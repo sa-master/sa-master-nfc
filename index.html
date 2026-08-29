@@ -19,8 +19,15 @@ html {
 body {
     margin: 0;
     background:
-        radial-gradient(circle at 10% 0%, #ffffff 0%, #f3f8fa 45%, #dce5e9 100%);
+        radial-gradient(
+            circle at 10% 0%,
+            #ffffff 0%,
+            #f3f8fa 45%,
+            #dce5e9 100%
+        );
+
     color: #17272f;
+
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -43,21 +50,23 @@ body {
 
 .hero {
     position: relative;
-    min-height: 470px;
+
     overflow: hidden;
+
+    padding: 20px;
 
     border-radius: 30px;
 
     background:
         radial-gradient(
-            circle at 75% 20%,
-            rgba(89,194,230,.28),
+            circle at 80% 15%,
+            rgba(89,194,230,.25),
             transparent 30%
         ),
         linear-gradient(
             145deg,
             #f8fcfd 0%,
-            #cbd8dd 45%,
+            #cbd8dd 48%,
             #738991 100%
         );
 
@@ -65,45 +74,31 @@ body {
         0 20px 50px rgba(37,63,75,.20);
 }
 
+
+/* Decorative circles */
+
 .hero::before {
     content: "";
 
     position: absolute;
 
-    width: 310px;
-    height: 310px;
+    width: 300px;
+    height: 300px;
 
-    right: -90px;
-    top: 105px;
+    right: -125px;
+    top: 80px;
 
-    border: 2px solid rgba(255,255,255,.48);
+    border:
+        2px solid rgba(255,255,255,.40);
 
     border-radius: 50%;
 
     box-shadow:
-        0 0 0 28px rgba(255,255,255,.10),
-        0 0 0 58px rgba(255,255,255,.07),
-        0 0 0 90px rgba(255,255,255,.04);
-}
+        0 0 0 28px rgba(255,255,255,.09),
+        0 0 0 58px rgba(255,255,255,.06),
+        0 0 0 90px rgba(255,255,255,.035);
 
-.hero::after {
-    content: "";
-
-    position: absolute;
-
-    width: 170px;
-    height: 2px;
-
-    right: 30px;
-    top: 255px;
-
-    background: rgba(53,177,218,.65);
-
-    transform: rotate(-32deg);
-
-    box-shadow:
-        0 30px 0 rgba(53,177,218,.35),
-        0 60px 0 rgba(53,177,218,.20);
+    pointer-events: none;
 }
 
 
@@ -112,19 +107,19 @@ body {
 ======================================== */
 
 .logo {
-    position: absolute;
+    position: relative;
 
-    top: 20px;
-    left: 20px;
-    right: 20px;
+    z-index: 5;
 
-    padding: 19px 15px;
+    padding: 18px 15px;
 
-    background: rgba(255,255,255,.88);
+    background:
+        rgba(255,255,255,.91);
 
     backdrop-filter: blur(14px);
 
-    border: 1px solid rgba(255,255,255,.85);
+    border:
+        1px solid rgba(255,255,255,.85);
 
     border-radius: 21px;
 
@@ -156,17 +151,252 @@ body {
 
 
 /* ========================================
+   HERO GALLERY
+======================================== */
+
+.hero-gallery {
+    position: relative;
+
+    z-index: 3;
+
+    width: 100%;
+
+    margin-top: 14px;
+
+    overflow: hidden;
+
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #eef5f7,
+            #cbd8dd
+        );
+
+    box-shadow:
+        0 14px 35px rgba(30,55,65,.20);
+
+    touch-action: pan-y;
+}
+
+.hero-gallery-track {
+    display: flex;
+
+    width: 100%;
+
+    transition:
+        transform .45s
+        cubic-bezier(.22,.61,.36,1);
+}
+
+.hero-gallery-slide {
+    position: relative;
+
+    flex: 0 0 100%;
+
+    aspect-ratio: 16 / 10;
+
+    overflow: hidden;
+
+    background: #cbd8dd;
+
+    cursor: pointer;
+}
+
+.hero-gallery-slide img {
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    transition:
+        transform .35s ease;
+}
+
+.hero-gallery-slide:hover img {
+    transform: scale(1.015);
+}
+
+
+/* Gallery dark gradient */
+
+.hero-gallery-slide::after {
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0,0,0,.04),
+            transparent 45%,
+            rgba(0,0,0,.20)
+        );
+
+    pointer-events: none;
+}
+
+
+/* ========================================
+   HERO GALLERY COUNTER
+======================================== */
+
+.hero-gallery-counter {
+    position: absolute;
+
+    z-index: 5;
+
+    top: 11px;
+    right: 11px;
+
+    padding: 6px 9px;
+
+    background:
+        rgba(18,35,42,.58);
+
+    backdrop-filter: blur(10px);
+
+    border:
+        1px solid rgba(255,255,255,.18);
+
+    border-radius: 8px;
+
+    color: white;
+
+    font-size: 8px;
+    font-weight: 800;
+}
+
+
+/* ========================================
+   HERO GALLERY ARROWS
+======================================== */
+
+.hero-gallery-arrow {
+    position: absolute;
+
+    z-index: 10;
+
+    top: 50%;
+
+    width: 36px;
+    height: 36px;
+
+    margin-top: -18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background:
+        rgba(255,255,255,.82);
+
+    backdrop-filter: blur(10px);
+
+    border:
+        1px solid rgba(255,255,255,.60);
+
+    border-radius: 50%;
+
+    color: #243940;
+
+    font-size: 22px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 6px 16px rgba(0,0,0,.15);
+
+    transition: .2s ease;
+}
+
+.hero-gallery-arrow:hover {
+    transform: scale(1.06);
+
+    background: white;
+}
+
+.hero-gallery-prev {
+    left: 9px;
+}
+
+.hero-gallery-next {
+    right: 9px;
+}
+
+
+/* ========================================
+   HERO GALLERY DOTS
+======================================== */
+
+.hero-gallery-dots {
+    position: absolute;
+
+    z-index: 10;
+
+    left: 50%;
+    bottom: 10px;
+
+    transform: translateX(-50%);
+
+    display: flex;
+
+    gap: 5px;
+
+    padding: 6px 8px;
+
+    background:
+        rgba(18,35,42,.48);
+
+    backdrop-filter: blur(10px);
+
+    border-radius: 20px;
+}
+
+.hero-gallery-dot {
+    width: 5px;
+    height: 5px;
+
+    padding: 0;
+
+    border: 0;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255,255,255,.45);
+
+    cursor: pointer;
+
+    transition: .25s ease;
+}
+
+.hero-gallery-dot.active {
+    width: 16px;
+
+    border-radius: 5px;
+
+    background: white;
+}
+
+
+/* ========================================
    HERO TEXT
 ======================================== */
 
 .hero-content {
-    position: absolute;
+    position: relative;
 
-    z-index: 2;
+    z-index: 4;
 
-    left: 24px;
-    right: 24px;
-    bottom: 25px;
+    padding:
+        18px 4px 2px;
 }
 
 .hero-label {
@@ -176,7 +406,8 @@ body {
 
     margin-bottom: 11px;
 
-    background: rgba(46,169,211,.90);
+    background:
+        rgba(46,169,211,.92);
 
     border-radius: 8px;
 
@@ -191,12 +422,11 @@ body {
 .hero h1 {
     margin: 0;
 
-    max-width: 390px;
+    color: white;
 
-    color: #fff;
-
-    font-size: 32px;
+    font-size: 31px;
     line-height: 1.06;
+
     font-weight: 900;
 
     letter-spacing: -1px;
@@ -208,7 +438,8 @@ body {
 .hero p {
     margin: 10px 0 0;
 
-    color: rgba(255,255,255,.94);
+    color:
+        rgba(255,255,255,.94);
 
     font-size: 14px;
     line-height: 1.45;
@@ -229,11 +460,13 @@ body {
 
     padding: 18px 20px;
 
-    background: rgba(255,255,255,.86);
+    background:
+        rgba(255,255,255,.86);
 
     backdrop-filter: blur(12px);
 
-    border: 1px solid rgba(90,130,145,.16);
+    border:
+        1px solid rgba(90,130,145,.16);
 
     border-radius: 21px;
 
@@ -324,7 +557,8 @@ body {
 
     margin-bottom: 13px;
 
-    background: rgba(255,255,255,.92);
+    background:
+        rgba(255,255,255,.92);
 
     border:
         1px solid rgba(45,158,199,.25);
@@ -372,7 +606,8 @@ body {
     width: 46px;
     height: 46px;
 
-    background: rgba(255,255,255,.94);
+    background:
+        rgba(255,255,255,.94);
 
     border:
         1px solid rgba(80,140,160,.17);
@@ -436,221 +671,6 @@ body {
     background: #42b8e2;
 
     border-radius: 5px;
-}
-
-
-/* ========================================
-   PHOTO CAROUSEL
-   Компактний варіант
-======================================== */
-
-.gallery {
-    position: relative;
-
-    width: 82%;
-    max-width: 400px;
-
-    margin: 0 auto;
-
-    overflow: hidden;
-
-    border-radius: 23px;
-
-    background:
-        linear-gradient(
-            145deg,
-            #eef5f7,
-            #cbd8dd
-        );
-
-    box-shadow:
-        0 14px 35px rgba(40,70,82,.14);
-
-    touch-action: pan-y;
-}
-
-.gallery-track {
-    display: flex;
-
-    width: 100%;
-
-    transition:
-        transform .45s
-        cubic-bezier(.22,.61,.36,1);
-}
-
-.gallery-slide {
-    position: relative;
-
-    flex: 0 0 100%;
-
-    /*
-       Фото залишаються у співвідношенні 9:16,
-       але сам блок став меншим.
-    */
-    aspect-ratio: 9 / 16;
-
-    overflow: hidden;
-
-    background: #cbd8dd;
-
-    cursor: pointer;
-}
-
-.gallery-slide img {
-    display: block;
-
-    width: 100%;
-    height: 100%;
-
-    object-fit: cover;
-
-    transition:
-        transform .35s ease;
-}
-
-.gallery-slide:hover img {
-    transform: scale(1.015);
-}
-
-
-/* ========================================
-   COUNTER
-======================================== */
-
-.gallery-counter {
-    position: absolute;
-
-    z-index: 5;
-
-    top: 13px;
-    right: 13px;
-
-    padding: 6px 9px;
-
-    background: rgba(18,35,42,.58);
-
-    backdrop-filter: blur(10px);
-
-    border:
-        1px solid rgba(255,255,255,.18);
-
-    border-radius: 8px;
-
-    color: white;
-
-    font-size: 8px;
-    font-weight: 800;
-}
-
-
-/* ========================================
-   ARROWS
-======================================== */
-
-.gallery-arrow {
-    position: absolute;
-
-    z-index: 10;
-
-    top: 50%;
-
-    width: 38px;
-    height: 38px;
-
-    margin-top: -19px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background: rgba(255,255,255,.80);
-
-    backdrop-filter: blur(10px);
-
-    border:
-        1px solid rgba(255,255,255,.55);
-
-    border-radius: 50%;
-
-    color: #243940;
-
-    font-size: 23px;
-    line-height: 1;
-
-    cursor: pointer;
-
-    box-shadow:
-        0 7px 18px rgba(0,0,0,.14);
-
-    transition: .2s ease;
-}
-
-.gallery-arrow:hover {
-    transform: scale(1.06);
-
-    background: white;
-}
-
-.gallery-prev {
-    left: 10px;
-}
-
-.gallery-next {
-    right: 10px;
-}
-
-
-/* ========================================
-   DOTS
-======================================== */
-
-.gallery-dots {
-    position: absolute;
-
-    z-index: 10;
-
-    left: 50%;
-    bottom: 13px;
-
-    transform: translateX(-50%);
-
-    display: flex;
-
-    gap: 5px;
-
-    padding: 6px 8px;
-
-    background: rgba(18,35,42,.48);
-
-    backdrop-filter: blur(10px);
-
-    border-radius: 20px;
-}
-
-.gallery-dot {
-    width: 5px;
-    height: 5px;
-
-    padding: 0;
-
-    border: 0;
-
-    border-radius: 50%;
-
-    background: rgba(255,255,255,.45);
-
-    cursor: pointer;
-
-    transition: .25s ease;
-}
-
-.gallery-dot.active {
-    width: 16px;
-
-    border-radius: 5px;
-
-    background: white;
 }
 
 
@@ -1093,15 +1113,20 @@ body {
 @media (max-width: 380px) {
 
     .hero {
-        min-height: 450px;
+        padding: 17px;
+    }
+
+    .logo {
+        font-size: 24px;
+        letter-spacing: 3px;
     }
 
     .hero h1 {
-        font-size: 29px;
+        font-size: 28px;
     }
 
-    .gallery {
-        width: 84%;
+    .hero-gallery-slide {
+        aspect-ratio: 16 / 10;
     }
 
     .social-icon {
@@ -1131,9 +1156,13 @@ body {
 
 <!-- ========================================
      HERO
+     ЛОГО → КАРУСЕЛЬ → ТЕКСТ
 ======================================== -->
 
 <section class="hero">
+
+
+    <!-- LOGO -->
 
     <div class="logo">
 
@@ -1145,6 +1174,136 @@ body {
 
     </div>
 
+
+
+    <!-- HERO PHOTO CAROUSEL -->
+
+    <div
+        class="hero-gallery"
+        id="heroGallery"
+    >
+
+        <div
+            class="hero-gallery-track"
+            id="heroGalleryTrack"
+        >
+
+
+            <!-- PHOTO 1 -->
+
+            <div
+                class="hero-gallery-slide"
+                onclick="openLightbox(0)"
+            >
+
+                <img
+                    src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=900&q=85"
+                    alt="Приклад роботи SA MASTER"
+                >
+
+            </div>
+
+
+
+            <!-- PHOTO 2 -->
+
+            <div
+                class="hero-gallery-slide"
+                onclick="openLightbox(1)"
+            >
+
+                <img
+                    src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=900&q=85"
+                    alt="Приклад роботи SA MASTER"
+                >
+
+            </div>
+
+
+
+            <!-- PHOTO 3 -->
+
+            <div
+                class="hero-gallery-slide"
+                onclick="openLightbox(2)"
+            >
+
+                <img
+                    src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=85"
+                    alt="Приклад роботи SA MASTER"
+                >
+
+            </div>
+
+
+
+            <!-- PHOTO 4 -->
+
+            <div
+                class="hero-gallery-slide"
+                onclick="openLightbox(3)"
+            >
+
+                <img
+                    src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=85"
+                    alt="Приклад роботи SA MASTER"
+                >
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- COUNTER -->
+
+        <div
+            class="hero-gallery-counter"
+            id="heroGalleryCounter"
+        >
+            01 / 04
+        </div>
+
+
+
+        <!-- PREVIOUS -->
+
+        <button
+            class="hero-gallery-arrow hero-gallery-prev"
+            onclick="changeHeroSlide(-1)"
+            aria-label="Попереднє фото"
+        >
+            ‹
+        </button>
+
+
+
+        <!-- NEXT -->
+
+        <button
+            class="hero-gallery-arrow hero-gallery-next"
+            onclick="changeHeroSlide(1)"
+            aria-label="Наступне фото"
+        >
+            ›
+        </button>
+
+
+
+        <!-- DOTS -->
+
+        <div
+            class="hero-gallery-dots"
+            id="heroGalleryDots"
+        ></div>
+
+
+    </div>
+
+
+
+    <!-- HERO TEXT -->
 
     <div class="hero-content">
 
@@ -1161,6 +1320,7 @@ body {
         </p>
 
     </div>
+
 
 </section>
 
@@ -1238,7 +1398,7 @@ body {
 
         <svg viewBox="0 0 24 24">
 
-            <path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm0 2A3.8 3.8 0 0 0 4 7.8v8.4A3.8 3.8 0 0 0 7.8 20h8.4a3.8 3.8 0 0 0 3.8-3.8V7.8A3.8 3.8 0 0 0 16.2 4H7.8zm8.8 1.5a1.35 1.35 0 1 1 0 2.7 1.35 1.35 0 0 1 0-2.7zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0-0-6z"/>
+            <path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm0 2A3.8 3.8 0 0 0 4 7.8v8.4A3.8 3.8 0 0 0 7.8 20h8.4a3.8 3.8 0 0 0 3.8-3.8V7.8A3.8 3.8 0 0 0 16.2 4H7.8zm8.8 1.5a1.35 1.35 0 1 1 0 2.7 1.35 1.35 0 0 1 0-2.7zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
 
         </svg>
 
@@ -1323,131 +1483,6 @@ body {
     </a>
 
 </div>
-
-
-
-<!-- ========================================
-     GALLERY
-======================================== -->
-
-<section class="section">
-
-    <div class="section-title">
-        Приклади робіт
-    </div>
-
-
-    <div
-        class="gallery"
-        id="gallery"
-    >
-
-        <div
-            class="gallery-track"
-            id="galleryTrack"
-        >
-
-
-            <!-- PHOTO 1 -->
-
-            <div
-                class="gallery-slide"
-                onclick="openLightbox(0)"
-            >
-
-                <img
-                    src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=900&q=85"
-                    alt="Приклад роботи SA MASTER"
-                >
-
-            </div>
-
-
-
-            <!-- PHOTO 2 -->
-
-            <div
-                class="gallery-slide"
-                onclick="openLightbox(1)"
-            >
-
-                <img
-                    src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=900&q=85"
-                    alt="Приклад роботи SA MASTER"
-                >
-
-            </div>
-
-
-
-            <!-- PHOTO 3 -->
-
-            <div
-                class="gallery-slide"
-                onclick="openLightbox(2)"
-            >
-
-                <img
-                    src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=85"
-                    alt="Приклад роботи SA MASTER"
-                >
-
-            </div>
-
-
-
-            <!-- PHOTO 4 -->
-
-            <div
-                class="gallery-slide"
-                onclick="openLightbox(3)"
-            >
-
-                <img
-                    src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=85"
-                    alt="Приклад роботи SA MASTER"
-                >
-
-            </div>
-
-
-        </div>
-
-
-        <div
-            class="gallery-counter"
-            id="galleryCounter"
-        >
-            01 / 04
-        </div>
-
-
-        <button
-            class="gallery-arrow gallery-prev"
-            onclick="changeSlide(-1)"
-            aria-label="Попереднє фото"
-        >
-            ‹
-        </button>
-
-
-        <button
-            class="gallery-arrow gallery-next"
-            onclick="changeSlide(1)"
-            aria-label="Наступне фото"
-        >
-            ›
-        </button>
-
-
-        <div
-            class="gallery-dots"
-            id="galleryDots"
-        ></div>
-
-    </div>
-
-</section>
 
 
 
@@ -1707,31 +1742,44 @@ body {
 
 <script>
 
-let currentSlide = 0;
+/* ========================================
+   HERO GALLERY
+======================================== */
 
-const track =
-    document.getElementById("galleryTrack");
+let currentHeroSlide = 0;
 
-const slides =
-    document.querySelectorAll(".gallery-slide");
+const heroTrack =
+    document.getElementById(
+        "heroGalleryTrack"
+    );
 
-const counter =
-    document.getElementById("galleryCounter");
+const heroSlides =
+    document.querySelectorAll(
+        ".hero-gallery-slide"
+    );
 
-const dotsContainer =
-    document.getElementById("galleryDots");
+const heroCounter =
+    document.getElementById(
+        "heroGalleryCounter"
+    );
 
-const totalSlides =
-    slides.length;
+const heroDotsContainer =
+    document.getElementById(
+        "heroGalleryDots"
+    );
+
+const totalHeroSlides =
+    heroSlides.length;
 
 
-/* =========================
+
+/* ========================================
    CREATE DOTS
-========================= */
+======================================== */
 
 for (
     let i = 0;
-    i < totalSlides;
+    i < totalHeroSlides;
     i++
 ) {
 
@@ -1739,7 +1787,7 @@ for (
         document.createElement("button");
 
     dot.className =
-        "gallery-dot";
+        "hero-gallery-dot";
 
     dot.setAttribute(
         "aria-label",
@@ -1752,41 +1800,42 @@ for (
 
             event.stopPropagation();
 
-            currentSlide = i;
+            currentHeroSlide = i;
 
-            updateGallery();
+            updateHeroGallery();
 
         }
     );
 
-    dotsContainer.appendChild(dot);
+    heroDotsContainer.appendChild(dot);
 }
 
 
-/* =========================
+
+/* ========================================
    UPDATE GALLERY
-========================= */
+======================================== */
 
-function updateGallery() {
+function updateHeroGallery() {
 
-    track.style.transform =
+    heroTrack.style.transform =
         "translateX(-" +
-        (currentSlide * 100) +
+        (currentHeroSlide * 100) +
         "%)";
 
 
-    counter.textContent =
+    heroCounter.textContent =
         String(
-            currentSlide + 1
+            currentHeroSlide + 1
         ).padStart(2, "0") +
         " / " +
-        String(totalSlides)
+        String(totalHeroSlides)
             .padStart(2, "0");
 
 
     const dots =
         document.querySelectorAll(
-            ".gallery-dot"
+            ".hero-gallery-dot"
         );
 
 
@@ -1795,7 +1844,7 @@ function updateGallery() {
 
             dot.classList.toggle(
                 "active",
-                index === currentSlide
+                index === currentHeroSlide
             );
 
         }
@@ -1803,51 +1852,55 @@ function updateGallery() {
 }
 
 
-/* =========================
+
+/* ========================================
    CHANGE SLIDE
-========================= */
+======================================== */
 
-function changeSlide(direction) {
+function changeHeroSlide(direction) {
 
-    currentSlide += direction;
+    currentHeroSlide += direction;
 
 
     if (
-        currentSlide < 0
+        currentHeroSlide < 0
     ) {
 
-        currentSlide =
-            totalSlides - 1;
+        currentHeroSlide =
+            totalHeroSlides - 1;
 
     }
 
 
     if (
-        currentSlide >= totalSlides
+        currentHeroSlide >= totalHeroSlides
     ) {
 
-        currentSlide = 0;
+        currentHeroSlide = 0;
 
     }
 
 
-    updateGallery();
+    updateHeroGallery();
 }
 
 
-/* =========================
+
+/* ========================================
    SWIPE
-========================= */
+======================================== */
 
 let touchStartX = 0;
 let touchEndX = 0;
 
 
-const gallery =
-    document.getElementById("gallery");
+const heroGallery =
+    document.getElementById(
+        "heroGallery"
+    );
 
 
-gallery.addEventListener(
+heroGallery.addEventListener(
     "touchstart",
     function(event) {
 
@@ -1862,7 +1915,7 @@ gallery.addEventListener(
 );
 
 
-gallery.addEventListener(
+heroGallery.addEventListener(
     "touchend",
     function(event) {
 
@@ -1870,7 +1923,7 @@ gallery.addEventListener(
             event.changedTouches[0]
                 .screenX;
 
-        handleSwipe();
+        handleHeroSwipe();
 
     },
     {
@@ -1879,7 +1932,7 @@ gallery.addEventListener(
 );
 
 
-function handleSwipe() {
+function handleHeroSwipe() {
 
     const distance =
         touchEndX - touchStartX;
@@ -1896,19 +1949,20 @@ function handleSwipe() {
 
     if (distance < 0) {
 
-        changeSlide(1);
+        changeHeroSlide(1);
 
     } else {
 
-        changeSlide(-1);
+        changeHeroSlide(-1);
 
     }
 }
 
 
-/* =========================
+
+/* ========================================
    LIGHTBOX
-========================= */
+======================================== */
 
 const lightbox =
     document.getElementById(
@@ -1924,7 +1978,7 @@ const lightboxImage =
 function openLightbox(index) {
 
     const image =
-        slides[index]
+        heroSlides[index]
             .querySelector("img");
 
     lightboxImage.src =
@@ -1958,9 +2012,10 @@ function closeLightbox(event) {
 }
 
 
-/* =========================
+
+/* ========================================
    ESC
-========================= */
+======================================== */
 
 document.addEventListener(
     "keydown",
@@ -1983,11 +2038,12 @@ document.addEventListener(
 );
 
 
-/* =========================
-   START
-========================= */
 
-updateGallery();
+/* ========================================
+   START
+======================================== */
+
+updateHeroGallery();
 
 </script>
 
