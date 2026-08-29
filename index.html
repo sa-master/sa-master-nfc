@@ -112,20 +112,29 @@ body {
 
 
 /* ========================================
-   LOGO
+   HEADER (logo + brand)
 ======================================== */
 
+.hero-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 5;
+}
+
+/* LOGO */
 .logo-wrapper {
+    flex-shrink: 0;
     position: relative;
     z-index: 5;
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 112px;
-    height: 112px;
-    margin: 0 auto 18px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
-    /* Білий фон повністю прибрано — його замінить маска */
     background: transparent;
     overflow: hidden;
     box-shadow: 0 8px 24px rgba(25,55,68,.16);
@@ -133,16 +142,12 @@ body {
     isolation: isolate;
 }
 
-/* 
-   СТВОРЮЄМО БІЛУ ПІДКЛАДКУ, ЯКА ПОВТОРЮЄ ФОРМУ ЛОГОТИПУ 
-   ЗА ДОПОМОГОЮ МАСКИ — ЖОДНОГО БІЛОГО КОНТУРУ!
-*/
 .logo-wrapper::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: #ffffff; /* білий фон для заповнення прозорих ділянок */
+    background: #ffffff;
     mask-image: url(logo.png);
     -webkit-mask-image: url(logo.png);
     mask-size: cover;
@@ -170,47 +175,31 @@ body {
     display: block;
 }
 
-
-/* ========================================
-   HERO TITLE
-======================================== */
-
-.hero-intro {
-    position: relative;
-    z-index: 4;
-    text-align: center;
-    margin-bottom: 17px;
+/* Бренд-текст */
+.hero-brand {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0; /* для запобігання переповнення */
 }
 
-.hero-label {
-    display: inline-block;
-    padding: 7px 11px;
-    margin-bottom: 10px;
-    background: rgba(46,169,211,.92);
-    border-radius: 8px;
-    color: white;
-    font-size: 9px;
+.brand-name {
+    font-size: 28px;
     font-weight: 900;
-    letter-spacing: 2px;
-}
-
-.hero h1 {
-    margin: 0 auto;
-    max-width: 410px;
+    line-height: 1.1;
     color: white;
-    font-size: 29px;
-    line-height: 1.08;
-    font-weight: 900;
-    letter-spacing: -1px;
-    text-shadow: 0 3px 18px rgba(0,0,0,.42);
+    text-shadow: 0 3px 18px rgba(0,0,0,.35);
+    letter-spacing: -0.5px;
 }
 
-.hero p {
-    margin: 9px 0 0;
-    color: rgba(255,255,255,.94);
+.brand-sub {
     font-size: 13px;
-    line-height: 1.45;
     font-weight: 600;
+    color: rgba(255,255,255,.92);
+    text-shadow: 0 2px 10px rgba(0,0,0,.25);
+    margin-top: 2px;
+    line-height: 1.3;
 }
 
 
@@ -352,7 +341,7 @@ body {
 
 
 /* ========================================
-   HERO TEXT
+   HERO TEXT (нижній)
 ======================================== */
 
 .hero-bottom {
@@ -808,14 +797,14 @@ body {
         padding: 17px 14px 20px;
     }
     .logo-wrapper {
-        width: 96px;
-        height: 96px;
-        margin-bottom: 18px;
+        width: 64px;
+        height: 64px;
     }
-    .logo {
-        width: 100%;
-        height: 100%;
-        padding: 0;
+    .brand-name {
+        font-size: 22px;
+    }
+    .brand-sub {
+        font-size: 11px;
     }
     .hero h1 {
         font-size: 26px;
@@ -852,35 +841,19 @@ body {
 
 <section class="hero">
 
+    <!-- Нова шапка з логотипом і текстом -->
+    <div class="hero-header">
 
-    <!-- LOGO -->
-
-    <div class="logo-wrapper">
-
-        <img
-            class="logo"
-            src="logo.png"
-            alt="SA MASTER"
-        >
-
-    </div>
-
-
-    <!-- HERO INTRO -->
-
-    <div class="hero-intro">
-
-        <div class="hero-label">
-            PREMIUM PLUMBING
+        <!-- LOGO -->
+        <div class="logo-wrapper">
+            <img class="logo" src="logo.png" alt="SA MASTER">
         </div>
 
-        <h1>
-            Комплексний монтаж сантехніки
-        </h1>
-
-        <p>
-            Реалізація сучасних проектних рішень
-        </p>
+        <!-- Бренд-текст -->
+        <div class="hero-brand">
+            <div class="brand-name">SA MASTER</div>
+            <div class="brand-sub">комплексний монтаж сантехніки</div>
+        </div>
 
     </div>
 
