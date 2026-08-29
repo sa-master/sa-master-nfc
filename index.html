@@ -6,6 +6,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SA MASTER — Комплексний монтаж сантехніки</title>
 
+<!-- Підключення сучасного шрифту Inter -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700;14..32,900&display=swap" rel="stylesheet">
+
 <style>
 
 /* ========================================
@@ -14,6 +17,8 @@
 
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 html {
@@ -22,22 +27,12 @@ html {
 
 body {
     margin: 0;
-    background:
-        radial-gradient(
-            circle at 10% 0%,
-            #ffffff 0%,
-            #f3f8fa 45%,
-            #dce5e9 100%
-        );
-    color: #17272f;
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Arial,
-        sans-serif;
+    background: radial-gradient(circle at 10% 0%, #f9fbfc 0%, #eef3f5 60%, #dce5e9 100%);
+    color: #1a2e38;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
 }
-
 
 /* ========================================
    PAGE
@@ -45,11 +40,37 @@ body {
 
 .page {
     width: 100%;
-    max-width: 520px;
-    margin: auto;
-    padding: 14px;
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 18px 16px 30px;
 }
 
+/* ========================================
+   АНІМАЦІЯ ПОЯВИ
+======================================== */
+
+.animate-in {
+    opacity: 0;
+    transform: translateY(18px);
+    animation: fadeUp 0.7s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes fadeUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Затримки для послідовної появи */
+.hero { animation-delay: 0.05s; }
+.experience { animation-delay: 0.15s; }
+.phone { animation-delay: 0.20s; }
+.save { animation-delay: 0.25s; }
+.social-icons { animation-delay: 0.30s; }
+.section { animation-delay: 0.35s; }
+.payment-buttons { animation-delay: 0.45s; }
+.footer { animation-delay: 0.55s; }
 
 /* ========================================
    HERO
@@ -58,58 +79,45 @@ body {
 .hero {
     position: relative;
     overflow: hidden;
-    padding: 20px 18px 22px;
-    border-radius: 30px;
+    padding: 28px 22px 26px;
+    border-radius: 36px;
     background:
-        radial-gradient(
-            circle at 75% 15%,
-            rgba(89,194,230,.30),
-            transparent 30%
-        ),
-        linear-gradient(
-            145deg,
-            #f8fcfd 0%,
-            #cbd8dd 45%,
-            #738991 100%
-        );
-    box-shadow:
-        0 20px 50px rgba(37,63,75,.20);
+        radial-gradient(circle at 70% 20%, rgba(70, 180, 210, 0.25), transparent 40%),
+        linear-gradient(145deg, #f0f6f9 0%, #bcccd4 45%, #7b939e 100%);
+    box-shadow: 0 24px 60px rgba(30, 55, 70, 0.20);
+    transition: box-shadow 0.3s ease;
 }
 
+.hero:hover {
+    box-shadow: 0 28px 70px rgba(30, 55, 70, 0.28);
+}
 
-/* декоративні кола */
-
+/* декоративні кола – більш витончені */
 .hero::before {
     content: "";
     position: absolute;
-    width: 310px;
-    height: 310px;
-    right: -120px;
-    top: 150px;
-    border: 2px solid rgba(255,255,255,.38);
+    width: 340px;
+    height: 340px;
+    right: -140px;
+    top: 120px;
+    border: 2px solid rgba(255,255,255,0.30);
     border-radius: 50%;
-    box-shadow:
-        0 0 0 28px rgba(255,255,255,.08),
-        0 0 0 58px rgba(255,255,255,.05),
-        0 0 0 90px rgba(255,255,255,.03);
+    box-shadow: 0 0 0 30px rgba(255,255,255,0.06), 0 0 0 70px rgba(255,255,255,0.04), 0 0 0 110px rgba(255,255,255,0.02);
     pointer-events: none;
 }
 
 .hero::after {
     content: "";
     position: absolute;
-    width: 190px;
+    width: 200px;
     height: 2px;
-    right: 5px;
-    top: 390px;
-    background: rgba(53,177,218,.45);
-    transform: rotate(-32deg);
-    box-shadow:
-        0 30px 0 rgba(53,177,218,.25),
-        0 60px 0 rgba(53,177,218,.15);
+    right: 0;
+    top: 380px;
+    background: rgba(180, 210, 220, 0.5);
+    transform: rotate(-28deg);
+    box-shadow: 0 28px 0 rgba(180,210,220,0.25), 0 56px 0 rgba(180,210,220,0.12);
     pointer-events: none;
 }
-
 
 /* ========================================
    LOGO
@@ -121,28 +129,24 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 112px;
-    height: 112px;
-    margin: 0 auto 18px;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 20px;
     border-radius: 50%;
-    /* Білий фон повністю прибрано — його замінить маска */
     background: transparent;
     overflow: hidden;
-    box-shadow: 0 8px 24px rgba(25,55,68,.16);
-    border: none;
+    box-shadow: 0 12px 30px rgba(20, 50, 65, 0.18);
+    border: 2px solid rgba(255,255,255,0.5);
     isolation: isolate;
 }
 
-/* 
-   СТВОРЮЄМО БІЛУ ПІДКЛАДКУ, ЯКА ПОВТОРЮЄ ФОРМУ ЛОГОТИПУ 
-   ЗА ДОПОМОГОЮ МАСКИ — ЖОДНОГО БІЛОГО КОНТУРУ!
-*/
+/* Маска для білої підкладки – точно за формою логотипу */
 .logo-wrapper::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: 1;
-    background: #ffffff; /* білий фон для заповнення прозорих ділянок */
+    background: #ffffff;
     mask-image: url(logo.png);
     -webkit-mask-image: url(logo.png);
     mask-size: cover;
@@ -170,7 +174,6 @@ body {
     display: block;
 }
 
-
 /* ========================================
    HERO TITLE
 ======================================== */
@@ -179,63 +182,66 @@ body {
     position: relative;
     z-index: 4;
     text-align: center;
-    margin-bottom: 17px;
+    margin-bottom: 16px;
 }
 
 .hero-label {
     display: inline-block;
-    padding: 7px 11px;
-    margin-bottom: 10px;
-    background: rgba(46,169,211,.92);
-    border-radius: 8px;
-    color: white;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 2px;
+    padding: 6px 14px;
+    margin-bottom: 12px;
+    background: rgba(26, 75, 92, 0.85);
+    backdrop-filter: blur(4px);
+    border-radius: 30px;
+    color: #f0f7fa;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
 }
 
 .hero h1 {
     margin: 0 auto;
-    max-width: 410px;
+    max-width: 400px;
     color: white;
-    font-size: 29px;
-    line-height: 1.08;
+    font-size: 32px;
+    line-height: 1.05;
     font-weight: 900;
     letter-spacing: -1px;
-    text-shadow: 0 3px 18px rgba(0,0,0,.42);
+    text-shadow: 0 4px 24px rgba(0,0,0,0.35);
 }
 
 .hero p {
-    margin: 9px 0 0;
-    color: rgba(255,255,255,.94);
-    font-size: 13px;
-    line-height: 1.45;
-    font-weight: 600;
+    margin: 10px 0 0;
+    color: rgba(255,255,255,0.92);
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 500;
+    letter-spacing: 0.2px;
 }
 
-
 /* ========================================
-   HEADER GALLERY
+   HEADER GALLERY (карусель)
 ======================================== */
 
 .header-gallery {
     position: relative;
     z-index: 5;
     width: 100%;
-    max-width: 390px;
-    margin: 0 auto 19px;
+    max-width: 400px;
+    margin: 0 auto 20px;
     overflow: hidden;
-    border-radius: 22px;
-    background: rgba(255,255,255,.18);
-    border: 1px solid rgba(255,255,255,.35);
-    box-shadow: 0 14px 35px rgba(25,55,68,.20);
+    border-radius: 26px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255,255,255,0.35);
+    box-shadow: 0 16px 40px rgba(20, 50, 65, 0.18);
     touch-action: pan-y;
 }
 
 .header-gallery-track {
     display: flex;
     width: 100%;
-    transition: transform .45s cubic-bezier(.22,.61,.36,1);
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .header-gallery-slide {
@@ -243,7 +249,7 @@ body {
     flex: 0 0 100%;
     aspect-ratio: 16 / 10;
     overflow: hidden;
-    background: #b9c8ce;
+    background: #b8cad2;
     cursor: pointer;
 }
 
@@ -252,104 +258,94 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform .35s ease;
+    transition: transform 0.4s ease;
 }
 
 .header-gallery-slide:hover img {
-    transform: scale(1.015);
+    transform: scale(1.03);
 }
 
-
 /* ========================================
-   HEADER GALLERY COUNTER
+   GALLERY CONTROLS
 ======================================== */
 
 .header-gallery-counter {
     position: absolute;
     z-index: 10;
-    top: 10px;
-    right: 10px;
-    padding: 6px 9px;
-    background: rgba(18,35,42,.58);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,.18);
-    border-radius: 8px;
+    top: 12px;
+    right: 12px;
+    padding: 5px 12px;
+    background: rgba(20, 45, 55, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 30px;
     color: white;
-    font-size: 8px;
-    font-weight: 800;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
-
-
-/* ========================================
-   HEADER GALLERY ARROWS
-======================================== */
 
 .header-gallery-arrow {
     position: absolute;
     z-index: 10;
     top: 50%;
-    width: 34px;
-    height: 34px;
-    margin-top: -17px;
+    width: 36px;
+    height: 36px;
+    margin-top: -18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255,255,255,.78);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,.60);
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.5);
     border-radius: 50%;
-    color: #243940;
-    font-size: 22px;
+    color: #1a3b4a;
+    font-size: 24px;
     line-height: 1;
     cursor: pointer;
-    box-shadow: 0 6px 15px rgba(0,0,0,.15);
-    transition: .2s ease;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+    transition: all 0.2s ease;
 }
 
 .header-gallery-arrow:hover {
-    transform: scale(1.06);
+    transform: scale(1.08);
     background: white;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
 }
 
-.header-gallery-prev { left: 9px; }
-.header-gallery-next { right: 9px; }
-
-
-/* ========================================
-   HEADER GALLERY DOTS
-======================================== */
+.header-gallery-prev { left: 10px; }
+.header-gallery-next { right: 10px; }
 
 .header-gallery-dots {
     position: absolute;
     z-index: 10;
     left: 50%;
-    bottom: 10px;
+    bottom: 12px;
     transform: translateX(-50%);
     display: flex;
-    gap: 5px;
-    padding: 5px 7px;
-    background: rgba(18,35,42,.48);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
+    gap: 6px;
+    padding: 5px 10px;
+    background: rgba(20, 45, 55, 0.45);
+    backdrop-filter: blur(8px);
+    border-radius: 30px;
 }
 
 .header-gallery-dot {
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     padding: 0;
     border: 0;
     border-radius: 50%;
-    background: rgba(255,255,255,.45);
+    background: rgba(255,255,255,0.4);
     cursor: pointer;
-    transition: .25s ease;
+    transition: all 0.3s ease;
 }
 
 .header-gallery-dot.active {
-    width: 15px;
-    border-radius: 5px;
+    width: 18px;
+    border-radius: 6px;
     background: white;
 }
-
 
 /* ========================================
    HERO TEXT
@@ -362,13 +358,14 @@ body {
 }
 
 .hero-bottom-text {
-    color: rgba(255,255,255,.94);
-    font-size: 11px;
-    line-height: 1.5;
-    font-weight: 700;
-    text-shadow: 0 2px 10px rgba(0,0,0,.28);
+    color: rgba(255,255,255,0.92);
+    font-size: 12px;
+    line-height: 1.6;
+    font-weight: 500;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.20);
+    max-width: 340px;
+    margin: 0 auto;
 }
-
 
 /* ========================================
    EXPERIENCE
@@ -377,36 +374,44 @@ body {
 .experience {
     display: flex;
     align-items: center;
-    margin: 14px 0;
-    padding: 18px 20px;
-    background: rgba(255,255,255,.86);
+    margin: 18px 0;
+    padding: 20px 24px;
+    background: rgba(255,255,255,0.75);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(90,130,145,.16);
-    border-radius: 21px;
-    box-shadow: 0 10px 30px rgba(40,70,82,.09);
+    border: 1px solid rgba(255,255,255,0.6);
+    border-radius: 28px;
+    box-shadow: 0 12px 35px rgba(30, 60, 75, 0.08);
+    transition: all 0.3s ease;
+}
+
+.experience:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 45px rgba(30, 60, 75, 0.12);
 }
 
 .experience-number {
-    margin-right: 15px;
-    color: #35acd5;
-    font-size: 36px;
+    margin-right: 18px;
+    color: #1a5b6c;
+    font-size: 40px;
     line-height: 1;
-    font-weight: 950;
+    font-weight: 900;
+    letter-spacing: -1px;
 }
 
 .experience-text strong {
     display: block;
-    color: #20333b;
-    font-size: 14px;
+    color: #1a2e38;
+    font-size: 15px;
+    font-weight: 700;
 }
 
 .experience-text span {
     display: block;
     margin-top: 4px;
-    color: #75858d;
-    font-size: 10px;
+    color: #6a7f89;
+    font-size: 11px;
+    font-weight: 500;
 }
-
 
 /* ========================================
    PHONE
@@ -416,22 +421,24 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 58px;
-    margin: 14px 0 10px;
-    background: linear-gradient(135deg, #4bc0e8, #238fbe);
-    border-radius: 18px;
+    min-height: 62px;
+    margin: 16px 0 12px;
+    background: linear-gradient(135deg, #2b7f94, #1a5b6c);
+    border-radius: 22px;
     color: white;
     text-decoration: none;
-    font-size: 18px;
-    font-weight: 900;
-    box-shadow: 0 10px 25px rgba(32,143,192,.26);
-    transition: .2s ease;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    box-shadow: 0 12px 30px rgba(26, 91, 108, 0.30);
+    transition: all 0.25s ease;
 }
 
 .phone:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(26, 91, 108, 0.35);
+    background: linear-gradient(135deg, #308ca3, #1f6a7e);
 }
-
 
 /* ========================================
    SAVE CONTACT
@@ -441,24 +448,27 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 54px;
-    margin-bottom: 13px;
-    background: rgba(255,255,255,.92);
-    border: 1px solid rgba(45,158,199,.25);
-    border-radius: 17px;
-    color: #238fb9;
+    min-height: 56px;
+    margin-bottom: 14px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(26, 91, 108, 0.20);
+    border-radius: 20px;
+    color: #1a5b6c;
     text-decoration: none;
     font-size: 13px;
-    font-weight: 900;
-    letter-spacing: .5px;
-    box-shadow: 0 7px 20px rgba(40,70,82,.07);
-    transition: .2s ease;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    box-shadow: 0 8px 24px rgba(30, 60, 75, 0.06);
+    transition: all 0.25s ease;
 }
 
 .save:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 14px 35px rgba(30, 60, 75, 0.10);
+    background: white;
+    border-color: #1a5b6c;
 }
-
 
 /* ========================================
    SOCIAL ICONS
@@ -467,64 +477,66 @@ body {
 .social-icons {
     display: flex;
     justify-content: center;
-    gap: 12px;
-    margin: 2px 0 5px;
+    gap: 14px;
+    margin: 4px 0 8px;
 }
 
 .social-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 46px;
-    height: 46px;
-    background: rgba(255,255,255,.94);
-    border: 1px solid rgba(80,140,160,.17);
+    width: 50px;
+    height: 50px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.5);
     border-radius: 50%;
-    color: #2ca4ce;
+    color: #2a6c7e;
     text-decoration: none;
-    box-shadow: 0 7px 18px rgba(40,70,82,.08);
-    transition: .2s ease;
+    box-shadow: 0 8px 22px rgba(30, 60, 75, 0.06);
+    transition: all 0.25s ease;
 }
 
 .social-icon:hover {
-    transform: translateY(-3px);
+    transform: translateY(-5px);
+    background: white;
+    box-shadow: 0 14px 35px rgba(30, 60, 75, 0.10);
+    color: #1a5b6c;
 }
 
 .social-icon svg {
-    width: 21px;
-    height: 21px;
+    width: 22px;
+    height: 22px;
     fill: currentColor;
 }
-
 
 /* ========================================
    SECTIONS
 ======================================== */
 
 .section {
-    margin-top: 30px;
+    margin-top: 34px;
 }
 
 .section-title {
     display: flex;
     align-items: center;
-    gap: 9px;
-    margin: 0 3px 13px;
-    color: #263940;
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: 2px;
+    gap: 10px;
+    margin: 0 4px 16px;
+    color: #1a3b4a;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
 }
 
 .section-title::before {
     content: "";
     width: 4px;
-    height: 19px;
-    background: #42b8e2;
-    border-radius: 5px;
+    height: 22px;
+    background: linear-gradient(180deg, #c9a84c, #b8923a);
+    border-radius: 4px;
 }
-
 
 /* ========================================
    BENTO GRID
@@ -533,29 +545,38 @@ body {
 .bento {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
 }
 
 .bento-card {
     position: relative;
     overflow: hidden;
-    min-height: 165px;
-    padding: 17px;
-    background: linear-gradient(145deg, rgba(255,255,255,.97), rgba(230,242,247,.90));
-    border: 1px solid rgba(100,135,148,.15);
-    border-radius: 21px;
-    box-shadow: 0 9px 25px rgba(40,70,82,.07);
+    min-height: 180px;
+    padding: 20px 16px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(235, 245, 248, 0.80));
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 26px;
+    box-shadow: 0 10px 30px rgba(30, 60, 75, 0.06);
+    transition: all 0.3s ease;
+}
+
+.bento-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 45px rgba(30, 60, 75, 0.10);
+    background: rgba(255,255,255,0.96);
 }
 
 .bento-card::after {
     content: "";
     position: absolute;
-    right: -35px;
-    bottom: -40px;
-    width: 110px;
-    height: 110px;
-    border: 1px solid rgba(55,177,218,.13);
+    right: -30px;
+    bottom: -30px;
+    width: 100px;
+    height: 100px;
+    border: 1px solid rgba(201, 168, 76, 0.10);
     border-radius: 50%;
+    pointer-events: none;
 }
 
 .bento-icon {
@@ -564,24 +585,25 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    margin-bottom: 13px;
-    background: linear-gradient(145deg, #ffffff, #e1f2f8);
-    border: 1px solid rgba(57,174,218,.18);
-    border-radius: 13px;
-    color: #2fa9d5;
-    font-size: 19px;
-    box-shadow: 0 5px 13px rgba(40,100,120,.07);
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
+    background: linear-gradient(145deg, #ffffff, #e8f2f7);
+    border: 1px solid rgba(26, 91, 108, 0.12);
+    border-radius: 16px;
+    color: #1a6b7e;
+    font-size: 20px;
+    box-shadow: 0 6px 16px rgba(30, 60, 75, 0.06);
 }
 
 .bento-card strong {
     position: relative;
     z-index: 2;
     display: block;
-    margin-bottom: 7px;
-    color: #21343c;
-    font-size: 14px;
+    margin-bottom: 6px;
+    color: #1a2e38;
+    font-size: 15px;
+    font-weight: 700;
     line-height: 1.2;
 }
 
@@ -589,11 +611,11 @@ body {
     position: relative;
     z-index: 2;
     margin: 0;
-    color: #6c7d85;
-    font-size: 10.5px;
+    color: #5f767f;
+    font-size: 11px;
     line-height: 1.5;
+    font-weight: 400;
 }
-
 
 /* ========================================
    REVIEWS
@@ -602,43 +624,53 @@ body {
 .reviews {
     position: relative;
     overflow: hidden;
-    padding: 23px 20px;
-    background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(228,244,250,.94));
-    border: 1px solid rgba(60,160,200,.18);
-    border-radius: 23px;
-    box-shadow: 0 10px 30px rgba(40,100,120,.09);
+    padding: 26px 24px;
+    background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(235, 245, 248, 0.80));
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 28px;
+    box-shadow: 0 12px 35px rgba(30, 60, 75, 0.06);
+    transition: all 0.3s ease;
+}
+
+.reviews:hover {
+    box-shadow: 0 18px 45px rgba(30, 60, 75, 0.10);
 }
 
 .rating {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 12px;
+    margin-bottom: 14px;
 }
 
 .stars {
-    color: #36acd5;
-    font-size: 19px;
-    letter-spacing: 1px;
+    color: #c9a84c;
+    font-size: 20px;
+    letter-spacing: 2px;
 }
 
 .rating-text {
-    color: #63757d;
+    color: #5f767f;
     font-size: 10px;
     font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
 
 .reviews strong {
     display: block;
     margin-bottom: 8px;
-    color: #20333b;
-    font-size: 18px;
+    color: #1a2e38;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
 }
 
 .reviews p {
-    margin: 0 0 18px;
-    color: #64767e;
-    font-size: 12px;
+    margin: 0 0 20px;
+    color: #5f767f;
+    font-size: 13px;
     line-height: 1.6;
 }
 
@@ -646,21 +678,25 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 52px;
-    background: #fff;
-    border: 1px solid rgba(45,158,199,.25);
-    border-radius: 16px;
-    color: #238fb9;
+    min-height: 54px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(201, 168, 76, 0.25);
+    border-radius: 20px;
+    color: #c9a84c;
     text-decoration: none;
     font-size: 12px;
-    font-weight: 900;
-    transition: .2s ease;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    transition: all 0.25s ease;
 }
 
 .review-button:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    background: white;
+    box-shadow: 0 14px 35px rgba(30, 60, 75, 0.10);
+    border-color: #c9a84c;
 }
-
 
 /* ========================================
    PAYMENT
@@ -669,92 +705,93 @@ body {
 .payment-buttons {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 25px;
+    gap: 12px;
+    margin-top: 28px;
 }
 
 .payment-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    min-height: 68px;
-    padding: 10px;
-    background: linear-gradient(145deg, #ffffff, #e6f1f5);
-    border: 1px solid rgba(100,135,148,.16);
-    border-radius: 19px;
-    color: #263840;
+    gap: 12px;
+    min-height: 72px;
+    padding: 12px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 22px;
+    color: #1a2e38;
     text-decoration: none;
-    box-shadow: 0 8px 22px rgba(40,70,82,.07);
-    transition: .2s ease;
+    box-shadow: 0 10px 30px rgba(30, 60, 75, 0.06);
+    transition: all 0.25s ease;
 }
 
 .payment-button:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    box-shadow: 0 18px 45px rgba(30, 60, 75, 0.10);
+    background: white;
 }
 
 .payment-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 47px;
-    height: 40px;
+    width: 50px;
+    height: 42px;
     flex-shrink: 0;
-    border-radius: 11px;
+    border-radius: 14px;
     color: white;
-    font-size: 11px;
-    font-weight: 950;
-    letter-spacing: -.5px;
-    box-shadow: 0 5px 13px rgba(40,70,82,.16);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.08);
 }
 
 .privat-icon {
-    background: linear-gradient(145deg, #63c64b, #238a31);
-    font-size: 12px;
+    background: linear-gradient(145deg, #5fb84a, #2a8a38);
 }
 
 .mono-icon {
-    background: linear-gradient(145deg, #242424, #000);
-    font-size: 11px;
-    letter-spacing: -1px;
+    background: linear-gradient(145deg, #2a2a2a, #0a0a0a);
 }
 
 .payment-button strong {
-    font-size: 12px;
-    font-weight: 900;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
-
 
 /* ========================================
    FOOTER
 ======================================== */
 
 .footer {
-    margin-top: 30px;
-    padding: 25px 8px 12px;
+    margin-top: 34px;
+    padding: 28px 12px 16px;
     text-align: center;
-    border-top: 1px solid rgba(90,120,130,.14);
-    color: #7d8d94;
-    font-size: 10px;
-    line-height: 1.7;
+    border-top: 1px solid rgba(26, 75, 92, 0.08);
+    color: #6a7f89;
+    font-size: 11px;
+    line-height: 1.8;
+    font-weight: 400;
 }
 
 .footer strong {
     display: block;
-    margin-bottom: 5px;
-    color: #43565e;
-    font-size: 12px;
-    letter-spacing: 2px;
+    margin-bottom: 4px;
+    color: #1a3b4a;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
 }
 
 .blue-line {
-    width: 45px;
+    width: 50px;
     height: 3px;
-    margin: 0 auto 13px;
-    background: #46b8df;
-    border-radius: 5px;
+    margin: 0 auto 14px;
+    background: linear-gradient(90deg, #c9a84c, #b8923a);
+    border-radius: 4px;
 }
-
 
 /* ========================================
    LIGHTBOX
@@ -768,8 +805,8 @@ body {
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba(5,15,20,.92);
-    backdrop-filter: blur(10px);
+    background: rgba(5, 18, 25, 0.92);
+    backdrop-filter: blur(14px);
 }
 
 .lightbox.active {
@@ -778,63 +815,45 @@ body {
 
 .lightbox img {
     max-width: 100%;
-    max-height: 94vh;
+    max-height: 92vh;
     object-fit: contain;
-    border-radius: 12px;
-    box-shadow: 0 20px 70px rgba(0,0,0,.45);
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
 }
 
 .lightbox-close {
     position: absolute;
-    top: 18px;
-    right: 18px;
-    width: 42px;
-    height: 42px;
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
     border: 0;
     border-radius: 50%;
-    background: rgba(255,255,255,.15);
+    background: rgba(255,255,255,0.08);
     color: white;
-    font-size: 26px;
+    font-size: 28px;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
+.lightbox-close:hover {
+    background: rgba(255,255,255,0.15);
+    transform: rotate(90deg);
+}
 
 /* ========================================
-   MOBILE
+   MOBILE ADJUSTMENTS
 ======================================== */
 
-@media (max-width: 380px) {
-    .hero {
-        padding: 17px 14px 20px;
-    }
-    .logo-wrapper {
-        width: 96px;
-        height: 96px;
-        margin-bottom: 18px;
-    }
-    .logo {
-        width: 100%;
-        height: 100%;
-        padding: 0;
-    }
-    .hero h1 {
-        font-size: 26px;
-    }
-    .header-gallery {
-        max-width: 100%;
-    }
-    .social-icon {
-        width: 43px;
-        height: 43px;
-    }
-    .payment-button {
-        gap: 7px;
-        padding: 8px;
-    }
-    .payment-icon {
-        width: 43px;
-        height: 38px;
-    }
+@media (max-width: 400px) {
+    .page { padding: 12px; }
+    .hero { padding: 20px 16px 22px; }
+    .logo-wrapper { width: 100px; height: 100px; margin-bottom: 16px; }
+    .hero h1 { font-size: 26px; }
+    .experience-number { font-size: 34px; }
+    .bento { gap: 8px; }
+    .bento-card { min-height: 150px; padding: 16px 12px; }
+    .social-icon { width: 44px; height: 44px; }
 }
 
 </style>
@@ -842,464 +861,187 @@ body {
 </head>
 <body>
 
-
 <div class="page">
-
 
 <!-- ========================================
      HERO
 ======================================== -->
 
-<section class="hero">
-
+<section class="hero animate-in">
 
     <!-- LOGO -->
-
     <div class="logo-wrapper">
-
-        <img
-            class="logo"
-            src="logo.png"
-            alt="SA MASTER"
-        >
-
+        <img class="logo" src="logo.png" alt="SA MASTER">
     </div>
-
-
-    <!-- HERO INTRO -->
 
     <div class="hero-intro">
-
-        <div class="hero-label">
-            PREMIUM PLUMBING
-        </div>
-
-        <h1>
-            Комплексний монтаж сантехніки
-        </h1>
-
-        <p>
-            Реалізація сучасних проектних рішень
-        </p>
-
+        <div class="hero-label">Premium Plumbing</div>
+        <h1>Комплексний монтаж сантехніки</h1>
+        <p>Реалізація сучасних проектних рішень</p>
     </div>
 
+    <!-- GALLERY -->
+    <div class="header-gallery" id="headerGallery">
+        <div class="header-gallery-track" id="headerGalleryTrack">
 
-    <!-- ========================================
-         PHOTO CAROUSEL IN HEADER
-    ======================================== -->
-
-    <div
-        class="header-gallery"
-        id="headerGallery"
-    >
-
-        <div
-            class="header-gallery-track"
-            id="headerGalleryTrack"
-        >
-
-            <!-- PHOTO 1 -->
-            <div
-                class="header-gallery-slide"
-                onclick="openLightbox(0)"
-            >
-                <img
-                    src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=900&q=85"
-                    alt="Приклад роботи SA MASTER"
-                >
+            <div class="header-gallery-slide" onclick="openLightbox(0)">
+                <img src="https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=900&q=85" alt="Приклад роботи SA MASTER">
             </div>
-
-            <!-- PHOTO 2 -->
-            <div
-                class="header-gallery-slide"
-                onclick="openLightbox(1)"
-            >
-                <img
-                    src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=900&q=85"
-                    alt="Приклад роботи SA MASTER"
-                >
+            <div class="header-gallery-slide" onclick="openLightbox(1)">
+                <img src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=900&q=85" alt="Приклад роботи SA MASTER">
             </div>
-
-            <!-- PHOTO 3 -->
-            <div
-                class="header-gallery-slide"
-                onclick="openLightbox(2)"
-            >
-                <img
-                    src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=85"
-                    alt="Приклад роботи SA MASTER"
-                >
+            <div class="header-gallery-slide" onclick="openLightbox(2)">
+                <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=85" alt="Приклад роботи SA MASTER">
             </div>
-
-            <!-- PHOTO 4 -->
-            <div
-                class="header-gallery-slide"
-                onclick="openLightbox(3)"
-            >
-                <img
-                    src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=85"
-                    alt="Приклад роботи SA MASTER"
-                >
+            <div class="header-gallery-slide" onclick="openLightbox(3)">
+                <img src="https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=900&q=85" alt="Приклад роботи SA MASTER">
             </div>
 
         </div>
 
-
-        <!-- COUNTER -->
-        <div
-            class="header-gallery-counter"
-            id="headerGalleryCounter"
-        >
-            01 / 04
-        </div>
-
-        <!-- PREV -->
-        <button
-            class="header-gallery-arrow header-gallery-prev"
-            onclick="changeHeaderSlide(-1)"
-            aria-label="Попереднє фото"
-        >
-            ‹
-        </button>
-
-        <!-- NEXT -->
-        <button
-            class="header-gallery-arrow header-gallery-next"
-            onclick="changeHeaderSlide(1)"
-            aria-label="Наступне фото"
-        >
-            ›
-        </button>
-
-        <!-- DOTS -->
-        <div
-            class="header-gallery-dots"
-            id="headerGalleryDots"
-        ></div>
-
+        <div class="header-gallery-counter" id="headerGalleryCounter">01 / 04</div>
+        <button class="header-gallery-arrow header-gallery-prev" onclick="changeHeaderSlide(-1)" aria-label="Попереднє фото">‹</button>
+        <button class="header-gallery-arrow header-gallery-next" onclick="changeHeaderSlide(1)" aria-label="Наступне фото">›</button>
+        <div class="header-gallery-dots" id="headerGalleryDots"></div>
     </div>
-
-
-    <!-- HERO BOTTOM -->
 
     <div class="hero-bottom">
-
         <div class="hero-bottom-text">
-            Якісний монтаж —
-            це не просто встановити сантехніку,
-            а правильно реалізувати рішення
-            від проєкту до результату.
+            Якісний монтаж — це не просто встановити сантехніку, а правильно реалізувати рішення від проєкту до результату.
         </div>
-
     </div>
 
-
 </section>
-
-
 
 <!-- ========================================
      EXPERIENCE
 ======================================== -->
 
-<div class="experience">
-
-    <div class="experience-number">
-        20+
-    </div>
-
+<div class="experience animate-in">
+    <div class="experience-number">20+</div>
     <div class="experience-text">
-        <strong>
-            років професійного досвіду
-        </strong>
-        <span>
-            Проєктування • монтаж • реалізація
-        </span>
+        <strong>років професійного досвіду</strong>
+        <span>Проєктування • монтаж • реалізація</span>
     </div>
-
 </div>
-
-
 
 <!-- ========================================
      PHONE
 ======================================== -->
 
-<a
-    class="phone"
-    href="tel:+380979111871"
->
-    📞 &nbsp; 097 911 18 71
-</a>
-
-
+<a class="phone animate-in" href="tel:+380979111871">📞 &nbsp; 097 911 18 71</a>
 
 <!-- ========================================
      SAVE CONTACT
 ======================================== -->
 
-<a
-    class="save"
-    href="Plumber-vcf.vcf"
-    download
->
-    📇 &nbsp; ЗБЕРЕГТИ КОНТАКТ
-</a>
-
-
+<a class="save animate-in" href="Plumber-vcf.vcf" download>📇 &nbsp; ЗБЕРЕГТИ КОНТАКТ</a>
 
 <!-- ========================================
      SOCIAL
 ======================================== -->
 
-<div class="social-icons">
-
-    <!-- INSTAGRAM -->
-    <a
-        class="social-icon"
-        href="https://www.instagram.com/sa_master/"
-        target="_blank"
-        rel="noopener"
-        aria-label="Instagram"
-    >
-        <svg viewBox="0 0 24 24">
-            <path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm0 2A3.8 3.8 0 0 0 4 7.8v8.4A3.8 3.8 0 0 0 7.8 20h8.4a3.8 3.8 0 0 0 3.8-3.8V7.8A3.8 3.8 0 0 0 16.2 4H7.8zm8.8 1.5a1.35 1.35 0 1 1 0 2.7 1.35 1.35 0 0 1 0-2.7zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
-        </svg>
+<div class="social-icons animate-in">
+    <a class="social-icon" href="https://www.instagram.com/sa_master/" target="_blank" rel="noopener" aria-label="Instagram">
+        <svg viewBox="0 0 24 24"><path d="M7.8 2h8.4A5.8 5.8 0 0 1 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8A5.8 5.8 0 0 1 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2zm0 2A3.8 3.8 0 0 0 4 7.8v8.4A3.8 3.8 0 0 0 7.8 20h8.4a3.8 3.8 0 0 0 3.8-3.8V7.8A3.8 3.8 0 0 0 16.2 4H7.8zm8.8 1.5a1.35 1.35 0 1 1 0 2.7 1.35 1.35 0 0 1 0-2.7zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>
     </a>
-
-    <!-- FACEBOOK -->
-    <a
-        class="social-icon"
-        href="https://www.facebook.com/share/1977uk6VHF/?mibextid=wwXIfr"
-        target="_blank"
-        rel="noopener"
-        aria-label="Facebook"
-    >
-        <svg viewBox="0 0 24 24">
-            <path d="M13.5 21v-8h2.7l.4-3h-3.1V8.1c0-.9.3-1.5 1.6-1.5h1.7V4a22 22 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3V10H7.5v3h2.6v8h3.4z"/>
-        </svg>
+    <a class="social-icon" href="https://www.facebook.com/share/1977uk6VHF/?mibextid=wwXIfr" target="_blank" rel="noopener" aria-label="Facebook">
+        <svg viewBox="0 0 24 24"><path d="M13.5 21v-8h2.7l.4-3h-3.1V8.1c0-.9.3-1.5 1.6-1.5h1.7V4a22 22 0 0 0-2.5-.1c-2.5 0-4.2 1.5-4.2 4.3V10H7.5v3h2.6v8h3.4z"/></svg>
     </a>
-
-    <!-- YOUTUBE -->
-    <a
-        class="social-icon"
-        href="https://www.youtube.com/@sa_master"
-        target="_blank"
-        rel="noopener"
-        aria-label="YouTube"
-    >
-        <svg viewBox="0 0 24 24">
-            <path d="M23 12s0-3.5-.4-5.1a2.9 2.9 0 0 0-2-2C18.9 4.4 12 4.4 12 4.4s-6.9 0-8.6.5a2.9 2.9 0 0 0-2 2C1 8.5 1 12 1 12s0 3.5.4 5.1a2.9 2.9 0 0 0 2 2c1.7.5 8.6.5 8.6.5s6.9 0 8.6-.5a2.9 2.9 0 0 0 2-2C23 15.5 23 12 23 12zM10 15.5v-7l6 3.5-6 3.5z"/>
-        </svg>
+    <a class="social-icon" href="https://www.youtube.com/@sa_master" target="_blank" rel="noopener" aria-label="YouTube">
+        <svg viewBox="0 0 24 24"><path d="M23 12s0-3.5-.4-5.1a2.9 2.9 0 0 0-2-2C18.9 4.4 12 4.4 12 4.4s-6.9 0-8.6.5a2.9 2.9 0 0 0-2 2C1 8.5 1 12 1 12s0 3.5.4 5.1a2.9 2.9 0 0 0 2 2c1.7.5 8.6.5 8.6.5s6.9 0 8.6-.5a2.9 2.9 0 0 0 2-2C23 15.5 23 12 23 12zM10 15.5v-7l6 3.5-6 3.5z"/></svg>
     </a>
-
-    <!-- TELEGRAM -->
-    <a
-        class="social-icon"
-        href="https://t.me/sa_master"
-        target="_blank"
-        rel="noopener"
-        aria-label="Telegram"
-    >
-        <svg viewBox="0 0 24 24">
-            <path d="M21.6 4.2 18.4 20c-.2 1.1-.8 1.4-1.6.9l-4.7-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8 8.7-7.9c.4-.4-.1-.6-.6-.2L6.5 14 1.9 12.6c-1-.3-1-1 .2-1.5L20.2 4c.9-.3 1.7.2 1.4.2z"/>
-        </svg>
+    <a class="social-icon" href="https://t.me/sa_master" target="_blank" rel="noopener" aria-label="Telegram">
+        <svg viewBox="0 0 24 24"><path d="M21.6 4.2 18.4 20c-.2 1.1-.8 1.4-1.6.9l-4.7-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8 8.7-7.9c.4-.4-.1-.6-.6-.2L6.5 14 1.9 12.6c-1-.3-1-1 .2-1.5L20.2 4c.9-.3 1.7.2 1.4.2z"/></svg>
     </a>
-
-    <!-- VIBER -->
-    <a
-        class="social-icon"
-        href="viber://add?number=380979111871"
-        aria-label="Viber"
-    >
-        <svg viewBox="0 0 24 24">
-            <path d="M18.7 3.2C16.7 2 7.3 1.5 4.8 3.1 2.9 4.4 2.4 7.5 2.3 11.3c-.1 3.8.2 6.9 2 8.4.9.8 2.1 1.1 3.4 1.3v2.2c0 .3.2.5.5.4 1.8-.6 3.1-1.7 4.1-2.4 2.5.1 5.1-.1 6.4-.7 2.2-1 2.8-3.7 2.9-7.4.1-3.8-.1-7.9-2.9-9.9z"/>
-        </svg>
+    <a class="social-icon" href="viber://add?number=380979111871" aria-label="Viber">
+        <svg viewBox="0 0 24 24"><path d="M18.7 3.2C16.7 2 7.3 1.5 4.8 3.1 2.9 4.4 2.4 7.5 2.3 11.3c-.1 3.8.2 6.9 2 8.4.9.8 2.1 1.1 3.4 1.3v2.2c0 .3.2.5.5.4 1.8-.6 3.1-1.7 4.1-2.4 2.5.1 5.1-.1 6.4-.7 2.2-1 2.8-3.7 2.9-7.4.1-3.8-.1-7.9-2.9-9.9z"/></svg>
     </a>
-
 </div>
-
-
 
 <!-- ========================================
      ABOUT
 ======================================== -->
 
-<section class="section">
-
-    <div class="section-title">
-        Про нас
-    </div>
-
+<section class="section animate-in">
+    <div class="section-title">Про нас</div>
     <div class="bento">
-
         <div class="bento-card">
             <div class="bento-icon">🏢</div>
             <strong>Новобудови Києва</strong>
-            <p>
-                Комплексний монтаж сантехніки
-                в квартирах. Пріоритетно —
-                об'єкти з дизайн-проєктом.
-            </p>
+            <p>Комплексний монтаж сантехніки в квартирах. Пріоритетно — об'єкти з дизайн-проєктом.</p>
         </div>
-
         <div class="bento-card">
             <div class="bento-icon">◈</div>
             <strong>Особиста відповідальність</strong>
-            <p>
-                Відповідальність за технічні
-                рішення, монтаж та якість
-                виконання.
-            </p>
+            <p>Відповідальність за технічні рішення, монтаж та якість виконання.</p>
         </div>
-
         <div class="bento-card">
             <div class="bento-icon">↗</div>
             <strong>Повний цикл</strong>
-            <p>
-                Від консультації та опрацювання
-                дизайн-проєкту до чистового
-                монтажу та підключення.
-            </p>
+            <p>Від консультації та опрацювання дизайн-проєкту до чистового монтажу та підключення.</p>
         </div>
-
         <div class="bento-card">
             <div class="bento-icon">◇</div>
             <strong>Преміальний сегмент</strong>
-            <p>
-                Матеріали та обладнання
-                провідних світових брендів.
-                Вартість робіт — вище середньої.
-            </p>
+            <p>Матеріали та обладнання провідних світових брендів. Вартість робіт — вище середньої.</p>
         </div>
-
     </div>
-
 </section>
-
-
 
 <!-- ========================================
      REVIEWS
 ======================================== -->
 
-<section class="section">
-
-    <div class="section-title">
-        Відгуки клієнтів
-    </div>
-
+<section class="section animate-in">
+    <div class="section-title">Відгуки клієнтів</div>
     <div class="reviews">
-
         <div class="rating">
             <div class="stars">★★★★★</div>
             <div class="rating-text">Відгуки в Google</div>
         </div>
-
-        <strong>
-            Результат говорить сам за себе.
-        </strong>
-
-        <p>
-            Якщо ви вже користувалися
-            моїми послугами — буду вдячний
-            за ваш відгук.
-        </p>
-
-        <a
-            class="review-button"
-            href="https://g.page/r/CWpHrJ6AJRQFEAE/review"
-            target="_blank"
-            rel="noopener"
-        >
-            ⭐ &nbsp; ЗАЛИШИТИ ВІДГУК У GOOGLE
-        </a>
-
+        <strong>Результат говорить сам за себе.</strong>
+        <p>Якщо ви вже користувалися моїми послугами — буду вдячний за ваш відгук.</p>
+        <a class="review-button" href="https://g.page/r/CWpHrJ6AJRQFEAE/review" target="_blank" rel="noopener">⭐ &nbsp; ЗАЛИШИТИ ВІДГУК У GOOGLE</a>
     </div>
-
 </section>
-
-
 
 <!-- ========================================
      PAYMENT
 ======================================== -->
 
-<div class="payment-buttons">
-
-    <!-- PRIVAT24 -->
-    <a
-        class="payment-button"
-        href="https://www.privat24.ua/send/4tid8"
-        target="_blank"
-        rel="noopener"
-        aria-label="privat24"
-    >
+<div class="payment-buttons animate-in">
+    <a class="payment-button" href="https://www.privat24.ua/send/4tid8" target="_blank" rel="noopener" aria-label="privat24">
         <span class="payment-icon privat-icon">p24</span>
         <strong>privat24</strong>
     </a>
-
-    <!-- MONOBANK -->
-    <a
-        class="payment-button"
-        href="https://send.monobank.ua/47w3DWsRew"
-        target="_blank"
-        rel="noopener"
-        aria-label="mono"
-    >
+    <a class="payment-button" href="https://send.monobank.ua/47w3DWsRew" target="_blank" rel="noopener" aria-label="mono">
         <span class="payment-icon mono-icon">mono</span>
         <strong>mono</strong>
     </a>
-
 </div>
-
-
 
 <!-- ========================================
      FOOTER
 ======================================== -->
 
-<footer class="footer">
-
+<footer class="footer animate-in">
     <div class="blue-line"></div>
-
     <strong>SA MASTER</strong>
-    Комплексний монтаж сантехніки
-    <br>
+    Комплексний монтаж сантехніки<br>
     Реалізація сучасних проектних рішень
-
 </footer>
 
-
 </div>
-
-
 
 <!-- ========================================
      LIGHTBOX
 ======================================== -->
 
-<div
-    class="lightbox"
-    id="lightbox"
-    onclick="closeLightbox(event)"
->
-    <button
-        class="lightbox-close"
-        onclick="closeLightbox(event)"
-        aria-label="Закрити"
-    >
-        ×
-    </button>
-    <img
-        id="lightboxImage"
-        src=""
-        alt="Перегляд фотографії"
-    >
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox(event)" aria-label="Закрити">×</button>
+    <img id="lightboxImage" src="" alt="Перегляд фотографії">
 </div>
-
-
 
 <script>
 
@@ -1308,48 +1050,31 @@ body {
 ======================================== */
 
 let currentHeaderSlide = 0;
-
 const headerTrack = document.getElementById("headerGalleryTrack");
 const headerSlides = document.querySelectorAll(".header-gallery-slide");
 const headerCounter = document.getElementById("headerGalleryCounter");
 const headerDotsContainer = document.getElementById("headerGalleryDots");
 const totalHeaderSlides = headerSlides.length;
 
-
-/* ========================================
-   CREATE DOTS
-======================================== */
-
 for (let i = 0; i < totalHeaderSlides; i++) {
     const dot = document.createElement("button");
     dot.className = "header-gallery-dot";
     dot.setAttribute("aria-label", "Фото " + (i + 1));
-    dot.addEventListener("click", function(event) {
-        event.stopPropagation();
+    dot.addEventListener("click", function(e) {
+        e.stopPropagation();
         currentHeaderSlide = i;
         updateHeaderGallery();
     });
     headerDotsContainer.appendChild(dot);
 }
 
-
-/* ========================================
-   UPDATE HEADER GALLERY
-======================================== */
-
 function updateHeaderGallery() {
     headerTrack.style.transform = "translateX(-" + (currentHeaderSlide * 100) + "%)";
     headerCounter.textContent = String(currentHeaderSlide + 1).padStart(2, "0") + " / " + String(totalHeaderSlides).padStart(2, "0");
-    const dots = document.querySelectorAll(".header-gallery-dot");
-    dots.forEach(function(dot, index) {
+    document.querySelectorAll(".header-gallery-dot").forEach((dot, index) => {
         dot.classList.toggle("active", index === currentHeaderSlide);
     });
 }
-
-
-/* ========================================
-   CHANGE SLIDE
-======================================== */
 
 function changeHeaderSlide(direction) {
     currentHeaderSlide += direction;
@@ -1358,31 +1083,19 @@ function changeHeaderSlide(direction) {
     updateHeaderGallery();
 }
 
-
-/* ========================================
-   SWIPE
-======================================== */
-
-let headerTouchStartX = 0;
-let headerTouchEndX = 0;
-
+let headerTouchStartX = 0, headerTouchEndX = 0;
 const headerGallery = document.getElementById("headerGallery");
 
-headerGallery.addEventListener("touchstart", function(event) {
-    headerTouchStartX = event.changedTouches[0].screenX;
+headerGallery.addEventListener("touchstart", function(e) {
+    headerTouchStartX = e.changedTouches[0].screenX;
 }, { passive: true });
 
-headerGallery.addEventListener("touchend", function(event) {
-    headerTouchEndX = event.changedTouches[0].screenX;
+headerGallery.addEventListener("touchend", function(e) {
+    headerTouchEndX = e.changedTouches[0].screenX;
     const distance = headerTouchEndX - headerTouchStartX;
     if (Math.abs(distance) < 45) return;
-    if (distance < 0) {
-        changeHeaderSlide(1);
-    } else {
-        changeHeaderSlide(-1);
-    }
+    changeHeaderSlide(distance < 0 ? 1 : -1);
 }, { passive: true });
-
 
 /* ========================================
    LIGHTBOX
@@ -1392,8 +1105,8 @@ const lightbox = document.getElementById("lightbox");
 const lightboxImage = document.getElementById("lightboxImage");
 
 function openLightbox(index) {
-    const image = headerSlides[index].querySelector("img");
-    lightboxImage.src = image.src;
+    const img = headerSlides[index].querySelector("img");
+    lightboxImage.src = img.src;
     lightbox.classList.add("active");
     document.body.style.overflow = "hidden";
 }
@@ -1405,13 +1118,12 @@ function closeLightbox(event) {
     }
 }
 
-document.addEventListener("keydown", function(event) {
-    if (event.key === "Escape") {
+document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") {
         lightbox.classList.remove("active");
         document.body.style.overflow = "";
     }
 });
-
 
 /* ========================================
    START
@@ -1420,7 +1132,6 @@ document.addEventListener("keydown", function(event) {
 updateHeaderGallery();
 
 </script>
-
 
 </body>
 </html>
