@@ -550,7 +550,7 @@ body {
 
 
 /* ========================================
-   ABOUT BLOCK (details/summary)
+   ABOUT BLOCK (акордеон)
 ======================================== */
 
 .about-block {
@@ -562,7 +562,7 @@ body {
 }
 
 .about-top {
-    overflow: hidden; /* для обгортання фото текстом */
+    overflow: hidden;
 }
 
 .about-photo {
@@ -588,51 +588,37 @@ body {
     font-weight: 800;
 }
 
-.about-accordion {
-    margin-top: 12px;
-}
-
-.about-accordion summary {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 700;
-    color: #1c59a3;
-    list-style: none;
-    user-select: none;
-    padding: 0;
+/* Компактна стрілка всередині абзацу */
+.inline-toggle {
+    display: inline;
     background: none;
     border: none;
-}
-
-.about-accordion summary::-webkit-details-marker {
-    display: none;
-}
-
-.about-accordion summary::after {
-    content: "▾";
-    font-size: 14px;
+    padding: 0;
+    margin-left: 6px;
+    color: #1c59a3;
+    font-size: 16px;
+    cursor: pointer;
+    vertical-align: middle;
     transition: transform .2s ease;
 }
 
-.about-accordion[open] summary::after {
+.inline-toggle.rotated {
     transform: rotate(180deg);
 }
 
-.about-accordion .about-hidden-text {
-    margin-top: 10px;
+.about-hidden {
+    display: none;
+    margin-top: 12px;
 }
 
-.about-accordion .about-hidden-text p {
+.about-hidden p {
     font-size: 16px;
     color: #4a5b66;
     line-height: 1.5;
     margin: 0 0 8px;
 }
 
-.about-accordion .about-hidden-text p strong {
+.about-hidden p strong {
     color: #1c59a3;
     font-weight: 800;
 }
@@ -892,12 +878,13 @@ body {
     }
 
     .first-paragraph,
-    .about-accordion .about-hidden-text p {
+    .about-hidden p {
         font-size: 14px;
     }
 
-    .about-accordion summary {
-        font-size: 13px;
+    .inline-toggle {
+        font-size: 14px;
+        margin-left: 4px;
     }
 
     .brands-subtitle {
@@ -1268,18 +1255,16 @@ body {
         <p class="first-paragraph">
             Мене звати <strong>Сергій</strong>.<br>
             Понад <strong>20 років</strong> я працюю із сантехнікою — і досі продовжую вдосконалювати свою майстерність.
+            <button class="inline-toggle" id="inlineToggle" onclick="toggleAbout()">▾</button>
         </p>
     </div>
 
-    <details class="about-accordion">
-        <summary>Читати далі</summary>
-        <div class="about-hidden-text">
-            <p>Беру участь у профільних заходах, ділюся досвідом та навчаю інших майстрів. Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
-            <p>Сьогодні ми спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва, професійно втілюючи сучасні проектні рішення в життя. У роботі використовуємо обладнання та матеріали провідних світових брендів.</p>
-            <p>Працюємо переважно з дизайн-проектами та без посередників. Вартість наших робіт — <strong>вище середньої по ринку</strong>.</p>
-            <p>Плануєте ремонт? Будемо раді співпраці. Графік робіт формуємо завчасно — орієнтовно на <strong>2 місяці вперед</strong>.</p>
-        </div>
-    </details>
+    <div class="about-hidden" id="aboutHidden">
+        <p>Беру участь у профільних заходах, ділюся досвідом та навчаю інших майстрів. Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
+        <p>Сьогодні ми спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва, професійно втілюючи сучасні проектні рішення в життя. У роботі використовуємо обладнання та матеріали провідних світових брендів.</p>
+        <p>Працюємо переважно з дизайн-проектами та без посередників. Вартість наших робіт — <strong>вище середньої по ринку</strong>.</p>
+        <p>Плануєте ремонт? Будемо раді співпраці. Графік робіт формуємо завчасно — орієнтовно на <strong>2 місяці вперед</strong>.</p>
+    </div>
 
 </div>
 
@@ -1331,7 +1316,7 @@ body {
 <section class="brands-section">
 
     <div class="brands-subtitle">
-        працюємо лише з якісними матеріалами провідних світових брендів
+        працюємо з якісними матеріалами провідних світових брендів
     </div>
 
     <div class="brands-line">
@@ -1604,6 +1589,24 @@ document.addEventListener(
 
     }
 );
+
+
+/* ========================================
+   ABOUT TOGGLE
+======================================== */
+
+function toggleAbout() {
+    const hidden = document.getElementById('aboutHidden');
+    const btn = document.getElementById('inlineToggle');
+
+    if (hidden.style.display === 'none' || hidden.style.display === '') {
+        hidden.style.display = 'block';
+        btn.classList.add('rotated');
+    } else {
+        hidden.style.display = 'none';
+        btn.classList.remove('rotated');
+    }
+}
 
 
 /* ========================================
