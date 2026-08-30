@@ -550,7 +550,7 @@ body {
 
 
 /* ========================================
-   ABOUT BLOCK (акордеон з градієнтом)
+   ABOUT BLOCK (details/summary)
 ======================================== */
 
 .about-block {
@@ -559,22 +559,21 @@ body {
     background: rgba(255,255,255,.6);
     border-radius: 20px;
     box-shadow: 0 8px 25px rgba(0,0,0,.08);
-    position: relative;
 }
 
 .about-top {
-    overflow: hidden; /* важливо для обгортання */
+    overflow: hidden; /* для обгортання фото текстом */
 }
 
 .about-photo {
-    float: right;          /* фото праворуч */
-    width: 150px;          /* ширина */
-    height: 150px;         /* фіксована висота */
+    float: right;
+    width: 150px;
+    height: 150px;
     margin-left: 16px;
     margin-bottom: 12px;
-    border-radius: 50%;    /* ідеальне коло */
+    border-radius: 50%;
     box-shadow: 0 6px 18px rgba(0,0,0,.12);
-    object-fit: cover;     /* обрізає фото, щоб заповнити квадрат */
+    object-fit: cover;
 }
 
 .first-paragraph {
@@ -589,57 +588,53 @@ body {
     font-weight: 800;
 }
 
-.about-hidden {
-    display: none;
+.about-accordion {
     margin-top: 12px;
 }
 
-.about-hidden p {
+.about-accordion summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1c59a3;
+    list-style: none;
+    user-select: none;
+    padding: 0;
+    background: none;
+    border: none;
+}
+
+.about-accordion summary::-webkit-details-marker {
+    display: none;
+}
+
+.about-accordion summary::after {
+    content: "▾";
+    font-size: 14px;
+    transition: transform .2s ease;
+}
+
+.about-accordion[open] summary::after {
+    transform: rotate(180deg);
+}
+
+.about-accordion .about-hidden-text {
+    margin-top: 10px;
+}
+
+.about-accordion .about-hidden-text p {
     font-size: 16px;
     color: #4a5b66;
     line-height: 1.5;
     margin: 0 0 8px;
 }
 
-.about-hidden p strong {
+.about-accordion .about-hidden-text p strong {
     color: #1c59a3;
     font-weight: 800;
-}
-
-/* Градієнтний перехід замість кнопки */
-.about-more {
-    position: relative;
-    height: 36px;
-    margin-top: -36px;
-    background: linear-gradient(
-        to bottom,
-        rgba(255,255,255,0) 0%,
-        rgba(255,255,255,0.95) 70%
-    );
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
-    cursor: pointer;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    transition: opacity .2s ease;
-}
-
-.about-more-arrow {
-    font-size: 16px;
-    color: #1c59a3;
-    margin-bottom: 4px;
-    transition: transform .3s ease;
-}
-
-.about-more.open .about-more-arrow {
-    transform: rotate(180deg);
-}
-
-/* Коли текст розкритий, приховуємо градієнт */
-.about-block.expanded .about-more {
-    opacity: 0;
-    pointer-events: none;
 }
 
 
@@ -897,18 +892,12 @@ body {
     }
 
     .first-paragraph,
-    .about-hidden p {
+    .about-accordion .about-hidden-text p {
         font-size: 14px;
     }
 
-    .about-more {
-        height: 28px;
-        margin-top: -28px;
-    }
-
-    .about-more-arrow {
-        font-size: 14px;
-        margin-bottom: 3px;
+    .about-accordion summary {
+        font-size: 13px;
     }
 
     .brands-subtitle {
@@ -1272,7 +1261,7 @@ body {
 
 
 
-<div class="about-block" id="aboutBlock">
+<div class="about-block">
 
     <div class="about-top">
         <img class="about-photo" src="your-photo.jpg" alt="Фото майстра">
@@ -1282,16 +1271,15 @@ body {
         </p>
     </div>
 
-    <div class="about-hidden" id="aboutHidden">
-        <p>Беру участь у профільних заходах, ділюся досвідом та навчаю інших майстрів. Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
-        <p>Сьогодні ми спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва, професійно втілюючи сучасні проектні рішення в життя. У роботі використовуємо обладнання та матеріали провідних світових брендів.</p>
-        <p>Працюємо переважно з дизайн-проектами та без посередників. Вартість наших робіт — <strong>вище середньої по ринку</strong>.</p>
-        <p>Плануєте ремонт? Будемо раді співпраці. Графік робіт формуємо завчасно — орієнтовно на <strong>2 місяці вперед</strong>.</p>
-    </div>
-
-    <div class="about-more" id="aboutMore" onclick="toggleAbout()">
-        <span class="about-more-arrow" id="aboutArrow">▼</span>
-    </div>
+    <details class="about-accordion">
+        <summary>Читати далі</summary>
+        <div class="about-hidden-text">
+            <p>Беру участь у профільних заходах, ділюся досвідом та навчаю інших майстрів. Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
+            <p>Сьогодні ми спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва, професійно втілюючи сучасні проектні рішення в життя. У роботі використовуємо обладнання та матеріали провідних світових брендів.</p>
+            <p>Працюємо переважно з дизайн-проектами та без посередників. Вартість наших робіт — <strong>вище середньої по ринку</strong>.</p>
+            <p>Плануєте ремонт? Будемо раді співпраці. Графік робіт формуємо завчасно — орієнтовно на <strong>2 місяці вперед</strong>.</p>
+        </div>
+    </details>
 
 </div>
 
@@ -1343,7 +1331,7 @@ body {
 <section class="brands-section">
 
     <div class="brands-subtitle">
-        працюємо з якісними матеріалами провідних світових брендів
+        працюємо лише з якісними матеріалами провідних світових брендів
     </div>
 
     <div class="brands-line">
@@ -1616,28 +1604,6 @@ document.addEventListener(
 
     }
 );
-
-
-/* ========================================
-   ABOUT TOGGLE
-======================================== */
-
-function toggleAbout() {
-    const hidden = document.getElementById('aboutHidden');
-    const block = document.getElementById('aboutBlock');
-    const more = document.getElementById('aboutMore');
-    const arrow шоп = document.getElementById('aboutArrow');
-
-    if (hidden.style.display === 'none' || hidden.style.display === '') {
-        hidden.style.display = 'block';
-        block.classList.add('expanded');
-        if (arrow) arrow.style.transform = 'rotate(180deg)';
-    } else {
-        hidden.style.display = 'none';
-        block.classList.remove('expanded');
-        if (arrow) arrow.style.transform = 'rotate(0deg)';
-    }
-}
 
 
 /* ========================================
