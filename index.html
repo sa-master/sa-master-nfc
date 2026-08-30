@@ -571,7 +571,7 @@ body {
 
 
 /* ========================================
-   ABOUT BLOCK (акордеон з текстовою кнопкою)
+   ABOUT BLOCK (акордеон з плавною анімацією)
 ======================================== */
 
 .about-block {
@@ -629,8 +629,18 @@ body {
     color: #0d3a66;
 }
 
+/* Прихована частина з плавною анімацією */
 .about-hidden {
-    display: none;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, opacity 0.3s ease, margin-top 0.3s ease;
+    margin-top: 0;
+}
+
+.about-hidden.open {
+    max-height: 1000px; /* достатньо для всього тексту */
+    opacity: 1;
     margin-top: 12px;
 }
 
@@ -1612,18 +1622,16 @@ document.addEventListener(
 
 
 /* ========================================
-   ABOUT TOGGLE
+   ABOUT TOGGLE (плавна анімація)
 ======================================== */
 
 function toggleAbout() {
     const hidden = document.getElementById('aboutHidden');
     const btn = document.getElementById('readMore');
 
-    if (hidden.style.display === 'none' || hidden.style.display === '') {
-        hidden.style.display = 'block';
+    if (hidden.classList.toggle('open')) {
         btn.textContent = 'згорнути';
     } else {
-        hidden.style.display = 'none';
         btn.textContent = 'читати далі';
     }
 }
