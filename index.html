@@ -550,13 +550,10 @@ body {
 
 
 /* ========================================
-   ABOUT BLOCK (photo + text)
+   ABOUT BLOCK (акордеон)
 ======================================== */
 
 .about-block {
-    display: flex;
-    align-items: center;
-    gap: 20px;
     margin: 24px 0;
     padding: 16px;
     background: rgba(255,255,255,.6);
@@ -564,20 +561,23 @@ body {
     box-shadow: 0 8px 25px rgba(0,0,0,.08);
 }
 
-.about-text {
-    flex: 1;
-    text-align: left;
+.about-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
 }
 
-.about-text p {
-    font-size: 13px;
+.first-paragraph {
+    flex: 1;
+    font-size: 16px;
     color: #4a5b66;
     line-height: 1.5;
-    margin: 0 0 8px;
+    margin: 0;
 }
 
-.about-text p:last-child {
-    margin-bottom: 0;
+.first-paragraph strong {
+    color: #1c59a3;
+    font-weight: 800;
 }
 
 .about-photo {
@@ -593,6 +593,40 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.about-hidden {
+    display: none;
+    margin-top: 12px;
+}
+
+.about-hidden p {
+    font-size: 16px;
+    color: #4a5b66;
+    line-height: 1.5;
+    margin: 0 0 8px;
+}
+
+.about-hidden p strong {
+    color: #1c59a3;
+    font-weight: 800;
+}
+
+.about-toggle {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: #e6f1f5;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1c59a3;
+    cursor: pointer;
+    transition: background .2s ease;
+}
+
+.about-toggle:hover {
+    background: #d0e4ed;
 }
 
 
@@ -839,19 +873,29 @@ body {
     }
 
     .about-block {
-        flex-direction: row;
-        align-items: center;
-        gap: 12px;
         padding: 12px;
     }
 
-    .about-text p {
-        font-size: 12px;
+    .about-top {
+        gap: 12px;
+    }
+
+    .first-paragraph {
+        font-size: 14px;
+    }
+
+    .about-hidden p {
+        font-size: 14px;
     }
 
     .about-photo {
         width: 80px;
         height: 80px;
+    }
+
+    .about-toggle {
+        font-size: 13px;
+        padding: 7px 14px;
     }
 
     .brands-subtitle {
@@ -1215,18 +1259,27 @@ body {
 
 
 
-<div class="about-block">
-    <div class="about-text">
-        <p>Мене звати Сергій. Понад 20 років я працюю із сантехнікою — і досі продовжую вдосконалювати свою майстерність.</p>
-        <p>Беру участь у профільних заходах, ділюся досвідом та навчаю інших майстрів. Є амбасадором Geberit, GROHE та Akvantis.</p>
-        <p>Сьогодні ми спеціалізуємось на комплексному монтажі сантехніки в новобудовах Києва, професійно втілюючи сучасні проектні рішення в життя. У роботі використовуємо обладнання та матеріали провідних світових брендів.</p>
-        <p>Працюємо переважно з дизайн-проектами та без посередників. Вартість наших робіт — вище середньої по ринку.</p>
-        <p>Плануєте ремонт? Будемо раді співпраці. Графік робіт формуємо завчасно — орієнтовно на 2 місяці вперед.</p>
+<div class="about-block" id="aboutBlock">
+
+    <div class="about-top">
+        <p class="first-paragraph">
+            Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою — і досі продовжую вдосконалювати свою майстерність.
+        </p>
+        <div class="about-photo">
+            <!-- Замініть src на шлях до вашого фото -->
+            <img src="your-photo.jpg" alt="Фото майстра">
+        </div>
     </div>
-    <div class="about-photo">
-        <!-- Замініть src на шлях до вашого фото -->
-        <img src="your-photo.jpg" alt="Фото майстра">
+
+    <div class="about-hidden" id="aboutHidden">
+        <p>Беру участь у профільних заходах, ділюся досвідом та навчаю інших майстрів. Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
+        <p>Сьогодні ми спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва, професійно втілюючи сучасні проектні рішення в життя. У роботі використовуємо обладнання та матеріали провідних світових брендів.</p>
+        <p>Працюємо переважно з дизайн-проектами та без посередників. Вартість наших робіт — <strong>вище середньої по ринку</strong>.</p>
+        <p>Плануєте ремонт? Будемо раді співпраці. Графік робіт формуємо завчасно — орієнтовно на <strong>2 місяці вперед</strong>.</p>
     </div>
+
+    <button class="about-toggle" id="aboutToggle" onclick="toggleAbout()">Читати далі</button>
+
 </div>
 
 
@@ -1550,6 +1603,24 @@ document.addEventListener(
 
     }
 );
+
+
+/* ========================================
+   ABOUT TOGGLE
+======================================== */
+
+function toggleAbout() {
+    const hidden = document.getElementById('aboutHidden');
+    const btn = document.getElementById('aboutToggle');
+
+    if (hidden.style.display === 'none' || hidden.style.display === '') {
+        hidden.style.display = 'block';
+        btn.textContent = 'Згорнути';
+    } else {
+        hidden.style.display = 'none';
+        btn.textContent = 'Читати далі';
+    }
+}
 
 
 /* ========================================
