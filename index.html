@@ -81,7 +81,10 @@ body {
 
     margin: 0 auto;
 
-    padding: 18px 16px 28px;
+    padding:
+        18px
+        16px
+        28px;
 }
 
 
@@ -94,7 +97,10 @@ body {
 
     overflow: hidden;
 
-    padding: 18px 18px 20px;
+    padding:
+        18px
+        18px
+        20px;
 
     border-radius: 34px;
 
@@ -111,6 +117,8 @@ body {
         inset 0 1px 0 rgba(255,255,255,.9);
 }
 
+
+/* subtle glow */
 
 .hero::before {
     content: "";
@@ -145,9 +153,10 @@ body {
     z-index: 5;
 
     display: flex;
+
     align-items: center;
 
-    margin-bottom: 19px;
+    margin-bottom: 22px;
 }
 
 
@@ -164,6 +173,7 @@ body {
     flex-shrink: 0;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -193,69 +203,109 @@ body {
 ========================================================= */
 
 .hero-brand {
-    min-width: 0;
     flex: 1;
 
-    margin-left: 14px;
+    min-width: 0;
 
-    overflow: hidden;
+    margin-left: 14px;
 }
 
 .brand-name {
-    width: 100%;
-
     font-family:
         "Rubik Mono One",
         "Arial Black",
         sans-serif;
 
-    font-size: 27px;
-    line-height: 1;
+    /*
+       Широкий SA-MASTER
+    */
+
+    font-size: 29px;
+
+    line-height: .95;
+
+    letter-spacing: -1.1px;
 
     color: #252525;
 
-    /*
-       Робимо SA-MASTER ширшим,
-       але без надмірного збільшення висоти
-    */
-    letter-spacing: 1px;
-
     white-space: nowrap;
-
-    transform: scaleX(1.04);
-    transform-origin: left center;
 
     text-shadow:
         0 2px 8px rgba(0,0,0,.08);
 }
 
 
+/*
+   Один рядок.
+   Навмисно менший за SA-MASTER,
+   щоб не виходив за його ширину.
+*/
+
 .brand-sub {
     margin-top: 7px;
 
-    /*
-       Один рядок.
-       Підганяється під ширину SA-MASTER.
-    */
-    width: 100%;
+    font-size: 11px;
 
-    font-size: 10px;
-    line-height: 1.1;
+    line-height: 1;
+
+    font-weight: 750;
+
+    color: #66757d;
+
+    letter-spacing: .05px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   HERO TITLE
+========================================================= */
+
+.hero-title {
+    position: relative;
+
+    z-index: 5;
+
+    margin:
+        3px
+        2px
+        17px;
+}
+
+.hero-title h1 {
+    margin: 0;
+
+    font-size: 31px;
+
+    line-height: 1.04;
+
+    letter-spacing: -1.25px;
 
     font-weight: 800;
 
-    color: #607078;
+    color: #17262d;
+}
 
-    letter-spacing: .15px;
+.hero-title h1 span {
+    color: #1977a1;
+}
 
-    white-space: nowrap;
+.hero-title p {
+    margin:
+        9px
+        0
+        0;
 
-    /*
-       Текст залишається одним рядком
-       і не виходить за межі назви бренду.
-    */
-    transform: scaleX(.94);
-    transform-origin: left center;
+    max-width: 400px;
+
+    font-size: 13px;
+
+    line-height: 1.45;
+
+    color: #66757c;
+
+    font-weight: 500;
 }
 
 
@@ -265,6 +315,7 @@ body {
 
 .header-gallery {
     position: relative;
+
     z-index: 5;
 
     width: 100%;
@@ -280,8 +331,14 @@ body {
         0 2px 4px rgba(0,0,0,.06);
 
     touch-action: pan-y;
+
+    cursor: pointer;
 }
 
+
+/* =========================================================
+   GALLERY TRACK
+========================================================= */
 
 .header-gallery-track {
     display: flex;
@@ -289,22 +346,26 @@ body {
     width: 100%;
 
     transition:
-        transform .55s cubic-bezier(.22,.61,.36,1);
+        transform .7s cubic-bezier(.22,.61,.36,1);
 }
 
+
+/* =========================================================
+   SLIDE
+========================================================= */
 
 .header-gallery-slide {
     position: relative;
 
-    flex: 0 0 100%;
+    flex:
+        0 0 100%;
 
     aspect-ratio: 4 / 3;
 
     overflow: hidden;
 
-    cursor: pointer;
+    user-select: none;
 }
-
 
 .header-gallery-slide::after {
     content: "";
@@ -316,14 +377,13 @@ body {
     background:
         linear-gradient(
             to bottom,
-            rgba(0,0,0,.08),
-            transparent 35%,
-            rgba(0,0,0,.22)
+            rgba(0,0,0,.03),
+            transparent 45%,
+            rgba(0,0,0,.18)
         );
 
     pointer-events: none;
 }
-
 
 .header-gallery-slide img {
     width: 100%;
@@ -334,17 +394,22 @@ body {
     object-fit: cover;
 
     transition:
-        transform .7s cubic-bezier(.22,.61,.36,1);
+        transform 1.2s cubic-bezier(.22,.61,.36,1);
 }
 
 
-.header-gallery-slide:hover img {
-    transform: scale(1.025);
+/*
+   Дуже легкий zoom
+   на активному слайді
+*/
+
+.header-gallery-slide.active img {
+    transform: scale(1.018);
 }
 
 
 /* =========================================================
-   GALLERY TOP
+   GALLERY TOP INFO
 ========================================================= */
 
 .gallery-top {
@@ -352,234 +417,161 @@ body {
 
     z-index: 20;
 
-    top: 12px;
-    left: 12px;
-    right: 12px;
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    top: 14px;
+    right: 14px;
 
     pointer-events: none;
 }
 
 
-.gallery-label {
-    padding: 7px 10px;
-
-    border-radius: 10px;
-
-    background:
-        rgba(10,25,32,.48);
-
-    border:
-        1px solid rgba(255,255,255,.16);
-
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-
-    color: white;
-
-    font-size: 8px;
-    font-weight: 800;
-
-    letter-spacing: 1px;
-
-    text-transform: uppercase;
-}
-
+/* =========================================================
+   COUNTER
+========================================================= */
 
 .header-gallery-counter {
-    padding: 7px 10px;
+    padding:
+        7px
+        10px;
 
-    border-radius: 10px;
-
-    background:
-        rgba(10,25,32,.48);
-
-    border:
-        1px solid rgba(255,255,255,.16);
-
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-
-    color: white;
-
-    font-size: 9px;
-    font-weight: 800;
-
-    letter-spacing: .5px;
-}
-
-
-/* =========================================================
-   GALLERY ARROWS
-========================================================= */
-
-.header-gallery-arrow {
-    position: absolute;
-
-    z-index: 20;
-
-    top: 50%;
-
-    width: 38px;
-    height: 38px;
-
-    margin-top: -19px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border:
-        1px solid rgba(255,255,255,.45);
-
-    border-radius: 50%;
-
-    background:
-        rgba(255,255,255,.72);
-
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-
-    color: #20343c;
-
-    font-size: 22px;
-    line-height: 1;
-
-    cursor: pointer;
-
-    box-shadow:
-        0 8px 20px rgba(0,0,0,.16);
-
-    transition:
-        transform .2s ease,
-        background .2s ease;
-}
-
-
-.header-gallery-arrow:hover {
-    transform: scale(1.07);
-
-    background:
-        rgba(255,255,255,.94);
-}
-
-
-.header-gallery-prev {
-    left: 11px;
-}
-
-
-.header-gallery-next {
-    right: 11px;
-}
-
-
-/* =========================================================
-   DOTS
-========================================================= */
-
-.header-gallery-dots {
-    position: absolute;
-
-    z-index: 20;
-
-    left: 50%;
-    bottom: 13px;
-
-    transform: translateX(-50%);
-
-    display: flex;
-    align-items: center;
-
-    gap: 5px;
-
-    padding: 6px 8px;
-
-    border-radius: 20px;
+    border-radius: 11px;
 
     background:
         rgba(10,25,32,.42);
 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
+    border:
+        1px solid rgba(255,255,255,.15);
 
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 
-.header-gallery-dot {
-    width: 5px;
-    height: 5px;
+    color: white;
 
-    padding: 0;
+    font-size: 9px;
 
-    border: 0;
+    font-weight: 800;
 
-    border-radius: 10px;
-
-    background:
-        rgba(255,255,255,.45);
-
-    cursor: pointer;
-
-    transition:
-        width .3s ease,
-        background .3s ease;
-}
-
-
-.header-gallery-dot.active {
-    width: 18px;
-
-    background: white;
+    letter-spacing: .6px;
 }
 
 
 /* =========================================================
-   PHOTO CAPTION
+   PROGRESS
 ========================================================= */
 
-.gallery-caption {
+.gallery-progress {
     position: absolute;
 
-    z-index: 15;
+    z-index: 20;
 
     left: 15px;
-    bottom: 15px;
+    right: 15px;
 
-    max-width: 65%;
+    bottom: 14px;
 
-    color: white;
+    height: 2px;
 
-    font-size: 10px;
+    overflow: hidden;
 
-    line-height: 1.25;
+    border-radius: 10px;
+
+    background:
+        rgba(255,255,255,.30);
+
+    pointer-events: none;
+}
+
+.gallery-progress-bar {
+    width: 0;
+    height: 100%;
+
+    border-radius: inherit;
+
+    background: rgba(255,255,255,.95);
+
+    transform-origin: left center;
+}
+
+
+/*
+   Автоматичний прогрес
+*/
+
+.gallery-progress-bar.playing {
+    animation:
+        galleryProgress 4.5s linear forwards;
+}
+
+@keyframes galleryProgress {
+
+    from {
+        width: 0;
+    }
+
+    to {
+        width: 100%;
+    }
+
+}
+
+
+/* =========================================================
+   GALLERY HINT
+========================================================= */
+
+.gallery-swipe-hint {
+    position: absolute;
+
+    z-index: 20;
+
+    left: 15px;
+    bottom: 24px;
+
+    color: rgba(255,255,255,.82);
+
+    font-size: 8px;
 
     font-weight: 700;
 
-    text-shadow:
-        0 2px 7px rgba(0,0,0,.5);
+    letter-spacing: .5px;
+
+    opacity: 0;
+
+    transition:
+        opacity .4s ease;
 
     pointer-events: none;
 }
 
 
+/*
+   Підказка з'являється коротко
+   при першому завантаженні
+*/
+
+.gallery-swipe-hint.show {
+    opacity: 1;
+}
+
+
 /* =========================================================
-   CTA
+   PHONE CTA
 ========================================================= */
 
 .action-button {
     position: relative;
 
     display: flex;
+
     align-items: stretch;
 
     width: 100%;
 
     min-height: 68px;
 
-    margin: 17px 0 13px;
+    margin:
+        17px
+        0
+        13px;
 
     overflow: hidden;
 
@@ -600,7 +592,6 @@ body {
         box-shadow .2s ease;
 }
 
-
 .action-button:hover {
     transform: translateY(-2px);
 
@@ -608,22 +599,23 @@ body {
         0 19px 38px rgba(22,104,141,.30);
 }
 
-
 .phone-part {
     flex: 1;
 
     display: flex;
+
     align-items: center;
 
     gap: 12px;
 
-    padding: 9px 15px;
+    padding:
+        9px
+        15px;
 
     color: white;
 
     text-decoration: none;
 }
-
 
 .phone-icon-circle {
     width: 43px;
@@ -632,6 +624,7 @@ body {
     flex-shrink: 0;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -644,7 +637,6 @@ body {
         1px solid rgba(255,255,255,.18);
 }
 
-
 .phone-icon-circle svg {
     width: 20px;
     height: 20px;
@@ -652,11 +644,9 @@ body {
     fill: white;
 }
 
-
 .phone-info {
     min-width: 0;
 }
-
 
 .phone-label {
     display: block;
@@ -674,7 +664,6 @@ body {
     text-transform: uppercase;
 }
 
-
 .phone-number {
     display: block;
 
@@ -689,13 +678,13 @@ body {
     white-space: nowrap;
 }
 
-
 .save-part {
     width: 58px;
 
     flex-shrink: 0;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -713,12 +702,10 @@ body {
         background .2s ease;
 }
 
-
 .save-part:hover {
     background:
         rgba(0,0,0,.18);
 }
-
 
 .save-part svg {
     width: 25px;
@@ -738,13 +725,17 @@ body {
 
     gap: 7px;
 
-    margin: 12px 0 25px;
+    margin:
+        12px
+        0
+        25px;
 }
-
 
 .social-item {
     display: flex;
+
     flex-direction: column;
+
     align-items: center;
 
     gap: 6px;
@@ -754,12 +745,12 @@ body {
     text-decoration: none;
 }
 
-
 .social-icon-wrapper {
     width: 46px;
     height: 46px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -779,7 +770,6 @@ body {
         box-shadow .2s ease;
 }
 
-
 .social-item:hover .social-icon-wrapper {
     transform: translateY(-3px);
 
@@ -787,12 +777,10 @@ body {
         0 12px 24px rgba(20,50,60,.13);
 }
 
-
 .social-icon-wrapper svg {
     width: 21px;
     height: 21px;
 }
-
 
 .social-label {
     font-size: 9px;
@@ -804,6 +792,8 @@ body {
     text-align: center;
 }
 
+
+/* SOCIAL COLORS */
 
 .social-item.instagram .social-icon-wrapper {
     color: #e1306c;
@@ -831,7 +821,10 @@ body {
 ========================================================= */
 
 .about-block {
-    margin: 0 0 23px;
+    margin:
+        0
+        0
+        23px;
 
     padding: 20px;
 
@@ -850,11 +843,9 @@ body {
     -webkit-backdrop-filter: blur(10px);
 }
 
-
 .about-top {
     overflow: hidden;
 }
-
 
 .about-photo {
     float: right;
@@ -873,7 +864,6 @@ body {
         0 8px 22px rgba(20,45,55,.14);
 }
 
-
 .first-paragraph {
     margin: 0;
 
@@ -884,7 +874,6 @@ body {
     line-height: 1.55;
 }
 
-
 .first-paragraph strong,
 .about-hidden strong {
     color: #155f8a;
@@ -892,11 +881,11 @@ body {
     font-weight: 800;
 }
 
-
 .read-more {
     display: inline;
 
     padding: 0;
+
     margin-left: 4px;
 
     border: 0;
@@ -916,7 +905,6 @@ body {
     text-underline-offset: 3px;
 }
 
-
 .about-hidden {
     max-height: 0;
 
@@ -932,7 +920,6 @@ body {
         margin-top .3s ease;
 }
 
-
 .about-hidden.open {
     max-height: 1000px;
 
@@ -941,9 +928,11 @@ body {
     margin-top: 14px;
 }
 
-
 .about-hidden p {
-    margin: 0 0 10px;
+    margin:
+        0
+        0
+        10px;
 
     color: #53656d;
 
@@ -960,18 +949,19 @@ body {
 .payment-buttons {
     display: grid;
 
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns:
+        1fr 1fr;
 
     gap: 11px;
 
     margin-bottom: 23px;
 }
 
-
 .payment-button {
     min-height: 64px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -1002,17 +992,16 @@ body {
         transform .2s ease;
 }
 
-
 .payment-button:hover {
     transform: translateY(-2px);
 }
-
 
 .payment-icon {
     width: 44px;
     height: 38px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -1030,7 +1019,6 @@ body {
         0 5px 13px rgba(40,70,82,.16);
 }
 
-
 .privat-icon {
     background:
         linear-gradient(
@@ -1040,7 +1028,6 @@ body {
         );
 }
 
-
 .mono-icon {
     background:
         linear-gradient(
@@ -1049,7 +1036,6 @@ body {
             #000
         );
 }
-
 
 .payment-button strong {
     font-size: 12px;
@@ -1063,14 +1049,16 @@ body {
 ========================================================= */
 
 .brands-section {
-    padding: 17px 5px 5px;
+    padding:
+        17px
+        5px
+        5px;
 
     border-top:
         1px solid rgba(90,120,130,.13);
 
     text-align: center;
 }
-
 
 .brands-subtitle {
     margin-bottom: 8px;
@@ -1084,7 +1072,6 @@ body {
     letter-spacing: .2px;
 }
 
-
 .brands-line {
     font-size: 11px;
 
@@ -1097,21 +1084,21 @@ body {
     letter-spacing: .2px;
 }
 
-
 .brands-line span {
     white-space: nowrap;
 }
 
-
 .brands-line .sep {
     color: #bdc9ce;
 
-    margin: 0 4px;
+    margin:
+        0
+        4px;
 }
 
 
 /* =========================================================
-   LIGHTBOX
+   FULLSCREEN LIGHTBOX
 ========================================================= */
 
 .lightbox {
@@ -1126,44 +1113,119 @@ body {
     align-items: center;
     justify-content: center;
 
-    padding: 18px;
+    padding: 14px;
 
     background:
-        rgba(4,13,18,.94);
+        rgba(4,13,18,.96);
 
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    touch-action: pan-y;
 }
-
 
 .lightbox.active {
     display: flex;
 }
 
 
+/* =========================================================
+   LIGHTBOX IMAGE
+========================================================= */
+
+.lightbox-image-wrap {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    overflow: hidden;
+}
+
 .lightbox img {
     max-width: 100%;
-    max-height: 92vh;
+    max-height: 88vh;
+
+    width: auto;
+    height: auto;
 
     object-fit: contain;
 
-    border-radius: 16px;
+    border-radius: 14px;
 
     box-shadow:
         0 25px 70px rgba(0,0,0,.55);
+
+    user-select: none;
+
+    transition:
+        opacity .25s ease,
+        transform .35s ease;
 }
 
+
+/* =========================================================
+   LIGHTBOX TOP
+========================================================= */
+
+.lightbox-counter {
+    position: absolute;
+
+    z-index: 10;
+
+    top: 18px;
+    left: 50%;
+
+    transform:
+        translateX(-50%);
+
+    padding:
+        8px
+        12px;
+
+    border-radius: 12px;
+
+    background:
+        rgba(255,255,255,.10);
+
+    border:
+        1px solid rgba(255,255,255,.16);
+
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+
+    color: white;
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    letter-spacing: .7px;
+}
+
+
+/* =========================================================
+   LIGHTBOX CLOSE
+========================================================= */
 
 .lightbox-close {
     position: absolute;
 
-    top: 18px;
-    right: 18px;
+    z-index: 20;
+
+    top: 17px;
+    right: 17px;
 
     width: 43px;
     height: 43px;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
@@ -1173,13 +1235,46 @@ body {
     border-radius: 50%;
 
     background:
-        rgba(255,255,255,.13);
+        rgba(255,255,255,.11);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 
     color: white;
 
     font-size: 25px;
 
+    line-height: 1;
+
     cursor: pointer;
+}
+
+
+/* =========================================================
+   LIGHTBOX SWIPE HINT
+========================================================= */
+
+.lightbox-hint {
+    position: absolute;
+
+    z-index: 10;
+
+    left: 50%;
+    bottom: 25px;
+
+    transform:
+        translateX(-50%);
+
+    color:
+        rgba(255,255,255,.65);
+
+    font-size: 9px;
+
+    font-weight: 600;
+
+    letter-spacing: .4px;
+
+    white-space: nowrap;
 }
 
 
@@ -1208,7 +1303,7 @@ body {
 
 
     .hero-topbar {
-        margin-bottom: 16px;
+        margin-bottom: 18px;
     }
 
 
@@ -1224,22 +1319,39 @@ body {
 
 
     .brand-name {
-        font-size: 24px;
+        font-size: 23px;
 
-        letter-spacing: .7px;
-
-        transform: scaleX(1.03);
+        letter-spacing: -.9px;
     }
 
 
     .brand-sub {
-        margin-top: 6px;
+        margin-top: 7px;
 
         font-size: 9px;
 
         letter-spacing: 0;
+    }
 
-        transform: scaleX(.95);
+
+    .hero-title {
+        margin:
+            0 1px
+            14px;
+    }
+
+
+    .hero-title h1 {
+        font-size: 27px;
+
+        letter-spacing: -1px;
+    }
+
+
+    .hero-title p {
+        font-size: 12px;
+
+        margin-top: 8px;
     }
 
 
@@ -1253,11 +1365,9 @@ body {
     }
 
 
-    .gallery-label {
-        font-size: 7px;
-
-        padding:
-            6px 8px;
+    .gallery-top {
+        top: 10px;
+        right: 10px;
     }
 
 
@@ -1265,35 +1375,24 @@ body {
         font-size: 8px;
 
         padding:
-            6px 8px;
+            6px
+            8px;
     }
 
 
-    .header-gallery-arrow {
-        width: 34px;
-        height: 34px;
-
-        margin-top: -17px;
-
-        font-size: 20px;
-    }
-
-
-    .header-gallery-prev {
-        left: 8px;
-    }
-
-
-    .header-gallery-next {
-        right: 8px;
-    }
-
-
-    .gallery-caption {
+    .gallery-progress {
         left: 12px;
-        bottom: 12px;
+        right: 12px;
 
-        font-size: 9px;
+        bottom: 11px;
+    }
+
+
+    .gallery-swipe-hint {
+        left: 12px;
+        bottom: 20px;
+
+        font-size: 7px;
     }
 
 
@@ -1418,6 +1517,42 @@ body {
         font-size: 10px;
     }
 
+
+    .lightbox {
+        padding: 8px;
+    }
+
+
+    .lightbox img {
+        max-width: 96%;
+        max-height: 86vh;
+
+        border-radius: 10px;
+    }
+
+
+    .lightbox-close {
+        top: 13px;
+        right: 13px;
+
+        width: 40px;
+        height: 40px;
+    }
+
+
+    .lightbox-counter {
+        top: 14px;
+
+        font-size: 9px;
+    }
+
+
+    .lightbox-hint {
+        bottom: 18px;
+
+        font-size: 8px;
+    }
+
 }
 
 
@@ -1428,7 +1563,7 @@ body {
 @media (max-width: 360px) {
 
     .brand-name {
-        font-size: 20px;
+        font-size: 19px;
     }
 
 
@@ -1437,8 +1572,8 @@ body {
     }
 
 
-    .header-gallery {
-        border-radius: 21px;
+    .hero-title h1 {
+        font-size: 24px;
     }
 
 
@@ -1492,13 +1627,32 @@ body {
             </div>
 
             <div class="brand-sub">
-                КОМПЛЕКСНИЙ МОНТАЖ САНТЕХНІКИ
+                комплексний монтаж сантехніки
             </div>
 
         </div>
 
 
     </div>
+
+
+
+    <!-- HERO TITLE -->
+
+    <div class="hero-title">
+
+        <h1>
+            Сантехніка,<br>
+            <span>яка працює.</span>
+        </h1>
+
+        <p>
+            Професійний комплексний монтаж
+            сантехніки в новобудовах Києва.
+        </p>
+
+    </div>
+
 
 
     <!-- ==================================================
@@ -1517,70 +1671,42 @@ body {
         >
 
 
-            <div
-                class="header-gallery-slide"
-                onclick="openLightbox(0)"
-            >
+            <div class="header-gallery-slide">
 
                 <img
                     src="photo-1.jpg"
                     alt="Приклад роботи SA MASTER"
                 >
 
-                <div class="gallery-caption">
-                    SA-MASTER / WORK 01
-                </div>
-
             </div>
 
 
-            <div
-                class="header-gallery-slide"
-                onclick="openLightbox(1)"
-            >
+            <div class="header-gallery-slide">
 
                 <img
                     src="photo-2.jpg"
                     alt="Приклад роботи SA MASTER"
                 >
 
-                <div class="gallery-caption">
-                    SA-MASTER / WORK 02
-                </div>
-
             </div>
 
 
-            <div
-                class="header-gallery-slide"
-                onclick="openLightbox(2)"
-            >
+            <div class="header-gallery-slide">
 
                 <img
                     src="photo-3.jpg"
                     alt="Приклад роботи SA MASTER"
                 >
 
-                <div class="gallery-caption">
-                    SA-MASTER / WORK 03
-                </div>
-
             </div>
 
 
-            <div
-                class="header-gallery-slide"
-                onclick="openLightbox(3)"
-            >
+            <div class="header-gallery-slide">
 
                 <img
                     src="photo-4.jpg"
                     alt="Приклад роботи SA MASTER"
                 >
-
-                <div class="gallery-caption">
-                    SA-MASTER / WORK 04
-                </div>
 
             </div>
 
@@ -1588,13 +1714,9 @@ body {
         </div>
 
 
-        <!-- GALLERY TOP -->
+        <!-- COUNTER -->
 
         <div class="gallery-top">
-
-            <div class="gallery-label">
-                PROJECTS
-            </div>
 
             <div
                 class="header-gallery-counter"
@@ -1606,38 +1728,33 @@ body {
         </div>
 
 
-        <!-- ARROWS -->
+        <!-- PROGRESS -->
 
-        <button
-            class="header-gallery-arrow header-gallery-prev"
-            onclick="changeHeaderSlide(-1)"
-            aria-label="Попереднє фото"
-        >
-            ‹
-        </button>
+        <div class="gallery-progress">
 
+            <div
+                class="gallery-progress-bar"
+                id="galleryProgressBar"
+            ></div>
 
-        <button
-            class="header-gallery-arrow header-gallery-next"
-            onclick="changeHeaderSlide(1)"
-            aria-label="Наступне фото"
-        >
-            ›
-        </button>
+        </div>
 
 
-        <!-- DOTS -->
+        <!-- SWIPE HINT -->
 
         <div
-            class="header-gallery-dots"
-            id="headerGalleryDots"
-        ></div>
+            class="gallery-swipe-hint"
+            id="gallerySwipeHint"
+        >
+            СВАЙП ДЛЯ ПЕРЕГЛЯДУ
+        </div>
 
 
     </div>
 
 
 </section>
+
 
 
 <!-- ======================================================
@@ -1652,6 +1769,7 @@ body {
         href="tel:+380979111871"
         title="Зателефонувати"
     >
+
 
         <div class="phone-icon-circle">
 
@@ -1709,7 +1827,9 @@ body {
 
     </a>
 
+
 </div>
+
 
 
 <!-- ======================================================
@@ -1746,6 +1866,7 @@ body {
     </a>
 
 
+
     <a
         class="social-item facebook"
         href="https://www.facebook.com/share/1977uk6VHF/?mibextid=wwXIfr"
@@ -1771,6 +1892,7 @@ body {
         </span>
 
     </a>
+
 
 
     <a
@@ -1800,6 +1922,7 @@ body {
     </a>
 
 
+
     <a
         class="social-item telegram"
         href="https://t.me/sa_master"
@@ -1825,6 +1948,7 @@ body {
         </span>
 
     </a>
+
 
 
     <a
@@ -1856,6 +1980,7 @@ body {
 </div>
 
 
+
 <!-- ======================================================
      ABOUT
 ====================================================== -->
@@ -1864,6 +1989,7 @@ body {
 
 
     <div class="about-top">
+
 
         <img
             class="about-photo"
@@ -1889,6 +2015,7 @@ body {
 
         </p>
 
+
     </div>
 
 
@@ -1903,6 +2030,7 @@ body {
             Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.
         </p>
 
+
         <p>
             Сьогодні ми спеціалізуємось на
             <strong>комплексному монтажі сантехніки</strong>
@@ -1912,12 +2040,14 @@ body {
             провідних світових брендів.
         </p>
 
+
         <p>
             Працюємо переважно з дизайн-проектами
             та без посередників.
             Вартість наших робіт —
             <strong>вище середньої по ринку</strong>.
         </p>
+
 
         <p>
             Плануєте ремонт?
@@ -1926,9 +2056,12 @@ body {
             орієнтовно на <strong>2 місяці вперед</strong>.
         </p>
 
+
     </div>
 
+
 </div>
+
 
 
 <!-- ======================================================
@@ -1979,6 +2112,7 @@ body {
 </div>
 
 
+
 <!-- ======================================================
      BRANDS
 ====================================================== -->
@@ -2027,7 +2161,9 @@ body {
 
     </div>
 
+
 </section>
+
 
 
 <!-- ======================================================
@@ -2037,35 +2173,56 @@ body {
 <div
     class="lightbox"
     id="lightbox"
-    onclick="closeLightbox(event)"
 >
 
 
     <button
         class="lightbox-close"
-        onclick="closeLightbox(event)"
+        id="lightboxClose"
         aria-label="Закрити"
     >
         ×
     </button>
 
 
-    <img
-        id="lightboxImage"
-        src=""
-        alt="Перегляд фотографії"
+    <div class="lightbox-counter" id="lightboxCounter">
+        01 / 04
+    </div>
+
+
+    <div
+        class="lightbox-image-wrap"
+        id="lightboxImageWrap"
     >
 
+        <img
+            id="lightboxImage"
+            src=""
+            alt="Перегляд фотографії"
+        >
+
+    </div>
+
+
+    <div class="lightbox-hint">
+        СВАЙП ВЛІВО / ВПРАВО
+    </div>
+
+
 </div>
+
 
 
 <script>
 
 /* =========================================================
-   GALLERY
+   GALLERY VARIABLES
 ========================================================= */
 
 let currentHeaderSlide = 0;
+
+const headerGallery =
+    document.getElementById("headerGallery");
 
 const headerTrack =
     document.getElementById("headerGalleryTrack");
@@ -2076,56 +2233,30 @@ const headerSlides =
 const headerCounter =
     document.getElementById("headerGalleryCounter");
 
-const headerDotsContainer =
-    document.getElementById("headerGalleryDots");
+const progressBar =
+    document.getElementById("galleryProgressBar");
 
 const totalHeaderSlides =
     headerSlides.length;
 
 
-/* =========================================================
-   CREATE DOTS
-========================================================= */
+/*
+   Автоматична зміна:
+   4.5 секунди
+*/
 
-for (
-    let i = 0;
-    i < totalHeaderSlides;
-    i++
-) {
+const AUTO_PLAY_TIME = 4500;
 
-    const dot =
-        document.createElement("button");
-
-    dot.className =
-        "header-gallery-dot";
-
-    dot.setAttribute(
-        "aria-label",
-        "Фото " + (i + 1)
-    );
-
-    dot.addEventListener(
-        "click",
-        function(event) {
-
-            event.stopPropagation();
-
-            currentHeaderSlide = i;
-
-            updateHeaderGallery();
-
-        }
-    );
-
-    headerDotsContainer.appendChild(dot);
-}
+let autoPlayTimer = null;
 
 
 /* =========================================================
    UPDATE GALLERY
 ========================================================= */
 
-function updateHeaderGallery() {
+function updateHeaderGallery(
+    restartProgress = true
+) {
 
     headerTrack.style.transform =
         "translateX(-" +
@@ -2143,21 +2274,92 @@ function updateHeaderGallery() {
         ).padStart(2, "0");
 
 
-    const dots =
-        document.querySelectorAll(
-            ".header-gallery-dot"
-        );
+    headerSlides.forEach(
+        function(slide, index) {
 
-
-    dots.forEach(
-        function(dot, index) {
-
-            dot.classList.toggle(
+            slide.classList.toggle(
                 "active",
                 index === currentHeaderSlide
             );
 
         }
+    );
+
+
+    if (restartProgress) {
+
+        restartProgressBar();
+
+    }
+
+}
+
+
+/* =========================================================
+   PROGRESS BAR
+========================================================= */
+
+function restartProgressBar() {
+
+    progressBar.classList.remove(
+        "playing"
+    );
+
+
+    /*
+       Примусово перезапускаємо animation
+    */
+
+    void progressBar.offsetWidth;
+
+
+    progressBar.classList.add(
+        "playing"
+    );
+
+}
+
+
+/* =========================================================
+   AUTO PLAY
+========================================================= */
+
+function startAutoPlay() {
+
+    stopAutoPlay();
+
+
+    autoPlayTimer =
+        setInterval(
+            function() {
+
+                changeHeaderSlide(1);
+
+            },
+            AUTO_PLAY_TIME
+        );
+
+
+    restartProgressBar();
+
+}
+
+
+function stopAutoPlay() {
+
+    if (autoPlayTimer) {
+
+        clearInterval(
+            autoPlayTimer
+        );
+
+        autoPlayTimer = null;
+
+    }
+
+
+    progressBar.classList.remove(
+        "playing"
     );
 
 }
@@ -2167,7 +2369,9 @@ function updateHeaderGallery() {
    CHANGE SLIDE
 ========================================================= */
 
-function changeHeaderSlide(direction) {
+function changeHeaderSlide(
+    direction
+) {
 
     currentHeaderSlide += direction;
 
@@ -2198,16 +2402,11 @@ function changeHeaderSlide(direction) {
 
 
 /* =========================================================
-   SWIPE
+   HEADER SWIPE
 ========================================================= */
 
 let headerTouchStartX = 0;
-
-const headerGallery =
-    document.getElementById(
-        "headerGallery"
-    );
-
+let headerTouchStartY = 0;
 
 headerGallery.addEventListener(
     "touchstart",
@@ -2215,6 +2414,9 @@ headerGallery.addEventListener(
 
         headerTouchStartX =
             event.changedTouches[0].screenX;
+
+        headerTouchStartY =
+            event.changedTouches[0].screenY;
 
     },
     {
@@ -2230,13 +2432,27 @@ headerGallery.addEventListener(
         const touchEndX =
             event.changedTouches[0].screenX;
 
-        const distance =
+        const touchEndY =
+            event.changedTouches[0].screenY;
+
+
+        const distanceX =
             touchEndX -
             headerTouchStartX;
 
+        const distanceY =
+            touchEndY -
+            headerTouchStartY;
+
+
+        /*
+           Якщо вертикальний рух більший,
+           не вважаємо це свайпом галереї
+        */
 
         if (
-            Math.abs(distance) < 45
+            Math.abs(distanceY) >
+            Math.abs(distanceX)
         ) {
 
             return;
@@ -2244,7 +2460,18 @@ headerGallery.addEventListener(
         }
 
 
-        if (distance < 0) {
+        if (
+            Math.abs(distanceX) < 45
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            distanceX < 0
+        ) {
 
             changeHeaderSlide(1);
 
@@ -2257,6 +2484,26 @@ headerGallery.addEventListener(
     },
     {
         passive: true
+    }
+);
+
+
+/* =========================================================
+   CLICK PHOTO → LIGHTBOX
+========================================================= */
+
+headerSlides.forEach(
+    function(slide, index) {
+
+        slide.addEventListener(
+            "click",
+            function() {
+
+                openLightbox(index);
+
+            }
+        );
+
     }
 );
 
@@ -2275,16 +2522,35 @@ const lightboxImage =
         "lightboxImage"
     );
 
+const lightboxClose =
+    document.getElementById(
+        "lightboxClose"
+    );
+
+const lightboxCounter =
+    document.getElementById(
+        "lightboxCounter"
+    );
+
+const lightboxImageWrap =
+    document.getElementById(
+        "lightboxImageWrap"
+    );
+
+
+let lightboxIndex = 0;
+
+
+/* =========================================================
+   OPEN LIGHTBOX
+========================================================= */
 
 function openLightbox(index) {
 
-    const image =
-        headerSlides[index]
-            .querySelector("img");
+    lightboxIndex = index;
 
 
-    lightboxImage.src =
-        image.src;
+    updateLightbox();
 
 
     lightbox.classList.add(
@@ -2295,44 +2561,310 @@ function openLightbox(index) {
     document.body.style.overflow =
         "hidden";
 
+
+    /*
+       Зупиняємо автоматичну
+       прокрутку основної каруселі
+    */
+
+    stopAutoPlay();
+
 }
 
 
-function closeLightbox(event) {
+/* =========================================================
+   UPDATE LIGHTBOX
+========================================================= */
+
+function updateLightbox() {
+
+    const image =
+        headerSlides[lightboxIndex]
+            .querySelector("img");
+
+
+    lightboxImage.style.opacity =
+        "0";
+
+
+    lightboxImage.style.transform =
+        "scale(.985)";
+
+
+    setTimeout(
+        function() {
+
+            lightboxImage.src =
+                image.src;
+
+            lightboxImage.alt =
+                image.alt;
+
+
+            lightboxCounter.textContent =
+                String(
+                    lightboxIndex + 1
+                ).padStart(2, "0") +
+                " / " +
+                String(
+                    totalHeaderSlides
+                ).padStart(2, "0");
+
+
+            lightboxImage.style.opacity =
+                "1";
+
+            lightboxImage.style.transform =
+                "scale(1)";
+
+        },
+        80
+    );
+
+}
+
+
+/* =========================================================
+   LIGHTBOX NEXT / PREVIOUS
+========================================================= */
+
+function changeLightbox(
+    direction
+) {
+
+    lightboxIndex += direction;
+
 
     if (
-        event.target === lightbox ||
-        event.target.classList.contains(
-            "lightbox-close"
-        )
+        lightboxIndex < 0
     ) {
 
-        lightbox.classList.remove(
-            "active"
-        );
-
-        document.body.style.overflow =
-            "";
+        lightboxIndex =
+            totalHeaderSlides - 1;
 
     }
 
+
+    if (
+        lightboxIndex >=
+        totalHeaderSlides
+    ) {
+
+        lightboxIndex = 0;
+
+    }
+
+
+    updateLightbox();
+
 }
 
+
+/* =========================================================
+   LIGHTBOX SWIPE
+========================================================= */
+
+let lightboxTouchStartX = 0;
+let lightboxTouchStartY = 0;
+
+
+lightboxImageWrap.addEventListener(
+    "touchstart",
+    function(event) {
+
+        lightboxTouchStartX =
+            event.changedTouches[0].screenX;
+
+        lightboxTouchStartY =
+            event.changedTouches[0].screenY;
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+lightboxImageWrap.addEventListener(
+    "touchend",
+    function(event) {
+
+        const touchEndX =
+            event.changedTouches[0].screenX;
+
+        const touchEndY =
+            event.changedTouches[0].screenY;
+
+
+        const distanceX =
+            touchEndX -
+            lightboxTouchStartX;
+
+        const distanceY =
+            touchEndY -
+            lightboxTouchStartY;
+
+
+        /*
+           Вертикальний свайп вниз
+           закриває галерею
+        */
+
+        if (
+            distanceY > 90 &&
+            Math.abs(distanceY) >
+            Math.abs(distanceX)
+        ) {
+
+            closeLightbox();
+
+            return;
+
+        }
+
+
+        /*
+           Горизонтальний свайп
+        */
+
+        if (
+            Math.abs(distanceX) < 45
+        ) {
+
+            return;
+
+        }
+
+
+        if (
+            Math.abs(distanceX) >
+            Math.abs(distanceY)
+        ) {
+
+            if (
+                distanceX < 0
+            ) {
+
+                changeLightbox(1);
+
+            } else {
+
+                changeLightbox(-1);
+
+            }
+
+        }
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+/* =========================================================
+   CLOSE LIGHTBOX
+========================================================= */
+
+function closeLightbox() {
+
+    lightbox.classList.remove(
+        "active"
+    );
+
+
+    document.body.style.overflow =
+        "";
+
+
+    /*
+       Після закриття
+       повертаємо autoplay
+    */
+
+    startAutoPlay();
+
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+========================================================= */
+
+lightboxClose.addEventListener(
+    "click",
+    function(event) {
+
+        event.stopPropagation();
+
+        closeLightbox();
+
+    }
+);
+
+
+/* =========================================================
+   CLOSE BY BACKGROUND
+========================================================= */
+
+lightbox.addEventListener(
+    "click",
+    function(event) {
+
+        if (
+            event.target === lightbox
+        ) {
+
+            closeLightbox();
+
+        }
+
+    }
+);
+
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
 
 document.addEventListener(
     "keydown",
     function(event) {
 
         if (
+            !lightbox.classList.contains(
+                "active"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        if (
             event.key === "Escape"
         ) {
 
-            lightbox.classList.remove(
-                "active"
-            );
+            closeLightbox();
 
-            document.body.style.overflow =
-                "";
+        }
+
+
+        if (
+            event.key === "ArrowRight"
+        ) {
+
+            changeLightbox(1);
+
+        }
+
+
+        if (
+            event.key === "ArrowLeft"
+        ) {
+
+            changeLightbox(-1);
 
         }
 
@@ -2358,7 +2890,9 @@ function toggleAbout() {
 
 
     if (
-        hidden.classList.toggle("open")
+        hidden.classList.toggle(
+            "open"
+        )
     ) {
 
         button.textContent =
@@ -2375,10 +2909,48 @@ function toggleAbout() {
 
 
 /* =========================================================
+   FIRST VISIT SWIPE HINT
+========================================================= */
+
+const gallerySwipeHint =
+    document.getElementById(
+        "gallerySwipeHint"
+    );
+
+
+setTimeout(
+    function() {
+
+        gallerySwipeHint.classList.add(
+            "show"
+        );
+
+
+        setTimeout(
+            function() {
+
+                gallerySwipeHint.classList.remove(
+                    "show"
+                );
+
+            },
+            1800
+        );
+
+    },
+    900
+);
+
+
+/* =========================================================
    START
 ========================================================= */
 
-updateHeaderGallery();
+updateHeaderGallery(
+    false
+);
+
+startAutoPlay();
 
 </script>
 
