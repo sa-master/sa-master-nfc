@@ -375,21 +375,11 @@ body {
 .header-gallery-track {
     display: flex;
 
-    width: 100%;
+    width: max-content;
 
-    transition:
-        transform .55s cubic-bezier(.22,.61,.36,1);
+    transform: translateX(0);
 
     will-change: transform;
-}
-
-
-/*
-   Під час непомітного повернення
-   після clone першого фото
-*/
-.header-gallery-track.no-transition {
-    transition: none !important;
 }
 
 
@@ -400,7 +390,9 @@ body {
 .header-gallery-slide {
     position: relative;
 
-    flex: 0 0 100%;
+    flex: 0 0 390px;
+
+    width: 390px;
 
     aspect-ratio: 16 / 10;
 
@@ -757,15 +749,274 @@ body {
 }
 
 
-.social-item.card.active .card-icon {
-    transform:
-        rotate(180deg);
-}
-
-
 .card-icon {
     transition:
         transform .3s ease;
+}
+
+
+/* ========================================
+   PAYMENT MODAL
+======================================== */
+
+.payment-modal {
+    position: fixed;
+
+    z-index: 10000;
+
+    inset: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 20px;
+
+    background:
+        rgba(5,15,20,.72);
+
+    backdrop-filter:
+        blur(10px);
+
+    -webkit-backdrop-filter:
+        blur(10px);
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    pointer-events: none;
+
+    transition:
+        opacity .25s ease,
+        visibility .25s ease;
+}
+
+
+.payment-modal.active {
+    opacity: 1;
+
+    visibility: visible;
+
+    pointer-events: auto;
+}
+
+
+.payment-modal-content {
+    position: relative;
+
+    width: 100%;
+
+    max-width: 370px;
+
+    padding: 24px;
+
+    border-radius: 28px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #f8fcfd,
+            #dfecef
+        );
+
+    box-shadow:
+        0 25px 80px rgba(0,0,0,.30);
+
+    transform:
+        translateY(15px)
+        scale(.96);
+
+    transition:
+        transform .3s cubic-bezier(.22,.61,.36,1);
+}
+
+
+.payment-modal.active .payment-modal-content {
+    transform:
+        translateY(0)
+        scale(1);
+}
+
+
+/* ========================================
+   PAYMENT MODAL HEADER
+======================================== */
+
+.payment-modal-title {
+    margin: 0 42px 5px 0;
+
+    color: #17272f;
+
+    font-size: 21px;
+
+    font-weight: 850;
+
+    line-height: 1.2;
+}
+
+
+.payment-modal-subtitle {
+    margin: 0 0 18px;
+
+    color: #657983;
+
+    font-size: 14px;
+
+    line-height: 1.4;
+}
+
+
+.payment-modal-close {
+    position: absolute;
+
+    top: 16px;
+    right: 16px;
+
+    width: 40px;
+    height: 40px;
+
+    border: 0;
+
+    border-radius: 50%;
+
+    background:
+        rgba(255,255,255,.75);
+
+    color: #425963;
+
+    font-size: 25px;
+
+    line-height: 1;
+
+    cursor: pointer;
+
+    box-shadow:
+        0 5px 15px rgba(0,0,0,.08);
+
+    transition:
+        transform .2s ease,
+        background .2s ease;
+}
+
+
+.payment-modal-close:hover {
+    transform: rotate(90deg);
+
+    background:
+        #ffffff;
+}
+
+
+/* ========================================
+   PAYMENT BUTTONS
+======================================== */
+
+.payment-buttons {
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+}
+
+
+.payment-button {
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 9px;
+
+    min-height: 105px;
+
+    padding: 12px;
+
+    background:
+        rgba(255,255,255,.72);
+
+    border:
+        1px solid rgba(100,135,148,.15);
+
+    border-radius: 20px;
+
+    color: #263840;
+
+    text-decoration: none;
+
+    box-shadow:
+        0 8px 22px rgba(40,70,82,.07);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+
+.payment-button:hover {
+    transform:
+        translateY(-3px);
+
+    box-shadow:
+        0 12px 26px rgba(40,70,82,.13);
+}
+
+
+.payment-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 58px;
+    height: 44px;
+
+    border-radius: 12px;
+
+    color: white;
+
+    font-size: 12px;
+
+    font-weight: 950;
+
+    letter-spacing: -.5px;
+
+    box-shadow:
+        0 5px 13px rgba(40,70,82,.16);
+}
+
+
+.privat-icon {
+    background:
+        linear-gradient(
+            145deg,
+            #63c64b,
+            #238a31
+        );
+
+    font-size: 13px;
+}
+
+
+.mono-icon {
+    background:
+        linear-gradient(
+            145deg,
+            #242424,
+            #000
+        );
+
+    font-size: 12px;
+
+    letter-spacing: -1px;
+}
+
+
+.payment-button strong {
+    font-size: 12px;
+
+    font-weight: 900;
 }
 
 
@@ -901,149 +1152,6 @@ body {
     color: #1c59a3;
 
     font-weight: 800;
-}
-
-
-/* ========================================
-   PAYMENT
-======================================== */
-
-.payment-buttons {
-    display: grid;
-
-    grid-template-columns: 1fr 1fr;
-
-    gap: 10px;
-
-    margin-top: 0;
-
-    max-height: 0;
-
-    opacity: 0;
-
-    overflow: hidden;
-
-    transform: translateY(-8px);
-
-    pointer-events: none;
-
-    transition:
-        max-height .45s ease,
-        opacity .35s ease,
-        transform .35s ease,
-        margin-top .35s ease;
-}
-
-
-.payment-buttons.open {
-    max-height: 120px;
-
-    opacity: 1;
-
-    transform: translateY(0);
-
-    margin-top: 18px;
-
-    pointer-events: auto;
-}
-
-
-.payment-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    gap: 10px;
-
-    min-height: 68px;
-
-    padding: 10px;
-
-    background:
-        linear-gradient(
-            145deg,
-            #ffffff,
-            #e6f1f5
-        );
-
-    border:
-        1px solid rgba(100,135,148,.16);
-
-    border-radius: 19px;
-
-    color: #263840;
-
-    text-decoration: none;
-
-    box-shadow:
-        0 8px 22px rgba(40,70,82,.07);
-
-    transition:
-        .2s ease;
-}
-
-
-.payment-button:hover {
-    transform:
-        translateY(-2px);
-}
-
-
-.payment-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 47px;
-    height: 40px;
-
-    flex-shrink: 0;
-
-    border-radius: 11px;
-
-    color: white;
-
-    font-size: 11px;
-
-    font-weight: 950;
-
-    letter-spacing: -.5px;
-
-    box-shadow:
-        0 5px 13px rgba(40,70,82,.16);
-}
-
-
-.privat-icon {
-    background:
-        linear-gradient(
-            145deg,
-            #63c64b,
-            #238a31
-        );
-
-    font-size: 12px;
-}
-
-
-.mono-icon {
-    background:
-        linear-gradient(
-            145deg,
-            #242424,
-            #000
-        );
-
-    font-size: 11px;
-
-    letter-spacing: -1px;
-}
-
-
-.payment-button strong {
-    font-size: 12px;
-
-    font-weight: 900;
 }
 
 
@@ -1235,6 +1343,13 @@ body {
     }
 
 
+    .header-gallery-slide {
+        flex-basis: 100vw;
+
+        width: 100vw;
+    }
+
+
     .gallery-label {
         left: 10px;
         bottom: 10px;
@@ -1316,6 +1431,28 @@ body {
     .social-icon-wrapper svg {
         width: 20px;
         height: 20px;
+    }
+
+
+    .payment-modal {
+        padding: 16px;
+    }
+
+
+    .payment-modal-content {
+        max-width: 350px;
+
+        padding: 21px;
+    }
+
+
+    .payment-modal-title {
+        font-size: 19px;
+    }
+
+
+    .payment-button {
+        min-height: 100px;
     }
 
 
@@ -1458,7 +1595,7 @@ body {
 
 
     <!-- ====================================
-         INFINITE GALLERY
+         SEAMLESS GALLERY
     ==================================== -->
 
     <div
@@ -1471,12 +1608,11 @@ body {
             id="headerGalleryTrack"
         >
 
-
-            <!-- PHOTO 1 -->
+            <!-- ORIGINAL 1 -->
 
             <div
                 class="header-gallery-slide"
-                onclick="openLightbox(0)"
+                data-index="0"
             >
 
                 <img
@@ -1492,11 +1628,11 @@ body {
             </div>
 
 
-            <!-- PHOTO 2 -->
+            <!-- ORIGINAL 2 -->
 
             <div
                 class="header-gallery-slide"
-                onclick="openLightbox(1)"
+                data-index="1"
             >
 
                 <img
@@ -1512,11 +1648,11 @@ body {
             </div>
 
 
-            <!-- PHOTO 3 -->
+            <!-- ORIGINAL 3 -->
 
             <div
                 class="header-gallery-slide"
-                onclick="openLightbox(2)"
+                data-index="2"
             >
 
                 <img
@@ -1532,11 +1668,11 @@ body {
             </div>
 
 
-            <!-- PHOTO 4 -->
+            <!-- ORIGINAL 4 -->
 
             <div
                 class="header-gallery-slide"
-                onclick="openLightbox(3)"
+                data-index="3"
             >
 
                 <img
@@ -1552,11 +1688,11 @@ body {
             </div>
 
 
-            <!-- PHOTO 5 -->
+            <!-- ORIGINAL 5 -->
 
             <div
                 class="header-gallery-slide"
-                onclick="openLightbox(4)"
+                data-index="4"
             >
 
                 <img
@@ -1568,11 +1704,11 @@ body {
             </div>
 
 
-            <!-- PHOTO 6 -->
+            <!-- ORIGINAL 6 -->
 
             <div
                 class="header-gallery-slide"
-                onclick="openLightbox(5)"
+                data-index="5"
             >
 
                 <img
@@ -1584,11 +1720,11 @@ body {
             </div>
 
 
-            <!-- PHOTO 7 -->
+            <!-- ORIGINAL 7 -->
 
             <div
                 class="header-gallery-slide"
-                onclick="openLightbox(6)"
+                data-index="6"
             >
 
                 <img
@@ -1600,11 +1736,11 @@ body {
             </div>
 
 
-            <!-- PHOTO 8 -->
+            <!-- ORIGINAL 8 -->
 
             <div
                 class="header-gallery-slide"
-                onclick="openLightbox(7)"
+                data-index="7"
             >
 
                 <img
@@ -1614,34 +1750,6 @@ body {
                 >
 
             </div>
-
-
-            <!--
-                CLONE PHOTO 1
-
-                Потрібна тільки для безшовного циклу.
-                Користувач її не відрізняє від справжнього
-                першого фото.
-            -->
-
-            <div
-                class="header-gallery-slide gallery-clone"
-                onclick="openLightbox(0)"
-                aria-hidden="true"
-            >
-
-                <img
-                    src="photo-1.jpg"
-                    alt=""
-                    draggable="false"
-                >
-
-                <div class="gallery-label">
-                    до
-                </div>
-
-            </div>
-
 
         </div>
 
@@ -1715,7 +1823,7 @@ body {
 
 
 <!-- ========================================
-     SOCIAL + CARD
+     SOCIAL + CARD ICON
 ======================================== -->
 
 <div class="social-container">
@@ -1854,9 +1962,7 @@ body {
     </a>
 
 
-    <!-- ====================================
-         CARD / PAYMENT TOGGLE
-    ==================================== -->
+    <!-- CARD -->
 
     <div
         class="social-item card"
@@ -1864,7 +1970,6 @@ body {
         role="button"
         tabindex="0"
         aria-expanded="false"
-        aria-controls="paymentButtons"
         aria-label="Відкрити картки для оплати"
         title="Картки для оплати"
     >
@@ -1908,52 +2013,92 @@ body {
 
 
 <!-- ========================================
-     PAYMENT
+     PAYMENT MODAL
 ======================================== -->
 
 <div
-    class="payment-buttons"
-    id="paymentButtons"
+    class="payment-modal"
+    id="paymentModal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="paymentModalTitle"
 >
 
 
-    <a
-        class="payment-button"
-        href="https://www.privat24.ua/send/4tid8"
-        target="_blank"
-        rel="noopener"
-        aria-label="Privat24"
-    >
-
-        <span class="payment-icon privat-icon">
-            p24
-        </span>
-
-        <strong>
-            privat24
-        </strong>
-
-    </a>
+    <div class="payment-modal-content">
 
 
-    <a
-        class="payment-button"
-        href="https://send.monobank.ua/47w3DWsRew"
-        target="_blank"
-        rel="noopener"
-        aria-label="Mono"
-    >
+        <button
+            class="payment-modal-close"
+            id="paymentModalClose"
+            type="button"
+            aria-label="Закрити"
+        >
+            ×
+        </button>
 
-        <span class="payment-icon mono-icon">
-            mono
-        </span>
 
-        <strong>
-            mono
-        </strong>
+        <h2
+            class="payment-modal-title"
+            id="paymentModalTitle"
+        >
+            Оплата
+        </h2>
 
-    </a>
 
+        <p class="payment-modal-subtitle">
+            Оберіть зручний спосіб оплати
+        </p>
+
+
+        <div class="payment-buttons">
+
+
+            <!-- PRIVAT24 -->
+
+            <a
+                class="payment-button"
+                href="https://www.privat24.ua/send/4tid8"
+                target="_blank"
+                rel="noopener"
+                aria-label="Оплатити через Privat24"
+            >
+
+                <span class="payment-icon privat-icon">
+                    p24
+                </span>
+
+                <strong>
+                    privat24
+                </strong>
+
+            </a>
+
+
+            <!-- MONO -->
+
+            <a
+                class="payment-button"
+                href="https://send.monobank.ua/47w3DWsRew"
+                target="_blank"
+                rel="noopener"
+                aria-label="Оплатити через mono"
+            >
+
+                <span class="payment-icon mono-icon">
+                    mono
+                </span>
+
+                <strong>
+                    mono
+                </strong>
+
+            </a>
+
+
+        </div>
+
+    </div>
 
 </div>
 
@@ -2113,251 +2258,253 @@ body {
 <script>
 
 /* ========================================
-   INFINITE HEADER GALLERY
+   SEAMLESS CAROUSEL
 ======================================== */
 
+const gallery =
+    document.getElementById("headerGallery");
+
+const track =
+    document.getElementById("headerGalleryTrack");
+
+const originalSlides =
+    Array.from(
+        track.querySelectorAll(
+            ".header-gallery-slide"
+        )
+    );
+
+
+const originalCount =
+    originalSlides.length;
+
+
+let slideWidth = 390;
+
+let currentPosition = 0;
+
+let isDragging = false;
+
+let startX = 0;
+
+let startPosition = 0;
+
+let animationFrame = null;
+
+let lastTime = 0;
+
+let autoRunning = true;
+
+
 /*
-    Реальні фото:
-    0  = photo-1
-    1  = photo-2
-    2  = photo-3
-    3  = photo-4
-    4  = photo-5
-    5  = photo-6
-    6  = photo-7
-    7  = photo-8
-
-    Індекс 8 — це клон photo-1.
-
-    Завдяки цьому після 8-го фото
-    карусель продовжує рухатися
-    справа наліво до першого.
+   Швидкість автоматичної прокрутки.
+   Менше число = повільніше.
 */
 
-let currentHeaderSlide = 0;
+const AUTO_SPEED = 0.035;
 
-const REAL_SLIDES = 8;
 
-const headerTrack =
-    document.getElementById(
-        "headerGalleryTrack"
-    );
+/* ========================================
+   CLONES
+======================================== */
 
-const headerGallery =
-    document.getElementById(
-        "headerGallery"
-    );
+const firstClone =
+    originalSlides[0].cloneNode(true);
 
-const allHeaderSlides =
-    document.querySelectorAll(
-        ".header-gallery-slide"
-    );
+const secondClone =
+    originalSlides[1].cloneNode(true);
 
-const totalHeaderSlides =
-    allHeaderSlides.length;
+const thirdClone =
+    originalSlides[2].cloneNode(true);
+
+
+track.appendChild(firstClone);
+track.appendChild(secondClone);
+track.appendChild(thirdClone);
+
+
+/* ========================================
+   MEASURE
+======================================== */
+
+function getSlideWidth() {
+
+    const firstSlide =
+        track.querySelector(
+            ".header-gallery-slide"
+        );
+
+    if (!firstSlide) return;
+
+    slideWidth =
+        firstSlide.getBoundingClientRect().width;
+
+}
+
+
+function updatePosition() {
+
+    track.style.transform =
+        "translate3d(" +
+        (-currentPosition) +
+        "px, 0, 0)";
+
+}
+
+
+/* ========================================
+   SEAMLESS LOOP
+======================================== */
+
+function normalizePosition() {
+
+    const totalWidth =
+        slideWidth * originalCount;
+
+
+    if (
+        currentPosition >= totalWidth
+    ) {
+
+        currentPosition -= totalWidth;
+
+    }
+
+
+    if (
+        currentPosition < 0
+    ) {
+
+        currentPosition += totalWidth;
+
+    }
+
+}
 
 
 /* ========================================
    AUTOPLAY
 ======================================== */
 
-let autoplayTimer = null;
+function animate(timestamp) {
 
-const AUTOPLAY_DELAY = 4500;
+    if (!lastTime) {
+        lastTime = timestamp;
+    }
+
+
+    const delta =
+        timestamp - lastTime;
+
+
+    lastTime = timestamp;
+
+
+    if (
+        autoRunning &&
+        !isDragging
+    ) {
+
+        currentPosition +=
+            AUTO_SPEED * delta;
+
+
+        normalizePosition();
+
+        updatePosition();
+
+    }
+
+
+    animationFrame =
+        requestAnimationFrame(
+            animate
+        );
+
+}
 
 
 function startAutoplay() {
 
-    stopAutoplay();
+    autoRunning = true;
 
-    autoplayTimer =
-        setInterval(
-            function() {
-
-                changeHeaderSlide(1);
-
-            },
-            AUTOPLAY_DELAY
-        );
+    lastTime = 0;
 
 }
 
 
 function stopAutoplay() {
 
-    if (
-        autoplayTimer !== null
-    ) {
-
-        clearInterval(
-            autoplayTimer
-        );
-
-        autoplayTimer = null;
-
-    }
+    autoRunning = false;
 
 }
 
 
 /* ========================================
-   UPDATE GALLERY
+   TOUCH / MOUSE SWIPE
 ======================================== */
 
-function updateHeaderGallery(
-    animate = true
-) {
+function pointerStart(clientX) {
 
-    if (animate) {
+    isDragging = true;
 
-        headerTrack.classList.remove(
-            "no-transition"
-        );
+    stopAutoplay();
 
-    } else {
+    startX = clientX;
 
-        headerTrack.classList.add(
-            "no-transition"
-        );
-
-    }
-
-
-    headerTrack.style.transform =
-        "translateX(-" +
-        (currentHeaderSlide * 100) +
-        "%)";
+    startPosition =
+        currentPosition;
 
 }
 
 
-/* ========================================
-   CHANGE SLIDE
-======================================== */
+function pointerMove(clientX) {
 
-function changeHeaderSlide(direction) {
+    if (!isDragging) return;
+
+
+    const distance =
+        clientX - startX;
+
 
     /*
-        Основний сценарій:
-
-        0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
-
-        де 8 — клон першого фото.
+       Рух пальця вліво =
+       рух каруселі вліво.
     */
 
-    if (direction > 0) {
-
-        currentHeaderSlide++;
-
-        updateHeaderGallery(true);
+    currentPosition =
+        startPosition - distance;
 
 
-        /*
-            Коли показали clone photo-1,
-            чекаємо завершення CSS-анімації,
-            після чого непомітно переносимо
-            позицію на справжній photo-1.
+    normalizePosition();
 
-            Візуально користувач цього
-            переходу не бачить.
-        */
+    updatePosition();
 
-        if (
-            currentHeaderSlide ===
-            REAL_SLIDES
-        ) {
-
-            setTimeout(
-                function() {
-
-                    currentHeaderSlide = 0;
-
-                    updateHeaderGallery(false);
+}
 
 
-                    /*
-                        Примусово читаємо layout,
-                        щоб браузер застосував
-                        no-transition.
-                    */
+function pointerEnd() {
 
-                    void headerTrack.offsetWidth;
+    if (!isDragging) return;
 
-                },
-                570
-            );
+    isDragging = false;
 
-        }
-
-    }
-
-    /*
-        При ручному свайпі назад дозволяємо
-        рухатися до попереднього фото.
-
-        Якщо користувач знаходиться на першому,
-        переходимо на останнє фото без
-        зворотної анімації через clone.
-    */
-
-    else if (direction < 0) {
-
-        if (
-            currentHeaderSlide > 0
-        ) {
-
-            currentHeaderSlide--;
-
-            updateHeaderGallery(true);
-
-        }
-
-        else {
-
-            /*
-                Щоб не ламати безшовну логіку,
-                при свайпі з першого назад
-                спочатку без анімації ставимо
-                позицію на clone/останнє фото,
-                а потім показуємо його.
-            */
-
-            currentHeaderSlide =
-                REAL_SLIDES - 1;
-
-            updateHeaderGallery(false);
-
-            void headerTrack.offsetWidth;
-
-            updateHeaderGallery(true);
-
-        }
-
-    }
+    startAutoplay();
 
 }
 
 
 /* ========================================
-   SWIPE
+   TOUCH
 ======================================== */
 
-let headerTouchStartX = 0;
-let headerTouchEndX = 0;
-
-let isTouchMoving = false;
-
-
-headerGallery.addEventListener(
+gallery.addEventListener(
     "touchstart",
     function(event) {
 
-        stopAutoplay();
-
-        headerTouchStartX =
-            event.changedTouches[0].screenX;
-
-        isTouchMoving = false;
+        pointerStart(
+            event.touches[0].clientX
+        );
 
     },
     {
@@ -2366,68 +2513,27 @@ headerGallery.addEventListener(
 );
 
 
-headerGallery.addEventListener(
+gallery.addEventListener(
     "touchmove",
-    function() {
-
-        isTouchMoving = true;
-
-    },
-    {
-        passive: true
-    }
-);
-
-
-headerGallery.addEventListener(
-    "touchend",
     function(event) {
 
-        headerTouchEndX =
-            event.changedTouches[0].screenX;
-
-
-        const distance =
-            headerTouchEndX -
-            headerTouchStartX;
-
-
-        if (
-            Math.abs(distance) >= 45
-        ) {
-
-            /*
-                Свайп вліво:
-                наступне фото.
-            */
-
-            if (
-                distance < 0
-            ) {
-
-                changeHeaderSlide(1);
-
-            }
-
-            /*
-                Свайп вправо:
-                попереднє фото.
-            */
-
-            else {
-
-                changeHeaderSlide(-1);
-
-            }
-
-        }
-
-
-        startAutoplay();
+        pointerMove(
+            event.touches[0].clientX
+        );
 
     },
     {
         passive: true
+    }
+);
+
+
+gallery.addEventListener(
+    "touchend",
+    function() {
+
+        pointerEnd();
+
     }
 );
 
@@ -2436,21 +2542,37 @@ headerGallery.addEventListener(
    MOUSE
 ======================================== */
 
-headerGallery.addEventListener(
-    "mouseenter",
-    function() {
+gallery.addEventListener(
+    "mousedown",
+    function(event) {
 
-        stopAutoplay();
+        event.preventDefault();
+
+        pointerStart(
+            event.clientX
+        );
 
     }
 );
 
 
-headerGallery.addEventListener(
-    "mouseleave",
+window.addEventListener(
+    "mousemove",
+    function(event) {
+
+        pointerMove(
+            event.clientX
+        );
+
+    }
+);
+
+
+window.addEventListener(
+    "mouseup",
     function() {
 
-        startAutoplay();
+        pointerEnd();
 
     }
 );
@@ -2476,22 +2598,8 @@ function openLightbox(index) {
     stopAutoplay();
 
 
-    /*
-        Lightbox працює тільки
-        з реальними 8 фотографіями.
-    */
-
-    if (
-        index >= REAL_SLIDES
-    ) {
-
-        index = 0;
-
-    }
-
-
     const image =
-        allHeaderSlides[index]
+        originalSlides[index]
             .querySelector("img");
 
 
@@ -2536,6 +2644,46 @@ function closeLightbox(event) {
 
 
 /* ========================================
+   CLICK ON ORIGINAL / CLONED SLIDES
+======================================== */
+
+track.addEventListener(
+    "click",
+    function(event) {
+
+        if (isDragging) return;
+
+
+        const slide =
+            event.target.closest(
+                ".header-gallery-slide"
+            );
+
+
+        if (!slide) return;
+
+
+        const index =
+            Number(
+                slide.dataset.index
+            );
+
+
+        if (
+            Number.isInteger(index) &&
+            index >= 0 &&
+            index < originalCount
+        ) {
+
+            openLightbox(index);
+
+        }
+
+    }
+);
+
+
+/* ========================================
    ESC
 ======================================== */
 
@@ -2551,10 +2699,21 @@ document.addEventListener(
                 "active"
             );
 
+            paymentModal.classList.remove(
+                "active"
+            );
+
+            cardToggle.classList.remove(
+                "active"
+            );
+
+            cardToggle.setAttribute(
+                "aria-expanded",
+                "false"
+            );
 
             document.body.style.overflow =
                 "";
-
 
             startAutoplay();
 
@@ -2601,7 +2760,7 @@ function toggleAbout() {
 
 
 /* ========================================
-   PAYMENT / CARD TOGGLE
+   PAYMENT MODAL
 ======================================== */
 
 const cardToggle =
@@ -2609,38 +2768,61 @@ const cardToggle =
         "cardToggle"
     );
 
-const paymentButtons =
+const paymentModal =
     document.getElementById(
-        "paymentButtons"
+        "paymentModal"
+    );
+
+const paymentModalClose =
+    document.getElementById(
+        "paymentModalClose"
     );
 
 
-function togglePayment() {
+function openPaymentModal() {
 
-    const isOpen =
-        paymentButtons.classList.toggle(
-            "open"
-        );
+    paymentModal.classList.add(
+        "active"
+    );
 
 
-    cardToggle.classList.toggle(
-        "active",
-        isOpen
+    cardToggle.classList.add(
+        "active"
     );
 
 
     cardToggle.setAttribute(
         "aria-expanded",
-        isOpen ? "true" : "false"
+        "true"
+    );
+
+
+    document.body.style.overflow =
+        "hidden";
+
+}
+
+
+function closePaymentModal() {
+
+    paymentModal.classList.remove(
+        "active"
+    );
+
+
+    cardToggle.classList.remove(
+        "active"
     );
 
 
     cardToggle.setAttribute(
-        "aria-label",
-        isOpen
-            ? "Сховати картки для оплати"
-            : "Відкрити картки для оплати"
+        "aria-expanded",
+        "false"
     );
+
+
+    document.body.style.overflow =
+        "";
 
 }
 
@@ -2653,7 +2835,19 @@ cardToggle.addEventListener(
     "click",
     function() {
 
-        togglePayment();
+        if (
+            paymentModal.classList.contains(
+                "active"
+            )
+        ) {
+
+            closePaymentModal();
+
+        } else {
+
+            openPaymentModal();
+
+        }
 
     }
 );
@@ -2674,7 +2868,19 @@ cardToggle.addEventListener(
 
             event.preventDefault();
 
-            togglePayment();
+            if (
+                paymentModal.classList.contains(
+                    "active"
+                )
+            ) {
+
+                closePaymentModal();
+
+            } else {
+
+                openPaymentModal();
+
+            }
 
         }
 
@@ -2683,12 +2889,97 @@ cardToggle.addEventListener(
 
 
 /* ========================================
-   START
+   CLOSE PAYMENT
 ======================================== */
 
-updateHeaderGallery(false);
+paymentModalClose.addEventListener(
+    "click",
+    function() {
 
-startAutoplay();
+        closePaymentModal();
+
+    }
+);
+
+
+paymentModal.addEventListener(
+    "click",
+    function(event) {
+
+        if (
+            event.target === paymentModal
+        ) {
+
+            closePaymentModal();
+
+        }
+
+    }
+);
+
+
+/* ========================================
+   INIT
+======================================== */
+
+function initGallery() {
+
+    getSlideWidth();
+
+    currentPosition =
+        slideWidth * originalCount;
+
+    /*
+       Починаємо з першої оригінальної
+       фотографії, але фізично стоїмо
+       на її копії.
+
+       Завдяки цьому цикл буде
+       абсолютно безшовним.
+    */
+
+    currentPosition =
+        slideWidth * originalCount;
+
+    updatePosition();
+
+}
+
+
+window.addEventListener(
+    "resize",
+    function() {
+
+        getSlideWidth();
+
+        /*
+           Перераховуємо позицію так,
+           щоб після зміни ширини екрану
+           карусель не перескочила.
+        */
+
+        const normalizedIndex =
+            currentPosition /
+            slideWidth;
+
+        currentPosition =
+            normalizedIndex *
+            slideWidth;
+
+        normalizePosition();
+
+        updatePosition();
+
+    }
+);
+
+
+initGallery();
+
+animationFrame =
+    requestAnimationFrame(
+        animate
+    );
 
 </script>
 
