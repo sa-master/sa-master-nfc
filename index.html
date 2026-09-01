@@ -467,8 +467,6 @@ button{
     box-shadow:0 3px 8px rgba(0,0,0,.18);
 }
 
-/* Підказка свайпу — нове */
-
 .ios-social-pagination{
     display:flex;
     align-items:center;
@@ -509,8 +507,6 @@ button{
     animation:socialHint 1s ease-in-out 1;
 }
 
-/* Кінець підказки */
-
 .about-modal{
     position:fixed;
     inset:0;
@@ -546,6 +542,7 @@ button{
     box-shadow:0 25px 70px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.9);
     transform:translateY(18px) scale(.97);
     transition:transform .3s cubic-bezier(.22,.61,.36,1);
+    touch-action:pan-y;
 }
 
 .about-modal.active .about-modal-content{
@@ -606,6 +603,7 @@ button{
     font-size:24px;
     line-height:1;
     cursor:pointer;
+    z-index:5;
 }
 
 .modal{
@@ -641,6 +639,7 @@ button{
     box-shadow:0 25px 70px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.9);
     transform:translateY(18px) scale(.97);
     transition:transform .3s cubic-bezier(.22,.61,.36,1);
+    touch-action:pan-y;
 }
 
 .modal.active .modal-box{
@@ -660,6 +659,7 @@ button{
     font-size:24px;
     line-height:1;
     cursor:pointer;
+    z-index:5;
 }
 
 .modal-title{
@@ -751,6 +751,7 @@ button{
     visibility:hidden;
     pointer-events:none;
     transition:opacity .25s ease,visibility .25s ease;
+    touch-action:pan-y;
 }
 
 .lightbox.active{
@@ -768,6 +769,7 @@ button{
     box-shadow:0 20px 60px rgba(0,0,0,.40);
     transform:scale(.97);
     transition:transform .3s ease;
+    touch-action:none;
 }
 
 .lightbox.active img{
@@ -1183,8 +1185,6 @@ button{
 
 </div>
 
-<!-- Індикатор сторінки док-бара -->
-
 <div class="ios-social-pagination" aria-hidden="true">
 <span class="ios-social-page-dot active"></span>
 <span class="ios-social-page-dot"></span>
@@ -1387,7 +1387,9 @@ function closeLightbox(){
 lightboxClose.addEventListener("click",closeLightbox);
 
 lightbox.addEventListener("click",event=>{
-    if(event.target===lightbox){closeLightbox();}
+    if(event.target===lightbox){
+        closeLightbox();
+    }
 });
 
 const aboutToggle=document.getElementById("aboutToggle");
@@ -1416,12 +1418,15 @@ aboutToggle.addEventListener("keydown",event=>{
 aboutModalClose.addEventListener("click",closeAboutModal);
 
 aboutModal.addEventListener("click",event=>{
-    if(event.target===aboutModal){closeAboutModal();}
+    if(event.target===aboutModal){
+        closeAboutModal();
+    }
 });
 
 function openModal(id){
     const modal=document.getElementById(id);
     if(!modal)return;
+
     modal.classList.add("active");
     document.body.style.overflow="hidden";
 }
@@ -1429,13 +1434,16 @@ function openModal(id){
 function closeModal(id){
     const modal=document.getElementById(id);
     if(!modal)return;
+
     modal.classList.remove("active");
     document.body.style.overflow="";
 }
 
 document.querySelectorAll(".modal").forEach(modal=>{
     modal.addEventListener("click",event=>{
-        if(event.target===modal){closeModal(modal.id);}
+        if(event.target===modal){
+            closeModal(modal.id);
+        }
     });
 });
 
@@ -1488,8 +1496,6 @@ socialViewport.addEventListener("touchend",()=>{
     }
 });
 
-/* Одноразова дуже легка підказка свайпу */
-
 setTimeout(()=>{
     socialTrack.classList.add("social-hint");
 
@@ -1499,16 +1505,188 @@ setTimeout(()=>{
 
 },900);
 
+
+/* =========================================================
+   iOS-подібний свайп вниз для закриття всіх модальних вікон
+   ========================================================= */
+
+function addSwipeToClose(element,closeFunction,options={}){
+
+    let startX=0;
+    let startY=0;
+    let currentY=0;
+    let dragging=false;
+    let moved=false;
+
+    const threshold=options.threshold||90;
+
+    element.addEventListener("touchstart",event=>{
+
+        if(!element.classList.contains("active"))return;
+
+        const touch=event.touches[0];
+
+        startX=touch.clientX;
+        startY=touch.clientY;
+        currentY=startY;
+
+        dragging=true;
+        moved=false;
+
+    },{passive:true});
+
+    element.addEventListener("touchmove",event=>{
+
+        if(!dragging)return;
+
+        const touch=event.touches[0];
+
+        const deltaX=touch.clientX-startX;
+        const deltaY=touch.clientY-startY;
+
+        currentY=touch.clientY;
+
+        if(Math.abs(deltaY)>8){
+            moved=true;
+        }
+
+        /*
+         * Працюємо тільки з вертикальним жестом.
+         * Горизонтальний рух не закриває вікно.
+         */
+        if(Math.abs(deltaY)>Math.abs(deltaX)){
+
+            if(deltaY>0){
+
+                const resistance=Math.min(deltaY*.55,180);
+
+                if(options.content){
+                    options.content.style.transform=
+                        `translateY(${resistance}px) scale(${1-Math.min(resistance/2500,.05)})`;
+                }else{
+                    element.style.transform=
+                        `translateY(${resistance}px)`;
+                }
+
+            }
+
+        }
+
+    },{passive:true});
+
+    element.addEventListener("touchend",()=>{
+
+        if(!dragging)return;
+
+        dragging=false;
+
+        const deltaY=currentY-startY;
+
+        const target=options.content||element;
+
+        /*
+         * Закриваємо тільки свайпом вниз.
+         */
+        if(
+            moved &&
+            deltaY>=threshold &&
+            Math.abs(deltaY)>Math.abs(0)
+        ){
+
+            target.style.transition=
+                "transform .28s cubic-bezier(.22,.61,.36,1)";
+
+            target.style.transform=
+                "translateY(100vh) scale(.96)";
+
+            setTimeout(()=>{
+
+                target.style.transition="";
+
+                target.style.transform="";
+
+                closeFunction();
+
+            },280);
+
+        }else{
+
+            target.style.transition=
+                "transform .28s cubic-bezier(.22,.61,.36,1)";
+
+            if(options.content){
+                target.style.transform="translateY(0) scale(1)";
+            }else{
+                target.style.transform="translateY(0)";
+            }
+
+            setTimeout(()=>{
+                target.style.transition="";
+            },280);
+
+        }
+
+    },{passive:true});
+
+}
+
+
+/* Вікно «Про мене» */
+
+addSwipeToClose(
+    aboutModal,
+    closeAboutModal,
+    {
+        content:document.querySelector(".about-modal-content"),
+        threshold:90
+    }
+);
+
+
+/* Вікно «Оплата» */
+
+const paymentModal=document.getElementById("paymentModal");
+
+addSwipeToClose(
+    paymentModal,
+    ()=>closeModal("paymentModal"),
+    {
+        content:paymentModal.querySelector(".modal-box"),
+        threshold:90
+    }
+);
+
+
+/* Перегляд фотографії */
+
+addSwipeToClose(
+    lightbox,
+    closeLightbox,
+    {
+        content:lightboxImage,
+        threshold:90
+    }
+);
+
+
+/* ========================================================= */
+
 document.addEventListener("keydown",event=>{
+
     if(event.key!=="Escape")return;
 
-    if(lightbox.classList.contains("active"))closeLightbox();
+    if(lightbox.classList.contains("active")){
+        closeLightbox();
+    }
 
-    if(aboutModal.classList.contains("active"))closeAboutModal();
+    if(aboutModal.classList.contains("active")){
+        closeAboutModal();
+    }
 
     document.querySelectorAll(".modal.active").forEach(modal=>{
         closeModal(modal.id);
     });
+
 });
 
 </script>
