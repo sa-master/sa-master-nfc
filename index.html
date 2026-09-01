@@ -1,29 +1,257 @@
-<div class="ios-dock">
-  <div class="dock-icon">
-    <div class="icon-shape blue">
-      <span>📞</span>
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iOS Dock Bar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 30px;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .ios-dock {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 30px;
+            padding: 20px 15px;
+            margin: 0 20px;
+            box-shadow: 
+                0 4px 6px rgba(0, 0, 0, 0.1),
+                inset 0 1px 1px rgba(255, 255, 255, 0.3);
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dock-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .dock-icon:hover {
+            transform: scale(1.15);
+        }
+
+        .dock-icon:active {
+            transform: scale(0.85);
+            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .icon-shape {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.2),
+                0 8px 16px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .dock-icon:hover .icon-shape {
+            box-shadow: 
+                0 4px 8px rgba(0, 0, 0, 0.3),
+                0 12px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .icon-shape::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), transparent);
+            border-radius: 15px 15px 0 0;
+            pointer-events: none;
+        }
+
+        .icon-shape svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+            position: relative;
+            z-index: 1;
+        }
+
+        .icon-label {
+            font-size: 11px;
+            color: #fff;
+            text-shadow: 
+                0 1px 2px rgba(0, 0, 0, 0.5),
+                0 0 10px rgba(0, 0, 0, 0.3);
+            font-weight: 500;
+            letter-spacing: 0.2px;
+        }
+
+        /* Кольори іконок iOS */
+        .blue { 
+            background: linear-gradient(135deg, #34C759 0%, #28a745 100%); 
+        }
+        
+        .green { 
+            background: linear-gradient(135deg, #30B0C7 0%, #1a8fa8 100%); 
+        }
+        
+        .orange { 
+            background: linear-gradient(135deg, #FF9500 0%, #e68a00 100%); 
+        }
+        
+        .purple { 
+            background: linear-gradient(135deg, #AF52DE 0%, #8944ab 100%); 
+        }
+
+        .red {
+            background: linear-gradient(135deg, #FF3B30 0%, #d63030 100%);
+        }
+
+        /* Анімація появи */
+        @keyframes dockAppear {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ios-dock {
+            animation: dockAppear 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Адаптивність для мобільних */
+        @media (max-width: 480px) {
+            .ios-dock {
+                padding: 15px 10px;
+                border-radius: 25px;
+            }
+
+            .icon-shape {
+                width: 50px;
+                height: 50px;
+                border-radius: 12px;
+            }
+
+            .icon-shape svg {
+                width: 25px;
+                height: 25px;
+            }
+
+            .icon-label {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ios-dock">
+        <!-- Телефон -->
+        <div class="dock-icon" onclick="handleIconClick('Телефон')">
+            <div class="icon-shape green">
+                <svg viewBox="0 0 24 24">
+                    <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                </svg>
+            </div>
+            <span class="icon-label">Телефон</span>
+        </div>
+
+        <!-- Safari -->
+        <div class="dock-icon" onclick="handleIconClick('Safari')">
+            <div class="icon-shape blue">
+                <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9" fill="none" stroke="white" stroke-width="2"/>
+                    <path d="M12 7L14 10L17 12L14 14L12 17L10 14L7 12L10 10Z"/>
+                </svg>
+            </div>
+            <span class="icon-label">Safari</span>
+        </div>
+
+        <!-- Повідомлення -->
+        <div class="dock-icon" onclick="handleIconClick('Повідомлення')">
+            <div class="icon-shape orange">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
+                </svg>
+            </div>
+            <span class="icon-label">Повідомлення</span>
+        </div>
+
+        <!-- Музика -->
+        <div class="dock-icon" onclick="handleIconClick('Музика')">
+            <div class="icon-shape purple">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+            </div>
+            <span class="icon-label">Музика</span>
+        </div>
     </div>
-    <span class="icon-label">Phone</span>
-  </div>
-  
-  <div class="dock-icon">
-    <div class="icon-shape green">
-      <span>💬</span>
-    </div>
-    <span class="icon-label">Messages</span>
-  </div>
-  
-  <div class="dock-icon">
-    <div class="icon-shape orange">
-      <span>🌐</span>
-    </div>
-    <span class="icon-label">Safari</span>
-  </div>
-  
-  <div class="dock-icon">
-    <div class="icon-shape purple">
-      <span>🎵</span>
-    </div>
-    <span class="icon-label">Music</span>
-  </div>
-</div>
+
+    <script>
+        function handleIconClick(iconName) {
+            // Додаємо вібрацію для мобільних пристроїв
+            if (navigator.vibrate) {
+                navigator.vibrate(10);
+            }
+            
+            // Анімація натискання
+            console.log(`Відкрито додаток: ${iconName}`);
+            
+            // Тут можна додати логіку відкриття додатків
+            // Наприклад: window.location.href = 'tel:123456789' для телефону
+        }
+
+        // Додаємо підтримку жестів для мобільних пристроїв
+        document.addEventListener('DOMContentLoaded', () => {
+            const dockIcons = document.querySelectorAll('.dock-icon');
+            
+            dockIcons.forEach(icon => {
+                // Запобігаємо появі контекстного меню при довгому натисканні
+                icon.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+                
+                // Додаємо ефект при натисканні
+                icon.addEventListener('touchstart', () => {
+                    icon.style.transform = 'scale(0.85)';
+                });
+                
+                icon.addEventListener('touchend', () => {
+                    icon.style.transform = 'scale(1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
