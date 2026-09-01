@@ -375,9 +375,10 @@ body {
 .header-gallery-track {
     display: flex;
 
-    width: max-content;
+    width: 100%;
 
-    transform: translateX(0);
+    transition:
+        transform .55s cubic-bezier(.22,.61,.36,1);
 
     will-change: transform;
 }
@@ -390,9 +391,7 @@ body {
 .header-gallery-slide {
     position: relative;
 
-    flex: 0 0 390px;
-
-    width: 390px;
+    flex: 0 0 100%;
 
     aspect-ratio: 16 / 10;
 
@@ -641,6 +640,8 @@ body {
     height: 52px;
 
     flex-shrink: 0;
+
+    -webkit-tap-highlight-color: transparent;
 }
 
 
@@ -666,7 +667,8 @@ body {
 
     transition:
         transform .25s ease,
-        box-shadow .25s ease;
+        box-shadow .25s ease,
+        background .25s ease;
 }
 
 
@@ -734,6 +736,14 @@ body {
 }
 
 
+.social-item.card:hover .social-icon-wrapper {
+    color: #1976d2;
+
+    box-shadow:
+        0 10px 22px rgba(25,118,210,.16);
+}
+
+
 .social-item.card.active .social-icon-wrapper {
     background:
         linear-gradient(
@@ -755,6 +765,12 @@ body {
 }
 
 
+.social-item.card.active .card-icon {
+    transform:
+        scale(.92);
+}
+
+
 /* ========================================
    PAYMENT MODAL
 ======================================== */
@@ -767,19 +783,20 @@ body {
     inset: 0;
 
     display: flex;
+
     align-items: center;
     justify-content: center;
 
     padding: 20px;
 
     background:
-        rgba(5,15,20,.72);
+        rgba(5,15,20,.68);
 
     backdrop-filter:
-        blur(10px);
+        blur(12px);
 
     -webkit-backdrop-filter:
-        blur(10px);
+        blur(12px);
 
     opacity: 0;
 
@@ -788,8 +805,8 @@ body {
     pointer-events: none;
 
     transition:
-        opacity .25s ease,
-        visibility .25s ease;
+        opacity .3s ease,
+        visibility .3s ease;
 }
 
 
@@ -806,8 +823,7 @@ body {
     position: relative;
 
     width: 100%;
-
-    max-width: 370px;
+    max-width: 380px;
 
     padding: 24px;
 
@@ -816,15 +832,18 @@ body {
     background:
         linear-gradient(
             145deg,
-            #f8fcfd,
-            #dfecef
+            #f9fcfd,
+            #dce8ed
         );
+
+    border:
+        1px solid rgba(255,255,255,.65);
 
     box-shadow:
         0 25px 80px rgba(0,0,0,.30);
 
     transform:
-        translateY(15px)
+        translateY(18px)
         scale(.96);
 
     transition:
@@ -839,27 +858,23 @@ body {
 }
 
 
-/* ========================================
-   PAYMENT MODAL HEADER
-======================================== */
-
 .payment-modal-title {
-    margin: 0 42px 5px 0;
+    margin: 0 36px 5px 0;
 
     color: #17272f;
 
-    font-size: 21px;
+    font-size: 22px;
 
     font-weight: 850;
 
-    line-height: 1.2;
+    line-height: 1.15;
 }
 
 
 .payment-modal-subtitle {
-    margin: 0 0 18px;
+    margin: 0 0 20px;
 
-    color: #657983;
+    color: #6b7f88;
 
     font-size: 14px;
 
@@ -870,29 +885,30 @@ body {
 .payment-modal-close {
     position: absolute;
 
-    top: 16px;
-    right: 16px;
+    top: 15px;
+    right: 15px;
 
     width: 40px;
     height: 40px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     border: 0;
 
     border-radius: 50%;
 
     background:
-        rgba(255,255,255,.75);
+        rgba(255,255,255,.65);
 
-    color: #425963;
+    color: #40545d;
 
     font-size: 25px;
 
     line-height: 1;
 
     cursor: pointer;
-
-    box-shadow:
-        0 5px 15px rgba(0,0,0,.08);
 
     transition:
         transform .2s ease,
@@ -901,27 +917,24 @@ body {
 
 
 .payment-modal-close:hover {
-    transform: rotate(90deg);
+    transform:
+        rotate(90deg);
 
     background:
         #ffffff;
 }
 
 
-/* ========================================
-   PAYMENT BUTTONS
-======================================== */
-
-.payment-buttons {
+.payment-modal-buttons {
     display: grid;
 
     grid-template-columns: 1fr 1fr;
 
-    gap: 10px;
+    gap: 12px;
 }
 
 
-.payment-button {
+.payment-modal-button {
     display: flex;
     flex-direction: column;
 
@@ -930,15 +943,15 @@ body {
 
     gap: 9px;
 
-    min-height: 105px;
+    min-height: 125px;
 
-    padding: 12px;
+    padding: 15px 10px;
 
     background:
-        rgba(255,255,255,.72);
+        rgba(255,255,255,.75);
 
     border:
-        1px solid rgba(100,135,148,.15);
+        1px solid rgba(100,135,148,.13);
 
     border-radius: 20px;
 
@@ -951,16 +964,20 @@ body {
 
     transition:
         transform .2s ease,
-        box-shadow .2s ease;
+        box-shadow .2s ease,
+        background .2s ease;
 }
 
 
-.payment-button:hover {
+.payment-modal-button:hover {
     transform:
         translateY(-3px);
 
+    background:
+        #ffffff;
+
     box-shadow:
-        0 12px 26px rgba(40,70,82,.13);
+        0 12px 28px rgba(40,70,82,.13);
 }
 
 
@@ -969,21 +986,21 @@ body {
     align-items: center;
     justify-content: center;
 
-    width: 58px;
-    height: 44px;
+    width: 64px;
+    height: 48px;
 
-    border-radius: 12px;
+    border-radius: 13px;
 
     color: white;
 
-    font-size: 12px;
+    font-size: 14px;
 
     font-weight: 950;
 
-    letter-spacing: -.5px;
+    letter-spacing: -.7px;
 
     box-shadow:
-        0 5px 13px rgba(40,70,82,.16);
+        0 6px 16px rgba(40,70,82,.16);
 }
 
 
@@ -995,7 +1012,7 @@ body {
             #238a31
         );
 
-    font-size: 13px;
+    font-size: 15px;
 }
 
 
@@ -1007,14 +1024,14 @@ body {
             #000
         );
 
-    font-size: 12px;
+    font-size: 14px;
 
     letter-spacing: -1px;
 }
 
 
-.payment-button strong {
-    font-size: 12px;
+.payment-modal-button strong {
+    font-size: 13px;
 
     font-weight: 900;
 }
@@ -1343,13 +1360,6 @@ body {
     }
 
 
-    .header-gallery-slide {
-        flex-basis: 100vw;
-
-        width: 100vw;
-    }
-
-
     .gallery-label {
         left: 10px;
         bottom: 10px;
@@ -1440,19 +1450,26 @@ body {
 
 
     .payment-modal-content {
-        max-width: 350px;
+        padding: 22px 16px 18px;
 
-        padding: 21px;
+        border-radius: 24px;
     }
 
 
     .payment-modal-title {
-        font-size: 19px;
+        font-size: 20px;
     }
 
 
-    .payment-button {
-        min-height: 100px;
+    .payment-modal-buttons {
+        gap: 9px;
+    }
+
+
+    .payment-modal-button {
+        min-height: 115px;
+
+        border-radius: 18px;
     }
 
 
@@ -1540,6 +1557,17 @@ body {
         height: 41px;
     }
 
+
+    .payment-modal-button {
+        min-height: 105px;
+    }
+
+
+    .payment-icon {
+        width: 58px;
+        height: 44px;
+    }
+
 }
 
 </style>
@@ -1563,6 +1591,7 @@ body {
     <!-- SA-MASTER HEADER -->
 
     <div class="hero-header">
+
 
         <div class="logo-wrapper">
 
@@ -1595,7 +1624,7 @@ body {
 
 
     <!-- ====================================
-         SEAMLESS GALLERY
+         GALLERY
     ==================================== -->
 
     <div
@@ -1608,7 +1637,8 @@ body {
             id="headerGalleryTrack"
         >
 
-            <!-- ORIGINAL 1 -->
+
+            <!-- PHOTO 1 -->
 
             <div
                 class="header-gallery-slide"
@@ -1628,7 +1658,7 @@ body {
             </div>
 
 
-            <!-- ORIGINAL 2 -->
+            <!-- PHOTO 2 -->
 
             <div
                 class="header-gallery-slide"
@@ -1648,7 +1678,7 @@ body {
             </div>
 
 
-            <!-- ORIGINAL 3 -->
+            <!-- PHOTO 3 -->
 
             <div
                 class="header-gallery-slide"
@@ -1668,7 +1698,7 @@ body {
             </div>
 
 
-            <!-- ORIGINAL 4 -->
+            <!-- PHOTO 4 -->
 
             <div
                 class="header-gallery-slide"
@@ -1688,7 +1718,7 @@ body {
             </div>
 
 
-            <!-- ORIGINAL 5 -->
+            <!-- PHOTO 5 -->
 
             <div
                 class="header-gallery-slide"
@@ -1704,7 +1734,7 @@ body {
             </div>
 
 
-            <!-- ORIGINAL 6 -->
+            <!-- PHOTO 6 -->
 
             <div
                 class="header-gallery-slide"
@@ -1720,7 +1750,7 @@ body {
             </div>
 
 
-            <!-- ORIGINAL 7 -->
+            <!-- PHOTO 7 -->
 
             <div
                 class="header-gallery-slide"
@@ -1736,7 +1766,7 @@ body {
             </div>
 
 
-            <!-- ORIGINAL 8 -->
+            <!-- PHOTO 8 -->
 
             <div
                 class="header-gallery-slide"
@@ -1750,6 +1780,30 @@ body {
                 >
 
             </div>
+
+
+            <!-- ====================================
+                 DUPLICATE PHOTO 1
+                 Для безшовного циклу
+            ==================================== -->
+
+            <div
+                class="header-gallery-slide gallery-clone"
+                data-clone="true"
+            >
+
+                <img
+                    src="photo-1.jpg"
+                    alt="До — приклад роботи SA MASTER"
+                    draggable="false"
+                >
+
+                <div class="gallery-label">
+                    до
+                </div>
+
+            </div>
+
 
         </div>
 
@@ -1823,7 +1877,7 @@ body {
 
 
 <!-- ========================================
-     SOCIAL + CARD ICON
+     SOCIAL + CARD
 ======================================== -->
 
 <div class="social-container">
@@ -1962,7 +2016,9 @@ body {
     </a>
 
 
-    <!-- CARD -->
+    <!-- ====================================
+         CARD
+    ==================================== -->
 
     <div
         class="social-item card"
@@ -1970,6 +2026,7 @@ body {
         role="button"
         tabindex="0"
         aria-expanded="false"
+        aria-controls="paymentModal"
         aria-label="Відкрити картки для оплати"
         title="Картки для оплати"
     >
@@ -2031,8 +2088,8 @@ body {
         <button
             class="payment-modal-close"
             id="paymentModalClose"
-            type="button"
             aria-label="Закрити"
+            type="button"
         >
             ×
         </button>
@@ -2051,13 +2108,13 @@ body {
         </p>
 
 
-        <div class="payment-buttons">
+        <div class="payment-modal-buttons">
 
 
             <!-- PRIVAT24 -->
 
             <a
-                class="payment-button"
+                class="payment-modal-button"
                 href="https://www.privat24.ua/send/4tid8"
                 target="_blank"
                 rel="noopener"
@@ -2069,7 +2126,7 @@ body {
                 </span>
 
                 <strong>
-                    privat24
+                    Privat24
                 </strong>
 
             </a>
@@ -2078,11 +2135,11 @@ body {
             <!-- MONO -->
 
             <a
-                class="payment-button"
+                class="payment-modal-button"
                 href="https://send.monobank.ua/47w3DWsRew"
                 target="_blank"
                 rel="noopener"
-                aria-label="Оплатити через mono"
+                aria-label="Оплатити через monobank"
             >
 
                 <span class="payment-icon mono-icon">
@@ -2090,7 +2147,7 @@ body {
                 </span>
 
                 <strong>
-                    mono
+                    monobank
                 </strong>
 
             </a>
@@ -2232,14 +2289,14 @@ body {
 <div
     class="lightbox"
     id="lightbox"
-    onclick="closeLightbox(event)"
 >
 
 
     <button
         class="lightbox-close"
-        onclick="closeLightbox(event)"
+        id="lightboxClose"
         aria-label="Закрити"
+        type="button"
     >
         ×
     </button>
@@ -2258,253 +2315,194 @@ body {
 <script>
 
 /* ========================================
-   SEAMLESS CAROUSEL
+   HEADER GALLERY
+   БЕЗШОВНА ПРОКРУТКА
 ======================================== */
 
-const gallery =
+const headerGallery =
     document.getElementById("headerGallery");
 
-const track =
+const headerTrack =
     document.getElementById("headerGalleryTrack");
 
 const originalSlides =
     Array.from(
-        track.querySelectorAll(
-            ".header-gallery-slide"
+        document.querySelectorAll(
+            ".header-gallery-slide:not(.gallery-clone)"
         )
     );
 
-
-const originalCount =
+const totalSlides =
     originalSlides.length;
 
+let currentHeaderSlide = 0;
 
-let slideWidth = 390;
+let autoplayTimer = null;
 
-let currentPosition = 0;
-
-let isDragging = false;
-
-let startX = 0;
-
-let startPosition = 0;
-
-let animationFrame = null;
-
-let lastTime = 0;
-
-let autoRunning = true;
-
-
-/*
-   Швидкість автоматичної прокрутки.
-   Менше число = повільніше.
-*/
-
-const AUTO_SPEED = 0.035;
+const AUTOPLAY_DELAY = 4500;
 
 
 /* ========================================
-   CLONES
+   UPDATE
 ======================================== */
 
-const firstClone =
-    originalSlides[0].cloneNode(true);
+function updateHeaderGallery(animate = true) {
 
-const secondClone =
-    originalSlides[1].cloneNode(true);
+    if (!animate) {
 
-const thirdClone =
-    originalSlides[2].cloneNode(true);
+        headerTrack.style.transition =
+            "none";
 
+    } else {
 
-track.appendChild(firstClone);
-track.appendChild(secondClone);
-track.appendChild(thirdClone);
-
-
-/* ========================================
-   MEASURE
-======================================== */
-
-function getSlideWidth() {
-
-    const firstSlide =
-        track.querySelector(
-            ".header-gallery-slide"
-        );
-
-    if (!firstSlide) return;
-
-    slideWidth =
-        firstSlide.getBoundingClientRect().width;
-
-}
-
-
-function updatePosition() {
-
-    track.style.transform =
-        "translate3d(" +
-        (-currentPosition) +
-        "px, 0, 0)";
-
-}
-
-
-/* ========================================
-   SEAMLESS LOOP
-======================================== */
-
-function normalizePosition() {
-
-    const totalWidth =
-        slideWidth * originalCount;
-
-
-    if (
-        currentPosition >= totalWidth
-    ) {
-
-        currentPosition -= totalWidth;
+        headerTrack.style.transition =
+            "transform .55s cubic-bezier(.22,.61,.36,1)";
 
     }
 
 
-    if (
-        currentPosition < 0
-    ) {
-
-        currentPosition += totalWidth;
-
-    }
+    headerTrack.style.transform =
+        "translateX(-" +
+        (currentHeaderSlide * 100) +
+        "%)";
 
 }
+
+
+/* ========================================
+   NEXT
+======================================== */
+
+function nextHeaderSlide() {
+
+    currentHeaderSlide++;
+
+    updateHeaderGallery(true);
+
+}
+
+
+/* ========================================
+   TRANSITION END
+======================================== */
+
+headerTrack.addEventListener(
+    "transitionend",
+    function(event) {
+
+        if (
+            event.propertyName !== "transform"
+        ) {
+            return;
+        }
+
+
+        /*
+         * Якщо дійшли до дубліката
+         * першої фотографії — миттєво
+         * повертаємо трек на справжнє
+         * перше фото.
+         *
+         * Користувач цього не бачить,
+         * тому рух виглядає безшовним.
+         */
+
+        if (
+            currentHeaderSlide === totalSlides
+        ) {
+
+            currentHeaderSlide = 0;
+
+            updateHeaderGallery(false);
+
+
+            /*
+             * Примусово запускаємо
+             * наступний кадр браузера,
+             * щоб transition знову працював.
+             */
+
+            requestAnimationFrame(
+                function() {
+
+                    requestAnimationFrame(
+                        function() {
+
+                            headerTrack.style.transition =
+                                "transform .55s cubic-bezier(.22,.61,.36,1)";
+
+                        }
+                    );
+
+                }
+            );
+
+        }
+
+    }
+);
 
 
 /* ========================================
    AUTOPLAY
 ======================================== */
 
-function animate(timestamp) {
-
-    if (!lastTime) {
-        lastTime = timestamp;
-    }
-
-
-    const delta =
-        timestamp - lastTime;
-
-
-    lastTime = timestamp;
-
-
-    if (
-        autoRunning &&
-        !isDragging
-    ) {
-
-        currentPosition +=
-            AUTO_SPEED * delta;
-
-
-        normalizePosition();
-
-        updatePosition();
-
-    }
-
-
-    animationFrame =
-        requestAnimationFrame(
-            animate
-        );
-
-}
-
-
 function startAutoplay() {
 
-    autoRunning = true;
+    stopAutoplay();
 
-    lastTime = 0;
+
+    autoplayTimer =
+        setInterval(
+            function() {
+
+                nextHeaderSlide();
+
+            },
+            AUTOPLAY_DELAY
+        );
 
 }
 
 
 function stopAutoplay() {
 
-    autoRunning = false;
+    if (
+        autoplayTimer !== null
+    ) {
+
+        clearInterval(
+            autoplayTimer
+        );
+
+        autoplayTimer = null;
+
+    }
 
 }
 
 
 /* ========================================
-   TOUCH / MOUSE SWIPE
+   SWIPE
 ======================================== */
 
-function pointerStart(clientX) {
+let headerTouchStartX = 0;
+let headerTouchStartY = 0;
 
-    isDragging = true;
-
-    stopAutoplay();
-
-    startX = clientX;
-
-    startPosition =
-        currentPosition;
-
-}
+let headerTouchEndX = 0;
 
 
-function pointerMove(clientX) {
-
-    if (!isDragging) return;
-
-
-    const distance =
-        clientX - startX;
-
-
-    /*
-       Рух пальця вліво =
-       рух каруселі вліво.
-    */
-
-    currentPosition =
-        startPosition - distance;
-
-
-    normalizePosition();
-
-    updatePosition();
-
-}
-
-
-function pointerEnd() {
-
-    if (!isDragging) return;
-
-    isDragging = false;
-
-    startAutoplay();
-
-}
-
-
-/* ========================================
-   TOUCH
-======================================== */
-
-gallery.addEventListener(
+headerGallery.addEventListener(
     "touchstart",
     function(event) {
 
-        pointerStart(
-            event.touches[0].clientX
-        );
+        stopAutoplay();
+
+        headerTouchStartX =
+            event.changedTouches[0].screenX;
+
+        headerTouchStartY =
+            event.changedTouches[0].screenY;
 
     },
     {
@@ -2513,27 +2511,65 @@ gallery.addEventListener(
 );
 
 
-gallery.addEventListener(
-    "touchmove",
+headerGallery.addEventListener(
+    "touchend",
     function(event) {
 
-        pointerMove(
-            event.touches[0].clientX
-        );
+        headerTouchEndX =
+            event.changedTouches[0].screenX;
+
+
+        const distance =
+            headerTouchEndX -
+            headerTouchStartX;
+
+
+        /*
+         * Тільки свайп справа наліво
+         * переходить вперед.
+         *
+         * Свайп зліва направо теж
+         * працює — повертає на попереднє
+         * фото вручну.
+         */
+
+        if (
+            Math.abs(distance) >= 45
+        ) {
+
+            if (
+                distance < 0
+            ) {
+
+                nextHeaderSlide();
+
+            } else {
+
+                currentHeaderSlide--;
+
+
+                if (
+                    currentHeaderSlide < 0
+                ) {
+
+                    currentHeaderSlide =
+                        totalSlides - 1;
+
+                }
+
+
+                updateHeaderGallery(true);
+
+            }
+
+        }
+
+
+        startAutoplay();
 
     },
     {
         passive: true
-    }
-);
-
-
-gallery.addEventListener(
-    "touchend",
-    function() {
-
-        pointerEnd();
-
     }
 );
 
@@ -2542,37 +2578,21 @@ gallery.addEventListener(
    MOUSE
 ======================================== */
 
-gallery.addEventListener(
-    "mousedown",
-    function(event) {
-
-        event.preventDefault();
-
-        pointerStart(
-            event.clientX
-        );
-
-    }
-);
-
-
-window.addEventListener(
-    "mousemove",
-    function(event) {
-
-        pointerMove(
-            event.clientX
-        );
-
-    }
-);
-
-
-window.addEventListener(
-    "mouseup",
+headerGallery.addEventListener(
+    "mouseenter",
     function() {
 
-        pointerEnd();
+        stopAutoplay();
+
+    }
+);
+
+
+headerGallery.addEventListener(
+    "mouseleave",
+    function() {
+
+        startAutoplay();
 
     }
 );
@@ -2583,14 +2603,13 @@ window.addEventListener(
 ======================================== */
 
 const lightbox =
-    document.getElementById(
-        "lightbox"
-    );
+    document.getElementById("lightbox");
 
 const lightboxImage =
-    document.getElementById(
-        "lightboxImage"
-    );
+    document.getElementById("lightboxImage");
+
+const lightboxClose =
+    document.getElementById("lightboxClose");
 
 
 function openLightbox(index) {
@@ -2618,64 +2637,67 @@ function openLightbox(index) {
 }
 
 
-function closeLightbox(event) {
+function closeLightbox() {
 
-    if (
-        event.target === lightbox ||
-        event.target.classList.contains(
-            "lightbox-close"
-        )
-    ) {
-
-        lightbox.classList.remove(
-            "active"
-        );
+    lightbox.classList.remove(
+        "active"
+    );
 
 
-        document.body.style.overflow =
-            "";
+    document.body.style.overflow =
+        "";
 
 
-        startAutoplay();
-
-    }
+    startAutoplay();
 
 }
 
 
 /* ========================================
-   CLICK ON ORIGINAL / CLONED SLIDES
+   GALLERY CLICK
 ======================================== */
 
-track.addEventListener(
+originalSlides.forEach(
+    function(slide, index) {
+
+        slide.addEventListener(
+            "click",
+            function() {
+
+                openLightbox(index);
+
+            }
+        );
+
+    }
+);
+
+
+/* ========================================
+   LIGHTBOX CLOSE
+======================================== */
+
+lightboxClose.addEventListener(
     "click",
     function(event) {
 
-        if (isDragging) return;
+        event.stopPropagation();
+
+        closeLightbox();
+
+    }
+);
 
 
-        const slide =
-            event.target.closest(
-                ".header-gallery-slide"
-            );
-
-
-        if (!slide) return;
-
-
-        const index =
-            Number(
-                slide.dataset.index
-            );
-
+lightbox.addEventListener(
+    "click",
+    function(event) {
 
         if (
-            Number.isInteger(index) &&
-            index >= 0 &&
-            index < originalCount
+            event.target === lightbox
         ) {
 
-            openLightbox(index);
+            closeLightbox();
 
         }
 
@@ -2695,27 +2717,26 @@ document.addEventListener(
             event.key === "Escape"
         ) {
 
-            lightbox.classList.remove(
-                "active"
-            );
+            if (
+                lightbox.classList.contains(
+                    "active"
+                )
+            ) {
 
-            paymentModal.classList.remove(
-                "active"
-            );
+                closeLightbox();
 
-            cardToggle.classList.remove(
-                "active"
-            );
+            }
 
-            cardToggle.setAttribute(
-                "aria-expanded",
-                "false"
-            );
 
-            document.body.style.overflow =
-                "";
+            if (
+                paymentModal.classList.contains(
+                    "active"
+                )
+            ) {
 
-            startAutoplay();
+                closePaymentModal();
+
+            }
 
         }
 
@@ -2868,6 +2889,7 @@ cardToggle.addEventListener(
 
             event.preventDefault();
 
+
             if (
                 paymentModal.classList.contains(
                     "active"
@@ -2889,7 +2911,7 @@ cardToggle.addEventListener(
 
 
 /* ========================================
-   CLOSE PAYMENT
+   MODAL CLOSE BUTTON
 ======================================== */
 
 paymentModalClose.addEventListener(
@@ -2901,6 +2923,10 @@ paymentModalClose.addEventListener(
     }
 );
 
+
+/* ========================================
+   CLICK OUTSIDE MODAL
+======================================== */
 
 paymentModal.addEventListener(
     "click",
@@ -2919,67 +2945,12 @@ paymentModal.addEventListener(
 
 
 /* ========================================
-   INIT
+   START
 ======================================== */
 
-function initGallery() {
+updateHeaderGallery(false);
 
-    getSlideWidth();
-
-    currentPosition =
-        slideWidth * originalCount;
-
-    /*
-       Починаємо з першої оригінальної
-       фотографії, але фізично стоїмо
-       на її копії.
-
-       Завдяки цьому цикл буде
-       абсолютно безшовним.
-    */
-
-    currentPosition =
-        slideWidth * originalCount;
-
-    updatePosition();
-
-}
-
-
-window.addEventListener(
-    "resize",
-    function() {
-
-        getSlideWidth();
-
-        /*
-           Перераховуємо позицію так,
-           щоб після зміни ширини екрану
-           карусель не перескочила.
-        */
-
-        const normalizedIndex =
-            currentPosition /
-            slideWidth;
-
-        currentPosition =
-            normalizedIndex *
-            slideWidth;
-
-        normalizePosition();
-
-        updatePosition();
-
-    }
-);
-
-
-initGallery();
-
-animationFrame =
-    requestAnimationFrame(
-        animate
-    );
+startAutoplay();
 
 </script>
 
