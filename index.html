@@ -368,6 +368,10 @@ body {
 }
 
 
+/* ========================================
+   TRACK
+======================================== */
+
 .header-gallery-track {
     display: flex;
 
@@ -379,6 +383,19 @@ body {
     will-change: transform;
 }
 
+
+/*
+   Під час непомітного повернення
+   після clone першого фото
+*/
+.header-gallery-track.no-transition {
+    transition: none !important;
+}
+
+
+/* ========================================
+   SLIDE
+======================================== */
 
 .header-gallery-slide {
     position: relative;
@@ -396,6 +413,10 @@ body {
     -webkit-tap-highlight-color: transparent;
 }
 
+
+/* ========================================
+   IMAGE
+======================================== */
 
 .header-gallery-slide img {
     display: block;
@@ -631,6 +652,10 @@ body {
 }
 
 
+/* ========================================
+   SOCIAL ICON
+======================================== */
+
 .social-icon-wrapper {
     display: flex;
     align-items: center;
@@ -649,8 +674,7 @@ body {
 
     transition:
         transform .25s ease,
-        box-shadow .25s ease,
-        background .25s ease;
+        box-shadow .25s ease;
 }
 
 
@@ -700,42 +724,21 @@ body {
 
 .social-item.card {
     cursor: pointer;
-
-    border: 0;
-
-    background: transparent;
-
-    padding: 0;
-
-    -webkit-tap-highlight-color: transparent;
 }
 
 
 .social-item.card .social-icon-wrapper {
     color: #176c91;
 
-    background: #ffffff;
+    background:
+        linear-gradient(
+            145deg,
+            #ffffff,
+            #e7f2f6
+        );
 
     border:
-        1px solid rgba(70,184,223,.12);
-
-    box-shadow:
-        0 6px 18px rgba(0,0,0,.06);
-
-    transition:
-        transform .25s ease,
-        box-shadow .25s ease,
-        background .25s ease,
-        color .25s ease;
-}
-
-
-.social-item.card:hover .social-icon-wrapper {
-    transform:
-        translateY(-3px);
-
-    box-shadow:
-        0 10px 22px rgba(0,0,0,.12);
+        1px solid rgba(70,184,223,.18);
 }
 
 
@@ -749,10 +752,14 @@ body {
 
     color: #ffffff;
 
-    border-color: transparent;
-
     box-shadow:
-        0 10px 24px rgba(25,118,210,.28);
+        0 8px 22px rgba(25,118,210,.25);
+}
+
+
+.social-item.card.active .card-icon {
+    transform:
+        rotate(180deg);
 }
 
 
@@ -762,9 +769,138 @@ body {
 }
 
 
-.social-item.card.active .card-icon {
-    transform:
-        rotate(180deg);
+/* ========================================
+   ABOUT
+======================================== */
+
+.about-block {
+    margin: 24px 0;
+
+    padding: 16px;
+
+    background:
+        rgba(255,255,255,.6);
+
+    border-radius: 20px;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.08);
+}
+
+
+.about-top {
+    overflow: hidden;
+}
+
+
+.about-photo {
+    float: right;
+
+    width: 150px;
+    height: 150px;
+
+    margin-left: 16px;
+    margin-bottom: 12px;
+
+    border-radius: 50%;
+
+    box-shadow:
+        0 6px 18px rgba(0,0,0,.12);
+
+    object-fit: cover;
+}
+
+
+.first-paragraph {
+    font-size: 16px;
+
+    color: #4a5b66;
+
+    line-height: 1.5;
+
+    margin: 0;
+}
+
+
+.first-paragraph strong {
+    color: #1c59a3;
+
+    font-weight: 800;
+}
+
+
+.read-more {
+    display: inline;
+
+    background: none;
+
+    border: none;
+
+    padding: 0;
+
+    margin-left: 4px;
+
+    color: #1c59a3;
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    text-decoration: underline;
+
+    text-underline-offset: 3px;
+
+    white-space: nowrap;
+}
+
+
+.read-more:hover {
+    color: #0d3a66;
+}
+
+
+.about-hidden {
+    max-height: 0;
+
+    opacity: 0;
+
+    overflow: hidden;
+
+    transition:
+        max-height .35s ease,
+        opacity .3s ease,
+        margin-top .3s ease;
+
+    margin-top: 0;
+}
+
+
+.about-hidden.open {
+    max-height: 1000px;
+
+    opacity: 1;
+
+    margin-top: 12px;
+}
+
+
+.about-hidden p {
+    font-size: 16px;
+
+    color: #4a5b66;
+
+    line-height: 1.5;
+
+    margin: 0 0 8px;
+}
+
+
+.about-hidden p strong {
+    color: #1c59a3;
+
+    font-weight: 800;
 }
 
 
@@ -908,141 +1044,6 @@ body {
     font-size: 12px;
 
     font-weight: 900;
-}
-
-
-/* ========================================
-   ABOUT
-======================================== */
-
-.about-block {
-    margin: 24px 0;
-
-    padding: 16px;
-
-    background:
-        rgba(255,255,255,.6);
-
-    border-radius: 20px;
-
-    box-shadow:
-        0 8px 25px rgba(0,0,0,.08);
-}
-
-
-.about-top {
-    overflow: hidden;
-}
-
-
-.about-photo {
-    float: right;
-
-    width: 150px;
-    height: 150px;
-
-    margin-left: 16px;
-    margin-bottom: 12px;
-
-    border-radius: 50%;
-
-    box-shadow:
-        0 6px 18px rgba(0,0,0,.12);
-
-    object-fit: cover;
-}
-
-
-.first-paragraph {
-    font-size: 16px;
-
-    color: #4a5b66;
-
-    line-height: 1.5;
-
-    margin: 0;
-}
-
-
-.first-paragraph strong {
-    color: #1c59a3;
-
-    font-weight: 800;
-}
-
-
-.read-more {
-    display: inline;
-
-    background: none;
-
-    border: none;
-
-    padding: 0;
-
-    margin-left: 4px;
-
-    color: #1c59a3;
-
-    font-size: 16px;
-
-    font-weight: 700;
-
-    cursor: pointer;
-
-    text-decoration: underline;
-
-    text-underline-offset: 3px;
-
-    white-space: nowrap;
-}
-
-
-.read-more:hover {
-    color: #0d3a66;
-}
-
-
-.about-hidden {
-    max-height: 0;
-
-    opacity: 0;
-
-    overflow: hidden;
-
-    transition:
-        max-height .35s ease,
-        opacity .3s ease,
-        margin-top .3s ease;
-
-    margin-top: 0;
-}
-
-
-.about-hidden.open {
-    max-height: 1000px;
-
-    opacity: 1;
-
-    margin-top: 12px;
-}
-
-
-.about-hidden p {
-    font-size: 16px;
-
-    color: #4a5b66;
-
-    line-height: 1.5;
-
-    margin: 0 0 8px;
-}
-
-
-.about-hidden p strong {
-    color: #1c59a3;
-
-    font-weight: 800;
 }
 
 
@@ -1426,7 +1427,6 @@ body {
 
     <div class="hero-header">
 
-
         <div class="logo-wrapper">
 
             <img
@@ -1457,7 +1457,9 @@ body {
     </div>
 
 
-    <!-- GALLERY -->
+    <!-- ====================================
+         INFINITE GALLERY
+    ==================================== -->
 
     <div
         class="header-gallery"
@@ -1469,6 +1471,8 @@ body {
             id="headerGalleryTrack"
         >
 
+
+            <!-- PHOTO 1 -->
 
             <div
                 class="header-gallery-slide"
@@ -1488,6 +1492,8 @@ body {
             </div>
 
 
+            <!-- PHOTO 2 -->
+
             <div
                 class="header-gallery-slide"
                 onclick="openLightbox(1)"
@@ -1505,6 +1511,8 @@ body {
 
             </div>
 
+
+            <!-- PHOTO 3 -->
 
             <div
                 class="header-gallery-slide"
@@ -1524,6 +1532,8 @@ body {
             </div>
 
 
+            <!-- PHOTO 4 -->
+
             <div
                 class="header-gallery-slide"
                 onclick="openLightbox(3)"
@@ -1542,6 +1552,8 @@ body {
             </div>
 
 
+            <!-- PHOTO 5 -->
+
             <div
                 class="header-gallery-slide"
                 onclick="openLightbox(4)"
@@ -1555,6 +1567,8 @@ body {
 
             </div>
 
+
+            <!-- PHOTO 6 -->
 
             <div
                 class="header-gallery-slide"
@@ -1570,6 +1584,8 @@ body {
             </div>
 
 
+            <!-- PHOTO 7 -->
+
             <div
                 class="header-gallery-slide"
                 onclick="openLightbox(6)"
@@ -1584,6 +1600,8 @@ body {
             </div>
 
 
+            <!-- PHOTO 8 -->
+
             <div
                 class="header-gallery-slide"
                 onclick="openLightbox(7)"
@@ -1594,6 +1612,33 @@ body {
                     alt="Приклад роботи SA MASTER"
                     draggable="false"
                 >
+
+            </div>
+
+
+            <!--
+                CLONE PHOTO 1
+
+                Потрібна тільки для безшовного циклу.
+                Користувач її не відрізняє від справжнього
+                першого фото.
+            -->
+
+            <div
+                class="header-gallery-slide gallery-clone"
+                onclick="openLightbox(0)"
+                aria-hidden="true"
+            >
+
+                <img
+                    src="photo-1.jpg"
+                    alt=""
+                    draggable="false"
+                >
+
+                <div class="gallery-label">
+                    до
+                </div>
 
             </div>
 
@@ -1652,9 +1697,15 @@ body {
             stroke-width="2"
         >
 
-            <circle cx="12" cy="12" r="10"/>
+            <circle
+                cx="12"
+                cy="12"
+                r="10"
+            />
 
-            <path d="M12 8v8M8 12h8"/>
+            <path
+                d="M12 8v8M8 12h8"
+            />
 
         </svg>
 
@@ -1807,10 +1858,11 @@ body {
          CARD / PAYMENT TOGGLE
     ==================================== -->
 
-    <button
+    <div
         class="social-item card"
         id="cardToggle"
-        type="button"
+        role="button"
+        tabindex="0"
         aria-expanded="false"
         aria-controls="paymentButtons"
         aria-label="Відкрити картки для оплати"
@@ -1849,7 +1901,7 @@ body {
 
         </div>
 
-    </button>
+    </div>
 
 
 </div>
@@ -2061,19 +2113,34 @@ body {
 <script>
 
 /* ========================================
-   HEADER GALLERY
+   INFINITE HEADER GALLERY
 ======================================== */
 
+/*
+    Реальні фото:
+    0  = photo-1
+    1  = photo-2
+    2  = photo-3
+    3  = photo-4
+    4  = photo-5
+    5  = photo-6
+    6  = photo-7
+    7  = photo-8
+
+    Індекс 8 — це клон photo-1.
+
+    Завдяки цьому після 8-го фото
+    карусель продовжує рухатися
+    справа наліво до першого.
+*/
+
 let currentHeaderSlide = 0;
+
+const REAL_SLIDES = 8;
 
 const headerTrack =
     document.getElementById(
         "headerGalleryTrack"
-    );
-
-const headerSlides =
-    document.querySelectorAll(
-        ".header-gallery-slide"
     );
 
 const headerGallery =
@@ -2081,8 +2148,13 @@ const headerGallery =
         "headerGallery"
     );
 
+const allHeaderSlides =
+    document.querySelectorAll(
+        ".header-gallery-slide"
+    );
+
 const totalHeaderSlides =
-    headerSlides.length;
+    allHeaderSlides.length;
 
 
 /* ========================================
@@ -2132,7 +2204,24 @@ function stopAutoplay() {
    UPDATE GALLERY
 ======================================== */
 
-function updateHeaderGallery() {
+function updateHeaderGallery(
+    animate = true
+) {
+
+    if (animate) {
+
+        headerTrack.classList.remove(
+            "no-transition"
+        );
+
+    } else {
+
+        headerTrack.classList.add(
+            "no-transition"
+        );
+
+    }
+
 
     headerTrack.style.transform =
         "translateX(-" +
@@ -2148,30 +2237,103 @@ function updateHeaderGallery() {
 
 function changeHeaderSlide(direction) {
 
-    currentHeaderSlide += direction;
+    /*
+        Основний сценарій:
+
+        0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+
+        де 8 — клон першого фото.
+    */
+
+    if (direction > 0) {
+
+        currentHeaderSlide++;
+
+        updateHeaderGallery(true);
 
 
-    if (
-        currentHeaderSlide < 0
-    ) {
+        /*
+            Коли показали clone photo-1,
+            чекаємо завершення CSS-анімації,
+            після чого непомітно переносимо
+            позицію на справжній photo-1.
 
-        currentHeaderSlide =
-            totalHeaderSlides - 1;
+            Візуально користувач цього
+            переходу не бачить.
+        */
+
+        if (
+            currentHeaderSlide ===
+            REAL_SLIDES
+        ) {
+
+            setTimeout(
+                function() {
+
+                    currentHeaderSlide = 0;
+
+                    updateHeaderGallery(false);
+
+
+                    /*
+                        Примусово читаємо layout,
+                        щоб браузер застосував
+                        no-transition.
+                    */
+
+                    void headerTrack.offsetWidth;
+
+                },
+                570
+            );
+
+        }
 
     }
 
+    /*
+        При ручному свайпі назад дозволяємо
+        рухатися до попереднього фото.
 
-    if (
-        currentHeaderSlide >=
-        totalHeaderSlides
-    ) {
+        Якщо користувач знаходиться на першому,
+        переходимо на останнє фото без
+        зворотної анімації через clone.
+    */
 
-        currentHeaderSlide = 0;
+    else if (direction < 0) {
+
+        if (
+            currentHeaderSlide > 0
+        ) {
+
+            currentHeaderSlide--;
+
+            updateHeaderGallery(true);
+
+        }
+
+        else {
+
+            /*
+                Щоб не ламати безшовну логіку,
+                при свайпі з першого назад
+                спочатку без анімації ставимо
+                позицію на clone/останнє фото,
+                а потім показуємо його.
+            */
+
+            currentHeaderSlide =
+                REAL_SLIDES - 1;
+
+            updateHeaderGallery(false);
+
+            void headerTrack.offsetWidth;
+
+            updateHeaderGallery(true);
+
+        }
 
     }
-
-
-    updateHeaderGallery();
 
 }
 
@@ -2183,6 +2345,8 @@ function changeHeaderSlide(direction) {
 let headerTouchStartX = 0;
 let headerTouchEndX = 0;
 
+let isTouchMoving = false;
+
 
 headerGallery.addEventListener(
     "touchstart",
@@ -2192,6 +2356,21 @@ headerGallery.addEventListener(
 
         headerTouchStartX =
             event.changedTouches[0].screenX;
+
+        isTouchMoving = false;
+
+    },
+    {
+        passive: true
+    }
+);
+
+
+headerGallery.addEventListener(
+    "touchmove",
+    function() {
+
+        isTouchMoving = true;
 
     },
     {
@@ -2217,13 +2396,25 @@ headerGallery.addEventListener(
             Math.abs(distance) >= 45
         ) {
 
+            /*
+                Свайп вліво:
+                наступне фото.
+            */
+
             if (
                 distance < 0
             ) {
 
                 changeHeaderSlide(1);
 
-            } else {
+            }
+
+            /*
+                Свайп вправо:
+                попереднє фото.
+            */
+
+            else {
 
                 changeHeaderSlide(-1);
 
@@ -2285,8 +2476,22 @@ function openLightbox(index) {
     stopAutoplay();
 
 
+    /*
+        Lightbox працює тільки
+        з реальними 8 фотографіями.
+    */
+
+    if (
+        index >= REAL_SLIDES
+    ) {
+
+        index = 0;
+
+    }
+
+
     const image =
-        headerSlides[index]
+        allHeaderSlides[index]
             .querySelector("img");
 
 
@@ -2481,7 +2686,7 @@ cardToggle.addEventListener(
    START
 ======================================== */
 
-updateHeaderGallery();
+updateHeaderGallery(false);
 
 startAutoplay();
 
