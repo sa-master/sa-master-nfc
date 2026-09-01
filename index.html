@@ -314,54 +314,6 @@ button{
     box-shadow:inset 0 0 0 1px rgba(40,100,125,.05);
 }
 
-.payment-card{
-    position:relative;
-    margin:18px 0 24px;
-    padding:17px 16px;
-    border-radius:22px;
-    background:rgba(255,255,255,.78);
-    border:1px solid rgba(255,255,255,.95);
-    box-shadow:0 12px 30px rgba(30,70,90,.08),inset 0 1px 0 rgba(255,255,255,.8);
-    cursor:pointer;
-    transition:transform .2s ease,box-shadow .2s ease;
-}
-
-.payment-card:active{
-    transform:scale(.985);
-}
-
-.payment-top{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:15px;
-}
-
-.payment-title{
-    font-size:18px;
-    font-weight:800;
-    letter-spacing:-.35px;
-}
-
-.payment-sub{
-    margin-top:4px;
-    font-size:13px;
-    color:#65757d;
-}
-
-.payment-card .about-arrow{
-    width:34px;
-    height:34px;
-    flex:0 0 34px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:50%;
-    background:linear-gradient(145deg,#fff,#e9f5fa);
-    color:#176c91;
-    font-size:20px;
-}
-
 .ios-social-shell{
     width:350px;
     max-width:calc(100vw - 28px);
@@ -514,6 +466,50 @@ button{
     border:2px solid rgba(255,255,255,.95);
     box-shadow:0 3px 8px rgba(0,0,0,.18);
 }
+
+/* Підказка свайпу — нове */
+
+.ios-social-pagination{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    margin-top:7px;
+}
+
+.ios-social-page-dot{
+    width:5px;
+    height:5px;
+    border-radius:50%;
+    background:rgba(77,93,101,.28);
+    transition:width .25s ease,background .25s ease;
+}
+
+.ios-social-page-dot.active{
+    width:15px;
+    border-radius:5px;
+    background:#6d858f;
+}
+
+@keyframes socialHint{
+    0%,100%{
+        transform:translate3d(0,0,0);
+    }
+
+    35%{
+        transform:translate3d(-18px,0,0);
+    }
+
+    65%{
+        transform:translate3d(0,0,0);
+    }
+}
+
+.ios-social-track.social-hint{
+    animation:socialHint 1s ease-in-out 1;
+}
+
+/* Кінець підказки */
 
 .about-modal{
     position:fixed;
@@ -834,7 +830,7 @@ button{
     }
 
     .about-block{
-        padding:17px;
+        padding:17px 14px;
         border-radius:21px;
     }
 
@@ -945,10 +941,6 @@ button{
     .brand-sub{
         font-size:9px;
         max-width:165px;
-    }
-
-    .about-block{
-        padding:16px;
     }
 
     .about-photo{
@@ -1187,6 +1179,15 @@ button{
 
 </div>
 
+</div>
+
+</div>
+
+<!-- Індикатор сторінки док-бара -->
+
+<div class="ios-social-pagination" aria-hidden="true">
+<span class="ios-social-page-dot active"></span>
+<span class="ios-social-page-dot"></span>
 </div>
 
 </div>
@@ -1440,15 +1441,24 @@ document.querySelectorAll(".modal").forEach(modal=>{
 
 const socialViewport=document.getElementById("socialViewport");
 const socialTrack=document.getElementById("socialTrack");
+const socialDots=Array.from(document.querySelectorAll(".ios-social-page-dot"));
+
 let socialPage=0;
 let socialStartX=0;
 let socialCurrentX=0;
 let socialDragging=false;
 
 function updateSocialDock(page,animate=true){
+
     socialPage=Math.max(0,Math.min(1,page));
+
     socialTrack.style.transition=animate?"transform .48s cubic-bezier(.22,.61,.36,1)":"none";
+
     socialTrack.style.transform=`translate3d(-${socialPage*50}%,0,0)`;
+
+    socialDots.forEach((dot,i)=>{
+        dot.classList.toggle("active",i===socialPage);
+    });
 }
 
 socialViewport.addEventListener("touchstart",event=>{
@@ -1464,18 +1474,41 @@ socialViewport.addEventListener("touchmove",event=>{
 
 socialViewport.addEventListener("touchend",()=>{
     if(!socialDragging)return;
+
     socialDragging=false;
+
     const difference=socialCurrentX-socialStartX;
+
     if(Math.abs(difference)<45)return;
-    if(difference<0){updateSocialDock(socialPage+1);}
-    else{updateSocialDock(socialPage-1);}
+
+    if(difference<0){
+        updateSocialDock(socialPage+1);
+    }else{
+        updateSocialDock(socialPage-1);
+    }
 });
+
+/* Одноразова дуже легка підказка свайпу */
+
+setTimeout(()=>{
+    socialTrack.classList.add("social-hint");
+
+    setTimeout(()=>{
+        socialTrack.classList.remove("social-hint");
+    },1100);
+
+},900);
 
 document.addEventListener("keydown",event=>{
     if(event.key!=="Escape")return;
+
     if(lightbox.classList.contains("active"))closeLightbox();
+
     if(aboutModal.classList.contains("active"))closeAboutModal();
-    document.querySelectorAll(".modal.active").forEach(modal=>closeModal(modal.id));
+
+    document.querySelectorAll(".modal.active").forEach(modal=>{
+        closeModal(modal.id);
+    });
 });
 
 </script>
