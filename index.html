@@ -1,648 +1,2247 @@
-<!-- ========================================
-     SA-MASTER — PREMIUM PHOTO CAROUSEL
-======================================== -->
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SA MASTER — Комплексний монтаж сантехніки</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link
+    href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap"
+    rel="stylesheet"
+>
+
 
 <style>
-/* КОНТЕЙНЕР КАРУСЕЛІ */
-.sa-carousel {
+
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+
+    background:
+        radial-gradient(
+            circle at 10% 0%,
+            #ffffff 0%,
+            #f3f8fa 45%,
+            #dce5e9 100%
+        );
+
+    color: #17272f;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+}
+
+
+/* =========================================================
+   PAGE
+========================================================= */
+
+.page {
     width: 100%;
+    max-width: 520px;
+
+    margin: 0 auto;
+
+    padding: 14px;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero {
+
     position: relative;
+
     overflow: hidden;
-    border-radius: 28px;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: pan-y;
-    cursor: grab;
+
+    padding: 22px 18px 22px;
+
+    border-radius: 30px;
+
+    background:
+
+        radial-gradient(
+            circle at 78% 12%,
+            rgba(89,194,230,.30),
+            transparent 30%
+        ),
+
+        linear-gradient(
+            145deg,
+            #f8fcfd 0%,
+            #cbd8dd 45%,
+            #738991 100%
+        );
+
+    box-shadow:
+        0 20px 50px rgba(37,63,75,.20);
 }
 
-/* Коли користувач тягне карусель */
-.sa-carousel.is-dragging {
-    cursor: grabbing;
-}
 
-/* Вікно слайдера */
-.sa-carousel-viewport {
-    width: 100%;
-    overflow: hidden;
-}
+/* =========================================================
+   HERO DECORATION
+========================================================= */
 
-/* Стрічка */
-.sa-carousel-track {
-    display: flex;
-    width: 100%;
-    will-change: transform;
-    transition: transform 0.65s cubic-bezier(.22, .61, .36, 1);
-}
+.hero::before {
 
-/* Слайд */
-.sa-carousel-slide {
-    min-width: 100%;
-    flex: 0 0 100%;
-    position: relative;
-    overflow: hidden;
-    aspect-ratio: 16 / 10;
-}
-
-/* Фото */
-.sa-carousel-slide img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    pointer-events: none;
-    -webkit-user-drag: none;
-    
-    transform: scale(1.001);
-    transition: transform 1.2s cubic-bezier(.22, .61, .36, 1);
-}
-
-/* Легкий zoom активного фото */
-.sa-carousel-slide.active img {
-    transform: scale(1.025);
-}
-
-/* М'яке затемнення знизу */
-.sa-carousel-slide::after {
     content: "";
+
     position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 28%;
-    pointer-events: none;
 
-    background: linear-gradient(
-        to top,
-        rgba(0,0,0,.18),
-        transparent
-    );
-}
+    width: 310px;
+    height: 310px;
 
-/* ІНДИКАТОР */
-.sa-carousel-progress {
-    position: absolute;
-    left: 50%;
-    bottom: 16px;
-    transform: translateX(-50%);
+    right: -120px;
+    top: 150px;
 
-    display: flex;
-    gap: 6px;
-
-    padding: 7px 9px;
-    border-radius: 20px;
-
-    background: rgba(20, 24, 28, .28);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
-
-/* Крапка */
-.sa-carousel-dot {
-    width: 5px;
-    height: 5px;
+    border:
+        2px solid rgba(255,255,255,.38);
 
     border-radius: 50%;
 
-    background: rgba(255,255,255,.42);
+    box-shadow:
+        0 0 0 28px rgba(255,255,255,.08),
+        0 0 0 58px rgba(255,255,255,.05),
+        0 0 0 90px rgba(255,255,255,.03);
+
+    pointer-events: none;
+}
+
+
+.hero::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 190px;
+    height: 2px;
+
+    right: 5px;
+    top: 390px;
+
+    background:
+        rgba(53,177,218,.45);
+
+    transform:
+        rotate(-32deg);
+
+    box-shadow:
+        0 30px 0 rgba(53,177,218,.25),
+        0 60px 0 rgba(53,177,218,.15);
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.hero-header {
+
+    position: relative;
+    z-index: 5;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 18px;
+
+    margin-bottom: 20px;
+
+    min-height: 90px;
+}
+
+
+/* =========================================================
+   LOGO
+========================================================= */
+
+.logo-wrapper {
+
+    position: relative;
+
+    z-index: 5;
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 88px;
+    height: 88px;
+
+    border-radius: 50%;
+
+    overflow: hidden;
+
+    background: transparent;
+
+    box-shadow:
+        0 8px 24px rgba(25,55,68,.16);
+
+    isolation: isolate;
+}
+
+
+.logo-wrapper::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    z-index: 1;
+
+    background: #ffffff;
+
+    mask-image: url(logo.png);
+    -webkit-mask-image: url(logo.png);
+
+    mask-size: cover;
+    -webkit-mask-size: cover;
+
+    mask-position: center;
+    -webkit-mask-position: center;
+
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+
+    pointer-events: none;
+}
+
+
+.logo {
+
+    position: relative;
+
+    z-index: 2;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    object-position: center;
+
+    display: block;
+}
+
+
+/* =========================================================
+   BRAND
+========================================================= */
+
+.hero-brand {
+
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    justify-content: center;
+}
+
+
+/* MAIN BRAND */
+
+.brand-name {
+
+    font-family:
+        "Rubik Mono One",
+        "Arial Black",
+        "Segoe UI",
+        sans-serif;
+
+    font-size: 34px;
+
+    font-weight: 400;
+
+    line-height: 1.02;
+
+    letter-spacing: -0.5px;
+
+    color: #252525;
+
+    white-space: nowrap;
+
+    text-shadow:
+        0 -1px 0 rgba(255,255,255,.45),
+        0 2px 6px rgba(0,0,0,.20),
+        0 4px 12px rgba(0,0,0,.08);
+}
+
+
+/* DIVIDER */
+
+.brand-divider {
+
+    width: 92%;
+
+    height: 2px;
+
+    margin:
+        9px 0 7px;
+
+    background:
+
+        linear-gradient(
+            90deg,
+            rgba(70,184,223,0) 0%,
+            #46b8df 50%,
+            rgba(70,184,223,0) 100%
+        );
+
+    border-radius: 2px;
+}
+
+
+/* SUBTITLE */
+
+.brand-sub {
+
+    font-size: 15px;
+
+    font-weight: 800;
+
+    color: #176c91;
+
+    line-height: 1.2;
+
+    letter-spacing: .2px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   HEADER GALLERY
+========================================================= */
+
+.header-gallery {
+
+    position: relative;
+
+    z-index: 5;
+
+    width: 100%;
+
+    margin:
+        0 auto;
+
+    overflow: hidden;
+
+    border-radius: 24px;
+
+    background:
+        rgba(255,255,255,.18);
+
+    border:
+        1px solid rgba(255,255,255,.35);
+
+    box-shadow:
+        0 14px 35px rgba(25,55,68,.20);
+
+    touch-action: pan-y;
+}
+
+
+/* TRACK */
+
+.header-gallery-track {
+
+    display: flex;
+
+    width: 100%;
 
     transition:
-        width .35s ease,
-        background .35s ease,
+        transform .45s cubic-bezier(.22,.61,.36,1);
+}
+
+
+/* SLIDE */
+
+.header-gallery-slide {
+
+    position: relative;
+
+    flex:
+        0 0 100%;
+
+    aspect-ratio:
+        16 / 10;
+
+    overflow: hidden;
+
+    background:
+        #aebdc3;
+
+    cursor: pointer;
+}
+
+
+/* IMAGE */
+
+.header-gallery-slide img {
+
+    display: block;
+
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+
+    transition:
         transform .35s ease;
 }
 
-/* Активна крапка */
-.sa-carousel-dot.active {
-    width: 18px;
-    border-radius: 10px;
-    background: #fff;
+
+.header-gallery-slide:hover img {
+
+    transform:
+        scale(1.015);
 }
 
-/* МОБІЛЬНА ВЕРСІЯ */
-@media (max-width: 700px) {
 
-    .sa-carousel {
-        border-radius: 22px;
-    }
+/* =========================================================
+   COUNTER
+========================================================= */
 
-    .sa-carousel-slide {
-        aspect-ratio: 4 / 3;
-    }
+.header-gallery-counter {
 
-    .sa-carousel-progress {
-        bottom: 12px;
-    }
+    position: absolute;
+
+    z-index: 10;
+
+    top: 11px;
+    right: 11px;
+
+    padding:
+        7px 10px;
+
+    background:
+        rgba(18,35,42,.58);
+
+    backdrop-filter:
+        blur(10px);
+
+    border:
+        1px solid rgba(255,255,255,.18);
+
+    border-radius:
+        9px;
+
+    color:
+        #ffffff;
+
+    font-size:
+        9px;
+
+    font-weight:
+        800;
+
+    letter-spacing:
+        .5px;
 }
 
-/* Дуже вузькі екрани */
-@media (max-width: 420px) {
 
-    .sa-carousel {
-        border-radius: 18px;
-    }
+/* =========================================================
+   ARROWS
+========================================================= */
 
-    .sa-carousel-slide {
-        aspect-ratio: 4 / 3;
-    }
+.header-gallery-arrow {
+
+    position: absolute;
+
+    z-index: 10;
+
+    top: 50%;
+
+    width: 34px;
+    height: 34px;
+
+    margin-top: -17px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    background:
+        rgba(255,255,255,.78);
+
+    backdrop-filter:
+        blur(10px);
+
+    border:
+        1px solid rgba(255,255,255,.60);
+
+    border-radius: 50%;
+
+    color:
+        #243940;
+
+    font-size:
+        22px;
+
+    line-height:
+        1;
+
+    cursor:
+        pointer;
+
+    box-shadow:
+        0 6px 15px rgba(0,0,0,.15);
+
+    transition:
+        .2s ease;
 }
 
-/* Якщо користувач просить зменшити анімації */
-@media (prefers-reduced-motion: reduce) {
 
-    .sa-carousel-track {
-        transition: none;
-    }
+.header-gallery-arrow:hover {
 
-    .sa-carousel-slide img {
-        transition: none;
-    }
+    transform:
+        scale(1.06);
+
+    background:
+        #ffffff;
 }
+
+
+.header-gallery-prev {
+    left: 9px;
+}
+
+
+.header-gallery-next {
+    right: 9px;
+}
+
+
+/* =========================================================
+   DOTS
+========================================================= */
+
+.header-gallery-dots {
+
+    position: absolute;
+
+    z-index: 10;
+
+    left: 50%;
+    bottom: 10px;
+
+    transform:
+        translateX(-50%);
+
+    display: flex;
+
+    gap: 5px;
+
+    padding:
+        5px 7px;
+
+    background:
+        rgba(18,35,42,.48);
+
+    backdrop-filter:
+        blur(10px);
+
+    border-radius:
+        20px;
+}
+
+
+.header-gallery-dot {
+
+    width: 5px;
+    height: 5px;
+
+    padding: 0;
+
+    border: 0;
+
+    border-radius:
+        50%;
+
+    background:
+        rgba(255,255,255,.45);
+
+    cursor:
+        pointer;
+
+    transition:
+        .25s ease;
+}
+
+
+.header-gallery-dot.active {
+
+    width: 15px;
+
+    border-radius:
+        5px;
+
+    background:
+        #ffffff;
+}
+
+
+/* =========================================================
+   ACTION BUTTON
+========================================================= */
+
+.action-button {
+
+    display: flex;
+
+    align-items: center;
+
+    max-width: 440px;
+
+    margin:
+        14px auto 12px;
+
+    min-height:
+        72px;
+
+    background:
+
+        linear-gradient(
+            180deg,
+            #42a5f5 0%,
+            #1976d2 100%
+        );
+
+    border-radius:
+        24px;
+
+    box-shadow:
+        0 10px 25px rgba(25,118,210,.25);
+
+    transition:
+        transform .2s ease,
+        box-shadow .2s ease;
+
+    overflow:
+        hidden;
+}
+
+
+.action-button:hover {
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 14px 30px rgba(25,118,210,.35);
+}
+
+
+/* PHONE */
+
+.phone-part {
+
+    flex: 1;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: flex-start;
+
+    gap: 12px;
+
+    padding:
+        10px 16px;
+
+    text-decoration: none;
+
+    color: white;
+
+    min-width: 0;
+}
+
+
+.phone-part .phone-icon-circle {
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 46px;
+    height: 46px;
+
+    background:
+        rgba(255,255,255,.15);
+
+    border-radius:
+        50%;
+
+    flex-shrink:
+        0;
+}
+
+
+.phone-part .phone-icon-circle svg {
+
+    width:
+        22px;
+
+    height:
+        22px;
+
+    fill:
+        #ffffff;
+}
+
+
+.phone-number {
+
+    font-size:
+        28px;
+
+    font-weight:
+        800;
+
+    line-height:
+        1.1;
+
+    letter-spacing:
+        .5px;
+
+    color:
+        #ffffff;
+
+    white-space:
+        nowrap;
+}
+
+
+/* SAVE */
+
+.save-part {
+
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width:
+        56px;
+
+    align-self:
+        stretch;
+
+    background:
+        rgba(255,255,255,.12);
+
+    border-left:
+        1px solid rgba(255,255,255,.25);
+
+    text-decoration:
+        none;
+
+    transition:
+        background .2s ease;
+}
+
+
+.save-part:hover {
+
+    background:
+        rgba(255,255,255,.20);
+}
+
+
+.save-part svg {
+
+    width:
+        28px;
+
+    height:
+        28px;
+
+    color:
+        #ffffff;
+}
+
+
+/* =========================================================
+   SOCIAL
+========================================================= */
+
+.social-container {
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    align-items:
+        flex-start;
+
+    margin:
+        10px 0 24px;
+
+    padding:
+        0 2px;
+}
+
+
+.social-item {
+
+    display: flex;
+
+    flex-direction:
+        column;
+
+    align-items:
+        center;
+
+    gap:
+        8px;
+
+    width:
+        62px;
+
+    text-decoration:
+        none;
+}
+
+
+.social-icon-wrapper {
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width:
+        52px;
+
+    height:
+        52px;
+
+    background:
+        #ffffff;
+
+    border-radius:
+        50%;
+
+    box-shadow:
+        0 6px 18px rgba(0,0,0,.06);
+
+    transition:
+        transform .25s ease,
+        box-shadow .25s ease;
+}
+
+
+.social-item:hover
+.social-icon-wrapper {
+
+    transform:
+        translateY(-3px);
+
+    box-shadow:
+        0 10px 22px rgba(0,0,0,.12);
+}
+
+
+.social-icon-wrapper svg {
+
+    width:
+        24px;
+
+    height:
+        24px;
+}
+
+
+.social-label {
+
+    font-size:
+        12px;
+
+    font-weight:
+        600;
+
+    color:
+        #334155;
+
+    text-align:
+        center;
+}
+
+
+/* COLORS */
+
+.social-item.instagram
+.social-icon-wrapper {
+    color: #e1306c;
+}
+
+.social-item.facebook
+.social-icon-wrapper {
+    color: #1877f2;
+}
+
+.social-item.youtube
+.social-icon-wrapper {
+    color: #ff0000;
+}
+
+.social-item.telegram
+.social-icon-wrapper {
+    color: #0088cc;
+}
+
+.social-item.viber
+.social-icon-wrapper {
+    color: #7360f2;
+}
+
+
+/* =========================================================
+   ABOUT
+========================================================= */
+
+.about-block {
+
+    margin:
+        24px 0;
+
+    padding:
+        16px;
+
+    background:
+        rgba(255,255,255,.6);
+
+    border-radius:
+        20px;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.08);
+}
+
+
+.about-top {
+    overflow:
+        hidden;
+}
+
+
+.about-photo {
+
+    float:
+        right;
+
+    width:
+        150px;
+
+    height:
+        150px;
+
+    margin-left:
+        16px;
+
+    margin-bottom:
+        12px;
+
+    border-radius:
+        50%;
+
+    box-shadow:
+        0 6px 18px rgba(0,0,0,.12);
+
+    object-fit:
+        cover;
+}
+
+
+.first-paragraph {
+
+    font-size:
+        16px;
+
+    color:
+        #4a5b66;
+
+    line-height:
+        1.5;
+
+    margin:
+        0;
+}
+
+
+.first-paragraph strong {
+
+    color:
+        #1c59a3;
+
+    font-weight:
+        800;
+}
+
+
+.read-more {
+
+    display:
+        inline;
+
+    background:
+        none;
+
+    border:
+        none;
+
+    padding:
+        0;
+
+    margin-left:
+        4px;
+
+    color:
+        #1c59a3;
+
+    font-size:
+        16px;
+
+    font-weight:
+        700;
+
+    cursor:
+        pointer;
+
+    text-decoration:
+        underline;
+
+    text-underline-offset:
+        3px;
+
+    white-space:
+        nowrap;
+}
+
+
+.read-more:hover {
+    color:
+        #0d3a66;
+}
+
+
+.about-hidden {
+
+    display:
+        none;
+
+    margin-top:
+        12px;
+}
+
+
+.about-hidden p {
+
+    font-size:
+        16px;
+
+    color:
+        #4a5b66;
+
+    line-height:
+        1.5;
+
+    margin:
+        0 0 8px;
+}
+
+
+.about-hidden p strong {
+
+    color:
+        #1c59a3;
+
+    font-weight:
+        800;
+}
+
+
+/* =========================================================
+   PAYMENT
+========================================================= */
+
+.payment-buttons {
+
+    display:
+        grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap:
+        10px;
+
+    margin-top:
+        25px;
+}
+
+
+.payment-button {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    gap:
+        10px;
+
+    min-height:
+        68px;
+
+    padding:
+        10px;
+
+    background:
+
+        linear-gradient(
+            145deg,
+            #ffffff,
+            #e6f1f5
+        );
+
+    border:
+        1px solid rgba(100,135,148,.16);
+
+    border-radius:
+        19px;
+
+    color:
+        #263840;
+
+    text-decoration:
+        none;
+
+    box-shadow:
+        0 8px 22px rgba(40,70,82,.07);
+
+    transition:
+        .2s ease;
+}
+
+
+.payment-button:hover {
+
+    transform:
+        translateY(-2px);
+}
+
+
+.payment-icon {
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    width:
+        47px;
+
+    height:
+        40px;
+
+    flex-shrink:
+        0;
+
+    border-radius:
+        11px;
+
+    color:
+        white;
+
+    font-size:
+        11px;
+
+    font-weight:
+        950;
+
+    letter-spacing:
+        -.5px;
+
+    box-shadow:
+        0 5px 13px rgba(40,70,82,.16);
+}
+
+
+.privat-icon {
+
+    background:
+        linear-gradient(
+            145deg,
+            #63c64b,
+            #238a31
+        );
+
+    font-size:
+        12px;
+}
+
+
+.mono-icon {
+
+    background:
+        linear-gradient(
+            145deg,
+            #242424,
+            #000
+        );
+
+    font-size:
+        11px;
+
+    letter-spacing:
+        -1px;
+}
+
+
+.payment-button strong {
+
+    font-size:
+        12px;
+
+    font-weight:
+        900;
+}
+
+
+/* =========================================================
+   BRANDS
+========================================================= */
+
+.brands-section {
+
+    margin-top:
+        22px;
+
+    padding:
+        12px 4px 4px;
+
+    border-top:
+        1px solid rgba(90,120,130,.14);
+
+    text-align:
+        center;
+}
+
+
+.brands-subtitle {
+
+    font-size:
+        12px;
+
+    font-weight:
+        500;
+
+    color:
+        #6b7f88;
+
+    margin-bottom:
+        8px;
+
+    line-height:
+        1.35;
+
+    letter-spacing:
+        .3px;
+}
+
+
+.brands-line {
+
+    font-size:
+        12px;
+
+    font-weight:
+        600;
+
+    color:
+        #5a6d76;
+
+    line-height:
+        1.5;
+
+    letter-spacing:
+        .4px;
+
+    word-spacing:
+        2px;
+}
+
+
+.brands-line span {
+
+    display:
+        inline;
+
+    white-space:
+        nowrap;
+}
+
+
+.brands-line .sep {
+
+    color:
+        #b0c0c8;
+
+    margin:
+        0 5px;
+}
+
+
+/* =========================================================
+   LIGHTBOX
+========================================================= */
+
+.lightbox {
+
+    position:
+        fixed;
+
+    z-index:
+        9999;
+
+    inset:
+        0;
+
+    display:
+        none;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    padding:
+        20px;
+
+    background:
+        rgba(5,15,20,.92);
+
+    backdrop-filter:
+        blur(10px);
+}
+
+
+.lightbox.active {
+
+    display:
+        flex;
+}
+
+
+.lightbox img {
+
+    max-width:
+        100%;
+
+    max-height:
+        94vh;
+
+    object-fit:
+        contain;
+
+    border-radius:
+        12px;
+
+    box-shadow:
+        0 20px 70px rgba(0,0,0,.45);
+}
+
+
+.lightbox-close {
+
+    position:
+        absolute;
+
+    top:
+        18px;
+
+    right:
+        18px;
+
+    width:
+        42px;
+
+    height:
+        42px;
+
+    border:
+        0;
+
+    border-radius:
+        50%;
+
+    background:
+        rgba(255,255,255,.15);
+
+    color:
+        white;
+
+    font-size:
+        26px;
+
+    cursor:
+        pointer;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width:480px) {
+
+    .hero {
+
+        padding:
+            18px 14px 20px;
+    }
+
+
+    /* HEADER */
+
+    .hero-header {
+
+        gap:
+            14px;
+
+        min-height:
+            76px;
+
+        margin-bottom:
+            18px;
+    }
+
+
+    .logo-wrapper {
+
+        width:
+            72px;
+
+        height:
+            72px;
+    }
+
+
+    .brand-name {
+
+        font-size:
+            27px;
+
+        letter-spacing:
+            -.4px;
+    }
+
+
+    .brand-divider {
+
+        width:
+            94%;
+
+        margin:
+            7px 0 6px;
+    }
+
+
+    .brand-sub {
+
+        font-size:
+            12px;
+
+        letter-spacing:
+            0;
+
+        white-space:
+            normal;
+
+        line-height:
+            1.15;
+    }
+
+
+    /* GALLERY */
+
+    .header-gallery {
+
+        width:
+            100%;
+
+        border-radius:
+            22px;
+    }
+
+
+    /* PHONE */
+
+    .action-button {
+
+        max-width:
+            100%;
+
+        margin:
+            14px auto 12px;
+
+        min-height:
+            64px;
+
+        border-radius:
+            20px;
+    }
+
+
+    .phone-part {
+
+        padding:
+            10px 12px;
+
+        gap:
+            10px;
+    }
+
+
+    .phone-part .phone-icon-circle {
+
+        width:
+            40px;
+
+        height:
+            40px;
+    }
+
+
+    .phone-part .phone-icon-circle svg {
+
+        width:
+            20px;
+
+        height:
+            20px;
+    }
+
+
+    .phone-number {
+
+        font-size:
+            22px;
+
+        letter-spacing:
+            .2px;
+    }
+
+
+    .save-part {
+
+        width:
+            48px;
+    }
+
+
+    .save-part svg {
+
+        width:
+            24px;
+
+        height:
+            24px;
+    }
+
+
+    /* SOCIAL */
+
+    .social-item {
+
+        width:
+            52px;
+    }
+
+
+    .social-icon-wrapper {
+
+        width:
+            44px;
+
+        height:
+            44px;
+    }
+
+
+    .social-icon-wrapper svg {
+
+        width:
+            20px;
+
+        height:
+            20px;
+    }
+
+
+    .social-label {
+
+        font-size:
+            10px;
+    }
+
+
+    /* ABOUT */
+
+    .about-block {
+
+        padding:
+            12px;
+    }
+
+
+    .about-photo {
+
+        width:
+            100px;
+
+        height:
+            100px;
+
+        margin-left:
+            10px;
+
+        margin-bottom:
+            8px;
+    }
+
+
+    .first-paragraph,
+    .about-hidden p {
+
+        font-size:
+            14px;
+    }
+
+
+    .read-more {
+
+        font-size:
+            14px;
+    }
+
+
+    /* PAYMENT */
+
+    .payment-button {
+
+        gap:
+            7px;
+
+        padding:
+            8px;
+    }
+
+
+    .payment-icon {
+
+        width:
+            43px;
+
+        height:
+            38px;
+    }
+
+
+    /* BRANDS */
+
+    .brands-subtitle {
+
+        font-size:
+            11px;
+
+        margin-bottom:
+            6px;
+    }
+
+
+    .brands-line {
+
+        font-size:
+            11px;
+
+        line-height:
+            1.45;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width:360px) {
+
+    .brand-name {
+        font-size: 23px;
+    }
+
+    .brand-sub {
+        font-size: 10px;
+    }
+
+    .logo-wrapper {
+        width: 66px;
+        height: 66px;
+    }
+
+    .phone-number {
+        font-size: 20px;
+    }
+
+}
+
+
 </style>
 
+</head>
 
-<div class="sa-carousel" id="saCarousel">
 
-    <div class="sa-carousel-viewport">
+<body>
 
-        <div class="sa-carousel-track" id="saCarouselTrack">
 
-            <!-- ФОТО 1 -->
-            <div class="sa-carousel-slide active">
-                <img
-                    src="images/photo-1.jpg"
-                    alt="SA-MASTER — монтаж сантехніки"
-                    draggable="false"
-                >
-            </div>
+<div class="page">
 
-            <!-- ФОТО 2 -->
-            <div class="sa-carousel-slide">
-                <img
-                    src="images/photo-2.jpg"
-                    alt="SA-MASTER — монтаж сантехніки"
-                    draggable="false"
-                >
-            </div>
 
-            <!-- ФОТО 3 -->
-            <div class="sa-carousel-slide">
-                <img
-                    src="images/photo-3.jpg"
-                    alt="SA-MASTER — монтаж сантехніки"
-                    draggable="false"
-                >
-            </div>
+<!-- =====================================================
+     HERO
+===================================================== -->
 
-            <!-- ФОТО 4 -->
-            <div class="sa-carousel-slide">
-                <img
-                    src="images/photo-4.jpg"
-                    alt="SA-MASTER — монтаж сантехніки"
-                    draggable="false"
-                >
-            </div>
+<section class="hero">
 
-            <!-- ФОТО 5 -->
-            <div class="sa-carousel-slide">
-                <img
-                    src="images/photo-5.jpg"
-                    alt="SA-MASTER — монтаж сантехніки"
-                    draggable="false"
-                >
-            </div>
+
+    <!-- HEADER -->
+
+    <div class="hero-header">
+
+
+        <!-- LOGO -->
+
+        <div class="logo-wrapper">
+
+            <img
+                class="logo"
+                src="logo.png"
+                alt="SA MASTER"
+            >
 
         </div>
+
+
+        <!-- BRAND -->
+
+        <div class="hero-brand">
+
+
+            <div class="brand-name">
+                SA-MASTER
+            </div>
+
+
+            <div class="brand-divider"></div>
+
+
+            <div class="brand-sub">
+                комплексний монтаж сантехніки
+            </div>
+
+
+        </div>
+
 
     </div>
 
 
-    <!-- ІНДИКАТОРИ -->
-    <div class="sa-carousel-progress" id="saCarouselDots"></div>
+
+    <!-- =================================================
+         WORK GALLERY
+    ================================================== -->
+
+    <div
+        class="header-gallery"
+        id="headerGallery"
+    >
+
+
+        <div
+            class="header-gallery-track"
+            id="headerGalleryTrack"
+        >
+
+
+            <!-- WORK 01 -->
+
+            <div
+                class="header-gallery-slide"
+                onclick="openLightbox(0)"
+            >
+
+                <img
+                    src="photo-2.jpg"
+                    alt="Робота SA MASTER — монтаж сантехніки"
+                >
+
+            </div>
+
+
+            <!-- WORK 02 -->
+
+            <div
+                class="header-gallery-slide"
+                onclick="openLightbox(1)"
+            >
+
+                <img
+                    src="photo-1.jpg"
+                    alt="Робота SA MASTER — монтаж сантехніки"
+                >
+
+            </div>
+
+
+            <!-- WORK 03 -->
+
+            <div
+                class="header-gallery-slide"
+                onclick="openLightbox(2)"
+            >
+
+                <img
+                    src="photo-4.jpg"
+                    alt="Робота SA MASTER — монтаж сантехніки"
+                >
+
+            </div>
+
+
+            <!-- WORK 04 -->
+
+            <div
+                class="header-gallery-slide"
+                onclick="openLightbox(3)"
+            >
+
+                <img
+                    src="photo-3.jpg"
+                    alt="Робота SA MASTER — монтаж сантехніки"
+                >
+
+            </div>
+
+
+        </div>
+
+
+
+        <!-- COUNTER -->
+
+        <div
+            class="header-gallery-counter"
+            id="headerGalleryCounter"
+        >
+            01 / 04
+        </div>
+
+
+
+        <!-- PREVIOUS -->
+
+        <button
+            class="header-gallery-arrow header-gallery-prev"
+            onclick="changeHeaderSlide(-1)"
+            aria-label="Попереднє фото"
+        >
+            ‹
+        </button>
+
+
+
+        <!-- NEXT -->
+
+        <button
+            class="header-gallery-arrow header-gallery-next"
+            onclick="changeHeaderSlide(1)"
+            aria-label="Наступне фото"
+        >
+            ›
+        </button>
+
+
+
+        <!-- DOTS -->
+
+        <div
+            class="header-gallery-dots"
+            id="headerGalleryDots"
+        ></div>
+
+
+    </div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     PHONE
+===================================================== -->
+
+<div class="action-button">
+
+
+    <a
+        class="phone-part"
+        href="tel:+380979111871"
+        title="Зателефонувати"
+    >
+
+
+        <div class="phone-icon-circle">
+
+            <svg viewBox="0 0 24 24">
+
+                <path
+                    d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"
+                />
+
+            </svg>
+
+        </div>
+
+
+        <span class="phone-number">
+            097 911 18 71
+        </span>
+
+
+    </a>
+
+
+
+    <a
+        class="save-part"
+        href="Plumber-vcf.vcf"
+        download
+        title="Зберегти контакт"
+        aria-label="Зберегти контакт"
+    >
+
+        <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+        >
+
+            <circle
+                cx="12"
+                cy="12"
+                r="10"
+            />
+
+            <path
+                d="M12 8v8M8 12h8"
+            />
+
+        </svg>
+
+    </a>
+
 
 </div>
 
 
-<script>
-(function () {
 
-    const carousel = document.getElementById("saCarousel");
-    const track = document.getElementById("saCarouselTrack");
-    const slides = Array.from(
-        track.querySelectorAll(".sa-carousel-slide")
-    );
-    const dotsContainer =
-        document.getElementById("saCarouselDots");
+<!-- =====================================================
+     SOCIAL
+===================================================== -->
 
-    if (!carousel || !track || !slides.length) return;
+<div class="social-container">
 
 
-    /* ========================================
-       НАЛАШТУВАННЯ
-    ======================================== */
+    <!-- INSTAGRAM -->
 
-    const AUTO_DELAY = 4500;
-    const TRANSITION_TIME = 650;
+    <a
+        class="social-item instagram"
+        href="https://www.instagram.com/sa_master/"
+        target="_blank"
+        rel="noopener"
+    >
 
+        <div class="social-icon-wrapper">
 
-    /* ========================================
-       СТАН
-    ======================================== */
+            <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+            >
 
-    let currentIndex = 0;
-    let autoTimer = null;
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
 
-    let startX = 0;
-    let currentX = 0;
+            </svg>
 
-    let isDragging = false;
-    let isPointerDown = false;
+        </div>
 
-    let dragOffset = 0;
+        <span class="social-label">
+            Instagram
+        </span>
 
+    </a>
 
-    /* ========================================
-       ІНДИКАТОРИ
-    ======================================== */
 
-    slides.forEach((_, index) => {
 
-        const dot = document.createElement("div");
+    <!-- FACEBOOK -->
 
-        dot.className = "sa-carousel-dot";
+    <a
+        class="social-item facebook"
+        href="https://www.facebook.com/share/1977uk6VHF/?mibextid=wwXIfr"
+        target="_blank"
+        rel="noopener"
+    >
 
-        if (index === 0) {
-            dot.classList.add("active");
-        }
+        <div class="social-icon-wrapper">
 
-        dotsContainer.appendChild(dot);
+            <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+            >
 
-    });
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
 
-    const dots = Array.from(
-        dotsContainer.querySelectorAll(".sa-carousel-dot")
-    );
+            </svg>
 
+        </div>
 
-    /* ========================================
-       ПОЗИЦІЯ
-    ======================================== */
+        <span class="social-label">
+            Facebook
+        </span>
 
-    function getWidth() {
-        return carousel.clientWidth;
-    }
+    </a>
 
 
-    function updatePosition(animate = true) {
 
-        track.style.transition = animate
-            ? `transform ${TRANSITION_TIME}ms cubic-bezier(.22,.61,.36,1)`
-            : "none";
+    <!-- YOUTUBE -->
 
-        track.style.transform =
-            `translate3d(-${currentIndex * getWidth()}px, 0, 0)`;
+    <a
+        class="social-item youtube"
+        href="https://www.youtube.com/@sa_master"
+        target="_blank"
+        rel="noopener"
+    >
 
+        <div class="social-icon-wrapper">
 
-        slides.forEach((slide, index) => {
+            <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+            >
 
-            slide.classList.toggle(
-                "active",
-                index === currentIndex
-            );
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
 
-        });
+            </svg>
 
+        </div>
 
-        dots.forEach((dot, index) => {
+        <span class="social-label">
+            YouTube
+        </span>
 
-            dot.classList.toggle(
-                "active",
-                index === currentIndex
-            );
+    </a>
 
-        });
 
-    }
 
+    <!-- TELEGRAM -->
 
-    /* ========================================
-       ПЕРЕХІД ДО СЛАЙДУ
-    ======================================== */
+    <a
+        class="social-item telegram"
+        href="https://t.me/sa_master"
+        target="_blank"
+        rel="noopener"
+    >
 
-    function goTo(index) {
+        <div class="social-icon-wrapper">
 
-        if (index < 0) {
-            index = slides.length - 1;
-        }
+            <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+            >
 
-        if (index >= slides.length) {
-            index = 0;
-        }
+                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12.016 12.016 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
 
-        currentIndex = index;
+            </svg>
 
-        updatePosition(true);
+        </div>
 
-    }
+        <span class="social-label">
+            Telegram
+        </span>
 
+    </a>
 
-    /* ========================================
-       НАСТУПНИЙ СЛАЙД
-    ======================================== */
 
-    function nextSlide() {
 
-        goTo(currentIndex + 1);
+    <!-- VIBER -->
 
-    }
+    <a
+        class="social-item viber"
+        href="viber://add?number=380979111871"
+        aria-label="Viber"
+    >
 
+        <div class="social-icon-wrapper">
 
-    /* ========================================
-       ПОПЕРЕДНІЙ СЛАЙД
-    ======================================== */
+            <svg
+                viewBox="0 0 24 24"
+                fill="currentColor"
+            >
 
-    function previousSlide() {
+                <path d="M11.4 0C9.473.028 5.333.344 3.02 2.467 1.302 4.187.696 6.7.633 9.817.57 12.933.488 18.776 6.12 20.36h.003l-.004 2.416s-.037.977.61 1.177c.777.242 1.234-.5 1.98-1.302.407-.44.972-1.084 1.397-1.58 3.85.326 6.812-.416 7.15-.525.776-.252 5.176-.816 5.892-6.657.74-6.02-.36-9.83-2.34-11.546-.596-.55-3.006-2.3-8.375-2.323 0 0-.395-.025-1.037-.017z"/>
 
-        goTo(currentIndex - 1);
+            </svg>
 
-    }
+        </div>
 
+        <span class="social-label">
+            Viber
+        </span>
 
-    /* ========================================
-       АВТОПРОКРУТКА
-    ======================================== */
+    </a>
 
-    function startAutoPlay() {
 
-        stopAutoPlay();
+</div>
 
-        autoTimer = setInterval(() => {
 
-            if (!document.hidden && !isPointerDown) {
-                nextSlide();
-            }
 
-        }, AUTO_DELAY);
+<!-- =====================================================
+     ABOUT
+===================================================== -->
 
-    }
+<div class="about-block">
 
 
-    function stopAutoPlay() {
+    <div class="about-top">
 
-        if (autoTimer) {
 
-            clearInterval(autoTimer);
+        <img
+            class="about-photo"
+            src="your-photo.jpg"
+            alt="Фото майстра"
+        >
 
-            autoTimer = null;
 
-        }
+        <p class="first-paragraph">
 
-    }
+            Мене звати
+            <strong>Сергій</strong>.
 
+            <br>
 
-    function restartAutoPlay() {
+            Понад
+            <strong>20 років</strong>
+            я працюю із сантехнікою —
+            і досі продовжую вдосконалювати свою майстерність.
 
-        stopAutoPlay();
+            <button
+                class="read-more"
+                id="readMore"
+                onclick="toggleAbout()"
+            >
+                читати далі
+            </button>
 
-        startAutoPlay();
+        </p>
 
-    }
 
+    </div>
 
-    /* ========================================
-       POINTER DOWN
-    ======================================== */
 
-    carousel.addEventListener(
-        "pointerdown",
-        function (event) {
 
-            if (event.pointerType === "mouse" &&
-                event.button !== 0) {
-                return;
-            }
+    <div
+        class="about-hidden"
+        id="aboutHidden"
+    >
 
-            isPointerDown = true;
-            isDragging = false;
+        <p>
+            Беру участь у профільних заходах,
+            ділюся досвідом та навчаю інших майстрів.
+            Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.
+        </p>
 
-            startX = event.clientX;
-            currentX = startX;
 
-            dragOffset = 0;
+        <p>
+            Сьогодні ми спеціалізуємось на
+            <strong>комплексному монтажі сантехніки</strong>
+            в новобудовах Києва,
+            професійно втілюючи сучасні проектні рішення в життя.
+            У роботі використовуємо обладнання та матеріали
+            провідних світових брендів.
+        </p>
 
-            track.style.transition = "none";
 
-            carousel.classList.add("is-dragging");
+        <p>
+            Працюємо переважно з дизайн-проектами
+            та без посередників.
+            Вартість наших робіт —
+            <strong>вище середньої по ринку</strong>.
+        </p>
 
-            try {
-                carousel.setPointerCapture(event.pointerId);
-            } catch (e) {}
 
-            stopAutoPlay();
-
-        }
-    );
-
-
-    /* ========================================
-       POINTER MOVE
-    ======================================== */
-
-    carousel.addEventListener(
-        "pointermove",
-        function (event) {
-
-            if (!isPointerDown) return;
-
-            currentX = event.clientX;
-
-            dragOffset = currentX - startX;
-
-            if (Math.abs(dragOffset) > 5) {
-                isDragging = true;
-            }
-
-            const baseOffset =
-                -(currentIndex * getWidth());
-
-            track.style.transform =
-                `translate3d(${baseOffset + dragOffset}px,0,0)`;
-
-        }
-    );
-
-
-    /* ========================================
-       POINTER UP
-    ======================================== */
-
-    function finishDrag() {
-
-        if (!isPointerDown) return;
-
-        isPointerDown = false;
-
-        carousel.classList.remove("is-dragging");
-
-        const width = getWidth();
-
-        const threshold =
-            Math.min(width * 0.18, 110);
-
-
-        /* Якщо свайп достатньо великий */
-        if (Math.abs(dragOffset) > threshold) {
-
-            if (dragOffset < 0) {
-                nextSlide();
-            } else {
-                previousSlide();
-            }
-
-        } else {
-
-            /* Повернення назад */
-            updatePosition(true);
-
-        }
-
-        dragOffset = 0;
-
-        restartAutoPlay();
-
-    }
-
-
-    carousel.addEventListener(
-        "pointerup",
-        finishDrag
-    );
-
-    carousel.addEventListener(
-        "pointercancel",
-        finishDrag
-    );
-
-    carousel.addEventListener(
-        "lostpointercapture",
-        function () {
-
-            if (isPointerDown) {
-                finishDrag();
-            }
-
-        }
-    );
-
-
-    /* ========================================
-       ЗАПОБІГАЄМО КЛІКУ ПІСЛЯ СВАЙПУ
-    ======================================== */
-
-    carousel.addEventListener(
-        "click",
-        function (event) {
-
-            if (isDragging) {
-
-                event.preventDefault();
-                event.stopPropagation();
-
-                isDragging = false;
-
-            }
-
-        },
-        true
-    );
-
-
-    /* ========================================
-       RESIZE
-    ======================================== */
-
-    let resizeTimer;
-
-    window.addEventListener(
-        "resize",
-        function () {
-
-            clearTimeout(resizeTimer);
-
-            resizeTimer = setTimeout(() => {
-
-                updatePosition(false);
-
-            }, 100);
-
-        }
-    );
-
-
-    /* ========================================
-       ВКЛАДКА НЕАКТИВНА
-    ======================================== */
-
-    document.addEventListener(
-        "visibilitychange",
-        function () {
-
-            if (document.hidden) {
-
-                stopAutoPlay();
-
-            } else {
-
-                restartAutoPlay();
-
-            }
-
-        }
-    );
-
-
-    /* ========================================
-       ПАУЗА ПРИ НАВЕДЕННІ НА ПК
-    ======================================== */
-
-    carousel.addEventListener(
-        "mouseenter",
-        function () {
-
-            if (window.matchMedia(
-                "(hover: hover)"
-            ).matches) {
-
-                stopAutoPlay();
-
-            }
-
-        }
-    );
-
-
-    carousel.addEventListener(
-        "mouseleave",
-        function () {
-
-            if (window.matchMedia(
-                "(hover: hover)"
-            ).matches) {
-
-                restartAutoPlay();
-
-            }
-
-        }
-    );
-
-
-    /* ========================================
-       СТАРТ
-    ======================================== */
-
-    updatePosition(false);
-
-    startAutoPlay();
-
-})();
-</script>
+        <p>
+            Плануєте ремонт?
+            Будемо раді спів
