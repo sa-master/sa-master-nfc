@@ -1299,14 +1299,9 @@ let galleryTimer;
 function updateGallery(index,animate=true){
     galleryTrack.style.transition=animate?"transform .55s cubic-bezier(.22,.61,.36,1)":"none";
     galleryTrack.style.transform=`translate3d(-${index*100}%,0,0)`;
-
     const realIndex=index>=galleryTotal?0:index;
-
     galleryCounter.textContent=`${realIndex+1} / ${galleryTotal}`;
-
-    galleryDots.forEach((dot,i)=>{
-        dot.classList.toggle("active",i===realIndex);
-    });
+    galleryDots.forEach((dot,i)=>{dot.classList.toggle("active",i===realIndex);});
 }
 
 function nextGallery(){
@@ -1315,104 +1310,58 @@ function nextGallery(){
 }
 
 function previousGallery(){
-
     if(galleryIndex<=0){
-
         galleryIndex=galleryTotal;
-
         updateGallery(galleryIndex,false);
-
         requestAnimationFrame(()=>{
-
             galleryIndex--;
-
             updateGallery(galleryIndex,true);
-
         });
-
         return;
     }
-
     galleryIndex--;
-
     updateGallery(galleryIndex,true);
 }
 
 galleryTrack.addEventListener("transitionend",()=>{
-
     if(galleryIndex===galleryTotal){
-
         galleryIndex=0;
-
         updateGallery(galleryIndex,false);
     }
-
 });
 
 galleryDots.forEach((dot,index)=>{
-
     dot.addEventListener("click",()=>{
-
         galleryIndex=index;
-
         updateGallery(galleryIndex,true);
-
         restartGalleryTimer();
-
     });
-
 });
 
 galleryWindow.addEventListener("touchstart",event=>{
-
     galleryStartX=event.touches[0].clientX;
-
     galleryCurrentX=galleryStartX;
-
     galleryDragging=true;
-
 },{passive:true});
 
 galleryWindow.addEventListener("touchmove",event=>{
-
     if(!galleryDragging)return;
-
     galleryCurrentX=event.touches[0].clientX;
-
 },{passive:true});
 
 galleryWindow.addEventListener("touchend",()=>{
-
     if(!galleryDragging)return;
-
     galleryDragging=false;
-
     const difference=galleryCurrentX-galleryStartX;
-
     if(Math.abs(difference)>=45){
-
-        if(difference<0){
-
-            nextGallery();
-
-        }else{
-
-            previousGallery();
-
-        }
-
+        if(difference<0){nextGallery();}else{previousGallery();}
         restartGalleryTimer();
-
     }
-
 });
 
 function restartGalleryTimer(){
-
     clearInterval(galleryTimer);
-
     galleryTimer=setInterval(nextGallery,4500);
-
 }
 
 restartGalleryTimer();
@@ -1422,39 +1371,25 @@ const lightboxImage=document.getElementById("lightboxImage");
 const lightboxClose=document.getElementById("lightboxClose");
 
 document.querySelectorAll(".gallery-slide img").forEach(img=>{
-
     img.addEventListener("click",()=>{
-
         lightboxImage.src=img.src;
-
         lightboxImage.alt=img.alt;
-
         lightbox.classList.add("active");
-
         document.body.style.overflow="hidden";
-
     });
-
 });
 
 function closeLightbox(){
-
     lightbox.classList.remove("active");
-
     document.body.style.overflow="";
-
 }
 
 lightboxClose.addEventListener("click",closeLightbox);
 
 lightbox.addEventListener("click",event=>{
-
     if(event.target===lightbox){
-
         closeLightbox();
-
     }
-
 });
 
 const aboutToggle=document.getElementById("aboutToggle");
@@ -1462,83 +1397,54 @@ const aboutModal=document.getElementById("aboutModal");
 const aboutModalClose=document.getElementById("aboutModalClose");
 
 function openAboutModal(){
-
     aboutModal.classList.add("active");
-
     document.body.style.overflow="hidden";
-
 }
 
 function closeAboutModal(){
-
     aboutModal.classList.remove("active");
-
     document.body.style.overflow="";
-
 }
 
 aboutToggle.addEventListener("click",openAboutModal);
 
 aboutToggle.addEventListener("keydown",event=>{
-
     if(event.key==="Enter"||event.key===" "){
-
         event.preventDefault();
-
         openAboutModal();
-
     }
-
 });
 
 aboutModalClose.addEventListener("click",closeAboutModal);
 
 aboutModal.addEventListener("click",event=>{
-
     if(event.target===aboutModal){
-
         closeAboutModal();
-
     }
-
 });
 
 function openModal(id){
-
     const modal=document.getElementById(id);
-
     if(!modal)return;
 
     modal.classList.add("active");
-
     document.body.style.overflow="hidden";
-
 }
 
 function closeModal(id){
-
     const modal=document.getElementById(id);
-
     if(!modal)return;
 
     modal.classList.remove("active");
-
     document.body.style.overflow="";
-
 }
 
 document.querySelectorAll(".modal").forEach(modal=>{
-
     modal.addEventListener("click",event=>{
-
         if(event.target===modal){
-
             closeModal(modal.id);
-
         }
-
     });
-
 });
 
 const socialViewport=document.getElementById("socialViewport");
@@ -1559,33 +1465,22 @@ function updateSocialDock(page,animate=true){
     socialTrack.style.transform=`translate3d(-${socialPage*50}%,0,0)`;
 
     socialDots.forEach((dot,i)=>{
-
         dot.classList.toggle("active",i===socialPage);
-
     });
-
 }
 
 socialViewport.addEventListener("touchstart",event=>{
-
     socialStartX=event.touches[0].clientX;
-
     socialCurrentX=socialStartX;
-
     socialDragging=true;
-
 },{passive:true});
 
 socialViewport.addEventListener("touchmove",event=>{
-
     if(!socialDragging)return;
-
     socialCurrentX=event.touches[0].clientX;
-
 },{passive:true});
 
 socialViewport.addEventListener("touchend",()=>{
-
     if(!socialDragging)return;
 
     socialDragging=false;
@@ -1595,42 +1490,37 @@ socialViewport.addEventListener("touchend",()=>{
     if(Math.abs(difference)<45)return;
 
     if(difference<0){
-
         updateSocialDock(socialPage+1);
-
     }else{
-
         updateSocialDock(socialPage-1);
-
     }
-
 });
 
 setTimeout(()=>{
-
     socialTrack.classList.add("social-hint");
 
     setTimeout(()=>{
-
         socialTrack.classList.remove("social-hint");
-
     },1100);
 
 },900);
 
 
 /* =========================================================
-   iOS-подібний інтерактивний свайп вниз для закриття popup
+   СВАЙП МОДАЛЬНИХ ВІКОН — РУХ ЗА ПАЛЬЦЕМ
    ========================================================= */
 
 function addSwipeToClose(element,closeFunction,options={}){
 
     let startX=0;
     let startY=0;
+
+    let currentX=0;
     let currentY=0;
 
     let dragging=false;
     let moved=false;
+    let verticalGesture=false;
 
     const threshold=options.threshold||90;
     const content=options.content||element;
@@ -1643,14 +1533,18 @@ function addSwipeToClose(element,closeFunction,options={}){
 
         startX=touch.clientX;
         startY=touch.clientY;
+
+        currentX=startX;
         currentY=startY;
 
         dragging=true;
         moved=false;
+        verticalGesture=false;
 
         content.style.transition="none";
 
     },{passive:true});
+
 
     element.addEventListener("touchmove",event=>{
 
@@ -1658,43 +1552,54 @@ function addSwipeToClose(element,closeFunction,options={}){
 
         const touch=event.touches[0];
 
-        const deltaX=touch.clientX-startX;
-        const deltaY=touch.clientY-startY;
-
+        currentX=touch.clientX;
         currentY=touch.clientY;
 
-        if(Math.abs(deltaY)>8){
+        const deltaX=currentX-startX;
+        const deltaY=currentY-startY;
 
-            moved=true;
+        /*
+         * Визначаємо напрямок жесту після
+         * невеликого початкового руху.
+         */
+        if(!verticalGesture && Math.max(Math.abs(deltaX),Math.abs(deltaY))>8){
+
+            verticalGesture=Math.abs(deltaY)>Math.abs(deltaX);
 
         }
 
+        if(!verticalGesture)return;
+
+        moved=true;
+
         /*
-         * Визначаємо вертикальний жест.
-         * Горизонтальний рух не впливає на popup.
+         * Працюємо тільки зі свайпом вниз.
+         * Панель рухається безпосередньо за пальцем.
          */
+        if(deltaY>0){
 
-        if(Math.abs(deltaY)>Math.abs(deltaX)){
+            const resistance=Math.min(deltaY,window.innerHeight);
 
-            /*
-             * Рухаємо popup тільки вниз.
-             */
+            const progress=Math.min(resistance/window.innerHeight,1);
 
-            if(deltaY>0){
+            if(options.content){
 
-                const resistance=Math.min(deltaY*.65,260);
-
-                const scale=
-                    1-Math.min(resistance/5000,.035);
+                const scale=1-(progress*.04);
 
                 content.style.transform=
-                    `translate3d(0,${resistance}px,0) scale(${scale})`;
+                    `translateY(${resistance}px) scale(${scale})`;
+
+            }else{
+
+                content.style.transform=
+                    `translateY(${resistance}px)`;
 
             }
 
         }
 
     },{passive:true});
+
 
     element.addEventListener("touchend",()=>{
 
@@ -1705,26 +1610,33 @@ function addSwipeToClose(element,closeFunction,options={}){
         const deltaY=currentY-startY;
 
         /*
-         * Якщо користувач достатньо потягнув вниз —
-         * popup повністю виїжджає за межі екрана.
+         * Якщо це не вертикальний жест —
+         * нічого не робимо.
          */
+        if(!verticalGesture){
 
-        if(
-            moved &&
-            deltaY>=threshold &&
-            deltaY>0
-        ){
+            content.style.transition="";
+            content.style.transform="";
+
+            return;
+
+        }
+
+        /*
+         * ДОСТАТНІЙ СВАЙП
+         * Панель продовжує рух вниз і закривається.
+         */
+        if(moved && deltaY>=threshold){
 
             content.style.transition=
                 "transform .30s cubic-bezier(.22,.61,.36,1)";
 
             content.style.transform=
-                "translate3d(0,100vh,0) scale(.96)";
+                "translateY(100vh) scale(.96)";
 
             setTimeout(()=>{
 
                 content.style.transition="";
-
                 content.style.transform="";
 
                 closeFunction();
@@ -1732,27 +1644,47 @@ function addSwipeToClose(element,closeFunction,options={}){
             },300);
 
             return;
-
         }
 
         /*
-         * Якщо свайп був недостатнім —
-         * popup повертається на початкову позицію.
+         * НЕДОСТАТНІЙ СВАЙП
+         * Панель плавно повертається
+         * точно у початкове положення.
          */
-
         content.style.transition=
-            "transform .32s cubic-bezier(.22,.61,.36,1)";
+            "transform .30s cubic-bezier(.22,.61,.36,1)";
 
         content.style.transform=
-            "translate3d(0,0,0) scale(1)";
+            "translateY(0) scale(1)";
 
         setTimeout(()=>{
 
             content.style.transition="";
-
             content.style.transform="";
 
-        },320);
+        },300);
+
+    },{passive:true});
+
+
+    element.addEventListener("touchcancel",()=>{
+
+        if(!dragging)return;
+
+        dragging=false;
+
+        content.style.transition=
+            "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+        content.style.transform=
+            "translateY(0) scale(1)";
+
+        setTimeout(()=>{
+
+            content.style.transition="";
+            content.style.transform="";
+
+        },300);
 
     },{passive:true});
 
@@ -1760,85 +1692,65 @@ function addSwipeToClose(element,closeFunction,options={}){
 
 
 /* =========================================================
-   Вікно «Про мене»
+   ВІКНО «ПРО МЕНЕ»
    ========================================================= */
 
 addSwipeToClose(
-
     aboutModal,
-
     closeAboutModal,
-
     {
         content:document.querySelector(".about-modal-content"),
         threshold:90
     }
-
 );
 
 
 /* =========================================================
-   Вікно «Оплата»
+   ВІКНО «ОПЛАТА»
    ========================================================= */
 
 const paymentModal=document.getElementById("paymentModal");
 
 addSwipeToClose(
-
     paymentModal,
-
     ()=>closeModal("paymentModal"),
-
     {
         content:paymentModal.querySelector(".modal-box"),
         threshold:90
     }
-
 );
 
 
 /* =========================================================
-   Перегляд фотографії
+   ПЕРЕГЛЯД ФОТО
    ========================================================= */
 
 addSwipeToClose(
-
     lightbox,
-
     closeLightbox,
-
     {
         content:lightboxImage,
         threshold:90
     }
-
 );
 
 
-/* =========================================================
-   Закриття клавішею Escape
-   ========================================================= */
+/* ========================================================= */
 
 document.addEventListener("keydown",event=>{
 
     if(event.key!=="Escape")return;
 
     if(lightbox.classList.contains("active")){
-
         closeLightbox();
-
     }
 
     if(aboutModal.classList.contains("active")){
-
         closeAboutModal();
-
     }
 
     document.querySelectorAll(".modal.active").forEach(modal=>{
-
         closeModal(modal.id);
-
     });
 
 });
