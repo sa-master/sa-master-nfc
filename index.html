@@ -246,126 +246,334 @@ button{
 
 
 /* =========================================================
-   ІНФОРМАЦІЙНІ КАРТКИ
+   INFO CARDS — СТІС
    ========================================================= */
 
 .info-section{
+    position:relative;
     margin:24px 0;
+    padding:0 4px 7px;
 }
 
-.info-carousel-window{
+.info-stack{
+    position:relative;
     width:100%;
-    overflow:hidden;
-    touch-action:pan-y;
-}
-
-.info-carousel-track{
-    display:flex;
-    gap:12px;
-    transform:translate3d(0,0,0);
-    transition:transform .48s cubic-bezier(.22,.61,.36,1);
-    will-change:transform;
+    height:220px;
+    perspective:1000px;
 }
 
 .info-card{
-    position:relative;
-    flex:0 0 86%;
-    min-height:205px;
-    padding:21px 20px 19px;
-    border-radius:26px;
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:205px;
+    padding:20px 20px 18px;
+    border-radius:28px;
     overflow:hidden;
     cursor:pointer;
-    background:
-        radial-gradient(circle at 100% 0%,rgba(70,184,223,.13),transparent 42%),
-        linear-gradient(145deg,rgba(255,255,255,.92),rgba(241,248,251,.82));
+    user-select:none;
+    -webkit-user-select:none;
+    background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(232,245,250,.82));
     border:1px solid rgba(255,255,255,.96);
     box-shadow:
-        0 14px 34px rgba(30,70,90,.09),
-        inset 0 1px 0 rgba(255,255,255,.92);
-    transition:transform .2s ease,box-shadow .2s ease;
+        0 18px 38px rgba(34,75,93,.13),
+        0 4px 12px rgba(34,75,93,.05),
+        inset 0 1px 0 rgba(255,255,255,.98);
+    transition:
+        transform .48s cubic-bezier(.22,.61,.36,1),
+        opacity .4s ease,
+        box-shadow .35s ease;
+    touch-action:none;
 }
 
 .info-card::before{
     content:"";
     position:absolute;
-    width:130px;
-    height:130px;
-    right:-55px;
-    bottom:-65px;
+    width:180px;
+    height:180px;
+    right:-70px;
+    top:-80px;
     border-radius:50%;
-    background:rgba(70,184,223,.10);
-    filter:blur(18px);
+    background:rgba(70,184,223,.13);
+    filter:blur(25px);
     pointer-events:none;
 }
 
-.info-card:active{
-    transform:scale(.975);
-    box-shadow:
-        0 8px 22px rgba(30,70,90,.08),
-        inset 0 1px 0 rgba(255,255,255,.92);
+.info-card::after{
+    content:attr(data-number);
+    position:absolute;
+    right:10px;
+    bottom:-27px;
+    font-size:125px;
+    line-height:1;
+    font-weight:900;
+    letter-spacing:-8px;
+    color:rgba(38,126,166,.055);
+    pointer-events:none;
+}
+
+.info-card[data-position="0"]{
+    z-index:4;
+    transform:translateY(0) scale(1);
+    opacity:1;
+}
+
+.info-card[data-position="1"]{
+    z-index:3;
+    transform:translateY(7px) scale(.965);
+    opacity:.88;
+}
+
+.info-card[data-position="2"]{
+    z-index:2;
+    transform:translateY(14px) scale(.93);
+    opacity:.72;
+}
+
+.info-card[data-position="3"]{
+    z-index:1;
+    transform:translateY(21px) scale(.895);
+    opacity:.56;
+}
+
+.info-card.dragging{
+    transition:none;
+}
+
+.info-card.swipe-away{
+    transform:translate3d(-115%,0,0) rotate(-5deg) !important;
+    opacity:0;
+}
+
+.info-card.swipe-away-right{
+    transform:translate3d(115%,0,0) rotate(5deg) !important;
+    opacity:0;
+}
+
+.info-card-top{
+    position:relative;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    gap:9px;
 }
 
 .info-card-number{
-    position:relative;
-    z-index:1;
     font-size:11px;
     line-height:1;
-    font-weight:700;
-    letter-spacing:.5px;
+    font-weight:800;
     color:#1976d2;
+    letter-spacing:.5px;
 }
 
-.info-card-title{
-    position:relative;
-    z-index:1;
-    margin-top:17px;
-    font-size:23px;
-    line-height:1.05;
-    font-weight:850;
-    letter-spacing:-.7px;
-    color:#182228;
-}
-
-.info-card-description{
-    position:relative;
-    z-index:1;
-    margin-top:12px;
-    max-width:285px;
-    font-size:14px;
-    line-height:1.45;
-    color:#5c6d75;
-}
-
-.info-card-description strong{
-    color:#1c59a3;
+.info-card-kicker{
+    font-size:10px;
+    line-height:1;
+    font-weight:700;
+    letter-spacing:.9px;
+    color:#788990;
+    text-transform:uppercase;
 }
 
 .info-card-arrow{
-    position:absolute;
-    right:18px;
-    bottom:18px;
+    margin-left:auto;
     width:34px;
     height:34px;
     display:flex;
     align-items:center;
     justify-content:center;
     border-radius:50%;
-    background:linear-gradient(145deg,#fff,#e9f5fa);
-    color:#176c91;
+    background:rgba(255,255,255,.68);
+    border:1px solid rgba(255,255,255,.85);
+    color:#267fa5;
     font-size:20px;
-    font-weight:500;
-    box-shadow:inset 0 0 0 1px rgba(40,100,125,.05);
+    font-weight:400;
+    box-shadow:0 4px 12px rgba(45,91,108,.08),inset 0 1px 0 rgba(255,255,255,.9);
 }
 
-.info-carousel-pagination{
+.info-card-content{
+    position:relative;
+    z-index:2;
+    margin-top:10px;
+}
+
+.info-card-title{
+    font-size:25px;
+    line-height:1.05;
+    font-weight:850;
+    letter-spacing:-.8px;
+    color:#172329;
+}
+
+.info-card-subtitle{
+    margin-top:6px;
+    max-width:370px;
+    font-size:13px;
+    line-height:1.35;
+    color:#64747c;
+}
+
+.info-about-content{
+    display:flex;
+    align-items:center;
+    gap:15px;
+    margin-top:9px;
+}
+
+.info-about-photo{
+    width:82px;
+    height:82px;
+    flex:0 0 82px;
+    object-fit:cover;
+    border-radius:24px;
+    border:2px solid rgba(255,255,255,.96);
+    box-shadow:0 9px 20px rgba(24,55,69,.14);
+}
+
+.info-about-details{
+    min-width:0;
+}
+
+.info-about-name{
+    font-size:19px;
+    line-height:1.05;
+    font-weight:800;
+    color:#18252b;
+}
+
+.info-about-years{
+    margin-top:5px;
+    font-size:13px;
+    line-height:1.2;
+    font-weight:700;
+    color:#1976d2;
+}
+
+.info-about-note{
+    margin-top:5px;
+    font-size:11px;
+    line-height:1.25;
+    color:#708088;
+}
+
+.info-process{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-top:16px;
+}
+
+.info-process-step{
+    min-width:0;
+    flex:1;
+    height:51px;
+    padding:0 7px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    border-radius:16px;
+    background:rgba(255,255,255,.62);
+    border:1px solid rgba(255,255,255,.85);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+}
+
+.info-process-step strong{
+    font-size:11px;
+    line-height:1;
+    color:#26343a;
+}
+
+.info-process-step span{
+    font-size:9px;
+    line-height:1;
+    color:#77878e;
+}
+
+.info-process-arrow{
+    flex:0 0 auto;
+    color:#56a8c8;
+    font-size:15px;
+}
+
+.info-price-value{
+    margin-top:13px;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+}
+
+.info-price-symbol{
+    font-size:29px;
+    line-height:1;
+    font-weight:800;
+    color:#1976d2;
+}
+
+.info-price-main{
+    font-size:22px;
+    line-height:1;
+    font-weight:800;
+    color:#202d33;
+}
+
+.info-price-note{
+    margin-top:7px;
+    font-size:12px;
+    line-height:1.3;
+    color:#697980;
+}
+
+.info-reviews-rating{
+    margin-top:14px;
+    display:flex;
+    align-items:center;
+    gap:9px;
+}
+
+.info-stars{
+    font-size:21px;
+    line-height:1;
+    letter-spacing:1px;
+    color:#1976d2;
+}
+
+.info-reviews-text{
+    font-size:12px;
+    font-weight:650;
+    color:#65757d;
+}
+
+.info-review-note{
+    margin-top:10px;
+    max-width:370px;
+    font-size:13px;
+    line-height:1.35;
+    color:#5f7078;
+}
+
+.info-stack-hint{
+    position:absolute;
+    left:50%;
+    bottom:0;
+    z-index:10;
+    transform:translateX(-50%);
+    width:68px;
+    height:3px;
+    border-radius:3px;
+    background:rgba(85,118,132,.18);
+}
+
+.info-pagination{
     display:flex;
     align-items:center;
     justify-content:center;
     gap:5px;
-    margin-top:9px;
+    margin-top:2px;
 }
 
-.info-carousel-dot{
+.info-dot{
     width:5px;
     height:5px;
     border-radius:50%;
@@ -373,25 +581,25 @@ button{
     transition:width .25s ease,background .25s ease;
 }
 
-.info-carousel-dot.active{
+.info-dot.active{
     width:15px;
     border-radius:5px;
     background:#6d858f;
 }
 
-.info-carousel-counter{
+.info-counter{
     margin-top:7px;
     text-align:center;
-    font-size:10px;
+    font-size:9px;
     line-height:1;
-    font-weight:600;
-    letter-spacing:.3px;
-    color:#71818a;
+    font-weight:650;
+    letter-spacing:.7px;
+    color:#7a8b92;
 }
 
 
 /* =========================================================
-   DOCK BAR — БЕЗ ЗМІН
+   DOCK — НЕ ЗМІНЮВАВСЯ
    ========================================================= */
 
 .ios-social-shell{
@@ -589,7 +797,7 @@ button{
 
 
 /* =========================================================
-   МОДАЛЬНЕ ВІКНО «ПРО МЕНЕ»
+   ABOUT MODAL
    ========================================================= */
 
 .about-modal{
@@ -693,76 +901,192 @@ button{
 
 
 /* =========================================================
-   ІНФОРМАЦІЙНІ МОДАЛЬНІ ВІКНА
+   ADDITIONAL INFO MODALS
    ========================================================= */
 
-.info-modal-list{
+.info-modal{
+    position:fixed;
+    inset:0;
+    z-index:11000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(8,18,24,.58);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:opacity .25s ease,visibility .25s ease;
+}
+
+.info-modal.active{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+}
+
+.info-modal-content{
+    position:relative;
+    width:100%;
+    max-width:440px;
+    max-height:88vh;
+    overflow-y:auto;
+    padding:24px 20px 22px;
+    border-radius:28px;
+    background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(244,248,250,.97));
+    box-shadow:0 25px 70px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.9);
+    transform:translateY(18px) scale(.97);
+    transition:transform .3s cubic-bezier(.22,.61,.36,1);
+    touch-action:pan-y;
+}
+
+.info-modal.active .info-modal-content{
+    transform:translateY(0) scale(1);
+}
+
+.info-modal-close{
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:40px;
+    height:40px;
+    border:0;
+    border-radius:50%;
+    background:rgba(120,130,140,.10);
+    color:#53616a;
+    font-size:24px;
+    line-height:1;
+    cursor:pointer;
+    z-index:5;
+}
+
+.info-modal-title{
+    padding-right:45px;
+    font-size:24px;
+    line-height:1.1;
+    font-weight:800;
+    letter-spacing:-.6px;
+}
+
+.info-modal-lead{
+    margin-top:7px;
+    font-size:14px;
+    font-weight:650;
+    color:#1976d2;
+}
+
+.info-modal-text{
     margin-top:18px;
+    font-size:15px;
+    line-height:1.55;
+    color:#5f6c73;
+}
+
+.info-modal-text p{
+    margin:0 0 14px;
+}
+
+.info-modal-text strong{
+    color:#20282d;
+}
+
+.info-modal-steps{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:20px;
 }
 
 .info-modal-step{
     display:flex;
-    gap:12px;
-    margin-bottom:15px;
-}
-
-.info-modal-step:last-child{
-    margin-bottom:0;
+    align-items:center;
+    gap:13px;
+    padding:13px 14px;
+    border-radius:18px;
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(255,255,255,.9);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
 }
 
 .info-modal-step-number{
-    width:30px;
-    height:30px;
-    flex:0 0 30px;
+    width:34px;
+    height:34px;
+    flex:0 0 34px;
     display:flex;
     align-items:center;
     justify-content:center;
-    border-radius:10px;
-    background:linear-gradient(145deg,#e8f7fc,#d8edf5);
-    color:#1976d2;
-    font-size:11px;
+    border-radius:50%;
+    background:linear-gradient(145deg,#55bce0,#1976d2);
+    color:#fff;
+    font-size:12px;
     font-weight:800;
 }
 
-.info-modal-step-text{
-    padding-top:2px;
+.info-modal-step strong{
+    display:block;
     font-size:14px;
-    line-height:1.45;
-    color:#5f6c73;
+    color:#20282d;
 }
 
-.info-modal-step-text strong{
-    color:#20282d;
+.info-modal-step span{
+    display:block;
+    margin-top:3px;
+    font-size:12px;
+    color:#697980;
+}
+
+.info-modal-price-box{
+    margin-top:20px;
+    padding:18px;
+    border-radius:22px;
+    background:linear-gradient(145deg,rgba(232,246,251,.9),rgba(255,255,255,.8));
+    border:1px solid rgba(255,255,255,.95);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.95);
+}
+
+.info-modal-price-box strong{
+    display:block;
+    font-size:18px;
+    color:#1976d2;
+}
+
+.info-modal-price-box span{
+    display:block;
+    margin-top:6px;
+    font-size:13px;
+    line-height:1.4;
+    color:#63747c;
+}
+
+.info-modal-stars{
+    margin-top:20px;
+    font-size:25px;
+    letter-spacing:2px;
+    color:#1976d2;
 }
 
 .info-modal-review{
-    margin-top:16px;
-    padding:15px;
-    border-radius:18px;
-    background:rgba(238,247,250,.72);
+    margin-top:15px;
+    padding:16px;
+    border-radius:20px;
+    background:rgba(255,255,255,.72);
     border:1px solid rgba(255,255,255,.9);
+    color:#5f6c73;
+    font-size:14px;
+    line-height:1.5;
 }
 
-.info-modal-review:first-child{
-    margin-top:18px;
-}
-
-.info-modal-review-name{
-    font-size:13px;
-    font-weight:800;
+.info-modal-review strong{
+    display:block;
+    margin-bottom:6px;
     color:#20282d;
-}
-
-.info-modal-review-text{
-    margin-top:6px;
-    font-size:13px;
-    line-height:1.45;
-    color:#66757d;
 }
 
 
 /* =========================================================
-   ЗАГАЛЬНІ МОДАЛЬНІ ВІКНА
+   PAYMENT
    ========================================================= */
 
 .modal{
@@ -895,6 +1219,11 @@ button{
     background:linear-gradient(145deg,#303034 0%,#171719 52%,#09090a 100%);
 }
 
+
+/* =========================================================
+   LIGHTBOX
+   ========================================================= */
+
 .lightbox{
     position:fixed;
     inset:0;
@@ -953,6 +1282,10 @@ button{
 }
 
 
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
 @media(max-width:420px){
 
     .page{
@@ -992,30 +1325,47 @@ button{
     }
 
     .info-section{
-        margin:21px 0;
+        margin:22px 0;
+        padding:0 2px 6px;
+    }
+
+    .info-stack{
+        height:215px;
     }
 
     .info-card{
-        flex-basis:88%;
-        min-height:194px;
-        padding:19px 17px 17px;
-        border-radius:23px;
+        height:200px;
+        padding:18px 16px 16px;
+        border-radius:24px;
     }
 
     .info-card-title{
-        font-size:21px;
+        font-size:23px;
     }
 
-    .info-card-description{
-        font-size:13px;
-        max-width:255px;
+    .info-about-photo{
+        width:76px;
+        height:76px;
+        flex-basis:76px;
+        border-radius:22px;
     }
 
-    .info-card-arrow{
-        right:15px;
-        bottom:15px;
-        width:32px;
-        height:32px;
+    .info-about-content{
+        gap:12px;
+    }
+
+    .info-process{
+        margin-top:14px;
+        gap:5px;
+    }
+
+    .info-process-step{
+        height:48px;
+        border-radius:14px;
+    }
+
+    .info-card-after{
+        display:none;
     }
 
     .ios-social-shell{
@@ -1083,8 +1433,17 @@ button{
         line-height:1.5;
     }
 
-}
+    .info-modal{
+        padding:12px;
+    }
 
+    .info-modal-content{
+        max-height:90vh;
+        padding:22px 16px 20px;
+        border-radius:24px;
+    }
+
+}
 
 @media(max-width:350px){
 
@@ -1105,16 +1464,29 @@ button{
     }
 
     .info-card{
-        flex-basis:89%;
-        min-height:188px;
+        padding:17px 14px 15px;
     }
 
     .info-card-title{
-        font-size:20px;
+        font-size:21px;
     }
 
-    .info-card-description{
-        font-size:12px;
+    .info-about-photo{
+        width:68px;
+        height:68px;
+        flex-basis:68px;
+    }
+
+    .info-about-name{
+        font-size:17px;
+    }
+
+    .info-process-step strong{
+        font-size:10px;
+    }
+
+    .info-process-step span{
+        font-size:8px;
     }
 
     .ios-social-shell{
@@ -1216,71 +1588,45 @@ button{
 
 
 <!-- =========================================================
-     4 ІНФОРМАЦІЙНІ КАРТКИ
+     INFO STACK
      ========================================================= -->
 
 <section class="info-section">
 
-<div class="info-carousel-window" id="infoCarouselWindow">
+<div class="info-stack" id="infoStack">
 
-<div class="info-carousel-track" id="infoCarouselTrack">
+<!-- 01 -->
+<div class="info-card"
+     data-index="0"
+     data-number="01"
+     data-position="0"
+     data-modal="aboutModal"
+     role="button"
+     tabindex="0"
+     aria-label="Відкрити інформацію про Сергія">
 
-<div class="info-card" data-modal="aboutModal" role="button" tabindex="0">
+<div class="info-card-top">
 
-<div class="info-card-number">01 / 04</div>
+<span class="info-card-number">01</span>
+<span class="info-card-kicker">ПРО НАС</span>
 
-<div class="info-card-title">Про нас</div>
-
-<div class="info-card-description">
-Понад <strong>20 років професійного досвіду</strong>. Комплексний монтаж сантехніки у новобудовах Києва.
-</div>
-
-<div class="info-card-arrow">→</div>
-
-</div>
-
-
-<div class="info-card" data-modal="processModal" role="button" tabindex="0">
-
-<div class="info-card-number">02 / 04</div>
-
-<div class="info-card-title">Порядок співпраці</div>
-
-<div class="info-card-description">
-Від знайомства з проєктом до завершення робіт — <strong>послідовний процес без зайвих посередників</strong>.
-</div>
-
-<div class="info-card-arrow">→</div>
+<span class="info-card-arrow">→</span>
 
 </div>
 
+<div class="info-about-content">
 
-<div class="info-card" data-modal="priceModal" role="button" tabindex="0">
+<img class="info-about-photo" src="your-photo.jpg" alt="Сергій — SA MASTER">
 
-<div class="info-card-number">03 / 04</div>
+<div class="info-about-details">
 
-<div class="info-card-title">Вартість</div>
+<div class="info-about-name">Сергій</div>
 
-<div class="info-card-description">
-Розрахунок формується <strong>за конкретним проєктом</strong> з урахуванням обсягу та складності робіт.
+<div class="info-about-years">20+ років професійного досвіду</div>
+
+<div class="info-about-note">
+Комплексний монтаж сантехніки у новобудовах Києва
 </div>
-
-<div class="info-card-arrow">→</div>
-
-</div>
-
-
-<div class="info-card" data-modal="reviewsModal" role="button" tabindex="0">
-
-<div class="info-card-number">04 / 04</div>
-
-<div class="info-card-title">Відгуки</div>
-
-<div class="info-card-description">
-Досвід наших клієнтів — <strong>реальні об'єкти та реальні враження</strong> від виконаної роботи.
-</div>
-
-<div class="info-card-arrow">→</div>
 
 </div>
 
@@ -1288,19 +1634,159 @@ button{
 
 </div>
 
-<div class="info-carousel-pagination" aria-hidden="true">
 
-<span class="info-carousel-dot active"></span>
-<span class="info-carousel-dot"></span>
-<span class="info-carousel-dot"></span>
-<span class="info-carousel-dot"></span>
+<!-- 02 -->
+<div class="info-card"
+     data-index="1"
+     data-number="02"
+     data-position="1"
+     data-modal="processModal"
+     role="button"
+     tabindex="0"
+     aria-label="Відкрити порядок співпраці">
+
+<div class="info-card-top">
+
+<span class="info-card-number">02</span>
+<span class="info-card-kicker">ПОРЯДОК СПІВПРАЦІ</span>
+
+<span class="info-card-arrow">→</span>
 
 </div>
 
-<div class="info-carousel-counter" id="infoCarouselCounter">01 / 04</div>
+<div class="info-card-content">
+
+<div class="info-card-title">Від проєкту до здачі</div>
+
+<div class="info-card-subtitle">
+Чіткий процес без зайвих посередників
+</div>
+
+<div class="info-process">
+
+<div class="info-process-step">
+<strong>Проєкт</strong>
+<span>аналіз</span>
+</div>
+
+<div class="info-process-arrow">→</div>
+
+<div class="info-process-step">
+<strong>Монтаж</strong>
+<span>виконання</span>
+</div>
+
+<div class="info-process-arrow">→</div>
+
+<div class="info-process-step">
+<strong>Здача</strong>
+<span>результат</span>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- 03 -->
+<div class="info-card"
+     data-index="2"
+     data-number="03"
+     data-position="2"
+     data-modal="priceModal"
+     role="button"
+     tabindex="0"
+     aria-label="Відкрити інформацію про вартість">
+
+<div class="info-card-top">
+
+<span class="info-card-number">03</span>
+<span class="info-card-kicker">ВАРТІСТЬ</span>
+
+<span class="info-card-arrow">→</span>
+
+</div>
+
+<div class="info-card-content">
+
+<div class="info-card-title">Розрахунок під проєкт</div>
+
+<div class="info-price-value">
+<span class="info-price-symbol">₴</span>
+<span class="info-price-main">індивідуальний</span>
+</div>
+
+<div class="info-price-note">
+Вартість формується після аналізу дизайн-проєкту та обсягу робіт.
+</div>
+
+</div>
+
+</div>
+
+
+<!-- 04 -->
+<div class="info-card"
+     data-index="3"
+     data-number="04"
+     data-position="3"
+     data-modal="reviewsModal"
+     role="button"
+     tabindex="0"
+     aria-label="Відкрити інформацію про відгуки">
+
+<div class="info-card-top">
+
+<span class="info-card-number">04</span>
+<span class="info-card-kicker">ВІДГУКИ</span>
+
+<span class="info-card-arrow">→</span>
+
+</div>
+
+<div class="info-card-content">
+
+<div class="info-card-title">Результат говорить сам</div>
+
+<div class="info-reviews-rating">
+
+<div class="info-stars">★★★★★</div>
+
+<div class="info-reviews-text">довіра клієнтів</div>
+
+</div>
+
+<div class="info-review-note">
+Якість монтажу — це те, що залишається після завершення ремонту.
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="info-stack-hint"></div>
+
+</div>
+
+<div class="info-pagination" aria-hidden="true">
+<span class="info-dot active"></span>
+<span class="info-dot"></span>
+<span class="info-dot"></span>
+<span class="info-dot"></span>
+</div>
+
+<div class="info-counter" id="infoCounter">01 / 04</div>
 
 </section>
 
+
+<!-- =========================================================
+     DOCK
+     ========================================================= -->
 
 <div class="ios-social-shell">
 
@@ -1429,7 +1915,7 @@ button{
 
 
 <!-- =========================================================
-     ВІКНО «ПРО МЕНЕ»
+     ABOUT MODAL
      ========================================================= -->
 
 <div class="about-modal" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
@@ -1464,48 +1950,42 @@ button{
 
 
 <!-- =========================================================
-     ВІКНО «ПОРЯДОК СПІВПРАЦІ»
+     PROCESS MODAL
      ========================================================= -->
 
-<div class="modal" id="processModal">
+<div class="info-modal" id="processModal" role="dialog" aria-modal="true" aria-labelledby="processModalTitle">
 
-<div class="modal-box">
+<div class="info-modal-content">
 
-<button class="modal-close" type="button" onclick="closeModal('processModal')" aria-label="Закрити">×</button>
+<button class="info-modal-close" type="button" onclick="closeInfoModal('processModal')" aria-label="Закрити">×</button>
 
-<div class="modal-title">Порядок співпраці</div>
+<h2 class="info-modal-title" id="processModalTitle">Порядок співпраці</h2>
 
-<div class="modal-text">
-Працюємо послідовно — від першого знайомства з проєктом до завершення монтажу.
-</div>
+<p class="info-modal-lead">Від проєкту до готового результату</p>
 
-<div class="info-modal-list">
+<div class="info-modal-steps">
 
 <div class="info-modal-step">
 <div class="info-modal-step-number">01</div>
-<div class="info-modal-step-text">
-<strong>Знайомство з проєктом.</strong> Вивчаємо дизайн-проєкт, креслення та технічні рішення.
+<div>
+<strong>Проєкт</strong>
+<span>Аналізуємо дизайн-проєкт та визначаємо обсяг робіт.</span>
 </div>
 </div>
 
 <div class="info-modal-step">
 <div class="info-modal-step-number">02</div>
-<div class="info-modal-step-text">
-<strong>Розрахунок.</strong> Визначаємо обсяг робіт, необхідні матеріали та формуємо вартість.
+<div>
+<strong>Монтаж</strong>
+<span>Виконуємо комплекс робіт відповідно до проєктних рішень.</span>
 </div>
 </div>
 
 <div class="info-modal-step">
 <div class="info-modal-step-number">03</div>
-<div class="info-modal-step-text">
-<strong>Планування.</strong> Узгоджуємо строки та формуємо графік виконання робіт.
-</div>
-</div>
-
-<div class="info-modal-step">
-<div class="info-modal-step-number">04</div>
-<div class="info-modal-step-text">
-<strong>Монтаж.</strong> Виконуємо комплекс робіт відповідно до проєкту та погоджених рішень.
+<div>
+<strong>Здача</strong>
+<span>Перевіряємо виконане та передаємо готовий результат.</span>
 </div>
 </div>
 
@@ -1517,50 +1997,34 @@ button{
 
 
 <!-- =========================================================
-     ВІКНО «ВАРТІСТЬ»
+     PRICE MODAL
      ========================================================= -->
 
-<div class="modal" id="priceModal">
+<div class="info-modal" id="priceModal" role="dialog" aria-modal="true" aria-labelledby="priceModalTitle">
 
-<div class="modal-box">
+<div class="info-modal-content">
 
-<button class="modal-close" type="button" onclick="closeModal('priceModal')" aria-label="Закрити">×</button>
+<button class="info-modal-close" type="button" onclick="closeInfoModal('priceModal')" aria-label="Закрити">×</button>
 
-<div class="modal-title">Вартість</div>
+<h2 class="info-modal-title" id="priceModalTitle">Вартість і підрахунок</h2>
 
-<div class="modal-text">
-Ми не використовуємо фіксовану ціну «за квадратний метр». Кожен об'єкт має свої особливості.
+<p class="info-modal-lead">Розрахунок під конкретний проєкт</p>
+
+<div class="info-modal-text">
+
+<p>Ми не працюємо за універсальним прайсом. Вартість залежить від <strong>обсягу, складності та конкретних проектних рішень</strong>.</p>
+
+<p>Після ознайомлення з дизайн-проєктом можна визначити перелік робіт та сформувати точний розрахунок.</p>
+
 </div>
 
-<div class="info-modal-list">
+<div class="info-modal-price-box">
 
-<div class="info-modal-step">
-<div class="info-modal-step-number">01</div>
-<div class="info-modal-step-text">
-<strong>Дизайн-проєкт.</strong> Насамперед оцінюємо технічні рішення та обсяг робіт.
-</div>
-</div>
+<strong>Вартість наших робіт — вище середньої по ринку.</strong>
 
-<div class="info-modal-step">
-<div class="info-modal-step-number">02</div>
-<div class="info-modal-step-text">
-<strong>Обсяг.</strong> Враховуємо кількість санвузлів, точок підключення, обладнання та етапи монтажу.
-</div>
-</div>
-
-<div class="info-modal-step">
-<div class="info-modal-step-number">03</div>
-<div class="info-modal-step-text">
-<strong>Матеріали.</strong> Враховуємо специфікацію проєкту та обладнання, яке використовується на об'єкті.
-</div>
-</div>
-
-<div class="info-modal-step">
-<div class="info-modal-step-number">04</div>
-<div class="info-modal-step-text">
-<strong>Підсумкова вартість.</strong> Розрахунок надаємо після аналізу конкретного об'єкта.
-</div>
-</div>
+<span>
+Це відповідає рівню виконання, досвіду та підходу до комплексного монтажу сантехніки.
+</span>
 
 </div>
 
@@ -1570,48 +2034,26 @@ button{
 
 
 <!-- =========================================================
-     ВІКНО «ВІДГУКИ»
+     REVIEWS MODAL
      ========================================================= -->
 
-<div class="modal" id="reviewsModal">
+<div class="info-modal" id="reviewsModal" role="dialog" aria-modal="true" aria-labelledby="reviewsModalTitle">
 
-<div class="modal-box">
+<div class="info-modal-content">
 
-<button class="modal-close" type="button" onclick="closeModal('reviewsModal')" aria-label="Закрити">×</button>
+<button class="info-modal-close" type="button" onclick="closeInfoModal('reviewsModal')" aria-label="Закрити">×</button>
 
-<div class="modal-title">Відгуки</div>
+<h2 class="info-modal-title" id="reviewsModalTitle">Відгуки</h2>
 
-<div class="modal-text">
-Найкраще про якість роботи говорять об'єкти та люди, для яких ми їх виконували.
-</div>
+<p class="info-modal-lead">Довіра формується результатом</p>
 
-<div class="info-modal-review">
-
-<div class="info-modal-review-name">Наші клієнти</div>
-
-<div class="info-modal-review-text">
-Відгуки та результати роботи можна переглянути у наших соціальних мережах.
-</div>
-
-</div>
+<div class="info-modal-stars">★★★★★</div>
 
 <div class="info-modal-review">
 
-<div class="info-modal-review-name">Реальні об'єкти</div>
+<strong>Якісний монтаж — це результат, який залишається після завершення ремонту.</strong>
 
-<div class="info-modal-review-text">
-У галереї на сайті представлені фотографії виконаних нами робіт.
-</div>
-
-</div>
-
-<div class="info-modal-review">
-
-<div class="info-modal-review-name">Досвід</div>
-
-<div class="info-modal-review-text">
-Понад 20 років професійної роботи — це десятки реалізованих об'єктів та напрацьована репутація.
-</div>
+Ми цінуємо довіру клієнтів і прагнемо, щоб виконана робота відповідала не лише проєкту, а й очікуванням від готового результату.
 
 </div>
 
@@ -1619,6 +2061,10 @@ button{
 
 </div>
 
+
+<!-- =========================================================
+     PAYMENT MODAL
+     ========================================================= -->
 
 <div class="modal" id="paymentModal">
 
@@ -1670,6 +2116,10 @@ button{
 
 </div>
 
+
+<!-- =========================================================
+     LIGHTBOX
+     ========================================================= -->
 
 <div class="lightbox" id="lightbox">
 
@@ -1797,109 +2247,137 @@ lightbox.addEventListener("click",event=>{
 
 
 /* =========================================================
-   ІНФОРМАЦІЙНІ КАРТКИ
+   INFO STACK
    ========================================================= */
 
-const infoCarouselWindow=document.getElementById("infoCarouselWindow");
-const infoCarouselTrack=document.getElementById("infoCarouselTrack");
+const infoStack=document.getElementById("infoStack");
 const infoCards=Array.from(document.querySelectorAll(".info-card"));
-const infoDots=Array.from(document.querySelectorAll(".info-carousel-dot"));
-const infoCounter=document.getElementById("infoCarouselCounter");
+const infoDots=Array.from(document.querySelectorAll(".info-dot"));
+const infoCounter=document.getElementById("infoCounter");
 
-let infoIndex=0;
+let infoActiveIndex=0;
 let infoStartX=0;
+let infoStartY=0;
 let infoCurrentX=0;
+let infoCurrentY=0;
 let infoDragging=false;
+let infoMoved=false;
+let infoHorizontalGesture=false;
 
-function updateInfoCarousel(index,animate=true){
+function updateInfoStack(){
 
-    infoIndex=Math.max(0,Math.min(infoCards.length-1,index));
+    infoCards.forEach((card,i)=>{
 
-    const cardWidth=infoCards[0].getBoundingClientRect().width;
-    const gap=12;
+        let position=(i-infoActiveIndex+infoCards.length)%infoCards.length;
 
-    const offset=infoIndex*(cardWidth+gap);
+        card.dataset.position=position;
 
-    infoCarouselTrack.style.transition=
-        animate
-        ?"transform .48s cubic-bezier(.22,.61,.36,1)"
-        :"none";
-
-    infoCarouselTrack.style.transform=
-        `translate3d(-${offset}px,0,0)`;
-
-    infoDots.forEach((dot,i)=>{
-        dot.classList.toggle("active",i===infoIndex);
     });
 
-    infoCounter.textContent=
-        `${String(infoIndex+1).padStart(2,"0")} / 04`;
+    infoDots.forEach((dot,i=>{
+        dot.classList.toggle("active",i===infoActiveIndex);
+    }));
+
+    infoCounter.textContent=`0${infoActiveIndex+1} / 04`;
+
 }
 
-infoCarouselWindow.addEventListener("touchstart",event=>{
 
-    infoStartX=event.touches[0].clientX;
-    infoCurrentX=infoStartX;
-    infoDragging=true;
+/* fix arrow-function grouping for pagination */
 
-},{passive:true});
+function updateInfoPagination(){
 
-infoCarouselWindow.addEventListener("touchmove",event=>{
+    infoDots.forEach((dot,i)=>{
+        dot.classList.toggle("active",i===infoActiveIndex);
+    });
 
-    if(!infoDragging)return;
+    infoCounter.textContent=`0${infoActiveIndex+1} / 04`;
 
-    infoCurrentX=event.touches[0].clientX;
+}
 
-},{passive:true});
 
-infoCarouselWindow.addEventListener("touchend",()=>{
+function refreshInfoStack(){
 
-    if(!infoDragging)return;
+    infoCards.forEach((card,i)=>{
 
-    infoDragging=false;
+        let position=(i-infoActiveIndex+infoCards.length)%infoCards.length;
 
-    const difference=infoCurrentX-infoStartX;
+        card.dataset.position=position;
 
-    if(Math.abs(difference)<45)return;
+    });
 
-    if(difference<0){
+    updateInfoPagination();
 
-        updateInfoCarousel(infoIndex+1);
+}
 
-    }else{
 
-        updateInfoCarousel(infoIndex-1);
+function moveInfoStack(direction){
+
+    const currentCard=infoCards[infoActiveIndex];
+
+    currentCard.classList.add(
+        direction<0 ? "swipe-away" : "swipe-away-right"
+    );
+
+    setTimeout(()=>{
+
+        currentCard.classList.remove("swipe-away","swipe-away-right");
+
+        infoActiveIndex=
+            (infoActiveIndex-direction+infoCards.length)
+            %infoCards.length;
+
+        refreshInfoStack();
+
+    },260);
+
+}
+
+
+function openInfoCardModal(card){
+
+    const modalId=card.dataset.modal;
+
+    if(!modalId)return;
+
+    if(modalId==="aboutModal"){
+
+        openAboutModal();
+        return;
 
     }
 
-});
+    const modal=document.getElementById(modalId);
+
+    if(!modal)return;
+
+    modal.classList.add("active");
+    document.body.style.overflow="hidden";
+
+}
+
 
 infoCards.forEach(card=>{
 
-    const openCardModal=()=>{
+    card.addEventListener("click",event=>{
 
-        const modalId=card.dataset.modal;
+        if(infoMoved)return;
 
-        if(modalId==="aboutModal"){
-
-            openAboutModal();
-
-        }else{
-
-            openModal(modalId);
-
+        if(card.dataset.position==="0"){
+            openInfoCardModal(card);
         }
 
-    };
-
-    card.addEventListener("click",openCardModal);
+    });
 
     card.addEventListener("keydown",event=>{
 
         if(event.key==="Enter"||event.key===" "){
 
             event.preventDefault();
-            openCardModal();
+
+            if(card.dataset.position==="0"){
+                openInfoCardModal(card);
+            }
 
         }
 
@@ -1907,15 +2385,155 @@ infoCards.forEach(card=>{
 
 });
 
-window.addEventListener("resize",()=>{
-    updateInfoCarousel(infoIndex,false);
+
+infoStack.addEventListener("touchstart",event=>{
+
+    const touch=event.touches[0];
+
+    infoStartX=touch.clientX;
+    infoStartY=touch.clientY;
+
+    infoCurrentX=infoStartX;
+    infoCurrentY=infoStartY;
+
+    infoDragging=true;
+    infoMoved=false;
+    infoHorizontalGesture=false;
+
+},{passive:true});
+
+
+infoStack.addEventListener("touchmove",event=>{
+
+    if(!infoDragging)return;
+
+    const touch=event.touches[0];
+
+    infoCurrentX=touch.clientX;
+    infoCurrentY=touch.clientY;
+
+    const deltaX=infoCurrentX-infoStartX;
+    const deltaY=infoCurrentY-infoStartY;
+
+    if(
+        !infoHorizontalGesture &&
+        Math.max(Math.abs(deltaX),Math.abs(deltaY))>8
+    ){
+
+        infoHorizontalGesture=
+            Math.abs(deltaX)>Math.abs(deltaY);
+
+    }
+
+    if(!infoHorizontalGesture)return;
+
+    infoMoved=true;
+
+    const currentCard=infoCards[infoActiveIndex];
+
+    currentCard.classList.add("dragging");
+
+    const resistance=Math.max(
+        -90,
+        Math.min(90,deltaX)
+    );
+
+    currentCard.style.transform=
+        `translate3d(${resistance}px,0,0) rotate(${resistance*.025}deg)`;
+
+},{passive:true});
+
+
+infoStack.addEventListener("touchend",()=>{
+
+    if(!infoDragging)return;
+
+    infoDragging=false;
+
+    const deltaX=infoCurrentX-infoStartX;
+
+    const currentCard=infoCards[infoActiveIndex];
+
+    currentCard.classList.remove("dragging");
+
+    if(!infoHorizontalGesture){
+
+        currentCard.style.transform="";
+
+        setTimeout(()=>{
+            infoMoved=false;
+        },50);
+
+        return;
+
+    }
+
+    if(Math.abs(deltaX)>=45){
+
+        currentCard.style.transform="";
+
+        if(deltaX<0){
+
+            moveInfoStack(-1);
+
+        }else{
+
+            moveInfoStack(1);
+
+        }
+
+    }else{
+
+        currentCard.style.transform=
+            "translate3d(0,0,0) rotate(0deg)";
+
+        setTimeout(()=>{
+
+            currentCard.style.transform="";
+
+        },300);
+
+    }
+
+    setTimeout(()=>{
+
+        infoMoved=false;
+
+    },100);
+
 });
 
 
+infoStack.addEventListener("touchcancel",()=>{
+
+    if(!infoDragging)return;
+
+    infoDragging=false;
+
+    const currentCard=infoCards[infoActiveIndex];
+
+    currentCard.classList.remove("dragging");
+
+    currentCard.style.transform=
+        "translate3d(0,0,0) rotate(0deg)";
+
+    setTimeout(()=>{
+
+        currentCard.style.transform="";
+
+    },300);
+
+});
+
+
+refreshInfoStack();
+
+
 /* =========================================================
-   ВІКНО «ПРО МЕНЕ»
+   ABOUT MODAL
    ========================================================= */
 
+const aboutToggle=infoCards[0];
 const aboutModal=document.getElementById("aboutModal");
 const aboutModalClose=document.getElementById("aboutModalClose");
 
@@ -1939,7 +2557,38 @@ aboutModal.addEventListener("click",event=>{
 
 
 /* =========================================================
-   ЗАГАЛЬНІ МОДАЛЬНІ ВІКНА
+   ADDITIONAL INFO MODALS
+   ========================================================= */
+
+function closeInfoModal(id){
+
+    const modal=document.getElementById(id);
+
+    if(!modal)return;
+
+    modal.classList.remove("active");
+    document.body.style.overflow="";
+
+}
+
+
+document.querySelectorAll(".info-modal").forEach(modal=>{
+
+    modal.addEventListener("click",event=>{
+
+        if(event.target===modal){
+
+            closeInfoModal(modal.id);
+
+        }
+
+    });
+
+});
+
+
+/* =========================================================
+   PAYMENT
    ========================================================= */
 
 function openModal(id){
@@ -1953,6 +2602,7 @@ function openModal(id){
 
 }
 
+
 function closeModal(id){
 
     const modal=document.getElementById(id);
@@ -1963,6 +2613,7 @@ function closeModal(id){
     document.body.style.overflow="";
 
 }
+
 
 document.querySelectorAll(".modal").forEach(modal=>{
 
@@ -1980,7 +2631,7 @@ document.querySelectorAll(".modal").forEach(modal=>{
 
 
 /* =========================================================
-   DOCK BAR — БЕЗ ЗМІН
+   SOCIAL DOCK
    ========================================================= */
 
 const socialViewport=document.getElementById("socialViewport");
@@ -2003,20 +2654,27 @@ function updateSocialDock(page,animate=true){
     socialDots.forEach((dot,i)=>{
         dot.classList.toggle("active",i===socialPage);
     });
+
 }
 
 socialViewport.addEventListener("touchstart",event=>{
+
     socialStartX=event.touches[0].clientX;
     socialCurrentX=socialStartX;
     socialDragging=true;
+
 },{passive:true});
 
 socialViewport.addEventListener("touchmove",event=>{
+
     if(!socialDragging)return;
+
     socialCurrentX=event.touches[0].clientX;
+
 },{passive:true});
 
 socialViewport.addEventListener("touchend",()=>{
+
     if(!socialDragging)return;
 
     socialDragging=false;
@@ -2026,17 +2684,26 @@ socialViewport.addEventListener("touchend",()=>{
     if(Math.abs(difference)<45)return;
 
     if(difference<0){
+
         updateSocialDock(socialPage+1);
+
     }else{
+
         updateSocialDock(socialPage-1);
+
     }
+
 });
 
+
 setTimeout(()=>{
+
     socialTrack.classList.add("social-hint");
 
     setTimeout(()=>{
+
         socialTrack.classList.remove("social-hint");
+
     },1100);
 
 },900);
@@ -2093,10 +2760,6 @@ function addSwipeToClose(element,closeFunction,options={}){
         const deltaX=currentX-startX;
         const deltaY=currentY-startY;
 
-        /*
-         * Визначаємо напрямок жесту після
-         * невеликого початкового руху.
-         */
         if(!verticalGesture && Math.max(Math.abs(deltaX),Math.abs(deltaY))>8){
 
             verticalGesture=Math.abs(deltaY)>Math.abs(deltaX);
@@ -2107,10 +2770,6 @@ function addSwipeToClose(element,closeFunction,options={}){
 
         moved=true;
 
-        /*
-         * Працюємо тільки зі свайпом вниз.
-         * Панель рухається безпосередньо за пальцем.
-         */
         if(deltaY>0){
 
             const resistance=Math.min(deltaY,window.innerHeight);
@@ -2143,10 +2802,6 @@ function addSwipeToClose(element,closeFunction,options={}){
 
         const deltaY=currentY-startY;
 
-        /*
-         * Якщо це не вертикальний жест —
-         * нічого не робимо.
-         */
         if(!verticalGesture){
 
             content.style.transition="";
@@ -2156,10 +2811,6 @@ function addSwipeToClose(element,closeFunction,options={}){
 
         }
 
-        /*
-         * ДОСТАТНІЙ СВАЙП
-         * Панель продовжує рух вниз і закривається.
-         */
         if(moved && deltaY>=threshold){
 
             content.style.transition=
@@ -2180,11 +2831,6 @@ function addSwipeToClose(element,closeFunction,options={}){
             return;
         }
 
-        /*
-         * НЕДОСТАТНІЙ СВАЙП
-         * Панель плавно повертається
-         * точно у початкове положення.
-         */
         content.style.transition=
             "transform .30s cubic-bezier(.22,.61,.36,1)";
 
@@ -2225,7 +2871,7 @@ function addSwipeToClose(element,closeFunction,options={}){
 
 
 /* =========================================================
-   ВІКНО «ПРО МЕНЕ»
+   ABOUT
    ========================================================= */
 
 addSwipeToClose(
@@ -2239,43 +2885,25 @@ addSwipeToClose(
 
 
 /* =========================================================
-   НОВІ ІНФОРМАЦІЙНІ ВІКНА
+   PROCESS / PRICE / REVIEWS
    ========================================================= */
 
-const processModal=document.getElementById("processModal");
-const priceModal=document.getElementById("priceModal");
-const reviewsModal=document.getElementById("reviewsModal");
+document.querySelectorAll(".info-modal").forEach(modal=>{
 
-addSwipeToClose(
-    processModal,
-    ()=>closeModal("processModal"),
-    {
-        content:processModal.querySelector(".modal-box"),
-        threshold:90
-    }
-);
+    addSwipeToClose(
+        modal,
+        ()=>closeInfoModal(modal.id),
+        {
+            content:modal.querySelector(".info-modal-content"),
+            threshold:90
+        }
+    );
 
-addSwipeToClose(
-    priceModal,
-    ()=>closeModal("priceModal"),
-    {
-        content:priceModal.querySelector(".modal-box"),
-        threshold:90
-    }
-);
-
-addSwipeToClose(
-    reviewsModal,
-    ()=>closeModal("reviewsModal"),
-    {
-        content:reviewsModal.querySelector(".modal-box"),
-        threshold:90
-    }
-);
+});
 
 
 /* =========================================================
-   ВІКНО «ОПЛАТА»
+   PAYMENT
    ========================================================= */
 
 const paymentModal=document.getElementById("paymentModal");
@@ -2291,7 +2919,7 @@ addSwipeToClose(
 
 
 /* =========================================================
-   ПЕРЕГЛЯД ФОТО
+   PHOTO VIEW
    ========================================================= */
 
 addSwipeToClose(
@@ -2304,7 +2932,9 @@ addSwipeToClose(
 );
 
 
-/* ========================================================= */
+/* =========================================================
+   ESC
+   ========================================================= */
 
 document.addEventListener("keydown",event=>{
 
@@ -2317,6 +2947,10 @@ document.addEventListener("keydown",event=>{
     if(aboutModal.classList.contains("active")){
         closeAboutModal();
     }
+
+    document.querySelectorAll(".info-modal.active").forEach(modal=>{
+        closeInfoModal(modal.id);
+    });
 
     document.querySelectorAll(".modal.active").forEach(modal=>{
         closeModal(modal.id);
