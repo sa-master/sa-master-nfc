@@ -2137,22 +2137,6 @@ let infoDragging=false;
 let infoSwipeLocked=false;
 let suppressCardClick=false;
 
-/*
- * infoDeckState:
- *
- * 0 = картка 1
- * 1 = картка 2
- * 2 = картка 3
- * 3 = картка 4
- *
- * Рух:
- * вправо = вперед
- * вліво = назад
- *
- * 1 <- заборонено
- * 4 -> заборонено
- */
-
 let infoDeckState=0;
 
 function updateInfoDeck(){
@@ -2193,19 +2177,7 @@ function cycleInfoDeck(direction){
 
     if(infoSwipeLocked)return;
 
-    /*
-     * direction:
-     *
-     * +1 = свайп вправо = вперед
-     * -1 = свайп вліво = назад
-     */
-
     const nextState=infoDeckState+direction;
-
-    /*
-     * Не дозволяємо вийти за межі
-     * 1 ↔ 2 ↔ 3 ↔ 4
-     */
 
     if(nextState<0 || nextState>=infoCards.length){
 
@@ -2230,11 +2202,6 @@ function cycleInfoDeck(direction){
         "depth2",
         "depth3"
     );
-
-    /*
-     * Візуальний напрямок вильоту
-     * відповідає фактичному напрямку свайпу.
-     */
 
     if(direction>0){
 
@@ -2311,29 +2278,16 @@ infoDeck.addEventListener("touchend",()=>{
     const horizontalDistance=Math.abs(deltaX);
     const verticalDistance=Math.abs(deltaY);
 
-    /*
-     * Реагуємо тільки на виразний
-     * горизонтальний свайп.
-     */
-
     if(
         horizontalDistance>=50 &&
         horizontalDistance>verticalDistance*1.2
     ){
-
-        /*
-         * Вправо — наступна картка.
-         */
 
         if(deltaX>0){
 
             cycleInfoDeck(1);
 
         }
-
-        /*
-         * Вліво — попередня картка.
-         */
 
         else{
 
@@ -2355,11 +2309,6 @@ infoDeck.addEventListener("click",event=>{
     if(!card)return;
 
     const cardIndex=Number(card.dataset.index);
-
-    /*
-     * Відкривати можна тільки ту картку,
-     * яка зараз знаходиться зверху.
-     */
 
     if(cardIndex!==infoDeckState)return;
 
@@ -2412,6 +2361,22 @@ document.querySelectorAll(".info-modal").forEach(modal=>{
     });
 
 });
+
+
+/* =========================================================
+   ДОДАНО: СВАЙП ДЛЯ «ПРО НАС»
+   ========================================================= */
+
+const infoAboutModal=document.getElementById("infoAboutModal");
+
+addSwipeToClose(
+    infoAboutModal,
+    ()=>closeInfoModal("infoAboutModal"),
+    {
+        content:infoAboutModal.querySelector(".info-modal-content"),
+        threshold:90
+    }
+);
 
 
 /* =========================================================
