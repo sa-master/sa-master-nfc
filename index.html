@@ -1012,7 +1012,7 @@ button{
     visibility:hidden;
     pointer-events:none;
     transition:opacity .25s ease,visibility .25s ease;
-    touch-action:pan-y;
+    touch-action:none;
 }
 
 .lightbox.active{
@@ -1031,6 +1031,7 @@ button{
     transform:scale(.97);
     transition:transform .3s ease;
     touch-action:none;
+    will-change:transform;
 }
 
 .lightbox.active img{
@@ -2099,27 +2100,534 @@ const lightbox=document.getElementById("lightbox");
 const lightboxImage=document.getElementById("lightboxImage");
 const lightboxClose=document.getElementById("lightboxClose");
 
-document.querySelectorAll(".gallery-slide img").forEach(img=>{
-    img.addEventListener("click",()=>{
-        lightboxImage.src=img.src;
-        lightboxImage.alt=img.alt;
-        lightbox.classList.add("active");
-        document.body.style.overflow="hidden";
-    });
-});
+const lightboxImages=
+    Array.from(
+        document.querySelectorAll(".gallery-slide img")
+    ).slice(0,galleryTotal);
 
-function closeLightbox(){
-    lightbox.classList.remove("active");
-    document.body.style.overflow="";
+let lightboxIndex=0;
+
+let lightboxStartX=0;
+let lightboxStartY=0;
+
+let lightboxCurrentX=0;
+let lightboxCurrentY=0;
+
+let lightboxDragging=false;
+let lightboxGestureAxis=null;
+let lightboxSwipeLocked=false;
+
+
+function openLightbox(index){
+
+    lightboxIndex=
+        Math.max(
+            0,
+            Math.min(
+                galleryTotal-1,
+                index
+            )
+        );
+
+    const image=
+        lightboxImages[lightboxIndex];
+
+    if(!image)return;
+
+    lightboxImage.src=
+        image.src;
+
+    lightboxImage.alt=
+        image.alt;
+
+    lightboxImage.style.transition="none";
+    lightboxImage.style.transform="scale(.97)";
+
+    lightbox.classList.add("active");
+
+    document.body.style.overflow="hidden";
+
+    requestAnimationFrame(()=>{
+
+        requestAnimationFrame(()=>{
+
+            lightboxImage.style.transition=
+                "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+            lightboxImage.style.transform=
+                "scale(1)";
+
+        });
+
+    });
+
 }
 
-lightboxClose.addEventListener("click",closeLightbox);
 
-lightbox.addEventListener("click",event=>{
-    if(event.target===lightbox){
-        closeLightbox();
-    }
+lightboxImages.forEach((img,index)=>{
+
+    img.addEventListener(
+        "click",
+        ()=>{
+            openLightbox(index);
+        }
+    );
+
 });
+
+
+function closeLightbox(){
+
+    lightbox.classList.remove(
+        "active"
+    );
+
+    lightboxImage.style.transition="";
+    lightboxImage.style.transform="";
+
+    document.body.style.overflow="";
+
+}
+
+
+function switchLightboxPhoto(direction){
+
+    if(lightboxSwipeLocked)return;
+
+    const nextIndex=
+        (lightboxIndex+direction+galleryTotal)%
+        galleryTotal;
+
+    const nextImage=
+        lightboxImages[nextIndex];
+
+    if(!nextImage)return;
+
+    lightboxSwipeLocked=true;
+
+    const exitX=
+        direction>0
+            ? "-110%"
+            : "110%";
+
+    const enterX=
+        direction>0
+            ? "110%"
+            : "-110%";
+
+
+    lightboxImage.style.transition=
+        "transform .28s cubic-bezier(.22,.61,.36,1)";
+
+    lightboxImage.style.transform=
+        `translateX(${exitX}) scale(.96)`;
+
+
+    setTimeout(()=>{
+
+        lightboxIndex=
+            nextIndex;
+
+        lightboxImage.src=
+            nextImage.src;
+
+        lightboxImage.alt=
+            nextImage.alt;
+
+        lightboxImage.style.transition=
+            "none";
+
+        lightboxImage.style.transform=
+            `translateX(${enterX}) scale(.96)`;
+
+
+        requestAnimationFrame(()=>{
+
+            requestAnimationFrame(()=>{
+
+                lightboxImage.style.transition=
+                    "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+                lightboxImage.style.transform=
+                    "translateX(0) scale(1)";
+
+            });
+
+        });
+
+
+        setTimeout(()=>{
+
+            lightboxImage.style.transition="";
+            lightboxImage.style.transform="";
+            lightboxSwipeLocked=false;
+
+        },320);
+
+    },280);
+
+}
+
+
+/* =========================================================
+   LIGHTBOX — СВАЙП
+   =========================================================
+
+   ↑ ВГОРУ  — ЗАКРИТИ
+   ↓ ВНИЗ   — ЗАКРИТИ
+   ← ВЛІВО  — НАСТУПНЕ ФОТО
+   → ВПРАВО — ПОПЕРЕДНЄ ФОТО
+
+   ========================================================= */
+
+lightboxImage.addEventListener(
+    "touchstart",
+    event=>{
+
+        if(
+            !lightbox.classList.contains(
+                "active"
+            )
+        ){
+
+            return;
+
+        }
+
+        if(lightboxSwipeLocked)return;
+
+        const touch=
+            event.touches[0];
+
+        lightboxStartX=
+            touch.clientX;
+
+        lightboxStartY=
+            touch.clientY;
+
+        lightboxCurrentX=
+            lightboxStartX;
+
+        lightboxCurrentY=
+            lightboxStartY;
+
+        lightboxDragging=true;
+
+        lightboxGestureAxis=null;
+
+        lightboxImage.style.transition=
+            "none";
+
+    },
+    {passive:true}
+);
+
+
+lightboxImage.addEventListener(
+    "touchmove",
+    event=>{
+
+        if(!lightboxDragging)return;
+
+        const touch=
+            event.touches[0];
+
+        lightboxCurrentX=
+            touch.clientX;
+
+        lightboxCurrentY=
+            touch.clientY;
+
+        const deltaX=
+            lightboxCurrentX-
+            lightboxStartX;
+
+        const deltaY=
+            lightboxCurrentY-
+            lightboxStartY;
+
+
+        const distance=
+            Math.max(
+                Math.abs(deltaX),
+                Math.abs(deltaY)
+            );
+
+
+        if(
+            !lightboxGestureAxis &&
+            distance>8
+        ){
+
+            lightboxGestureAxis=
+                Math.abs(deltaX)>
+                Math.abs(deltaY)
+                    ? "horizontal"
+                    : "vertical";
+
+        }
+
+
+        if(!lightboxGestureAxis)return;
+
+
+        /* ---------------------------------------------
+           ГОРИЗОНТАЛЬНИЙ СВАЙП
+           --------------------------------------------- */
+
+        if(
+            lightboxGestureAxis===
+            "horizontal"
+        ){
+
+            const movement=
+                deltaX*.70;
+
+            const progress=
+                Math.min(
+                    Math.abs(movement)/
+                    window.innerWidth,
+                    1
+                );
+
+            const scale=
+                1-
+                (progress*.05);
+
+            lightboxImage.style.transform=
+                `translateX(${movement}px) scale(${scale})`;
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           ВЕРТИКАЛЬНИЙ СВАЙП
+           --------------------------------------------- */
+
+        if(
+            lightboxGestureAxis===
+            "vertical"
+        ){
+
+            const movement=
+                deltaY*.72;
+
+            const progress=
+                Math.min(
+                    Math.abs(movement)/
+                    window.innerHeight,
+                    1
+                );
+
+            const scale=
+                1-
+                (progress*.05);
+
+            lightboxImage.style.transform=
+                `translateY(${movement}px) scale(${scale})`;
+
+        }
+
+    },
+    {passive:true}
+);
+
+
+lightboxImage.addEventListener(
+    "touchend",
+    ()=>{
+
+        if(!lightboxDragging)return;
+
+        lightboxDragging=false;
+
+        const deltaX=
+            lightboxCurrentX-
+            lightboxStartX;
+
+        const deltaY=
+            lightboxCurrentY-
+            lightboxStartY;
+
+        const horizontalDistance=
+            Math.abs(deltaX);
+
+        const verticalDistance=
+            Math.abs(deltaY);
+
+
+        /* ---------------------------------------------
+           ВЕРТИКАЛЬНИЙ СВАЙП — ЗАКРИТТЯ
+           --------------------------------------------- */
+
+        if(
+            lightboxGestureAxis===
+            "vertical"
+        ){
+
+            if(
+                verticalDistance>=80
+            ){
+
+                const direction=
+                    deltaY<0
+                        ? -1
+                        : 1;
+
+                lightboxImage.style.transition=
+                    "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+                lightboxImage.style.transform=
+                    `translateY(${direction*110}%) scale(.96)`;
+
+
+                setTimeout(
+                    ()=>{
+                        closeLightbox();
+                    },
+                    300
+                );
+
+                lightboxGestureAxis=null;
+
+                return;
+
+            }
+
+
+            lightboxImage.style.transition=
+                "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+            lightboxImage.style.transform=
+                "translateY(0) scale(1)";
+
+
+            setTimeout(
+                ()=>{
+
+                    lightboxImage.style.transition="";
+                    lightboxImage.style.transform="";
+
+                },
+                300
+            );
+
+            lightboxGestureAxis=null;
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           ГОРИЗОНТАЛЬНИЙ СВАЙП — ФОТО
+           --------------------------------------------- */
+
+        if(
+            lightboxGestureAxis===
+            "horizontal" &&
+            horizontalDistance>=80
+        ){
+
+            if(deltaX<0){
+
+                switchLightboxPhoto(1);
+
+            }else{
+
+                switchLightboxPhoto(-1);
+
+            }
+
+            lightboxGestureAxis=null;
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           НЕДОСТАТНІЙ СВАЙП — ПОВЕРНЕННЯ
+           --------------------------------------------- */
+
+        lightboxImage.style.transition=
+            "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+        lightboxImage.style.transform=
+            "translateX(0) translateY(0) scale(1)";
+
+
+        setTimeout(
+            ()=>{
+
+                lightboxImage.style.transition="";
+                lightboxImage.style.transform="";
+
+            },
+            300
+        );
+
+        lightboxGestureAxis=null;
+
+    },
+    {passive:true}
+);
+
+
+lightboxImage.addEventListener(
+    "touchcancel",
+    ()=>{
+
+        if(!lightboxDragging)return;
+
+        lightboxDragging=false;
+        lightboxGestureAxis=null;
+
+        lightboxImage.style.transition=
+            "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+        lightboxImage.style.transform=
+            "translateX(0) translateY(0) scale(1)";
+
+
+        setTimeout(
+            ()=>{
+
+                lightboxImage.style.transition="";
+                lightboxImage.style.transform="";
+
+            },
+            300
+        );
+
+    },
+    {passive:true}
+);
+
+
+lightboxClose.addEventListener(
+    "click",
+    closeLightbox
+);
+
+
+lightbox.addEventListener(
+    "click",
+    event=>{
+
+        if(
+            event.target===
+            lightbox
+        ){
+
+            closeLightbox();
+
+        }
+
+    }
+);
 
 
 /* =========================================================
@@ -2575,10 +3083,6 @@ document.querySelectorAll(".info-modal").forEach(modal=>{
         if(!gestureAxis)return;
 
 
-        /* ---------------------------------------------
-           ГОРИЗОНТАЛЬНИЙ СВАЙП
-           --------------------------------------------- */
-
         if(gestureAxis==="horizontal"){
 
             const movement=deltaX*.55;
@@ -2590,10 +3094,6 @@ document.querySelectorAll(".info-modal").forEach(modal=>{
 
         }
 
-
-        /* ---------------------------------------------
-           ВЕРТИКАЛЬНИЙ СВАЙП
-           --------------------------------------------- */
 
         if(gestureAxis==="vertical"){
 
@@ -2628,10 +3128,6 @@ document.querySelectorAll(".info-modal").forEach(modal=>{
         const horizontalDistance=Math.abs(deltaX);
         const verticalDistance=Math.abs(deltaY);
 
-
-        /* ---------------------------------------------
-           ВЕРТИКАЛЬНИЙ СВАЙП — ЗАКРИТТЯ
-           --------------------------------------------- */
 
         if(gestureAxis==="vertical"){
 
@@ -2681,10 +3177,6 @@ document.querySelectorAll(".info-modal").forEach(modal=>{
         }
 
 
-        /* ---------------------------------------------
-           ГОРИЗОНТАЛЬНИЙ СВАЙП — ПЕРЕХІД
-           --------------------------------------------- */
-
         if(
             gestureAxis==="horizontal" &&
             horizontalDistance>=80
@@ -2706,10 +3198,6 @@ document.querySelectorAll(".info-modal").forEach(modal=>{
 
         }
 
-
-        /* ---------------------------------------------
-           НЕДОСТАТНІЙ СВАЙП — ПОВЕРНЕННЯ
-           --------------------------------------------- */
 
         content.style.transition=
             "transform .30s cubic-bezier(.22,.61,.36,1)";
@@ -2893,20 +3381,6 @@ addSwipeToClose(
     ()=>closeModal("paymentModal"),
     {
         content:paymentModal.querySelector(".modal-box"),
-        threshold:90
-    }
-);
-
-
-/* =========================================================
-   ПЕРЕГЛЯД ФОТО
-   ========================================================= */
-
-addSwipeToClose(
-    lightbox,
-    closeLightbox,
-    {
-        content:lightboxImage,
         threshold:90
     }
 );
