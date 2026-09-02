@@ -24,6 +24,7 @@
         /* ── змінні ── */
         :root {
             --color-primary: #007AFF;
+            --color-primary-dark: #0055CC;
             --color-text: #1C1C1E;
             --color-text-secondary: #8E8E93;
             --color-bg: #F2F2F7;
@@ -68,73 +69,133 @@
             margin: 0 auto;
         }
 
-        /* ── hero ── */
+        /* ============================================================
+           НОВА СТИЛЬНА ШАПКА
+           ============================================================ */
         .hero {
             position: relative;
             overflow: hidden;
-            padding: 18px 16px 16px;
+            padding: 24px 20px 20px;
             border-radius: 28px;
-            background: #FFFFFF;
+            background: linear-gradient(145deg, #FFFFFF, #F5F7FA);
             border: 1px solid rgba(255, 255, 255, .9);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, .06), inset 0 1px 0 rgba(255, 255, 255, .9);
+            box-shadow: 0 16px 48px rgba(0, 0, 0, .06), 0 4px 12px rgba(0, 0, 0, .03), inset 0 1px 0 rgba(255, 255, 255, .95);
         }
+
+        /* декоративний градієнтний фон */
         .hero::before {
             content: "";
             position: absolute;
-            width: 200px;
-            height: 200px;
-            top: -120px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 122, 255, .08);
-            filter: blur(50px);
+            inset: 0;
+            background: radial-gradient(ellipse at 70% 20%, rgba(0, 122, 255, .06) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 80%, rgba(0, 122, 255, .04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* велика кольорова пляма зверху */
+        .hero::after {
+            content: "";
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            top: -140px;
+            right: -80px;
+            background: radial-gradient(circle, rgba(0, 122, 255, .08) 0%, transparent 70%);
             border-radius: 50%;
             pointer-events: none;
+            z-index: 0;
         }
+
         .hero-header {
             position: relative;
             z-index: 1;
             display: flex;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 16px;
+            gap: 16px;
         }
+
+        /* логотип з об'ємною тінню */
         .logo-wrapper {
-            width: 72px;
-            height: 72px;
-            flex: 0 0 72px;
+            width: 80px;
+            height: 80px;
+            flex: 0 0 80px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            border-radius: 20px;
+            border-radius: 22px;
             background: #fff;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, .06);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .08), 0 2px 8px rgba(0, 0, 0, .04), inset 0 0 0 1px rgba(0, 0, 0, .02);
+            transition: transform .3s ease, box-shadow .3s ease;
+        }
+        .logo-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, .12);
         }
         .logo {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            padding: 6px;
         }
+
+        .hero-brand {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .brand-top {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
         .brand-name {
             font-family: "Rubik Mono One", sans-serif;
-            font-size: 28px;
+            font-size: 32px;
             line-height: 1;
             letter-spacing: -1.2px;
             color: #111;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
+
+        .brand-badge {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: .6px;
+            color: #fff;
+            background: linear-gradient(145deg, var(--color-primary), var(--color-primary-dark));
+            padding: 3px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            -webkit-text-fill-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 122, 255, .25);
+            white-space: nowrap;
+        }
+
         .brand-divider {
-            width: 100%;
-            height: 1px;
-            margin: 5px 0 4px;
-            background: linear-gradient(90deg, rgba(17, 17, 17, .6), rgba(0, 122, 255, .3), transparent);
+            width: 40px;
+            height: 2px;
+            margin: 8px 0 6px;
+            background: linear-gradient(90deg, var(--color-primary), rgba(0, 122, 255, .2));
+            border-radius: 2px;
         }
+
         .brand-sub {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 500;
-            letter-spacing: .3px;
+            letter-spacing: .2px;
             color: var(--color-text-secondary);
-            text-transform: lowercase;
+        }
+
+        .brand-sub strong {
+            color: var(--color-primary);
+            font-weight: 600;
         }
 
         /* ── gallery ── */
@@ -144,6 +205,7 @@
             border-radius: var(--radius-card);
             background: #E5E8EC;
             box-shadow: var(--shadow-card);
+            margin-top: 16px;
         }
         .gallery-window {
             position: relative;
@@ -266,7 +328,6 @@
             stroke-width: 2;
             fill: none;
         }
-        /* кольори іконок */
         .widget-card:nth-child(1) .widget-icon {
             background: rgba(0, 122, 255, .10);
         }
@@ -515,7 +576,7 @@
             -webkit-backdrop-filter: blur(10px);
         }
 
-        /* ── social dock (ОРИГІНАЛЬНИЙ) ── */
+        /* ── social dock ── */
         .ios-social-shell {
             width: 350px;
             max-width: calc(100vw - 28px);
@@ -672,21 +733,29 @@
                 width: calc(100% - 14px);
             }
             .hero {
-                padding: 14px 12px 12px;
+                padding: 18px 14px 16px;
                 border-radius: 24px;
             }
             .logo-wrapper {
-                width: 60px;
-                height: 60px;
-                flex-basis: 60px;
-                border-radius: 16px;
+                width: 64px;
+                height: 64px;
+                flex-basis: 64px;
+                border-radius: 18px;
             }
             .brand-name {
-                font-size: 22px;
+                font-size: 24px;
                 letter-spacing: -.8px;
             }
+            .brand-badge {
+                font-size: 7px;
+                padding: 2px 8px;
+            }
             .brand-sub {
-                font-size: 10px;
+                font-size: 11px;
+            }
+            .brand-divider {
+                width: 32px;
+                margin: 6px 0 4px;
             }
             .widgets-grid {
                 gap: 8px;
@@ -762,6 +831,30 @@
             }
         }
         @media(max-width:380px) {
+            .hero {
+                padding: 14px 12px 12px;
+                border-radius: 20px;
+            }
+            .logo-wrapper {
+                width: 54px;
+                height: 54px;
+                flex-basis: 54px;
+                border-radius: 14px;
+            }
+            .brand-name {
+                font-size: 20px;
+            }
+            .brand-badge {
+                font-size: 6px;
+                padding: 1px 6px;
+            }
+            .brand-sub {
+                font-size: 10px;
+            }
+            .brand-divider {
+                width: 28px;
+                margin: 4px 0 3px;
+            }
             .widgets-grid {
                 gap: 6px;
             }
@@ -828,16 +921,21 @@
 
     <div class="page">
 
-        <!-- ====== HERO ====== -->
+        <!-- ====== НОВА СТИЛЬНА ШАПКА ====== -->
         <section class="hero">
             <div class="hero-header">
                 <div class="logo-wrapper">
                     <img class="logo" src="logo.png" alt="SA MASTER">
                 </div>
                 <div class="hero-brand">
-                    <div class="brand-name">SA-MASTER</div>
+                    <div class="brand-top">
+                        <span class="brand-name">SA-MASTER</span>
+                        <span class="brand-badge">профі</span>
+                    </div>
                     <div class="brand-divider"></div>
-                    <div class="brand-sub">комплексний монтаж сантехніки</div>
+                    <div class="brand-sub">
+                        комплексний монтаж сантехніки <strong>· 20+ років</strong>
+                    </div>
                 </div>
             </div>
 
@@ -873,7 +971,7 @@
         <section class="widgets-section">
             <div class="widgets-grid">
 
-                <!-- Widget 1: ПРО НАС -->
+                <!-- Widget 1 -->
                 <div class="widget-card" data-modal="modalAbout">
                     <div class="widget-icon">
                         <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
@@ -883,7 +981,7 @@
                     <div class="widget-badge">01</div>
                 </div>
 
-                <!-- Widget 2: ПРО РОБОТУ -->
+                <!-- Widget 2 -->
                 <div class="widget-card" data-modal="modalProcess">
                     <div class="widget-icon">
                         <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
@@ -893,7 +991,7 @@
                     <div class="widget-badge">02</div>
                 </div>
 
-                <!-- Widget 3: ПРО ВАРТІСТЬ -->
+                <!-- Widget 3 -->
                 <div class="widget-card" data-modal="modalPrice">
                     <div class="widget-icon">
                         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
@@ -903,7 +1001,7 @@
                     <div class="widget-badge">03</div>
                 </div>
 
-                <!-- Widget 4: ПРО РЕЗУЛЬТАТ -->
+                <!-- Widget 4 -->
                 <div class="widget-card" data-modal="modalReviews">
                     <div class="widget-icon">
                         <svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -916,7 +1014,7 @@
             </div>
         </section>
 
-        <!-- ====== SOCIAL DOCK (ОРИГІНАЛЬНИЙ) ====== -->
+        <!-- ====== SOCIAL DOCK ====== -->
         <div class="ios-social-shell">
             <div class="ios-social-viewport" id="socialViewport">
                 <div class="ios-social-track" id="socialTrack">
@@ -1241,7 +1339,6 @@
             document.body.style.overflow = '';
         };
 
-        // Відкриття модалок через клік на віджети
         var widgets = document.querySelectorAll('.widget-card');
         for (var w = 0; w < widgets.length; w++) {
             (function(card) {
@@ -1252,7 +1349,6 @@
             })(widgets[w]);
         }
 
-        // Закриття по фону
         var overlays = document.querySelectorAll('.modal-overlay');
         for (var o = 0; o < overlays.length; o++) {
             (function(overlay) {
@@ -1264,7 +1360,6 @@
             })(overlays[o]);
         }
 
-        // ESC
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 var open = document.querySelector('.modal-overlay.active');
@@ -1273,7 +1368,7 @@
         });
 
         /* ============================================================
-           SOCIAL DOCK (ОРИГІНАЛЬНИЙ)
+           SOCIAL DOCK
            ============================================================ */
         (function social() {
             var track = document.getElementById('socialTrack');
