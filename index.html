@@ -62,11 +62,19 @@ button{
     font-family:inherit;
 }
 
+/* =========================================================
+   ОСНОВНА СТОРІНКА
+   ========================================================= */
+
 .page{
     width:min(620px,calc(100% - 24px));
     margin:0 auto;
     padding:18px 0 26px;
 }
+
+/* =========================================================
+   HERO
+   ========================================================= */
 
 .hero{
     position:relative;
@@ -150,6 +158,10 @@ button{
     color:#66727a;
     text-transform:lowercase;
 }
+
+/* =========================================================
+   GALLERY
+   ========================================================= */
 
 .gallery{
     position:relative;
@@ -244,75 +256,327 @@ button{
     background:#fff;
 }
 
-.about-block{
+/* =========================================================
+   INFO CARD DECK
+   ========================================================= */
+
+.info-section{
     position:relative;
-    margin:24px 0;
-    padding:24px 18px;
-    border-radius:22px;
-    background:rgba(255,255,255,.78);
-    border:1px solid rgba(255,255,255,.95);
-    box-shadow:0 12px 30px rgba(30,70,90,.08),inset 0 1px 0 rgba(255,255,255,.8);
-    cursor:pointer;
-    transition:transform .2s ease,box-shadow .2s ease;
+    margin:24px 0 25px;
+    padding:0 12px;
 }
 
-.about-block:active{
-    transform:scale(.985);
-    box-shadow:0 8px 20px rgba(30,70,90,.07),inset 0 1px 0 rgba(255,255,255,.8);
-}
-
-.about-preview{
+.info-deck-wrap{
+    position:relative;
+    width:100%;
     display:flex;
     align-items:center;
-    gap:15px;
+    justify-content:center;
 }
 
-.about-photo{
-    width:104px;
-    height:104px;
-    flex:0 0 104px;
+.info-deck{
+    position:relative;
+    width:100%;
+    height:184px;
+    touch-action:pan-y;
+    overflow:visible;
+}
+
+.info-card{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    padding:20px 20px 18px;
+    border-radius:24px;
+    background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(244,249,251,.94));
+    border:1px solid rgba(255,255,255,.98);
+    box-shadow:
+        0 15px 35px rgba(30,70,90,.11),
+        0 3px 8px rgba(30,70,90,.05),
+        inset 0 1px 0 rgba(255,255,255,.95);
+    cursor:pointer;
+    overflow:hidden;
+    transform-origin:center center;
+    transition:
+        transform .45s cubic-bezier(.22,.61,.36,1),
+        opacity .35s ease,
+        box-shadow .35s ease;
+    will-change:transform,opacity;
+}
+
+.info-card.top{
+    transform:translate3d(0,0,0) scale(1) rotate(0deg);
+    z-index:4;
+}
+
+.info-card.depth1{
+    transform:translate3d(0,8px,0) scale(.965) rotate(-.4deg);
+    z-index:3;
+}
+
+.info-card.depth2{
+    transform:translate3d(0,15px,0) scale(.93) rotate(.6deg);
+    z-index:2;
+}
+
+.info-card.depth3{
+    transform:translate3d(0,21px,0) scale(.895) rotate(-.7deg);
+    z-index:1;
+}
+
+.info-card.is-leaving-left{
+    transform:translate3d(-125%,35px,0) scale(.91) rotate(-8deg);
+    opacity:.08;
+    z-index:10;
+}
+
+.info-card.is-leaving-right{
+    transform:translate3d(125%,35px,0) scale(.91) rotate(8deg);
+    opacity:.08;
+    z-index:10;
+}
+
+.info-card:active{
+    box-shadow:
+        0 9px 22px rgba(30,70,90,.09),
+        inset 0 1px 0 rgba(255,255,255,.95);
+}
+
+.info-card-number{
+    position:absolute;
+    top:17px;
+    left:20px;
+    font-size:10px;
+    font-weight:750;
+    letter-spacing:1.2px;
+    color:#8a9aa2;
+}
+
+.info-card-title{
+    position:absolute;
+    top:17px;
+    right:20px;
+    font-size:10px;
+    font-weight:750;
+    letter-spacing:1px;
+    color:#687982;
+}
+
+.info-card-content{
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    gap:17px;
+    padding-top:10px;
+}
+
+.info-card-photo{
+    width:102px;
+    height:102px;
+    flex:0 0 102px;
     object-fit:cover;
     border-radius:50%;
-    box-shadow:0 7px 18px rgba(0,0,0,.10);
     border:2px solid #fff;
+    box-shadow:0 8px 20px rgba(0,0,0,.11);
 }
 
-.about-info{
+.info-card-icon{
+    width:82px;
+    height:82px;
+    flex:0 0 82px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:24px;
+    background:linear-gradient(145deg,#fff,#edf7fb);
+    box-shadow:
+        inset 0 0 0 1px rgba(40,100,125,.06),
+        0 7px 18px rgba(40,90,110,.08);
+}
+
+.info-card-icon svg{
+    width:42px;
+    height:42px;
+    display:block;
+}
+
+.info-card-text{
     min-width:0;
     flex:1;
 }
 
-.about-name{
-    font-size:18px;
-    font-weight:850;
-    letter-spacing:-.4px;
+.info-card-heading{
+    font-size:19px;
+    line-height:1.1;
+    font-weight:800;
+    letter-spacing:-.5px;
+    color:#1d282e;
 }
 
-.about-description{
-    margin-top:5px;
-    font-size:14px;
+.info-card-description{
+    margin-top:7px;
+    font-size:13px;
     line-height:1.4;
-    color:#526771;
+    color:#66777f;
 }
 
-.about-description strong{
-    color:#1c59a3;
+.info-card-description strong{
+    color:#1976d2;
 }
 
-.about-block .about-arrow{
-    width:34px;
-    height:34px;
-    flex:0 0 34px;
+.info-arrow{
+    position:absolute;
+    right:17px;
+    bottom:15px;
+    width:31px;
+    height:31px;
     display:flex;
     align-items:center;
     justify-content:center;
     border-radius:50%;
     background:linear-gradient(145deg,#fff,#e9f5fa);
     color:#176c91;
-    font-size:20px;
+    font-size:19px;
     font-weight:500;
     box-shadow:inset 0 0 0 1px rgba(40,100,125,.05);
 }
+
+.deck-swipe-hint{
+    position:absolute;
+    top:50%;
+    z-index:20;
+    width:28px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transform:translateY(-50%);
+    pointer-events:none;
+    opacity:.30;
+}
+
+.deck-swipe-hint svg{
+    width:23px;
+    height:23px;
+    display:block;
+    filter:drop-shadow(0 2px 4px rgba(30,70,90,.08));
+}
+
+.deck-swipe-left{
+    left:-2px;
+}
+
+.deck-swipe-right{
+    right:-2px;
+}
+
+/* =========================================================
+   КАРТКИ — МОДАЛЬНІ ВІКНА
+   ========================================================= */
+
+.info-modal{
+    position:fixed;
+    inset:0;
+    z-index:11000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(8,18,24,.58);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transition:opacity .25s ease,visibility .25s ease;
+}
+
+.info-modal.active{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+}
+
+.info-modal-content{
+    position:relative;
+    width:100%;
+    max-width:440px;
+    max-height:88vh;
+    overflow-y:auto;
+    padding:25px 20px 22px;
+    border-radius:28px;
+    background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(244,248,250,.97));
+    box-shadow:0 25px 70px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.9);
+    transform:translateY(18px) scale(.97);
+    transition:transform .3s cubic-bezier(.22,.61,.36,1);
+    touch-action:pan-y;
+}
+
+.info-modal.active .info-modal-content{
+    transform:translateY(0) scale(1);
+}
+
+.info-modal-close{
+    position:absolute;
+    top:12px;
+    right:12px;
+    width:40px;
+    height:40px;
+    border:0;
+    border-radius:50%;
+    background:rgba(120,130,140,.10);
+    color:#53616a;
+    font-size:24px;
+    line-height:1;
+    cursor:pointer;
+    z-index:5;
+}
+
+.info-modal-title{
+    font-size:24px;
+    font-weight:800;
+    letter-spacing:-.6px;
+}
+
+.info-modal-lead{
+    margin-top:6px;
+    font-size:14px;
+    font-weight:650;
+    color:#1976d2;
+}
+
+.info-modal-text{
+    margin-top:18px;
+    font-size:15px;
+    line-height:1.55;
+    color:#5f6c73;
+}
+
+.info-modal-text p{
+    margin:0 0 13px;
+}
+
+.info-modal-text strong{
+    color:#20282d;
+}
+
+.info-modal-list{
+    margin:15px 0 0 18px;
+    padding:0;
+    color:#5f6c73;
+    font-size:14px;
+    line-height:1.55;
+}
+
+.info-modal-list li{
+    margin-bottom:9px;
+}
+
+/* =========================================================
+   SOCIAL DOCK — БЕЗ ЗМІН
+   ========================================================= */
 
 .ios-social-shell{
     width:350px;
@@ -507,6 +771,10 @@ button{
     animation:socialHint 1s ease-in-out 1;
 }
 
+/* =========================================================
+   ABOUT MODAL
+   ========================================================= */
+
 .about-modal{
     position:fixed;
     inset:0;
@@ -605,6 +873,10 @@ button{
     cursor:pointer;
     z-index:5;
 }
+
+/* =========================================================
+   PAYMENT MODAL
+   ========================================================= */
 
 .modal{
     position:fixed;
@@ -736,6 +1008,10 @@ button{
     background:linear-gradient(145deg,#303034 0%,#171719 52%,#09090a 100%);
 }
 
+/* =========================================================
+   LIGHTBOX
+   ========================================================= */
+
 .lightbox{
     position:fixed;
     inset:0;
@@ -793,6 +1069,10 @@ button{
     -webkit-backdrop-filter:blur(10px);
 }
 
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
 @media(max-width:420px){
 
     .page{
@@ -831,33 +1111,82 @@ button{
         max-width:190px;
     }
 
-    .about-block{
-        padding:17px 14px;
+    .info-section{
+        padding:0 8px;
+    }
+
+    .info-deck{
+        height:174px;
+    }
+
+    .info-card{
+        padding:18px 16px 16px;
+        border-radius:22px;
+    }
+
+    .info-card-number{
+        top:15px;
+        left:16px;
+    }
+
+    .info-card-title{
+        top:15px;
+        right:16px;
+    }
+
+    .info-card-content{
+        gap:12px;
+        padding-top:9px;
+    }
+
+    .info-card-photo{
+        width:88px;
+        height:88px;
+        flex-basis:88px;
+    }
+
+    .info-card-icon{
+        width:70px;
+        height:70px;
+        flex-basis:70px;
         border-radius:21px;
     }
 
-    .about-preview{
-        gap:12px;
+    .info-card-icon svg{
+        width:36px;
+        height:36px;
     }
 
-    .about-photo{
-        width:92px;
-        height:92px;
-        flex-basis:92px;
-    }
-
-    .about-name{
+    .info-card-heading{
         font-size:17px;
     }
 
-    .about-description{
-        font-size:13px;
+    .info-card-description{
+        font-size:12px;
     }
 
-    .about-block .about-arrow{
-        width:32px;
-        height:32px;
-        flex-basis:32px;
+    .info-arrow{
+        width:30px;
+        height:30px;
+        right:14px;
+        bottom:13px;
+    }
+
+    .deck-swipe-hint{
+        width:23px;
+    }
+
+    .deck-swipe-hint svg{
+        width:20px;
+        height:20px;
+    }
+
+    .deck-swipe-left{
+        left:-1px;
+    }
+
+    .deck-swipe-right{
+        right:-1px;
     }
 
     .ios-social-shell{
@@ -925,6 +1254,16 @@ button{
         line-height:1.5;
     }
 
+    .info-modal{
+        padding:12px;
+    }
+
+    .info-modal-content{
+        max-height:90vh;
+        padding:22px 16px 20px;
+        border-radius:24px;
+    }
+
 }
 
 @media(max-width:350px){
@@ -945,14 +1284,18 @@ button{
         max-width:165px;
     }
 
-    .about-photo{
-        width:82px;
-        height:82px;
-        flex-basis:82px;
+    .info-card-photo{
+        width:78px;
+        height:78px;
+        flex-basis:78px;
     }
 
-    .about-description{
-        font-size:12px;
+    .info-card-heading{
+        font-size:16px;
+    }
+
+    .info-card-description{
+        font-size:11px;
     }
 
     .ios-social-shell{
@@ -1052,22 +1395,406 @@ button{
 
 </section>
 
-<div class="about-block" id="aboutToggle" role="button" tabindex="0" aria-label="Відкрити інформацію про Сергія">
 
-<div class="about-preview">
+<!-- =====================================================
+     INFO CARD DECK
+     ===================================================== -->
 
-<img class="about-photo" src="your-photo.jpg" alt="Сергій — SA MASTER">
+<section class="info-section">
 
-<div class="about-info">
-<h2 class="about-name">Сергій</h2>
-<p class="about-description">Понад <strong>20 років</strong> у сантехніці. Комплексний монтаж у новобудовах Києва.</p>
+<div class="info-deck-wrap">
+
+<div class="deck-swipe-hint deck-swipe-left" aria-hidden="true">
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M14.5 5L7.5 12L14.5 19" stroke="#5B707A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
 </div>
 
-<div class="about-arrow">→</div>
+<div class="info-deck" id="infoDeck">
+
+<!-- 01 -->
+
+<div class="info-card top"
+     data-modal="infoAboutModal"
+     data-index="0">
+
+<div class="info-card-number">01</div>
+<div class="info-card-title">ПРО НАС</div>
+
+<div class="info-card-content">
+
+<img class="info-card-photo"
+     src="your-photo.jpg"
+     alt="Сергій — SA MASTER">
+
+<div class="info-card-text">
+
+<div class="info-card-heading">Сергій</div>
+
+<div class="info-card-description">
+Понад <strong>20 років</strong> професійного досвіду
+</div>
+
+</div>
+
+</div>
+
+<div class="info-arrow">→</div>
+
+</div>
+
+
+<!-- 02 -->
+
+<div class="info-card depth1"
+     data-modal="processModal"
+     data-index="1">
+
+<div class="info-card-number">02</div>
+<div class="info-card-title">ПРОЦЕС</div>
+
+<div class="info-card-content">
+
+<div class="info-card-icon">
+
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+<path d="M10 14H38"
+      stroke="#1976D2"
+      stroke-width="2.4"
+      stroke-linecap="round"/>
+
+<path d="M10 24H31"
+      stroke="#42A5F5"
+      stroke-width="2.4"
+      stroke-linecap="round"/>
+
+<path d="M10 34H24"
+      stroke="#1976D2"
+      stroke-width="2.4"
+      stroke-linecap="round"/>
+
+<circle cx="35" cy="24" r="4"
+        stroke="#1976D2"
+        stroke-width="2.2"/>
+
+<circle cx="28" cy="34" r="4"
+        stroke="#42A5F5"
+        stroke-width="2.2"/>
+
+</svg>
+
+</div>
+
+<div class="info-card-text">
+
+<div class="info-card-heading">Порядок співпраці</div>
+
+<div class="info-card-description">
+Проєкт → монтаж → здача
+</div>
+
+</div>
+
+</div>
+
+<div class="info-arrow">→</div>
+
+</div>
+
+
+<!-- 03 -->
+
+<div class="info-card depth2"
+     data-modal="priceModal"
+     data-index="2">
+
+<div class="info-card-number">03</div>
+<div class="info-card-title">ВАРТІСТЬ</div>
+
+<div class="info-card-content">
+
+<div class="info-card-icon">
+
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+<rect x="9" y="12" width="30" height="24" rx="6"
+      stroke="#1976D2"
+      stroke-width="2.2"/>
+
+<path d="M9 20H39"
+      stroke="#42A5F5"
+      stroke-width="2.2"/>
+
+<circle cx="29" cy="29" r="4"
+        stroke="#1976D2"
+        stroke-width="2.2"/>
+
+<path d="M29 27V31"
+      stroke="#1976D2"
+      stroke-width="1.8"
+      stroke-linecap="round"/>
+
+</svg>
+
+</div>
+
+<div class="info-card-text">
+
+<div class="info-card-heading">Від проєкту</div>
+
+<div class="info-card-description">
+Розрахунок під конкретний об'єкт
+</div>
+
+</div>
+
+</div>
+
+<div class="info-arrow">→</div>
+
+</div>
+
+
+<!-- 04 -->
+
+<div class="info-card depth3"
+     data-modal="reviewsModal"
+     data-index="3">
+
+<div class="info-card-number">04</div>
+<div class="info-card-title">ДОВІРА</div>
+
+<div class="info-card-content">
+
+<div class="info-card-icon">
+
+<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+<path d="M24 8L28.7 17.5L39 19L31.5 26.4L33.3 36.8L24 31.9L14.7 36.8L16.5 26.4L9 19L19.3 17.5L24 8Z"
+      stroke="#1976D2"
+      stroke-width="2.1"
+      stroke-linejoin="round"/>
+
+</svg>
+
+</div>
+
+<div class="info-card-text">
+
+<div class="info-card-heading">Відгуки</div>
+
+<div class="info-card-description">
+Досвід, якість та рекомендації
+</div>
+
+</div>
+
+</div>
+
+<div class="info-arrow">→</div>
 
 </div>
 
 </div>
+
+<div class="deck-swipe-hint deck-swipe-right" aria-hidden="true">
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M9.5 5L16.5 12L9.5 19" stroke="#5B707A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+</div>
+
+</div>
+
+</section>
+
+
+<!-- =====================================================
+     INFO MODALS
+     ===================================================== -->
+
+<div class="info-modal" id="infoAboutModal" role="dialog" aria-modal="true">
+
+<div class="info-modal-content">
+
+<button class="info-modal-close"
+        type="button"
+        onclick="closeInfoModal('infoAboutModal')"
+        aria-label="Закрити">×</button>
+
+<img class="about-modal-photo"
+     src="your-photo.jpg"
+     alt="Сергій — SA MASTER">
+
+<h2 class="about-modal-title">Сергій</h2>
+
+<p class="about-modal-lead">
+Понад 20 років професійного досвіду
+</p>
+
+<div class="info-modal-text">
+
+<p>
+Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong>
+я працюю із сантехнікою — і досі продовжую вдосконалювати свою майстерність.
+</p>
+
+<p>
+Беру участь у профільних заходах, ділюся досвідом та навчаю інших майстрів.
+Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.
+</p>
+
+<p>
+Сьогодні ми спеціалізуємось на <strong>комплексному монтажі сантехніки</strong>
+в новобудовах Києва, професійно втілюючи сучасні проектні рішення в життя.
+У роботі використовуємо обладнання та матеріали провідних світових брендів.
+</p>
+
+<p>
+Працюємо переважно з дизайн-проектами та без посередників.
+Вартість наших робіт — <strong>вище середньої по ринку</strong>.
+</p>
+
+<p>
+Плануєте ремонт? Будемо раді співпраці.
+Графік робіт формуємо завчасно — орієнтовно на <strong>2 місяці вперед</strong>.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="info-modal" id="processModal" role="dialog" aria-modal="true">
+
+<div class="info-modal-content">
+
+<button class="info-modal-close"
+        type="button"
+        onclick="closeInfoModal('processModal')"
+        aria-label="Закрити">×</button>
+
+<div class="info-modal-title">Порядок співпраці</div>
+
+<div class="info-modal-lead">
+Чіткий процес без зайвих етапів
+</div>
+
+<div class="info-modal-text">
+
+<p>
+<strong>01. Проєкт</strong><br>
+Починаємо з дизайн-проєкту та технічних рішень.
+Аналізуємо креслення, розташування обладнання,
+комунікацій та майбутньої сантехніки.
+</p>
+
+<p>
+<strong>02. Монтаж</strong><br>
+Виконуємо комплексний монтаж сантехніки відповідно
+до затверджених рішень. Працюємо послідовно,
+акуратно та з дотриманням технології.
+</p>
+
+<p>
+<strong>03. Здача</strong><br>
+Після завершення перевіряємо виконані роботи,
+узгоджуємо результат та передаємо об'єкт замовнику.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="info-modal" id="priceModal" role="dialog" aria-modal="true">
+
+<div class="info-modal-content">
+
+<button class="info-modal-close"
+        type="button"
+        onclick="closeInfoModal('priceModal')"
+        aria-label="Закрити">×</button>
+
+<div class="info-modal-title">Вартість</div>
+
+<div class="info-modal-lead">
+Розрахунок під конкретний об'єкт
+</div>
+
+<div class="info-modal-text">
+
+<p>
+Ми не працюємо за універсальним прайсом,
+оскільки кожен об'єкт має власний дизайн-проєкт,
+площу, кількість санвузлів та технічні рішення.
+</p>
+
+<p>
+Вартість формується після аналізу конкретного проєкту
+та залежить від обсягу монтажних робіт,
+складності рішень і кількості обладнання.
+</p>
+
+<p>
+<strong>Спочатку проєкт — потім точний розрахунок.</strong>
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+<div class="info-modal" id="reviewsModal" role="dialog" aria-modal="true">
+
+<div class="info-modal-content">
+
+<button class="info-modal-close"
+        type="button"
+        onclick="closeInfoModal('reviewsModal')"
+        aria-label="Закрити">×</button>
+
+<div class="info-modal-title">Довіра</div>
+
+<div class="info-modal-lead">
+Досвід, якість та рекомендації
+</div>
+
+<div class="info-modal-text">
+
+<p>
+Понад <strong>20 років професійного досвіду</strong>
+дозволяють бачити не тільки сам монтаж,
+а весь процес реалізації сантехнічних рішень.
+</p>
+
+<p>
+Працюємо з обладнанням провідних світових брендів
+та приділяємо увагу деталям, які залишаються
+прихованими після завершення ремонту.
+</p>
+
+<p>
+Основою нашої роботи є якість виконання,
+відповідальність та рекомендації клієнтів.
+</p>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- =====================================================
+     SOCIAL DOCK
+     ===================================================== -->
 
 <div class="ios-social-shell">
 
@@ -1192,7 +1919,10 @@ button{
 
 </div>
 
-</div>
+
+<!-- =====================================================
+     ABOUT MODAL — ЗАЛИШЕНО
+     ===================================================== -->
 
 <div class="about-modal" id="aboutModal" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle">
 
@@ -1223,6 +1953,11 @@ button{
 </div>
 
 </div>
+
+
+<!-- =====================================================
+     PAYMENT MODAL
+     ===================================================== -->
 
 <div class="modal" id="paymentModal">
 
@@ -1274,6 +2009,11 @@ button{
 
 </div>
 
+
+<!-- =====================================================
+     LIGHTBOX
+     ===================================================== -->
+
 <div class="lightbox" id="lightbox">
 
 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
@@ -1282,7 +2022,12 @@ button{
 
 </div>
 
+
 <script>
+
+/* =========================================================
+   GALLERY
+   ========================================================= */
 
 const galleryWindow=document.getElementById("galleryWindow");
 const galleryTrack=document.getElementById("galleryTrack");
@@ -1366,6 +2111,11 @@ function restartGalleryTimer(){
 
 restartGalleryTimer();
 
+
+/* =========================================================
+   LIGHTBOX
+   ========================================================= */
+
 const lightbox=document.getElementById("lightbox");
 const lightboxImage=document.getElementById("lightboxImage");
 const lightboxClose=document.getElementById("lightboxClose");
@@ -1392,60 +2142,240 @@ lightbox.addEventListener("click",event=>{
     }
 });
 
-const aboutToggle=document.getElementById("aboutToggle");
-const aboutModal=document.getElementById("aboutModal");
-const aboutModalClose=document.getElementById("aboutModalClose");
 
-function openAboutModal(){
-    aboutModal.classList.add("active");
-    document.body.style.overflow="hidden";
+/* =========================================================
+   INFO CARD DECK
+   ========================================================= */
+
+const infoDeck=document.getElementById("infoDeck");
+const infoCards=Array.from(document.querySelectorAll(".info-card"));
+
+let infoStartX=0;
+let infoStartY=0;
+let infoCurrentX=0;
+let infoCurrentY=0;
+let infoDragging=false;
+let infoSwipeLocked=false;
+let suppressCardClick=false;
+
+function updateInfoDeck(){
+
+    infoCards.forEach((card,index)=>{
+
+        card.classList.remove(
+            "top",
+            "depth1",
+            "depth2",
+            "depth3"
+        );
+
+        const position=(index-infoDeckState+infoCards.length)%infoCards.length;
+
+        if(position===0){
+            card.classList.add("top");
+        }
+
+        if(position===1){
+            card.classList.add("depth1");
+        }
+
+        if(position===2){
+            card.classList.add("depth2");
+        }
+
+        if(position===3){
+            card.classList.add("depth3");
+        }
+
+    });
+
 }
 
-function closeAboutModal(){
-    aboutModal.classList.remove("active");
-    document.body.style.overflow="";
+let infoDeckState=0;
+
+function cycleInfoDeck(direction){
+
+    if(infoSwipeLocked)return;
+
+    infoSwipeLocked=true;
+    suppressCardClick=true;
+
+    const topCard=infoCards[infoDeckState];
+
+    topCard.classList.remove(
+        "top",
+        "depth1",
+        "depth2",
+        "depth3"
+    );
+
+    if(direction<0){
+
+        topCard.classList.add("is-leaving-left");
+
+        infoDeckState=
+            (infoDeckState+1)%infoCards.length;
+
+    }else{
+
+        topCard.classList.add("is-leaving-right");
+
+        infoDeckState=
+            (infoDeckState-1+infoCards.length)%infoCards.length;
+
+    }
+
+    setTimeout(()=>{
+
+        topCard.classList.remove(
+            "is-leaving-left",
+            "is-leaving-right"
+        );
+
+        updateInfoDeck();
+
+        setTimeout(()=>{
+            infoSwipeLocked=false;
+        },30);
+
+    },450);
+
+    setTimeout(()=>{
+        suppressCardClick=false;
+    },500);
+
 }
 
-aboutToggle.addEventListener("click",openAboutModal);
+infoDeck.addEventListener("touchstart",event=>{
 
-aboutToggle.addEventListener("keydown",event=>{
-    if(event.key==="Enter"||event.key===" "){
-        event.preventDefault();
-        openAboutModal();
+    if(infoSwipeLocked)return;
+
+    const touch=event.touches[0];
+
+    infoStartX=touch.clientX;
+    infoStartY=touch.clientY;
+
+    infoCurrentX=infoStartX;
+    infoCurrentY=infoStartY;
+
+    infoDragging=true;
+
+},{passive:true});
+
+
+infoDeck.addEventListener("touchmove",event=>{
+
+    if(!infoDragging)return;
+
+    const touch=event.touches[0];
+
+    infoCurrentX=touch.clientX;
+    infoCurrentY=touch.clientY;
+
+},{passive:true});
+
+
+infoDeck.addEventListener("touchend",()=>{
+
+    if(!infoDragging)return;
+
+    infoDragging=false;
+
+    const deltaX=infoCurrentX-infoStartX;
+    const deltaY=infoCurrentY-infoStartY;
+
+    const horizontalDistance=Math.abs(deltaX);
+    const verticalDistance=Math.abs(deltaY);
+
+    if(
+        horizontalDistance>=50 &&
+        horizontalDistance>verticalDistance*1.2
+    ){
+
+        if(deltaX<0){
+
+            cycleInfoDeck(-1);
+
+        }else{
+
+            cycleInfoDeck(1);
+
+        }
+
     }
+
 });
 
-aboutModalClose.addEventListener("click",closeAboutModal);
 
-aboutModal.addEventListener("click",event=>{
-    if(event.target===aboutModal){
-        closeAboutModal();
-    }
+infoDeck.addEventListener("click",event=>{
+
+    if(suppressCardClick)return;
+
+    const card=event.target.closest(".info-card");
+
+    if(!card)return;
+
+    const cardIndex=Number(card.dataset.index);
+
+    const currentPosition=
+        (cardIndex-infoDeckState+infoCards.length)%infoCards.length;
+
+    if(currentPosition!==0)return;
+
+    openInfoModal(card.dataset.modal);
+
 });
 
-function openModal(id){
+
+updateInfoDeck();
+
+
+/* =========================================================
+   INFO MODALS
+   ========================================================= */
+
+function openInfoModal(id){
+
     const modal=document.getElementById(id);
+
     if(!modal)return;
 
     modal.classList.add("active");
     document.body.style.overflow="hidden";
+
 }
 
-function closeModal(id){
+
+function closeInfoModal(id){
+
     const modal=document.getElementById(id);
+
     if(!modal)return;
 
     modal.classList.remove("active");
     document.body.style.overflow="";
+
 }
 
-document.querySelectorAll(".modal").forEach(modal=>{
+
+document.querySelectorAll(".info-modal").forEach(modal=>{
+
     modal.addEventListener("click",event=>{
+
         if(event.target===modal){
-            closeModal(modal.id);
+
+            closeInfoModal(modal.id);
+
         }
+
     });
+
 });
+
+
+/* =========================================================
+   SOCIAL DOCK — БЕЗ ЗМІН
+   ========================================================= */
 
 const socialViewport=document.getElementById("socialViewport");
 const socialTrack=document.getElementById("socialTrack");
@@ -1504,6 +2434,7 @@ setTimeout(()=>{
     },1100);
 
 },900);
+
 
 /* =========================================================
    СВАЙП МОДАЛЬНИХ ВІКОН — РУХ ЗА ПАЛЬЦЕМ
@@ -1686,9 +2617,33 @@ function addSwipeToClose(element,closeFunction,options={}){
 
 }
 
+
 /* =========================================================
    ВІКНО «ПРО МЕНЕ»
    ========================================================= */
+
+const aboutModal=document.getElementById("aboutModal");
+const aboutModalClose=document.getElementById("aboutModalClose");
+
+function closeAboutModal(){
+
+    aboutModal.classList.remove("active");
+    document.body.style.overflow="";
+
+}
+
+aboutModalClose.addEventListener("click",closeAboutModal);
+
+aboutModal.addEventListener("click",event=>{
+
+    if(event.target===aboutModal){
+
+        closeAboutModal();
+
+    }
+
+});
+
 
 addSwipeToClose(
     aboutModal,
@@ -1699,11 +2654,50 @@ addSwipeToClose(
     }
 );
 
+
 /* =========================================================
    ВІКНО «ОПЛАТА»
    ========================================================= */
 
 const paymentModal=document.getElementById("paymentModal");
+
+function openModal(id){
+
+    const modal=document.getElementById(id);
+
+    if(!modal)return;
+
+    modal.classList.add("active");
+    document.body.style.overflow="hidden";
+
+}
+
+function closeModal(id){
+
+    const modal=document.getElementById(id);
+
+    if(!modal)return;
+
+    modal.classList.remove("active");
+    document.body.style.overflow="";
+
+}
+
+
+document.querySelectorAll(".modal").forEach(modal=>{
+
+    modal.addEventListener("click",event=>{
+
+        if(event.target===modal){
+
+            closeModal(modal.id);
+
+        }
+
+    });
+
+});
+
 
 addSwipeToClose(
     paymentModal,
@@ -1713,6 +2707,7 @@ addSwipeToClose(
         threshold:90
     }
 );
+
 
 /* =========================================================
    ПЕРЕГЛЯД ФОТО
@@ -1727,7 +2722,10 @@ addSwipeToClose(
     }
 );
 
-/* ========================================================= */
+
+/* =========================================================
+   ESC
+   ========================================================= */
 
 document.addEventListener("keydown",event=>{
 
@@ -1740,6 +2738,10 @@ document.addEventListener("keydown",event=>{
     if(aboutModal.classList.contains("active")){
         closeAboutModal();
     }
+
+    document.querySelectorAll(".info-modal.active").forEach(modal=>{
+        closeInfoModal(modal.id);
+    });
 
     document.querySelectorAll(".modal.active").forEach(modal=>{
         closeModal(modal.id);
