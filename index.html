@@ -2324,13 +2324,33 @@ updateInfoDeck();
    INFO MODALS
    ========================================================= */
 
+const infoModalIds=[
+    "infoAboutModal",
+    "processModal",
+    "priceModal",
+    "reviewsModal"
+];
+
+let activeInfoModalIndex=0;
+
 function openInfoModal(id){
 
     const modal=document.getElementById(id);
 
     if(!modal)return;
 
+    const index=infoModalIds.indexOf(id);
+
+    if(index!==-1){
+        activeInfoModalIndex=index;
+    }
+
+    document.querySelectorAll(".info-modal").forEach(item=>{
+        item.classList.remove("active");
+    });
+
     modal.classList.add("active");
+
     document.body.style.overflow="hidden";
 
 }
@@ -2343,10 +2363,120 @@ function closeInfoModal(id){
     if(!modal)return;
 
     modal.classList.remove("active");
+
+    const content=modal.querySelector(".info-modal-content");
+
+    if(content){
+
+        content.style.transition="";
+        content.style.transform="";
+
+    }
+
     document.body.style.overflow="";
 
 }
 
+
+/* =========================================================
+   ПЕРЕХІД МІЖ ІНФОРМАЦІЙНИМИ ВІКНАМИ
+   ========================================================= */
+
+let infoModalSwipeLocked=false;
+
+function switchInfoModal(direction){
+
+    if(infoModalSwipeLocked)return;
+
+    const currentIndex=activeInfoModalIndex;
+    const nextIndex=currentIndex+direction;
+
+    if(
+        nextIndex<0 ||
+        nextIndex>=infoModalIds.length
+    ){
+
+        return;
+
+    }
+
+    const currentModal=
+        document.getElementById(infoModalIds[currentIndex]);
+
+    const nextModal=
+        document.getElementById(infoModalIds[nextIndex]);
+
+    if(!currentModal || !nextModal)return;
+
+    const currentContent=
+        currentModal.querySelector(".info-modal-content");
+
+    const nextContent=
+        nextModal.querySelector(".info-modal-content");
+
+    if(!currentContent || !nextContent)return;
+
+    infoModalSwipeLocked=true;
+
+    const swipeLeft=direction>0;
+
+    const exitX=swipeLeft
+        ? "-110%"
+        : "110%";
+
+    const enterX=swipeLeft
+        ? "110%"
+        : "-110%";
+
+    currentContent.style.transition=
+        "transform .32s cubic-bezier(.22,.61,.36,1)";
+
+    currentContent.style.transform=
+        `translateX(${exitX}) scale(.96)`;
+
+    nextModal.classList.add("active");
+
+    nextContent.style.transition="none";
+
+    nextContent.style.transform=
+        `translateX(${enterX}) scale(.96)`;
+
+    requestAnimationFrame(()=>{
+
+        requestAnimationFrame(()=>{
+
+            nextContent.style.transition=
+                "transform .32s cubic-bezier(.22,.61,.36,1)";
+
+            nextContent.style.transform=
+                "translateX(0) scale(1)";
+
+        });
+
+    });
+
+    setTimeout(()=>{
+
+        currentModal.classList.remove("active");
+
+        currentContent.style.transition="";
+        currentContent.style.transform="";
+
+        nextContent.style.transition="";
+        nextContent.style.transform="";
+
+        activeInfoModalIndex=nextIndex;
+
+        infoModalSwipeLocked=false;
+
+    },330);
+
+}
+
+
+/* =========================================================
+   ЗАКРИТТЯ ПО НАТИСКАННЮ НА ФОН
+   ========================================================= */
 
 document.querySelectorAll(".info-modal").forEach(modal=>{
 
@@ -2364,19 +2494,264 @@ document.querySelectorAll(".info-modal").forEach(modal=>{
 
 
 /* =========================================================
-   ДОДАНО: СВАЙП ДЛЯ «ПРО НАС»
+   СВАЙПИ ВСЕРЕДИНІ ІНФОРМАЦІЙНИХ ВІКОН
+   =========================================================
+
+   ↑ ВГОРУ  — ЗАКРИТИ
+   ↓ ВНИЗ   — ЗАКРИТИ
+   ← ВЛІВО  — НАСТУПНЕ ВІКНО
+   → ВПРАВО — ПОПЕРЕДНЄ ВІКНО
+
    ========================================================= */
 
-const infoAboutModal=document.getElementById("infoAboutModal");
+document.querySelectorAll(".info-modal").forEach(modal=>{
 
-addSwipeToClose(
-    infoAboutModal,
-    ()=>closeInfoModal("infoAboutModal"),
-    {
-        content:infoAboutModal.querySelector(".info-modal-content"),
-        threshold:90
-    }
-);
+    const content=
+        modal.querySelector(".info-modal-content");
+
+    if(!content)return;
+
+    let startX=0;
+    let startY=0;
+
+    let currentX=0;
+    let currentY=0;
+
+    let dragging=false;
+    let gestureAxis=null;
+
+    content.addEventListener("touchstart",event=>{
+
+        if(!modal.classList.contains("active"))return;
+
+        if(infoModalSwipeLocked)return;
+
+        const touch=event.touches[0];
+
+        startX=touch.clientX;
+        startY=touch.clientY;
+
+        currentX=startX;
+        currentY=startY;
+
+        dragging=true;
+        gestureAxis=null;
+
+        content.style.transition="none";
+
+    },{passive:true});
+
+
+    content.addEventListener("touchmove",event=>{
+
+        if(!dragging)return;
+
+        const touch=event.touches[0];
+
+        currentX=touch.clientX;
+        currentY=touch.clientY;
+
+        const deltaX=currentX-startX;
+        const deltaY=currentY-startY;
+
+        const distance=
+            Math.max(
+                Math.abs(deltaX),
+                Math.abs(deltaY)
+            );
+
+        if(
+            !gestureAxis &&
+            distance>8
+        ){
+
+            gestureAxis=
+                Math.abs(deltaX)>Math.abs(deltaY)
+                    ? "horizontal"
+                    : "vertical";
+
+        }
+
+        if(!gestureAxis)return;
+
+
+        /* ---------------------------------------------
+           ГОРИЗОНТАЛЬНИЙ СВАЙП
+           --------------------------------------------- */
+
+        if(gestureAxis==="horizontal"){
+
+            const movement=deltaX*.55;
+
+            content.style.transform=
+                `translateX(${movement}px) scale(.985)`;
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           ВЕРТИКАЛЬНИЙ СВАЙП
+           --------------------------------------------- */
+
+        if(gestureAxis==="vertical"){
+
+            const movement=deltaY*.72;
+
+            const progress=
+                Math.min(
+                    Math.abs(movement)/window.innerHeight,
+                    1
+                );
+
+            const scale=
+                1-(progress*.04);
+
+            content.style.transform=
+                `translateY(${movement}px) scale(${scale})`;
+
+        }
+
+    },{passive:true});
+
+
+    content.addEventListener("touchend",()=>{
+
+        if(!dragging)return;
+
+        dragging=false;
+
+        const deltaX=currentX-startX;
+        const deltaY=currentY-startY;
+
+        const horizontalDistance=Math.abs(deltaX);
+        const verticalDistance=Math.abs(deltaY);
+
+
+        /* ---------------------------------------------
+           ВЕРТИКАЛЬНИЙ СВАЙП — ЗАКРИТТЯ
+           --------------------------------------------- */
+
+        if(gestureAxis==="vertical"){
+
+            if(verticalDistance>=80){
+
+                const direction=
+                    deltaY<0
+                        ? -1
+                        : 1;
+
+                content.style.transition=
+                    "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+                content.style.transform=
+                    `translateY(${direction*110}%) scale(.96)`;
+
+                setTimeout(()=>{
+
+                    closeInfoModal(modal.id);
+
+                },300);
+
+                gestureAxis=null;
+
+                return;
+
+            }
+
+
+            content.style.transition=
+                "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+            content.style.transform=
+                "translateY(0) scale(1)";
+
+            setTimeout(()=>{
+
+                content.style.transition="";
+                content.style.transform="";
+
+            },300);
+
+            gestureAxis=null;
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           ГОРИЗОНТАЛЬНИЙ СВАЙП — ПЕРЕХІД
+           --------------------------------------------- */
+
+        if(
+            gestureAxis==="horizontal" &&
+            horizontalDistance>=80
+        ){
+
+            if(deltaX<0){
+
+                switchInfoModal(1);
+
+            }else{
+
+                switchInfoModal(-1);
+
+            }
+
+            gestureAxis=null;
+
+            return;
+
+        }
+
+
+        /* ---------------------------------------------
+           НЕДОСТАТНІЙ СВАЙП — ПОВЕРНЕННЯ
+           --------------------------------------------- */
+
+        content.style.transition=
+            "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+        content.style.transform=
+            "translateX(0) translateY(0) scale(1)";
+
+        setTimeout(()=>{
+
+            content.style.transition="";
+            content.style.transform="";
+
+        },300);
+
+        gestureAxis=null;
+
+    },{passive:true});
+
+
+    content.addEventListener("touchcancel",()=>{
+
+        if(!dragging)return;
+
+        dragging=false;
+        gestureAxis=null;
+
+        content.style.transition=
+            "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+        content.style.transform=
+            "translateX(0) translateY(0) scale(1)";
+
+        setTimeout(()=>{
+
+            content.style.transition="";
+            content.style.transform="";
+
+        },300);
+
+    },{passive:true});
+
+});
 
 
 /* =========================================================
@@ -2443,7 +2818,102 @@ setTimeout(()=>{
 
 
 /* =========================================================
-   СВАЙП МОДАЛЬНИХ ВІКОН — РУХ ЗА ПАЛЬЦЕМ
+   ВІКНО «ПРО МЕНЕ»
+   ========================================================= */
+
+const aboutModal=document.getElementById("aboutModal");
+const aboutModalClose=document.getElementById("aboutModalClose");
+
+function closeAboutModal(){
+
+    aboutModal.classList.remove("active");
+    document.body.style.overflow="";
+
+}
+
+aboutModalClose.addEventListener("click",closeAboutModal);
+
+aboutModal.addEventListener("click",event=>{
+
+    if(event.target===aboutModal){
+
+        closeAboutModal();
+
+    }
+
+});
+
+
+/* =========================================================
+   ВІКНО «ОПЛАТА»
+   ========================================================= */
+
+const paymentModal=document.getElementById("paymentModal");
+
+function openModal(id){
+
+    const modal=document.getElementById(id);
+
+    if(!modal)return;
+
+    modal.classList.add("active");
+    document.body.style.overflow="hidden";
+
+}
+
+function closeModal(id){
+
+    const modal=document.getElementById(id);
+
+    if(!modal)return;
+
+    modal.classList.remove("active");
+    document.body.style.overflow="";
+
+}
+
+
+document.querySelectorAll(".modal").forEach(modal=>{
+
+    modal.addEventListener("click",event=>{
+
+        if(event.target===modal){
+
+            closeModal(modal.id);
+
+        }
+
+    });
+
+});
+
+
+addSwipeToClose(
+    paymentModal,
+    ()=>closeModal("paymentModal"),
+    {
+        content:paymentModal.querySelector(".modal-box"),
+        threshold:90
+    }
+);
+
+
+/* =========================================================
+   ПЕРЕГЛЯД ФОТО
+   ========================================================= */
+
+addSwipeToClose(
+    lightbox,
+    closeLightbox,
+    {
+        content:lightboxImage,
+        threshold:90
+    }
+);
+
+
+/* =========================================================
+   УНІВЕРСАЛЬНИЙ СВАЙП ДЛЯ СТАРИХ МОДАЛЬНИХ ВІКОН
    ========================================================= */
 
 function addSwipeToClose(element,closeFunction,options={}){
@@ -2601,111 +3071,6 @@ function addSwipeToClose(element,closeFunction,options={}){
     },{passive:true});
 
 }
-
-
-/* =========================================================
-   ВІКНО «ПРО МЕНЕ»
-   ========================================================= */
-
-const aboutModal=document.getElementById("aboutModal");
-const aboutModalClose=document.getElementById("aboutModalClose");
-
-function closeAboutModal(){
-
-    aboutModal.classList.remove("active");
-    document.body.style.overflow="";
-
-}
-
-aboutModalClose.addEventListener("click",closeAboutModal);
-
-aboutModal.addEventListener("click",event=>{
-
-    if(event.target===aboutModal){
-
-        closeAboutModal();
-
-    }
-
-});
-
-
-addSwipeToClose(
-    aboutModal,
-    closeAboutModal,
-    {
-        content:document.querySelector(".about-modal-content"),
-        threshold:90
-    }
-);
-
-
-/* =========================================================
-   ВІКНО «ОПЛАТА»
-   ========================================================= */
-
-const paymentModal=document.getElementById("paymentModal");
-
-function openModal(id){
-
-    const modal=document.getElementById(id);
-
-    if(!modal)return;
-
-    modal.classList.add("active");
-    document.body.style.overflow="hidden";
-
-}
-
-function closeModal(id){
-
-    const modal=document.getElementById(id);
-
-    if(!modal)return;
-
-    modal.classList.remove("active");
-    document.body.style.overflow="";
-
-}
-
-
-document.querySelectorAll(".modal").forEach(modal=>{
-
-    modal.addEventListener("click",event=>{
-
-        if(event.target===modal){
-
-            closeModal(modal.id);
-
-        }
-
-    });
-
-});
-
-
-addSwipeToClose(
-    paymentModal,
-    ()=>closeModal("paymentModal"),
-    {
-        content:paymentModal.querySelector(".modal-box"),
-        threshold:90
-    }
-);
-
-
-/* =========================================================
-   ПЕРЕГЛЯД ФОТО
-   ========================================================= */
-
-addSwipeToClose(
-    lightbox,
-    closeLightbox,
-    {
-        content:lightboxImage,
-        threshold:90
-    }
-);
 
 
 /* =========================================================
