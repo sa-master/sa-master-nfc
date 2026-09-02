@@ -426,9 +426,12 @@ button{
     color:#1976d2;
 }
 
-.info-arrow{
+/* =========================================================
+   СТРІЛКИ СВАЙПУ НА САМИХ КАРТКАХ
+   ========================================================= */
+
+.info-swipe-arrow{
     position:absolute;
-    right:17px;
     bottom:15px;
     width:31px;
     height:31px;
@@ -440,36 +443,18 @@ button{
     color:#176c91;
     font-size:19px;
     font-weight:500;
+    line-height:1;
     box-shadow:inset 0 0 0 1px rgba(40,100,125,.05);
-}
-
-.deck-swipe-hint{
-    position:absolute;
-    top:50%;
-    z-index:20;
-    width:28px;
-    height:42px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transform:translateY(-50%);
     pointer-events:none;
-    opacity:.30;
+    user-select:none;
 }
 
-.deck-swipe-hint svg{
-    width:23px;
-    height:23px;
-    display:block;
-    filter:drop-shadow(0 2px 4px rgba(30,70,90,.08));
+.info-swipe-arrow-left{
+    left:17px;
 }
 
-.deck-swipe-left{
-    left:-2px;
-}
-
-.deck-swipe-right{
-    right:-2px;
+.info-swipe-arrow-right{
+    right:17px;
 }
 
 /* =========================================================
@@ -1165,28 +1150,18 @@ button{
         font-size:12px;
     }
 
-    .info-arrow{
+    .info-swipe-arrow{
         width:30px;
         height:30px;
-        right:14px;
         bottom:13px;
     }
 
-    .deck-swipe-hint{
-        width:23px;
+    .info-swipe-arrow-left{
+        left:14px;
     }
 
-    .deck-swipe-hint svg{
-        width:20px;
-        height:20px;
-    }
-
-    .deck-swipe-left{
-        left:-1px;
-    }
-
-    .deck-swipe-right{
-        right:-1px;
+    .info-swipe-arrow-right{
+        right:14px;
     }
 
     .ios-social-shell{
@@ -1298,6 +1273,20 @@ button{
         font-size:11px;
     }
 
+    .info-swipe-arrow{
+        width:28px;
+        height:28px;
+        bottom:12px;
+    }
+
+    .info-swipe-arrow-left{
+        left:12px;
+    }
+
+    .info-swipe-arrow-right{
+        right:12px;
+    }
+
     .ios-social-shell{
         width:320px;
         max-width:calc(100vw - 24px);
@@ -1404,12 +1393,6 @@ button{
 
 <div class="info-deck-wrap">
 
-<div class="deck-swipe-hint deck-swipe-left" aria-hidden="true">
-<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M14.5 5L7.5 12L14.5 19" stroke="#5B707A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-</div>
-
 <div class="info-deck" id="infoDeck">
 
 <!-- 01 -->
@@ -1439,7 +1422,7 @@ button{
 
 </div>
 
-<div class="info-arrow">→</div>
+<div class="info-swipe-arrow info-swipe-arrow-right" aria-hidden="true">→</div>
 
 </div>
 
@@ -1498,7 +1481,8 @@ button{
 
 </div>
 
-<div class="info-arrow">→</div>
+<div class="info-swipe-arrow info-swipe-arrow-left" aria-hidden="true">←</div>
+<div class="info-swipe-arrow info-swipe-arrow-right" aria-hidden="true">→</div>
 
 </div>
 
@@ -1551,7 +1535,8 @@ button{
 
 </div>
 
-<div class="info-arrow">→</div>
+<div class="info-swipe-arrow info-swipe-arrow-left" aria-hidden="true">←</div>
+<div class="info-swipe-arrow info-swipe-arrow-right" aria-hidden="true">→</div>
 
 </div>
 
@@ -1592,16 +1577,10 @@ button{
 
 </div>
 
-<div class="info-arrow">→</div>
+<div class="info-swipe-arrow info-swipe-arrow-left" aria-hidden="true">←</div>
 
 </div>
 
-</div>
-
-<div class="deck-swipe-hint deck-swipe-right" aria-hidden="true">
-<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M9.5 5L16.5 12L9.5 19" stroke="#5B707A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
 </div>
 
 </div>
@@ -2158,6 +2137,24 @@ let infoDragging=false;
 let infoSwipeLocked=false;
 let suppressCardClick=false;
 
+/*
+ * infoDeckState:
+ *
+ * 0 = картка 1
+ * 1 = картка 2
+ * 2 = картка 3
+ * 3 = картка 4
+ *
+ * Рух:
+ * вправо = вперед
+ * вліво = назад
+ *
+ * 1 <- заборонено
+ * 4 -> заборонено
+ */
+
+let infoDeckState=0;
+
 function updateInfoDeck(){
 
     infoCards.forEach((card,index)=>{
@@ -2169,7 +2166,7 @@ function updateInfoDeck(){
             "depth3"
         );
 
-        const position=(index-infoDeckState+infoCards.length)%infoCards.length;
+        const position=index-infoDeckState;
 
         if(position===0){
             card.classList.add("top");
@@ -2191,11 +2188,36 @@ function updateInfoDeck(){
 
 }
 
-let infoDeckState=0;
 
 function cycleInfoDeck(direction){
 
     if(infoSwipeLocked)return;
+
+    /*
+     * direction:
+     *
+     * +1 = свайп вправо = вперед
+     * -1 = свайп вліво = назад
+     */
+
+    const nextState=infoDeckState+direction;
+
+    /*
+     * Не дозволяємо вийти за межі
+     * 1 ↔ 2 ↔ 3 ↔ 4
+     */
+
+    if(nextState<0 || nextState>=infoCards.length){
+
+        suppressCardClick=true;
+
+        setTimeout(()=>{
+            suppressCardClick=false;
+        },120);
+
+        return;
+
+    }
 
     infoSwipeLocked=true;
     suppressCardClick=true;
@@ -2209,21 +2231,22 @@ function cycleInfoDeck(direction){
         "depth3"
     );
 
-    if(direction<0){
+    /*
+     * Візуальний напрямок вильоту
+     * відповідає фактичному напрямку свайпу.
+     */
 
-        topCard.classList.add("is-leaving-left");
-
-        infoDeckState=
-            (infoDeckState+1)%infoCards.length;
-
-    }else{
+    if(direction>0){
 
         topCard.classList.add("is-leaving-right");
 
-        infoDeckState=
-            (infoDeckState-1+infoCards.length)%infoCards.length;
+    }else{
+
+        topCard.classList.add("is-leaving-left");
 
     }
+
+    infoDeckState=nextState;
 
     setTimeout(()=>{
 
@@ -2245,6 +2268,7 @@ function cycleInfoDeck(direction){
     },500);
 
 }
+
 
 infoDeck.addEventListener("touchstart",event=>{
 
@@ -2287,18 +2311,33 @@ infoDeck.addEventListener("touchend",()=>{
     const horizontalDistance=Math.abs(deltaX);
     const verticalDistance=Math.abs(deltaY);
 
+    /*
+     * Реагуємо тільки на виразний
+     * горизонтальний свайп.
+     */
+
     if(
         horizontalDistance>=50 &&
         horizontalDistance>verticalDistance*1.2
     ){
 
-        if(deltaX<0){
+        /*
+         * Вправо — наступна картка.
+         */
 
-            cycleInfoDeck(-1);
-
-        }else{
+        if(deltaX>0){
 
             cycleInfoDeck(1);
+
+        }
+
+        /*
+         * Вліво — попередня картка.
+         */
+
+        else{
+
+            cycleInfoDeck(-1);
 
         }
 
@@ -2317,10 +2356,12 @@ infoDeck.addEventListener("click",event=>{
 
     const cardIndex=Number(card.dataset.index);
 
-    const currentPosition=
-        (cardIndex-infoDeckState+infoCards.length)%infoCards.length;
+    /*
+     * Відкривати можна тільки ту картку,
+     * яка зараз знаходиться зверху.
+     */
 
-    if(currentPosition!==0)return;
+    if(cardIndex!==infoDeckState)return;
 
     openInfoModal(card.dataset.modal);
 
@@ -2487,10 +2528,6 @@ function addSwipeToClose(element,closeFunction,options={}){
         const deltaX=currentX-startX;
         const deltaY=currentY-startY;
 
-        /*
-         * Визначаємо напрямок жесту після
-         * невеликого початкового руху.
-         */
         if(!verticalGesture && Math.max(Math.abs(deltaX),Math.abs(deltaY))>8){
 
             verticalGesture=Math.abs(deltaY)>Math.abs(deltaX);
@@ -2501,10 +2538,6 @@ function addSwipeToClose(element,closeFunction,options={}){
 
         moved=true;
 
-        /*
-         * Працюємо тільки зі свайпом вниз.
-         * Панель рухається безпосередньо за пальцем.
-         */
         if(deltaY>0){
 
             const resistance=Math.min(deltaY,window.innerHeight);
@@ -2537,10 +2570,6 @@ function addSwipeToClose(element,closeFunction,options={}){
 
         const deltaY=currentY-startY;
 
-        /*
-         * Якщо це не вертикальний жест —
-         * нічого не робимо.
-         */
         if(!verticalGesture){
 
             content.style.transition="";
@@ -2550,10 +2579,6 @@ function addSwipeToClose(element,closeFunction,options={}){
 
         }
 
-        /*
-         * ДОСТАТНІЙ СВАЙП
-         * Панель продовжує рух вниз і закривається.
-         */
         if(moved && deltaY>=threshold){
 
             content.style.transition=
@@ -2574,11 +2599,6 @@ function addSwipeToClose(element,closeFunction,options={}){
             return;
         }
 
-        /*
-         * НЕДОСТАТНІЙ СВАЙП
-         * Панель плавно повертається
-         * точно у початкове положення.
-         */
         content.style.transition=
             "transform .30s cubic-bezier(.22,.61,.36,1)";
 
