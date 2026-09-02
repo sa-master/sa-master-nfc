@@ -44,7 +44,8 @@ body{
     min-height:100vh;
     font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Arial,sans-serif;
     color:#182228;
-    background:radial-gradient(circle at 50% -10%,rgba(255,255,255,.98),rgba(237,247,251,.94) 42%,rgba(228,240,245,.95) 100%);
+    background:
+        radial-gradient(circle at 50% -10%,rgba(255,255,255,.98),rgba(237,247,251,.94) 42%,rgba(228,240,245,.95) 100%);
     -webkit-font-smoothing:antialiased;
     text-rendering:optimizeLegibility;
 }
@@ -83,9 +84,13 @@ button{
     overflow:hidden;
     padding:22px 16px 20px;
     border-radius:30px;
-    background:radial-gradient(circle at 50% 0%,rgba(255,255,255,.98),rgba(255,255,255,.78)),linear-gradient(145deg,#fff,#edf5f8);
+    background:
+        radial-gradient(circle at 50% 0%,rgba(255,255,255,.98),rgba(255,255,255,.78)),
+        linear-gradient(145deg,#fff,#edf5f8);
     border:1px solid rgba(255,255,255,.9);
-    box-shadow:0 18px 45px rgba(32,72,94,.10),inset 0 1px 0 rgba(255,255,255,.9);
+    box-shadow:
+        0 18px 45px rgba(32,72,94,.10),
+        inset 0 1px 0 rgba(255,255,255,.9);
 }
 
 .hero::before{
@@ -122,7 +127,9 @@ button{
     overflow:hidden;
     border-radius:24px;
     background:#fff;
-    box-shadow:0 8px 22px rgba(0,0,0,.08),inset 0 0 0 1px rgba(0,0,0,.035);
+    box-shadow:
+        0 8px 22px rgba(0,0,0,.08),
+        inset 0 0 0 1px rgba(0,0,0,.035);
 }
 
 .logo{
@@ -171,7 +178,9 @@ button{
     overflow:hidden;
     border-radius:24px;
     background:#eaf1f4;
-    box-shadow:0 12px 30px rgba(31,67,84,.12),inset 0 1px 0 rgba(255,255,255,.8);
+    box-shadow:
+        0 12px 30px rgba(31,67,84,.12),
+        inset 0 1px 0 rgba(255,255,255,.8);
 }
 
 .gallery-window{
@@ -261,13 +270,72 @@ button{
 
 
 /* =========================================================
-   INFO CARD DECK
+   INFO STORY
    ========================================================= */
 
 .info-section{
     position:relative;
-    margin:24px 0 25px;
+    margin:27px 0 25px;
     padding:0 12px;
+}
+
+/* тонкий маршрут історії */
+.info-story-nav{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    width:calc(100% - 18px);
+    margin:0 auto 13px;
+    padding:0 3px;
+}
+
+.info-story-nav::before{
+    content:"";
+    position:absolute;
+    left:8px;
+    right:8px;
+    top:50%;
+    height:1px;
+    background:linear-gradient(
+        90deg,
+        rgba(100,130,142,.12),
+        rgba(100,130,142,.30),
+        rgba(100,130,142,.12)
+    );
+}
+
+.info-story-step{
+    position:relative;
+    z-index:2;
+    width:18px;
+    height:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:rgba(239,247,250,.96);
+    border:1px solid rgba(105,137,150,.20);
+    color:#84949b;
+    font-size:7px;
+    font-weight:800;
+    letter-spacing:.2px;
+    transition:
+        background .35s ease,
+        color .35s ease,
+        border-color .35s ease,
+        box-shadow .35s ease,
+        transform .35s ease;
+}
+
+.info-story-step.active{
+    background:#e9f8fc;
+    color:#1976d2;
+    border-color:rgba(66,165,245,.45);
+    box-shadow:
+        0 0 0 4px rgba(66,165,245,.08),
+        0 4px 10px rgba(66,165,245,.13);
+    transform:scale(1.12);
 }
 
 .info-deck-wrap{
@@ -281,7 +349,7 @@ button{
 .info-deck{
     position:relative;
     width:100%;
-    height:184px;
+    height:190px;
     touch-action:pan-y;
     overflow:visible;
 }
@@ -292,8 +360,13 @@ button{
     width:100%;
     height:100%;
     padding:20px 20px 18px;
-    border-radius:24px;
-    background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(244,249,251,.94));
+    border-radius:25px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.98),
+            rgba(242,249,252,.94)
+        );
     border:1px solid rgba(255,255,255,.98);
     box-shadow:
         0 15px 35px rgba(30,70,90,.11),
@@ -309,23 +382,56 @@ button{
     will-change:transform,opacity;
 }
 
+/* легкий технічний блік у верхній частині */
+.info-card::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:1px;
+    background:linear-gradient(
+        90deg,
+        transparent,
+        rgba(66,165,245,.38),
+        transparent
+    );
+    pointer-events:none;
+}
+
+/* велике фонове число */
+.info-card::after{
+    content:attr(data-story);
+    position:absolute;
+    right:-7px;
+    bottom:-28px;
+    z-index:0;
+    font-size:112px;
+    line-height:1;
+    font-weight:800;
+    letter-spacing:-8px;
+    color:rgba(57,115,137,.055);
+    pointer-events:none;
+    user-select:none;
+}
+
 .info-card.top{
     transform:translate3d(0,0,0) scale(1) rotate(0deg);
     z-index:4;
 }
 
 .info-card.depth1{
-    transform:translate3d(0,8px,0) scale(.965) rotate(-.4deg);
+    transform:translate3d(0,8px,0) scale(.965) rotate(-.35deg);
     z-index:3;
 }
 
 .info-card.depth2{
-    transform:translate3d(0,15px,0) scale(.93) rotate(.6deg);
+    transform:translate3d(0,15px,0) scale(.93) rotate(.5deg);
     z-index:2;
 }
 
 .info-card.depth3{
-    transform:translate3d(0,21px,0) scale(.895) rotate(-.7deg);
+    transform:translate3d(0,21px,0) scale(.895) rotate(-.6deg);
     z-index:1;
 }
 
@@ -351,23 +457,27 @@ button{
     position:absolute;
     top:17px;
     left:20px;
+    z-index:3;
     font-size:10px;
-    font-weight:750;
-    letter-spacing:1.2px;
-    color:#8a9aa2;
+    font-weight:800;
+    letter-spacing:1.5px;
+    color:#1976d2;
 }
 
 .info-card-title{
     position:absolute;
     top:17px;
     right:20px;
-    font-size:10px;
+    z-index:3;
+    font-size:9px;
     font-weight:750;
-    letter-spacing:1px;
-    color:#687982;
+    letter-spacing:1.15px;
+    color:#71828a;
 }
 
 .info-card-content{
+    position:relative;
+    z-index:2;
     width:100%;
     height:100%;
     display:flex;
@@ -383,7 +493,9 @@ button{
     object-fit:cover;
     border-radius:50%;
     border:2px solid #fff;
-    box-shadow:0 8px 20px rgba(0,0,0,.11);
+    box-shadow:
+        0 8px 20px rgba(0,0,0,.11),
+        0 0 0 1px rgba(50,100,120,.04);
 }
 
 .info-card-icon{
@@ -394,7 +506,8 @@ button{
     align-items:center;
     justify-content:center;
     border-radius:24px;
-    background:linear-gradient(145deg,#fff,#edf7fb);
+    background:
+        linear-gradient(145deg,#fff,#edf7fb);
     box-shadow:
         inset 0 0 0 1px rgba(40,100,125,.06),
         0 7px 18px rgba(40,90,110,.08);
@@ -421,6 +534,7 @@ button{
 
 .info-card-description{
     margin-top:7px;
+    max-width:250px;
     font-size:13px;
     line-height:1.4;
     color:#66777f;
@@ -438,6 +552,7 @@ button{
 .info-swipe-arrow{
     position:absolute;
     bottom:15px;
+    z-index:4;
     width:31px;
     height:31px;
     display:flex;
@@ -449,7 +564,9 @@ button{
     font-size:19px;
     font-weight:500;
     line-height:1;
-    box-shadow:inset 0 0 0 1px rgba(40,100,125,.05);
+    box-shadow:
+        inset 0 0 0 1px rgba(40,100,125,.05),
+        0 4px 10px rgba(40,90,110,.05);
     pointer-events:none;
     user-select:none;
 }
@@ -490,11 +607,6 @@ button{
     pointer-events:auto;
 }
 
-/*
-   Під час переходу наступне вікно не додає
-   другий шар затемнення. Саме це прибирає
-   ефект подвійного/дивного накладання.
-*/
 .info-modal.info-transition-target{
     background:transparent;
     backdrop-filter:none;
@@ -510,7 +622,9 @@ button{
     padding:25px 20px 22px;
     border-radius:28px;
     background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(244,248,250,.97));
-    box-shadow:0 25px 70px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.9);
+    box-shadow:
+        0 25px 70px rgba(0,0,0,.22),
+        inset 0 1px 0 rgba(255,255,255,.9);
     transform:translateY(18px) scale(.97);
     transition:transform .3s cubic-bezier(.22,.61,.36,1);
     touch-action:pan-y;
@@ -589,7 +703,11 @@ button{
     padding:11px 5px 10px;
     background:linear-gradient(180deg,rgba(255,255,255,.78),rgba(244,248,250,.68));
     border:1px solid rgba(255,255,255,.92);
-    box-shadow:0 16px 38px rgba(38,75,91,.13),0 3px 10px rgba(38,75,91,.06),inset 0 1px 0 rgba(255,255,255,.96),inset 0 -1px 0 rgba(130,155,165,.08);
+    box-shadow:
+        0 16px 38px rgba(38,75,91,.13),
+        0 3px 10px rgba(38,75,91,.06),
+        inset 0 1px 0 rgba(255,255,255,.96),
+        inset 0 -1px 0 rgba(130,155,165,.08);
     backdrop-filter:blur(24px) saturate(170%);
     -webkit-backdrop-filter:blur(24px) saturate(170%);
     overflow:hidden;
@@ -639,7 +757,11 @@ button{
     color:#fff;
     overflow:hidden;
     cursor:pointer;
-    box-shadow:0 7px 15px rgba(44,67,76,.16),0 2px 5px rgba(44,67,76,.09),inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(0,0,0,.06);
+    box-shadow:
+        0 7px 15px rgba(44,67,76,.16),
+        0 2px 5px rgba(44,67,76,.09),
+        inset 0 1px 0 rgba(255,255,255,.55),
+        inset 0 -1px 0 rgba(0,0,0,.06);
     transition:transform .18s ease,box-shadow .18s ease;
 }
 
@@ -654,7 +776,9 @@ button{
 
 .ios-social-button:active{
     transform:scale(.91);
-    box-shadow:0 3px 8px rgba(44,67,76,.14),inset 0 1px 0 rgba(255,255,255,.35);
+    box-shadow:
+        0 3px 8px rgba(44,67,76,.14),
+        inset 0 1px 0 rgba(255,255,255,.35);
 }
 
 .ios-social-button svg{
@@ -758,19 +882,9 @@ button{
 }
 
 @keyframes socialHint{
-
-    0%,100%{
-        transform:translate3d(0,0,0);
-    }
-
-    35%{
-        transform:translate3d(-18px,0,0);
-    }
-
-    65%{
-        transform:translate3d(0,0,0);
-    }
-
+    0%,100%{transform:translate3d(0,0,0)}
+    35%{transform:translate3d(-18px,0,0)}
+    65%{transform:translate3d(0,0,0)}
 }
 
 .ios-social-track.social-hint{
@@ -1124,15 +1238,33 @@ button{
 
     .info-section{
         padding:0 8px;
+        margin-top:24px;
+    }
+
+    .info-story-nav{
+        width:calc(100% - 14px);
+        margin-bottom:11px;
+    }
+
+    .info-story-step{
+        width:17px;
+        height:17px;
+        font-size:6.5px;
     }
 
     .info-deck{
-        height:174px;
+        height:180px;
     }
 
     .info-card{
         padding:18px 16px 16px;
         border-radius:22px;
+    }
+
+    .info-card::after{
+        font-size:94px;
+        bottom:-23px;
+        right:-5px;
     }
 
     .info-card-number{
@@ -1299,6 +1431,10 @@ button{
         font-size:11px;
     }
 
+    .info-card::after{
+        font-size:82px;
+    }
+
     .info-swipe-arrow{
         width:28px;
         height:28px;
@@ -1415,10 +1551,17 @@ button{
 
 
 <!-- =====================================================
-     INFO CARD DECK
+     INFO STORY DECK
      ===================================================== -->
 
 <section class="info-section">
+
+<div class="info-story-nav" id="infoStoryNav" aria-hidden="true">
+<span class="info-story-step active">01</span>
+<span class="info-story-step">02</span>
+<span class="info-story-step">03</span>
+<span class="info-story-step">04</span>
+</div>
 
 <div class="info-deck-wrap">
 
@@ -1429,10 +1572,11 @@ button{
 
 <div class="info-card top"
      data-modal="infoAboutModal"
-     data-index="0">
+     data-index="0"
+     data-story="01">
 
 <div class="info-card-number">01</div>
-<div class="info-card-title">ПРО НАС</div>
+<div class="info-card-title">ХТО МИ</div>
 
 <div class="info-card-content">
 
@@ -1461,10 +1605,11 @@ button{
 
 <div class="info-card depth1"
      data-modal="processModal"
-     data-index="1">
+     data-index="1"
+     data-story="02">
 
 <div class="info-card-number">02</div>
-<div class="info-card-title">ПРОЦЕС</div>
+<div class="info-card-title">ЯК ПРАЦЮЄМО</div>
 
 <div class="info-card-content">
 
@@ -1501,7 +1646,7 @@ button{
 
 <div class="info-card-text">
 
-<div class="info-card-heading">Порядок співпраці</div>
+<div class="info-card-heading">Від проєкту до результату</div>
 
 <div class="info-card-description">
 Проєкт → монтаж → здача
@@ -1521,7 +1666,8 @@ button{
 
 <div class="info-card depth2"
      data-modal="priceModal"
-     data-index="2">
+     data-index="2"
+     data-story="03">
 
 <div class="info-card-number">03</div>
 <div class="info-card-title">ВАРТІСТЬ</div>
@@ -1555,7 +1701,7 @@ button{
 
 <div class="info-card-text">
 
-<div class="info-card-heading">Від проєкту</div>
+<div class="info-card-heading">Під конкретний проєкт</div>
 
 <div class="info-card-description">
 Розрахунок під конкретний об'єкт
@@ -1575,10 +1721,11 @@ button{
 
 <div class="info-card depth3"
      data-modal="reviewsModal"
-     data-index="3">
+     data-index="3"
+     data-story="04">
 
 <div class="info-card-number">04</div>
-<div class="info-card-title">ДОВІРА</div>
+<div class="info-card-title">РЕЗУЛЬТАТ</div>
 
 <div class="info-card-content">
 
@@ -1597,10 +1744,10 @@ button{
 
 <div class="info-card-text">
 
-<div class="info-card-heading">Відгуки</div>
+<div class="info-card-heading">Те, що залишається за стінами</div>
 
 <div class="info-card-description">
-Досвід, якість та рекомендації
+Якість, яку не видно після ремонту
 </div>
 
 </div>
@@ -1635,17 +1782,17 @@ button{
      src="your-photo.jpg"
      alt="Сергій — SA MASTER">
 
-<h2 class="about-modal-title">Сергій</h2>
+<h2 class="about-modal-title">Хто ми</h2>
 
 <p class="about-modal-lead">
-Понад 20 років професійного досвіду
+Досвід, який лежить в основі роботи
 </p>
 
 <div class="info-modal-text">
 
 <p>
 Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong>
-я працюю із сантехнікою — і досі продовжую вдосконалювати свою майстерність.
+я працюю із сантехнікою — і продовжую вдосконалювати свою майстерність.
 </p>
 
 <p>
@@ -1654,19 +1801,19 @@ button{
 </p>
 
 <p>
-Сьогодні ми спеціалізуємось на <strong>комплексному монтажі сантехніки</strong>
-в новобудовах Києва, професійно втілюючи сучасні проектні рішення в життя.
-У роботі використовуємо обладнання та матеріали провідних світових брендів.
+Сьогодні SA-MASTER спеціалізується на
+<strong>комплексному монтажі сантехніки</strong>
+в новобудовах Києва.
 </p>
 
 <p>
-Працюємо переважно з дизайн-проектами та без посередників.
-Вартість наших робіт — <strong>вище середньої по ринку</strong>.
+Працюємо переважно з дизайн-проєктами та без посередників,
+використовуючи обладнання й матеріали провідних світових брендів.
 </p>
 
 <p>
-Плануєте ремонт? Будемо раді співпраці.
-Графік робіт формуємо завчасно — орієнтовно на <strong>2 місяці вперед</strong>.
+Для нас важливо не просто виконати монтаж,
+а правильно реалізувати задуманий проєкт.
 </p>
 
 </div>
@@ -1685,10 +1832,10 @@ button{
         onclick="closeInfoModal('processModal')"
         aria-label="Закрити">×</button>
 
-<div class="info-modal-title">Порядок співпраці</div>
+<div class="info-modal-title">Як працюємо</div>
 
 <div class="info-modal-lead">
-Чіткий процес без зайвих етапів
+Від проєкту до готового результату
 </div>
 
 <div class="info-modal-text">
@@ -1702,7 +1849,7 @@ button{
 
 <p>
 <strong>02. Монтаж</strong><br>
-Виконуємо комплексний монтаж сантехніки відповідно
+Виконуємо комплексний монтаж відповідно
 до затверджених рішень. Працюємо послідовно,
 акуратно та з дотриманням технології.
 </p>
@@ -1711,6 +1858,11 @@ button{
 <strong>03. Здача</strong><br>
 Після завершення перевіряємо виконані роботи,
 узгоджуємо результат та передаємо об'єкт замовнику.
+</p>
+
+<p>
+Кожен етап є продовженням попереднього —
+тому кінцевий результат закладається ще на етапі проєкту.
 </p>
 
 </div>
@@ -1732,25 +1884,29 @@ button{
 <div class="info-modal-title">Вартість</div>
 
 <div class="info-modal-lead">
-Розрахунок під конкретний об'єкт
+Під конкретний проєкт
 </div>
 
 <div class="info-modal-text">
 
 <p>
-Ми не працюємо за універсальним прайсом,
-оскільки кожен об'єкт має власний дизайн-проєкт,
-площу, кількість санвузлів та технічні рішення.
+У сантехнічному монтажі немає універсальної вартості,
+яка однаково підходить для кожного об'єкта.
 </p>
 
 <p>
-Вартість формується після аналізу конкретного проєкту
-та залежить від обсягу монтажних робіт,
-складності рішень і кількості обладнання.
+Кожен проєкт має власну площу, кількість санвузлів,
+склад обладнання та технічні рішення.
 </p>
 
 <p>
-<strong>Спочатку проєкт — потім точний розрахунок.</strong>
+Тому спочатку ми аналізуємо конкретний
+<strong>дизайн-проєкт</strong>, визначаємо обсяг робіт
+і лише після цього формуємо розрахунок.
+</p>
+
+<p>
+<strong>Спочатку проєкт — потім точна вартість.</strong>
 </p>
 
 </div>
@@ -1769,29 +1925,37 @@ button{
         onclick="closeInfoModal('reviewsModal')"
         aria-label="Закрити">×</button>
 
-<div class="info-modal-title">Довіра</div>
+<div class="info-modal-title">Результат</div>
 
 <div class="info-modal-lead">
-Досвід, якість та рекомендації
+Те, що залишається за стінами
 </div>
 
 <div class="info-modal-text">
 
 <p>
-Понад <strong>20 років професійного досвіду</strong>
-дозволяють бачити не тільки сам монтаж,
-а весь процес реалізації сантехнічних рішень.
+Якісний монтаж — це не тільки те,
+що видно після завершення ремонту.
 </p>
 
 <p>
-Працюємо з обладнанням провідних світових брендів
-та приділяємо увагу деталям, які залишаються
-прихованими після завершення ремонту.
+Найважливіша частина роботи залишається
+<strong>за стінами</strong>: правильна підготовка,
+розташування комунікацій, монтаж та дотримання
+технології.
 </p>
 
 <p>
-Основою нашої роботи є якість виконання,
-відповідальність та рекомендації клієнтів.
+Саме тому ми приділяємо увагу деталям,
+які не можна буде побачити після оздоблення.
+Вони визначають, наскільки надійно система
+працюватиме роками.
+</p>
+
+<p>
+Для нас результат — це коли після завершення ремонту
+про сантехніку просто <strong>не потрібно думати</strong>.
+Вона має працювати так, як задумано в проєкті.
 </p>
 
 </div>
@@ -1821,12 +1985,9 @@ button{
    href="tel:+380979111871"
    aria-label="Подзвонити">
 
-<svg viewBox="0 0 24 24"
-     fill="none"
-     xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 
-<path d="M6.62 10.79C8.06 13.62 10.38 15.94 13.21 17.38L15.41 15.18C15.69 14.9 16.08 14.82 16.43 14.94C17.55 15.31 18.75 15.51 20 15.51C20.55 15.51 21 15.96 21 16.51V20C21 20.55 20.55 21 20 21C10.61 21 3 13.39 3 4C3 3.45 3.45 3 4 3H7.5C8.05 3 8.5 3.45 8.5 4C8.5 5.25 8.7 6.45 9.07 7.57C9.18 7.92 9.11 8.31 8.82 8.59L6.62 10.79Z"
-      fill="white"/>
+<path d="M6.62 10.79C8.06 13.62 10.38 15.94 13.21 17.38L15.41 15.18C15.69 14.9 16.08 14.82 16.43 14.94C17.55 15.31 18.75 15.51 20 15.51C20.55 15.51 21 15.96 21 16.51V20C21 20.55 20.55 21 20 21C10.61 21 3 13.39 3 4C3 3.45 3.45 3 4 3H7.5C8.05 3 8.5 3.45 8.5 4C8.5 5.25 8.7 6.45 9.07 7.57C9.18 7.92 9.11 8.31 8.82 8.59L6.62 10.79Z" fill="white"/>
 
 </svg>
 
@@ -1834,9 +1995,7 @@ button{
 
 </div>
 
-<div class="ios-social-label">
-Подзвонити
-</div>
+<div class="ios-social-label">Подзвонити</div>
 
 </div>
 
@@ -1850,26 +2009,15 @@ button{
    download
    aria-label="Зберегти контакт">
 
-<svg viewBox="0 0 24 24"
-     fill="none"
-     xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 
 <circle cx="9" cy="8" r="3" fill="white"/>
 
-<path d="M3.5 19C3.5 15.96 5.96 13.5 9 13.5C12.04 13.5 14.5 15.96 14.5 19"
-      stroke="white"
-      stroke-width="2"
-      stroke-linecap="round"/>
+<path d="M3.5 19C3.5 15.96 5.96 13.5 9 13.5C12.04 13.5 14.5 15.96 14.5 19" stroke="white" stroke-width="2" stroke-linecap="round"/>
 
-<path d="M18 13V20"
-      stroke="white"
-      stroke-width="2"
-      stroke-linecap="round"/>
+<path d="M18 13V20" stroke="white" stroke-width="2" stroke-linecap="round"/>
 
-<path d="M14.5 16.5H21.5"
-      stroke="white"
-      stroke-width="2"
-      stroke-linecap="round"/>
+<path d="M14.5 16.5H21.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
 
 </svg>
 
@@ -1877,9 +2025,7 @@ button{
 
 </div>
 
-<div class="ios-social-label">
-Зберегти
-</div>
+<div class="ios-social-label">Зберегти</div>
 
 </div>
 
@@ -1894,25 +2040,11 @@ button{
    rel="noopener"
    aria-label="Instagram">
 
-<svg viewBox="0 0 24 24"
-     fill="none"
-     xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 
-<rect x="4" y="4"
-      width="16"
-      height="16"
-      rx="4.5"
-      stroke="white"
-      stroke-width="2"/>
-
-<circle cx="12" cy="12"
-        r="3.5"
-        stroke="white"
-        stroke-width="2"/>
-
-<circle cx="17.4" cy="6.8"
-        r="1.15"
-        fill="white"/>
+<rect x="4" y="4" width="16" height="16" rx="4.5" stroke="white" stroke-width="2"/>
+<circle cx="12" cy="12" r="3.5" stroke="white" stroke-width="2"/>
+<circle cx="17.4" cy="6.8" r="1.15" fill="white"/>
 
 </svg>
 
@@ -1920,9 +2052,7 @@ button{
 
 </div>
 
-<div class="ios-social-label">
-Instagram
-</div>
+<div class="ios-social-label">Instagram</div>
 
 </div>
 
@@ -1937,11 +2067,9 @@ Instagram
    rel="noopener"
    aria-label="Facebook">
 
-<svg viewBox="0 0 24 24"
-     xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 
-<path d="M13.5 21V13.9H16L16.4 11H13.5V9.15C13.5 8.31 13.73 7.74 14.92 7.74H16.5V5.16C16.23 5.12 15.29 5 14.2 5C11.92 5 10.36 6.39 10.36 8.95V11H7.9V13.9H10.36V21H13.5Z"
-      fill="white"/>
+<path d="M13.5 21V13.9H16L16.4 11H13.5V9.15C13.5 8.31 13.73 7.74 14.92 7.74H16.5V5.16C16.23 5.12 15.29 5 14.2 5C11.92 5 10.36 6.39 10.36 8.95V11H7.9V13.9H10.36V21H13.5Z" fill="white"/>
 
 </svg>
 
@@ -1949,9 +2077,7 @@ Instagram
 
 </div>
 
-<div class="ios-social-label">
-Facebook
-</div>
+<div class="ios-social-label">Facebook</div>
 
 </div>
 
@@ -1970,14 +2096,11 @@ Facebook
    rel="noopener"
    aria-label="YouTube">
 
-<svg viewBox="0 0 24 24"
-     xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 
-<path d="M21.58 7.19C21.36 6.38 20.73 5.74 19.92 5.52C18.45 5.12 12 5.12 12 5.12C12 5.12 5.55 5.12 4.08 5.52C3.27 5.74 2.64 6.38 2.42 7.19C2 8.66 2 12 2 12C2 12 2 15.34 2.42 16.81C2.64 17.62 3.27 18.26 4.08 18.48C5.55 18.88 12 18.88 12 18.88C12 18.88 18.45 18.88 19.92 18.48C20.73 18.26 21.36 17.62 21.58 16.81C22 15.34 22 12 22 12C22 12 22 8.66 21.58 7.19Z"
-      fill="white"/>
+<path d="M21.58 7.19C21.36 6.38 20.73 5.74 19.92 5.52C18.45 5.12 12 5.12 12 5.12C12 5.12 5.55 5.12 4.08 5.52C3.27 5.74 2.64 6.38 2.42 7.19C2 8.66 2 12 2 12C2 12 2 15.34 2.42 16.81C2.64 17.62 3.27 18.26 4.08 18.48C5.55 18.88 12 18.88 12 18.88C12 18.88 18.45 18.88 19.92 18.48C20.73 18.26 21.36 17.62 21.58 16.81C22 15.34 22 12 22 12C22 12 22 8.66 21.58 7.19Z" fill="white"/>
 
-<path d="M10 15.1L15.2 12L10 8.9V15.1Z"
-      fill="#ff2d2d"/>
+<path d="M10 15.1L15.2 12L10 8.9V15.1Z" fill="#ff2d2d"/>
 
 </svg>
 
@@ -1985,9 +2108,7 @@ Facebook
 
 </div>
 
-<div class="ios-social-label">
-YouTube
-</div>
+<div class="ios-social-label">YouTube</div>
 
 </div>
 
@@ -2002,14 +2123,11 @@ YouTube
    rel="noopener"
    aria-label="Telegram">
 
-<svg viewBox="0 0 24 24"
-     xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 
-<path d="M20.66 4.31L3.95 10.75C2.81 11.19 2.82 11.8 3.74 12.07L8.03 13.41L9.67 18.42C9.87 18.97 9.77 19.19 10.36 19.19C10.82 19.19 11.02 18.98 11.27 18.74L13.35 16.72L17.68 19.92C18.48 20.36 19.06 20.13 19.26 19.18L22.11 5.74C22.39 4.59 21.67 4.07 20.66 4.31Z"
-      fill="white"/>
+<path d="M20.66 4.31L3.95 10.75C2.81 11.19 2.82 11.8 3.74 12.07L8.03 13.41L9.67 18.42C9.87 18.97 9.77 19.19 10.36 19.19C10.82 19.19 11.02 18.98 11.27 18.74L13.35 16.72L17.68 19.92C18.48 20.36 19.06 20.13 19.26 19.18L22.11 5.74C22.39 4.59 21.67 4.07 20.66 4.31Z" fill="white"/>
 
-<path d="M8.18 13.1L17.91 7.08C18.39 6.79 18.83 6.95 18.47 7.27L10.59 14.38L10.29 17.43L9.06 13.64L8.18 13.1Z"
-      fill="#5BC9FF"/>
+<path d="M8.18 13.1L17.91 7.08C18.39 6.79 18.83 6.95 18.47 7.27L10.59 14.38L10.29 17.43L9.06 13.64L8.18 13.1Z" fill="#5BC9FF"/>
 
 </svg>
 
@@ -2017,9 +2135,7 @@ YouTube
 
 </div>
 
-<div class="ios-social-label">
-Telegram
-</div>
+<div class="ios-social-label">Telegram</div>
 
 </div>
 
@@ -2032,14 +2148,11 @@ Telegram
    href="viber://add?number=380979111871"
    aria-label="Viber">
 
-<svg viewBox="0 0 24 24"
-     xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 
-<path d="M18.7 4.1C16.91 2.53 14.48 1.82 12 1.82C7.04 1.82 2.55 4.69 2.55 10.43C2.55 13.31 3.47 15.05 4.84 16.55L4.51 19.7C4.46 20.21 4.97 20.55 5.4 20.28L8.5 18.31C9.55 18.62 10.69 18.79 12 18.79C17.02 18.79 21.45 15.91 21.45 10.22C21.45 7.62 20.55 5.73 18.7 4.1Z"
-      fill="white"/>
+<path d="M18.7 4.1C16.91 2.53 14.48 1.82 12 1.82C7.04 1.82 2.55 4.69 2.55 10.43C2.55 13.31 3.47 15.05 4.84 16.55L4.51 19.7C4.46 20.21 4.97 20.55 5.4 20.28L8.5 18.31C9.55 18.62 10.69 18.79 12 18.79C17.02 18.79 21.45 15.91 21.45 10.22C21.45 7.62 20.55 5.73 18.7 4.1Z" fill="white"/>
 
-<path d="M8.2 7.05C8.51 6.9 8.82 6.98 9.03 7.25L10.02 8.53C10.25 8.83 10.22 9.2 9.95 9.46L9.35 10.04C9.96 11.24 10.91 12.18 12.12 12.79L12.7 12.19C12.96 11.92 13.33 11.89 13.63 12.12L14.91 13.11C15.18 13.32 15.26 13.63 15.11 13.94L14.72 14.76C14.52 15.19 14.04 15.43 13.58 15.31C10.19 14.42 7.7 11.93 6.81 8.54C6.69 8.08 6.93 7.6 7.36 7.4L8.2 7.05Z"
-      fill="#8B79D9"/>
+<path d="M8.2 7.05C8.51 6.9 8.82 6.98 9.03 7.25L10.02 8.53C10.25 8.83 10.22 9.2 9.95 9.46L9.35 10.04C9.96 11.24 10.91 12.18 12.12 12.79L12.7 12.19C12.96 11.92 13.33 11.89 13.63 12.12L14.91 13.11C15.18 13.32 15.26 13.63 15.11 13.94L14.72 14.76C14.52 15.19 14.04 15.43 13.58 15.31C10.19 14.42 7.7 11.93 6.81 8.54C6.69 8.08 6.93 7.6 7.36 7.4L8.2 7.05Z" fill="#8B79D9"/>
 
 </svg>
 
@@ -2047,9 +2160,7 @@ Telegram
 
 </div>
 
-<div class="ios-social-label">
-Viber
-</div>
+<div class="ios-social-label">Viber</div>
 
 </div>
 
@@ -2063,23 +2174,11 @@ Viber
         onclick="openModal('paymentModal')"
         aria-label="Оплата">
 
-<svg viewBox="0 0 24 24"
-     fill="none"
-     xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 
-<rect x="3" y="5"
-      width="18"
-      height="14"
-      rx="3"
-      fill="white"/>
-
-<path d="M3 9H21"
-      stroke="#1976D2"
-      stroke-width="2"/>
-
-<circle cx="16.5" cy="14"
-        r="1.5"
-        fill="#1976D2"/>
+<rect x="3" y="5" width="18" height="14" rx="3" fill="white"/>
+<path d="M3 9H21" stroke="#1976D2" stroke-width="2"/>
+<circle cx="16.5" cy="14" r="1.5" fill="#1976D2"/>
 
 </svg>
 
@@ -2087,9 +2186,7 @@ Viber
 
 </div>
 
-<div class="ios-social-label">
-Оплата
-</div>
+<div class="ios-social-label">Оплата</div>
 
 </div>
 
@@ -2098,13 +2195,10 @@ Viber
 </div>
 
 </div>
-
 
 <div class="ios-social-pagination" aria-hidden="true">
-
 <span class="ios-social-page-dot active"></span>
 <span class="ios-social-page-dot"></span>
-
 </div>
 
 </div>
@@ -2131,10 +2225,7 @@ Viber
      src="your-photo.jpg"
      alt="Сергій — SA MASTER">
 
-<h2 class="about-modal-title"
-    id="aboutModalTitle">
-Сергій
-</h2>
+<h2 class="about-modal-title" id="aboutModalTitle">Сергій</h2>
 
 <p class="about-modal-lead">
 Понад 20 років професійного досвіду
@@ -2188,9 +2279,7 @@ Viber
         onclick="closeModal('paymentModal')"
         aria-label="Закрити">×</button>
 
-<div class="modal-title">
-Оплата
-</div>
+<div class="modal-title">Оплата</div>
 
 <div class="modal-text">
 Оберіть зручний спосіб оплати.
@@ -2204,23 +2293,13 @@ Viber
    rel="noopener"
    aria-label="Оплата через Privat24">
 
-<svg viewBox="0 0 64 64"
-     xmlns="http://www.w3.org/2000/svg"
-     aria-hidden="true">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 
-<rect x="7" y="12"
-      width="50"
-      height="40"
-      rx="8"
-      fill="white"/>
+<rect x="7" y="12" width="50" height="40" rx="8" fill="white"/>
 
-<path d="M7 24H57"
-      stroke="#36B83D"
-      stroke-width="5"/>
+<path d="M7 24H57" stroke="#36B83D" stroke-width="5"/>
 
-<text x="32"
-      y="42"
-      text-anchor="middle"
+<text x="32" y="42" text-anchor="middle"
       font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif"
       font-size="14"
       font-weight="800"
@@ -2239,23 +2318,13 @@ Viber
    rel="noopener"
    aria-label="Оплата через monobank">
 
-<svg viewBox="0 0 64 64"
-     xmlns="http://www.w3.org/2000/svg"
-     aria-hidden="true">
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 
-<rect x="7" y="12"
-      width="50"
-      height="40"
-      rx="8"
-      fill="white"/>
+<rect x="7" y="12" width="50" height="40" rx="8" fill="white"/>
 
-<path d="M7 24H57"
-      stroke="#171719"
-      stroke-width="5"/>
+<path d="M7 24H57" stroke="#171719" stroke-width="5"/>
 
-<text x="32"
-      y="42"
-      text-anchor="middle"
+<text x="32" y="42" text-anchor="middle"
       font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif"
       font-size="13"
       font-weight="800"
@@ -2285,15 +2354,12 @@ Viber
         type="button"
         aria-label="Закрити">×</button>
 
-<img id="lightboxImage"
-     src=""
-     alt="">
+<img id="lightboxImage" src="" alt="">
 
 </div>
 
 
 <script>
-
 
 /* =========================================================
    GALLERY
@@ -2304,17 +2370,13 @@ const galleryTrack=document.getElementById("galleryTrack");
 const galleryCounter=document.getElementById("galleryCounter");
 const galleryDots=Array.from(document.querySelectorAll(".gallery-dot"));
 const gallerySlides=Array.from(document.querySelectorAll(".gallery-slide"));
-
 const galleryTotal=8;
 
 let galleryIndex=0;
-
 let galleryStartX=0;
 let galleryCurrentX=0;
 let galleryDragging=false;
-
 let galleryTimer;
-
 
 function updateGallery(index,animate=true){
 
@@ -2327,36 +2389,20 @@ function updateGallery(index,animate=true){
         `translate3d(-${index*100}%,0,0)`;
 
     const realIndex=
-        index>=galleryTotal
-        ? 0
-        : index;
+        index>=galleryTotal ? 0 : index;
 
     galleryCounter.textContent=
         `${realIndex+1} / ${galleryTotal}`;
 
     galleryDots.forEach((dot,i)=>{
-
-        dot.classList.toggle(
-            "active",
-            i===realIndex
-        );
-
+        dot.classList.toggle("active",i===realIndex);
     });
-
 }
-
 
 function nextGallery(){
-
     galleryIndex++;
-
-    updateGallery(
-        galleryIndex,
-        true
-    );
-
+    updateGallery(galleryIndex,true);
 }
-
 
 function previousGallery(){
 
@@ -2364,151 +2410,87 @@ function previousGallery(){
 
         galleryIndex=galleryTotal;
 
-        updateGallery(
-            galleryIndex,
-            false
-        );
+        updateGallery(galleryIndex,false);
 
         requestAnimationFrame(()=>{
-
             galleryIndex--;
-
-            updateGallery(
-                galleryIndex,
-                true
-            );
-
+            updateGallery(galleryIndex,true);
         });
 
         return;
-
     }
 
     galleryIndex--;
-
-    updateGallery(
-        galleryIndex,
-        true
-    );
-
+    updateGallery(galleryIndex,true);
 }
 
+galleryTrack.addEventListener("transitionend",()=>{
 
-galleryTrack.addEventListener(
-    "transitionend",
-    ()=>{
+    if(galleryIndex===galleryTotal){
 
-        if(galleryIndex===galleryTotal){
+        galleryIndex=0;
 
-            galleryIndex=0;
-
-            updateGallery(
-                galleryIndex,
-                false
-            );
-
-        }
-
+        updateGallery(galleryIndex,false);
     }
-);
-
+});
 
 galleryDots.forEach((dot,index)=>{
 
-    dot.addEventListener(
-        "click",
-        ()=>{
+    dot.addEventListener("click",()=>{
 
-            galleryIndex=index;
+        galleryIndex=index;
 
-            updateGallery(
-                galleryIndex,
-                true
-            );
+        updateGallery(galleryIndex,true);
 
-            restartGalleryTimer();
-
-        }
-    );
-
+        restartGalleryTimer();
+    });
 });
 
+galleryWindow.addEventListener("touchstart",event=>{
 
-galleryWindow.addEventListener(
-    "touchstart",
-    event=>{
+    galleryStartX=event.touches[0].clientX;
+    galleryCurrentX=galleryStartX;
+    galleryDragging=true;
 
-        galleryStartX=
-            event.touches[0].clientX;
+},{passive:true});
 
-        galleryCurrentX=
-            galleryStartX;
+galleryWindow.addEventListener("touchmove",event=>{
 
-        galleryDragging=true;
+    if(!galleryDragging)return;
 
-    },
-    {passive:true}
-);
+    galleryCurrentX=event.touches[0].clientX;
 
+},{passive:true});
 
-galleryWindow.addEventListener(
-    "touchmove",
-    event=>{
+galleryWindow.addEventListener("touchend",()=>{
 
-        if(!galleryDragging)return;
+    if(!galleryDragging)return;
 
-        galleryCurrentX=
-            event.touches[0].clientX;
+    galleryDragging=false;
 
-    },
-    {passive:true}
-);
+    const difference=
+        galleryCurrentX-galleryStartX;
 
+    if(Math.abs(difference)>=45){
 
-galleryWindow.addEventListener(
-    "touchend",
-    ()=>{
-
-        if(!galleryDragging)return;
-
-        galleryDragging=false;
-
-        const difference=
-            galleryCurrentX-
-            galleryStartX;
-
-        if(Math.abs(difference)>=45){
-
-            if(difference<0){
-
-                nextGallery();
-
-            }else{
-
-                previousGallery();
-
-            }
-
-            restartGalleryTimer();
-
+        if(difference<0){
+            nextGallery();
+        }else{
+            previousGallery();
         }
 
+        restartGalleryTimer();
     }
-);
 
+});
 
 function restartGalleryTimer(){
 
     clearInterval(galleryTimer);
 
     galleryTimer=
-        setInterval(
-            nextGallery,
-            4500
-        );
-
+        setInterval(nextGallery,4500);
 }
-
 
 restartGalleryTimer();
 
@@ -2517,47 +2499,29 @@ restartGalleryTimer();
    LIGHTBOX
    ========================================================= */
 
-const lightbox=
-    document.getElementById("lightbox");
-
-const lightboxImage=
-    document.getElementById("lightboxImage");
-
-const lightboxClose=
-    document.getElementById("lightboxClose");
-
+const lightbox=document.getElementById("lightbox");
+const lightboxImage=document.getElementById("lightboxImage");
+const lightboxClose=document.getElementById("lightboxClose");
 
 const lightboxImages=
-    Array.from(
-        document.querySelectorAll(".gallery-slide img")
-    ).slice(
-        0,
-        galleryTotal
-    );
-
+    Array.from(document.querySelectorAll(".gallery-slide img"))
+    .slice(0,galleryTotal);
 
 let lightboxIndex=0;
-
 let lightboxStartX=0;
 let lightboxStartY=0;
-
 let lightboxCurrentX=0;
 let lightboxCurrentY=0;
-
 let lightboxDragging=false;
 let lightboxGestureAxis=null;
 let lightboxSwipeLocked=false;
-
 
 function openLightbox(index){
 
     lightboxIndex=
         Math.max(
             0,
-            Math.min(
-                galleryTotal-1,
-                index
-            )
+            Math.min(galleryTotal-1,index)
         );
 
     const image=
@@ -2565,76 +2529,50 @@ function openLightbox(index){
 
     if(!image)return;
 
-    lightboxImage.src=
-        image.src;
+    lightboxImage.src=image.src;
+    lightboxImage.alt=image.alt;
 
-    lightboxImage.alt=
-        image.alt;
+    lightboxImage.style.transition="none";
+    lightboxImage.style.transform="scale(.97)";
 
-    lightboxImage.style.transition=
-        "none";
+    lightbox.classList.add("active");
 
-    lightboxImage.style.transform=
-        "scale(.97)";
-
-    lightbox.classList.add(
-        "active"
-    );
-
-    document.body.style.overflow=
-        "hidden";
+    document.body.style.overflow="hidden";
 
     requestAnimationFrame(()=>{
-
         requestAnimationFrame(()=>{
 
             lightboxImage.style.transition=
                 "transform .30s cubic-bezier(.22,.61,.36,1)";
 
-            lightboxImage.style.transform=
-                "scale(1)";
-
+            lightboxImage.style.transform="scale(1)";
         });
-
     });
-
 }
-
 
 lightboxImages.forEach((img,index)=>{
 
-    img.addEventListener(
-        "click",
-        ()=>{
-            openLightbox(index);
-        }
-    );
-
+    img.addEventListener("click",()=>{
+        openLightbox(index);
+    });
 });
-
 
 function closeLightbox(){
 
-    lightbox.classList.remove(
-        "active"
-    );
+    lightbox.classList.remove("active");
 
     lightboxImage.style.transition="";
     lightboxImage.style.transform="";
 
     document.body.style.overflow="";
-
 }
-
 
 function switchLightboxPhoto(direction){
 
     if(lightboxSwipeLocked)return;
 
     const nextIndex=
-        (lightboxIndex+
-         direction+
-         galleryTotal)%
+        (lightboxIndex+direction+galleryTotal)%
         galleryTotal;
 
     const nextImage=
@@ -2645,15 +2583,10 @@ function switchLightboxPhoto(direction){
     lightboxSwipeLocked=true;
 
     const exitX=
-        direction>0
-        ? "-110%"
-        : "110%";
+        direction>0 ? "-110%" : "110%";
 
     const enterX=
-        direction>0
-        ? "110%"
-        : "-110%";
-
+        direction>0 ? "110%" : "-110%";
 
     lightboxImage.style.transition=
         "transform .28s cubic-bezier(.22,.61,.36,1)";
@@ -2661,27 +2594,18 @@ function switchLightboxPhoto(direction){
     lightboxImage.style.transform=
         `translateX(${exitX}) scale(.96)`;
 
-
     setTimeout(()=>{
 
-        lightboxIndex=
-            nextIndex;
+        lightboxIndex=nextIndex;
 
-        lightboxImage.src=
-            nextImage.src;
+        lightboxImage.src=nextImage.src;
+        lightboxImage.alt=nextImage.alt;
 
-        lightboxImage.alt=
-            nextImage.alt;
-
-        lightboxImage.style.transition=
-            "none";
-
+        lightboxImage.style.transition="none";
         lightboxImage.style.transform=
             `translateX(${enterX}) scale(.96)`;
 
-
         requestAnimationFrame(()=>{
-
             requestAnimationFrame(()=>{
 
                 lightboxImage.style.transition=
@@ -2689,11 +2613,8 @@ function switchLightboxPhoto(direction){
 
                 lightboxImage.style.transform=
                     "translateX(0) scale(1)";
-
             });
-
         });
-
 
         setTimeout(()=>{
 
@@ -2704,425 +2625,290 @@ function switchLightboxPhoto(direction){
         },320);
 
     },280);
-
 }
 
 
 /* =========================================================
-   LIGHTBOX — СВАЙП
+   LIGHTBOX SWIPE
    ========================================================= */
 
-lightboxImage.addEventListener(
-    "touchstart",
-    event=>{
+lightboxImage.addEventListener("touchstart",event=>{
 
-        if(
-            !lightbox.classList.contains(
-                "active"
-            )
-        ){
+    if(!lightbox.classList.contains("active"))return;
+    if(lightboxSwipeLocked)return;
 
-            return;
+    const touch=event.touches[0];
 
-        }
+    lightboxStartX=touch.clientX;
+    lightboxStartY=touch.clientY;
 
-        if(lightboxSwipeLocked)return;
+    lightboxCurrentX=lightboxStartX;
+    lightboxCurrentY=lightboxStartY;
 
-        const touch=
-            event.touches[0];
+    lightboxDragging=true;
+    lightboxGestureAxis=null;
 
-        lightboxStartX=
-            touch.clientX;
+    lightboxImage.style.transition="none";
 
-        lightboxStartY=
-            touch.clientY;
+},{passive:true});
 
-        lightboxCurrentX=
-            lightboxStartX;
+lightboxImage.addEventListener("touchmove",event=>{
 
-        lightboxCurrentY=
-            lightboxStartY;
+    if(!lightboxDragging)return;
 
-        lightboxDragging=true;
+    const touch=event.touches[0];
 
-        lightboxGestureAxis=null;
+    lightboxCurrentX=touch.clientX;
+    lightboxCurrentY=touch.clientY;
 
-        lightboxImage.style.transition=
-            "none";
+    const deltaX=
+        lightboxCurrentX-lightboxStartX;
 
-    },
-    {passive:true}
-);
+    const deltaY=
+        lightboxCurrentY-lightboxStartY;
 
+    const distance=
+        Math.max(
+            Math.abs(deltaX),
+            Math.abs(deltaY)
+        );
 
-lightboxImage.addEventListener(
-    "touchmove",
-    event=>{
+    if(!lightboxGestureAxis && distance>8){
 
-        if(!lightboxDragging)return;
+        lightboxGestureAxis=
+            Math.abs(deltaX)>Math.abs(deltaY)
+            ? "horizontal"
+            : "vertical";
+    }
 
-        const touch=
-            event.touches[0];
+    if(!lightboxGestureAxis)return;
 
-        lightboxCurrentX=
-            touch.clientX;
+    if(lightboxGestureAxis==="horizontal"){
 
-        lightboxCurrentY=
-            touch.clientY;
+        const movement=deltaX*.70;
 
-        const deltaX=
-            lightboxCurrentX-
-            lightboxStartX;
-
-        const deltaY=
-            lightboxCurrentY-
-            lightboxStartY;
-
-
-        const distance=
-            Math.max(
-                Math.abs(deltaX),
-                Math.abs(deltaY)
+        const progress=
+            Math.min(
+                Math.abs(movement)/window.innerWidth,
+                1
             );
 
+        const scale=1-(progress*.05);
 
-        if(
-            !lightboxGestureAxis &&
-            distance>8
-        ){
+        lightboxImage.style.transform=
+            `translateX(${movement}px) scale(${scale})`;
 
-            lightboxGestureAxis=
-                Math.abs(deltaX)>
-                Math.abs(deltaY)
-                ? "horizontal"
-                : "vertical";
+        return;
+    }
 
-        }
+    if(lightboxGestureAxis==="vertical"){
 
+        const movement=deltaY*.72;
 
-        if(!lightboxGestureAxis)return;
+        const progress=
+            Math.min(
+                Math.abs(movement)/window.innerHeight,
+                1
+            );
 
+        const scale=1-(progress*.05);
 
-        if(
-            lightboxGestureAxis===
-            "horizontal"
-        ){
+        lightboxImage.style.transform=
+            `translateY(${movement}px) scale(${scale})`;
+    }
 
-            const movement=
-                deltaX*.70;
+},{passive:true});
 
-            const progress=
-                Math.min(
-                    Math.abs(movement)/
-                    window.innerWidth,
-                    1
-                );
+lightboxImage.addEventListener("touchend",()=>{
 
-            const scale=
-                1-
-                (progress*.05);
+    if(!lightboxDragging)return;
 
-            lightboxImage.style.transform=
-                `translateX(${movement}px) scale(${scale})`;
+    lightboxDragging=false;
 
-            return;
+    const deltaX=
+        lightboxCurrentX-lightboxStartX;
 
-        }
+    const deltaY=
+        lightboxCurrentY-lightboxStartY;
 
+    const horizontalDistance=Math.abs(deltaX);
+    const verticalDistance=Math.abs(deltaY);
 
-        if(
-            lightboxGestureAxis===
-            "vertical"
-        ){
+    if(lightboxGestureAxis==="vertical"){
 
-            const movement=
-                deltaY*.72;
+        if(verticalDistance>=80){
 
-            const progress=
-                Math.min(
-                    Math.abs(movement)/
-                    window.innerHeight,
-                    1
-                );
-
-            const scale=
-                1-
-                (progress*.05);
-
-            lightboxImage.style.transform=
-                `translateY(${movement}px) scale(${scale})`;
-
-        }
-
-    },
-    {passive:true}
-);
-
-
-lightboxImage.addEventListener(
-    "touchend",
-    ()=>{
-
-        if(!lightboxDragging)return;
-
-        lightboxDragging=false;
-
-        const deltaX=
-            lightboxCurrentX-
-            lightboxStartX;
-
-        const deltaY=
-            lightboxCurrentY-
-            lightboxStartY;
-
-        const horizontalDistance=
-            Math.abs(deltaX);
-
-        const verticalDistance=
-            Math.abs(deltaY);
-
-
-        if(
-            lightboxGestureAxis===
-            "vertical"
-        ){
-
-            if(verticalDistance>=80){
-
-                const direction=
-                    deltaY<0
-                    ? -1
-                    : 1;
-
-                lightboxImage.style.transition=
-                    "transform .30s cubic-bezier(.22,.61,.36,1)";
-
-                lightboxImage.style.transform=
-                    `translateY(${direction*110}%) scale(.96)`;
-
-
-                setTimeout(
-                    ()=>{
-                        closeLightbox();
-                    },
-                    300
-                );
-
-                lightboxGestureAxis=null;
-
-                return;
-
-            }
-
+            const direction=
+                deltaY<0 ? -1 : 1;
 
             lightboxImage.style.transition=
                 "transform .30s cubic-bezier(.22,.61,.36,1)";
 
             lightboxImage.style.transform=
-                "translateY(0) scale(1)";
+                `translateY(${direction*110}%) scale(.96)`;
 
-
-            setTimeout(
-                ()=>{
-
-                    lightboxImage.style.transition="";
-                    lightboxImage.style.transform="";
-
-                },
-                300
-            );
+            setTimeout(closeLightbox,300);
 
             lightboxGestureAxis=null;
-
             return;
-
         }
-
-
-        if(
-            lightboxGestureAxis===
-            "horizontal" &&
-            horizontalDistance>=80
-        ){
-
-            if(deltaX<0){
-
-                switchLightboxPhoto(1);
-
-            }else{
-
-                switchLightboxPhoto(-1);
-
-            }
-
-            lightboxGestureAxis=null;
-
-            return;
-
-        }
-
 
         lightboxImage.style.transition=
             "transform .30s cubic-bezier(.22,.61,.36,1)";
 
         lightboxImage.style.transform=
-            "translateX(0) translateY(0) scale(1)";
+            "translateY(0) scale(1)";
 
+        setTimeout(()=>{
 
-        setTimeout(
-            ()=>{
+            lightboxImage.style.transition="";
+            lightboxImage.style.transform="";
 
-                lightboxImage.style.transition="";
-                lightboxImage.style.transform="";
-
-            },
-            300
-        );
+        },300);
 
         lightboxGestureAxis=null;
-
-    },
-    {passive:true}
-);
-
-
-lightboxImage.addEventListener(
-    "touchcancel",
-    ()=>{
-
-        if(!lightboxDragging)return;
-
-        lightboxDragging=false;
-        lightboxGestureAxis=null;
-
-        lightboxImage.style.transition=
-            "transform .30s cubic-bezier(.22,.61,.36,1)";
-
-        lightboxImage.style.transform=
-            "translateX(0) translateY(0) scale(1)";
-
-
-        setTimeout(
-            ()=>{
-
-                lightboxImage.style.transition="";
-                lightboxImage.style.transform="";
-
-            },
-            300
-        );
-
-    },
-    {passive:true}
-);
-
-
-lightboxClose.addEventListener(
-    "click",
-    closeLightbox
-);
-
-
-lightbox.addEventListener(
-    "click",
-    event=>{
-
-        if(event.target===lightbox){
-
-            closeLightbox();
-
-        }
-
+        return;
     }
-);
+
+    if(
+        lightboxGestureAxis==="horizontal" &&
+        horizontalDistance>=80
+    ){
+
+        if(deltaX<0){
+            switchLightboxPhoto(1);
+        }else{
+            switchLightboxPhoto(-1);
+        }
+
+        lightboxGestureAxis=null;
+        return;
+    }
+
+    lightboxImage.style.transition=
+        "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+    lightboxImage.style.transform=
+        "translateX(0) translateY(0) scale(1)";
+
+    setTimeout(()=>{
+
+        lightboxImage.style.transition="";
+        lightboxImage.style.transform="";
+
+    },300);
+
+    lightboxGestureAxis=null;
+
+},{passive:true});
+
+lightboxImage.addEventListener("touchcancel",()=>{
+
+    if(!lightboxDragging)return;
+
+    lightboxDragging=false;
+    lightboxGestureAxis=null;
+
+    lightboxImage.style.transition=
+        "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+    lightboxImage.style.transform=
+        "translateX(0) translateY(0) scale(1)";
+
+    setTimeout(()=>{
+
+        lightboxImage.style.transition="";
+        lightboxImage.style.transform="";
+
+    },300);
+
+},{passive:true});
+
+lightboxClose.addEventListener("click",closeLightbox);
+
+lightbox.addEventListener("click",event=>{
+
+    if(event.target===lightbox){
+        closeLightbox();
+    }
+
+});
 
 
 /* =========================================================
    INFO CARD DECK
    ========================================================= */
 
-const infoDeck=
-    document.getElementById("infoDeck");
+const infoDeck=document.getElementById("infoDeck");
 
 const infoCards=
-    Array.from(
-        document.querySelectorAll(".info-card")
-    );
+    Array.from(document.querySelectorAll(".info-card"));
 
+const infoStorySteps=
+    Array.from(document.querySelectorAll(".info-story-step"));
 
 let infoStartX=0;
 let infoStartY=0;
-
 let infoCurrentX=0;
 let infoCurrentY=0;
-
 let infoDragging=false;
 let infoSwipeLocked=false;
 let suppressCardClick=false;
-
 let infoDeckState=0;
 
+function updateInfoStory(){
+
+    infoStorySteps.forEach((step,index)=>{
+
+        step.classList.toggle(
+            "active",
+            index===infoDeckState
+        );
+
+    });
+}
 
 function updateInfoDeck(){
 
-    infoCards.forEach(
-        (card,index)=>{
+    infoCards.forEach((card,index)=>{
 
-            card.classList.remove(
-                "top",
-                "depth1",
-                "depth2",
-                "depth3"
-            );
+        card.classList.remove(
+            "top",
+            "depth1",
+            "depth2",
+            "depth3"
+        );
 
-            const position=
-                index-infoDeckState;
+        const position=
+            index-infoDeckState;
 
-            if(position===0){
-
-                card.classList.add(
-                    "top"
-                );
-
-            }
-
-            if(position===1){
-
-                card.classList.add(
-                    "depth1"
-                );
-
-            }
-
-            if(position===2){
-
-                card.classList.add(
-                    "depth2"
-                );
-
-            }
-
-            if(position===3){
-
-                card.classList.add(
-                    "depth3"
-                );
-
-            }
-
+        if(position===0){
+            card.classList.add("top");
         }
-    );
 
+        if(position===1){
+            card.classList.add("depth1");
+        }
+
+        if(position===2){
+            card.classList.add("depth2");
+        }
+
+        if(position===3){
+            card.classList.add("depth3");
+        }
+
+    });
+
+    updateInfoStory();
 }
-
 
 function cycleInfoDeck(direction){
 
     if(infoSwipeLocked)return;
 
     const nextState=
-        infoDeckState+
-        direction;
+        infoDeckState+direction;
 
     if(
         nextState<0 ||
@@ -3131,15 +2917,11 @@ function cycleInfoDeck(direction){
 
         suppressCardClick=true;
 
-        setTimeout(
-            ()=>{
-                suppressCardClick=false;
-            },
-            120
-        );
+        setTimeout(()=>{
+            suppressCardClick=false;
+        },120);
 
         return;
-
     }
 
     infoSwipeLocked=true;
@@ -3148,14 +2930,12 @@ function cycleInfoDeck(direction){
     const topCard=
         infoCards[infoDeckState];
 
-
     topCard.classList.remove(
         "top",
         "depth1",
         "depth2",
         "depth3"
     );
-
 
     if(direction>0){
 
@@ -3168,13 +2948,11 @@ function cycleInfoDeck(direction){
         topCard.classList.add(
             "is-leaving-left"
         );
-
     }
 
+    infoDeckState=nextState;
 
-    infoDeckState=
-        nextState;
-
+    updateInfoStory();
 
     setTimeout(()=>{
 
@@ -3191,138 +2969,86 @@ function cycleInfoDeck(direction){
 
     },450);
 
-
     setTimeout(()=>{
         suppressCardClick=false;
     },500);
-
 }
 
+infoDeck.addEventListener("touchstart",event=>{
 
-infoDeck.addEventListener(
-    "touchstart",
-    event=>{
+    if(infoSwipeLocked)return;
 
-        if(infoSwipeLocked)return;
+    const touch=event.touches[0];
 
-        const touch=
-            event.touches[0];
+    infoStartX=touch.clientX;
+    infoStartY=touch.clientY;
 
-        infoStartX=
-            touch.clientX;
+    infoCurrentX=infoStartX;
+    infoCurrentY=infoStartY;
 
-        infoStartY=
-            touch.clientY;
+    infoDragging=true;
 
-        infoCurrentX=
-            infoStartX;
+},{passive:true});
 
-        infoCurrentY=
-            infoStartY;
+infoDeck.addEventListener("touchmove",event=>{
 
-        infoDragging=true;
+    if(!infoDragging)return;
 
-    },
-    {passive:true}
-);
+    const touch=event.touches[0];
 
+    infoCurrentX=touch.clientX;
+    infoCurrentY=touch.clientY;
 
-infoDeck.addEventListener(
-    "touchmove",
-    event=>{
+},{passive:true});
 
-        if(!infoDragging)return;
+infoDeck.addEventListener("touchend",()=>{
 
-        const touch=
-            event.touches[0];
+    if(!infoDragging)return;
 
-        infoCurrentX=
-            touch.clientX;
+    infoDragging=false;
 
-        infoCurrentY=
-            touch.clientY;
+    const deltaX=
+        infoCurrentX-infoStartX;
 
-    },
-    {passive:true}
-);
+    const deltaY=
+        infoCurrentY-infoStartY;
 
+    const horizontalDistance=
+        Math.abs(deltaX);
 
-infoDeck.addEventListener(
-    "touchend",
-    ()=>{
+    const verticalDistance=
+        Math.abs(deltaY);
 
-        if(!infoDragging)return;
+    if(
+        horizontalDistance>=50 &&
+        horizontalDistance>verticalDistance*1.2
+    ){
 
-        infoDragging=false;
-
-        const deltaX=
-            infoCurrentX-
-            infoStartX;
-
-        const deltaY=
-            infoCurrentY-
-            infoStartY;
-
-        const horizontalDistance=
-            Math.abs(deltaX);
-
-        const verticalDistance=
-            Math.abs(deltaY);
-
-
-        if(
-            horizontalDistance>=50 &&
-            horizontalDistance>
-            verticalDistance*1.2
-        ){
-
-            if(deltaX>0){
-
-                cycleInfoDeck(1);
-
-            }else{
-
-                cycleInfoDeck(-1);
-
-            }
-
+        if(deltaX>0){
+            cycleInfoDeck(1);
+        }else{
+            cycleInfoDeck(-1);
         }
-
     }
-);
 
+});
 
-infoDeck.addEventListener(
-    "click",
-    event=>{
+infoDeck.addEventListener("click",event=>{
 
-        if(suppressCardClick)return;
+    if(suppressCardClick)return;
 
-        const card=
-            event.target.closest(
-                ".info-card"
-            );
+    const card=
+        event.target.closest(".info-card");
 
-        if(!card)return;
+    if(!card)return;
 
-        const cardIndex=
-            Number(card.dataset.index);
+    const cardIndex=
+        Number(card.dataset.index);
 
-        if(
-            cardIndex!==infoDeckState
-        ){
+    if(cardIndex!==infoDeckState)return;
 
-            return;
-
-        }
-
-        openInfoModal(
-            card.dataset.modal
-        );
-
-    }
-);
-
+    openInfoModal(card.dataset.modal);
+});
 
 updateInfoDeck();
 
@@ -3338,11 +3064,8 @@ const infoModalIds=[
     "reviewsModal"
 ];
 
-
 let activeInfoModalIndex=-1;
-
 let infoModalSwipeLocked=false;
-
 
 function openInfoModal(id){
 
@@ -3356,9 +3079,7 @@ function openInfoModal(id){
 
     if(index===-1)return;
 
-    activeInfoModalIndex=
-        index;
-
+    activeInfoModalIndex=index;
 
     document
         .querySelectorAll(".info-modal")
@@ -3378,22 +3099,13 @@ function openInfoModal(id){
 
                 content.style.transition="";
                 content.style.transform="";
-
             }
-
         });
 
+    modal.classList.add("active");
 
-    modal.classList.add(
-        "active"
-    );
-
-
-    document.body.style.overflow=
-        "hidden";
-
+    document.body.style.overflow="hidden";
 }
-
 
 function closeInfoModal(id){
 
@@ -3402,12 +3114,10 @@ function closeInfoModal(id){
 
     if(!modal)return;
 
-
     modal.classList.remove(
         "active",
         "info-transition-target"
     );
-
 
     const content=
         modal.querySelector(
@@ -3418,21 +3128,17 @@ function closeInfoModal(id){
 
         content.style.transition="";
         content.style.transform="";
-
     }
 
-
     activeInfoModalIndex=-1;
-
     infoModalSwipeLocked=false;
 
     document.body.style.overflow="";
-
 }
 
 
 /* =========================================================
-   НОВА ЧИСТА АНІМАЦІЯ МІЖ INFO MODALS
+   INFO MODAL SWITCH
    ========================================================= */
 
 function switchInfoModal(direction){
@@ -3445,19 +3151,14 @@ function switchInfoModal(direction){
         activeInfoModalIndex;
 
     const nextIndex=
-        currentIndex+
-        direction;
-
+        currentIndex+direction;
 
     if(
         nextIndex<0 ||
         nextIndex>=infoModalIds.length
     ){
-
         return;
-
     }
-
 
     const currentModal=
         document.getElementById(
@@ -3469,16 +3170,12 @@ function switchInfoModal(direction){
             infoModalIds[nextIndex]
         );
 
-
     if(
         !currentModal ||
         !nextModal
     ){
-
         return;
-
     }
-
 
     const currentContent=
         currentModal.querySelector(
@@ -3490,40 +3187,22 @@ function switchInfoModal(direction){
             ".info-modal-content"
         );
 
-
     if(
         !currentContent ||
         !nextContent
     ){
-
         return;
-
     }
-
 
     infoModalSwipeLocked=true;
 
-
-    const left=
-        direction>0;
-
+    const left=direction>0;
 
     const exitPosition=
-        left
-        ? "-100%"
-        : "100%";
-
+        left ? "-100%" : "100%";
 
     const enterPosition=
-        left
-        ? "100%"
-        : "-100%";
-
-
-    /*
-       Поточне вікно залишається єдиним
-       затемненим фоном.
-    */
+        left ? "100%" : "-100%";
 
     currentContent.style.transition=
         "transform .34s cubic-bezier(.22,.61,.36,1)";
@@ -3531,27 +3210,17 @@ function switchInfoModal(direction){
     currentContent.style.transform=
         `translateX(${exitPosition})`;
 
-
-    /*
-       Наступне вікно активне, але його фон
-       прозорий — тому немає подвійного затемнення.
-    */
-
     nextModal.classList.add(
         "active",
         "info-transition-target"
     );
 
-
-    nextContent.style.transition=
-        "none";
+    nextContent.style.transition="none";
 
     nextContent.style.transform=
         `translateX(${enterPosition})`;
 
-
     requestAnimationFrame(()=>{
-
         requestAnimationFrame(()=>{
 
             nextContent.style.transition=
@@ -3559,21 +3228,15 @@ function switchInfoModal(direction){
 
             nextContent.style.transform=
                 "translateX(0)";
-
         });
-
     });
-
 
     setTimeout(()=>{
 
-        currentModal.classList.remove(
-            "active"
-        );
+        currentModal.classList.remove("active");
 
         currentContent.style.transition="";
         currentContent.style.transform="";
-
 
         nextModal.classList.remove(
             "info-transition-target"
@@ -3582,14 +3245,10 @@ function switchInfoModal(direction){
         nextContent.style.transition="";
         nextContent.style.transform="";
 
-
-        activeInfoModalIndex=
-            nextIndex;
-
+        activeInfoModalIndex=nextIndex;
         infoModalSwipeLocked=false;
 
     },350);
-
 }
 
 
@@ -3601,23 +3260,14 @@ document
     .querySelectorAll(".info-modal")
     .forEach(modal=>{
 
-        modal.addEventListener(
-            "click",
-            event=>{
+        modal.addEventListener("click",event=>{
 
-                if(
-                    event.target===
-                    modal
-                ){
+            if(event.target===modal){
 
-                    closeInfoModal(
-                        modal.id
-                    );
-
-                }
-
+                closeInfoModal(modal.id);
             }
-        );
+
+        });
 
     });
 
@@ -3637,304 +3287,146 @@ document
 
         if(!content)return;
 
-
         let startX=0;
         let startY=0;
-
         let currentX=0;
         let currentY=0;
-
         let dragging=false;
         let gestureAxis=null;
 
+        content.addEventListener("touchstart",event=>{
 
-        content.addEventListener(
-            "touchstart",
-            event=>{
+            if(
+                !modal.classList.contains("active")
+            ){
+                return;
+            }
 
-                if(
-                    !modal.classList.contains(
-                        "active"
-                    )
-                ){
+            if(infoModalSwipeLocked)return;
 
-                    return;
+            const touch=event.touches[0];
 
-                }
+            startX=touch.clientX;
+            startY=touch.clientY;
 
-                if(infoModalSwipeLocked)return;
+            currentX=startX;
+            currentY=startY;
 
+            dragging=true;
+            gestureAxis=null;
 
-                const touch=
-                    event.touches[0];
+            content.style.transition="none";
 
-                startX=
-                    touch.clientX;
+        },{passive:true});
 
-                startY=
-                    touch.clientY;
+        content.addEventListener("touchmove",event=>{
 
-                currentX=
-                    startX;
+            if(!dragging)return;
 
-                currentY=
-                    startY;
+            const touch=event.touches[0];
 
-                dragging=true;
+            currentX=touch.clientX;
+            currentY=touch.clientY;
 
-                gestureAxis=null;
+            const deltaX=
+                currentX-startX;
 
-                content.style.transition=
-                    "none";
+            const deltaY=
+                currentY-startY;
 
-            },
-            {passive:true}
-        );
+            const distance=
+                Math.max(
+                    Math.abs(deltaX),
+                    Math.abs(deltaY)
+                );
 
+            if(!gestureAxis && distance>8){
 
-        content.addEventListener(
-            "touchmove",
-            event=>{
+                gestureAxis=
+                    Math.abs(deltaX)>Math.abs(deltaY)
+                    ? "horizontal"
+                    : "vertical";
+            }
 
-                if(!dragging)return;
+            if(!gestureAxis)return;
 
-                const touch=
-                    event.touches[0];
+            if(gestureAxis==="horizontal"){
 
-                currentX=
-                    touch.clientX;
+                const movement=deltaX*.72;
 
-                currentY=
-                    touch.clientY;
+                content.style.transform=
+                    `translateX(${movement}px)`;
 
+                return;
+            }
 
-                const deltaX=
-                    currentX-startX;
+            if(gestureAxis==="vertical"){
 
-                const deltaY=
-                    currentY-startY;
+                const movement=deltaY*.72;
 
-
-                const distance=
-                    Math.max(
-                        Math.abs(deltaX),
-                        Math.abs(deltaY)
+                const progress=
+                    Math.min(
+                        Math.abs(movement)/
+                        window.innerHeight,
+                        1
                     );
 
+                const scale=
+                    1-(progress*.04);
 
-                if(
-                    !gestureAxis &&
-                    distance>8
-                ){
+                content.style.transform=
+                    `translateY(${movement}px) scale(${scale})`;
+            }
 
-                    gestureAxis=
-                        Math.abs(deltaX)>
-                        Math.abs(deltaY)
-                        ? "horizontal"
-                        : "vertical";
+        },{passive:true});
 
-                }
+        content.addEventListener("touchend",()=>{
 
+            if(!dragging)return;
 
-                if(!gestureAxis)return;
+            dragging=false;
 
+            const deltaX=
+                currentX-startX;
 
-                /* -----------------------------------------
-                   ГОРИЗОНТАЛЬНИЙ СВАЙП
-                   ----------------------------------------- */
+            const deltaY=
+                currentY-startY;
 
-                if(
-                    gestureAxis===
-                    "horizontal"
-                ){
+            const horizontalDistance=
+                Math.abs(deltaX);
 
-                    /*
-                       Рух за пальцем без scale
-                       та без rotation.
-                    */
+            const verticalDistance=
+                Math.abs(deltaY);
 
-                    const movement=
-                        deltaX*.72;
+            if(gestureAxis==="vertical"){
 
-                    content.style.transform=
-                        `translateX(${movement}px)`;
+                if(verticalDistance>=80){
 
-                    return;
-
-                }
-
-
-                /* -----------------------------------------
-                   ВЕРТИКАЛЬНИЙ СВАЙП
-                   ----------------------------------------- */
-
-                if(
-                    gestureAxis===
-                    "vertical"
-                ){
-
-                    const movement=
-                        deltaY*.72;
-
-                    const progress=
-                        Math.min(
-                            Math.abs(movement)/
-                            window.innerHeight,
-                            1
-                        );
-
-                    const scale=
-                        1-
-                        (progress*.04);
-
-                    content.style.transform=
-                        `translateY(${movement}px) scale(${scale})`;
-
-                }
-
-            },
-            {passive:true}
-        );
-
-
-        content.addEventListener(
-            "touchend",
-            ()=>{
-
-                if(!dragging)return;
-
-                dragging=false;
-
-
-                const deltaX=
-                    currentX-startX;
-
-                const deltaY=
-                    currentY-startY;
-
-
-                const horizontalDistance=
-                    Math.abs(deltaX);
-
-                const verticalDistance=
-                    Math.abs(deltaY);
-
-
-                /* -----------------------------------------
-                   ВЕРТИКАЛЬНИЙ СВАЙП — ЗАКРИТТЯ
-                   ----------------------------------------- */
-
-                if(
-                    gestureAxis===
-                    "vertical"
-                ){
-
-                    if(
-                        verticalDistance>=80
-                    ){
-
-                        const direction=
-                            deltaY<0
-                            ? -1
-                            : 1;
-
-
-                        content.style.transition=
-                            "transform .30s cubic-bezier(.22,.61,.36,1)";
-
-                        content.style.transform=
-                            `translateY(${direction*110}%) scale(.96)`;
-
-
-                        setTimeout(()=>{
-
-                            closeInfoModal(
-                                modal.id
-                            );
-
-                        },300);
-
-
-                        gestureAxis=null;
-
-                        return;
-
-                    }
-
+                    const direction=
+                        deltaY<0 ? -1 : 1;
 
                     content.style.transition=
                         "transform .30s cubic-bezier(.22,.61,.36,1)";
 
                     content.style.transform=
-                        "translateY(0) scale(1)";
-
+                        `translateY(${direction*110}%) scale(.96)`;
 
                     setTimeout(()=>{
 
-                        content.style.transition="";
-                        content.style.transform="";
+                        closeInfoModal(modal.id);
 
                     },300);
 
-
                     gestureAxis=null;
 
                     return;
-
                 }
-
-
-                /* -----------------------------------------
-                   ГОРИЗОНТАЛЬНИЙ СВАЙП
-                   ----------------------------------------- */
-
-                if(
-                    gestureAxis===
-                    "horizontal" &&
-                    horizontalDistance>=80
-                ){
-
-                    /*
-                       Спочатку прибираємо ручне
-                       положення. Далі switchInfoModal()
-                       виконує одну чисту анімацію.
-                    */
-
-                    content.style.transition=
-                        "none";
-
-                    content.style.transform=
-                        "translateX(0)";
-
-
-                    if(deltaX<0){
-
-                        switchInfoModal(1);
-
-                    }else{
-
-                        switchInfoModal(-1);
-
-                    }
-
-
-                    gestureAxis=null;
-
-                    return;
-
-                }
-
-
-                /* -----------------------------------------
-                   НЕДОСТАТНІЙ СВАЙП
-                   ----------------------------------------- */
 
                 content.style.transition=
                     "transform .30s cubic-bezier(.22,.61,.36,1)";
 
                 content.style.transform=
-                    "translateX(0) translateY(0) scale(1)";
-
+                    "translateY(0) scale(1)";
 
                 setTimeout(()=>{
 
@@ -3943,40 +3435,68 @@ document
 
                 },300);
 
-
                 gestureAxis=null;
 
-            },
-            {passive:true}
-        );
-
-
-        content.addEventListener(
-            "touchcancel",
-            ()=>{
-
-                if(!dragging)return;
-
-                dragging=false;
-                gestureAxis=null;
-
-
-                content.style.transition=
-                    "transform .30s cubic-bezier(.22,.61,.36,1)";
-
-                content.style.transform=
-                    "translateX(0) translateY(0) scale(1)";
-
-
-                setTimeout(()=>{
-
-                    content.style.transition="";
-                    content.style.transform="";
-
-                },300);
-
+                return;
             }
-        );
+
+            if(
+                gestureAxis==="horizontal" &&
+                horizontalDistance>=80
+            ){
+
+                content.style.transition="none";
+                content.style.transform="translateX(0)";
+
+                if(deltaX<0){
+                    switchInfoModal(1);
+                }else{
+                    switchInfoModal(-1);
+                }
+
+                gestureAxis=null;
+
+                return;
+            }
+
+            content.style.transition=
+                "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+            content.style.transform=
+                "translateX(0) translateY(0) scale(1)";
+
+            setTimeout(()=>{
+
+                content.style.transition="";
+                content.style.transform="";
+
+            },300);
+
+            gestureAxis=null;
+
+        },{passive:true});
+
+        content.addEventListener("touchcancel",()=>{
+
+            if(!dragging)return;
+
+            dragging=false;
+            gestureAxis=null;
+
+            content.style.transition=
+                "transform .30s cubic-bezier(.22,.61,.36,1)";
+
+            content.style.transform=
+                "translateX(0) translateY(0) scale(1)";
+
+            setTimeout(()=>{
+
+                content.style.transition="";
+                content.style.transform="";
+
+            },300);
+
+        });
 
     });
 
@@ -3986,14 +3506,10 @@ document
    ========================================================= */
 
 const socialViewport=
-    document.getElementById(
-        "socialViewport"
-    );
+    document.getElementById("socialViewport");
 
 const socialTrack=
-    document.getElementById(
-        "socialTrack"
-    );
+    document.getElementById("socialTrack");
 
 const socialDots=
     Array.from(
@@ -4002,128 +3518,89 @@ const socialDots=
         )
     );
 
-
 let socialPage=0;
-
 let socialStartX=0;
 let socialCurrentX=0;
 let socialDragging=false;
 
-
-function updateSocialDock(
-    page,
-    animate=true
-){
+function updateSocialDock(page,animate=true){
 
     socialPage=
         Math.max(
             0,
-            Math.min(
-                1,
-                page
-            )
+            Math.min(1,page)
         );
-
 
     socialTrack.style.transition=
         animate
         ? "transform .48s cubic-bezier(.22,.61,.36,1)"
         : "none";
 
-
     socialTrack.style.transform=
         `translate3d(-${socialPage*50}%,0,0)`;
 
+    socialDots.forEach((dot,i)=>{
 
-    socialDots.forEach(
-        (dot,i)=>{
+        dot.classList.toggle(
+            "active",
+            i===socialPage
+        );
 
-            dot.classList.toggle(
-                "active",
-                i===socialPage
-            );
-
-        }
-    );
-
+    });
 }
 
+socialViewport.addEventListener("touchstart",event=>{
 
-socialViewport.addEventListener(
-    "touchstart",
-    event=>{
+    socialStartX=
+        event.touches[0].clientX;
 
-        socialStartX=
-            event.touches[0].clientX;
+    socialCurrentX=
+        socialStartX;
 
-        socialCurrentX=
-            socialStartX;
+    socialDragging=true;
 
-        socialDragging=true;
+},{passive:true});
 
-    },
-    {passive:true}
-);
+socialViewport.addEventListener("touchmove",event=>{
 
+    if(!socialDragging)return;
 
-socialViewport.addEventListener(
-    "touchmove",
-    event=>{
+    socialCurrentX=
+        event.touches[0].clientX;
 
-        if(!socialDragging)return;
+},{passive:true});
 
-        socialCurrentX=
-            event.touches[0].clientX;
+socialViewport.addEventListener("touchend",()=>{
 
-    },
-    {passive:true}
-);
+    if(!socialDragging)return;
 
+    socialDragging=false;
 
-socialViewport.addEventListener(
-    "touchend",
-    ()=>{
+    const difference=
+        socialCurrentX-socialStartX;
 
-        if(!socialDragging)return;
+    if(Math.abs(difference)<45)return;
 
-        socialDragging=false;
+    if(difference<0){
 
-        const difference=
-            socialCurrentX-
-            socialStartX;
+        updateSocialDock(
+            socialPage+1
+        );
 
+    }else{
 
-        if(Math.abs(difference)<45){
-
-            return;
-
-        }
-
-
-        if(difference<0){
-
-            updateSocialDock(
-                socialPage+1
-            );
-
-        }else{
-
-            updateSocialDock(
-                socialPage-1
-            );
-
-        }
-
+        updateSocialDock(
+            socialPage-1
+        );
     }
-);
 
+});
 
 setTimeout(()=>{
 
     socialTrack.classList.add(
         "social-hint"
     );
-
 
     setTimeout(()=>{
 
@@ -4141,44 +3618,30 @@ setTimeout(()=>{
    ========================================================= */
 
 const aboutModal=
-    document.getElementById(
-        "aboutModal"
-    );
+    document.getElementById("aboutModal");
 
 const aboutModalClose=
-    document.getElementById(
-        "aboutModalClose"
-    );
-
+    document.getElementById("aboutModalClose");
 
 function closeAboutModal(){
 
-    aboutModal.classList.remove(
-        "active"
-    );
+    aboutModal.classList.remove("active");
 
     document.body.style.overflow="";
-
 }
-
 
 aboutModalClose.addEventListener(
     "click",
     closeAboutModal
 );
 
-
 aboutModal.addEventListener(
     "click",
     event=>{
 
-        if(
-            event.target===
-            aboutModal
-        ){
+        if(event.target===aboutModal){
 
             closeAboutModal();
-
         }
 
     }
@@ -4190,10 +3653,7 @@ aboutModal.addEventListener(
    ========================================================= */
 
 const paymentModal=
-    document.getElementById(
-        "paymentModal"
-    );
-
+    document.getElementById("paymentModal");
 
 function openModal(id){
 
@@ -4202,15 +3662,10 @@ function openModal(id){
 
     if(!modal)return;
 
-    modal.classList.add(
-        "active"
-    );
+    modal.classList.add("active");
 
-    document.body.style.overflow=
-        "hidden";
-
+    document.body.style.overflow="hidden";
 }
-
 
 function closeModal(id){
 
@@ -4219,15 +3674,10 @@ function closeModal(id){
 
     if(!modal)return;
 
-    modal.classList.remove(
-        "active"
-    );
+    modal.classList.remove("active");
 
-    document.body.style.overflow=
-        "";
-
+    document.body.style.overflow="";
 }
-
 
 document
     .querySelectorAll(".modal")
@@ -4237,15 +3687,9 @@ document
             "click",
             event=>{
 
-                if(
-                    event.target===
-                    modal
-                ){
+                if(event.target===modal){
 
-                    closeModal(
-                        modal.id
-                    );
-
+                    closeModal(modal.id);
                 }
 
             }
@@ -4263,9 +3707,7 @@ addSwipeToClose(
     ()=>closeModal("paymentModal"),
     {
         content:
-            paymentModal.querySelector(
-                ".modal-box"
-            ),
+            paymentModal.querySelector(".modal-box"),
         threshold:90
     }
 );
@@ -4283,65 +3725,46 @@ function addSwipeToClose(
 
     let startX=0;
     let startY=0;
-
     let currentX=0;
     let currentY=0;
-
     let dragging=false;
     let moved=false;
     let verticalGesture=false;
 
-
     const threshold=
-        options.threshold||
-        90;
+        options.threshold||90;
 
     const content=
-        options.content||
-        element;
-
+        options.content||element;
 
     element.addEventListener(
         "touchstart",
         event=>{
 
             if(
-                !element.classList.contains(
-                    "active"
-                )
+                !element.classList.contains("active")
             ){
-
                 return;
-
             }
-
 
             const touch=
                 event.touches[0];
 
-            startX=
-                touch.clientX;
+            startX=touch.clientX;
+            startY=touch.clientY;
 
-            startY=
-                touch.clientY;
-
-            currentX=
-                startX;
-
-            currentY=
-                startY;
+            currentX=startX;
+            currentY=startY;
 
             dragging=true;
             moved=false;
             verticalGesture=false;
 
-            content.style.transition=
-                "none";
+            content.style.transition="none";
 
         },
         {passive:true}
     );
-
 
     element.addEventListener(
         "touchmove",
@@ -4352,19 +3775,14 @@ function addSwipeToClose(
             const touch=
                 event.touches[0];
 
-            currentX=
-                touch.clientX;
-
-            currentY=
-                touch.clientY;
-
+            currentX=touch.clientX;
+            currentY=touch.clientY;
 
             const deltaX=
                 currentX-startX;
 
             const deltaY=
                 currentY-startY;
-
 
             if(
                 !verticalGesture &&
@@ -4377,14 +3795,11 @@ function addSwipeToClose(
                 verticalGesture=
                     Math.abs(deltaY)>
                     Math.abs(deltaX);
-
             }
-
 
             if(!verticalGesture)return;
 
             moved=true;
-
 
             if(deltaY>0){
 
@@ -4401,12 +3816,10 @@ function addSwipeToClose(
                         1
                     );
 
-
                 if(options.content){
 
                     const scale=
-                        1-
-                        (progress*.04);
+                        1-(progress*.04);
 
                     content.style.transform=
                         `translateY(${resistance}px) scale(${scale})`;
@@ -4415,15 +3828,12 @@ function addSwipeToClose(
 
                     content.style.transform=
                         `translateY(${resistance}px)`;
-
                 }
-
             }
 
         },
         {passive:true}
     );
-
 
     element.addEventListener(
         "touchend",
@@ -4433,10 +3843,8 @@ function addSwipeToClose(
 
             dragging=false;
 
-
             const deltaY=
                 currentY-startY;
-
 
             if(!verticalGesture){
 
@@ -4444,9 +3852,7 @@ function addSwipeToClose(
                 content.style.transform="";
 
                 return;
-
             }
-
 
             if(
                 moved &&
@@ -4459,7 +3865,6 @@ function addSwipeToClose(
                 content.style.transform=
                     "translateY(100vh) scale(.96)";
 
-
                 setTimeout(()=>{
 
                     content.style.transition="";
@@ -4470,16 +3875,13 @@ function addSwipeToClose(
                 },300);
 
                 return;
-
             }
-
 
             content.style.transition=
                 "transform .30s cubic-bezier(.22,.61,.36,1)";
 
             content.style.transform=
                 "translateY(0) scale(1)";
-
 
             setTimeout(()=>{
 
@@ -4492,7 +3894,6 @@ function addSwipeToClose(
         {passive:true}
     );
 
-
     element.addEventListener(
         "touchcancel",
         ()=>{
@@ -4501,13 +3902,11 @@ function addSwipeToClose(
 
             dragging=false;
 
-
             content.style.transition=
                 "transform .30s cubic-bezier(.22,.61,.36,1)";
 
             content.style.transform=
                 "translateY(0) scale(1)";
-
 
             setTimeout(()=>{
 
@@ -4518,7 +3917,6 @@ function addSwipeToClose(
 
         }
     );
-
 }
 
 
@@ -4532,51 +3930,31 @@ document.addEventListener(
 
         if(event.key!=="Escape")return;
 
-
         if(
-            lightbox.classList.contains(
-                "active"
-            )
+            lightbox.classList.contains("active")
         ){
-
             closeLightbox();
-
         }
-
 
         if(
-            aboutModal.classList.contains(
-                "active"
-            )
+            aboutModal.classList.contains("active")
         ){
-
             closeAboutModal();
-
         }
-
 
         document
-            .querySelectorAll(
-                ".info-modal.active"
-            )
+            .querySelectorAll(".info-modal.active")
             .forEach(modal=>{
 
-                closeInfoModal(
-                    modal.id
-                );
+                closeInfoModal(modal.id);
 
             });
 
-
         document
-            .querySelectorAll(
-                ".modal.active"
-            )
+            .querySelectorAll(".modal.active")
             .forEach(modal=>{
 
-                closeModal(
-                    modal.id
-                );
+                closeModal(modal.id);
 
             });
 
