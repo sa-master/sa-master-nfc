@@ -11,10 +11,7 @@
         content="SA-MASTER.PRO — комплексний монтаж сантехніки у новобудовах Києва. 20+ років професійного досвіду. 097 911 1871."
     >
 
-    <!-- ============================================================
-         OPEN GRAPH
-         ============================================================ -->
-
+    <!-- OPEN GRAPH -->
     <meta property="og:title" content="SA-MASTER.PRO">
     <meta
         property="og:description"
@@ -28,10 +25,7 @@
     <meta property="og:site_name" content="SA-MASTER.PRO">
     <meta property="og:locale" content="uk_UA">
 
-    <!-- ============================================================
-         TWITTER / X
-         ============================================================ -->
-
+    <!-- TWITTER / X -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="SA-MASTER.PRO">
     <meta
@@ -40,7 +34,6 @@
     >
     <meta name="twitter:image" content="https://sa-master.pro/og-image.jpg">
 
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="logo.png">
 
     <style>
@@ -53,8 +46,10 @@
             --blue: #007AFF;
             --blue-dark: #0055CC;
             --blue-soft: #4C8DB8;
+
             --text: #1C1C1E;
             --text-secondary: #8E8E93;
+
             --background: #F2F2F7;
 
             --card-radius: 20px;
@@ -144,7 +139,7 @@
 
 
         /* ============================================================
-           HERO / HEADER
+           HERO
            ============================================================ */
 
         .hero {
@@ -219,10 +214,11 @@
 
 
         /* ============================================================
-           HEADER GRID
-
-           Логотип = ліва колонка
-           Текст = права колонка
+           HEADER
+           
+           КЛЮЧОВА ЗМІНА:
+           логотип і текст мають стабільні колонки.
+           Розмір тексту більше не визначає ширину колонки.
            ============================================================ */
 
         .hero-header {
@@ -234,8 +230,11 @@
             display: grid;
 
             grid-template-columns:
-                29%
-                minmax(0,71%);
+                clamp(88px, 29%, 170px)
+                minmax(0, 1fr);
+
+            column-gap:
+                clamp(10px, 2.2vw, 20px);
 
             align-items: center;
 
@@ -269,7 +268,6 @@
 
         .logo-wrapper {
             width: 100%;
-
             aspect-ratio: 1 / 1;
 
             display: flex;
@@ -278,8 +276,6 @@
 
             position: relative;
             z-index: 3;
-
-            background: transparent;
 
             overflow: visible;
 
@@ -302,36 +298,61 @@
 
 
         /* ============================================================
-           RIGHT HEADER CONTENT
+           BRAND AREA
            ============================================================ */
 
         .hero-brand {
             width: 100%;
             min-width: 0;
 
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
+            display: grid;
+
+            grid-template-rows:
+                auto
+                auto
+                auto;
+
+            align-content: center;
         }
 
 
         /* ============================================================
-           BRAND NAME
+           BRAND TOP
            ============================================================ */
 
         .brand-top {
             width: 100%;
+            min-width: 0;
         }
+
+
+        /*
+           Тут використовується GRID, а не flex.
+           
+           Ліва частина:
+           SA-MASTER
+
+           Права частина:
+           .pro
+
+           Вони завжди залишаються в межах
+           однієї контрольованої ширини.
+        */
 
         .brand-link {
             width: 100%;
+            min-width: 0;
 
-            display: flex;
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                auto;
+
             align-items: center;
 
-            gap: clamp(7px,1.3vw,13px);
-
-            white-space: nowrap;
+            column-gap:
+                clamp(6px, 1.5vw, 12px);
 
             transition:
                 transform .25s ease;
@@ -341,12 +362,17 @@
             transform: translateY(-1px);
         }
 
+
+        /* ============================================================
+           BRAND NAME
+           ============================================================ */
+
         .brand-name {
             min-width: 0;
 
-            flex: 1 1 auto;
-
             display: block;
+
+            overflow: hidden;
 
             font-family:
                 -apple-system,
@@ -358,14 +384,15 @@
                 sans-serif;
 
             /*
-               Розмір прив'язаний до ширини,
-               але має верхню та нижню межу.
+               Розмір залежить від ширини екрана,
+               але ніколи не виходить за межі.
             */
+
             font-size:
                 clamp(
-                    27px,
-                    7.2vw,
-                    55px
+                    21px,
+                    7vw,
+                    48px
                 );
 
             line-height: .92;
@@ -374,7 +401,7 @@
 
             letter-spacing:
                 clamp(
-                    -1.8px,
+                    -1.5px,
                     -.25vw,
                     -1px
                 );
@@ -402,28 +429,26 @@
 
 
         /* ============================================================
-           .PRO BADGE
+           PRO BADGE
            ============================================================ */
 
         .brand-badge {
-            flex: 0 0 auto;
-
             height:
                 clamp(
-                    38px,
-                    6.7vw,
-                    68px
+                    32px,
+                    6.5vw,
+                    58px
                 );
 
             min-width:
                 clamp(
-                    65px,
+                    57px,
                     11vw,
-                    112px
+                    96px
                 );
 
             padding:
-                0 clamp(8px,1.5vw,14px);
+                0 clamp(7px, 1.4vw, 12px);
 
             display: flex;
             align-items: center;
@@ -431,9 +456,9 @@
 
             border-radius:
                 clamp(
-                    13px,
-                    2.2vw,
-                    19px
+                    11px,
+                    2vw,
+                    17px
                 );
 
             background:
@@ -452,19 +477,11 @@
 
             color: #FFFFFF;
 
-            font-family:
-                -apple-system,
-                BlinkMacSystemFont,
-                "SF Pro Display",
-                "Segoe UI",
-                Arial,
-                sans-serif;
-
             font-size:
                 clamp(
-                    21px,
-                    4.2vw,
-                    42px
+                    18px,
+                    4vw,
+                    36px
                 );
 
             line-height: 1;
@@ -494,23 +511,29 @@
 
         /* ============================================================
            SUBTITLE
+           
+           ВАЖЛИВО:
+           subtitle має ту саму ширину, що й весь brand-link.
            ============================================================ */
 
         .brand-sub {
             width: 100%;
+            min-width: 0;
 
             margin-top:
                 clamp(
-                    7px,
-                    1.5vw,
-                    13px
+                    6px,
+                    1.3vw,
+                    11px
                 );
+
+            overflow: hidden;
 
             font-size:
                 clamp(
-                    15px,
-                    3.5vw,
-                    31px
+                    12px,
+                    3.45vw,
+                    25px
                 );
 
             line-height: 1;
@@ -519,16 +542,14 @@
 
             letter-spacing:
                 clamp(
-                    -.6px,
-                    -.1vw,
-                    -.3px
+                    -.45px,
+                    -.08vw,
+                    -.25px
                 );
 
             color: #1D2B3D;
 
             white-space: nowrap;
-
-            overflow: hidden;
         }
 
 
@@ -538,26 +559,27 @@
 
         .brand-phone {
             width: 100%;
+            min-width: 0;
 
             height:
                 clamp(
-                    48px,
-                    7.4vw,
-                    76px
+                    42px,
+                    7vw,
+                    64px
                 );
 
             margin-top:
                 clamp(
-                    9px,
-                    1.7vw,
-                    16px
+                    8px,
+                    1.5vw,
+                    13px
                 );
 
             padding:
                 0 clamp(
-                    10px,
-                    2vw,
-                    18px
+                    8px,
+                    1.8vw,
+                    16px
                 );
 
             display: flex;
@@ -566,18 +588,13 @@
 
             gap:
                 clamp(
-                    7px,
-                    1.8vw,
-                    15px
+                    6px,
+                    1.5vw,
+                    12px
                 );
 
             border:
-                clamp(
-                    1.5px,
-                    .25vw,
-                    2px
-                )
-                solid #5795BE;
+                2px solid #5795BE;
 
             border-radius: 60px;
 
@@ -588,16 +605,16 @@
 
             font-size:
                 clamp(
-                    20px,
-                    4vw,
-                    40px
+                    16px,
+                    3.7vw,
+                    30px
                 );
 
             line-height: 1;
 
             font-weight: 700;
 
-            letter-spacing: .2px;
+            letter-spacing: .1px;
 
             white-space: nowrap;
 
@@ -624,16 +641,16 @@
         .phone-icon {
             width:
                 clamp(
-                    23px,
-                    4.4vw,
-                    44px
+                    20px,
+                    4vw,
+                    32px
                 );
 
             height:
                 clamp(
-                    23px,
-                    4.4vw,
-                    44px
+                    20px,
+                    4vw,
+                    32px
                 );
 
             flex: 0 0 auto;
@@ -1675,16 +1692,24 @@
 
             .hero {
                 padding:
-                    12px;
+                    11px;
 
                 border-radius:
                     24px;
             }
 
+            /*
+               На телефоні логотип займає приблизно 28%.
+               Мінімальна ширина не дозволяє йому "схлопнутися".
+            */
+
             .hero-header {
                 grid-template-columns:
-                    29%
-                    minmax(0,71%);
+                    clamp(82px, 28%, 110px)
+                    minmax(0, 1fr);
+
+                column-gap:
+                    9px;
             }
 
             .brand-name {
@@ -1702,36 +1727,37 @@
             .brand-badge {
                 height:
                     clamp(
-                        34px,
-                        9vw,
-                        48px
+                        31px,
+                        8.5vw,
+                        45px
                     );
 
                 min-width:
                     clamp(
-                        58px,
-                        16vw,
-                        78px
+                        55px,
+                        15vw,
+                        75px
                     );
 
                 border-radius:
-                    13px;
+                    12px;
 
                 font-size:
                     clamp(
-                        18px,
-                        5.5vw,
-                        25px
+                        17px,
+                        5.2vw,
+                        24px
                     );
             }
 
             .brand-sub {
-                margin-top: 8px;
+                margin-top:
+                    7px;
 
                 font-size:
                     clamp(
-                        13px,
-                        3.7vw,
+                        12px,
+                        3.55vw,
                         18px
                     );
             }
@@ -1739,43 +1765,44 @@
             .brand-phone {
                 height:
                     clamp(
-                        42px,
-                        12vw,
-                        58px
+                        40px,
+                        11.5vw,
+                        54px
                     );
 
-                margin-top: 9px;
+                margin-top:
+                    8px;
 
                 padding:
-                    0 10px;
+                    0 9px;
 
                 gap:
-                    7px;
+                    6px;
 
                 border-radius:
                     40px;
 
                 font-size:
                     clamp(
-                        17px,
-                        5vw,
-                        24px
+                        16px,
+                        4.8vw,
+                        23px
                     );
             }
 
             .phone-icon {
                 width:
                     clamp(
-                        20px,
-                        5.5vw,
-                        27px
+                        19px,
+                        5.2vw,
+                        26px
                     );
 
                 height:
                     clamp(
-                        20px,
-                        5.5vw,
-                        27px
+                        19px,
+                        5.2vw,
+                        26px
                     );
             }
 
@@ -1921,10 +1948,19 @@
 
             .hero {
                 padding:
-                    10px;
+                    9px;
 
                 border-radius:
                     20px;
+            }
+
+            .hero-header {
+                grid-template-columns:
+                    78px
+                    minmax(0,1fr);
+
+                column-gap:
+                    8px;
             }
 
             .brand-name {
@@ -1938,29 +1974,29 @@
 
             .brand-badge {
                 min-width:
-                    54px;
+                    52px;
 
                 height:
-                    31px;
+                    30px;
 
                 border-radius:
-                    11px;
+                    10px;
 
                 font-size:
-                    17px;
+                    16px;
             }
 
             .brand-sub {
                 font-size:
-                    12px;
+                    11.5px;
             }
 
             .brand-phone {
                 height:
-                    39px;
+                    38px;
 
                 font-size:
-                    16px;
+                    15px;
 
                 gap:
                     5px;
@@ -2079,94 +2115,165 @@
 
             .hero {
                 padding:
-                    10px 14px;
+                    9px 14px;
             }
+
+            /*
+               В альбомній орієнтації даємо логотипу
+               трохи більше простору.
+            */
 
             .hero-header {
                 grid-template-columns:
-                    25%
-                    minmax(0,75%);
+                    clamp(92px, 25%, 140px)
+                    minmax(0,1fr);
+
+                column-gap:
+                    12px;
             }
 
             .brand-name {
                 font-size:
                     clamp(
-                        24px,
-                        6vw,
-                        42px
+                        23px,
+                        5.8vw,
+                        40px
                     );
             }
 
             .brand-badge {
                 height:
                     clamp(
-                        34px,
-                        7vw,
-                        50px
+                        32px,
+                        6.5vw,
+                        48px
                     );
 
                 min-width:
                     clamp(
-                        58px,
-                        11vw,
-                        82px
+                        56px,
+                        10vw,
+                        80px
                     );
 
                 font-size:
                     clamp(
-                        18px,
-                        4.5vw,
-                        28px
+                        17px,
+                        4.2vw,
+                        27px
                     );
             }
 
             .brand-sub {
-                margin-top: 7px;
+                margin-top:
+                    6px;
 
                 font-size:
                     clamp(
-                        13px,
-                        3vw,
-                        21px
+                        12px,
+                        2.9vw,
+                        20px
                     );
             }
 
             .brand-phone {
                 height:
                     clamp(
-                        42px,
-                        7vw,
-                        54px
+                        40px,
+                        6.5vw,
+                        52px
                     );
 
-                margin-top: 8px;
+                margin-top:
+                    7px;
 
                 font-size:
                     clamp(
-                        17px,
-                        3.5vw,
-                        26px
+                        16px,
+                        3.4vw,
+                        25px
                     );
             }
 
             .phone-icon {
                 width:
                     clamp(
-                        20px,
-                        4vw,
-                        28px
+                        19px,
+                        3.8vw,
+                        27px
                     );
 
                 height:
                     clamp(
-                        20px,
-                        4vw,
-                        28px
+                        19px,
+                        3.8vw,
+                        27px
                     );
             }
 
             .gallery {
                 margin-top: 12px;
+            }
+        }
+
+
+        /* ============================================================
+           EXTRA NARROW LANDSCAPE
+           ============================================================ */
+
+        @media (orientation: landscape) and (max-height: 400px) {
+
+            .hero-header {
+                grid-template-columns:
+                    82px
+                    minmax(0,1fr);
+
+                column-gap:
+                    10px;
+            }
+
+            .brand-name {
+                font-size:
+                    clamp(
+                        20px,
+                        5.5vw,
+                        30px
+                    );
+            }
+
+            .brand-badge {
+                height:
+                    30px;
+
+                min-width:
+                    54px;
+
+                font-size:
+                    16px;
+            }
+
+            .brand-sub {
+                margin-top:
+                    5px;
+
+                font-size:
+                    12px;
+            }
+
+            .brand-phone {
+                height:
+                    36px;
+
+                margin-top:
+                    6px;
+
+                font-size:
+                    15px;
+            }
+
+            .phone-icon {
+                width: 18px;
+                height: 18px;
             }
         }
 
@@ -2205,9 +2312,6 @@
 
             <div class="hero-brand">
 
-
-                <!-- SA-MASTER + PRO -->
-
                 <div class="brand-top">
 
                     <a
@@ -2231,14 +2335,10 @@
                 </div>
 
 
-                <!-- SUBTITLE -->
-
                 <div class="brand-sub">
                     комплексний монтаж сантехніки
                 </div>
 
-
-                <!-- PHONE -->
 
                 <a
                     href="tel:+380979111871"
@@ -2337,16 +2437,16 @@
                         <img src="photo-8.jpg" alt="Робота 8">
                     </div>
 
-                    <!-- CLONE FOR LOOP -->
-
                     <div
                         class="gallery-slide gallery-clone"
                         aria-hidden="true"
                     >
+
                         <img
                             src="photo-1.jpg"
                             alt=""
                         >
+
                     </div>
 
                 </div>
@@ -2366,53 +2466,14 @@
                     aria-label="Навігація галереєю"
                 >
 
-                    <button
-                        class="gallery-dot active"
-                        type="button"
-                        aria-label="Фото 1"
-                    ></button>
-
-                    <button
-                        class="gallery-dot"
-                        type="button"
-                        aria-label="Фото 2"
-                    ></button>
-
-                    <button
-                        class="gallery-dot"
-                        type="button"
-                        aria-label="Фото 3"
-                    ></button>
-
-                    <button
-                        class="gallery-dot"
-                        type="button"
-                        aria-label="Фото 4"
-                    ></button>
-
-                    <button
-                        class="gallery-dot"
-                        type="button"
-                        aria-label="Фото 5"
-                    ></button>
-
-                    <button
-                        class="gallery-dot"
-                        type="button"
-                        aria-label="Фото 6"
-                    ></button>
-
-                    <button
-                        class="gallery-dot"
-                        type="button"
-                        aria-label="Фото 7"
-                    ></button>
-
-                    <button
-                        class="gallery-dot"
-                        type="button"
-                        aria-label="Фото 8"
-                    ></button>
+                    <button class="gallery-dot active" type="button" aria-label="Фото 1"></button>
+                    <button class="gallery-dot" type="button" aria-label="Фото 2"></button>
+                    <button class="gallery-dot" type="button" aria-label="Фото 3"></button>
+                    <button class="gallery-dot" type="button" aria-label="Фото 4"></button>
+                    <button class="gallery-dot" type="button" aria-label="Фото 5"></button>
+                    <button class="gallery-dot" type="button" aria-label="Фото 6"></button>
+                    <button class="gallery-dot" type="button" aria-label="Фото 7"></button>
+                    <button class="gallery-dot" type="button" aria-label="Фото 8"></button>
 
                 </div>
 
@@ -2470,9 +2531,7 @@
 
                 </div>
 
-                <div class="widget-badge">
-                    01
-                </div>
+                <div class="widget-badge">01</div>
 
                 <div class="widget-title">
                     ПРО НАС
@@ -2524,9 +2583,7 @@
 
                 </div>
 
-                <div class="widget-badge">
-                    02
-                </div>
+                <div class="widget-badge">02</div>
 
                 <div class="widget-title">
                     ПРО РОБОТУ
@@ -2577,9 +2634,7 @@
 
                 </div>
 
-                <div class="widget-badge">
-                    03
-                </div>
+                <div class="widget-badge">03</div>
 
                 <div class="widget-title">
                     ПРО ВАРТІСТЬ
@@ -2641,9 +2696,7 @@
 
                 </div>
 
-                <div class="widget-badge">
-                    04
-                </div>
+                <div class="widget-badge">04</div>
 
                 <div class="widget-title">
                     ПРО РЕЗУЛЬТАТ
@@ -2680,11 +2733,9 @@
                 id="socialTrack"
             >
 
-
                 <!-- PAGE 1 -->
 
                 <div class="ios-social-page">
-
 
                     <!-- PHONE -->
 
@@ -2698,10 +2749,7 @@
                                 aria-label="Подзвонити"
                             >
 
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                >
+                                <svg viewBox="0 0 24 24">
 
                                     <path
                                         d="
@@ -2750,10 +2798,7 @@
                                 aria-label="Зберегти контакт"
                             >
 
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                >
+                                <svg viewBox="0 0 24 24">
 
                                     <circle
                                         cx="9"
@@ -2814,10 +2859,7 @@
                                 aria-label="Instagram"
                             >
 
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                >
+                                <svg viewBox="0 0 24 24">
 
                                     <rect
                                         x="4"
@@ -2871,9 +2913,7 @@
                                 aria-label="Facebook"
                             >
 
-                                <svg
-                                    viewBox="0 0 24 24"
-                                >
+                                <svg viewBox="0 0 24 24">
 
                                     <path
                                         d="
@@ -2906,7 +2946,6 @@
 
                 <div class="ios-social-page">
 
-
                     <!-- YOUTUBE -->
 
                     <div class="ios-social-item">
@@ -2921,9 +2960,7 @@
                                 aria-label="YouTube"
                             >
 
-                                <svg
-                                    viewBox="0 0 24 24"
-                                >
+                                <svg viewBox="0 0 24 24">
 
                                     <path
                                         d="
@@ -2976,9 +3013,7 @@
                                 aria-label="Telegram"
                             >
 
-                                <svg
-                                    viewBox="0 0 24 24"
-                                >
+                                <svg viewBox="0 0 24 24">
 
                                     <path
                                         d="
@@ -3036,9 +3071,7 @@
                                 aria-label="Viber"
                             >
 
-                                <svg
-                                    viewBox="0 0 24 24"
-                                >
+                                <svg viewBox="0 0 24 24">
 
                                     <path
                                         d="
@@ -3103,10 +3136,7 @@
                                 aria-label="Оплата"
                             >
 
-                                <svg
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                >
+                                <svg viewBox="0 0 24 24">
 
                                     <rect
                                         x="3"
@@ -3154,13 +3184,8 @@
             aria-hidden="true"
         >
 
-            <span
-                class="ios-social-page-dot active"
-            ></span>
-
-            <span
-                class="ios-social-page-dot"
-            ></span>
+            <span class="ios-social-page-dot active"></span>
+            <span class="ios-social-page-dot"></span>
 
         </div>
 
@@ -3170,9 +3195,6 @@
     <!-- ============================================================
          MODALS
          ============================================================ -->
-
-
-    <!-- ABOUT -->
 
     <div
         class="modal-overlay"
@@ -3239,8 +3261,6 @@
     </div>
 
 
-    <!-- PROCESS -->
-
     <div
         class="modal-overlay"
         id="modalProcess"
@@ -3292,8 +3312,6 @@
 
     </div>
 
-
-    <!-- PRICE -->
 
     <div
         class="modal-overlay"
@@ -3347,8 +3365,6 @@
     </div>
 
 
-    <!-- RESULT -->
-
     <div
         class="modal-overlay"
         id="modalReviews"
@@ -3399,8 +3415,6 @@
     </div>
 
 
-    <!-- PAYMENT -->
-
     <div
         class="modal-overlay"
         id="modalPayment"
@@ -3428,7 +3442,6 @@
             </div>
 
             <div class="payment-buttons">
-
 
                 <a
                     class="payment-btn privat"
