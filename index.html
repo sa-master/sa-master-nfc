@@ -26,9 +26,7 @@
     <link rel="icon" type="image/png" href="logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Шрифт Rubik Mono One залишаємо тільки для логотипу -->
     <link href="https://fonts.googleapis.com/css2?family=Rubik+Mono+One&display=swap" rel="stylesheet" />
-    
     <style>
         /* ── змінні ── */
         :root {
@@ -44,25 +42,33 @@
         }
 
         /* ── скидання ── */
-        *, *::before, *::after {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        html { scroll-behavior: smooth; }
+        html {
+            scroll-behavior: smooth;
+        }
         body {
             min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Arial, sans-serif;
             color: var(--color-text);
             background: var(--color-bg);
             -webkit-font-smoothing: antialiased;
             padding: 12px 0 20px;
         }
-        button, a {
+        button,
+        a {
             -webkit-tap-highlight-color: transparent;
             font-family: inherit;
         }
-        a { text-decoration: none; color: inherit; }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
 
         /* ── layout ── */
         .page {
@@ -71,159 +77,221 @@
         }
 
         /* ============================================================
-           ШАПКА (ВИПРАВЛЕНА)
+           ШАПКА
            ============================================================ */
         .hero {
             position: relative;
             overflow: hidden;
-            padding: 24px 24px;
-            border-radius: 40px; 
-            background: linear-gradient(145deg, #F5F8FC, #EAEFF5);
+            padding: 24px 20px 20px;
+            border-radius: 28px;
+            background: linear-gradient(145deg, #FFFFFF, #F5F7FA);
             border: 1px solid rgba(255, 255, 255, .9);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-            margin-bottom: 14px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, .06), 0 4px 12px rgba(0, 0, 0, .03), inset 0 1px 0 rgba(255, 255, 255, .95);
+        }
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 70% 20%, rgba(0, 122, 255, .06) 0%, transparent 60%),
+                radial-gradient(ellipse at 30% 80%, rgba(0, 122, 255, .04) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            top: -140px;
+            right: -80px;
+            background: radial-gradient(circle, rgba(0, 122, 255, .08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
         }
 
+        /* ── АНІМАЦІЯ ДЛЯ ВСІЄЇ ВЕРХНЬОЇ ЧАСТИНИ ── */
         .hero-header {
             position: relative;
             z-index: 1;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 15px;
+            gap: 18px;
             animation: heroReveal .7s ease-out forwards;
             will-change: transform, opacity;
         }
 
         @keyframes heroReveal {
-            0% { opacity: 0; transform: translateY(20px); filter: blur(4px); }
-            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+                filter: blur(4px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+                filter: blur(0);
+            }
         }
 
         /* ── ЛОГОТИП ── */
         .logo-wrapper {
-            width: 100px;
-            height: 100px;
-            flex: 0 0 100px;
+            width: 120px;
+            height: 120px;
+            flex: 0 0 120px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             border-radius: 50%;
-            background: linear-gradient(135deg, #5B9EE0, #3A7CB8);
-            border: 5px solid #D1D9E6;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15), inset 0 0 15px rgba(255,255,255,0.3);
-            transition: transform .35s ease;
+            background: transparent;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .12), 0 2px 8px rgba(0, 0, 0, .04);
+            transition: transform .35s ease, box-shadow .35s ease;
         }
-        .logo-wrapper:hover { transform: translateY(-2px) scale(1.02); }
-        .logo { width: 85%; height: 85%; object-fit: contain; }
+        .logo-wrapper:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, .18);
+        }
+        .logo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 6px;
+        }
 
         .hero-brand {
             flex: 1;
             min-width: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
         }
 
-        /* ── ВЕРХНІЙ РЯДОК: SA-MASTER.pro ── */
-        .brand-top { display: flex; align-items: center; width: 100%; }
-        
+        /* ── ВЕРХНІЙ РЯДОК: назва + .pro ── */
+        .brand-top {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
         .brand-link {
             display: flex;
             align-items: center;
+            gap: 4px;
             text-decoration: none;
             transition: transform .3s ease;
             white-space: nowrap;
         }
-        .brand-link:hover { transform: translateY(-2px); }
+        .brand-link:hover {
+            transform: translateY(-2px);
+        }
 
         .brand-name {
-            font-family: 'Rubik Mono One', sans-serif; /* Повернули шрифт для логотипу */
-            font-size: 24px;
+            font-family: "Rubik Mono One", sans-serif;
+            font-size: 30px;
             line-height: 1;
-            letter-spacing: 2px;
-            color: #1C2333;
+            letter-spacing: 1.5px;
+            white-space: nowrap;
+            background: linear-gradient(180deg,
+                    #8a9aaa 0%,
+                    #5a7a9a 15%,
+                    #7a8aaa 30%,
+                    #3a5a7a 45%,
+                    #6a8aaa 55%,
+                    #2a4a6a 70%,
+                    #5a7a9a 85%,
+                    #1a3a5a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.15),
+                0 2px 0 rgba(0, 0, 0, 0.04),
+                0 3px 0 rgba(0, 0, 0, 0.06),
+                0 4px 0 rgba(0, 0, 0, 0.04),
+                0 6px 12px rgba(0, 0, 0, 0.12),
+                0 10px 20px rgba(0, 0, 0, 0.08);
+            transform: perspective(600px) rotateX(0deg);
+            transition: all .4s cubic-bezier(.22, .61, .36, 1);
+        }
+
+        .brand-name:hover {
+            transform: perspective(600px) rotateX(3deg) scale(1.02);
+            text-shadow:
+                0 1px 0 rgba(255, 255, 255, 0.2),
+                0 2px 0 rgba(0, 0, 0, 0.04),
+                0 3px 0 rgba(0, 0, 0, 0.06),
+                0 4px 0 rgba(0, 0, 0, 0.04),
+                0 8px 16px rgba(0, 0, 0, 0.16),
+                0 14px 28px rgba(0, 0, 0, 0.10);
         }
 
         .brand-badge {
-            font-family: 'Rubik Mono One', sans-serif;
-            font-size: 20px;
-            font-weight: 400;
-            line-height: 1.2;
-            color: #FFFFFF;
-            background-color: #4E83AD;
-            padding: 4px 8px;
-            border-radius: 8px;
-            margin-left: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: .5px;
+            color: #007AFF;
+            background: rgba(0, 122, 255, .10);
+            padding: 2px 14px;
+            border-radius: 22px;
+            border: 1px solid rgba(0, 122, 255, .15);
+            transition: all .25s ease;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            white-space: nowrap;
+            text-shadow: 0 1px 4px rgba(0, 122, 255, .10);
+        }
+        .brand-link:hover .brand-badge {
+            background: rgba(0, 122, 255, .18);
+            border-color: rgba(0, 122, 255, .3);
+            transform: scale(1.04);
         }
 
         /* ── ПІДЗАГОЛОВОК ── */
-        .brand-sub-wrap { width: 100%; margin-top: 2px; }
         .brand-sub {
-            width: 100%;
-            font-size: 14px;
-            font-weight: 700;
-            color: #1C2333;
-            line-height: 1.2;
-            text-transform: uppercase;
-            white-space: nowrap;
-            letter-spacing: 0.5px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-top: 4px;
+            line-height: 1.3;
         }
 
-        /* ── КНОПКА ТЕЛЕФОНУ ── */
-        .hero-actions {
-            display: flex;
-            align-items: center;
-            margin-top: 6px;
-        }
-
+        /* ── НОМЕР ТЕЛЕФОНУ (НА ВСЮ ШИРИНУ) ── */
         .brand-phone {
+            display: block;
             width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            color: #1C2333;
-            font-size: 20px;
-            font-weight: 700;
+            color: #007AFF;
+            font-size: 26px;
+            font-weight: 800;
             text-decoration: none;
-            padding: 6px 10px;
-            border-radius: 50px;
-            background: transparent;
-            border: 2px solid #4E83AD;
+            padding: 8px 16px;
+            border-radius: 24px;
+            background: rgba(0, 122, 255, .08);
+            border: 1.5px solid rgba(0, 122, 255, .15);
             transition: all .25s ease;
-            white-space: nowrap;
-            letter-spacing: 1px;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+            letter-spacing: 0.5px;
+            margin-top: 6px;
+            text-align: center;
+            box-sizing: border-box;
         }
-        
-        .brand-phone svg {
-            width: 18px;
-            height: 18px;
-            fill: #4E83AD;
-            flex-shrink: 0;
-            transform: rotate(-5deg);
-        }
-        
         .brand-phone:hover {
-            background: rgba(78, 131, 173, 0.08);
-            border-color: #3A6485;
+            background: rgba(0, 122, 255, .14);
+            border-color: rgba(0, 122, 255, .28);
+            transform: translateY(-1px);
         }
 
-        /* ── gallery (ПОВЕРНУТО ОРИГІНАЛЬНУ СТРУКТУРУ) ── */
+        /* ── gallery ── */
         .gallery {
             position: relative;
             overflow: hidden;
-            border-radius: 16px;
+            border-radius: var(--radius-card);
             background: #E5E8EC;
             box-shadow: var(--shadow-card);
-            margin-top: 12px;
+            margin-top: 16px;
         }
         .gallery-window {
             position: relative;
             width: 100%;
             overflow: hidden;
-            aspect-ratio: 16/9;
+            aspect-ratio: 16/10;
         }
         .gallery-track {
             display: flex;
@@ -247,34 +315,34 @@
         }
         .gallery-counter {
             position: absolute;
-            top: 8px;
-            right: 8px;
+            top: 10px;
+            right: 10px;
             z-index: 5;
-            min-width: 32px;
-            height: 22px;
-            padding: 0 8px;
+            min-width: 36px;
+            height: 24px;
+            padding: 0 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 11px;
+            border-radius: 12px;
             background: rgba(0, 0, 0, .45);
             border: 1px solid rgba(255, 255, 255, .2);
             color: #fff;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             backdrop-filter: blur(12px);
         }
         .gallery-dots {
             position: absolute;
             left: 50%;
-            bottom: 8px;
+            bottom: 10px;
             z-index: 5;
             transform: translateX(-50%);
             display: flex;
             align-items: center;
             gap: 4px;
             padding: 4px 7px;
-            border-radius: 12px;
+            border-radius: 14px;
             background: rgba(0, 0, 0, .35);
             border: 1px solid rgba(255, 255, 255, .15);
             backdrop-filter: blur(12px);
@@ -290,102 +358,95 @@
             cursor: pointer;
         }
         .gallery-dot.active {
-            width: 12px;
-            border-radius: 3px;
+            width: 14px;
+            border-radius: 4px;
             background: #fff;
         }
 
-        /* ============================================================
-           iOS WIDGETS
-           ============================================================ */
+        /* ── iOS Widgets ── */
         .widgets-section {
-            margin: 14px 0 12px;
+            margin: 20px 0 16px;
         }
         .widgets-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
         }
 
         .widget-card {
             position: relative;
-            padding: 0;
+            padding: 18px 16px 16px;
             border-radius: 20px;
+            background: #FFFFFF;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, .06), 0 2px 8px rgba(0, 0, 0, .03);
+            border: 1px solid rgba(255, 255, 255, .9);
             cursor: pointer;
-            transition: transform .15s ease, filter .15s ease;
+            transition: transform .2s ease, box-shadow .2s ease;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            aspect-ratio: 1 / 1;
+            min-height: 130px;
             opacity: 0;
             animation: heroReveal .6s ease-out forwards;
             will-change: transform, opacity;
-            overflow: hidden;
-            border: none;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .25);
         }
-        .widget-card:nth-child(1) { animation-delay: 0.05s; }
-        .widget-card:nth-child(2) { animation-delay: 0.10s; }
-        .widget-card:nth-child(3) { animation-delay: 0.15s; }
-        .widget-card:nth-child(4) { animation-delay: 0.20s; }
+        .widget-card:nth-child(1) { animation-delay: 0.1s; }
+        .widget-card:nth-child(2) { animation-delay: 0.2s; }
+        .widget-card:nth-child(3) { animation-delay: 0.3s; }
+        .widget-card:nth-child(4) { animation-delay: 0.4s; }
 
         .widget-card:active {
-            transform: scale(.88);
-            filter: brightness(0.9);
+            transform: scale(.97);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .06);
         }
-
-        .widget-card::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,.05) 35%, transparent 55%);
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .widget-card[data-modal="modalAbout"] { background: linear-gradient(160deg, #4DA3FF 0%, #007AFF 45%, #0055CC 100%); }
-        .widget-card[data-modal="modalProcess"] { background: linear-gradient(160deg, #5EDC7A 0%, #34C759 45%, #1E9E3F 100%); }
-        .widget-card[data-modal="modalPrice"] { background: linear-gradient(160deg, #FFB340 0%, #FF9500 45%, #E08600 100%); }
-        .widget-card[data-modal="modalReviews"] { background: linear-gradient(160deg, #C77BEE 0%, #AF52DE 45%, #8A3CC4 100%); }
 
         .widget-icon {
-            position: relative;
-            z-index: 2;
             width: 44px;
             height: 44px;
-            border-radius: 0;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 8px;
             flex: 0 0 44px;
-            background: transparent !important;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .15));
         }
         .widget-icon svg {
-            width: 26px;
-            height: 26px;
+            width: 22px;
+            height: 22px;
             display: block;
-            stroke: #FFFFFF;
-            stroke-width: 2;
+            stroke-width: 2.2;
             fill: none;
         }
 
-        .widget-badge { display: none; }
+        .widget-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            font-size: 14px;
+            font-weight: 800;
+            color: rgba(0, 0, 0, .06);
+            letter-spacing: .5px;
+        }
 
         .widget-title {
-            position: relative;
-            z-index: 2;
-            font-size: 10px;
+            font-size: 18px;
             font-weight: 700;
             line-height: 1.2;
-            letter-spacing: -.1px;
-            color: #FFFFFF;
-            text-align: center;
-            text-shadow: 0 1px 4px rgba(0, 0, 0, .25);
+            letter-spacing: -.3px;
+            color: #1a1a2e;
         }
-        .widget-sub, .widget-desc { display: none; }
+        .widget-sub {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.3;
+            color: #1a1a2e;
+            margin-top: 2px;
+        }
+        .widget-desc {
+            font-size: 12px;
+            line-height: 1.4;
+            color: #8E8E93;
+            margin-top: 4px;
+        }
 
         /* ── модальні вікна ── */
         .modal-overlay {
@@ -525,8 +586,12 @@
             position: relative;
             z-index: 2;
         }
-        .payment-btn.privat { background: linear-gradient(145deg, #67D45B, #159C35); }
-        .payment-btn.mono { background: linear-gradient(145deg, #303034, #09090A); }
+        .payment-btn.privat {
+            background: linear-gradient(145deg, #67D45B, #159C35);
+        }
+        .payment-btn.mono {
+            background: linear-gradient(145deg, #303034, #09090A);
+        }
 
         /* ── lightbox ── */
         .lightbox {
@@ -580,21 +645,19 @@
             -webkit-backdrop-filter: blur(10px);
         }
 
-        /* ============================================================
-           SOCIAL DOCK
-           ============================================================ */
+        /* ── social dock ── */
         .ios-social-shell {
-            width: 380px;
-            max-width: calc(100vw - 20px);
-            margin: 20px auto 8px;
-            padding: 12px 5px 10px;
+            width: 350px;
+            max-width: calc(100vw - 28px);
+            margin: 24px auto 8px;
+            padding: 11px 5px 10px;
             background: linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(244, 248, 250, .68));
             border: 1px solid rgba(255, 255, 255, .92);
             box-shadow: 0 16px 38px rgba(38, 75, 91, .13), 0 3px 10px rgba(38, 75, 91, .06), inset 0 1px 0 rgba(255, 255, 255, .96), inset 0 -1px 0 rgba(130, 155, 165, .08);
             backdrop-filter: blur(24px) saturate(170%);
             -webkit-backdrop-filter: blur(24px) saturate(170%);
             overflow: hidden;
-            border-radius: 34px;
+            border-radius: 31px;
         }
         .ios-social-viewport {
             width: 100%;
@@ -612,22 +675,29 @@
             animation: socialHint 1s ease-in-out 1;
         }
         @keyframes socialHint {
-            0%, 100% { transform: translate3d(0, 0, 0); }
-            35% { transform: translate3d(-18px, 0, 0); }
-            65% { transform: translate3d(0, 0, 0); }
+            0%,
+            100% {
+                transform: translate3d(0, 0, 0);
+            }
+            35% {
+                transform: translate3d(-18px, 0, 0);
+            }
+            65% {
+                transform: translate3d(0, 0, 0);
+            }
         }
 
         .ios-social-page {
             width: 50%;
             flex: 0 0 50%;
             display: grid;
-            grid-template-columns: repeat(4, 80px);
-            column-gap: 16px;
+            grid-template-columns: repeat(4, 68px);
+            column-gap: 14px;
             justify-content: center;
             padding: 0 2px;
         }
         .ios-social-item {
-            width: 80px;
+            width: 68px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -635,13 +705,13 @@
         }
         .ios-social-button {
             position: relative;
-            width: 80px;
-            height: 80px;
+            width: 68px;
+            height: 68px;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 0;
-            border-radius: 22px;
+            border-radius: 18px;
             color: #fff;
             overflow: hidden;
             cursor: pointer;
@@ -663,21 +733,37 @@
         .ios-social-button svg {
             position: relative;
             z-index: 2;
-            width: 48px;
-            height: 48px;
+            width: 42px;
+            height: 42px;
             display: block;
             filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .10));
         }
-        .ios-phone { background: linear-gradient(145deg, #55f36d 0%, #31dc50 48%, #18c83b 100%); }
-        .ios-contact { background: linear-gradient(145deg, #42A5F5 0%, #007AFF 50%, #0066D6 100%); }
-        .ios-instagram { background: linear-gradient(145deg, #ffdc80 0%, #fcaf45 20%, #f77737 42%, #e1306c 67%, #c13584 82%, #833ab4 100%); }
-        .ios-facebook { background: linear-gradient(145deg, #5b9af9, #1877f2); }
-        .ios-youtube { background: linear-gradient(145deg, #ff5c5c, #ff0000); }
-        .ios-telegram { background: linear-gradient(145deg, #5bc9ff, #229ed9); }
-        .ios-viber { background: linear-gradient(145deg, #a486ff, #665cac); }
-        .ios-payment { background: linear-gradient(145deg, #57c2ff, var(--color-primary)); }
+        .ios-phone {
+            background: linear-gradient(145deg, #55f36d 0%, #31dc50 48%, #18c83b 100%);
+        }
+        .ios-contact {
+            background: linear-gradient(145deg, #42A5F5 0%, #007AFF 50%, #0066D6 100%);
+        }
+        .ios-instagram {
+            background: linear-gradient(145deg, #ffdc80 0%, #fcaf45 20%, #f77737 42%, #e1306c 67%, #c13584 82%, #833ab4 100%);
+        }
+        .ios-facebook {
+            background: linear-gradient(145deg, #5b9af9, #1877f2);
+        }
+        .ios-youtube {
+            background: linear-gradient(145deg, #ff5c5c, #ff0000);
+        }
+        .ios-telegram {
+            background: linear-gradient(145deg, #5bc9ff, #229ed9);
+        }
+        .ios-viber {
+            background: linear-gradient(145deg, #a486ff, #665cac);
+        }
+        .ios-payment {
+            background: linear-gradient(145deg, #57c2ff, var(--color-primary));
+        }
         .ios-social-label {
-            font-size: 12px;
+            font-size: 11px;
             line-height: 1.1;
             font-weight: 500;
             color: #4d5d65;
@@ -687,8 +773,8 @@
         }
         .ios-social-icon-wrap {
             position: relative;
-            width: 80px;
-            height: 80px;
+            width: 68px;
+            height: 68px;
         }
         .ios-social-pagination {
             display: flex;
@@ -710,27 +796,215 @@
             background: #6d858f;
         }
 
-        /* ── mobile adaptive (ВИПРАВЛЕНО) ── */
-        @media(max-width: 480px) {
-            .hero { padding: 15px; border-radius: 25px; }
-            .logo-wrapper { width: 65px; height: 65px; flex-basis: 65px; border-width: 3px; }
-            .brand-name { font-size: 16px; letter-spacing: 1px; }
-            .brand-badge { font-size: 14px; margin-left: 5px; }
-            .brand-sub { font-size: 10px; }
-            .brand-phone { font-size: 15px; padding: 4px 8px; gap: 5px; letter-spacing: 0px; }
-            .brand-phone svg { width: 14px; height: 14px; }
-            .widgets-grid { gap: 6px; }
-            .widget-card { border-radius: 15px; }
-            .widget-icon { width: 32px; height: 32px; flex: 0 0 32px; margin-bottom: 5px; }
-            .widget-icon svg { width: 18px; height: 18px; }
-            .widget-title { font-size: 8px; }
-            .ios-social-shell { width: 340px; padding: 10px 4px 8px; }
-            .ios-social-button { width: 64px; height: 64px; border-radius: 18px; }
-            .ios-social-button svg { width: 36px; height: 36px; }
-            .ios-social-page { grid-template-columns: repeat(4, 64px); column-gap: 10px; }
-            .ios-social-item { width: 64px; gap: 5px; }
-            .ios-social-icon-wrap { width: 64px; height: 64px; }
-            .ios-social-label { font-size: 10px; }
+        /* ── mobile ── */
+        @media(max-width:480px) {
+            .page {
+                width: calc(100% - 14px);
+            }
+            .hero {
+                padding: 18px 14px 16px;
+                border-radius: 24px;
+            }
+            .logo-wrapper {
+                width: 88px;
+                height: 88px;
+                flex-basis: 88px;
+            }
+            .logo {
+                padding: 5px;
+            }
+            .brand-name {
+                font-size: 24px;
+                letter-spacing: 1px;
+            }
+            .brand-badge {
+                font-size: 12px;
+                padding: 1px 10px;
+            }
+            .brand-sub {
+                font-size: 15px;
+            }
+            .brand-phone {
+                font-size: 20px;
+                padding: 6px 14px;
+            }
+            .widgets-grid {
+                gap: 10px;
+            }
+            .widget-card {
+                padding: 14px 14px 12px;
+                min-height: 110px;
+                border-radius: 16px;
+            }
+            .widget-icon {
+                width: 36px;
+                height: 36px;
+                flex: 0 0 36px;
+                border-radius: 12px;
+            }
+            .widget-icon svg {
+                width: 18px;
+                height: 18px;
+            }
+            .widget-title {
+                font-size: 16px;
+            }
+            .widget-sub {
+                font-size: 13px;
+            }
+            .widget-desc {
+                font-size: 11px;
+            }
+            .widget-badge {
+                font-size: 12px;
+                top: 10px;
+                right: 10px;
+            }
+            .ios-social-shell {
+                padding: 10px 5px 9px;
+                border-radius: 31px;
+            }
+            .ios-social-button {
+                width: 60px;
+                height: 60px;
+            }
+            .ios-social-button svg {
+                width: 36px;
+                height: 36px;
+            }
+            .ios-social-label {
+                font-size: 10px;
+            }
+            .ios-social-page {
+                grid-template-columns: repeat(4, 60px);
+                column-gap: 10px;
+            }
+            .ios-social-item {
+                width: 60px;
+                gap: 5px;
+            }
+            .ios-social-icon-wrap {
+                width: 60px;
+                height: 60px;
+            }
+            .modal-box {
+                padding: 20px 16px 18px;
+                border-radius: 24px;
+            }
+            .modal-title {
+                font-size: 22px;
+            }
+            .modal-lead {
+                font-size: 14px;
+            }
+            .modal-text {
+                font-size: 15px;
+            }
+            .payment-btn {
+                min-height: 70px;
+                border-radius: 16px;
+                font-size: 12px;
+            }
+            .payment-btn svg {
+                width: 32px;
+                height: 32px;
+            }
+            .payment-buttons {
+                gap: 10px;
+            }
+        }
+        @media(max-width:380px) {
+            .hero {
+                padding: 14px 12px 12px;
+                border-radius: 20px;
+            }
+            .logo-wrapper {
+                width: 72px;
+                height: 72px;
+                flex-basis: 72px;
+            }
+            .logo {
+                padding: 4px;
+            }
+            .brand-name {
+                font-size: 20px;
+                letter-spacing: 0.5px;
+            }
+            .brand-badge {
+                font-size: 10px;
+                padding: 1px 8px;
+            }
+            .brand-sub {
+                font-size: 14px;
+            }
+            .brand-phone {
+                font-size: 17px;
+                padding: 4px 12px;
+            }
+            .widgets-grid {
+                gap: 8px;
+            }
+            .widget-card {
+                padding: 12px 12px 10px;
+                min-height: 90px;
+                border-radius: 14px;
+            }
+            .widget-icon {
+                width: 30px;
+                height: 30px;
+                flex: 0 0 30px;
+                border-radius: 10px;
+            }
+            .widget-icon svg {
+                width: 16px;
+                height: 16px;
+            }
+            .widget-title {
+                font-size: 14px;
+            }
+            .widget-sub {
+                font-size: 12px;
+            }
+            .widget-desc {
+                font-size: 10px;
+            }
+            .widget-badge {
+                font-size: 10px;
+                top: 8px;
+                right: 8px;
+            }
+            .ios-social-shell {
+                width: 320px;
+                max-width: calc(100vw - 24px);
+                border-radius: 30px;
+            }
+            .ios-social-button {
+                width: 52px;
+                height: 52px;
+                border-radius: 16px;
+            }
+            .ios-social-button svg {
+                width: 30px;
+                height: 30px;
+            }
+            .ios-social-label {
+                font-size: 9px;
+            }
+            .ios-social-page {
+                grid-template-columns: repeat(4, 52px);
+                column-gap: 8px;
+            }
+            .ios-social-item {
+                width: 52px;
+                gap: 4px;
+            }
+            .ios-social-icon-wrap {
+                width: 52px;
+                height: 52px;
+            }
+            .modal-text {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -744,7 +1018,6 @@
                 <div class="logo-wrapper">
                     <img class="logo" src="logo.png" alt="SA MASTER">
                 </div>
-                
                 <div class="hero-brand">
                     <div class="brand-top">
                         <a href="https://sa-master.pro/" class="brand-link" target="_blank" rel="noopener">
@@ -752,19 +1025,13 @@
                             <span class="brand-badge">.pro</span>
                         </a>
                     </div>
-                    <div class="brand-sub-wrap">
-                        <div class="brand-sub">комплексний монтаж сантехніки</div>
+                    <div class="brand-sub">
+                        комплексний монтаж сантехніки
                     </div>
-                    <div class="hero-actions">
-                        <a href="tel:+380979111871" class="brand-phone">
-                            <svg viewBox="0 0 24 24"><path d="M6.62 10.79C8.06 13.62 10.38 15.94 13.21 17.38L15.41 15.18C15.69 14.9 16.08 14.82 16.43 14.94C17.55 15.31 18.75 15.51 20 15.51C20.55 15.51 21 15.96 21 16.51V20C21 20.55 20.55 21 20 21C10.61 21 3 13.39 3 4C3 3.45 3.45 3 4 3H7.5C8.05 3 8.5 3.45 8.5 4C8.5 5.25 8.7 6.45 9.07 7.57C9.18 7.92 9.11 8.31 8.82 8.59L6.62 10.79Z"/></svg>
-                            <span>097 911 1871</span>
-                        </a>
-                    </div>
+                    <a href="tel:+380979111871" class="brand-phone">097 911 1871</a>
                 </div>
             </div>
 
-            <!-- ГАЛЕРЕЯ (ПОВНІСТЮ ОРИГІНАЛЬНА) -->
             <div class="gallery">
                 <div class="gallery-window" id="galleryWindow">
                     <div class="gallery-track" id="galleryTrack">
@@ -799,45 +1066,46 @@
 
                 <!-- CARD 1: ПРО НАС -->
                 <div class="widget-card" data-modal="modalAbout">
-                    <div class="widget-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round">
-                            <circle cx="12" cy="8" r="4"/>
-                            <path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3"/>
-                        </svg>
+                    <div class="widget-icon" style="background: rgba(0, 122, 255, .10);">
+                        <svg viewBox="0 0 24 24" stroke="#007AFF"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
                     </div>
+                    <div class="widget-badge">01</div>
                     <div class="widget-title">ПРО НАС</div>
+                    <div class="widget-sub">Досвід, який залишається за стінами</div>
+                    <div class="widget-desc">20+ років монтажу сантехніки у новобудовах Києва</div>
                 </div>
 
                 <!-- CARD 2: ПРО РОБОТУ -->
                 <div class="widget-card" data-modal="modalProcess">
-                    <div class="widget-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14.7 6.3a4.5 4.5 0 0 0-6.1 5.6L2.5 18a1.8 1.8 0 0 0 2.5 2.5l6.1-6.1a4.5 4.5 0 0 0 5.6-6.1l-3.2 3.2-2.5-2.5 3.2-3.2z"/>
-                        </svg>
+                    <div class="widget-icon" style="background: rgba(52, 199, 89, .10);">
+                        <svg viewBox="0 0 24 24" stroke="#34C759"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
                     </div>
+                    <div class="widget-badge">02</div>
                     <div class="widget-title">ПРО РОБОТУ</div>
+                    <div class="widget-sub">Від задуму — до бездоганного результату</div>
+                    <div class="widget-desc">Проєктування, монтаж, здача — повний цикл</div>
                 </div>
 
                 <!-- CARD 3: ПРО ВАРТІСТЬ -->
                 <div class="widget-card" data-modal="modalPrice">
-                    <div class="widget-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round">
-                            <circle cx="12" cy="12" r="9"/>
-                            <path d="M12 7v5l3 3"/>
-                        </svg>
+                    <div class="widget-icon" style="background: rgba(255, 149, 0, .10);">
+                        <svg viewBox="0 0 24 24" stroke="#FF9500"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
                     </div>
+                    <div class="widget-badge">03</div>
                     <div class="widget-title">ПРО ВАРТІСТЬ</div>
+                    <div class="widget-sub">Якість не починається з цифри</div>
+                    <div class="widget-desc">Розрахунок під конкретний проєкт, без прихованих платежів</div>
                 </div>
 
                 <!-- CARD 4: ПРО РЕЗУЛЬТАТ -->
                 <div class="widget-card" data-modal="modalReviews">
-                    <div class="widget-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
-                            <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                        </svg>
+                    <div class="widget-icon" style="background: rgba(175, 82, 222, .10);">
+                        <svg viewBox="0 0 24 24" stroke="#AF52DE"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </div>
+                    <div class="widget-badge">04</div>
                     <div class="widget-title">ПРО РЕЗУЛЬТАТ</div>
+                    <div class="widget-sub">Те, що не видно. Те, що працює роками.</div>
+                    <div class="widget-desc">Надійність, яка залишається за стінами</div>
                 </div>
 
             </div>
