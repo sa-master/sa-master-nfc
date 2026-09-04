@@ -35,7 +35,7 @@
             --color-text: #1C1C1E;
             --color-text-secondary: #8E8E93;
             --color-bg: #F2F2F7;
-            --radius-card: 24px; /* збільшено для iOS-стилю */
+            --radius-card: 24px;
             --shadow-card: 0 4px 16px rgba(0, 0, 0, .06), 0 2px 8px rgba(0, 0, 0, .03);
             --shadow-modal: 0 24px 64px rgba(0, 0, 0, .18);
             --transition: .35s cubic-bezier(.22, .61, .36, 1);
@@ -72,7 +72,7 @@
 
         /* ── layout ── */
         .page {
-            width: min(480px, calc(100% - 20px)); /* зменшено максимальну ширину для відчуття iPhone */
+            width: min(480px, calc(100% - 20px));
             margin: 0 auto;
         }
 
@@ -84,7 +84,7 @@
             overflow: hidden;
             padding: 24px 20px 20px;
             border-radius: 28px;
-            background: rgba(255, 255, 255, 0.72); /* напівпрозорий, як віджет iOS */
+            background: rgba(255, 255, 255, 0.72);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
             border: 1px solid rgba(255, 255, 255, 0.9);
@@ -146,7 +146,7 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
-            border-radius: 50%; /* залишаємо круглим, щоб не псувати лого */
+            border-radius: 50%;
             background: transparent;
             box-shadow: none;
             transition: transform .35s ease;
@@ -161,9 +161,13 @@
             padding: 6px;
         }
 
+        /* ── ТЕКСТОВИЙ БЛОК ── */
         .hero-brand {
-            flex: 1;
-            min-width: 200px;
+            flex: 0 0 auto; /* ширина визначається вмістом */
+            display: flex;
+            flex-direction: column;
+            align-items: stretch; /* діти розтягуються на ширину батька */
+            gap: 6px;
             max-width: 100%;
         }
 
@@ -172,34 +176,31 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            width: 100%;
         }
 
         .brand-link {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+            white-space: nowrap;
+            width: 100%;
+            justify-content: flex-start;
             text-decoration: none;
             transition: transform .3s ease;
-            white-space: nowrap;
         }
         .brand-link:hover {
             transform: translateY(-2px);
         }
 
         .brand-name {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif; /* системний шрифт, як iOS */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             font-size: clamp(28px, 5vw, 34px);
             font-weight: 700;
             letter-spacing: -0.5px;
-            white-space: normal;
-            color: #1C1C1E; /* чистий чорний, без градієнта */
-            text-shadow: none;
-            transition: none;
-        }
-        /* Прибираємо hover-ефект з градієнтом, який був раніше */
-        .brand-name:hover {
-            transform: none;
+            white-space: nowrap;
+            color: #1C1C1E;
             text-shadow: none;
         }
 
@@ -214,54 +215,52 @@
             border: none;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
             white-space: nowrap;
+            flex-shrink: 0;
         }
         .brand-link:hover .brand-badge {
             background: rgba(0, 122, 255, .2);
             transform: scale(1.02);
         }
 
-        /* ── ПІДЗАГОЛОВОК ── */
+        /* ── ПІДЗАГОЛОВОК (визначає ширину всього блоку) ── */
         .brand-sub {
             font-size: clamp(14px, 2.5vw, 18px);
             font-weight: 500;
             color: #3A3A3C;
-            margin-top: 2px;
             line-height: 1.3;
+            white-space: normal;
         }
 
-        /* ── НОМЕР ТЕЛЕФОНУ (кнопка-капсула в стилі iOS) ── */
+        /* ── НОМЕР ТЕЛЕФОНУ (мінімалістична кнопка) ── */
         .brand-phone {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             width: auto;
-            padding: 10px 22px;
-            border-radius: 30px;
-            background: #007AFF;
-            color: #fff;
-            font-size: clamp(16px, 3vw, 20px);
+            padding: 6px 16px;
+            border-radius: 20px;
+            background: rgba(0, 122, 255, 0.08);
+            color: #007AFF;
+            font-size: clamp(14px, 2.5vw, 16px);
             font-weight: 600;
-            text-decoration: none;
             white-space: nowrap;
-            transition: all .2s ease;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-            letter-spacing: 0.2px;
-            margin-top: 8px;
-            box-shadow: 0 6px 16px rgba(0, 122, 255, .25);
-            border: none;
+            border: 1px solid rgba(0, 122, 255, 0.2);
+            box-shadow: none;
+            margin-top: 2px;
+            text-decoration: none;
+            transition: background .2s ease, border-color .2s ease;
         }
         .brand-phone:hover {
-            background: #0066D6;
-            transform: scale(1.02);
-            box-shadow: 0 8px 20px rgba(0, 122, 255, .35);
+            background: rgba(0, 122, 255, 0.14);
+            border-color: rgba(0, 122, 255, 0.3);
         }
 
         /* ── gallery ── */
         .gallery {
             position: relative;
             overflow: hidden;
-            border-radius: 24px; /* збільшено скруглення, як у додатку Фото */
+            border-radius: 24px;
             background: #E5E8EC;
             box-shadow: 0 8px 24px rgba(0, 0, 0, .06);
             margin-top: 16px;
@@ -355,7 +354,7 @@
         .widget-card {
             position: relative;
             padding: 18px 16px 16px;
-            border-radius: 24px; /* більше скруглення */
+            border-radius: 24px;
             background: #FFFFFF;
             box-shadow: 0 4px 16px rgba(0, 0, 0, .06), 0 2px 8px rgba(0, 0, 0, .03);
             border: 1px solid rgba(255, 255, 255, .9);
@@ -804,8 +803,8 @@
                 font-size: 15px;
             }
             .brand-phone {
-                font-size: 18px;
-                padding: 8px 18px;
+                font-size: 14px;
+                padding: 5px 14px;
             }
             .widgets-grid {
                 gap: 10px;
@@ -929,8 +928,8 @@
                 font-size: 14px;
             }
             .brand-phone {
-                font-size: 17px;
-                padding: 6px 16px;
+                font-size: 13px;
+                padding: 4px 12px;
             }
             .widgets-grid {
                 gap: 8px;
