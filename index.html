@@ -80,7 +80,7 @@
         .hero-top-row {
             display: flex;
             align-items: center;
-            justify-content: space-between; /* логотип зліва, заголовок справа */
+            justify-content: space-between;
             width: 100%;
             gap: 12px;
         }
@@ -93,6 +93,7 @@
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            background: transparent;
             transition: transform .35s ease;
         }
         .logo-wrapper:hover { transform: scale(1.03); }
@@ -100,13 +101,14 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            padding: 6px;
+            display: block;
+            padding: 0; /* важливо: без внутрішніх відступів */
         }
         .brand-top {
             flex: 1;
             display: flex;
             align-items: center;
-            justify-content: flex-end; /* назва притиснута до правого краю */
+            justify-content: flex-end;
             min-width: 0;
         }
         .brand-link {
@@ -139,7 +141,7 @@
             text-transform: lowercase;
         }
 
-        /* Підзаголовок на всю ширину, один рядок */
+        /* Підзаголовок */
         .brand-sub {
             width: 100%;
             text-align: center;
@@ -147,9 +149,7 @@
             font-weight: 500;
             color: #3A3A3C;
             line-height: 1.3;
-            white-space: nowrap; /* забороняємо перенос */
-            overflow: hidden;
-            text-overflow: ellipsis; /* на випадок надто довгого тексту */
+            white-space: normal; /* дозволяємо перенос, якщо потрібно */
         }
 
         /* Галерея */
@@ -172,6 +172,7 @@
             height: 100%;
             transform: translate3d(0,0,0);
             transition: transform .5s cubic-bezier(.22,.61,.36,1);
+            will-change: transform;
         }
         .gallery-slide {
             flex: 0 0 100%;
@@ -346,7 +347,7 @@
             backdrop-filter: blur(24px) saturate(170%);
             border-radius: 31px; overflow: hidden;
         }
-        .ios-social-viewport { width: 100%; overflow: hidden; }
+        .ios-social-viewport { width: 100%; overflow: hidden; touch-action: pan-y; }
         .ios-social-track {
             display: flex; width: 200%;
             transform: translate3d(0,0,0);
@@ -365,6 +366,7 @@
             box-shadow: 0 7px 15px rgba(44,67,76,.16);
             transition: transform .18s ease, box-shadow .18s ease;
         }
+        .ios-social-button:active { transform: scale(.91); }
         .ios-social-button svg { width: 48px; height: 48px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.1)); }
         .ios-phone { background: linear-gradient(145deg, #55f36d, #31dc50); }
         .ios-contact { background: linear-gradient(145deg, #42A5F5, #007AFF); }
@@ -436,6 +438,7 @@
 </head>
 <body>
     <div class="page">
+        <!-- Шапка -->
         <section class="hero">
             <div class="hero-header">
                 <div class="hero-top-row">
@@ -452,6 +455,7 @@
                 <div class="brand-sub">комплексний монтаж сантехніки</div>
             </div>
 
+            <!-- Галерея -->
             <div class="gallery">
                 <div class="gallery-window" id="galleryWindow">
                     <div class="gallery-track" id="galleryTrack">
@@ -480,11 +484,423 @@
             </div>
         </section>
 
-        <!-- Віджети, докбар, модальні вікна залишаються без змін -->
-        <!-- ... (весь попередній код нижче) ... -->
+        <!-- Віджети -->
+        <section class="widgets-section">
+            <div class="widgets-grid">
+                <div class="widget-card" data-modal="modalAbout">
+                    <div class="widget-icon" style="background: rgba(0, 122, 255, .10);">
+                        <svg viewBox="0 0 24 24" stroke="#007AFF"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="widget-badge">01</div>
+                    <div class="widget-title">ПРО НАС</div>
+                    <div class="widget-sub">Досвід, який залишається за стінами</div>
+                    <div class="widget-desc">20+ років монтажу сантехніки у новобудовах Києва</div>
+                </div>
+                <div class="widget-card" data-modal="modalProcess">
+                    <div class="widget-icon" style="background: rgba(52, 199, 89, .10);">
+                        <svg viewBox="0 0 24 24" stroke="#34C759"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+                    </div>
+                    <div class="widget-badge">02</div>
+                    <div class="widget-title">ПРО РОБОТУ</div>
+                    <div class="widget-sub">Від задуму — до бездоганного результату</div>
+                    <div class="widget-desc">Проєктування, монтаж, здача — повний цикл</div>
+                </div>
+                <div class="widget-card" data-modal="modalPrice">
+                    <div class="widget-icon" style="background: rgba(255, 149, 0, .10);">
+                        <svg viewBox="0 0 24 24" stroke="#FF9500"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="widget-badge">03</div>
+                    <div class="widget-title">ПРО ВАРТІСТЬ</div>
+                    <div class="widget-sub">Якість не починається з цифри</div>
+                    <div class="widget-desc">Розрахунок під конкретний проєкт, без прихованих платежів</div>
+                </div>
+                <div class="widget-card" data-modal="modalReviews">
+                    <div class="widget-icon" style="background: rgba(175, 82, 222, .10);">
+                        <svg viewBox="0 0 24 24" stroke="#AF52DE"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="widget-badge">04</div>
+                    <div class="widget-title">ПРО РЕЗУЛЬТАТ</div>
+                    <div class="widget-sub">Те, що не видно. Те, що працює роками.</div>
+                    <div class="widget-desc">Надійність, яка залишається за стінами</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Соціальний док -->
+        <div class="ios-social-shell">
+            <div class="ios-social-viewport" id="socialViewport">
+                <div class="ios-social-track" id="socialTrack">
+                    <div class="ios-social-page">
+                        <div class="ios-social-item">
+                            <div class="ios-social-icon-wrap">
+                                <a class="ios-social-button ios-phone" href="tel:+380979111871" aria-label="Подзвонити">
+                                    <svg viewBox="0 0 24 24" fill="none"><path d="M6.62 10.79C8.06 13.62 10.38 15.94 13.21 17.38L15.41 15.18C15.69 14.9 16.08 14.82 16.43 14.94C17.55 15.31 18.75 15.51 20 15.51C20.55 15.51 21 15.96 21 16.51V20C21 20.55 20.55 21 20 21C10.61 21 3 13.39 3 4C3 3.45 3.45 3 4 3H7.5C8.05 3 8.5 3.45 8.5 4C8.5 5.25 8.7 6.45 9.07 7.57C9.18 7.92 9.11 8.31 8.82 8.59L6.62 10.79Z" fill="white"/></svg>
+                                </a>
+                            </div>
+                            <div class="ios-social-label">Подзвонити</div>
+                        </div>
+                        <div class="ios-social-item">
+                            <div class="ios-social-icon-wrap">
+                                <a class="ios-social-button ios-contact" href="Plumber-vcf.vcf" download aria-label="Зберегти контакт">
+                                    <svg viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" fill="white"/><path d="M3.5 19C3.5 15.96 5.96 13.5 9 13.5C12.04 13.5 14.5 15.96 14.5 19" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M18 13V20" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M14.5 16.5H21.5" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+                                </a>
+                            </div>
+                            <div class="ios-social-label">Зберегти</div>
+                        </div>
+                        <div class="ios-social-item">
+                            <div class="ios-social-icon-wrap">
+                                <a class="ios-social-button ios-instagram" href="https://www.instagram.com/sa_master/" target="_blank" rel="noopener" aria-label="Instagram">
+                                    <svg viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="4.5" stroke="white" stroke-width="2"/><circle cx="12" cy="12" r="3.5" stroke="white" stroke-width="2"/><circle cx="17.4" cy="6.8" r="1.15" fill="white"/></svg>
+                                </a>
+                            </div>
+                            <div class="ios-social-label">Instagram</div>
+                        </div>
+                        <div class="ios-social-item">
+                            <div class="ios-social-icon-wrap">
+                                <a class="ios-social-button ios-facebook" href="https://www.facebook.com/share/1977uk6VHF/?mibextid=wwXIfr" target="_blank" rel="noopener" aria-label="Facebook">
+                                    <svg viewBox="0 0 24 24"><path d="M13.5 21V13.9H16L16.4 11H13.5V9.15C13.5 8.31 13.73 7.74 14.92 7.74H16.5V5.16C16.23 5.12 15.29 5 14.2 5C11.92 5 10.36 6.39 10.36 8.95V11H7.9V13.9H10.36V21H13.5Z" fill="white"/></svg>
+                                </a>
+                            </div>
+                            <div class="ios-social-label">Facebook</div>
+                        </div>
+                    </div>
+                    <div class="ios-social-page">
+                        <div class="ios-social-item">
+                            <div class="ios-social-icon-wrap">
+                                <a class="ios-social-button ios-youtube" href="https://www.youtube.com/@sa_master" target="_blank" rel="noopener" aria-label="YouTube">
+                                    <svg viewBox="0 0 24 24"><path d="M21.58 7.19C21.36 6.38 20.73 5.74 19.92 5.52C18.45 5.12 12 5.12 12 5.12C12 5.12 5.55 5.12 4.08 5.52C3.27 5.74 2.64 6.38 2.42 7.19C2 8.66 2 12 2 12C2 12 2 15.34 2.42 16.81C2.64 17.62 3.27 18.26 4.08 18.48C5.55 18.88 12 18.88 12 18.88C12 18.88 18.45 18.88 19.92 18.48C20.73 18.26 21.36 17.62 21.58 16.81C22 15.34 22 12 22 12C22 12 22 8.66 21.58 7.19Z" fill="white"/><path d="M10 15.1L15.2 12L10 8.9V15.1Z" fill="#ff2d2d"/></svg>
+                                </a>
+                            </div>
+                            <div class="ios-social-label">YouTube</div>
+                        </div>
+                        <div class="ios-social-item">
+                            <div class="ios-social-icon-wrap">
+                                <a class="ios-social-button ios-telegram" href="https://t.me/sa_master" target="_blank" rel="noopener" aria-label="Telegram">
+                                    <svg viewBox="0 0 24 24"><path d="M20.66 4.31L3.95 10.75C2.81 11.19 2.82 11.8 3.74 12.07L8.03 13.41L9.67 18.42C9.87 18.97 9.77 19.19 10.36 19.19C10.82 19.19 11.02 18.98 11.27 18.74L13.35 16.72L17.68 19.92C18.48 20.36 19.06 20.13 19.26 19.18L22.11 5.74C22.39 4.59 21.67 4.07 20.66 4.31Z" fill="white"/><path d="M8.18 13.1L17.91 7.08C18.39 6.79 18.83 6.95 18.47 7.27L10.59 14.38L10.29 17.43L9.06 13.64L8.18 13.1Z" fill="#5BC9FF"/></svg>
+                                </a>
+                            </div>
+                            <div class="ios-social-label">Telegram</div>
+                        </div>
+                        <div class="ios-social-item">
+                            <div class="ios-social-icon-wrap">
+                                <a class="ios-social-button ios-viber" href="viber://add?number=380979111871" aria-label="Viber">
+                                    <svg viewBox="0 0 24 24"><path d="M18.7 4.1C16.91 2.53 14.48 1.82 12 1.82C7.04 1.82 2.55 4.69 2.55 10.43C2.55 13.31 3.47 15.05 4.84 16.55L4.51 19.7C4.46 20.21 4.97 20.55 5.4 20.28L8.5 18.31C9.55 18.62 10.69 18.79 12 18.79C17.02 18.79 21.45 15.91 21.45 10.22C21.45 7.62 20.55 5.73 18.7 4.1Z" fill="white"/><path d="M8.2 7.05C8.51 6.9 8.82 6.98 9.03 7.25L10.02 8.53C10.25 8.83 10.22 9.2 9.95 9.46L9.35 10.04C9.96 11.24 10.91 12.18 12.12 12.79L12.7 12.19C12.96 11.92 13.33 11.89 13.63 12.12L14.91 13.11C15.18 13.32 15.26 13.63 15.11 13.94L14.72 14.76C14.52 15.19 14.04 15.43 13.58 15.31C10.19 14.42 7.7 11.93 6.81 8.54C6.69 8.08 6.93 7.6 7.36 7.4L8.2 7.05Z" fill="#8B79D9"/></svg>
+                                </a>
+                            </div>
+                            <div class="ios-social-label">Viber</div>
+                        </div>
+                        <div class="ios-social-item">
+                            <div class="ios-social-icon-wrap">
+                                <button class="ios-social-button ios-payment" type="button" onclick="openModal('modalPayment')" aria-label="Оплата">
+                                    <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" fill="white"/><path d="M3 9H21" stroke="#1976D2" stroke-width="2"/><circle cx="16.5" cy="14" r="1.5" fill="#1976D2"/></svg>
+                                </button>
+                            </div>
+                            <div class="ios-social-label">Оплата</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ios-social-pagination" aria-hidden="true">
+                <span class="ios-social-page-dot active"></span>
+                <span class="ios-social-page-dot"></span>
+            </div>
+        </div>
+
+        <!-- Модальні вікна -->
+        <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
+            <div class="modal-box">
+                <button class="modal-close" type="button" onclick="closeModal('modalAbout')">×</button>
+                <img class="modal-photo" src="your-photo.jpg" alt="Сергій">
+                <div class="modal-title">Про нас</div>
+                <div class="modal-lead">Досвід, який залишається за стінами</div>
+                <div class="modal-text">
+                    <p>Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою.</p>
+                    <p>Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
+                    <p>Спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва.</p>
+                    <p>Працюємо з дизайн-проєктами без посередників.</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-overlay" id="modalProcess" role="dialog" aria-modal="true">
+            <div class="modal-box">
+                <button class="modal-close" type="button" onclick="closeModal('modalProcess')">×</button>
+                <div class="modal-title">Про роботу</div>
+                <div class="modal-lead">Від задуму — до бездоганного результату</div>
+                <div class="modal-text">
+                    <p><strong>01. Проєкт</strong><br />Аналізуємо креслення та технічні рішення.</p>
+                    <p><strong>02. Монтаж</strong><br />Виконуємо комплексний монтаж з дотриманням технології.</p>
+                    <p><strong>03. Здача</strong><br />Перевіряємо роботи та передаємо об'єкт замовнику.</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-overlay" id="modalPrice" role="dialog" aria-modal="true">
+            <div class="modal-box">
+                <button class="modal-close" type="button" onclick="closeModal('modalPrice')">×</button>
+                <div class="modal-title">Про вартість</div>
+                <div class="modal-lead">Якість не починається з цифри</div>
+                <div class="modal-text">
+                    <p>Кожен проєкт має власну площу, кількість санвузлів та технічні рішення.</p>
+                    <p>Спочатку аналізуємо <strong>дизайн-проєкт</strong>, потім формуємо розрахунок.</p>
+                    <p><strong>Спочатку проєкт — потім точна вартість.</strong></p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-overlay" id="modalReviews" role="dialog" aria-modal="true">
+            <div class="modal-box">
+                <button class="modal-close" type="button" onclick="closeModal('modalReviews')">×</button>
+                <div class="modal-title">Про результат</div>
+                <div class="modal-lead">Те, що не видно. Те, що працює роками.</div>
+                <div class="modal-text">
+                    <p>Найважливіша частина роботи залишається <strong>за стінами</strong>.</p>
+                    <p>Ми приділяємо увагу деталям, які не видно після оздоблення.</p>
+                    <p>Результат — коли про сантехніку <strong>не потрібно думати</strong> роками.</p>
+                </div>
+            </div>
+        </div>
+        <div class="modal-overlay" id="modalPayment" role="dialog" aria-modal="true">
+            <div class="modal-box">
+                <button class="modal-close" type="button" onclick="closeModal('modalPayment')">×</button>
+                <div class="modal-title">Оплата</div>
+                <div class="modal-lead">Оберіть зручний спосіб</div>
+                <div class="payment-buttons">
+                    <a class="payment-btn privat" href="https://www.privat24.ua/send/4tid8" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 64 64"><rect x="7" y="12" width="50" height="40" rx="8" fill="white"/><path d="M7 24H57" stroke="#36B83D" stroke-width="5"/><text x="32" y="42" text-anchor="middle" font-size="14" font-weight="800" fill="#36B83D">p24</text></svg>
+                        <span>Privat24</span>
+                    </a>
+                    <a class="payment-btn mono" href="https://send.monobank.ua/47w3DWsRew" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 64 64"><rect x="7" y="12" width="50" height="40" rx="8" fill="white"/><path d="M7 24H57" stroke="#171719" stroke-width="5"/><text x="32" y="42" text-anchor="middle" font-size="13" font-weight="800" fill="#171719">mono</text></svg>
+                        <span>monobank</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lightbox -->
+        <div class="lightbox" id="lightbox">
+            <button class="lightbox-close" id="lightboxClose" type="button">×</button>
+            <img id="lightboxImage" src="" alt="">
+        </div>
     </div>
+
     <script>
-        /* Скрипти галереї, лайтбоксу, модалок, докбару без змін */
+        /* ===== ГАЛЕРЕЯ ===== */
+        (function() {
+            var track = document.getElementById('galleryTrack');
+            var dots = document.querySelectorAll('.gallery-dot');
+            var counter = document.getElementById('galleryCounter');
+            var total = 8;
+            var index = 0,
+                timer,
+                startX = 0,
+                currentX = 0,
+                dragging = false;
+
+            function update(animate) {
+                track.style.transition = animate ? 'transform .5s cubic-bezier(.22,.61,.36,1)' : 'none';
+                track.style.transform = 'translate3d(-' + (index * 100) + '%,0,0)';
+                var real = index >= total ? 0 : index;
+                counter.textContent = (real + 1) + ' / ' + total;
+                for (var i = 0; i < dots.length; i++) {
+                    dots[i].classList.toggle('active', i === real);
+                }
+            }
+
+            function next() {
+                index++;
+                update(true);
+            }
+
+            function prev() {
+                if (index <= 0) {
+                    index = total;
+                    update(false);
+                    requestAnimationFrame(function() {
+                        index--;
+                        update(true);
+                    });
+                    return;
+                }
+                index--;
+                update(true);
+            }
+
+            track.addEventListener('transitionend', function() {
+                if (index === total) {
+                    index = 0;
+                    update(false);
+                }
+            });
+
+            for (var d = 0; d < dots.length; d++) {
+                (function(i) {
+                    dots[i].addEventListener('click', function() {
+                        index = i;
+                        update(true);
+                        restartTimer();
+                    });
+                })(d);
+            }
+
+            var win = document.getElementById('galleryWindow');
+            win.addEventListener('touchstart', function(e) {
+                startX = e.touches[0].clientX;
+                currentX = startX;
+                dragging = true;
+            }, { passive: true });
+            win.addEventListener('touchmove', function(e) {
+                if (dragging) currentX = e.touches[0].clientX;
+            }, { passive: true });
+            win.addEventListener('touchend', function() {
+                if (!dragging) return;
+                dragging = false;
+                var diff = currentX - startX;
+                if (Math.abs(diff) >= 45) {
+                    if (diff < 0) next();
+                    else prev();
+                    restartTimer();
+                }
+            });
+
+            function restartTimer() {
+                clearInterval(timer);
+                timer = setInterval(next, 4500);
+            }
+            restartTimer();
+
+            var slides = document.querySelectorAll('.gallery-slide img');
+            for (var s = 0; s < slides.length; s++) {
+                (function(i) {
+                    slides[i].addEventListener('click', function() {
+                        openLightbox(i);
+                    });
+                })(s);
+            }
+        })();
+
+        /* ===== LIGHTBOX ===== */
+        (function() {
+            var el = document.getElementById('lightbox');
+            var img = document.getElementById('lightboxImage');
+            var closeBtn = document.getElementById('lightboxClose');
+            var slides = document.querySelectorAll('.gallery-slide img');
+            var total = 8;
+            var index = 0;
+
+            window.openLightbox = function(i) {
+                index = Math.max(0, Math.min(total - 1, i));
+                img.src = slides[index].src;
+                img.alt = slides[index].alt;
+                img.style.transition = 'none';
+                img.style.transform = 'scale(.95)';
+                el.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                requestAnimationFrame(function() {
+                    requestAnimationFrame(function() {
+                        img.style.transition = 'transform .3s ease';
+                        img.style.transform = 'scale(1)';
+                    });
+                });
+            };
+
+            function closeLightbox() {
+                el.classList.remove('active');
+                img.style.transition = '';
+                img.style.transform = '';
+                document.body.style.overflow = '';
+            }
+
+            closeBtn.addEventListener('click', closeLightbox);
+            el.addEventListener('click', function(e) {
+                if (e.target === el) closeLightbox();
+            });
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && el.classList.contains('active')) closeLightbox();
+            });
+        })();
+
+        /* ===== МОДАЛКИ ===== */
+        window.openModal = function(id) {
+            var modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeModal = function(id) {
+            var modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        var widgets = document.querySelectorAll('.widget-card');
+        for (var w = 0; w < widgets.length; w++) {
+            (function(card) {
+                card.addEventListener('click', function() {
+                    var modalId = this.dataset.modal;
+                    if (modalId) openModal(modalId);
+                });
+            })(widgets[w]);
+        }
+
+        var overlays = document.querySelectorAll('.modal-overlay');
+        for (var o = 0; o < overlays.length; o++) {
+            (function(overlay) {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) closeModal(this.id);
+                });
+            })(overlays[o]);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                var open = document.querySelector('.modal-overlay.active');
+                if (open) closeModal(open.id);
+            }
+        });
+
+        /* ===== СОЦІАЛЬНИЙ ДОК ===== */
+        (function social() {
+            var track = document.getElementById('socialTrack');
+            var dots = document.querySelectorAll('.ios-social-page-dot');
+            var viewport = document.getElementById('socialViewport');
+            var page = 0,
+                startX = 0,
+                curX = 0,
+                dragging = false;
+
+            function update(p, animate) {
+                page = Math.max(0, Math.min(1, p));
+                track.style.transition = animate ? 'transform .48s cubic-bezier(.22,.61,.36,1)' : 'none';
+                track.style.transform = 'translate3d(-' + (page * 50) + '%,0,0)';
+                dots.forEach(function(d, i) {
+                    d.classList.toggle('active', i === page);
+                });
+            }
+
+            viewport.addEventListener('touchstart', function(e) {
+                startX = e.touches[0].clientX;
+                curX = startX;
+                dragging = true;
+            }, { passive: true });
+            viewport.addEventListener('touchmove', function(e) {
+                if (dragging) curX = e.touches[0].clientX;
+            }, { passive: true });
+            viewport.addEventListener('touchend', function() {
+                if (!dragging) return;
+                dragging = false;
+                var diff = curX - startX;
+                if (Math.abs(diff) < 45) return;
+                update(diff < 0 ? page + 1 : page - 1, true);
+            });
+
+            setTimeout(function() {
+                track.classList.add('social-hint');
+                setTimeout(function() {
+                    track.classList.remove('social-hint');
+                }, 1100);
+            }, 900);
+        })();
     </script>
 </body>
 </html>
