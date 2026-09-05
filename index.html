@@ -45,7 +45,7 @@
                         var(--color-bg);
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
-            padding: max(8px, env(safe-area-inset-top)) 0 20px;
+            padding: max(8px, env(safe-area-inset-top)) 0 calc(120px + env(safe-area-inset-bottom)); /* ← збільшено нижній відступ */
         }
         a { text-decoration: none; color: inherit; }
         .page {
@@ -54,6 +54,7 @@
             position: relative;
         }
 
+        /* Glass utilities */
         .glass {
             background: var(--glass);
             border: 1px solid var(--border);
@@ -377,18 +378,26 @@
             color: #8e8e93;
         }
 
-        /* Соціальний док (звичайний блок у потоці) */
+        /* Соціальний док (фіксований) */
         .ios-social-shell {
-            position: relative;
-            width: 100%;
-            margin: 20px auto 0;
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            width: 480px;
+            max-width: calc(100vw - 28px);
+            margin: 0 auto;
             padding: 12px 6px 11px;
-            background: rgba(255, 255, 255, 0.85);
+            background: linear-gradient(145deg, rgba(255,255,255,.80), rgba(255,255,255,.58));
             border: 1px solid rgba(255,255,255,.92);
             box-shadow: 0 18px 42px rgba(0,0,0,.09), 0 2px 8px rgba(0,0,0,.03);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
             border-radius: 31px;
             overflow: hidden;
             padding-bottom: calc(11px + env(safe-area-inset-bottom));
+            overscroll-behavior: contain;
         }
         .ios-social-viewport {
             width: 100%;
@@ -626,7 +635,7 @@
             .widget-icon { width: 46px; height: 46px; flex-basis: 46px; }
             .widget-sub { font-size: 17px; }
             .widget-desc { font-size: 12px; }
-            .ios-social-shell { width: 100%; }
+            .ios-social-shell { width: 100%; max-width: 400px; }
             .ios-social-page { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
             .ios-social-button { width: 68px; height: 68px; border-radius: 18px; }
             .ios-social-button svg { width: 44px; height: 44px; }
@@ -648,7 +657,7 @@
             .widget-icon svg { width: 20px; height: 20px; }
             .widget-sub { font-size: 16px; }
             .widget-desc { font-size: 11px; }
-            .ios-social-shell { width: 100%; }
+            .ios-social-shell { width: 100%; max-width: 320px; }
             .ios-social-button { width: 64px; height: 64px; border-radius: 18px; }
             .ios-social-button svg { width: 40px; height: 40px; }
             .modal-text { font-size: 14px; }
