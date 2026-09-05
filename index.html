@@ -45,7 +45,7 @@
                         var(--color-bg);
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
-            padding: max(8px, env(safe-area-inset-top)) 0 calc(150px + env(safe-area-inset-bottom)); /* ← збільшено відступ */
+            padding: max(8px, env(safe-area-inset-top)) 0 calc(150px + env(safe-area-inset-bottom));
         }
         a { text-decoration: none; color: inherit; }
         .page {
@@ -377,19 +377,17 @@
             color: #8e8e93;
         }
 
-        /* Соціальний док (фіксований) */
+        /* Соціальний док (фіксований, виправлений для Safari) */
         .ios-social-shell {
             position: fixed;
             bottom: 0;
-            left: 50%;
-            transform: translateX(-50%) translateZ(0); /* ← апаратне прискорення */
-            will-change: transform; /* ← допомагає при скролі */
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
+            left: 0;
+            right: 0;
+            margin-left: auto;
+            margin-right: auto;
             z-index: 1000;
             width: 480px;
             max-width: calc(100vw - 28px);
-            margin: 0 auto;
             padding: 12px 6px 11px;
             background: linear-gradient(145deg, rgba(255,255,255,.80), rgba(255,255,255,.58));
             border: 1px solid rgba(255,255,255,.92);
@@ -400,6 +398,8 @@
             overflow: hidden;
             padding-bottom: calc(11px + env(safe-area-inset-bottom));
             overscroll-behavior: contain;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
         .ios-social-viewport {
             width: 100%;
