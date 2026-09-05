@@ -40,21 +40,96 @@
         }
         a { text-decoration: none; color: inherit; }
 
-        /* Фоновий шар */
+        /* ═══════════════════════════════════════════════
+           ФОНОВИЙ ШАР — iOS ILLUSION
+           ═══════════════════════════════════════════════ */
         .background-layer {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: 0;
             pointer-events: none;
-            background: 
-                url("data:image/svg+xml,%3Csvg width='300' height='300' viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M30 60 H140 Q160 60 160 80 V140' stroke-width='14' stroke-opacity='0.5'/%3E%3Cpath d='M90 220 V120 Q90 100 110 100 H180' stroke-width='12' stroke-opacity='0.45'/%3E%3Ccircle cx='160' cy='140' r='18' stroke-width='7' stroke-opacity='0.55'/%3E%3Ccircle cx='160' cy='140' r='8' fill='%23ffffff' fill-opacity='0.6'/%3E%3Cpath d='M210 40 H250 Q270 40 270 60 V120' stroke-width='10' stroke-opacity='0.45'/%3E%3Cpath d='M240 200 V160 Q240 140 220 140 H180' stroke-width='11' stroke-opacity='0.45'/%3E%3Ccircle cx='180' cy='140' r='16' stroke-width='6' stroke-opacity='0.5'/%3E%3Cpath d='M50 180 H90 Q110 180 110 160 V130' stroke-width='10' stroke-opacity='0.45'/%3E%3Cpath d='M130 30 V70 Q130 90 150 90 H200' stroke-width='9' stroke-opacity='0.4'/%3E%3Ccircle cx='200' cy='90' r='12' stroke-width='5' stroke-opacity='0.5'/%3E%3C/g%3E%3C/svg%3E") repeat,
-                radial-gradient(ellipse at 20% 20%, rgba(255, 255, 255, 0.6) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(0, 122, 255, 0.15) 0%, transparent 50%),
-                linear-gradient(165deg, #E3F0FA 0%, #B8D8F5 40%, #D0E4FA 70%, #C2DCF5 100%);
-            background-repeat: repeat, no-repeat, no-repeat, no-repeat;
+            overflow: hidden;
+            /* База — м'який вертикальний градієнт */
+            background: linear-gradient(
+                180deg,
+                #F2F6FB 0%,
+                #DCE9F8 25%,
+                #C9DFF5 50%,
+                #D5E7FA 75%,
+                #EAF1FA 100%
+            );
+            will-change: transform;
+        }
+
+        /* Шар 1 — «Аврора»: кольорові димки, що повільно рухаються */
+        .background-layer::before {
+            content: "";
+            position: absolute;
+            inset: -30%;
+            background:
+                radial-gradient(ellipse 60% 50% at 25% 20%,
+                    rgba(0, 122, 255, 0.22) 0%, transparent 60%),
+                radial-gradient(ellipse 55% 45% at 75% 75%,
+                    rgba(88, 86, 214, 0.18) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 55% 50%,
+                    rgba(255, 255, 255, 0.45) 0%, transparent 65%),
+                radial-gradient(ellipse 40% 35% at 85% 20%,
+                    rgba(52, 199, 89, 0.08) 0%, transparent 50%);
+            animation: auroraShift 14s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+
+        /* Шар 2 — Плаваючі світлові орби (розмиті) */
+        .background-layer::after {
+            content: "";
+            position: absolute;
+            inset: -15%;
+            background:
+                radial-gradient(circle 25% at 30% 40%,
+                    rgba(0, 122, 255, 0.12) 0%, transparent 60%),
+                radial-gradient(circle 20% at 70% 60%,
+                    rgba(88, 86, 214, 0.10) 0%, transparent 55%),
+                radial-gradient(circle 30% at 50% 85%,
+                    rgba(255, 255, 255, 0.25) 0%, transparent 50%);
+            filter: blur(40px);
+            animation: orbFloat 10s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+
+        /* Шар 3 — Легка зернистість (як у iOS-шпалерах) */
+        .grain-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            background-size: 256px 256px;
+            background-repeat: repeat;
+            mix-blend-mode: soft-light;
+        }
+
+        @keyframes auroraShift {
+            0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33%  { transform: translate(3%, -2%) scale(1.08) rotate(0.5deg); }
+            66%  { transform: translate(-2%, 1.5%) scale(1.04) rotate(-0.3deg); }
+            100% { transform: translate(1%, -1%) scale(1.06) rotate(0.2deg); }
+        }
+
+        @keyframes orbFloat {
+            0%   { transform: translate(0, 0) scale(1); opacity: 0.8; }
+            50%  { transform: translate(4%, -3%) scale(1.1); opacity: 1; }
+            100% { transform: translate(-3%, 2%) scale(0.95); opacity: 0.9; }
+        }
+
+        /* Зменшення руху для accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            .background-layer::before,
+            .background-layer::after {
+                animation: none;
+            }
         }
 
         /* Контент */
@@ -500,7 +575,9 @@
     </style>
 </head>
 <body>
-    <div class="background-layer"></div>
+    <div class="background-layer">
+        <div class="grain-overlay"></div>
+    </div>
     <div class="content-wrapper">
         <div class="page">
             <!-- Шапка -->
