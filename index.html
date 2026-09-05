@@ -383,18 +383,28 @@
             color: #8e8e93;
         }
 
-        /* Соціальний док (звичайний блок у потоці) */
+        /* Соціальний док — тепер плаваючий */
         .ios-social-shell {
-            position: relative;
-            width: 100%;
-            margin: 20px auto 20px;
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(480px, calc(100% - 20px));
+            z-index: 1000; /* нижче модалок і лайтбокса */
+            margin: 0 auto;
             padding: 12px 6px 11px;
             background: rgba(255, 255, 255, 0.85);
             border: 1px solid rgba(255,255,255,.92);
-            box-shadow: 0 18px 42px rgba(0,0,0,.09), 0 2px 8px rgba(0,0,0,.03);
-            border-radius: 31px;
+            box-shadow: 0 -5px 20px rgba(0,0,0,.08), 0 18px 42px rgba(0,0,0,.09), 0 2px 8px rgba(0,0,0,.03);
+            border-radius: 31px 31px 0 0;
             overflow: hidden;
             padding-bottom: calc(11px + env(safe-area-inset-bottom));
+            transition: opacity .35s ease, transform .35s var(--spring);
+        }
+        body.modal-open .ios-social-shell {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(20px);
         }
         .ios-social-viewport {
             width: 100%;
@@ -652,7 +662,7 @@
             .widget-icon { width: 46px; height: 46px; flex-basis: 46px; }
             .widget-sub { font-size: 17px; }
             .widget-desc { font-size: 12px; }
-            .ios-social-shell { width: 100%; }
+            .ios-social-shell { width: calc(100% - 10px); }
             .ios-social-page { grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; }
             .ios-social-button { width: 68px; height: 68px; border-radius: 18px; }
             .ios-social-button svg { width: 44px; height: 44px; }
@@ -674,7 +684,7 @@
             .widget-icon svg { width: 20px; height: 20px; }
             .widget-sub { font-size: 16px; }
             .widget-desc { font-size: 11px; }
-            .ios-social-shell { width: 100%; }
+            .ios-social-shell { width: calc(100% - 6px); }
             .ios-social-button { width: 64px; height: 64px; border-radius: 18px; }
             .ios-social-button svg { width: 40px; height: 40px; }
             .modal-text { font-size: 14px; }
@@ -785,7 +795,7 @@
         </section>
 
         <!-- Соціальний док -->
-        <div class="ios-social-shell">
+        <div class="ios-social-shell" id="socialDock">
             <div class="ios-social-viewport" id="socialViewport">
                 <div class="ios-social-track" id="socialTrack">
                     <div class="ios-social-page">
@@ -1035,6 +1045,7 @@
                 img.style.transition = 'none';
                 img.style.transform = 'scale(.95)';
                 el.classList.add('active');
+                document.body.classList.add('modal-open');
                 document.body.style.overflow = 'hidden';
                 requestAnimationFrame(function() {
                     requestAnimationFrame(function() {
@@ -1048,6 +1059,7 @@
                 el.classList.remove('active');
                 img.style.transition = '';
                 img.style.transform = '';
+                document.body.classList.remove('modal-open');
                 document.body.style.overflow = '';
             }
 
@@ -1065,6 +1077,7 @@
             var modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.add('active');
+            document.body.classList.add('modal-open');
             document.body.style.overflow = 'hidden';
         };
 
@@ -1072,6 +1085,7 @@
             var modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.remove('active');
+            document.body.classList.remove('modal-open');
             document.body.style.overflow = '';
         };
 
