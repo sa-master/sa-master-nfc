@@ -40,9 +40,7 @@
         }
         a { text-decoration: none; color: inherit; }
 
-        /* ═══════════════════════════════════════════════
-           ФОНОВИЙ ШАР — iOS ILLUSION
-           ═══════════════════════════════════════════════ */
+        /* Фоновий шар — iOS ілюзія */
         .background-layer {
             position: fixed;
             top: 0;
@@ -52,7 +50,6 @@
             z-index: 0;
             pointer-events: none;
             overflow: hidden;
-            /* База — м'який вертикальний градієнт */
             background: linear-gradient(
                 180deg,
                 #F2F6FB 0%,
@@ -63,43 +60,30 @@
             );
             will-change: transform;
         }
-
-        /* Шар 1 — «Аврора»: кольорові димки, що повільно рухаються */
         .background-layer::before {
             content: "";
             position: absolute;
             inset: -30%;
             background:
-                radial-gradient(ellipse 60% 50% at 25% 20%,
-                    rgba(0, 122, 255, 0.22) 0%, transparent 60%),
-                radial-gradient(ellipse 55% 45% at 75% 75%,
-                    rgba(88, 86, 214, 0.18) 0%, transparent 55%),
-                radial-gradient(ellipse 50% 40% at 55% 50%,
-                    rgba(255, 255, 255, 0.45) 0%, transparent 65%),
-                radial-gradient(ellipse 40% 35% at 85% 20%,
-                    rgba(52, 199, 89, 0.08) 0%, transparent 50%);
+                radial-gradient(ellipse 60% 50% at 25% 20%, rgba(0, 122, 255, 0.22) 0%, transparent 60%),
+                radial-gradient(ellipse 55% 45% at 75% 75%, rgba(88, 86, 214, 0.18) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 40% at 55% 50%, rgba(255, 255, 255, 0.45) 0%, transparent 65%),
+                radial-gradient(ellipse 40% 35% at 85% 20%, rgba(52, 199, 89, 0.08) 0%, transparent 50%);
             animation: auroraShift 14s ease-in-out infinite alternate;
             will-change: transform;
         }
-
-        /* Шар 2 — Плаваючі світлові орби (розмиті) */
         .background-layer::after {
             content: "";
             position: absolute;
             inset: -15%;
             background:
-                radial-gradient(circle 25% at 30% 40%,
-                    rgba(0, 122, 255, 0.12) 0%, transparent 60%),
-                radial-gradient(circle 20% at 70% 60%,
-                    rgba(88, 86, 214, 0.10) 0%, transparent 55%),
-                radial-gradient(circle 30% at 50% 85%,
-                    rgba(255, 255, 255, 0.25) 0%, transparent 50%);
+                radial-gradient(circle 25% at 30% 40%, rgba(0, 122, 255, 0.12) 0%, transparent 60%),
+                radial-gradient(circle 20% at 70% 60%, rgba(88, 86, 214, 0.10) 0%, transparent 55%),
+                radial-gradient(circle 30% at 50% 85%, rgba(255, 255, 255, 0.25) 0%, transparent 50%);
             filter: blur(40px);
             animation: orbFloat 10s ease-in-out infinite alternate;
             will-change: transform;
         }
-
-        /* Шар 3 — Легка зернистість (як у iOS-шпалерах) */
         .grain-overlay {
             position: absolute;
             inset: 0;
@@ -110,29 +94,22 @@
             background-repeat: repeat;
             mix-blend-mode: soft-light;
         }
-
         @keyframes auroraShift {
             0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
             33%  { transform: translate(3%, -2%) scale(1.08) rotate(0.5deg); }
             66%  { transform: translate(-2%, 1.5%) scale(1.04) rotate(-0.3deg); }
             100% { transform: translate(1%, -1%) scale(1.06) rotate(0.2deg); }
         }
-
         @keyframes orbFloat {
             0%   { transform: translate(0, 0) scale(1); opacity: 0.8; }
             50%  { transform: translate(4%, -3%) scale(1.1); opacity: 1; }
             100% { transform: translate(-3%, 2%) scale(0.95); opacity: 0.9; }
         }
-
-        /* Зменшення руху для accessibility */
         @media (prefers-reduced-motion: reduce) {
             .background-layer::before,
-            .background-layer::after {
-                animation: none;
-            }
+            .background-layer::after { animation: none; }
         }
 
-        /* Контент */
         .content-wrapper {
             position: relative;
             z-index: 1;
@@ -141,7 +118,6 @@
             flex-direction: column;
             padding: 6px 0 20px;
         }
-
         .page {
             width: min(480px, calc(100% - 20px));
             margin: 0 auto;
@@ -150,7 +126,7 @@
             flex-direction: column;
         }
 
-        /* Шапка */
+        /* Шапка (без змін) */
         .hero {
             position: relative;
             overflow: hidden;
@@ -182,8 +158,6 @@
             0% { opacity: 0; transform: translateY(20px); filter: blur(4px); }
             100% { opacity: 1; transform: translateY(0); filter: blur(0); }
         }
-
-        /* Рядок з логотипом, лінією та текстом */
         .hero-top-row {
             display: flex;
             align-items: center;
@@ -211,16 +185,12 @@
             display: block;
             padding: 0;
         }
-
-        /* Вертикальна лінія */
         .hero-divider {
             width: 1px;
             height: 48px;
             background: rgba(60, 60, 67, 0.15);
             flex-shrink: 0;
         }
-
-        /* Текстовий блок */
         .brand-text {
             flex: 1;
             display: flex;
@@ -268,8 +238,6 @@
             background: none;
             transform: scale(1.05);
         }
-
-        /* Підзаголовок */
         .brand-sub {
             width: 100%;
             font-size: clamp(13px, 2vw, 15px);
@@ -282,7 +250,7 @@
             margin-top: 0;
         }
 
-        /* Галерея */
+        /* Галерея (без змін) */
         .gallery {
             position: relative;
             overflow: hidden;
@@ -354,45 +322,160 @@
         }
         .gallery-dot.active { width: 14px; border-radius: 4px; background: #fff; }
 
-        /* Віджети */
-        .widgets-section { margin: 20px 0 16px; }
-        .widgets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        /* ═══════════════════════════════════════════════
+           НОВИЙ ДИЗАЙН КАРТОК — ФОТО-ТАЙЛИ
+           ═══════════════════════════════════════════════ */
+        .widgets-section {
+            margin: 20px 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
         .widget-card {
             position: relative;
-            padding: 18px 16px 16px;
-            border-radius: 24px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(24px) saturate(200%);
-            -webkit-backdrop-filter: blur(24px) saturate(200%);
-            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            border-radius: var(--radius-card);
+            background: #D2D6DC; /* fallback */
+            background-size: cover;
+            background-position: center;
             box-shadow: var(--glass-shadow);
             cursor: pointer;
-            transition: transform .2s ease, box-shadow .2s ease;
-            display: flex; flex-direction: column; min-height: 130px;
-            opacity: 0; animation: heroReveal .6s ease-out forwards;
+            transition: transform .3s cubic-bezier(.22,.61,.36,1), box-shadow .3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 200px;
+            padding: 20px;
+            opacity: 0;
+            animation: heroReveal .6s ease-out forwards;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        .widget-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to top,
+                rgba(0,0,0,0.75) 0%,
+                rgba(0,0,0,0.35) 40%,
+                rgba(0,0,0,0.05) 70%,
+                rgba(0,0,0,0) 100%
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+        .widget-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.18);
+        }
+        .widget-card:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
         .widget-card:nth-child(1) { animation-delay: .1s; }
         .widget-card:nth-child(2) { animation-delay: .2s; }
         .widget-card:nth-child(3) { animation-delay: .3s; }
         .widget-card:nth-child(4) { animation-delay: .4s; }
-        .widget-card:active { transform: scale(.97); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-        .widget-icon {
-            width: 44px; height: 44px;
-            border-radius: 14px;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 8px; flex: 0 0 44px;
-        }
-        .widget-icon svg { width: 22px; height: 22px; stroke-width: 2.2; fill: none; }
-        .widget-badge {
-            position: absolute; top: 14px; right: 14px;
-            font-size: 14px; font-weight: 800;
-            color: rgba(0,0,0,.06);
-        }
-        .widget-title { font-size: 18px; font-weight: 700; color: #1a1a2e; }
-        .widget-sub { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-top: 2px; }
-        .widget-desc { font-size: 12px; color: #8E8E93; margin-top: 4px; }
 
-        /* Модальні вікна */
+        /* Елементи всередині картки */
+        .widget-icon {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            z-index: 2;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: rgba(255,255,255,0.25);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .widget-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke-width: 2.2;
+            fill: none;
+            stroke: #fff;
+        }
+        .widget-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 2;
+            font-size: 14px;
+            font-weight: 800;
+            color: rgba(255,255,255,0.8);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .widget-content {
+            position: relative;
+            z-index: 2;
+            color: #fff;
+        }
+        .widget-title {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .widget-sub {
+            font-size: 15px;
+            font-weight: 600;
+            opacity: 0.95;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            margin-bottom: 6px;
+        }
+        .widget-desc {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.8;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        /* Адаптивність карток */
+        @media(max-width:480px) {
+            .widget-card {
+                min-height: 170px;
+                padding: 16px;
+                border-radius: 20px;
+            }
+            .widget-icon {
+                width: 36px;
+                height: 36px;
+                border-radius: 12px;
+                top: 12px;
+                left: 12px;
+            }
+            .widget-icon svg { width: 18px; height: 18px; }
+            .widget-title { font-size: 20px; }
+            .widget-sub { font-size: 13px; }
+            .widget-desc { font-size: 11px; }
+            .widget-badge { font-size: 12px; top: 12px; right: 12px; }
+        }
+        @media(max-width:380px) {
+            .widget-card {
+                min-height: 140px;
+                padding: 12px;
+                border-radius: 16px;
+            }
+            .widget-icon {
+                width: 30px;
+                height: 30px;
+                top: 10px;
+                left: 10px;
+            }
+            .widget-icon svg { width: 16px; height: 16px; }
+            .widget-title { font-size: 18px; }
+            .widget-sub { font-size: 12px; }
+            .widget-desc { font-size: 10px; }
+            .widget-badge { font-size: 10px; top: 10px; right: 10px; }
+        }
+
+        /* Модальні вікна (без змін) */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 11000;
             display: flex; align-items: center; justify-content: center;
@@ -447,7 +530,7 @@
         .payment-btn.privat { background: linear-gradient(145deg, #67D45B, #159C35); }
         .payment-btn.mono { background: linear-gradient(145deg, #303034, #09090A); }
 
-        /* Lightbox */
+        /* Lightbox (без змін) */
         .lightbox {
             position: fixed; inset: 0; z-index: 12000;
             display: flex; align-items: center; justify-content: center;
@@ -472,7 +555,7 @@
             backdrop-filter: blur(10px);
         }
 
-        /* Соціальний док */
+        /* Соціальний док (без змін) */
         .ios-social-shell {
             width: 400px; max-width: calc(100vw - 28px);
             margin: auto auto 8px;
@@ -522,7 +605,7 @@
         }
         .ios-social-page-dot.active { width: 15px; border-radius: 5px; background: #6d858f; }
 
-        /* Адаптивність */
+        /* Адаптивність для соцдоку */
         @media(max-width:480px) {
             .page { width: calc(100% - 14px); }
             .hero { padding: 10px 10px 8px; border-radius: 24px; }
@@ -532,14 +615,6 @@
             .brand-name { font-size: 28px; letter-spacing: 0.6px; }
             .brand-badge { font-size: 13px; }
             .brand-sub { font-size: 13px; }
-            .widgets-grid { gap: 10px; }
-            .widget-card { padding: 14px 14px 12px; min-height: 110px; border-radius: 20px; }
-            .widget-icon { width: 36px; height: 36px; border-radius: 12px; }
-            .widget-icon svg { width: 18px; height: 18px; }
-            .widget-title { font-size: 16px; }
-            .widget-sub { font-size: 13px; }
-            .widget-desc { font-size: 11px; }
-            .widget-badge { font-size: 12px; }
             .ios-social-shell { width: 360px; }
             .ios-social-page { grid-template-columns: repeat(4, 68px); column-gap: 12px; }
             .ios-social-item { width: 68px; }
@@ -559,13 +634,6 @@
             .brand-name { font-size: 24px; letter-spacing: 0.5px; }
             .brand-badge { font-size: 12px; }
             .brand-sub { font-size: 12px; }
-            .widget-card { padding: 12px 12px 10px; min-height: 90px; border-radius: 16px; }
-            .widget-icon { width: 30px; height: 30px; }
-            .widget-icon svg { width: 16px; height: 16px; }
-            .widget-title { font-size: 14px; }
-            .widget-sub { font-size: 12px; }
-            .widget-desc { font-size: 10px; }
-            .widget-badge { font-size: 10px; }
             .ios-social-shell { width: 320px; }
             .ios-social-page { grid-template-columns: repeat(4, 64px); column-gap: 10px; }
             .ios-social-item { width: 64px; }
@@ -629,41 +697,54 @@
                 </div>
             </section>
 
-            <!-- Віджети -->
+            <!-- Віджети — нові фото-картки -->
             <section class="widgets-section">
-                <div class="widgets-grid">
-                    <div class="widget-card" data-modal="modalAbout">
-                        <div class="widget-icon" style="background: rgba(0, 122, 255, .10);">
-                            <svg viewBox="0 0 24 24" stroke="#007AFF"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
-                        </div>
-                        <div class="widget-badge">01</div>
+                <!-- Картка 1: Про нас -->
+                <div class="widget-card" data-modal="modalAbout" style="background-image: url('photo-1.jpg');">
+                    <div class="widget-icon">
+                        <svg viewBox="0 0 24 24" stroke="#fff"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="widget-badge">01</div>
+                    <div class="widget-content">
                         <div class="widget-title">ПРО НАС</div>
                         <div class="widget-sub">Досвід, який залишається за стінами</div>
                         <div class="widget-desc">20+ років монтажу сантехніки у новобудовах Києва</div>
                     </div>
-                    <div class="widget-card" data-modal="modalProcess">
-                        <div class="widget-icon" style="background: rgba(52, 199, 89, .10);">
-                            <svg viewBox="0 0 24 24" stroke="#34C759"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
-                        </div>
-                        <div class="widget-badge">02</div>
+                </div>
+
+                <!-- Картка 2: Про роботу -->
+                <div class="widget-card" data-modal="modalProcess" style="background-image: url('photo-2.jpg');">
+                    <div class="widget-icon">
+                        <svg viewBox="0 0 24 24" stroke="#fff"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M8 3v4M16 3v4M3 11h18"/></svg>
+                    </div>
+                    <div class="widget-badge">02</div>
+                    <div class="widget-content">
                         <div class="widget-title">ПРО РОБОТУ</div>
                         <div class="widget-sub">Від задуму — до бездоганного результату</div>
                         <div class="widget-desc">Проєктування, монтаж, здача — повний цикл</div>
                     </div>
-                    <div class="widget-card" data-modal="modalPrice">
-                        <div class="widget-icon" style="background: rgba(255, 149, 0, .10);">
-                            <svg viewBox="0 0 24 24" stroke="#FF9500"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
-                        </div>
-                        <div class="widget-badge">03</div>
+                </div>
+
+                <!-- Картка 3: Про вартість -->
+                <div class="widget-card" data-modal="modalPrice" style="background-image: url('photo-3.jpg');">
+                    <div class="widget-icon">
+                        <svg viewBox="0 0 24 24" stroke="#fff"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round"/></svg>
+                    </div>
+                    <div class="widget-badge">03</div>
+                    <div class="widget-content">
                         <div class="widget-title">ПРО ВАРТІСТЬ</div>
                         <div class="widget-sub">Якість не починається з цифри</div>
                         <div class="widget-desc">Розрахунок під конкретний проєкт, без прихованих платежів</div>
                     </div>
-                    <div class="widget-card" data-modal="modalReviews">
-                        <div class="widget-icon" style="background: rgba(175, 82, 222, .10);">
-                            <svg viewBox="0 0 24 24" stroke="#AF52DE"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </div>
-                        <div class="widget-badge">04</div>
+                </div>
+
+                <!-- Картка 4: Про результат -->
+                <div class="widget-card" data-modal="modalReviews" style="background-image: url('photo-4.jpg');">
+                    <div class="widget-icon">
+                        <svg viewBox="0 0 24 24" stroke="#fff"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </div>
+                    <div class="widget-badge">04</div>
+                    <div class="widget-content">
                         <div class="widget-title">ПРО РЕЗУЛЬТАТ</div>
                         <div class="widget-sub">Те, що не видно. Те, що працює роками.</div>
                         <div class="widget-desc">Надійність, яка залишається за стінами</div>
@@ -751,7 +832,7 @@
                 </div>
             </div>
 
-            <!-- Модальні вікна -->
+            <!-- Модальні вікна (без змін) -->
             <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalAbout')">×</button>
@@ -829,7 +910,7 @@
     </div>
 
     <script>
-        /* ===== ГАЛЕРЕЯ ===== */
+        /* ===== ГАЛЕРЕЯ (без змін) ===== */
         (function() {
             var track = document.getElementById('galleryTrack');
             var dots = document.querySelectorAll('.gallery-dot');
@@ -923,7 +1004,7 @@
             }
         })();
 
-        /* ===== LIGHTBOX ===== */
+        /* ===== LIGHTBOX (без змін) ===== */
         (function() {
             var el = document.getElementById('lightbox');
             var img = document.getElementById('lightboxImage');
@@ -964,7 +1045,7 @@
             });
         })();
 
-        /* ===== МОДАЛКИ ===== */
+        /* ===== МОДАЛКИ (без змін) ===== */
         window.openModal = function(id) {
             var modal = document.getElementById(id);
             if (!modal) return;
@@ -1005,7 +1086,7 @@
             }
         });
 
-        /* ===== СОЦІАЛЬНИЙ ДОК ===== */
+        /* ===== СОЦІАЛЬНИЙ ДОК (без змін) ===== */
         (function social() {
             var track = document.getElementById('socialTrack');
             var dots = document.querySelectorAll('.ios-social-page-dot');
