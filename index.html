@@ -376,7 +376,7 @@
         .ios-social-viewport {
             width: 100%;
             overflow: hidden;
-            touch-action: auto;  /* ← виправлено для горизонтальних свайпів */
+            touch-action: pan-x; /* ← дозволяє тільки горизонтальні жести */
         }
         .ios-social-track {
             display: flex; width: 200%;
@@ -902,7 +902,9 @@
             var viewport = document.getElementById('socialViewport');
             var page = 0,
                 startX = 0,
+                startY = 0,
                 curX = 0,
+                curY = 0,
                 dragging = false;
 
             function update(p, animate) {
@@ -916,18 +918,30 @@
 
             viewport.addEventListener('touchstart', function(e) {
                 startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
                 curX = startX;
+                curY = startY;
                 dragging = true;
             }, { passive: true });
+
             viewport.addEventListener('touchmove', function(e) {
-                if (dragging) curX = e.touches[0].clientX;
-            }, { passive: true });
+                if (!dragging) return;
+                curX = e.touches[0].clientX;
+                curY = e.touches[0].clientY;
+                var diffX = Math.abs(curX - startX);
+                var diffY = Math.abs(curY - startY);
+                if (diffX > diffY) {
+                    e.preventDefault(); // блокуємо вертикальний скрол, щоб горизонтальний свайп працював
+                }
+            }, { passive: false });
+
             viewport.addEventListener('touchend', function() {
                 if (!dragging) return;
                 dragging = false;
                 var diff = curX - startX;
-                if (Math.abs(diff) < 45) return;
-                update(diff < 0 ? page + 1 : page - 1, true);
+                if (Math.abs(diff) >= 45) {
+                    update(diff < 0 ? page + 1 : page - 1, true);
+                }
             });
 
             setTimeout(function() {
