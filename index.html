@@ -6,6 +6,7 @@
     <title>SA-MASTER.PRO — Комплексний монтаж сантехніки</title>
     <meta name="description" content="SA-MASTER.PRO — комплексний монтаж сантехніки у новобудовах Києва. Реалізація сучасних проектних рішень. 0979111871" />
     
+    <!-- OG-теги -->
     <meta property="og:title" content="SA-MASTER.PRO" />
     <meta property="og:description" content="комплексний монтаж сантехніки. Реалізація сучасних проектних рішень. 0979111871" />
     <meta property="og:image" content="https://sa-master.pro/og-image.jpg" />
@@ -33,7 +34,7 @@
             color: var(--color-text);
             background: var(--color-bg);
             -webkit-font-smoothing: antialiased;
-            padding: 0 0 150px;
+            padding: 12px 0 20px;
         }
         a { text-decoration: none; color: inherit; }
         .page {
@@ -45,7 +46,7 @@
         .hero {
             position: relative;
             overflow: hidden;
-            padding: 12px 12px 10px;
+            padding: 16px 16px 12px;
             border-radius: 28px;
             background: rgba(255,255,255,0.72);
             backdrop-filter: blur(20px) saturate(180%);
@@ -74,6 +75,7 @@
             100% { opacity: 1; transform: translateY(0); filter: blur(0); }
         }
 
+        /* Рядок з логотипом, лінією та текстом */
         .hero-top-row {
             display: flex;
             align-items: center;
@@ -102,13 +104,15 @@
             padding: 0;
         }
 
+        /* Вертикальна лінія */
         .hero-divider {
             width: 1px;
             height: 48px;
-            background: rgba(60,60,67,0.15);
+            background: rgba(60, 60, 67, 0.15);
             flex-shrink: 0;
         }
 
+        /* Текстовий блок */
         .brand-text {
             flex: 1;
             display: flex;
@@ -157,6 +161,7 @@
             transform: scale(1.05);
         }
 
+        /* Підзаголовок */
         .brand-sub {
             width: 100%;
             font-size: clamp(13px, 2vw, 15px);
@@ -354,30 +359,17 @@
             backdrop-filter: blur(10px);
         }
 
-        /* Соціальний док (фіксований внизу, bottom: 0) */
+        /* Соціальний док */
         .ios-social-shell {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            width: 400px;
-            max-width: calc(100vw - 28px);
-            padding: 12px 6px 11px;
+            width: 400px; max-width: calc(100vw - 28px);
+            margin: 24px auto 8px; padding: 12px 6px 11px;
             background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(244,248,250,.68));
             border: 1px solid rgba(255,255,255,.92);
             box-shadow: 0 16px 38px rgba(38,75,91,.13), 0 3px 10px rgba(38,75,91,.06);
             backdrop-filter: blur(24px) saturate(170%);
-            -webkit-backdrop-filter: blur(24px) saturate(170%);
-            overflow: hidden;
-            border-radius: 31px;
-            overscroll-behavior: contain;
+            border-radius: 31px; overflow: hidden;
         }
-        .ios-social-viewport {
-            width: 100%;
-            overflow: hidden;
-            touch-action: pan-x; /* ← дозволяє тільки горизонтальні жести */
-        }
+        .ios-social-viewport { width: 100%; overflow: hidden; touch-action: pan-y; }
         .ios-social-track {
             display: flex; width: 200%;
             transform: translate3d(0,0,0);
@@ -418,13 +410,12 @@
 
         /* Адаптивність */
         @media(max-width:480px) {
-            body { padding-bottom: 130px; }
             .page { width: calc(100% - 14px); }
-            .hero { padding: 10px 8px 8px; border-radius: 24px; }
+            .hero { padding: 14px 10px 10px; border-radius: 24px; }
             .hero-top-row { gap: 10px; }
             .logo-wrapper { width: 68px; height: 68px; margin-left: 6px; }
             .hero-divider { height: 40px; }
-            .brand-name { font-size: 28px; letter-spacing: 0.6px; }
+            .brand-name { font-size: 28px; letter-spacing: 0.6px; }  /* ← збільшено */
             .brand-badge { font-size: 13px; }
             .brand-sub { font-size: 13px; }
             .widgets-grid { gap: 10px; }
@@ -448,10 +439,10 @@
             .payment-btn svg { width: 32px; height: 32px; }
         }
         @media(max-width:380px) {
-            .hero { padding: 8px 6px 6px; border-radius: 20px; }
+            .hero { padding: 12px 8px 8px; border-radius: 20px; }
             .logo-wrapper { width: 64px; height: 64px; margin-left: 4px; }
             .hero-divider { height: 36px; }
-            .brand-name { font-size: 24px; letter-spacing: 0.5px; }
+            .brand-name { font-size: 24px; letter-spacing: 0.5px; }  /* ← збільшено */
             .brand-badge { font-size: 12px; }
             .brand-sub { font-size: 12px; }
             .widget-card { padding: 12px 12px 10px; min-height: 90px; border-radius: 16px; }
@@ -902,9 +893,7 @@
             var viewport = document.getElementById('socialViewport');
             var page = 0,
                 startX = 0,
-                startY = 0,
                 curX = 0,
-                curY = 0,
                 dragging = false;
 
             function update(p, animate) {
@@ -918,30 +907,18 @@
 
             viewport.addEventListener('touchstart', function(e) {
                 startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
                 curX = startX;
-                curY = startY;
                 dragging = true;
             }, { passive: true });
-
             viewport.addEventListener('touchmove', function(e) {
-                if (!dragging) return;
-                curX = e.touches[0].clientX;
-                curY = e.touches[0].clientY;
-                var diffX = Math.abs(curX - startX);
-                var diffY = Math.abs(curY - startY);
-                if (diffX > diffY) {
-                    e.preventDefault(); // блокуємо вертикальний скрол, щоб горизонтальний свайп працював
-                }
-            }, { passive: false });
-
+                if (dragging) curX = e.touches[0].clientX;
+            }, { passive: true });
             viewport.addEventListener('touchend', function() {
                 if (!dragging) return;
                 dragging = false;
                 var diff = curX - startX;
-                if (Math.abs(diff) >= 45) {
-                    update(diff < 0 ? page + 1 : page - 1, true);
-                }
+                if (Math.abs(diff) < 45) return;
+                update(diff < 0 ? page + 1 : page - 1, true);
             });
 
             setTimeout(function() {
