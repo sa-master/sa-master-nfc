@@ -1009,9 +1009,13 @@
                     <div class="modal-lead">1 — Знайомство</div>
                     <div class="modal-text">
                         <p>Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою, і надалі продовжую вдосконалювати свою майстерність.</p>
+                        <p>Сантехніка для мене — це більше ніж професія. Це справа, якою я живу.</p>
                         <p>Відвідую різні навчальні семінари, на деяких з них і сам виступаю в ролі спікера, де ділюсь досвідом з колегами.</p>
                         <p>Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
                         <p>У роботі мені допомагають перевірені майстри, з якими ми разом виконуємо проєкти.</p>
+                        <p>Наша мета — реалізувати роботу якісно, щоб сантехніка працювала бездоганно багато років, а за потреби її можна було без проблем модернізувати.</p>
+                        <p>Саме тому використовуємо лише якісні матеріали перевірених роками світових брендів.</p>
+                        <p>Ми не працюємо за демпінговими цінами. Наша вартість відображає рівень експертизи, якість матеріалів та відповідальність за результат.</p>
                         <p>Спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва.</p>
                         <p>Працюємо з дизайн-проєктами без посередників.</p>
                         <p><a href="#" class="next-modal-link" data-next="modalProcess"><em>Далі — як ми працюємо →</em></a></p>
@@ -1043,6 +1047,7 @@
                     <div class="modal-text">
                         <p>Кожен проєкт має власну площу, кількість санвузлів та технічні рішення.</p>
                         <p>Спочатку аналізуємо <strong>дизайн-проєкт</strong>, потім формуємо розрахунок.</p>
+                        <p>Ми не працюємо за демпінговими цінами. Вартість наших послуг відповідає рівню експертизи, якості матеріалів та гарантії на виконані роботи.</p>
                         <p><strong>Оплата 2 000 грн</strong> — це оплата консультації та детального прорахунку вартості робіт.</p>
                         <p><strong>Матеріали прораховуються на об'єкті</strong> після розрахунку вартості робіт, консультації та затвердженого графіка початку робіт.</p>
                         <p><a href="#" class="next-modal-link" data-next="modalReviews"><em>Далі — результат →</em></a></p>
@@ -1277,6 +1282,10 @@
         };
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
+                gtag('event', 'card_open', {
+                    'event_category': 'cards',
+                    'event_label': card.dataset.modal
+                });
                 const modalId = card.dataset.modal;
                 if (modalId) openModal(modalId);
             });
@@ -1301,6 +1310,10 @@
         document.querySelectorAll('.next-modal-link').forEach((link) => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
+                gtag('event', 'next_modal', {
+                    'event_category': 'navigation',
+                    'event_label': link.dataset.next
+                });
                 const currentModal = link.closest('.modal-overlay');
                 const nextModalId = link.dataset.next;
                 if (currentModal && nextModalId) {
@@ -1320,6 +1333,10 @@
         };
         document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
+                gtag('event', 'calc_button', {
+                    'event_category': 'calculator',
+                    'event_label': btn.dataset.group + '_' + btn.dataset.value
+                });
                 const group = btn.dataset.group;
                 const value = btn.dataset.value;
                 if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
@@ -1333,7 +1350,13 @@
 
         const calcPayBtn = document.getElementById('calcPayBtn');
         const calcTelegramBtn = document.getElementById('calcTelegramBtn');
-        calcPayBtn.addEventListener('click', () => openModal('modalPayment'));
+        calcPayBtn.addEventListener('click', () => {
+            gtag('event', 'pay_button', {
+                'event_category': 'calculator',
+                'event_label': 'pay_consultation'
+            });
+            openModal('modalPayment');
+        });
         const paymentModal = document.getElementById('modalPayment');
         paymentModal.addEventListener('click', (e) => {
             if (e.target === paymentModal) {
@@ -1348,8 +1371,19 @@
             calcPayBtn.style.display = 'none';
         });
         calcTelegramBtn.addEventListener('click', () => {
+            gtag('event', 'telegram_send', {
+                'event_category': 'calculator',
+                'event_label': 'send_project'
+            });
             const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
             window.open(`https://t.me/sa_master?text=${message}`, '_blank');
+        });
+
+        document.querySelector('.review-google-btn').addEventListener('click', () => {
+            gtag('event', 'google_review', {
+                'event_category': 'reviews',
+                'event_label': 'google_review_button'
+            });
         });
 
         const socialTrack = document.getElementById('socialTrack');
@@ -1383,6 +1417,15 @@
             const yearSpan = document.getElementById('currentYear');
             if (yearSpan) yearSpan.textContent = new Date().getFullYear();
         });
+    </script>
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XECEJ8EL4T"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XECEJ8EL4T');
     </script>
 </body>
 </html>
