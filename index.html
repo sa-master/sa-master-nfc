@@ -430,13 +430,25 @@
         .modal-text p { margin: 0 0 0.625rem; }
         .modal-text strong { color: var(--color-modal-title); }
         .modal-photo {
-            display: block;
-            width: 5.5rem;
-            height: 5.5rem;
+            float: left;
+            width: 5rem;
+            height: 5rem;
             object-fit: cover;
             border-radius: 50%;
-            margin: 0 auto 0.75rem;
+            margin: 0 0.875rem 0.5rem 0;
             border: 0.1875rem solid #fff;
+        }
+        .next-modal-link {
+            color: var(--color-primary);
+            font-style: italic;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.2s ease;
+        }
+        .next-modal-link:hover {
+            opacity: 0.7;
+            text-decoration: underline;
         }
         .payment-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
         .payment-btn {
@@ -603,10 +615,16 @@
         .review-philosophy p:last-child { margin-bottom: 0; }
         .review-item {
             margin-top: 0.75rem;
-            padding: 0.875rem;
+            padding: 1rem;
             border-radius: 0.875rem;
-            background: rgba(120, 130, 140, 0.05);
-            border: 1px solid rgba(120, 130, 140, 0.1);
+            background: #ffffff;
+            border: 1px solid rgba(120, 130, 140, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.04);
+        }
+        body.dark-mode .review-item {
+            background: #2C2C2E;
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
         .review-item-text {
             font-size: 0.875rem;
@@ -618,7 +636,17 @@
             font-size: 0.75rem;
             font-weight: 600;
             color: var(--color-modal-title);
-            margin-top: 0.5rem;
+            margin-top: 0.625rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .review-item-author::before {
+            content: "";
+            display: inline-block;
+            width: 1.5rem;
+            height: 1px;
+            background: rgba(120, 130, 140, 0.4);
         }
         .review-google-btn {
             display: flex;
@@ -978,13 +1006,15 @@
                     <button class="modal-close" type="button" onclick="closeModal('modalAbout')" aria-label="Закрити">×</button>
                     <img class="modal-photo" src="your-photo.jpg" alt="Сергій" loading="lazy" />
                     <div class="modal-title">Про нас</div>
-                    <div class="modal-lead">Частина 1 — Знайомство</div>
+                    <div class="modal-lead">1 — Знайомство</div>
                     <div class="modal-text">
-                        <p>Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою.</p>
+                        <p>Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою, і надалі продовжую вдосконалювати свою майстерність.</p>
+                        <p>Відвідую різні навчальні семінари, на деяких з них і сам виступаю в ролі спікера, де ділюсь досвідом з колегами.</p>
                         <p>Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
-                        <p>Спеціалізуюсь на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва.</p>
-                        <p>Працюю з дизайн-проєктами без посередників.</p>
-                        <p><em>Далі — як ми працюємо →</em></p>
+                        <p>У роботі мені допомагають перевірені майстри, з якими ми разом виконуємо проєкти.</p>
+                        <p>Спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва.</p>
+                        <p>Працюємо з дизайн-проєктами без посередників.</p>
+                        <p><a href="#" class="next-modal-link" data-next="modalProcess"><em>Далі — як ми працюємо →</em></a></p>
                     </div>
                 </div>
             </div>
@@ -992,16 +1022,16 @@
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalProcess')" aria-label="Закрити">×</button>
                     <div class="modal-title">Про роботу</div>
-                    <div class="modal-lead">Частина 2 — Порядок співпраці</div>
+                    <div class="modal-lead">2 — Порядок співпраці</div>
                     <div class="modal-text">
                         <p><strong>01. Географія</strong><br />Працюємо лише по м. Київ.</p>
                         <p><strong>02. Умови початку робіт</strong><br />Приступаємо до виконання робіт за наявності геометрії приміщень (після штукатурних робіт) та чіткого розуміння концепції.</p>
                         <p><strong>03. Планування графіка</strong><br />Графік плануємо завчасно — за 1–2 місяці.</p>
                         <p><strong>04. Бронювання графіка</strong><br />Бронюємо графік після внесення авансу 50%. Аванс не повертається при перенесенні з вини замовника.</p>
-                        <p><strong>05. Комплектація</strong><br />Комплектацією займаємось самостійно: закупка, доставка, прийом товару. Можемо допомогти у виборі та закупівлі матеріалів.</p>
+                        <p><strong>05. Комплектація</strong><br />Комплектацією займаємось самостійно: закупка, доставка, прийом товару. Можемо допомогти у виборі та закупівлі приладів.</p>
                         <p><strong>06. Готовність об'єкта</strong><br />На момент початку робіт об'єкт має бути закомплектований сантехприладами: інсталяції для унітазів, вбудовані частини змішувачів, трапи, радіатори.</p>
-                        <p><strong>07. Ідеальні умови</strong><br />Коли й чорнові матеріали теж закуплені.</p>
-                        <p><em>Далі — вартість →</em></p>
+                        <p><strong>07. Ідеальні умови</strong><br />Коли закуплені сантехприлади та чорнові матеріали.</p>
+                        <p><a href="#" class="next-modal-link" data-next="modalPrice"><em>Далі — вартість →</em></a></p>
                     </div>
                 </div>
             </div>
@@ -1009,13 +1039,13 @@
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalPrice')" aria-label="Закрити">×</button>
                     <div class="modal-title">Про вартість</div>
-                    <div class="modal-lead">Частина 3 — Інвестиція в якість</div>
+                    <div class="modal-lead">3 — Інвестиція в якість</div>
                     <div class="modal-text">
                         <p>Кожен проєкт має власну площу, кількість санвузлів та технічні рішення.</p>
                         <p>Спочатку аналізуємо <strong>дизайн-проєкт</strong>, потім формуємо розрахунок.</p>
                         <p><strong>Оплата 2 000 грн</strong> — це оплата консультації та детального прорахунку вартості робіт.</p>
-                        <p><strong>Матеріали прораховуються на об'єкті</strong> після розрахунку вартості робіт та консультації.</p>
-                        <p><em>Далі — результат →</em></p>
+                        <p><strong>Матеріали прораховуються на об'єкті</strong> після розрахунку вартості робіт, консультації та затвердженого графіка початку робіт.</p>
+                        <p><a href="#" class="next-modal-link" data-next="modalReviews"><em>Далі — результат →</em></a></p>
                     </div>
 
                     <div class="calc">
@@ -1073,7 +1103,7 @@
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalReviews')" aria-label="Закрити">×</button>
                     <div class="modal-title">Про результат</div>
-                    <div class="modal-lead">Частина 4 — Фінал</div>
+                    <div class="modal-lead">4 — Відгуки</div>
                     <div class="modal-text">
                         <p>Найважливіша частина роботи залишається <strong>за стінами</strong>.</p>
                         <p>Ми приділяємо увагу деталям, які не видно після оздоблення.</p>
@@ -1266,6 +1296,18 @@
                 const open = document.querySelector('.modal-overlay.active');
                 if (open) closeModal(open.id);
             }
+        });
+
+        document.querySelectorAll('.next-modal-link').forEach((link) => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const currentModal = link.closest('.modal-overlay');
+                const nextModalId = link.dataset.next;
+                if (currentModal && nextModalId) {
+                    closeModal(currentModal.id);
+                    setTimeout(() => openModal(nextModalId), 300);
+                }
+            });
         });
 
         const calcState = { bathrooms: 1, system: 'tee' };
