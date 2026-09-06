@@ -1180,6 +1180,9 @@
     </div>
 
     <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+
         const toggleBtn = document.getElementById('themeToggle');
         const body = document.body;
         const getInitialTheme = () => {
@@ -1282,10 +1285,12 @@
         };
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
-                gtag('event', 'card_open', {
-                    'event_category': 'cards',
-                    'event_label': card.dataset.modal
-                });
+                if (typeof gtag === 'function') {
+                    gtag('event', 'card_open', {
+                        'event_category': 'cards',
+                        'event_label': card.dataset.modal
+                    });
+                }
                 const modalId = card.dataset.modal;
                 if (modalId) openModal(modalId);
             });
@@ -1310,10 +1315,12 @@
         document.querySelectorAll('.next-modal-link').forEach((link) => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                gtag('event', 'next_modal', {
-                    'event_category': 'navigation',
-                    'event_label': link.dataset.next
-                });
+                if (typeof gtag === 'function') {
+                    gtag('event', 'next_modal', {
+                        'event_category': 'navigation',
+                        'event_label': link.dataset.next
+                    });
+                }
                 const currentModal = link.closest('.modal-overlay');
                 const nextModalId = link.dataset.next;
                 if (currentModal && nextModalId) {
@@ -1333,10 +1340,12 @@
         };
         document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
-                gtag('event', 'calc_button', {
-                    'event_category': 'calculator',
-                    'event_label': btn.dataset.group + '_' + btn.dataset.value
-                });
+                if (typeof gtag === 'function') {
+                    gtag('event', 'calc_button', {
+                        'event_category': 'calculator',
+                        'event_label': btn.dataset.group + '_' + btn.dataset.value
+                    });
+                }
                 const group = btn.dataset.group;
                 const value = btn.dataset.value;
                 if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
@@ -1351,10 +1360,12 @@
         const calcPayBtn = document.getElementById('calcPayBtn');
         const calcTelegramBtn = document.getElementById('calcTelegramBtn');
         calcPayBtn.addEventListener('click', () => {
-            gtag('event', 'pay_button', {
-                'event_category': 'calculator',
-                'event_label': 'pay_consultation'
-            });
+            if (typeof gtag === 'function') {
+                gtag('event', 'pay_button', {
+                    'event_category': 'calculator',
+                    'event_label': 'pay_consultation'
+                });
+            }
             openModal('modalPayment');
         });
         const paymentModal = document.getElementById('modalPayment');
@@ -1371,19 +1382,23 @@
             calcPayBtn.style.display = 'none';
         });
         calcTelegramBtn.addEventListener('click', () => {
-            gtag('event', 'telegram_send', {
-                'event_category': 'calculator',
-                'event_label': 'send_project'
-            });
+            if (typeof gtag === 'function') {
+                gtag('event', 'telegram_send', {
+                    'event_category': 'calculator',
+                    'event_label': 'send_project'
+                });
+            }
             const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
             window.open(`https://t.me/sa_master?text=${message}`, '_blank');
         });
 
         document.querySelector('.review-google-btn').addEventListener('click', () => {
-            gtag('event', 'google_review', {
-                'event_category': 'reviews',
-                'event_label': 'google_review_button'
-            });
+            if (typeof gtag === 'function') {
+                gtag('event', 'google_review', {
+                    'event_category': 'reviews',
+                    'event_label': 'google_review_button'
+                });
+            }
         });
 
         const socialTrack = document.getElementById('socialTrack');
