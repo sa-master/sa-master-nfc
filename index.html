@@ -14,24 +14,13 @@
     <meta property="og:url" content="https://sa-master.pro/" />
     <link rel="canonical" href="https://sa-master.pro/" />
     
-    <!-- JSON-LD структуровані дані -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Plumber",
-        "name": "SA-MASTER.PRO",
-        "telephone": "+380979111871",
-        "areaServed": "Київ, Україна",
-        "description": "Комплексний монтаж сантехніки у новобудовах Києва"
-    }
-    </script>
-    
     <link rel="icon" type="image/png" href="logo.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     
     <style>
+        /* ===== БАЗОВІ ЗМІННІ ===== */
         :root {
             --color-primary: #007AFF;
             --color-text: #1C1C1E;
@@ -48,14 +37,14 @@
             --color-modal-title: #1C1C1E;
             --color-footer-text: #6D6D72;
             --color-focus: #007AFF;
-            --color-chevron: rgba(60, 60, 67, 0.3);
-            --radius-card: 0.625rem;
+            --radius-card: 0.875rem;
             --radius-modal: 1.25rem;
             --radius-social: 1.75rem;
             --radius-gallery: 1.25rem;
             --transition: 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
 
+        /* ===== ТЕМНА ТЕМА ===== */
         body.dark-mode {
             --color-primary: #0A84FF;
             --color-text: #F2F2F7;
@@ -64,7 +53,7 @@
             --color-bg: #1C1C1E;
             --color-bg-gradient-start: #2C2C2E;
             --color-bg-gradient-end: #1C1C1E;
-            --color-glass-bg: rgba(44, 44, 46, 0.7);
+            --color-glass-bg: rgba(44, 44, 46, 0.55);
             --color-glass-border: rgba(255, 255, 255, 0.12);
             --color-glass-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.4), 0 0.125rem 0.5rem rgba(0, 0, 0, 0.2);
             --color-modal-bg: rgba(28, 28, 30, 0.98);
@@ -72,7 +61,6 @@
             --color-modal-title: #F2F2F7;
             --color-footer-text: #8E8E93;
             --color-focus: #0A84FF;
-            --color-chevron: rgba(255, 255, 255, 0.5);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -91,12 +79,14 @@
         
         a { text-decoration: none; color: inherit; }
         
+        /* Фокус-стани для доступності */
         :focus-visible {
             outline: 0.1875rem solid var(--color-focus);
             outline-offset: 0.125rem;
             border-radius: 0.25rem;
         }
 
+        /* ===== ФОНОВИЙ ШАР ===== */
         .background-layer {
             position: fixed;
             top: 0;
@@ -132,16 +122,19 @@
         }
         
         @media (prefers-reduced-motion: reduce) {
-            .background-layer::before { animation: none; }
+            .background-layer::before {
+                animation: none;
+            }
         }
 
+        /* ===== КОНТЕНТ ===== */
         .content-wrapper {
             position: relative;
             z-index: 1;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            padding: 0.5rem 0 calc(3.5rem + env(safe-area-inset-bottom));
+            padding: 0.5rem 0 1.5rem;
         }
         
         .page {
@@ -152,6 +145,7 @@
             flex-direction: column;
         }
 
+        /* ===== ШАПКА ===== */
         .hero {
             position: relative;
             overflow: hidden;
@@ -259,7 +253,6 @@
             color: var(--color-primary);
             white-space: nowrap;
             transition: color 0.3s ease;
-            cursor: pointer;
         }
         
         .brand-phone:hover {
@@ -267,6 +260,7 @@
             text-decoration: underline;
         }
 
+        /* ===== ПЕРЕМИКАЧ ТЕМИ ===== */
         .theme-toggle {
             flex-shrink: 0;
             width: 2.5rem;
@@ -301,6 +295,7 @@
         body.dark-mode .theme-toggle .icon-sun { display: block; }
         body.dark-mode .theme-toggle .icon-moon { display: none; }
 
+        /* ===== ГАЛЕРЕЯ ===== */
         .gallery {
             position: relative;
             overflow: hidden;
@@ -393,39 +388,94 @@
             background: #fff;
         }
 
-        /* ===== КАРТКИ (ВИСОТА 96px, ОДНАКОВІ ВІДСТУПИ) ===== */
+        /* ===== КАРТКИ (ОНОВЛЕНИЙ ДИЗАЙН) ===== */
         .widgets-section {
             margin: 0.625rem 0;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
+            gap: 0.75rem;
         }
         
         .widget-card {
             position: relative;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 1rem 0.875rem;
+            gap: 0.375rem;
+            padding: 0.75rem;
             border-radius: var(--radius-card);
-            background: var(--color-glass-bg);
+            background: rgba(255, 255, 255, 0.72);
             backdrop-filter: blur(1.5rem) saturate(200%);
             -webkit-backdrop-filter: blur(1.5rem) saturate(200%);
-            border: 1px solid var(--color-glass-border);
-            box-shadow: var(--color-glass-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 
+                0 0.5rem 1.5rem rgba(0, 0, 0, 0.06),
+                0 0.125rem 0.25rem rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
             opacity: 0;
             animation: heroReveal 0.6s ease-out forwards;
-            min-height: 6rem; /* 96px */
+        }
+        
+        body.dark-mode .widget-card {
+            background: rgba(44, 44, 46, 0.72);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 0.5rem 1.5rem rgba(0, 0, 0, 0.35),
+                0 0.125rem 0.25rem rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+        
+        .widget-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(
+                145deg,
+                rgba(255, 255, 255, 0.5) 0%,
+                rgba(255, 255, 255, 0) 40%,
+                rgba(0, 122, 255, 0.03) 100%
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        body.dark-mode .widget-card::before {
+            background: linear-gradient(
+                145deg,
+                rgba(255, 255, 255, 0.08) 0%,
+                rgba(255, 255, 255, 0) 40%,
+                rgba(10, 132, 255, 0.06) 100%
+            );
         }
         
         .widget-card:hover {
             transform: translateY(-0.125rem);
+            box-shadow: 
+                0 0.75rem 2rem rgba(0, 0, 0, 0.08),
+                0 0.25rem 0.5rem rgba(0, 0, 0, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.95);
+        }
+        
+        body.dark-mode .widget-card:hover {
+            box-shadow: 
+                0 0.75rem 2rem rgba(0, 0, 0, 0.45),
+                0 0.25rem 0.5rem rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
         }
         
         .widget-card:active {
             transform: scale(0.98);
+            box-shadow: 
+                0 0.25rem 0.75rem rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.7);
+        }
+        
+        body.dark-mode .widget-card:active {
+            box-shadow: 
+                0 0.25rem 0.75rem rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
         
         .widget-card:nth-child(1) { animation-delay: 0.1s; }
@@ -433,55 +483,101 @@
         .widget-card:nth-child(3) { animation-delay: 0.3s; }
         .widget-card:nth-child(4) { animation-delay: 0.4s; }
         
+        .widget-top {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+        
         .widget-card[data-modal="modalAbout"] .widget-icon {
-            color: #007AFF;
+            background: linear-gradient(145deg, #6BB5FF, #007AFF);
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 122, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
         .widget-card[data-modal="modalProcess"] .widget-icon {
-            color: #34C759;
+            background: linear-gradient(145deg, #7DE09A, #34C759);
+            box-shadow: 0 0.25rem 0.75rem rgba(52, 199, 89, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
         .widget-card[data-modal="modalPrice"] .widget-icon {
-            color: #FF9500;
+            background: linear-gradient(145deg, #FFC266, #FF9500);
+            box-shadow: 0 0.25rem 0.75rem rgba(255, 149, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
         .widget-card[data-modal="modalReviews"] .widget-icon {
-            color: #AF52DE;
+            background: linear-gradient(145deg, #D49BFF, #AF52DE);
+            box-shadow: 0 0.25rem 0.75rem rgba(175, 82, 222, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
         }
         
         .widget-icon {
             flex-shrink: 0;
-            width: auto;
-            height: auto;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         
         .widget-icon svg {
-            width: 1.75rem;
-            height: 1.75rem;
-            stroke-width: 1.8;
+            width: 1.125rem;
+            height: 1.125rem;
+            stroke-width: 2.2;
             fill: none;
-            stroke: currentColor;
+            stroke: #fff;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
         }
         
         .widget-title {
-            font-size: 0.8125rem;
+            flex: 1;
+            font-size: 0.9375rem;
             font-weight: 600;
             color: var(--color-text);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            letter-spacing: -0.2px;
         }
         
         .widget-chevron {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            width: 0.875rem;
-            height: 0.875rem;
-            color: var(--color-chevron);
-            transition: color 0.3s ease;
+            flex-shrink: 0;
+            width: 1rem;
+            height: 1rem;
+            color: var(--color-text-muted);
+            opacity: 0.6;
+        }
+        
+        .widget-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.0625rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .widget-sub {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+            line-height: 1.3;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            letter-spacing: -0.1px;
+        }
+        
+        .widget-desc {
+            font-size: 0.625rem;
+            font-weight: 400;
+            color: var(--color-text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.7;
         }
 
+        /* ===== МОДАЛЬНІ ВІКНА ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -535,11 +631,6 @@
             font-size: 1.125rem;
             cursor: pointer;
             z-index: 5;
-            transition: background 0.2s ease;
-        }
-        
-        .modal-close:hover {
-            background: rgba(120, 130, 140, 0.2);
         }
         
         .modal-title {
@@ -603,6 +694,7 @@
         .payment-btn.privat { background: linear-gradient(145deg, #67D45B, #159C35); }
         .payment-btn.mono { background: linear-gradient(145deg, #303034, #09090A); }
 
+        /* ===== LIGHTBOX ===== */
         .lightbox {
             position: fixed;
             inset: 0;
@@ -711,7 +803,10 @@
         }
         
         .ios-social-button:active { transform: scale(0.91); }
-        .ios-social-button svg { width: 2.75rem; height: 2.75rem; }
+        .ios-social-button svg {
+            width: 2.75rem;
+            height: 2.75rem;
+        }
         
         .ios-phone { background: linear-gradient(145deg, #55f36d, #31dc50); }
         .ios-contact { background: linear-gradient(145deg, #42A5F5, #007AFF); }
@@ -723,7 +818,7 @@
         .ios-payment { background: linear-gradient(145deg, #55f36d, #31dc50); }
         
         .ios-social-label {
-            font-size: 0.75rem;
+            font-size: 0.6875rem;
             font-weight: 500;
             color: var(--color-text-secondary);
             text-align: center;
@@ -750,6 +845,7 @@
             background: var(--color-text-secondary);
         }
 
+        /* ===== ФУТЕР ===== */
         .site-footer {
             width: 100%;
             margin: 0.5rem auto 0;
@@ -765,6 +861,7 @@
             margin: 0;
         }
 
+        /* ===== АДАПТИВНІСТЬ ===== */
         @media (max-width: 30rem) {
             .page { width: calc(100% - 0.875rem); }
             .hero { padding: 0.5rem 0.5rem 0.375rem; border-radius: 1.25rem; }
@@ -772,10 +869,13 @@
             .hero-divider { height: 2.25rem; }
             .brand-name { font-size: 1.625rem; }
             .brand-phone { font-size: 0.75rem; }
-            .widgets-section { gap: 0.375rem; margin: 0.5rem 0; }
-            .widget-card { padding: 0.875rem 0.75rem; min-height: 5.5rem; }
-            .widget-icon svg { width: 1.5rem; height: 1.5rem; }
-            .widget-title { font-size: 0.75rem; }
+            .widgets-section { gap: 0.625rem; margin: 0.5rem 0; }
+            .widget-card { padding: 0.625rem; border-radius: 0.75rem; }
+            .widget-icon { width: 1.75rem; height: 1.75rem; }
+            .widget-icon svg { width: 1rem; height: 1rem; }
+            .widget-title { font-size: 0.8125rem; }
+            .widget-sub { font-size: 0.6875rem; }
+            .widget-desc { font-size: 0.5625rem; }
             .ios-social-shell { width: 22.5rem; margin: 0.5rem auto 0.375rem; }
             .ios-social-page { grid-template-columns: repeat(4, 4rem); column-gap: 0.625rem; }
             .ios-social-item { width: 4rem; }
@@ -790,10 +890,13 @@
             .logo-wrapper { width: 3.5rem; height: 3.5rem; }
             .brand-name { font-size: 1.375rem; }
             .brand-phone { font-size: 0.6875rem; }
-            .widgets-section { gap: 0.3125rem; margin: 0.375rem 0; }
-            .widget-card { padding: 0.75rem 0.625rem; min-height: 5rem; }
-            .widget-icon svg { width: 1.25rem; height: 1.25rem; }
-            .widget-title { font-size: 0.6875rem; }
+            .widgets-section { gap: 0.5rem; margin: 0.375rem 0; }
+            .widget-card { padding: 0.5rem; border-radius: 0.625rem; }
+            .widget-icon { width: 1.5rem; height: 1.5rem; border-radius: 0.3125rem; }
+            .widget-icon svg { width: 0.875rem; height: 0.875rem; }
+            .widget-title { font-size: 0.75rem; }
+            .widget-sub { font-size: 0.625rem; }
+            .widget-desc { font-size: 0.5rem; }
             .ios-social-shell { width: 20rem; margin: 0.375rem auto 0.25rem; }
             .ios-social-page { grid-template-columns: repeat(4, 3.75rem); column-gap: 0.5rem; }
             .ios-social-item { width: 3.75rem; }
@@ -801,7 +904,7 @@
             .ios-social-button svg { width: 2.25rem; height: 2.25rem; }
             .theme-toggle { width: 2rem; height: 2rem; }
             .theme-toggle svg { width: 1rem; height: 1rem; }
-            .footer-text { font-size: 0.625rem; }
+            .footer-text { font-size: 0.5625rem; }
         }
     </style>
 </head>
@@ -810,6 +913,7 @@
     
     <div class="content-wrapper">
         <div class="page">
+            <!-- Шапка -->
             <section class="hero">
                 <div class="hero-header">
                     <div class="hero-top-row">
@@ -825,7 +929,7 @@
                                 </a>
                             </div>
                             <div class="brand-sub">комплексний монтаж сантехніки</div>
-                            <a href="tel:+380979111871" class="brand-phone" aria-label="Зателефонувати: +38 (097) 911-18-71">+38 (097) 911-18-71</a>
+                            <a href="tel:+380979111871" class="brand-phone" aria-label="Зателефонувати">+38 (097) 911-18-71</a>
                         </div>
                         <button class="theme-toggle" id="themeToggle" type="button" aria-label="Перемкнути тему">
                             <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -839,18 +943,19 @@
                     </div>
                 </div>
 
+                <!-- Галерея -->
                 <div class="gallery">
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки у новобудові — приклад 1" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж інсталяції Geberit — приклад 2" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Підключення змішувача GROHE — приклад 3" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж системи Akvantis — приклад 4" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Розведення труб у санвузлі — приклад 5" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Встановлення душової системи — приклад 6" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж радіатора — приклад 7" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Готовий санвузол — приклад 8" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки у новобудові — приклад 1" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
                         </div>
                         <div class="gallery-counter" id="galleryCounter" aria-live="polite">1 / 8</div>
                         <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Навігація по фото">
@@ -867,55 +972,83 @@
                 </div>
             </section>
 
+            <!-- КАРТКИ -->
             <section class="widgets-section" aria-label="Інформація про послуги">
                 <div class="widget-card" data-modal="modalAbout" role="button" tabindex="0" aria-label="Дізнатися про нас">
-                    <div class="widget-icon">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M5.5 20c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/></svg>
+                    <div class="widget-top">
+                        <div class="widget-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
+                        </div>
+                        <div class="widget-title">ПРО НАС</div>
+                        <div class="widget-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                        </div>
                     </div>
-                    <div class="widget-title">ПРО НАС</div>
-                    <div class="widget-chevron" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                    <div class="widget-text">
+                        <div class="widget-sub">Досвід, який залишається за стінами</div>
+                        <div class="widget-desc">20+ років монтажу</div>
                     </div>
                 </div>
 
                 <div class="widget-card" data-modal="modalProcess" role="button" tabindex="0" aria-label="Дізнатися про процес роботи">
-                    <div class="widget-icon">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 0-6.9 6.9L3 18.9V21h2.1l4.8-4.8a5 5 0 0 0 6.9-6.9l-2.9 2.9-2.1-2.1 2.9-2.9z"/></svg>
+                    <div class="widget-top">
+                        <div class="widget-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 0-6.9 6.9L3 18.9V21h2.1l4.8-4.8a5 5 0 0 0 6.9-6.9l-2.9 2.9-2.1-2.1 2.9-2.9z"/></svg>
+                        </div>
+                        <div class="widget-title">ПРО РОБОТУ</div>
+                        <div class="widget-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                        </div>
                     </div>
-                    <div class="widget-title">ПРО РОБОТУ</div>
-                    <div class="widget-chevron" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                    <div class="widget-text">
+                        <div class="widget-sub">Від задуму — до результату</div>
+                        <div class="widget-desc">Проєкт, монтаж, здача</div>
                     </div>
                 </div>
 
                 <div class="widget-card" data-modal="modalPrice" role="button" tabindex="0" aria-label="Дізнатися про вартість">
-                    <div class="widget-icon">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9h5a2 2 0 0 1 0 4h-4a2 2 0 0 0 0 4h5"/></svg>
+                    <div class="widget-top">
+                        <div class="widget-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <text x="12" y="16" text-anchor="middle" font-size="14" font-weight="700" fill="white">$</text>
+                            </svg>
+                        </div>
+                        <div class="widget-title">ПРО ВАРТІСТЬ</div>
+                        <div class="widget-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                        </div>
                     </div>
-                    <div class="widget-title">ПРО ВАРТІСТЬ</div>
-                    <div class="widget-chevron" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                    <div class="widget-text">
+                        <div class="widget-sub">Якість не починається з цифри</div>
+                        <div class="widget-desc">Розрахунок під проєкт</div>
                     </div>
                 </div>
 
                 <div class="widget-card" data-modal="modalReviews" role="button" tabindex="0" aria-label="Дізнатися про результати">
-                    <div class="widget-icon">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <div class="widget-top">
+                        <div class="widget-icon">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </div>
+                        <div class="widget-title">ПРО РЕЗУЛЬТАТ</div>
+                        <div class="widget-chevron" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                        </div>
                     </div>
-                    <div class="widget-title">ПРО РЕЗУЛЬТАТ</div>
-                    <div class="widget-chevron" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+                    <div class="widget-text">
+                        <div class="widget-sub">Те, що не видно. Те, що працює роками.</div>
+                        <div class="widget-desc">Надійність за стінами</div>
                     </div>
                 </div>
             </section>
 
+            <!-- Соціальний док -->
             <div class="ios-social-shell">
                 <div class="ios-social-viewport" id="socialViewport">
                     <div class="ios-social-track" id="socialTrack">
                         <div class="ios-social-page">
                             <div class="ios-social-item">
                                 <div class="ios-social-icon-wrap">
-                                    <a class="ios-social-button ios-phone" href="tel:+380979111871" aria-label="Подзвонити: +38 (097) 911-18-71">
+                                    <a class="ios-social-button ios-phone" href="tel:+380979111871" aria-label="Подзвонити">
                                         <svg viewBox="0 0 24 24" fill="none"><path d="M6.62 10.79C8.06 13.62 10.38 15.94 13.21 17.38L15.41 15.18C15.69 14.9 16.08 14.82 16.43 14.94C17.55 15.31 18.75 15.51 20 15.51C20.55 15.51 21 15.96 21 16.51V20C21 20.55 20.55 21 20 21C10.61 21 3 13.39 3 4C3 3.45 3.45 3 4 3H7.5C8.05 3 8.5 3.45 8.5 4C8.5 5.25 8.7 6.45 9.07 7.57C9.18 7.92 9.11 8.31 8.82 8.59L6.62 10.79Z" fill="white"/></svg>
                                     </a>
                                 </div>
@@ -992,14 +1125,16 @@
                 </div>
             </div>
 
+            <!-- Футер -->
             <footer class="site-footer">
                 <p class="footer-text">© <span id="currentYear">2026</span> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
             </footer>
 
+            <!-- Модальні вікна -->
             <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalAbout')" aria-label="Закрити">×</button>
-                    <img class="modal-photo" src="your-photo.jpg" alt="Сергій — майстер сантехніки" loading="lazy" />
+                    <img class="modal-photo" src="your-photo.jpg" alt="Сергій" loading="lazy" />
                     <div class="modal-title">Про нас</div>
                     <div class="modal-lead">Досвід, який залишається за стінами</div>
                     <div class="modal-text">
@@ -1064,6 +1199,7 @@
                 </div>
             </div>
 
+            <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
                 <img id="lightboxImage" src="" alt="" />
