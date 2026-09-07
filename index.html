@@ -33,7 +33,7 @@
       "telephone": "+380979111871",
       "priceRange": "₴₴₴",
       "areaServed": { "@type": "City", "name": "Київ" },
-      "founder": { "@type": "Person", "name": "Сергій Мельник" },
+      "founder": { "@type": "Person", "name": "Сергій" },
       "sameAs": [
         "https://www.instagram.com/sa_master/",
         "https://www.facebook.com/santehmaster/",
@@ -86,7 +86,12 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html { 
             scroll-behavior: smooth; 
-            scrollbar-width: none; /* Приховуємо смугу прокрутки для Firefox */
+            overflow-x: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        html::-webkit-scrollbar {
+            display: none;
         }
         body {
             min-height: 100vh;
@@ -97,11 +102,12 @@
             position: relative;
             padding: 0;
             transition: background 0.3s ease, color 0.3s ease;
-            overflow-y: scroll; /* Забезпечуємо стабільний скрол без смуги */
+            overflow-x: hidden;
             scrollbar-width: none;
+            -ms-overflow-style: none;
         }
-        body::-webkit-scrollbar, html::-webkit-scrollbar {
-            display: none; /* Приховуємо вертикальну полоску прокрутки для Chrome/Safari/Edge */
+        body::-webkit-scrollbar {
+            display: none;
         }
         a { text-decoration: none; color: inherit; }
         :focus-visible {
@@ -268,14 +274,16 @@
         }
         .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
         .gallery-window:active { cursor: grabbing; }
-        .gallery-track { 
-            display: flex; 
+        .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); will-change: transform; }
+        .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
+        .gallery-slide img { 
+            width: 100%; 
             height: 100%; 
-            will-change: transform;
-            transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1); 
+            object-fit: cover; 
+            display: block; 
+            loading: eager;
+            decoding: async;
         }
-        .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; cursor: pointer; }
-        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; will-change: transform; }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -421,8 +429,6 @@
         .widget-text { display: none; }
         .widget-sub { display: none; }
         .widget-desc { display: none; }
-        
-        /* Оновлені модальні вікна в стилі iOS з фіксованою панеллю навігації */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -433,57 +439,60 @@
             padding: 1rem;
             background: rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(1.25rem);
-            -webkit-backdrop-filter: blur(1.25rem);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
         .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
-        
         .modal-box {
             position: relative;
             width: 100%;
             max-width: 25rem;
             max-height: 85vh;
-            display: flex;
-            flex-direction: column;
+            overflow-y: auto;
+            padding: 1.25rem;
             border-radius: var(--radius-modal);
             background: var(--color-modal-bg);
             box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.18);
-            transform: translateY(1.5rem) scale(0.94);
-            opacity: 0;
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            overflow: hidden;
+            transform: translateY(1rem) scale(0.96);
+            transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
-        .modal-overlay.active .modal-box { transform: translateY(0) scale(1); opacity: 1; }
-        
-        /* Збільшений та помітніший хрестик закриття */
+        .modal-box::-webkit-scrollbar {
+            display: none;
+        }
+        .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
         .modal-close {
-            position: absolute;
-            top: 0.875rem;
-            right: 0.875rem;
-            width: 2.25rem;
-            height: 2.25rem;
-            border: none;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            background: rgba(142, 142, 147, 0.2);
-            color: var(--color-text);
-            font-size: 1.375rem;
-            font-weight: 600;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 700;
             cursor: pointer;
-            z-index: 20;
+            z-index: 12001;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            line-height: 1;
+            backdrop-filter: blur(0.625rem);
+            -webkit-backdrop-filter: blur(0.625rem);
         }
-        .modal-close:hover { background: rgba(142, 142, 147, 0.35); transform: scale(1.05); }
-        .modal-close:active { transform: scale(0.9); }
-
-        .modal-header-content {
-            padding: 1.25rem 1.25rem 0.75rem 1.25rem;
-            flex-shrink: 0;
+        .modal-close:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+        .modal-close:active {
+            transform: scale(0.9);
         }
         .modal-title {
             font-size: 1.375rem;
@@ -492,23 +501,7 @@
             padding-right: 3rem;
         }
         .modal-lead { margin-top: 0.25rem; font-size: 0.875rem; font-weight: 600; color: var(--color-primary); }
-
-        /* Контентний блок з прокруткою */
-        .modal-body-scroll {
-            padding: 0 1.25rem;
-            overflow-y: auto;
-            flex: 1;
-            scrollbar-width: thin;
-        }
-        .modal-body-scroll::-webkit-scrollbar {
-            width: 4px;
-        }
-        .modal-body-scroll::-webkit-scrollbar-thumb {
-            background: rgba(142, 142, 147, 0.3);
-            border-radius: 4px;
-        }
-
-        .modal-text { margin-top: 0.5rem; font-size: 0.9375rem; line-height: 1.6; color: var(--color-modal-text); padding-bottom: 1rem; }
+        .modal-text { margin-top: 0.875rem; font-size: 0.9375rem; line-height: 1.6; color: var(--color-modal-text); }
         .modal-text p { margin: 0 0 0.625rem; }
         .modal-text strong { color: var(--color-modal-title); }
         .modal-photo {
@@ -517,37 +510,43 @@
             height: 5rem;
             object-fit: cover;
             border-radius: 50%;
-            margin: 1rem 0 0.5rem 0.875rem;
+            margin: 2.5rem 0 0.5rem 0.875rem;
             border: 0.1875rem solid #fff;
         }
-
-        /* Закріплена панель навігації знизу модального вікна */
         .modal-nav {
+            position: sticky;
+            bottom: 0;
+            background: inherit;
+            padding-top: 1rem;
+            padding-bottom: 0.5rem;
+            margin-top: 1.25rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.875rem 1.25rem;
-            background: var(--color-modal-bg);
-            border-top: 1px solid rgba(120, 130, 140, 0.12);
-            flex-shrink: 0;
+            gap: 0.75rem;
             z-index: 10;
         }
         .modal-nav-arrow {
-            width: 2.375rem;
-            height: 2.375rem;
-            border: 1px solid rgba(120, 130, 140, 0.2);
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 1px solid rgba(120, 130, 140, 0.3);
             border-radius: 50%;
-            background: rgba(120, 130, 140, 0.08);
+            background: rgba(255, 255, 255, 0.9);
             color: var(--color-text-secondary);
-            font-size: 1.125rem;
+            font-size: 1.5rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        body.dark-mode .modal-nav-arrow {
+            background: rgba(60, 60, 67, 0.9);
+            border-color: rgba(255, 255, 255, 0.2);
         }
         .modal-nav-arrow:hover {
-            background: rgba(120, 130, 140, 0.15);
+            background: rgba(255, 255, 255, 1);
             transform: scale(1.05);
         }
         .modal-nav-arrow:active { transform: scale(0.95); }
@@ -567,7 +566,6 @@
             background: var(--color-primary);
             transform: scale(1.4);
         }
-
         .payment-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
         .payment-btn {
             position: relative;
@@ -865,8 +863,6 @@
             color: #F2F2F7;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
-        
-        /* Lightbox Галерея */
         .lightbox {
             position: fixed;
             inset: 0;
@@ -874,88 +870,81 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1rem;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(1.25rem);
-            -webkit-backdrop-filter: blur(1.25rem);
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(1rem);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
         }
         .lightbox.active { opacity: 1; visibility: visible; pointer-events: auto; }
-        .lightbox-container {
-            position: relative;
-            max-width: 100%;
-            max-height: 90vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
         .lightbox img {
             max-width: 100%;
-            max-height: 85vh;
+            max-height: 90vh;
             border-radius: 0.875rem;
             object-fit: contain;
             transform: scale(0.95);
-            transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
-            user-select: none;
+            transition: transform 0.3s ease;
         }
         .lightbox.active img { transform: scale(1); }
         .lightbox-close {
             position: absolute;
-            top: -3rem;
-            right: 0;
-            width: 2.5rem;
-            height: 2.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            top: 1rem;
+            right: 1rem;
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.6);
             color: #fff;
-            font-size: 1.375rem;
+            font-size: 1.5rem;
+            font-weight: 700;
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 12010;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            line-height: 1;
+            z-index: 12001;
         }
-        .lightbox-arrow {
+        .lightbox-close:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+        .lightbox-close:active {
+            transform: scale(0.9);
+        }
+        .lightbox-nav {
             position: absolute;
             top: 50%;
             transform: translateY(-50%);
             width: 3rem;
             height: 3rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(0, 0, 0, 0.5);
             color: #fff;
-            font-size: 1.5rem;
+            font-size: 1.75rem;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 12001;
             backdrop-filter: blur(0.625rem);
-            z-index: 12010;
-            transition: background 0.2s ease, transform 0.2s ease;
         }
-        .lightbox-arrow:hover { background: rgba(255, 255, 255, 0.3); transform: translateY(-50%) scale(1.05); }
-        .lightbox-prev { left: -1rem; }
-        .lightbox-next { right: -1rem; }
-        .lightbox-counter {
-            position: absolute;
-            bottom: -2.5rem;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #fff;
-            font-size: 0.875rem;
-            font-weight: 600;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            backdrop-filter: blur(0.5rem);
+        .lightbox-nav:hover {
+            background: rgba(0, 0, 0, 0.7);
         }
-
+        .lightbox-prev {
+            left: 1rem;
+        }
+        .lightbox-next {
+            right: 1rem;
+        }
         .ios-social-shell {
             width: 25rem;
             max-width: calc(100vw - 1.75rem);
@@ -1041,12 +1030,9 @@
             .ios-social-item { width: 4rem; }
             .ios-social-button { width: 4rem; height: 4rem; }
             .ios-social-button svg { width: 2.5rem; height: 2.5rem; }
-            .modal-box { padding: 0; max-height: 88vh; }
+            .modal-box { padding: 1.125rem 0.875rem 1rem; }
             .theme-toggle { width: 2.25rem; height: 2.25rem; }
             .theme-toggle svg { width: 1.125rem; height: 1.125rem; }
-            .lightbox-arrow { width: 2.5rem; height: 2.5rem; font-size: 1.2rem; }
-            .lightbox-prev { left: 0.25rem; }
-            .lightbox-next { right: 0.25rem; }
         }
         @media (max-width: 23.75rem) {
             .logo-wrapper { width: 3.5rem; height: 3.5rem; }
@@ -1075,7 +1061,7 @@
                 <div class="hero-header">
                     <div class="hero-top-row">
                         <div class="logo-wrapper">
-                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="eager" fetchpriority="high" />
+                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="eager" />
                         </div>
                         <div class="hero-divider"></div>
                         <div class="brand-text">
@@ -1102,15 +1088,15 @@
                 <div class="gallery">
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide" data-index="0"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" fetchpriority="high" /></div>
-                            <div class="gallery-slide" data-index="1"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
-                            <div class="gallery-slide" data-index="2"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
-                            <div class="gallery-slide" data-index="3"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
-                            <div class="gallery-slide" data-index="4"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
-                            <div class="gallery-slide" data-index="5"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
-                            <div class="gallery-slide" data-index="6"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" /></div>
-                            <div class="gallery-slide" data-index="7"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" /></div>
-                            <div class="gallery-slide" data-index="0"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="eager" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="eager" /></div>
+                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
                         </div>
                         <div class="gallery-counter" id="galleryCounter" aria-live="polite">1 / 8</div>
                         <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Навігація по фото">
@@ -1243,27 +1229,23 @@
                 <p class="footer-text">© <span id="currentYear">2026</span> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
             </footer>
 
-            <!-- Модальні вікна із зафіксованою навігацією -->
+            <!-- Модальні вікна -->
             <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalAbout')" aria-label="Закрити">×</button>
-                    <div class="modal-header-content">
-                        <div class="modal-title">Про нас</div>
-                        <div class="modal-lead">1 — Знайомство</div>
-                    </div>
-                    <div class="modal-body-scroll">
-                        <img class="modal-photo" src="your-photo.jpg" alt="Сергій" loading="lazy" />
-                        <div class="modal-text">
-                            <p>Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою, і надалі продовжую вдосконалювати свою майстерність.</p>
-                            <p>Сантехніка для мене — це більше ніж професія. Це справа, якою я живу.</p>
-                            <p>Відвідую різні навчальні семінари, на деяких з них і сам виступаю в ролі спікера, де ділюсь досвідом з колегами.</p>
-                            <p>Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
-                            <p>У роботі мені допомагають перевірені майстри, з якими ми разом виконуємо проєкти.</p>
-                            <p>Наша мета — реалізувати роботу якісно, щоб сантехніка працювала бездоганно багато років, а за потреби її можна було без проблем модернізувати.</p>
-                            <p>Саме тому використовуємо лише якісні матеріали перевірених роками світових брендів.</p>
-                            <p>Спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва.</p>
-                            <p>Працюємо з дизайн-проєктами без посередників.</p>
-                        </div>
+                    <img class="modal-photo" src="your-photo.jpg" alt="Сергій" loading="lazy" />
+                    <div class="modal-title">Про нас</div>
+                    <div class="modal-lead">1 — Знайомство</div>
+                    <div class="modal-text">
+                        <p>Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою, і надалі продовжую вдосконалювати свою майстерність.</p>
+                        <p>Сантехніка для мене — це більше ніж професія. Це справа, якою я живу.</p>
+                        <p>Відвідую різні навчальні семінари, на деяких з них і сам виступаю в ролі спікера, де ділюсь досвідом з колегами.</p>
+                        <p>Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
+                        <p>У роботі мені допомагають перевірені майстри, з якими ми разом виконуємо проєкти.</p>
+                        <p>Наша мета — реалізувати роботу якісно, щоб сантехніка працювала бездоганно багато років, а за потреби її можна було без проблем модернізувати.</p>
+                        <p>Саме тому використовуємо лише якісні матеріали перевірених роками світових брендів.</p>
+                        <p>Спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва.</p>
+                        <p>Працюємо з дизайн-проєктами без посередників.</p>
                     </div>
                     <div class="modal-nav">
                         <button class="modal-nav-arrow" data-direction="prev" aria-label="Назад">←</button>
@@ -1280,20 +1262,16 @@
             <div class="modal-overlay" id="modalProcess" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalProcess')" aria-label="Закрити">×</button>
-                    <div class="modal-header-content">
-                        <div class="modal-title">Про роботу</div>
-                        <div class="modal-lead">2 — Порядок співпраці</div>
-                    </div>
-                    <div class="modal-body-scroll">
-                        <div class="modal-text">
-                            <p><strong>01. Географія</strong><br />Працюємо лише по м. Київ.</p>
-                            <p><strong>02. Умови початку робіт</strong><br />Приступаємо до виконання робіт за наявності геометрії приміщень (після штукатурних робіт) та чіткого розуміння концепції.</p>
-                            <p><strong>03. Планування графіка</strong><br />Графік плануємо завчасно — за 1–2 місяці.</p>
-                            <p><strong>04. Бронювання графіка</strong><br />Бронюємо графік після внесення авансу 50%. Аванс не повертається при перенесенні з вини замовника.</p>
-                            <p><strong>05. Комплектація</strong><br />Комплектацією займаємось самостійно: закупка, доставка, прийом товару. Можемо допомогти у виборі та закупівлі приладів.</p>
-                            <p><strong>06. Готовність об'єкта</strong><br />На момент початку робіт об'єкт має бути закомплектований сантехприладами: інсталяції для унітазів, вбудовані частини змішувачів, трапи, радіатори.</p>
-                            <p><strong>07. Ідеальні умови</strong><br />Коли закуплені сантехприлади та чорнові матеріали.</p>
-                        </div>
+                    <div class="modal-title">Про роботу</div>
+                    <div class="modal-lead">2 — Порядок співпраці</div>
+                    <div class="modal-text">
+                        <p><strong>01. Географія</strong><br />Працюємо лише по м. Київ.</p>
+                        <p><strong>02. Умови початку робіт</strong><br />Приступаємо до виконання робіт за наявності геометрії приміщень (після штукатурних робіт) та чіткого розуміння концепції.</p>
+                        <p><strong>03. Планування графіка</strong><br />Графік плануємо завчасно — за 1–2 місяці.</p>
+                        <p><strong>04. Бронювання графіка</strong><br />Бронюємо графік після внесення авансу 50%. Аванс не повертається при перенесенні з вини замовника.</p>
+                        <p><strong>05. Комплектація</strong><br />Комплектацією займаємось самостійно: закупка, доставка, прийом товару. Можемо допомогти у виборі та закупівлі приладів.</p>
+                        <p><strong>06. Готовність об'єкта</strong><br />На момент початку робіт об'єкт має бути закомплектований сантехприладами: інсталяції для унітазів, вбудовані частини змішувачів, трапи, радіатори.</p>
+                        <p><strong>07. Ідеальні умови</strong><br />Коли закуплені сантехприлади та чорнові матеріали.</p>
                     </div>
                     <div class="modal-nav">
                         <button class="modal-nav-arrow" data-direction="prev" aria-label="Назад">←</button>
@@ -1310,69 +1288,66 @@
             <div class="modal-overlay" id="modalPrice" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalPrice')" aria-label="Закрити">×</button>
-                    <div class="modal-header-content">
-                        <div class="modal-title">Про вартість</div>
-                        <div class="modal-lead">3 — Інвестиція в якість</div>
+                    <div class="modal-title">Про вартість</div>
+                    <div class="modal-lead">3 — Інвестиція в якість</div>
+                    <div class="modal-text">
+                        <p>Кожен проєкт має власну площу, кількість санвузлів та технічні рішення.</p>
+                        <p>Спочатку аналізуємо <strong>дизайн-проєкт</strong>, потім формуємо розрахунок.</p>
+                        <p>Ми не працюємо за демпінговими цінами. Вартість наших послуг відповідає рівню експертизи, якості матеріалів та гарантії на виконані роботи.</p>
+                        <p><strong>Оплата 2 000 грн</strong> — це оплата консультації та детального прорахунку вартості робіт.</p>
+                        <p><strong>Матеріали прораховуються на об'єкті</strong> після розрахунку вартості робіт, консультації та затвердженого графіка початку робіт.</p>
                     </div>
-                    <div class="modal-body-scroll">
-                        <div class="modal-text">
-                            <p>Кожен проєкт має власну площу, кількість санвузлів та технічні рішення.</p>
-                            <p>Спочатку аналізуємо <strong>дизайн-проєкт</strong>, потім формуємо розрахунок.</p>
-                            <p>Ми не працюємо за демпінговими цінами. Вартість наших послуг відповідає рівню експертизи, якості матеріалів та гарантії на виконані роботи.</p>
-                            <p><strong>Оплата 2 000 грн</strong> — це оплата консультації та детального прорахунку вартості робіт.</p>
-                            <p><strong>Матеріали прораховуються на об'єкті</strong> після розрахунку вартості робіт, консультації та затвердженого графіка початку робіт.</p>
-                        </div>
 
-                        <div class="calc">
-                            <div class="calc-title">Швидкий розрахунок</div>
-                            <div class="calc-subtitle">Оберіть параметри вашого проєкту</div>
-                            <div class="calc-group">
-                                <div class="calc-label">Санвузли</div>
-                                <div class="calc-segment">
-                                    <button class="calc-seg-btn active" data-group="bathrooms" data-value="1" type="button">Один</button>
-                                    <button class="calc-seg-btn" data-group="bathrooms" data-value="2" type="button">Два</button>
-                                </div>
-                            </div>
-                            <div class="calc-group">
-                                <div class="calc-label">Система</div>
-                                <div class="calc-segment">
-                                    <button class="calc-seg-btn active" data-group="system" data-value="tee" type="button">Трійникова</button>
-                                    <button class="calc-seg-btn" data-group="system" data-value="radial" type="button">Променева</button>
-                                </div>
-                            </div>
-                            <div class="calc-result">
-                                <div class="calc-result-label">Орієнтовна вартість робіт</div>
-                                <div class="calc-result-value" id="calcPrice">160 000 грн</div>
-                                <div class="calc-result-note">Точний прорахунок — після консультації та погодження технічних моментів</div>
+                    <div class="calc">
+                        <div class="calc-title">Швидкий розрахунок</div>
+                        <div class="calc-subtitle">Оберіть параметри вашого проєкту</div>
+                        <div class="calc-group">
+                            <div class="calc-label">Санвузли</div>
+                            <div class="calc-segment">
+                                <button class="calc-seg-btn active" data-group="bathrooms" data-value="1" type="button">Один</button>
+                                <button class="calc-seg-btn" data-group="bathrooms" data-value="2" type="button">Два</button>
                             </div>
                         </div>
-
-                        <div class="calc-detail">
-                            <div class="calc-detail-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M9 12l2 2 4-4"/>
-                                    <circle cx="12" cy="12" r="9"/>
-                                </svg>
+                        <div class="calc-group">
+                            <div class="calc-label">Система</div>
+                            <div class="calc-segment">
+                                <button class="calc-seg-btn active" data-group="system" data-value="tee" type="button">Трійникова</button>
+                                <button class="calc-seg-btn" data-group="system" data-value="radial" type="button">Променева</button>
                             </div>
-                            <div class="calc-detail-text">
-                                <div class="calc-detail-title">Детальний прорахунок вартості робіт</div>
-                                <div class="calc-detail-desc">Консультація, аналіз проєкту та детальний прорахунок вартості робіт</div>
-                            </div>
-                            <div class="calc-detail-price">2 000 грн</div>
                         </div>
+                        <div class="calc-result">
+                            <div class="calc-result-label">Орієнтовна вартість робіт</div>
+                            <div class="calc-result-value" id="calcPrice">160 000 грн</div>
+                            <div class="calc-result-note">Точний прорахунок — після консультації та погодження технічних моментів</div>
+                        </div>
+                    </div>
 
-                        <button class="calc-pay-btn" id="calcPayBtn" type="button">
-                            Оплатити консультацію та прорахунок
-                        </button>
-
-                        <button class="calc-telegram-btn" id="calcTelegramBtn" type="button" style="display: none;">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M20.66 4.31L3.95 10.75C2.81 11.19 2.82 11.8 3.74 12.07L8.03 13.41L9.67 18.42C9.87 18.97 9.77 19.19 10.36 19.19C10.82 19.19 11.02 18.98 11.27 18.74L13.35 16.72L17.68 19.92C18.48 20.36 19.06 20.13 19.26 19.18L22.11 5.74C22.39 4.59 21.67 4.07 20.66 4.31Z"/>
-                                <path d="M8.18 13.1L17.91 7.08C18.39 6.79 18.83 6.95 18.47 7.27L10.59 14.38L10.29 17.43L9.06 13.64L8.18 13.1Z" fill="#5BC9FF"/>
+                    <div class="calc-detail">
+                        <div class="calc-detail-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 12l2 2 4-4"/>
+                                <circle cx="12" cy="12" r="9"/>
                             </svg>
-                            Надіслати проєкт та чек у Telegram
-                        </button>
+                        </div>
+                        <div class="calc-detail-text">
+                            <div class="calc-detail-title">Детальний прорахунок вартості робіт</div>
+                            <div class="calc-detail-desc">Консультація, аналіз проєкту та детальний прорахунок вартості робіт</div>
+                        </div>
+                        <div class="calc-detail-price">2 000 грн</div>
                     </div>
+
+                    <button class="calc-pay-btn" id="calcPayBtn" type="button">
+                        Оплатити консультацію та прорахунок
+                    </button>
+
+                    <button class="calc-telegram-btn" id="calcTelegramBtn" type="button" style="display: none;">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.66 4.31L3.95 10.75C2.81 11.19 2.82 11.8 3.74 12.07L8.03 13.41L9.67 18.42C9.87 18.97 9.77 19.19 10.36 19.19C10.82 19.19 11.02 18.98 11.27 18.74L13.35 16.72L17.68 19.92C18.48 20.36 19.06 20.13 19.26 19.18L22.11 5.74C22.39 4.59 21.67 4.07 20.66 4.31Z"/>
+                            <path d="M8.18 13.1L17.91 7.08C18.39 6.79 18.83 6.95 18.47 7.27L10.59 14.38L10.29 17.43L9.06 13.64L8.18 13.1Z" fill="#5BC9FF"/>
+                        </svg>
+                        Надіслати проєкт та чек у Telegram
+                    </button>
+
                     <div class="modal-nav">
                         <button class="modal-nav-arrow" data-direction="prev" aria-label="Назад">←</button>
                         <div class="modal-progress">
@@ -1388,65 +1363,63 @@
             <div class="modal-overlay" id="modalReviews" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalReviews')" aria-label="Закрити">×</button>
-                    <div class="modal-header-content">
-                        <div class="modal-title">Про результат</div>
-                        <div class="modal-lead">4 — Відгуки</div>
+                    <div class="modal-title">Про результат</div>
+                    <div class="modal-lead">4 — Відгуки</div>
+
+                    <div class="result-highlight">
+                        <p>Результат — коли про сантехніку <strong>не потрібно думати</strong> роками.</p>
+                        <p class="result-highlight-sub">Найважливіше залишається за стінами.</p>
                     </div>
-                    <div class="modal-body-scroll">
-                        <div class="result-highlight">
-                            <p>Результат — коли про сантехніку <strong>не потрібно думати</strong> роками.</p>
-                            <p class="result-highlight-sub">Найважливіше залишається за стінами.</p>
-                        </div>
 
-                        <div class="review-section-title">Що кажуть клієнти</div>
+                    <div class="review-section-title">Що кажуть клієнти</div>
 
-                        <div class="review-item">
-                            <div class="review-stars">★★★★★</div>
-                            <div class="review-item-text">«Оперативно почали роботи, зробили все дуже гарно. Рекомендую!»</div>
-                            <div class="review-item-author">— Hanna Torosh</div>
-                        </div>
-
-                        <div class="review-item">
-                            <div class="review-stars">★★★★★</div>
-                            <div class="review-item-text">«Чорнова сантехніка виконана бездоганно. Чистий об'єкт після робіт!»</div>
-                            <div class="review-item-author">— Pavlo Mogylevskyi</div>
-                        </div>
-
-                        <div class="review-item">
-                            <div class="review-stars">★★★★★</div>
-                            <div class="review-item-text">«Професіонали, які знають свою роботу і не перестають вдосконалюватися»</div>
-                            <div class="review-item-author">— Galia Tivoniak</div>
-                        </div>
-
-                        <div class="review-item">
-                            <div class="review-stars">★★★★★</div>
-                            <div class="review-item-text">«Якісна робота. Гарна комунікація. Однозначно рекомендую!»</div>
-                            <div class="review-item-author">— Ivan Pustovoi</div>
-                        </div>
-
-                        <div class="review-philosophy">
-                            <p>Відгуки про нас є майже в усіх соцмережах. Нам приємно їх читати.</p>
-                            <p>Та найкращий відгук — коли нас рекомендують знайомим.</p>
-                            <p>А коли сантехніка працює роками, і її показують гостям — це справжня емоція.</p>
-                        </div>
-
-                        <div class="review-social-links">
-                            <a href="https://g.page/r/CWpHrJ6AJRQFEAE" target="_blank" rel="noopener" class="review-social-btn" aria-label="Google Reviews">G</a>
-                            <a href="https://www.instagram.com/s/aGlnaGxpZ2h0OjE3ODk5NzMyMDM2ODI1MTU3?stkn=MTQ4N2JoaTBkZWZvaA==" target="_blank" rel="noopener" class="review-social-btn" aria-label="Instagram Reviews">IG</a>
-                            <a href="https://www.facebook.com/santehmaster/reviews/" target="_blank" rel="noopener" class="review-social-btn" aria-label="Facebook Reviews">FB</a>
-                            <a href="https://rating.faynatown.kyiv.ua/santekhniky/santekhmaster-0bc815" target="_blank" rel="noopener" class="review-social-btn" aria-label="Файна Таун">ФТ</a>
-                        </div>
-
-                        <a class="review-google-btn" href="https://g.page/r/CWpHrJ6AJRQFEAE/review" target="_blank" rel="noopener">
-                            <svg viewBox="0 0 24 24">
-                                <path d="M21.35 11.1H12v3.9h5.35c-.5 2.6-2.6 4.1-5.35 4.1-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8c1.4 0 2.7.5 3.7 1.4l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12s3.6 8 8 8c4.6 0 7.7-3.2 7.7-7.9 0-.5 0-1-.1-1z" fill="#4285F4"/>
-                                <path d="M3.5 6.5l3.2 2.3C7.3 7.3 9.5 6 12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12c0 .8.1 1.5.3 2.2l-.8-7.7z" fill="#EA4335"/>
-                                <path d="M12 21c2.8 0 5.3-1 7-2.7l-3.2-2.5c-1 .7-2.3 1.1-3.8 1.1-2.8 0-5.1-1.9-5.9-4.4l-3.2 2.5C4.3 18.3 7.9 21 12 21z" fill="#34A853"/>
-                                <path d="M21.35 11.1H12v3.9h5.35c-.3 1.4-1 2.6-2.1 3.5l3.2 2.5c1.9-1.8 3-4.3 3-7.4 0-.5 0-1-.1-1.5l.1-1 z" fill="#FBBC05"/>
-                            </svg>
-                            Залишити відгук у Google
-                        </a>
+                    <div class="review-item">
+                        <div class="review-stars">★★★★★</div>
+                        <div class="review-item-text">«Оперативно почали роботи, зробили все дуже гарно. Рекомендую!»</div>
+                        <div class="review-item-author">— Hanna Torosh</div>
                     </div>
+
+                    <div class="review-item">
+                        <div class="review-stars">★★★★★</div>
+                        <div class="review-item-text">«Чорнова сантехніка виконана бездоганно. Чистий об'єкт після робіт!»</div>
+                        <div class="review-item-author">— Pavlo Mogylevskyi</div>
+                    </div>
+
+                    <div class="review-item">
+                        <div class="review-stars">★★★★★</div>
+                        <div class="review-item-text">«Професіонали, які знають свою роботу і не перестають вдосконалюватися»</div>
+                        <div class="review-item-author">— Galia Tivoniak</div>
+                    </div>
+
+                    <div class="review-item">
+                        <div class="review-stars">★★★★★</div>
+                        <div class="review-item-text">«Якісна робота. Гарна комунікація. Однозначно рекомендую!»</div>
+                        <div class="review-item-author">— Ivan Pustovoi</div>
+                    </div>
+
+                    <div class="review-philosophy">
+                        <p>Відгуки про нас є майже в усіх соцмережах. Нам приємно їх читати.</p>
+                        <p>Та найкращий відгук — коли нас рекомендують знайомим.</p>
+                        <p>А коли сантехніка працює роками, і її показують гостям — це справжня емоція.</p>
+                    </div>
+
+                    <div class="review-social-links">
+                        <a href="https://g.page/r/CWpHrJ6AJRQFEAE" target="_blank" rel="noopener" class="review-social-btn" aria-label="Google Reviews">G</a>
+                        <a href="https://www.instagram.com/s/aGlnaGxpZ2h0OjE3ODk5NzMyMDM2ODI1MTU3?stkn=MTQ4N2JoaTBkZWZvaA==" target="_blank" rel="noopener" class="review-social-btn" aria-label="Instagram Reviews">IG</a>
+                        <a href="https://www.facebook.com/santehmaster/reviews/" target="_blank" rel="noopener" class="review-social-btn" aria-label="Facebook Reviews">FB</a>
+                        <a href="https://rating.faynatown.kyiv.ua/santekhniky/santekhmaster-0bc815" target="_blank" rel="noopener" class="review-social-btn" aria-label="Файна Таун">ФТ</a>
+                    </div>
+
+                    <a class="review-google-btn" href="https://g.page/r/CWpHrJ6AJRQFEAE/review" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21.35 11.1H12v3.9h5.35c-.5 2.6-2.6 4.1-5.35 4.1-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8c1.4 0 2.7.5 3.7 1.4l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12s3.6 8 8 8c4.6 0 7.7-3.2 7.7-7.9 0-.5 0-1-.1-1z" fill="#4285F4"/>
+                            <path d="M3.5 6.5l3.2 2.3C7.3 7.3 9.5 6 12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12c0 .8.1 1.5.3 2.2l-.8-7.7z" fill="#EA4335"/>
+                            <path d="M12 21c2.8 0 5.3-1 7-2.7l-3.2-2.5c-1 .7-2.3 1.1-3.8 1.1-2.8 0-5.1-1.9-5.9-4.4l-3.2 2.5C4.3 18.3 7.9 21 12 21z" fill="#34A853"/>
+                            <path d="M21.35 11.1H12v3.9h5.35c-.3 1.4-1 2.6-2.1 3.5l3.2 2.5c1.9-1.8 3-4.3 3-7.4 0-.5 0-1-.1-1.5l.1-1z" fill="#FBBC05"/>
+                        </svg>
+                        Залишити відгук у Google
+                    </a>
+
                     <div class="modal-nav">
                         <button class="modal-nav-arrow" data-direction="prev" aria-label="Назад">←</button>
                         <div class="modal-progress">
@@ -1462,34 +1435,27 @@
             <div class="modal-overlay" id="modalPayment" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalPayment')" aria-label="Закрити">×</button>
-                    <div class="modal-header-content">
-                        <div class="modal-title">Оплата</div>
-                        <div class="modal-lead">Оберіть зручний спосіб</div>
-                    </div>
-                    <div class="modal-body-scroll" style="padding-bottom: 1.25rem;">
-                        <div class="payment-buttons">
-                            <a class="payment-btn privat" href="https://www.privat24.ua/send/4tid8" target="_blank" rel="noopener">
-                                <svg viewBox="0 0 64 64"><rect x="7" y="12" width="50" height="40" rx="8" fill="white"/><path d="M7 24H57" stroke="#36B83D" stroke-width="5"/><text x="32" y="42" text-anchor="middle" font-size="14" font-weight="800" fill="#36B83D">p24</text></svg>
-                                <span>Privat24</span>
-                            </a>
-                            <a class="payment-btn mono" href="https://send.monobank.ua/47w3DWsRew" target="_blank" rel="noopener">
-                                <svg viewBox="0 0 64 64"><rect x="7" y="12" width="50" height="40" rx="8" fill="white"/><path d="M7 24H57" stroke="#171719" stroke-width="5"/><text x="32" y="42" text-anchor="middle" font-size="13" font-weight="800" fill="#171719">mono</text></svg>
-                                <span>monobank</span>
-                            </a>
-                        </div>
+                    <div class="modal-title">Оплата</div>
+                    <div class="modal-lead">Оберіть зручний спосіб</div>
+                    <div class="payment-buttons">
+                        <a class="payment-btn privat" href="https://www.privat24.ua/send/4tid8" target="_blank" rel="noopener">
+                            <svg viewBox="0 0 64 64"><rect x="7" y="12" width="50" height="40" rx="8" fill="white"/><path d="M7 24H57" stroke="#36B83D" stroke-width="5"/><text x="32" y="42" text-anchor="middle" font-size="14" font-weight="800" fill="#36B83D">p24</text></svg>
+                            <span>Privat24</span>
+                        </a>
+                        <a class="payment-btn mono" href="https://send.monobank.ua/47w3DWsRew" target="_blank" rel="noopener">
+                            <svg viewBox="0 0 64 64"><rect x="7" y="12" width="50" height="40" rx="8" fill="white"/><path d="M7 24H57" stroke="#171719" stroke-width="5"/><text x="32" y="42" text-anchor="middle" font-size="13" font-weight="800" fill="#171719">mono</text></svg>
+                            <span>monobank</span>
+                        </a>
                     </div>
                 </div>
             </div>
 
-            <!-- Lightbox Галерея -->
+            <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
-                <div class="lightbox-container">
-                    <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
-                    <button class="lightbox-arrow lightbox-prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">‹</button>
-                    <img id="lightboxImage" src="" alt="" />
-                    <button class="lightbox-arrow lightbox-next" id="lightboxNext" type="button" aria-label="Наступне фото">›</button>
-                    <div class="lightbox-counter" id="lightboxCounter">1 / 8</div>
-                </div>
+                <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
+                <button class="lightbox-nav lightbox-prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">‹</button>
+                <img id="lightboxImage" src="" alt="" />
+                <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Наступне фото">›</button>
             </div>
         </div>
     </div>
@@ -1508,7 +1474,6 @@
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
         });
 
-        // Оптимізована карусель
         const track = document.getElementById('galleryTrack');
         const dots = [...document.querySelectorAll('.gallery-dot')];
         const counter = document.getElementById('galleryCounter');
@@ -1518,35 +1483,29 @@
         let isDragging = false;
         let startX = 0;
         let currentX = 0;
-
         const updateGallery = (animate = true) => {
-            track.style.transition = animate ? 'transform 0.45s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+            track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
             const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
             counter.textContent = `${realIndex + 1} / ${totalSlides}`;
             dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
         };
-
         const nextSlide = () => { currentIndex++; updateGallery(); };
         const prevSlide = () => {
             if (currentIndex <= 0) {
                 currentIndex = totalSlides;
                 updateGallery(false);
-                requestAnimationFrame(() => { requestAnimationFrame(() => { currentIndex--; updateGallery(); }); });
+                requestAnimationFrame(() => { currentIndex--; updateGallery(); });
             } else { currentIndex--; updateGallery(); }
         };
-
         const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
         const stopAutoPlay = () => clearInterval(autoPlayTimer);
-
         track.addEventListener('transitionend', () => {
             if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
         });
-
         dots.forEach((dot, i) => {
             dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
         });
-
         const galleryWindow = document.getElementById('galleryWindow');
         galleryWindow.addEventListener('mouseenter', stopAutoPlay);
         galleryWindow.addEventListener('mouseleave', restartAutoPlay);
@@ -1560,78 +1519,107 @@
             if (!isDragging) return;
             isDragging = false;
             const diff = currentX - startX;
-            if (Math.abs(diff) >= 40) { diff < 0 ? nextSlide() : prevSlide(); }
+            if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
             restartAutoPlay();
         });
         restartAutoPlay();
 
-        // Повноцінна галерея зображень (Lightbox) з можливістю гортання
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
         const lightboxPrev = document.getElementById('lightboxPrev');
         const lightboxNext = document.getElementById('lightboxNext');
-        const lightboxCounter = document.getElementById('lightboxCounter');
-        const gallerySlides = [...document.querySelectorAll('.gallery-slide')];
+        const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
         let lightboxIndex = 0;
-
-        const showLightboxImage = (index) => {
-            if (index < 0) index = totalSlides - 1;
-            if (index >= totalSlides) index = 0;
-            lightboxIndex = index;
-            const imgEl = gallerySlides[lightboxIndex].querySelector('img');
-            lightboxImage.style.transform = 'scale(0.95)';
-            lightboxImage.src = imgEl.src;
-            lightboxImage.alt = imgEl.alt;
-            lightboxCounter.textContent = `${lightboxIndex + 1} / ${totalSlides}`;
-            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
-        };
+        let lightboxStartX = 0;
+        let lightboxCurrentX = 0;
+        let lightboxDragging = false;
 
         const openLightbox = (i) => {
-            stopAutoPlay();
-            showLightboxImage(i);
+            lightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
+            updateLightboxImage();
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
+        };
+
+        const updateLightboxImage = () => {
+            lightboxImage.src = gallerySlides[lightboxIndex].src;
+            lightboxImage.alt = gallerySlides[lightboxIndex].alt;
+            lightboxImage.style.transform = 'scale(0.95)';
+            requestAnimationFrame(() => { 
+                requestAnimationFrame(() => { 
+                    lightboxImage.style.transform = 'scale(1)'; 
+                }); 
+            });
         };
 
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transform = '';
             body.style.overflow = '';
-            restartAutoPlay();
         };
 
-        gallerySlides.forEach((slide) => {
-            slide.addEventListener('click', () => {
-                const idx = parseInt(slide.getAttribute('data-index'), 10);
-                if (!isNaN(idx)) openLightbox(idx);
-            });
-        });
-
-        lightboxClose.addEventListener('click', closeLightbox);
-        lightboxPrev.addEventListener('click', (e) => { e.stopPropagation(); showLightboxImage(lightboxIndex - 1); });
-        lightboxNext.addEventListener('click', (e) => { e.stopPropagation(); showLightboxImage(lightboxIndex + 1); });
-        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
-
-        document.addEventListener('keydown', (e) => {
-            if (!lightbox.classList.contains('active')) return;
-            if (e.key === 'Escape') closeLightbox();
-            if (e.key === 'ArrowLeft') showLightboxImage(lightboxIndex - 1);
-            if (e.key === 'ArrowRight') showLightboxImage(lightboxIndex + 1);
-        });
-
-        // Підтримка свайпів в Lightbox
-        let lbStartX = 0;
-        lightbox.addEventListener('touchstart', (e) => { lbStartX = e.touches[0].clientX; }, { passive: true });
-        lightbox.addEventListener('touchend', (e) => {
-            const diff = e.changedTouches[0].clientX - lbStartX;
-            if (Math.abs(diff) > 50) {
-                if (diff > 0) showLightboxImage(lightboxIndex - 1);
-                else showLightboxImage(lightboxIndex + 1);
+        const navigateLightbox = (direction) => {
+            if (direction === 'next') {
+                lightboxIndex = (lightboxIndex + 1) % totalSlides;
+            } else {
+                lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
             }
+            updateLightboxImage();
+        };
+
+        gallerySlides.forEach((slide, i) => { 
+            slide.addEventListener('click', () => openLightbox(i)); 
+        });
+        lightboxClose.addEventListener('click', closeLightbox);
+        lightboxPrev.addEventListener('click', () => navigateLightbox('prev'));
+        lightboxNext.addEventListener('click', () => navigateLightbox('next'));
+        lightbox.addEventListener('click', (e) => { 
+            if (e.target === lightbox) closeLightbox(); 
+        });
+
+        // Свайп для lightbox
+        lightbox.addEventListener('touchstart', (e) => {
+            lightboxStartX = e.touches[0].clientX;
+            lightboxCurrentX = lightboxStartX;
+            lightboxDragging = true;
         }, { passive: true });
 
-        // Управління модальними вікнами та анімація свайпом в стилі iOS
+        lightbox.addEventListener('touchmove', (e) => {
+            if (lightboxDragging) {
+                lightboxCurrentX = e.touches[0].clientX;
+                const diff = lightboxCurrentX - lightboxStartX;
+                if (Math.abs(diff) > 10) {
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
+
+        lightbox.addEventListener('touchend', () => {
+            if (!lightboxDragging) return;
+            lightboxDragging = false;
+            const diff = lightboxCurrentX - lightboxStartX;
+            if (Math.abs(diff) >= 50) {
+                if (diff < 0) {
+                    navigateLightbox('next');
+                } else {
+                    navigateLightbox('prev');
+                }
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                closeLightbox();
+            } else if (lightbox.classList.contains('active')) {
+                if (e.key === 'ArrowLeft') {
+                    navigateLightbox('prev');
+                } else if (e.key === 'ArrowRight') {
+                    navigateLightbox('next');
+                }
+            }
+        });
+
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
         
         const updateProgress = (activeId) => {
@@ -1650,14 +1638,12 @@
             body.style.overflow = 'hidden';
             updateProgress(id);
         };
-
         const closeModal = (id) => {
             const modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.remove('active');
             body.style.overflow = '';
         };
-
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
@@ -1677,11 +1663,9 @@
                 }
             });
         });
-
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
             overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
         });
-
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const open = document.querySelector('.modal-overlay.active');
@@ -1705,62 +1689,187 @@
                 const targetId = modalOrder[targetIndex];
                 if (targetId !== overlay.id) {
                     closeModal(overlay.id);
-                    setTimeout(() => openModal(targetId), 250);
+                    setTimeout(() => openModal(targetId), 300);
                 }
             });
         });
 
-        // Плавний свайп для перегортання модальних вікон вліво/вправо у стилі iOS
+        // Покращена анімація свайпу для модальних вікон
         document.querySelectorAll('.modal-box').forEach((box) => {
             let startX = 0;
             let startY = 0;
             let isHorizontal = false;
+            let isSwiping = false;
             
             box.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
                 isHorizontal = false;
+                isSwiping = true;
             }, { passive: true });
             
             box.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
                 const diffX = e.touches[0].clientX - startX;
                 const diffY = e.touches[0].clientY - startY;
-                if (Math.abs(diffX) > 25 && Math.abs(diffX) > Math.abs(diffY)) {
+                if (Math.abs(diffX) > 30 && Math.abs(diffX) > Math.abs(diffY)) {
                     isHorizontal = true;
+                    e.preventDefault();
+                    // Додаємо ефект зсуву
+                    box.style.transform = `translateX(${diffX * 0.3}px)`;
+                    box.style.transition = 'none';
                 }
-            }, { passive: true });
+            }, { passive: false });
             
             box.addEventListener('touchend', (e) => {
-                const diffX = e.changedTouches[0].clientX - startX;
-                const diffY = e.changedTouches[0].clientY - startY;
-
+                if (!isSwiping) return;
+                isSwiping = false;
+                
+                // Повертаємо трансформацію
+                box.style.transform = '';
+                box.style.transition = '';
+                
                 if (!isHorizontal) {
-                    if (diffY > 100 && box.querySelector('.modal-body-scroll').scrollTop === 0) {
+                    const diffY = e.changedTouches[0].clientY - startY;
+                    if (diffY > 100 && box.scrollTop === 0) {
                         const overlay = box.closest('.modal-overlay');
                         closeModal(overlay.id);
                     }
                     return;
                 }
-
-                if (Math.abs(diffX) > 60) {
+                
+                const diff = startX - e.changedTouches[0].clientX;
+                if (Math.abs(diff) > 80) {
                     const overlay = box.closest('.modal-overlay');
                     const currentIndex = modalOrder.indexOf(overlay.id);
-                    let targetIndex = currentIndex;
-
-                    if (diffX < 0 && currentIndex < modalOrder.length - 1) {
-                        targetIndex = currentIndex + 1; // Свайп вліво -> наступна картка
-                    } else if (diffX > 0 && currentIndex > 0) {
-                        targetIndex = currentIndex - 1; // Свайп вправо -> попередня картка
+                    
+                    let targetIndex;
+                    if (diff > 0) {
+                        targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
+                    } else {
+                        targetIndex = Math.max(currentIndex - 1, 0);
                     }
-
-                    if (targetIndex !== currentIndex) {
-                        const targetId = modalOrder[targetIndex];
+                    
+                    const targetId = modalOrder[targetIndex];
+                    if (targetId !== overlay.id) {
                         closeModal(overlay.id);
-                        setTimeout(() => openModal(targetId), 250);
+                        setTimeout(() => openModal(targetId), 300);
                     }
                 }
             });
         });
+
+        const calcState = { bathrooms: 1, system: 'tee' };
+        const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
+        const calcPriceElement = document.getElementById('calcPrice');
+        const updateCalc = () => {
+            const key = `${calcState.bathrooms}-${calcState.system}`;
+            const total = calcPrices[key] || 160000;
+            calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
+        };
+        document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (typeof gtag === 'function') {
+                    gtag('event', 'calc_button', {
+                        'event_category': 'calculator',
+                        'event_label': btn.dataset.group + '_' + btn.dataset.value
+                    });
+                }
+                const group = btn.dataset.group;
+                const value = btn.dataset.value;
+                if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
+                else if (group === 'system') calcState.system = value;
+                document.querySelectorAll(`.calc-seg-btn[data-group="${group}"]`).forEach((b) => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateCalc();
+            });
+        });
+        if (calcPriceElement) updateCalc();
+
+        const calcPayBtn = document.getElementById('calcPayBtn');
+        const calcTelegramBtn = document.getElementById('calcTelegramBtn');
+        calcPayBtn.addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'pay_button', {
+                    'event_category': 'calculator',
+                    'event_label': 'pay_consultation'
+                });
+            }
+            openModal('modalPayment');
+        });
+        const paymentModal = document.getElementById('modalPayment');
+        paymentModal.addEventListener('click', (e) => {
+            if (e.target === paymentModal) {
+                closeModal('modalPayment');
+                calcTelegramBtn.style.display = 'flex';
+                calcPayBtn.style.display = 'none';
+            }
+        });
+        document.querySelector('#modalPayment .modal-close').addEventListener('click', () => {
+            closeModal('modalPayment');
+            calcTelegramBtn.style.display = 'flex';
+            calcPayBtn.style.display = 'none';
+        });
+        calcTelegramBtn.addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'telegram_send', {
+                    'event_category': 'calculator',
+                    'event_label': 'send_project'
+                });
+            }
+            const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
+            window.open(`https://t.me/sa_master?text=${message}`, '_blank');
+        });
+
+        document.querySelector('.review-google-btn').addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'google_review', {
+                    'event_category': 'reviews',
+                    'event_label': 'google_review_button'
+                });
+            }
+        });
+
+        const socialTrack = document.getElementById('socialTrack');
+        const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
+        const socialViewport = document.getElementById('socialViewport');
+        let socialPage = 0;
+        let socialStartX = 0;
+        let socialCurrentX = 0;
+        let socialDragging = false;
+        const updateSocial = (page, animate = true) => {
+            socialPage = Math.max(0, Math.min(1, page));
+            socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
+            socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
+            socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
+        };
+        socialViewport.addEventListener('touchstart', (e) => {
+            socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
+        }, { passive: true });
+        socialViewport.addEventListener('touchmove', (e) => {
+            if (socialDragging) socialCurrentX = e.touches[0].clientX;
+        }, { passive: true });
+        socialViewport.addEventListener('touchend', () => {
+            if (!socialDragging) return;
+            socialDragging = false;
+            const diff = socialCurrentX - socialStartX;
+            if (Math.abs(diff) < 45) return;
+            updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const yearSpan = document.getElementById('currentYear');
+            if (yearSpan) yearSpan.textContent = new Date().getFullYear();
+        });
+    </script>
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XECEJ8EL4T"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XECEJ8EL4T');
     </script>
 </body>
 </html>
