@@ -186,7 +186,7 @@
             transition: transform 0.35s ease;
         }
         .logo-wrapper:hover { transform: scale(1.03); }
-        .logo { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .logo { width: 100%; height: 100%; object-fit: contain; display: block; loading: eager; }
         .hero-divider { width: 1px; height: 2.5rem; background: rgba(60, 60, 67, 0.15); flex-shrink: 0; }
         body.dark-mode .hero-divider { background: rgba(255, 255, 255, 0.15); }
         .brand-text { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -262,7 +262,17 @@
         .gallery-window:active { cursor: grabbing; }
         .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
         .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
-        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: lazy; }
+        .gallery-slide img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block; 
+            loading: eager;
+            decoding: async;
+        }
+        .gallery-slide:first-child img {
+            fetchpriority: "high";
+        }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -824,15 +834,28 @@
             visibility: hidden;
             pointer-events: none;
             transition: opacity 0.25s ease, visibility 0.25s ease;
+            touch-action: pan-y;
         }
         .lightbox.active { opacity: 1; visibility: visible; pointer-events: auto; }
-        .lightbox img {
+        .lightbox-content {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
             max-width: 100%;
             max-height: 90vh;
+        }
+        .lightbox img {
+            max-width: 100%;
+            max-height: 85vh;
             border-radius: 0.875rem;
             object-fit: contain;
             transform: scale(0.95);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
         .lightbox.active img { transform: scale(1); }
         .lightbox-close {
@@ -848,6 +871,47 @@
             font-size: 1.25rem;
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
+            z-index: 10;
+        }
+        .lightbox-nav {
+            width: 3rem;
+            height: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
+            backdrop-filter: blur(0.625rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, transform 0.2s ease;
+            flex-shrink: 0;
+            z-index: 10;
+            line-height: 1;
+            padding-bottom: 0.25rem;
+        }
+        .lightbox-nav:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.05);
+        }
+        .lightbox-nav:active {
+            transform: scale(0.95);
+        }
+        .lightbox-counter {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 0.875rem;
+            font-weight: 600;
+            backdrop-filter: blur(0.625rem);
+            z-index: 10;
         }
         .ios-social-shell {
             width: 25rem;
@@ -965,7 +1029,7 @@
                 <div class="hero-header">
                     <div class="hero-top-row">
                         <div class="logo-wrapper">
-                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="lazy" />
+                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="eager" />
                         </div>
                         <div class="hero-divider"></div>
                         <div class="brand-text">
@@ -992,15 +1056,15 @@
                 <div class="gallery">
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" decoding="async" fetchpriority="high" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="eager" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="eager" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="eager" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="eager" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="eager" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="eager" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="eager" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" decoding="async" /></div>
                         </div>
                         <div class="gallery-counter" id="galleryCounter" aria-live="polite">1 / 8</div>
                         <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Навігація по фото">
@@ -1357,7 +1421,12 @@
             <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
-                <img id="lightboxImage" src="" alt="" />
+                <div class="lightbox-content">
+                    <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Попереднє фото">‹</button>
+                    <img id="lightboxImage" src="" alt="" />
+                    <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Наступне фото">›</button>
+                </div>
+                <div class="lightbox-counter" id="lightboxCounter">1 / 8</div>
             </div>
         </div>
     </div>
@@ -1429,26 +1498,118 @@
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
+        const lightboxPrev = document.getElementById('lightboxPrev');
+        const lightboxNext = document.getElementById('lightboxNext');
+        const lightboxCounter = document.getElementById('lightboxCounter');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
-        const openLightbox = (i) => {
-            const index = Math.max(0, Math.min(totalSlides - 1, i));
-            lightboxImage.src = gallerySlides[index].src;
-            lightboxImage.alt = gallerySlides[index].alt;
+        
+        let lightboxIndex = 0;
+        let lightboxStartX = 0;
+        let lightboxCurrentX = 0;
+        let lightboxDragging = false;
+        
+        const updateLightbox = () => {
+            const realIndex = lightboxIndex % totalSlides;
+            lightboxImage.src = gallerySlides[realIndex].src;
+            lightboxImage.alt = gallerySlides[realIndex].alt;
+            lightboxCounter.textContent = `${realIndex + 1} / ${totalSlides}`;
+            
             lightboxImage.style.transform = 'scale(0.95)';
+            lightboxImage.style.opacity = '0.5';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    lightboxImage.style.transform = 'scale(1)';
+                    lightboxImage.style.opacity = '1';
+                });
+            });
+        };
+        
+        const openLightbox = (i) => {
+            lightboxIndex = i;
+            updateLightbox();
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
-            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
         };
+        
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transform = '';
+            lightboxImage.style.opacity = '';
             body.style.overflow = '';
         };
-        gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
+        
+        const lightboxNextSlide = () => {
+            lightboxIndex = (lightboxIndex + 1) % totalSlides;
+            updateLightbox();
+        };
+        
+        const lightboxPrevSlide = () => {
+            lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
+            updateLightbox();
+        };
+        
+        gallerySlides.forEach((slide, i) => { 
+            slide.addEventListener('click', () => openLightbox(i)); 
+        });
+        
         lightboxClose.addEventListener('click', closeLightbox);
-        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+        lightboxNext.addEventListener('click', lightboxNextSlide);
+        lightboxPrev.addEventListener('click', lightboxPrevSlide);
+        
+        lightbox.addEventListener('click', (e) => { 
+            if (e.target === lightbox || e.target === lightbox.querySelector('.lightbox-content')) {
+                closeLightbox(); 
+            }
+        });
+        
+        lightbox.addEventListener('touchstart', (e) => {
+            lightboxStartX = e.touches[0].clientX;
+            lightboxCurrentX = lightboxStartX;
+            lightboxDragging = true;
+        }, { passive: true });
+        
+        lightbox.addEventListener('touchmove', (e) => {
+            if (lightboxDragging) {
+                lightboxCurrentX = e.touches[0].clientX;
+                
+                const diff = lightboxCurrentX - lightboxStartX;
+                if (Math.abs(diff) > 10) {
+                    lightboxImage.style.transform = `translateX(${diff * 0.3}px) scale(0.95)`;
+                    lightboxImage.style.opacity = '0.7';
+                }
+            }
+        }, { passive: true });
+        
+        lightbox.addEventListener('touchend', () => {
+            if (!lightboxDragging) return;
+            lightboxDragging = false;
+            
+            const diff = lightboxCurrentX - lightboxStartX;
+            
+            lightboxImage.style.transform = '';
+            lightboxImage.style.opacity = '';
+            
+            if (Math.abs(diff) >= 50) {
+                if (diff < 0) {
+                    lightboxNextSlide();
+                } else {
+                    lightboxPrevSlide();
+                }
+            } else {
+                updateLightbox();
+            }
+        });
+        
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+            if (lightbox.classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                } else if (e.key === 'ArrowLeft') {
+                    lightboxPrevSlide();
+                } else if (e.key === 'ArrowRight') {
+                    lightboxNextSlide();
+                }
+            }
         });
 
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
@@ -1475,6 +1636,10 @@
             modal.classList.remove('active');
             body.style.overflow = '';
         };
+        
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
