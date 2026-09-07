@@ -84,15 +84,7 @@
             --color-focus: #0A84FF;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { 
-            scroll-behavior: smooth; 
-            overflow-x: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        html::-webkit-scrollbar {
-            display: none;
-        }
+        html { scroll-behavior: smooth; }
         body {
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
@@ -102,12 +94,6 @@
             position: relative;
             padding: 0;
             transition: background 0.3s ease, color 0.3s ease;
-            overflow-x: hidden;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        body::-webkit-scrollbar {
-            display: none;
         }
         a { text-decoration: none; color: inherit; }
         :focus-visible {
@@ -274,16 +260,9 @@
         }
         .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
         .gallery-window:active { cursor: grabbing; }
-        .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); will-change: transform; }
+        .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
         .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
-        .gallery-slide img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            display: block; 
-            loading: eager;
-            decoding: async;
-        }
+        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: lazy; }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -457,49 +436,27 @@
             box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.18);
             transform: translateY(1rem) scale(0.96);
             transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            overscroll-behavior: contain;
-        }
-        .modal-box::-webkit-scrollbar {
-            display: none;
         }
         .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
         .modal-close {
             position: absolute;
             top: 0.75rem;
             right: 0.75rem;
-            width: 2.75rem;
-            height: 2.75rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            width: 2rem;
+            height: 2rem;
+            border: 0;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.6);
-            color: #fff;
-            font-size: 1.5rem;
-            font-weight: 700;
+            background: rgba(120, 130, 140, 0.08);
+            color: var(--color-text-muted);
+            font-size: 1.125rem;
             cursor: pointer;
             z-index: 5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            line-height: 1;
-            backdrop-filter: blur(0.625rem);
-            -webkit-backdrop-filter: blur(0.625rem);
-        }
-        .modal-close:hover {
-            background: rgba(0, 0, 0, 0.8);
-            transform: scale(1.1);
-        }
-        .modal-close:active {
-            transform: scale(0.9);
         }
         .modal-title {
             font-size: 1.375rem;
             font-weight: 700;
             color: var(--color-modal-title);
-            padding-right: 3.5rem;
+            padding-right: 3rem;
         }
         .modal-lead { margin-top: 0.25rem; font-size: 0.875rem; font-weight: 600; color: var(--color-primary); }
         .modal-text { margin-top: 0.875rem; font-size: 0.9375rem; line-height: 1.6; color: var(--color-modal-text); }
@@ -511,43 +468,32 @@
             height: 5rem;
             object-fit: cover;
             border-radius: 50%;
-            margin: 3.5rem 0 0.5rem 0.875rem;
+            margin: 2.5rem 0 0.5rem 0.875rem;
             border: 0.1875rem solid #fff;
         }
         .modal-nav {
-            position: sticky;
-            bottom: -1.25rem;
-            background: inherit;
-            padding: 1rem 0 0.75rem;
-            margin: 1.25rem -1.25rem -1.25rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            margin-top: 1.25rem;
             gap: 0.75rem;
-            z-index: 10;
-            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
         }
         .modal-nav-arrow {
-            width: 2.75rem;
-            height: 2.75rem;
-            border: 1px solid rgba(120, 130, 140, 0.3);
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 1px solid rgba(120, 130, 140, 0.2);
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(120, 130, 140, 0.08);
             color: var(--color-text-secondary);
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        body.dark-mode .modal-nav-arrow {
-            background: rgba(60, 60, 67, 0.9);
-            border-color: rgba(255, 255, 255, 0.2);
+            transition: background 0.2s ease, transform 0.2s ease;
         }
         .modal-nav-arrow:hover {
-            background: rgba(255, 255, 255, 1);
+            background: rgba(120, 130, 140, 0.15);
             transform: scale(1.05);
         }
         .modal-nav-arrow:active { transform: scale(0.95); }
@@ -891,60 +837,17 @@
         .lightbox.active img { transform: scale(1); }
         .lightbox-close {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 2.75rem;
-            height: 2.75rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            top: 0.875rem;
+            right: 0.875rem;
+            width: 2.25rem;
+            height: 2.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(255, 255, 255, 0.08);
             color: #fff;
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-size: 1.25rem;
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            line-height: 1;
-            z-index: 12001;
-        }
-        .lightbox-close:hover {
-            background: rgba(0, 0, 0, 0.8);
-            transform: scale(1.1);
-        }
-        .lightbox-close:active {
-            transform: scale(0.9);
-        }
-        .lightbox-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3rem;
-            height: 3rem;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.5);
-            color: #fff;
-            font-size: 1.75rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            z-index: 12001;
-            backdrop-filter: blur(0.625rem);
-        }
-        .lightbox-nav:hover {
-            background: rgba(0, 0, 0, 0.7);
-        }
-        .lightbox-prev {
-            left: 1rem;
-        }
-        .lightbox-next {
-            right: 1rem;
         }
         .ios-social-shell {
             width: 25rem;
@@ -1062,7 +965,7 @@
                 <div class="hero-header">
                     <div class="hero-top-row">
                         <div class="logo-wrapper">
-                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="eager" />
+                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="lazy" />
                         </div>
                         <div class="hero-divider"></div>
                         <div class="brand-text">
@@ -1089,9 +992,9 @@
                 <div class="gallery">
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" /></div>
-                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="eager" /></div>
-                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="eager" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
                             <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
                             <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
                             <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
@@ -1454,9 +1357,7 @@
             <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
-                <button class="lightbox-nav lightbox-prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">‹</button>
                 <img id="lightboxImage" src="" alt="" />
-                <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Наступне фото">›</button>
             </div>
         </div>
     </div>
@@ -1528,97 +1429,26 @@
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
-        const lightboxPrev = document.getElementById('lightboxPrev');
-        const lightboxNext = document.getElementById('lightboxNext');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
-        let lightboxIndex = 0;
-        let lightboxStartX = 0;
-        let lightboxCurrentX = 0;
-        let lightboxDragging = false;
-
         const openLightbox = (i) => {
-            lightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
-            updateLightboxImage();
+            const index = Math.max(0, Math.min(totalSlides - 1, i));
+            lightboxImage.src = gallerySlides[index].src;
+            lightboxImage.alt = gallerySlides[index].alt;
+            lightboxImage.style.transform = 'scale(0.95)';
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
+            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
         };
-
-        const updateLightboxImage = () => {
-            lightboxImage.src = gallerySlides[lightboxIndex].src;
-            lightboxImage.alt = gallerySlides[lightboxIndex].alt;
-            lightboxImage.style.transform = 'scale(0.95)';
-            requestAnimationFrame(() => { 
-                requestAnimationFrame(() => { 
-                    lightboxImage.style.transform = 'scale(1)'; 
-                }); 
-            });
-        };
-
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transform = '';
             body.style.overflow = '';
         };
-
-        const navigateLightbox = (direction) => {
-            if (direction === 'next') {
-                lightboxIndex = (lightboxIndex + 1) % totalSlides;
-            } else {
-                lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
-            }
-            updateLightboxImage();
-        };
-
-        gallerySlides.forEach((slide, i) => { 
-            slide.addEventListener('click', () => openLightbox(i)); 
-        });
+        gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
         lightboxClose.addEventListener('click', closeLightbox);
-        lightboxPrev.addEventListener('click', () => navigateLightbox('prev'));
-        lightboxNext.addEventListener('click', () => navigateLightbox('next'));
-        lightbox.addEventListener('click', (e) => { 
-            if (e.target === lightbox) closeLightbox(); 
-        });
-
-        // Свайп для lightbox
-        lightbox.addEventListener('touchstart', (e) => {
-            lightboxStartX = e.touches[0].clientX;
-            lightboxCurrentX = lightboxStartX;
-            lightboxDragging = true;
-        }, { passive: true });
-
-        lightbox.addEventListener('touchmove', (e) => {
-            if (lightboxDragging) {
-                lightboxCurrentX = e.touches[0].clientX;
-                const diff = lightboxCurrentX - lightboxStartX;
-                if (Math.abs(diff) > 10) {
-                    e.preventDefault();
-                }
-            }
-        }, { passive: false });
-
-        lightbox.addEventListener('touchend', () => {
-            if (!lightboxDragging) return;
-            lightboxDragging = false;
-            const diff = lightboxCurrentX - lightboxStartX;
-            if (Math.abs(diff) >= 50) {
-                if (diff < 0) {
-                    navigateLightbox('next');
-                } else {
-                    navigateLightbox('prev');
-                }
-            }
-        });
-
+        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.classList.contains('active')) {
-                closeLightbox();
-            } else if (lightbox.classList.contains('active')) {
-                if (e.key === 'ArrowLeft') {
-                    navigateLightbox('prev');
-                } else if (e.key === 'ArrowRight') {
-                    navigateLightbox('next');
-                }
-            }
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
         });
 
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
@@ -1695,45 +1525,24 @@
             });
         });
 
-        // Покращена анімація свайпу для модальних вікон
         document.querySelectorAll('.modal-box').forEach((box) => {
             let startX = 0;
             let startY = 0;
             let isHorizontal = false;
-            let isSwiping = false;
             
             box.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
                 isHorizontal = false;
-                isSwiping = true;
             }, { passive: true });
             
             box.addEventListener('touchmove', (e) => {
-                if (!isSwiping) return;
-                const diffX = e.touches[0].clientX - startX;
-                const diffY = e.touches[0].clientY - startY;
-                if (Math.abs(diffX) > 30 && Math.abs(diffX) > Math.abs(diffY)) {
-                    isHorizontal = true;
-                    e.preventDefault();
-                    // Додаємо ефект зсуву з опором
-                    const resistance = 0.4;
-                    const shift = diffX * resistance;
-                    box.style.transform = `translateX(${shift}px) scale(0.98)`;
-                    box.style.transition = 'none';
-                    box.style.opacity = '0.8';
-                }
-            }, { passive: false });
+                const diffX = Math.abs(e.touches[0].clientX - startX);
+                const diffY = Math.abs(e.touches[0].clientY - startY);
+                if (diffX > 30 && diffX > diffY) isHorizontal = true;
+            }, { passive: true });
             
             box.addEventListener('touchend', (e) => {
-                if (!isSwiping) return;
-                isSwiping = false;
-                
-                // Плавне повернення
-                box.style.transition = 'transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.3s ease';
-                box.style.transform = '';
-                box.style.opacity = '';
-                
                 if (!isHorizontal) {
                     const diffY = e.changedTouches[0].clientY - startY;
                     if (diffY > 100 && box.scrollTop === 0) {
@@ -1757,18 +1566,8 @@
                     
                     const targetId = modalOrder[targetIndex];
                     if (targetId !== overlay.id) {
-                        // Анімація виходу
-                        box.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
-                        box.style.transform = `translateX(${diff > 0 ? '-100%' : '100%'})`;
-                        box.style.opacity = '0';
-                        
-                        setTimeout(() => {
-                            closeModal(overlay.id);
-                            box.style.transform = '';
-                            box.style.opacity = '';
-                            box.style.transition = '';
-                            openModal(targetId);
-                        }, 250);
+                        closeModal(overlay.id);
+                        setTimeout(() => openModal(targetId), 300);
                     }
                 }
             });
