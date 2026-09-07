@@ -258,51 +258,35 @@
             box-shadow: var(--color-glass-shadow);
             margin-top: 0.625rem;
         }
-        .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
+        .gallery-window { 
+            position: relative; 
+            width: 100%; 
+            aspect-ratio: 16/10; 
+            overflow: hidden; 
+            cursor: grab;
+            touch-action: pan-y;
+        }
         .gallery-window:active { cursor: grabbing; }
-        .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
+        .gallery-track { 
+            display: flex; 
+            height: 100%; 
+            transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+            will-change: transform;
+        }
         .gallery-slide { 
             flex: 0 0 100%; 
             height: 100%; 
             overflow: hidden; 
             background: #D2D6DC; 
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
         .gallery-slide img { 
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
             display: block; 
-            opacity: 0;
-            transition: opacity 0.5s ease;
-        }
-        .gallery-slide img.loaded {
             opacity: 1;
-        }
-        .gallery-slide::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(110deg, 
-                #D2D6DC 8%, 
-                #E5E9EE 18%, 
-                #D2D6DC 33%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s linear infinite;
-            z-index: 1;
-        }
-        .gallery-slide img.loaded + .gallery-slide::before {
-            display: none;
-        }
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
+            transition: opacity 0.3s ease;
         }
         .gallery-counter {
             position: absolute;
@@ -320,6 +304,7 @@
             font-size: 0.75rem;
             font-weight: 600;
             backdrop-filter: blur(0.75rem);
+            pointer-events: none;
         }
         .gallery-dots {
             position: absolute;
@@ -343,8 +328,13 @@
             background: rgba(255, 255, 255, 0.5);
             transition: width 0.25s ease, background 0.25s ease;
             cursor: pointer;
+            padding: 0;
         }
-        .gallery-dot.active { width: 0.875rem; border-radius: 0.25rem; background: #fff; }
+        .gallery-dot.active { 
+            width: 0.875rem; 
+            border-radius: 0.25rem; 
+            background: #fff; 
+        }
         .widgets-section { margin: 0.625rem 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
         .widget-card {
             position: relative;
@@ -1076,15 +1066,14 @@
                 <div class="gallery">
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" data-src="photo-1.jpg" /></div>
-                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" data-src="photo-2.jpg" /></div>
-                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" data-src="photo-3.jpg" /></div>
-                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" data-src="photo-4.jpg" /></div>
-                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" data-src="photo-5.jpg" /></div>
-                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" data-src="photo-6.jpg" /></div>
-                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" data-src="photo-7.jpg" /></div>
-                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" data-src="photo-8.jpg" /></div>
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" data-src="photo-1.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" /></div>
                         </div>
                         <div class="gallery-counter" id="galleryCounter" aria-live="polite">1 / 8</div>
                         <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Навігація по фото">
@@ -1450,48 +1439,6 @@
     </div>
 
     <script>
-        // Оптимізація завантаження зображень
-        document.addEventListener('DOMContentLoaded', function() {
-            const images = document.querySelectorAll('.gallery-slide img');
-            
-            // Додаємо клас loaded для першого зображення відразу
-            if (images.length > 0) {
-                images[0].classList.add('loaded');
-            }
-            
-            // Спостерігач за завантаженням зображень
-            const imageObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        const src = img.getAttribute('data-src') || img.src;
-                        
-                        if (src && !img.classList.contains('loaded')) {
-                            img.src = src;
-                            img.onload = () => {
-                                img.classList.add('loaded');
-                            };
-                            img.onerror = () => {
-                                img.classList.add('loaded'); // Показуємо placeholder при помилці
-                            };
-                        }
-                        
-                        imageObserver.unobserve(img);
-                    }
-                });
-            }, {
-                rootMargin: '200px', // Завантажуємо зображення за 200px до появи
-                threshold: 0.01
-            });
-            
-            // Спостерігаємо за всіма зображеннями крім першого
-            images.forEach((img, index) => {
-                if (index > 0) {
-                    imageObserver.observe(img);
-                }
-            });
-        });
-
         const toggleBtn = document.getElementById('themeToggle');
         const body = document.body;
         const getInitialTheme = () => {
@@ -1505,6 +1452,7 @@
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
         });
 
+        // Карусель
         const track = document.getElementById('galleryTrack');
         const dots = [...document.querySelectorAll('.gallery-dot')];
         const counter = document.getElementById('galleryCounter');
@@ -1514,45 +1462,77 @@
         let isDragging = false;
         let startX = 0;
         let currentX = 0;
+        
         const updateGallery = (animate = true) => {
             track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
-            const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
-            counter.textContent = `${realIndex + 1} / ${totalSlides}`;
-            dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
+            counter.textContent = `${currentIndex + 1} / ${totalSlides}`;
+            dots.forEach((dot, i) => dot.classList.toggle('active', i === currentIndex));
         };
-        const nextSlide = () => { currentIndex++; updateGallery(); };
+        
+        const nextSlide = () => {
+            if (currentIndex < totalSlides - 1) {
+                currentIndex++;
+            } else {
+                currentIndex = 0;
+            }
+            updateGallery();
+        };
+        
         const prevSlide = () => {
-            if (currentIndex <= 0) {
-                currentIndex = totalSlides;
-                updateGallery(false);
-                requestAnimationFrame(() => { currentIndex--; updateGallery(); });
-            } else { currentIndex--; updateGallery(); }
+            if (currentIndex > 0) {
+                currentIndex--;
+            } else {
+                currentIndex = totalSlides - 1;
+            }
+            updateGallery();
         };
-        const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
+        
+        const restartAutoPlay = () => { 
+            clearInterval(autoPlayTimer); 
+            autoPlayTimer = setInterval(nextSlide, 4500); 
+        };
+        
         const stopAutoPlay = () => clearInterval(autoPlayTimer);
-        track.addEventListener('transitionend', () => {
-            if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
-        });
+        
         dots.forEach((dot, i) => {
-            dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
+            dot.addEventListener('click', () => { 
+                currentIndex = i; 
+                updateGallery(); 
+                restartAutoPlay(); 
+            });
         });
+        
         const galleryWindow = document.getElementById('galleryWindow');
         galleryWindow.addEventListener('mouseenter', stopAutoPlay);
         galleryWindow.addEventListener('mouseleave', restartAutoPlay);
+        
+        // Touch події для свайпу
         galleryWindow.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX; currentX = startX; isDragging = true; stopAutoPlay();
+            startX = e.touches[0].clientX; 
+            currentX = startX; 
+            isDragging = true; 
+            stopAutoPlay();
         }, { passive: true });
+        
         galleryWindow.addEventListener('touchmove', (e) => {
             if (isDragging) currentX = e.touches[0].clientX;
         }, { passive: true });
+        
         galleryWindow.addEventListener('touchend', () => {
             if (!isDragging) return;
             isDragging = false;
             const diff = currentX - startX;
-            if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
+            if (Math.abs(diff) >= 50) { 
+                if (diff < 0) {
+                    nextSlide();
+                } else {
+                    prevSlide();
+                }
+            }
             restartAutoPlay();
         });
+        
         restartAutoPlay();
 
         // Lightbox функціональність
@@ -1566,7 +1546,7 @@
         let lightboxIndex = 0;
         
         const openLightbox = (i) => {
-            lightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
+            lightboxIndex = i;
             updateLightboxImage();
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
@@ -1576,17 +1556,10 @@
             lightboxImage.src = gallerySlides[lightboxIndex].src;
             lightboxImage.alt = gallerySlides[lightboxIndex].alt;
             lightboxCounter.textContent = `${lightboxIndex + 1} / ${totalSlides}`;
-            lightboxImage.style.transform = 'scale(0.95)';
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    lightboxImage.style.transform = 'scale(1)';
-                });
-            });
         };
         
         const closeLightbox = () => {
             lightbox.classList.remove('active');
-            lightboxImage.style.transform = '';
             body.style.overflow = '';
         };
         
@@ -1601,16 +1574,21 @@
         };
         
         gallerySlides.forEach((slide, i) => { 
-            slide.addEventListener('click', () => openLightbox(i)); 
+            slide.addEventListener('click', () => {
+                stopAutoPlay();
+                openLightbox(i); 
+            }); 
         });
+        
         lightboxClose.addEventListener('click', closeLightbox);
         lightboxPrev.addEventListener('click', lightboxPrevImage);
         lightboxNext.addEventListener('click', lightboxNextImage);
+        
         lightbox.addEventListener('click', (e) => { 
             if (e.target === lightbox) closeLightbox(); 
         });
         
-        // Клавіатурна навігація для lightbox
+        // Клавіатурна навігація
         document.addEventListener('keydown', (e) => {
             if (lightbox.classList.contains('active')) {
                 if (e.key === 'Escape') closeLightbox();
@@ -1621,21 +1599,23 @@
         
         // Touch навігація для lightbox
         let lightboxTouchStartX = 0;
-        let lightboxTouchEndX = 0;
         
         lightbox.addEventListener('touchstart', (e) => {
             lightboxTouchStartX = e.touches[0].clientX;
         }, { passive: true });
         
         lightbox.addEventListener('touchend', (e) => {
-            lightboxTouchEndX = e.changedTouches[0].clientX;
-            const diff = lightboxTouchEndX - lightboxTouchStartX;
+            const diff = e.changedTouches[0].clientX - lightboxTouchStartX;
             if (Math.abs(diff) > 50) {
-                if (diff > 0) lightboxPrevImage();
-                else lightboxNextImage();
+                if (diff > 0) {
+                    lightboxPrevImage();
+                } else {
+                    lightboxNextImage();
+                }
             }
         });
 
+        // Модальні вікна
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
         
         const updateProgress = (activeId) => {
@@ -1654,12 +1634,14 @@
             body.style.overflow = 'hidden';
             updateProgress(id);
         };
+        
         const closeModal = (id) => {
             const modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.remove('active');
             body.style.overflow = '';
         };
+        
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
@@ -1679,9 +1661,13 @@
                 }
             });
         });
+        
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+            overlay.addEventListener('click', (e) => { 
+                if (e.target === overlay) closeModal(overlay.id); 
+            });
         });
+        
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const open = document.querySelector('.modal-overlay.active');
@@ -1710,62 +1696,17 @@
             });
         });
 
-        document.querySelectorAll('.modal-box').forEach((box) => {
-            let startX = 0;
-            let startY = 0;
-            let isHorizontal = false;
-            
-            box.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                isHorizontal = false;
-            }, { passive: true });
-            
-            box.addEventListener('touchmove', (e) => {
-                const diffX = Math.abs(e.touches[0].clientX - startX);
-                const diffY = Math.abs(e.touches[0].clientY - startY);
-                if (diffX > 30 && diffX > diffY) isHorizontal = true;
-            }, { passive: true });
-            
-            box.addEventListener('touchend', (e) => {
-                if (!isHorizontal) {
-                    const diffY = e.changedTouches[0].clientY - startY;
-                    if (diffY > 100 && box.scrollTop === 0) {
-                        const overlay = box.closest('.modal-overlay');
-                        closeModal(overlay.id);
-                    }
-                    return;
-                }
-                
-                const diff = startX - e.changedTouches[0].clientX;
-                if (Math.abs(diff) > 80) {
-                    const overlay = box.closest('.modal-overlay');
-                    const currentIndex = modalOrder.indexOf(overlay.id);
-                    
-                    let targetIndex;
-                    if (diff > 0) {
-                        targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
-                    } else {
-                        targetIndex = Math.max(currentIndex - 1, 0);
-                    }
-                    
-                    const targetId = modalOrder[targetIndex];
-                    if (targetId !== overlay.id) {
-                        closeModal(overlay.id);
-                        setTimeout(() => openModal(targetId), 300);
-                    }
-                }
-            });
-        });
-
+        // Калькулятор
         const calcState = { bathrooms: 1, system: 'tee' };
         const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
         const calcPriceElement = document.getElementById('calcPrice');
+        
         const updateCalc = () => {
             const key = `${calcState.bathrooms}-${calcState.system}`;
             const total = calcPrices[key] || 160000;
             calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
         };
+        
         document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
@@ -1783,52 +1724,10 @@
                 updateCalc();
             });
         });
+        
         if (calcPriceElement) updateCalc();
 
-        const calcPayBtn = document.getElementById('calcPayBtn');
-        const calcTelegramBtn = document.getElementById('calcTelegramBtn');
-        calcPayBtn.addEventListener('click', () => {
-            if (typeof gtag === 'function') {
-                gtag('event', 'pay_button', {
-                    'event_category': 'calculator',
-                    'event_label': 'pay_consultation'
-                });
-            }
-            openModal('modalPayment');
-        });
-        const paymentModal = document.getElementById('modalPayment');
-        paymentModal.addEventListener('click', (e) => {
-            if (e.target === paymentModal) {
-                closeModal('modalPayment');
-                calcTelegramBtn.style.display = 'flex';
-                calcPayBtn.style.display = 'none';
-            }
-        });
-        document.querySelector('#modalPayment .modal-close').addEventListener('click', () => {
-            closeModal('modalPayment');
-            calcTelegramBtn.style.display = 'flex';
-            calcPayBtn.style.display = 'none';
-        });
-        calcTelegramBtn.addEventListener('click', () => {
-            if (typeof gtag === 'function') {
-                gtag('event', 'telegram_send', {
-                    'event_category': 'calculator',
-                    'event_label': 'send_project'
-                });
-            }
-            const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
-            window.open(`https://t.me/sa_master?text=${message}`, '_blank');
-        });
-
-        document.querySelector('.review-google-btn').addEventListener('click', () => {
-            if (typeof gtag === 'function') {
-                gtag('event', 'google_review', {
-                    'event_category': 'reviews',
-                    'event_label': 'google_review_button'
-                });
-            }
-        });
-
+        // Соціальний слайдер
         const socialTrack = document.getElementById('socialTrack');
         const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
         const socialViewport = document.getElementById('socialViewport');
@@ -1836,18 +1735,24 @@
         let socialStartX = 0;
         let socialCurrentX = 0;
         let socialDragging = false;
+        
         const updateSocial = (page, animate = true) => {
             socialPage = Math.max(0, Math.min(1, page));
             socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
             socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
         };
+        
         socialViewport.addEventListener('touchstart', (e) => {
-            socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
+            socialStartX = e.touches[0].clientX; 
+            socialCurrentX = socialStartX; 
+            socialDragging = true;
         }, { passive: true });
+        
         socialViewport.addEventListener('touchmove', (e) => {
             if (socialDragging) socialCurrentX = e.touches[0].clientX;
         }, { passive: true });
+        
         socialViewport.addEventListener('touchend', () => {
             if (!socialDragging) return;
             socialDragging = false;
@@ -1856,6 +1761,7 @@
             updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
         });
 
+        // Ініціалізація
         document.addEventListener('DOMContentLoaded', () => {
             const yearSpan = document.getElementById('currentYear');
             if (yearSpan) yearSpan.textContent = new Date().getFullYear();
