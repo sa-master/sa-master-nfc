@@ -20,6 +20,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
+    <!-- Preload critical images -->
+    <link rel="preload" as="image" href="photo-1.jpg" />
+    <link rel="preload" as="image" href="photo-2.jpg" />
+    <link rel="preload" as="image" href="photo-3.jpg" />
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -261,8 +265,19 @@
         .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
         .gallery-window:active { cursor: grabbing; }
         .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
-        .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
-        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: lazy; }
+        .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; position: relative; }
+        .gallery-slide img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block; 
+            position: absolute;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .gallery-slide img.loaded { opacity: 1; }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -280,6 +295,36 @@
             font-weight: 600;
             backdrop-filter: blur(0.75rem);
         }
+        .gallery-nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 6;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(0.75rem);
+            transition: background 0.2s ease, transform 0.2s ease;
+            opacity: 0.7;
+        }
+        .gallery-nav-arrow:hover {
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 1;
+            transform: translateY(-50%) scale(1.05);
+        }
+        .gallery-nav-arrow:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        .gallery-nav-arrow.prev { left: 0.625rem; }
+        .gallery-nav-arrow.next { right: 0.625rem; }
         .gallery-dots {
             position: absolute;
             left: 50%;
@@ -848,6 +893,7 @@
             object-fit: contain;
             transform: scale(0.95);
             transition: transform 0.3s ease;
+            cursor: pointer;
         }
         .lightbox.active img { transform: scale(1); }
         .lightbox-close {
@@ -864,6 +910,31 @@
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
         }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(0.75rem);
+            transition: background 0.2s ease, transform 0.2s ease;
+            z-index: 10;
+        }
+        .lightbox-nav:hover {
+            background: rgba(0, 0, 0, 0.5);
+            transform: translateY(-50%) scale(1.05);
+        }
+        .lightbox-nav.prev { left: 1rem; }
+        .lightbox-nav.next { right: 1rem; }
         .ios-social-shell {
             width: 25rem;
             max-width: calc(100vw - 1.75rem);
@@ -952,6 +1023,8 @@
             .modal-box { padding: 1.125rem 0.875rem 1rem; }
             .theme-toggle { width: 2.25rem; height: 2.25rem; }
             .theme-toggle svg { width: 1.125rem; height: 1.125rem; }
+            .gallery-nav-arrow { width: 2rem; height: 2rem; font-size: 1rem; }
+            .lightbox-nav { width: 2.5rem; height: 2.5rem; font-size: 1.25rem; }
         }
         @media (max-width: 23.75rem) {
             .logo-wrapper { width: 3.5rem; height: 3.5rem; }
@@ -980,7 +1053,7 @@
                 <div class="hero-header">
                     <div class="hero-top-row">
                         <div class="logo-wrapper">
-                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="lazy" />
+                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="eager" fetchpriority="high" />
                         </div>
                         <div class="hero-divider"></div>
                         <div class="brand-text">
@@ -1007,9 +1080,9 @@
                 <div class="gallery">
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" fetchpriority="high" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="eager" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="eager" /></div>
                             <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
                             <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
                             <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
@@ -1018,6 +1091,8 @@
                             <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
                         </div>
                         <div class="gallery-counter" id="galleryCounter" aria-live="polite">1 / 8</div>
+                        <button class="gallery-nav-arrow prev" id="galleryPrev" type="button" aria-label="Попереднє фото">‹</button>
+                        <button class="gallery-nav-arrow next" id="galleryNext" type="button" aria-label="Наступне фото">›</button>
                         <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Навігація по фото">
                             <button class="gallery-dot active" type="button" role="tab" aria-selected="true" aria-label="Фото 1"></button>
                             <button class="gallery-dot" type="button" role="tab" aria-selected="false" aria-label="Фото 2"></button>
@@ -1372,6 +1447,8 @@
             <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
+                <button class="lightbox-nav prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">‹</button>
+                <button class="lightbox-nav next" id="lightboxNext" type="button" aria-label="Наступне фото">›</button>
                 <img id="lightboxImage" src="" alt="" />
             </div>
         </div>
@@ -1400,6 +1477,19 @@
         let isDragging = false;
         let startX = 0;
         let currentX = 0;
+        
+        // Mark initial images as loaded
+        const galleryImages = [...document.querySelectorAll('.gallery-slide img')];
+        galleryImages.forEach(img => {
+            if (img.complete) {
+                img.classList.add('loaded');
+            } else {
+                img.addEventListener('load', () => {
+                    img.classList.add('loaded');
+                });
+            }
+        });
+        
         const updateGallery = (animate = true) => {
             track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
@@ -1407,27 +1497,65 @@
             counter.textContent = `${realIndex + 1} / ${totalSlides}`;
             dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
         };
-        const nextSlide = () => { currentIndex++; updateGallery(); };
+        const nextSlide = () => { 
+            currentIndex++; 
+            updateGallery(); 
+            restartAutoPlay();
+        };
         const prevSlide = () => {
             if (currentIndex <= 0) {
                 currentIndex = totalSlides;
                 updateGallery(false);
                 requestAnimationFrame(() => { currentIndex--; updateGallery(); });
-            } else { currentIndex--; updateGallery(); }
+            } else { 
+                currentIndex--; 
+                updateGallery(); 
+            }
+            restartAutoPlay();
         };
-        const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
+        const restartAutoPlay = () => { 
+            clearInterval(autoPlayTimer); 
+            autoPlayTimer = setInterval(nextSlide, 4500); 
+        };
         const stopAutoPlay = () => clearInterval(autoPlayTimer);
+        
         track.addEventListener('transitionend', () => {
-            if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
+            if (currentIndex === totalSlides) { 
+                currentIndex = 0; 
+                updateGallery(false); 
+            }
         });
+        
         dots.forEach((dot, i) => {
-            dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
+            dot.addEventListener('click', () => { 
+                currentIndex = i; 
+                updateGallery(); 
+                restartAutoPlay(); 
+            });
         });
+        
+        // Add arrow navigation
+        const galleryPrev = document.getElementById('galleryPrev');
+        const galleryNext = document.getElementById('galleryNext');
+        
+        galleryPrev.addEventListener('click', (e) => {
+            e.stopPropagation();
+            prevSlide();
+        });
+        
+        galleryNext.addEventListener('click', (e) => {
+            e.stopPropagation();
+            nextSlide();
+        });
+        
         const galleryWindow = document.getElementById('galleryWindow');
         galleryWindow.addEventListener('mouseenter', stopAutoPlay);
         galleryWindow.addEventListener('mouseleave', restartAutoPlay);
         galleryWindow.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX; currentX = startX; isDragging = true; stopAutoPlay();
+            startX = e.touches[0].clientX; 
+            currentX = startX; 
+            isDragging = true; 
+            stopAutoPlay();
         }, { passive: true });
         galleryWindow.addEventListener('touchmove', (e) => {
             if (isDragging) currentX = e.touches[0].clientX;
@@ -1436,34 +1564,135 @@
             if (!isDragging) return;
             isDragging = false;
             const diff = currentX - startX;
-            if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
+            if (Math.abs(diff) >= 45) { 
+                diff < 0 ? nextSlide() : prevSlide(); 
+            }
             restartAutoPlay();
         });
+        
+        // Keyboard navigation for gallery
+        galleryWindow.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                nextSlide();
+            }
+        });
+        galleryWindow.setAttribute('tabindex', '0');
+        
         restartAutoPlay();
 
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
+        const lightboxPrev = document.getElementById('lightboxPrev');
+        const lightboxNext = document.getElementById('lightboxNext');
+        
+        let lightboxIndex = 0;
+        
         const openLightbox = (i) => {
-            const index = Math.max(0, Math.min(totalSlides - 1, i));
-            lightboxImage.src = gallerySlides[index].src;
-            lightboxImage.alt = gallerySlides[index].alt;
-            lightboxImage.style.transform = 'scale(0.95)';
+            lightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
+            updateLightboxImage();
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
-            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
+            stopAutoPlay();
         };
+        
+        const updateLightboxImage = () => {
+            const img = gallerySlides[lightboxIndex];
+            lightboxImage.src = img.src;
+            lightboxImage.alt = img.alt;
+            lightboxImage.style.transform = 'scale(0.95)';
+            requestAnimationFrame(() => { 
+                requestAnimationFrame(() => { 
+                    lightboxImage.style.transform = 'scale(1)'; 
+                }); 
+            });
+        };
+        
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transform = '';
             body.style.overflow = '';
+            restartAutoPlay();
         };
-        gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
+        
+        const lightboxPrevSlide = () => {
+            lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
+            updateLightboxImage();
+        };
+        
+        const lightboxNextSlide = () => {
+            lightboxIndex = (lightboxIndex + 1) % totalSlides;
+            updateLightboxImage();
+        };
+        
+        gallerySlides.forEach((slide, i) => { 
+            slide.addEventListener('click', () => openLightbox(i)); 
+        });
+        
         lightboxClose.addEventListener('click', closeLightbox);
-        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+        lightboxPrev.addEventListener('click', (e) => {
+            e.stopPropagation();
+            lightboxPrevSlide();
+        });
+        lightboxNext.addEventListener('click', (e) => {
+            e.stopPropagation();
+            lightboxNextSlide();
+        });
+        lightbox.addEventListener('click', (e) => { 
+            if (e.target === lightbox) closeLightbox(); 
+        });
+        
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+            if (!lightbox.classList.contains('active')) return;
+            
+            if (e.key === 'Escape') {
+                closeLightbox();
+            } else if (e.key === 'ArrowLeft') {
+                lightboxPrevSlide();
+            } else if (e.key === 'ArrowRight') {
+                lightboxNextSlide();
+            }
+        });
+        
+        // Touch swipe for lightbox
+        let lightboxStartX = 0;
+        let lightboxStartY = 0;
+        let lightboxIsSwiping = false;
+        
+        lightbox.addEventListener('touchstart', (e) => {
+            lightboxStartX = e.touches[0].clientX;
+            lightboxStartY = e.touches[0].clientY;
+            lightboxIsSwiping = true;
+        }, { passive: true });
+        
+        lightbox.addEventListener('touchmove', (e) => {
+            if (!lightboxIsSwiping) return;
+            const diffX = Math.abs(e.touches[0].clientX - lightboxStartX);
+            const diffY = Math.abs(e.touches[0].clientY - lightboxStartY);
+            if (diffX > 30 && diffX > diffY) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        lightbox.addEventListener('touchend', (e) => {
+            if (!lightboxIsSwiping) return;
+            lightboxIsSwiping = false;
+            
+            const diffX = e.changedTouches[0].clientX - lightboxStartX;
+            const diffY = e.changedTouches[0].clientY - lightboxStartY;
+            
+            if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX < 0) {
+                    lightboxNextSlide();
+                } else {
+                    lightboxPrevSlide();
+                }
+            }
         });
 
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
@@ -1673,7 +1902,9 @@
             socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
         };
         socialViewport.addEventListener('touchstart', (e) => {
-            socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
+            socialStartX = e.touches[0].clientX; 
+            socialCurrentX = socialStartX; 
+            socialDragging = true;
         }, { passive: true });
         socialViewport.addEventListener('touchmove', (e) => {
             if (socialDragging) socialCurrentX = e.touches[0].clientX;
