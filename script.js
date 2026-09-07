@@ -61,30 +61,527 @@ galleryWindow.addEventListener('touchend', () => {
 });
 restartAutoPlay();
 
+/* =========================
+   iOS LIGHTBOX
+   ========================= */
+
 const lightbox = document.getElementById('lightbox');
+const lightboxStage = document.getElementById('lightboxStage');
+const lightboxImageWrap = document.getElementById('lightboxImageWrap');
 const lightboxImage = document.getElementById('lightboxImage');
+
 const lightboxClose = document.getElementById('lightboxClose');
-const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
-const openLightbox = (i) => {
-    const index = Math.max(0, Math.min(totalSlides - 1, i));
-    lightboxImage.src = gallerySlides[index].src;
-    lightboxImage.alt = gallerySlides[index].alt;
-    lightboxImage.style.transform = 'scale(0.95)';
-    lightbox.classList.add('active');
+const lightboxPrev = document.getElementById('lightboxPrev');
+const lightboxNext = document.getElementById('lightboxNext');
+const lightboxCounter = document.getElementById('lightboxCounter');
+
+const galleryImages = [
+    ...document.querySelectorAll('.gallery-slide img')
+].slice(0, totalSlides);
+
+let lightboxIndex = 0;
+
+let lightboxStartX = 0;
+let lightboxCurrentX = 0;
+let lightboxStartY = 0;
+
+let lightboxDragging = false;
+let lightboxMoved = false;
+
+let previousBodyOverflow = '';
+let previousBodyTouchAction = '';
+
+
+/* ---------- preload ---------- */
+
+const preloadLightboxImage = (index) => {
+
+    if (index < 0 || index >= galleryImages.length) {
+        return;
+    }
+
+    const img = new Image();
+
+    img.decoding = 'async';
+    img.src = galleryImages[index].currentSrc ||
+              galleryImages[index].src;
+};
+
+
+/* ---------- counter ---------- */
+
+const updateLightboxCounter = () => {
+
+    lightboxCounter.textContent =
+        `${lightboxIndex + 1} / ${galleryImages.length}`;
+};
+
+
+/* ---------- show image ---------- */
+
+const showLightboxImage = (
+    index,
+    direction = 0,
+    animate = true
+) => {
+
+    if (!galleryImages.length) return;
+
+    lightboxIndex = Math.max(
+        0,
+        Math.min(galleryImages.length - 1, index)
+    );
+
+    const source = galleryImages[lightboxIndex];
+
+    const newSrc =
+        source.currentSrc ||
+        source.src;
+
+    const newAlt =
+        source.alt ||
+        `Фото ${lightboxIndex + 1}`;
+
+    if (!animate) {
+
+        lightboxImage.src = newSrc;
+        lightboxImage.alt = newAlt;
+
+        lightboxImageWrap.style.transition = 'none';
+        lightboxImageWrap.style.transform =
+            'translate3d(0,0,0) scale(1)';
+        lightboxImageWrap.style.opacity = '1';
+
+    } else {
+
+        lightboxImageWrap.style.transition =
+            'transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.2s ease';
+
+        lightboxImageWrap.style.transform =
+            `translate3d(${direction * 35}px,0,0) scale(0.97)`;
+
+        lightboxImageWrap.style.opacity = '0';
+
+        setTimeout(() => {
+
+            lightboxImage.src = newSrc;
+            lightboxImage.alt = newAlt;
+
+            requestAnimationFrame(() => {
+
+                lightboxImageWrap.style.transition =
+                    'transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.25s ease';
+
+                lightboxImageWrap.style.transform =
+                    'translate3d(0,0,0) scale(1)';
+
+                lightboxImageWrap.style.opacity = '1';
+
+            });
+
+        }, 120);
+    }
+
+    updateLightboxCounter();
+
+    /* Підготовка сусідніх фото */
+
+    preloadLightboxImage(lightboxIndex - 1);
+    preloadLightboxImage(lightboxIndex + 1);
+
+};
+
+
+/* ---------- open ---------- */
+
+const openLightbox = (index) => {
+
+    lightboxIndex = Math.max(
+        0,
+        Math.min(galleryImages.length - 1, index)
+    );
+
+    previousBodyOverflow = body.style.overflow;
+    previousBodyTouchAction = body.style.touchAction;
+
     body.style.overflow = 'hidden';
-    requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
+    body.style.touchAction = 'none';
+
+    lightbox.classList.add('active');
+
+    const source = galleryImages[lightboxIndex];
+
+    lightboxImage.src =
+        source.currentSrc ||
+        source.src;
+
+    lightboxImage.alt =
+        source.alt ||
+        `Фото ${lightboxIndex + 1}`;
+
+    lightboxImageWrap.style.transition = 'none';
+    lightboxImageWrap.style.transform =
+        'translate3d(0,0,0) scale(0.96)';
+    lightboxImageWrap.style.opacity = '0';
+
+    updateLightboxCounter();
+
+    requestAnimationFrame(() => {
+
+        requestAnimationFrame(() => {
+
+            lightboxImageWrap.style.transition =
+                'transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.25s ease';
+
+            lightboxImageWrap.style.transform =
+                'translate3d(0,0,0) scale(1)';
+
+            lightboxImageWrap.style.opacity = '1';
+
+        });
+
+    });
+
+    preloadLightboxImage(lightboxIndex - 1);
+    preloadLightboxImage(lightboxIndex + 1);
 };
+
+
+/* ---------- close ---------- */
+
 const closeLightbox = () => {
+
     lightbox.classList.remove('active');
-    lightboxImage.style.transform = '';
-    body.style.overflow = '';
+
+    lightboxImageWrap.style.transform =
+        'translate3d(0,0,0) scale(0.96)';
+
+    lightboxImageWrap.style.opacity = '0';
+
+    body.style.overflow = previousBodyOverflow;
+    body.style.touchAction = previousBodyTouchAction;
+
+    setTimeout(() => {
+
+        if (!lightbox.classList.contains('active')) {
+
+            lightboxImage.removeAttribute('src');
+            lightboxImage.alt = '';
+
+        }
+
+    }, 250);
 };
-gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
-lightboxClose.addEventListener('click', closeLightbox);
-lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+
+
+/* ---------- next ---------- */
+
+const nextLightbox = () => {
+
+    if (lightboxIndex >= galleryImages.length - 1) {
+        return;
+    }
+
+    showLightboxImage(
+        lightboxIndex + 1,
+        -1,
+        true
+    );
+};
+
+
+/* ---------- previous ---------- */
+
+const prevLightbox = () => {
+
+    if (lightboxIndex <= 0) {
+        return;
+    }
+
+    showLightboxImage(
+        lightboxIndex - 1,
+        1,
+        true
+    );
+};
+
+
+/* ---------- gallery click ---------- */
+
+galleryImages.forEach((image, index) => {
+
+    image.addEventListener('click', () => {
+        openLightbox(index);
+    });
+
 });
+
+
+/* ---------- buttons ---------- */
+
+lightboxClose.addEventListener(
+    'click',
+    closeLightbox
+);
+
+lightboxNext.addEventListener(
+    'click',
+    (event) => {
+        event.stopPropagation();
+        nextLightbox();
+    }
+);
+
+lightboxPrev.addEventListener(
+    'click',
+    (event) => {
+        event.stopPropagation();
+        prevLightbox();
+    }
+);
+
+
+/* ---------- background tap ---------- */
+
+lightbox.addEventListener('click', (event) => {
+
+    if (
+        event.target === lightbox ||
+        event.target === lightboxStage
+    ) {
+        closeLightbox();
+    }
+
+});
+
+
+/* =========================
+   TOUCH / SWIPE
+   ========================= */
+
+lightboxStage.addEventListener(
+    'touchstart',
+    (event) => {
+
+        if (!lightbox.classList.contains('active')) {
+            return;
+        }
+
+        if (!event.touches.length) {
+            return;
+        }
+
+        const touch = event.touches[0];
+
+        lightboxStartX = touch.clientX;
+        lightboxCurrentX = touch.clientX;
+
+        lightboxStartY = touch.clientY;
+
+        lightboxDragging = true;
+        lightboxMoved = false;
+
+        lightboxImageWrap.style.transition = 'none';
+
+    },
+    { passive: true }
+);
+
+
+lightboxStage.addEventListener(
+    'touchmove',
+    (event) => {
+
+        if (!lightboxDragging) {
+            return;
+        }
+
+        if (!event.touches.length) {
+            return;
+        }
+
+        const touch = event.touches[0];
+
+        lightboxCurrentX = touch.clientX;
+
+        const deltaX =
+            lightboxCurrentX -
+            lightboxStartX;
+
+        const deltaY =
+            touch.clientY -
+            lightboxStartY;
+
+        /*
+         * Якщо рух переважно вертикальний —
+         * не втручаємося в жест.
+         */
+
+        if (
+            Math.abs(deltaY) >
+            Math.abs(deltaX) * 1.15
+        ) {
+            return;
+        }
+
+        lightboxMoved = true;
+
+        /*
+         * Опір при русі за межі галереї.
+         */
+
+        let movement = deltaX;
+
+        if (
+            (lightboxIndex === 0 && deltaX > 0) ||
+            (
+                lightboxIndex ===
+                galleryImages.length - 1 &&
+                deltaX < 0
+            )
+        ) {
+            movement = deltaX * 0.28;
+        }
+
+        const distance =
+            Math.min(
+                Math.abs(movement),
+                window.innerWidth * 0.85
+            );
+
+        const scale =
+            1 -
+            Math.min(
+                distance / window.innerWidth * 0.08,
+                0.08
+            );
+
+        lightboxImageWrap.style.transform =
+            `translate3d(${movement}px,0,0) scale(${scale})`;
+
+    },
+    { passive: true }
+);
+
+
+lightboxStage.addEventListener(
+    'touchend',
+    () => {
+
+        if (!lightboxDragging) {
+            return;
+        }
+
+        lightboxDragging = false;
+
+        const deltaX =
+            lightboxCurrentX -
+            lightboxStartX;
+
+        const threshold =
+            Math.max(
+                55,
+                window.innerWidth * 0.16
+            );
+
+        /*
+         * Недостатній свайп —
+         * повертаємо фото назад.
+         */
+
+        if (
+            !lightboxMoved ||
+            Math.abs(deltaX) < threshold
+        ) {
+
+            lightboxImageWrap.style.transition =
+                'transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+            lightboxImageWrap.style.transform =
+                'translate3d(0,0,0) scale(1)';
+
+            return;
+        }
+
+        /*
+         * Свайп вліво → наступне.
+         */
+
+        if (deltaX < 0) {
+
+            if (
+                lightboxIndex <
+                galleryImages.length - 1
+            ) {
+                nextLightbox();
+            } else {
+
+                lightboxImageWrap.style.transition =
+                    'transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+                lightboxImageWrap.style.transform =
+                    'translate3d(0,0,0) scale(1)';
+            }
+
+        }
+
+        /*
+         * Свайп вправо → попереднє.
+         */
+
+        else {
+
+            if (lightboxIndex > 0) {
+                prevLightbox();
+            } else {
+
+                lightboxImageWrap.style.transition =
+                    'transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+                lightboxImageWrap.style.transform =
+                    'translate3d(0,0,0) scale(1)';
+            }
+
+        }
+
+    },
+    { passive: true }
+);
+
+
+/* ---------- keyboard ---------- */
+
+document.addEventListener(
+    'keydown',
+    (event) => {
+
+        if (
+            !lightbox.classList.contains('active')
+        ) {
+            return;
+        }
+
+        if (event.key === 'Escape') {
+            closeLightbox();
+        }
+
+        if (
+            event.key === 'ArrowRight' &&
+            lightboxIndex <
+            galleryImages.length - 1
+        ) {
+            nextLightbox();
+        }
+
+        if (
+            event.key === 'ArrowLeft' &&
+            lightboxIndex > 0
+        ) {
+            prevLightbox();
+        }
+
+    }
+);
 
 const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
 
