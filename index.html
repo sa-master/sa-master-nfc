@@ -84,7 +84,7 @@
             --color-focus: #0A84FF;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
         body {
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
@@ -94,12 +94,11 @@
             position: relative;
             padding: 0;
             transition: background 0.3s ease, color 0.3s ease;
-            scrollbar-width: none; /* Приховування полоски прокрутки у Firefox */
-            -ms-overflow-style: none; /* Приховування полоски прокрутки у IE/Edge */
+            overflow-x: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
-        body::-webkit-scrollbar {
-            display: none; /* Приховування полоски прокрутки у Chrome, Safari та Opera */
-        }
+        body::-webkit-scrollbar { display: none; }
         a { text-decoration: none; color: inherit; }
         :focus-visible {
             outline: 0.1875rem solid var(--color-focus);
@@ -265,9 +264,9 @@
         }
         .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
         .gallery-window:active { cursor: grabbing; }
-        .gallery-track { display: flex; height: 100%; will-change: transform; transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
         .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
-        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; }
+        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: eager; }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -444,32 +443,35 @@
             scrollbar-width: none;
             -ms-overflow-style: none;
         }
-        .modal-box::-webkit-scrollbar {
-            display: none;
-        }
+        .modal-box::-webkit-scrollbar { display: none; }
         .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
         .modal-close {
-            position: absolute;
-            top: 0.75rem;
-            right: 0.75rem;
-            width: 2.25rem;
-            height: 2.25rem;
-            border: 0;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            background: rgba(0, 122, 255, 0.15);
-            color: var(--color-primary);
-            font-size: 1.35rem;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            font-size: 1.5rem;
             font-weight: 700;
             cursor: pointer;
-            z-index: 10;
+            z-index: 12001;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            line-height: 1;
         }
         .modal-close:hover {
-            background: rgba(0, 122, 255, 0.25);
-            transform: scale(1.05);
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+        .modal-close:active {
+            transform: scale(0.9);
         }
         .modal-title {
             font-size: 1.375rem;
@@ -493,35 +495,37 @@
         .modal-nav {
             position: sticky;
             bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--color-modal-bg);
-            padding-top: 0.75rem;
-            padding-bottom: 0.25rem;
+            background: inherit;
+            padding-top: 1rem;
+            padding-bottom: 0.5rem;
             margin-top: 1.25rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 0.75rem;
-            z-index: 5;
-            border-top: 1px solid rgba(120, 130, 140, 0.1);
+            z-index: 10;
         }
         .modal-nav-arrow {
-            width: 2.5rem;
-            height: 2.5rem;
-            border: 1px solid rgba(120, 130, 140, 0.2);
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 1px solid rgba(120, 130, 140, 0.3);
             border-radius: 50%;
-            background: rgba(120, 130, 140, 0.08);
+            background: rgba(255, 255, 255, 0.9);
             color: var(--color-text-secondary);
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        body.dark-mode .modal-nav-arrow {
+            background: rgba(60, 60, 67, 0.9);
+            border-color: rgba(255, 255, 255, 0.2);
         }
         .modal-nav-arrow:hover {
-            background: rgba(120, 130, 140, 0.15);
+            background: rgba(255, 255, 255, 1);
             transform: scale(1.05);
         }
         .modal-nav-arrow:active { transform: scale(0.95); }
@@ -846,7 +850,7 @@
             align-items: center;
             justify-content: center;
             padding: 0.75rem;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(1rem);
             opacity: 0;
             visibility: hidden;
@@ -854,82 +858,42 @@
             transition: opacity 0.25s ease, visibility 0.25s ease;
         }
         .lightbox.active { opacity: 1; visibility: visible; pointer-events: auto; }
-        .lightbox-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: pan-y;
-        }
         .lightbox img {
             max-width: 100%;
-            max-height: 85vh;
+            max-height: 90vh;
             border-radius: 0.875rem;
             object-fit: contain;
             transform: scale(0.95);
             transition: transform 0.3s ease;
-            user-select: none;
         }
         .lightbox.active img { transform: scale(1); }
         .lightbox-close {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            width: 2.5rem;
-            height: 2.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.6);
             color: #fff;
             font-size: 1.5rem;
             font-weight: 700;
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
-            z-index: 12005;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            line-height: 1;
         }
-        .lightbox-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3rem;
-            height: 3rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.12);
-            color: #fff;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            backdrop-filter: blur(0.5rem);
-            z-index: 12005;
-            transition: background 0.2s ease, transform 0.2s ease;
+        .lightbox-close:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
         }
-        .lightbox-nav:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-50%) scale(1.05); }
-        .lightbox-prev { left: 1rem; }
-        .lightbox-next { right: 1rem; }
-        .lightbox-counter {
-            position: absolute;
-            bottom: 1.5rem;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 0.25rem 0.75rem;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 1rem;
-            color: #fff;
-            font-size: 0.875rem;
-            font-weight: 600;
-            backdrop-filter: blur(0.5rem);
-        }
-        @media (max-width: 768px) {
-            .lightbox-nav { display: none; } /* На мобільних керуємо свайпами */
+        .lightbox-close:active {
+            transform: scale(0.9);
         }
         .ios-social-shell {
             width: 25rem;
@@ -1075,8 +1039,8 @@
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
                             <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" /></div>
-                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="eager" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="eager" /></div>
                             <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
                             <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
                             <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
@@ -1439,12 +1403,9 @@
             <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
-                <div class="lightbox-container" id="lightboxContainer">
-                    <button class="lightbox-nav lightbox-prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">‹</button>
-                    <img id="lightboxImage" src="" alt="" />
-                    <button class="lightbox-nav lightbox-next" id="lightboxNext" type="button" aria-label="Наступне фото">›</button>
-                    <div class="lightbox-counter" id="lightboxCounter">1 / 8</div>
-                </div>
+                <button class="lightbox-prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">‹</button>
+                <img id="lightboxImage" src="" alt="" />
+                <button class="lightbox-next" id="lightboxNext" type="button" aria-label="Наступне фото">›</button>
             </div>
         </div>
     </div>
@@ -1473,7 +1434,7 @@
         let startX = 0;
         let currentX = 0;
         const updateGallery = (animate = true) => {
-            track.style.transition = animate ? 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)' : 'none';
+            track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
             const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
             counter.textContent = `${realIndex + 1} / ${totalSlides}`;
@@ -1513,79 +1474,99 @@
         });
         restartAutoPlay();
 
-        // Lightbox з галереєю та свайпами
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
         const lightboxPrev = document.getElementById('lightboxPrev');
         const lightboxNext = document.getElementById('lightboxNext');
-        const lightboxCounter = document.getElementById('lightboxCounter');
-        const lightboxContainer = document.getElementById('lightboxContainer');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
         let lightboxIndex = 0;
-
-        const updateLightbox = (index) => {
-            lightboxIndex = (index + totalSlides) % totalSlides;
-            lightboxImage.style.opacity = '0';
-            setTimeout(() => {
-                lightboxImage.src = gallerySlides[lightboxIndex].src;
-                lightboxImage.alt = gallerySlides[lightboxIndex].alt;
-                lightboxCounter.textContent = `${lightboxIndex + 1} / ${totalSlides}`;
-                lightboxImage.style.opacity = '1';
-            }, 100);
-        };
+        let lightboxStartX = 0;
+        let lightboxCurrentX = 0;
+        let lightboxDragging = false;
 
         const openLightbox = (i) => {
-            stopAutoPlay();
-            lightboxIndex = i;
-            updateLightbox(lightboxIndex);
+            lightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
+            updateLightboxImage();
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
         };
 
-        const closeLightbox = () => {
-            lightbox.classList.remove('active');
-            body.style.overflow = '';
-            restartAutoPlay();
+        const updateLightboxImage = () => {
+            lightboxImage.src = gallerySlides[lightboxIndex].src;
+            lightboxImage.alt = gallerySlides[lightboxIndex].alt;
+            lightboxImage.style.transform = 'scale(0.95)';
+            requestAnimationFrame(() => { 
+                requestAnimationFrame(() => { 
+                    lightboxImage.style.transform = 'scale(1)'; 
+                }); 
+            });
         };
 
-        gallerySlides.slice(0, totalSlides).forEach((slide, i) => { 
+        const closeLightbox = () => {
+            lightbox.classList.remove('active');
+            lightboxImage.style.transform = '';
+            body.style.overflow = '';
+        };
+
+        const navigateLightbox = (direction) => {
+            if (direction === 'next') {
+                lightboxIndex = (lightboxIndex + 1) % totalSlides;
+            } else {
+                lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
+            }
+            updateLightboxImage();
+        };
+
+        gallerySlides.forEach((slide, i) => { 
             slide.addEventListener('click', () => openLightbox(i)); 
         });
-
         lightboxClose.addEventListener('click', closeLightbox);
-        lightboxPrev.addEventListener('click', () => updateLightbox(lightboxIndex - 1));
-        lightboxNext.addEventListener('click', () => updateLightbox(lightboxIndex + 1));
-        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+        lightboxPrev.addEventListener('click', () => navigateLightbox('prev'));
+        lightboxNext.addEventListener('click', () => navigateLightbox('next'));
+        lightbox.addEventListener('click', (e) => { 
+            if (e.target === lightbox) closeLightbox(); 
+        });
 
-        // Свайпи в галереї лайтбокса у стилі iOS
-        let lbStartX = 0;
-        let lbCurrentX = 0;
-        lightboxContainer.addEventListener('touchstart', (e) => {
-            lbStartX = e.touches[0].clientX;
-            lbCurrentX = lbStartX;
+        // Свайп для lightbox
+        lightbox.addEventListener('touchstart', (e) => {
+            lightboxStartX = e.touches[0].clientX;
+            lightboxCurrentX = lightboxStartX;
+            lightboxDragging = true;
         }, { passive: true });
 
-        lightboxContainer.addEventListener('touchmove', (e) => {
-            lbCurrentX = e.touches[0].clientX;
-        }, { passive: true });
+        lightbox.addEventListener('touchmove', (e) => {
+            if (lightboxDragging) {
+                lightboxCurrentX = e.touches[0].clientX;
+                const diff = lightboxCurrentX - lightboxStartX;
+                if (Math.abs(diff) > 10) {
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
 
-        lightboxContainer.addEventListener('touchend', () => {
-            const diff = lbCurrentX - lbStartX;
-            if (Math.abs(diff) > 50) {
-                if (diff > 0) {
-                    updateLightbox(lightboxIndex - 1);
+        lightbox.addEventListener('touchend', () => {
+            if (!lightboxDragging) return;
+            lightboxDragging = false;
+            const diff = lightboxCurrentX - lightboxStartX;
+            if (Math.abs(diff) >= 50) {
+                if (diff < 0) {
+                    navigateLightbox('next');
                 } else {
-                    updateLightbox(lightboxIndex + 1);
+                    navigateLightbox('prev');
                 }
             }
         });
 
         document.addEventListener('keydown', (e) => {
-            if (lightbox.classList.contains('active')) {
-                if (e.key === 'Escape') closeLightbox();
-                if (e.key === 'ArrowLeft') updateLightbox(lightboxIndex - 1);
-                if (e.key === 'ArrowRight') updateLightbox(lightboxIndex + 1);
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                closeLightbox();
+            } else if (lightbox.classList.contains('active')) {
+                if (e.key === 'ArrowLeft') {
+                    navigateLightbox('prev');
+                } else if (e.key === 'ArrowRight') {
+                    navigateLightbox('next');
+                }
             }
         });
 
@@ -1663,90 +1644,182 @@
             });
         });
 
-        // Плавна iOS анімація жестів та свайпів для модальних вікон
+        // Покращена анімація свайпу для модальних вікон
         document.querySelectorAll('.modal-box').forEach((box) => {
             let startX = 0;
             let startY = 0;
             let isHorizontal = false;
+            let isSwiping = false;
             
             box.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
                 isHorizontal = false;
+                isSwiping = true;
             }, { passive: true });
             
             box.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
                 const diffX = e.touches[0].clientX - startX;
                 const diffY = e.touches[0].clientY - startY;
                 if (Math.abs(diffX) > 30 && Math.abs(diffX) > Math.abs(diffY)) {
                     isHorizontal = true;
+                    e.preventDefault();
+                    // Додаємо ефект зсуву
+                    box.style.transform = `translateX(${diffX * 0.3}px)`;
+                    box.style.transition = 'none';
                 }
-            }, { passive: true });
+            }, { passive: false });
             
             box.addEventListener('touchend', (e) => {
-                const diffX = e.changedTouches[0].clientX - startX;
-                const diffY = e.changedTouches[0].clientY - startY;
+                if (!isSwiping) return;
+                isSwiping = false;
                 
-                if (isHorizontal && Math.abs(diffX) > 60) {
+                // Повертаємо трансформацію
+                box.style.transform = '';
+                box.style.transition = '';
+                
+                if (!isHorizontal) {
+                    const diffY = e.changedTouches[0].clientY - startY;
+                    if (diffY > 100 && box.scrollTop === 0) {
+                        const overlay = box.closest('.modal-overlay');
+                        closeModal(overlay.id);
+                    }
+                    return;
+                }
+                
+                const diff = startX - e.changedTouches[0].clientX;
+                if (Math.abs(diff) > 80) {
                     const overlay = box.closest('.modal-overlay');
                     const currentIndex = modalOrder.indexOf(overlay.id);
-                    if (currentIndex !== -1) {
-                        let targetIndex = currentIndex;
-                        if (diffX < 0 && currentIndex < modalOrder.length - 1) {
-                            targetIndex++;
-                        } else if (diffX > 0 && currentIndex > 0) {
-                            targetIndex--;
-                        }
-                        if (targetIndex !== currentIndex) {
-                            const targetId = modalOrder[targetIndex];
-                            closeModal(overlay.id);
-                            setTimeout(() => openModal(targetId), 300);
-                        }
+                    
+                    let targetIndex;
+                    if (diff > 0) {
+                        targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
+                    } else {
+                        targetIndex = Math.max(currentIndex - 1, 0);
                     }
-                } else if (!isHorizontal && diffY > 100 && box.scrollTop === 0) {
-                    const overlay = box.closest('.modal-overlay');
-                    closeModal(overlay.id);
+                    
+                    const targetId = modalOrder[targetIndex];
+                    if (targetId !== overlay.id) {
+                        closeModal(overlay.id);
+                        setTimeout(() => openModal(targetId), 300);
+                    }
                 }
             });
         });
 
-        // Швидкий розрахунок вартості
-        const state = { bathrooms: '1', system: 'tee' };
-        const basePrices = { '1_tee': 160000, '1_radial': 190000, '2_tee': 240000, '2_radial': 290000 };
-        const priceElement = document.getElementById('calcPrice');
-        const calcPayBtn = document.getElementById('calcPayBtn');
-        const calcTelegramBtn = document.getElementById('calcTelegramBtn');
-
+        const calcState = { bathrooms: 1, system: 'tee' };
+        const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
+        const calcPriceElement = document.getElementById('calcPrice');
         const updateCalc = () => {
-            const key = `${state.bathrooms}_${state.system}`;
-            const price = basePrices[key] || 160000;
-            priceElement.textContent = price.toLocaleString('uk-UA') + ' грн';
+            const key = `${calcState.bathrooms}-${calcState.system}`;
+            const total = calcPrices[key] || 160000;
+            calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
         };
-
         document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
+                if (typeof gtag === 'function') {
+                    gtag('event', 'calc_button', {
+                        'event_category': 'calculator',
+                        'event_label': btn.dataset.group + '_' + btn.dataset.value
+                    });
+                }
                 const group = btn.dataset.group;
                 const value = btn.dataset.value;
+                if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
+                else if (group === 'system') calcState.system = value;
                 document.querySelectorAll(`.calc-seg-btn[data-group="${group}"]`).forEach((b) => b.classList.remove('active'));
                 btn.classList.add('active');
-                state[group] = value;
                 updateCalc();
             });
         });
+        if (calcPriceElement) updateCalc();
 
+        const calcPayBtn = document.getElementById('calcPayBtn');
+        const calcTelegramBtn = document.getElementById('calcTelegramBtn');
         calcPayBtn.addEventListener('click', () => {
-            calcPayBtn.style.display = 'none';
+            if (typeof gtag === 'function') {
+                gtag('event', 'pay_button', {
+                    'event_category': 'calculator',
+                    'event_label': 'pay_consultation'
+                });
+            }
+            openModal('modalPayment');
+        });
+        const paymentModal = document.getElementById('modalPayment');
+        paymentModal.addEventListener('click', (e) => {
+            if (e.target === paymentModal) {
+                closeModal('modalPayment');
+                calcTelegramBtn.style.display = 'flex';
+                calcPayBtn.style.display = 'none';
+            }
+        });
+        document.querySelector('#modalPayment .modal-close').addEventListener('click', () => {
+            closeModal('modalPayment');
             calcTelegramBtn.style.display = 'flex';
+            calcPayBtn.style.display = 'none';
         });
-
         calcTelegramBtn.addEventListener('click', () => {
-            const key = `${state.bathrooms}_${state.system}`;
-            const price = basePrices[key] || 160000;
-            const text = encodeURIComponent(`Доброго дня! Розрахунок проєкту:\nСанвузлів: ${state.bathrooms}\nСистема: ${state.system === 'tee' ? 'Трійникова' : 'Променева'}\nОрієнтовна вартість: ${price.toLocaleString('uk-UA')} грн\n\nНадсилаю дизайн-проєкт та чек.`);
-            window.open(`https://t.me/sa_master?text=${text}`, '_blank');
+            if (typeof gtag === 'function') {
+                gtag('event', 'telegram_send', {
+                    'event_category': 'calculator',
+                    'event_label': 'send_project'
+                });
+            }
+            const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
+            window.open(`https://t.me/sa_master?text=${message}`, '_blank');
         });
 
-        document.getElementById('currentYear').textContent = new Date().getFullYear();
+        document.querySelector('.review-google-btn').addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'google_review', {
+                    'event_category': 'reviews',
+                    'event_label': 'google_review_button'
+                });
+            }
+        });
+
+        const socialTrack = document.getElementById('socialTrack');
+        const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
+        const socialViewport = document.getElementById('socialViewport');
+        let socialPage = 0;
+        let socialStartX = 0;
+        let socialCurrentX = 0;
+        let socialDragging = false;
+        const updateSocial = (page, animate = true) => {
+            socialPage = Math.max(0, Math.min(1, page));
+            socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
+            socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
+            socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
+        };
+        socialViewport.addEventListener('touchstart', (e) => {
+            socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
+        }, { passive: true });
+        socialViewport.addEventListener('touchmove', (e) => {
+            if (socialDragging) socialCurrentX = e.touches[0].clientX;
+        }, { passive: true });
+        socialViewport.addEventListener('touchend', () => {
+            if (!socialDragging) return;
+            socialDragging = false;
+            const diff = socialCurrentX - socialStartX;
+            if (Math.abs(diff) < 45) return;
+            updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const yearSpan = document.getElementById('currentYear');
+            if (yearSpan) yearSpan.textContent = new Date().getFullYear();
+        });
+    </script>
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XECEJ8EL4T"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XECEJ8EL4T');
     </script>
 </body>
 </html>
