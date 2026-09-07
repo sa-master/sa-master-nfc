@@ -460,6 +460,7 @@
             visibility: hidden;
             pointer-events: none;
             transition: opacity 0.3s ease, visibility 0.3s ease;
+            will-change: opacity, visibility;
         }
         .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         .modal-box {
@@ -469,26 +470,81 @@
             max-height: 85vh;
             overflow-y: auto;
             padding: 1.25rem;
+            padding-bottom: 5rem;
             border-radius: var(--radius-modal);
             background: var(--color-modal-bg);
             box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.18);
             transform: translateY(1rem) scale(0.96);
             transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
         .modal-close {
-            position: absolute;
+            position: sticky;
             top: 0.75rem;
             right: 0.75rem;
-            width: 2rem;
-            height: 2rem;
-            border: 0;
+            float: right;
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 2px solid rgba(120, 130, 140, 0.25);
             border-radius: 50%;
-            background: rgba(120, 130, 140, 0.08);
-            color: var(--color-text-muted);
-            font-size: 1.125rem;
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--color-text);
+            font-size: 1.375rem;
+            font-weight: 300;
+            line-height: 1;
             cursor: pointer;
-            z-index: 5;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s cubic-bezier(0.22, 0.61, 0.36, 1);
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+            margin-left: 0.5rem;
+            margin-bottom: 0.5rem;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body.dark-mode .modal-close {
+            background: rgba(44, 44, 46, 0.95);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #F2F2F7;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.4);
+        }
+        .modal-close:hover {
+            background: #FF3B30;
+            color: #fff;
+            border-color: #FF3B30;
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 0.5rem 1rem rgba(255, 59, 48, 0.3);
+        }
+        .modal-close:active {
+            transform: rotate(90deg) scale(0.95);
+            box-shadow: 0 0.25rem 0.5rem rgba(255, 59, 48, 0.2);
+        }
+        .modal-close::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .modal-close:hover::before {
+            border-color: #FF3B30;
+            animation: closePulse 1.5s ease-out infinite;
+        }
+        @keyframes closePulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
         }
         .modal-title {
             font-size: 1.375rem;
@@ -510,46 +566,84 @@
             border: 0.1875rem solid #fff;
         }
         .modal-nav {
+            position: sticky;
+            bottom: -1.25rem;
+            left: -1.25rem;
+            right: -1.25rem;
+            width: calc(100% + 2.5rem);
+            margin: 1.25rem -1.25rem -1.25rem -1.25rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--color-modal-bg);
+            backdrop-filter: blur(1.5rem) saturate(200%);
+            -webkit-backdrop-filter: blur(1.5rem) saturate(200%);
+            border-top: 1px solid rgba(120, 130, 140, 0.15);
+            box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.08);
+            z-index: 10;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-top: 1.25rem;
             gap: 0.75rem;
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        body.dark-mode .modal-nav {
+            border-top-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 -0.5rem 1.5rem rgba(0, 0, 0, 0.3);
         }
         .modal-nav-arrow {
-            width: 2.5rem;
-            height: 2.5rem;
-            border: 1px solid rgba(120, 130, 140, 0.2);
+            width: 3rem;
+            height: 3rem;
+            border: 1px solid rgba(120, 130, 140, 0.25);
             border-radius: 50%;
-            background: rgba(120, 130, 140, 0.08);
-            color: var(--color-text-secondary);
-            font-size: 1.25rem;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--color-text);
+            font-size: 1.5rem;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        body.dark-mode .modal-nav-arrow {
+            background: rgba(44, 44, 46, 0.9);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3);
         }
         .modal-nav-arrow:hover {
-            background: rgba(120, 130, 140, 0.15);
-            transform: scale(1.05);
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+            transform: translateY(-0.125rem);
+            box-shadow: 0 0.5rem 1rem rgba(0, 122, 255, 0.3);
         }
-        .modal-nav-arrow:active { transform: scale(0.95); }
+        .modal-nav-arrow:active {
+            transform: translateY(0) scale(0.95);
+            box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.15);
+        }
         .modal-progress {
             display: flex;
             gap: 0.5rem;
             align-items: center;
+            padding: 0 0.5rem;
         }
         .modal-progress .dot {
             width: 0.5rem;
             height: 0.5rem;
             border-radius: 50%;
-            background: rgba(120, 130, 140, 0.25);
-            transition: background 0.3s ease, transform 0.3s ease;
+            background: rgba(120, 130, 140, 0.3);
+            transition: all 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+            cursor: pointer;
+        }
+        .modal-progress .dot:hover {
+            background: rgba(120, 130, 140, 0.5);
+            transform: scale(1.2);
         }
         .modal-progress .dot.active {
             background: var(--color-primary);
-            transform: scale(1.4);
+            transform: scale(1.3);
+            box-shadow: 0 0 0.5rem rgba(0, 122, 255, 0.4);
         }
         .payment-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
         .payment-btn {
@@ -972,7 +1066,17 @@
             .ios-social-item { width: 4rem; }
             .ios-social-button { width: 4rem; height: 4rem; }
             .ios-social-button svg { width: 2.5rem; height: 2.5rem; }
-            .modal-box { padding: 1.125rem 0.875rem 1rem; }
+            .modal-box { padding: 1.125rem 0.875rem 4.5rem; }
+            .modal-nav {
+                padding: 0.625rem 0.875rem;
+                margin: 1rem -0.875rem -1rem -0.875rem;
+                width: calc(100% + 1.75rem);
+                left: -0.875rem;
+                right: -0.875rem;
+                bottom: -1rem;
+            }
+            .modal-nav-arrow { width: 2.75rem; height: 2.75rem; font-size: 1.375rem; }
+            .modal-close { width: 2.25rem; height: 2.25rem; font-size: 1.25rem; top: 0.625rem; right: 0.625rem; }
             .theme-toggle { width: 2.25rem; height: 2.25rem; }
             .theme-toggle svg { width: 1.125rem; height: 1.125rem; }
         }
@@ -1174,7 +1278,7 @@
             <!-- Модальні вікна -->
             <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
                 <div class="modal-box">
-                    <button class="modal-close" type="button" onclick="closeModal('modalAbout')" aria-label="Закрити">×</button>
+                    <button class="modal-close" type="button" data-modal-close="modalAbout" aria-label="Закрити">×</button>
                     <img class="modal-photo" src="your-photo.jpg" alt="Сергій" loading="lazy" />
                     <div class="modal-title">Про нас</div>
                     <div class="modal-lead">1 — Знайомство</div>
@@ -1203,7 +1307,7 @@
             </div>
             <div class="modal-overlay" id="modalProcess" role="dialog" aria-modal="true">
                 <div class="modal-box">
-                    <button class="modal-close" type="button" onclick="closeModal('modalProcess')" aria-label="Закрити">×</button>
+                    <button class="modal-close" type="button" data-modal-close="modalProcess" aria-label="Закрити">×</button>
                     <div class="modal-title">Про роботу</div>
                     <div class="modal-lead">2 — Порядок співпраці</div>
                     <div class="modal-text">
@@ -1229,7 +1333,7 @@
             </div>
             <div class="modal-overlay" id="modalPrice" role="dialog" aria-modal="true">
                 <div class="modal-box">
-                    <button class="modal-close" type="button" onclick="closeModal('modalPrice')" aria-label="Закрити">×</button>
+                    <button class="modal-close" type="button" data-modal-close="modalPrice" aria-label="Закрити">×</button>
                     <div class="modal-title">Про вартість</div>
                     <div class="modal-lead">3 — Інвестиція в якість</div>
                     <div class="modal-text">
@@ -1304,7 +1408,7 @@
             </div>
             <div class="modal-overlay" id="modalReviews" role="dialog" aria-modal="true">
                 <div class="modal-box">
-                    <button class="modal-close" type="button" onclick="closeModal('modalReviews')" aria-label="Закрити">×</button>
+                    <button class="modal-close" type="button" data-modal-close="modalReviews" aria-label="Закрити">×</button>
                     <div class="modal-title">Про результат</div>
                     <div class="modal-lead">4 — Відгуки</div>
 
@@ -1376,7 +1480,7 @@
             </div>
             <div class="modal-overlay" id="modalPayment" role="dialog" aria-modal="true">
                 <div class="modal-box">
-                    <button class="modal-close" type="button" onclick="closeModal('modalPayment')" aria-label="Закрити">×</button>
+                    <button class="modal-close" type="button" data-modal-close="modalPayment" aria-label="Закрити">×</button>
                     <div class="modal-title">Оплата</div>
                     <div class="modal-lead">Оберіть зручний спосіб</div>
                     <div class="payment-buttons">
@@ -1417,14 +1521,12 @@
 
         // ============ GALLERY (ІЗОЛЬОВАНИЙ МОДУЛЬ) ============
         const GalleryModule = (() => {
-            // Приватні змінні модуля
             const track = document.getElementById('galleryTrack');
             const galleryWindow = document.getElementById('galleryWindow');
             const dots = [...document.querySelectorAll('.gallery-dot')];
             const counter = document.getElementById('galleryCounter');
             const totalSlides = 8;
             
-            // Стан галереї
             let currentIndex = 0;
             let autoPlayTimer = null;
             let isDragging = false;
@@ -1434,16 +1536,13 @@
             let dragDistance = 0;
             let rafId = null;
             
-            // Перевірка наявності необхідних елементів
             if (!track || !galleryWindow || !counter || dots.length === 0) {
                 console.warn('Gallery elements not found');
                 return { init: () => {}, destroy: () => {} };
             }
             
             const updateGallery = (animate = true) => {
-                if (rafId) {
-                    cancelAnimationFrame(rafId);
-                }
+                if (rafId) cancelAnimationFrame(rafId);
                 
                 rafId = requestAnimationFrame(() => {
                     track.style.transition = animate ? 
@@ -1452,9 +1551,7 @@
                     track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
                     
                     const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
-                    if (counter) {
-                        counter.textContent = `${realIndex + 1} / ${totalSlides}`;
-                    }
+                    if (counter) counter.textContent = `${realIndex + 1} / ${totalSlides}`;
                     dots.forEach((dot, i) => {
                         dot.classList.toggle('active', i === realIndex);
                         dot.setAttribute('aria-selected', i === realIndex ? 'true' : 'false');
@@ -1482,11 +1579,9 @@
                 isTransitioning = true;
                 
                 if (currentIndex <= 0) {
-                    // Перехід до останнього слайда
                     currentIndex = totalSlides;
                     updateGallery(false);
                     
-                    // Даємо браузеру час на рендер
                     setTimeout(() => {
                         currentIndex--;
                         updateGallery(true);
@@ -1517,9 +1612,7 @@
             };
             
             const restartAutoPlay = () => {
-                if (autoPlayTimer) {
-                    clearInterval(autoPlayTimer);
-                }
+                if (autoPlayTimer) clearInterval(autoPlayTimer);
                 autoPlayTimer = setInterval(nextSlide, 4500);
             };
             
@@ -1530,7 +1623,6 @@
                 }
             };
             
-            // ============ TOUCH & MOUSE EVENTS ============
             const handleDragStart = (clientX) => {
                 if (isTransitioning) return;
                 
@@ -1551,11 +1643,9 @@
                 currentX = clientX;
                 dragDistance = currentX - startX;
                 
-                // Обмежуємо перетягування
                 const maxDrag = galleryWindow.offsetWidth * 0.8;
                 const boundedDrag = Math.max(-maxDrag, Math.min(maxDrag, dragDistance));
                 
-                // Рухаємо слайди за пальцем
                 const offset = -currentIndex * 100;
                 const dragPercent = (boundedDrag / galleryWindow.offsetWidth) * 100;
                 
@@ -1569,32 +1659,26 @@
                 galleryWindow.classList.remove('dragging');
                 galleryWindow.style.cursor = '';
                 
-                const threshold = galleryWindow.offsetWidth * 0.2; // 20% ширини для свайпу
+                const threshold = galleryWindow.offsetWidth * 0.2;
                 
                 if (Math.abs(dragDistance) > threshold) {
-                    if (dragDistance < 0) {
-                        nextSlide();
-                    } else {
-                        prevSlide();
-                    }
+                    if (dragDistance < 0) nextSlide();
+                    else prevSlide();
                 } else {
-                    // Повертаємось до поточного слайда
                     updateGallery(true);
                 }
                 
                 restartAutoPlay();
             };
             
-            // ============ EVENT LISTENERS ============
             const addEventListeners = () => {
-                // Touch Events
                 galleryWindow.addEventListener('touchstart', (e) => {
                     handleDragStart(e.touches[0].clientX);
                 }, { passive: true });
                 
                 galleryWindow.addEventListener('touchmove', (e) => {
                     if (isDragging) {
-                        e.preventDefault(); // Запобігаємо скролу сторінки тільки під час перетягування
+                        e.preventDefault();
                         handleDragMove(e.touches[0].clientX);
                     }
                 }, { passive: false });
@@ -1602,18 +1686,13 @@
                 galleryWindow.addEventListener('touchend', handleDragEnd);
                 galleryWindow.addEventListener('touchcancel', handleDragEnd);
                 
-                // Mouse Events (для десктопа)
                 galleryWindow.addEventListener('mousedown', (e) => {
-                    // Ігноруємо кліки по точках навігації
                     if (e.target.closest('.gallery-dots')) return;
                     
                     e.preventDefault();
                     handleDragStart(e.clientX);
                     
-                    const handleMouseMove = (e) => {
-                        handleDragMove(e.clientX);
-                    };
-                    
+                    const handleMouseMove = (e) => handleDragMove(e.clientX);
                     const handleMouseUp = () => {
                         handleDragEnd();
                         document.removeEventListener('mousemove', handleMouseMove);
@@ -1624,68 +1703,51 @@
                     document.addEventListener('mouseup', handleMouseUp);
                 });
                 
-                // Кліки по краях галереї
                 galleryWindow.addEventListener('click', (e) => {
-                    // Ігноруємо кліки по точках навігації
                     if (e.target.closest('.gallery-dots')) return;
-                    
                     if (isDragging || Math.abs(dragDistance) > 10) return;
                     
                     const rect = galleryWindow.getBoundingClientRect();
                     const clickX = e.clientX - rect.left;
                     const width = rect.width;
                     
-                    if (clickX < width * 0.2) {
-                        prevSlide();
-                    } else if (clickX > width * 0.8) {
-                        nextSlide();
-                    }
+                    if (clickX < width * 0.2) prevSlide();
+                    else if (clickX > width * 0.8) nextSlide();
                 });
                 
-                // Кліки по точках
                 dots.forEach((dot, i) => {
                     dot.addEventListener('click', (e) => {
-                        e.stopPropagation(); // Запобігаємо конфлікту з кліками по галереї
+                        e.stopPropagation();
                         e.preventDefault();
                         goToSlide(i);
                         restartAutoPlay();
                     });
                 });
                 
-                // Hover ефекти для десктопа
                 galleryWindow.addEventListener('mouseenter', stopAutoPlay);
                 galleryWindow.addEventListener('mouseleave', restartAutoPlay);
                 
-                // Пауза автопрокрутки коли вкладка неактивна
                 document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
-                        stopAutoPlay();
-                    } else {
-                        restartAutoPlay();
-                    }
+                    if (document.hidden) stopAutoPlay();
+                    else restartAutoPlay();
                 });
             };
             
-            // ============ ІНІЦІАЛІЗАЦІЯ ============
             const init = () => {
                 updateGallery(false);
                 addEventListeners();
                 restartAutoPlay();
             };
             
-            // Публічний API
             return {
                 init,
                 destroy: () => {
                     stopAutoPlay();
-                    if (rafId) {
-                        cancelAnimationFrame(rafId);
-                    }
+                    if (rafId) cancelAnimationFrame(rafId);
                 }
             };
         })();
         
-        // Запускаємо галерею
         GalleryModule.init();
 
         // ============ LIGHTBOX ============
@@ -1714,65 +1776,122 @@
             if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
         });
 
-        // ============ MODALS ============
-        const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-        
-        const updateProgress = (activeId) => {
-            const activeIndex = modalOrder.indexOf(activeId);
-            document.querySelectorAll('.modal-progress').forEach((progress) => {
-                progress.querySelectorAll('.dot').forEach((dot, i) => {
-                    dot.classList.toggle('active', i === activeIndex);
-                });
+        // ============ MODALS (ІЗОЛЬОВАНИЙ МОДУЛЬ) ============
+        const ModalsModule = (() => {
+            const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+            const modalElements = {};
+            
+            modalOrder.forEach(id => {
+                modalElements[id] = document.getElementById(id);
             });
-        };
-
-        const openModal = (id) => {
-            const modal = document.getElementById(id);
-            if (!modal) return;
-            modal.classList.add('active');
-            body.style.overflow = 'hidden';
-            updateProgress(id);
-        };
-        const closeModal = (id) => {
-            const modal = document.getElementById(id);
-            if (!modal) return;
-            modal.classList.remove('active');
-            body.style.overflow = '';
-        };
-        document.querySelectorAll('.widget-card').forEach((card) => {
-            card.addEventListener('click', () => {
-                if (typeof gtag === 'function') {
-                    gtag('event', 'card_open', {
-                        'event_category': 'cards',
-                        'event_label': card.dataset.modal
-                    });
-                }
-                const modalId = card.dataset.modal;
-                if (modalId) openModal(modalId);
-            });
-            card.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    const modalId = card.dataset.modal;
-                    if (modalId) openModal(modalId);
-                }
-            });
-        });
-        document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
-        });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                const open = document.querySelector('.modal-overlay.active');
-                if (open) closeModal(open.id);
+            
+            let currentModal = null;
+            let isTransitioning = false;
+            
+            if (modalOrder.some(id => !modalElements[id])) {
+                console.warn('Some modal elements not found');
+                return { init: () => {}, openModal: () => {}, closeModal: () => {}, goToModal: () => {}, getCurrentModal: () => null };
             }
-        });
-
-        document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
-            arrow.addEventListener('click', () => {
-                const overlay = arrow.closest('.modal-overlay');
-                const direction = arrow.dataset.direction;
-                const currentIndex = modalOrder.indexOf(overlay.id);
+            
+            const updateProgress = (activeId) => {
+                const activeIndex = modalOrder.indexOf(activeId);
+                document.querySelectorAll('.modal-progress').forEach((progress) => {
+                    progress.querySelectorAll('.dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === activeIndex);
+                    });
+                });
+            };
+            
+            const openModal = (id, direction = 'forward') => {
+                if (isTransitioning) return;
+                
+                const modal = modalElements[id] || document.getElementById(id);
+                if (!modal) return;
+                
+                isTransitioning = true;
+                
+                if (currentModal && currentModal !== modal) {
+                    const currentBox = currentModal.querySelector('.modal-box');
+                    const currentOverlay = currentModal;
+                    
+                    currentBox.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+                    currentOverlay.style.transition = 'opacity 0.3s ease, visibility 0.3s ease';
+                    
+                    if (direction === 'forward') {
+                        currentBox.style.transform = 'translateX(-100%) scale(0.96)';
+                    } else {
+                        currentBox.style.transform = 'translateX(100%) scale(0.96)';
+                    }
+                    currentOverlay.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        currentModal.classList.remove('active');
+                        currentBox.style.transition = '';
+                        currentBox.style.transform = '';
+                        currentOverlay.style.transition = '';
+                        currentOverlay.style.opacity = '';
+                    }, 300);
+                }
+                
+                const newBox = modal.querySelector('.modal-box');
+                modal.classList.add('active');
+                body.style.overflow = 'hidden';
+                
+                if (currentModal && currentModal !== modal) {
+                    if (direction === 'forward') {
+                        newBox.style.transition = 'none';
+                        newBox.style.transform = 'translateX(100%) scale(0.96)';
+                    } else {
+                        newBox.style.transition = 'none';
+                        newBox.style.transform = 'translateX(-100%) scale(0.96)';
+                    }
+                }
+                
+                setTimeout(() => {
+                    newBox.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    newBox.style.transform = 'translateY(0) scale(1)';
+                    
+                    setTimeout(() => {
+                        newBox.style.transition = '';
+                        newBox.style.transform = '';
+                        isTransitioning = false;
+                    }, 300);
+                }, 50);
+                
+                currentModal = modal;
+                updateProgress(id);
+            };
+            
+            const closeModal = (id) => {
+                const modal = modalElements[id] || document.getElementById(id);
+                if (!modal) return;
+                
+                const box = modal.querySelector('.modal-box');
+                
+                box.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+                modal.style.transition = 'opacity 0.3s ease, visibility 0.3s ease';
+                
+                box.style.transform = 'translateY(100%) scale(0.96)';
+                modal.style.opacity = '0';
+                
+                setTimeout(() => {
+                    modal.classList.remove('active');
+                    box.style.transition = '';
+                    box.style.transform = '';
+                    modal.style.transition = '';
+                    modal.style.opacity = '';
+                    body.style.overflow = '';
+                    
+                    if (currentModal === modal) {
+                        currentModal = null;
+                    }
+                }, 300);
+            };
+            
+            const goToModal = (direction) => {
+                if (isTransitioning || !currentModal) return;
+                
+                const currentIndex = modalOrder.indexOf(currentModal.id);
                 
                 let targetIndex;
                 if (direction === 'next') {
@@ -1782,60 +1901,174 @@
                 }
                 
                 const targetId = modalOrder[targetIndex];
-                if (targetId !== overlay.id) {
-                    closeModal(overlay.id);
-                    setTimeout(() => openModal(targetId), 300);
+                if (targetId !== currentModal.id) {
+                    openModal(targetId, direction === 'next' ? 'forward' : 'backward');
                 }
-            });
-        });
-
-        document.querySelectorAll('.modal-box').forEach((box) => {
-            let startX = 0;
-            let startY = 0;
-            let isHorizontal = false;
+            };
             
-            box.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                isHorizontal = false;
-            }, { passive: true });
-            
-            box.addEventListener('touchmove', (e) => {
-                const diffX = Math.abs(e.touches[0].clientX - startX);
-                const diffY = Math.abs(e.touches[0].clientY - startY);
-                if (diffX > 30 && diffX > diffY) isHorizontal = true;
-            }, { passive: true });
-            
-            box.addEventListener('touchend', (e) => {
-                if (!isHorizontal) {
-                    const diffY = e.changedTouches[0].clientY - startY;
-                    if (diffY > 100 && box.scrollTop === 0) {
-                        const overlay = box.closest('.modal-overlay');
-                        closeModal(overlay.id);
-                    }
-                    return;
-                }
+            const init = () => {
+                document.querySelectorAll('.widget-card').forEach((card) => {
+                    card.addEventListener('click', () => {
+                        if (typeof gtag === 'function') {
+                            gtag('event', 'card_open', {
+                                'event_category': 'cards',
+                                'event_label': card.dataset.modal
+                            });
+                        }
+                        const modalId = card.dataset.modal;
+                        if (modalId) openModal(modalId);
+                    });
+                    
+                    card.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const modalId = card.dataset.modal;
+                            if (modalId) openModal(modalId);
+                        }
+                    });
+                });
                 
-                const diff = startX - e.changedTouches[0].clientX;
-                if (Math.abs(diff) > 80) {
-                    const overlay = box.closest('.modal-overlay');
-                    const currentIndex = modalOrder.indexOf(overlay.id);
-                    
-                    let targetIndex;
-                    if (diff > 0) {
-                        targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
-                    } else {
-                        targetIndex = Math.max(currentIndex - 1, 0);
+                modalOrder.forEach(id => {
+                    const modal = modalElements[id];
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) closeModal(id);
+                    });
+                });
+                
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        const open = document.querySelector('.modal-overlay.active');
+                        if (open) closeModal(open.id);
                     }
+                });
+                
+                document.querySelectorAll('.modal-close').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const modal = btn.closest('.modal-overlay');
+                        if (modal) closeModal(modal.id);
+                    });
+                });
+                
+                document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
+                    arrow.addEventListener('click', () => {
+                        const direction = arrow.dataset.direction;
+                        goToModal(direction === 'next' ? 'next' : 'prev');
+                    });
+                });
+                
+                // Touch events для свайпів
+                modalOrder.forEach(id => {
+                    const modal = modalElements[id];
+                    const box = modal.querySelector('.modal-box');
                     
-                    const targetId = modalOrder[targetIndex];
-                    if (targetId !== overlay.id) {
-                        closeModal(overlay.id);
-                        setTimeout(() => openModal(targetId), 300);
-                    }
-                }
-            });
-        });
+                    box.addEventListener('touchstart', (e) => {
+                        touchStartX = e.touches[0].clientX;
+                        touchStartY = e.touches[0].clientY;
+                        touchCurrentX = touchStartX;
+                        isSwiping = true;
+                        isHorizontalSwipe = false;
+                    }, { passive: true });
+                    
+                    box.addEventListener('touchmove', (e) => {
+                        if (!isSwiping) return;
+                        
+                        const diffX = Math.abs(e.touches[0].clientX - touchStartX);
+                        const diffY = Math.abs(e.touches[0].clientY - touchStartY);
+                        
+                        if (diffX > 20 && diffX > diffY) {
+                            isHorizontalSwipe = true;
+                            
+                            if (e.cancelable) e.preventDefault();
+                            
+                            const currentIndex = modalOrder.indexOf(modal.id);
+                            const maxIndex = modalOrder.length - 1;
+                            
+                            const canSwipeLeft = currentIndex < maxIndex;
+                            const canSwipeRight = currentIndex > 0;
+                            
+                            const dragDistance = e.touches[0].clientX - touchStartX;
+                            
+                            let boundedDrag = dragDistance;
+                            if (!canSwipeLeft && dragDistance < 0) {
+                                boundedDrag = Math.max(dragDistance, -50);
+                            }
+                            if (!canSwipeRight && dragDistance > 0) {
+                                boundedDrag = Math.min(dragDistance, 50);
+                            }
+                            
+                            box.style.transition = 'none';
+                            box.style.transform = `translateX(${boundedDrag}px)`;
+                            
+                            const opacity = 1 - Math.min(Math.abs(boundedDrag) / 500, 0.3);
+                            box.style.opacity = opacity;
+                        }
+                    }, { passive: false });
+                    
+                    box.addEventListener('touchend', (e) => {
+                        if (!isSwiping) return;
+                        isSwiping = false;
+                        
+                        if (isHorizontalSwipe) {
+                            const dragDistance = e.changedTouches[0].clientX - touchStartX;
+                            const threshold = 80;
+                            
+                            box.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+                            box.style.opacity = '1';
+                            
+                            if (Math.abs(dragDistance) > threshold) {
+                                if (dragDistance < 0) goToModal('next');
+                                else goToModal('prev');
+                            } else {
+                                box.style.transform = 'translateX(0)';
+                                setTimeout(() => {
+                                    box.style.transition = '';
+                                    box.style.transform = '';
+                                    box.style.opacity = '';
+                                }, 300);
+                            }
+                        }
+                        
+                        isHorizontalSwipe = false;
+                    });
+                    
+                    box.addEventListener('touchcancel', () => {
+                        if (isSwiping) {
+                            isSwiping = false;
+                            isHorizontalSwipe = false;
+                            box.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease';
+                            box.style.transform = 'translateX(0)';
+                            box.style.opacity = '1';
+                            setTimeout(() => {
+                                box.style.transition = '';
+                                box.style.transform = '';
+                                box.style.opacity = '';
+                            }, 300);
+                        }
+                    });
+                });
+            };
+            
+            // Змінні для touch events
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isSwiping = false;
+            let isHorizontalSwipe = false;
+            
+            return {
+                init,
+                openModal,
+                closeModal,
+                goToModal,
+                getCurrentModal: () => currentModal
+            };
+        })();
+        
+        ModalsModule.init();
+        
+        // Глобальні функції
+        window.openModal = (id) => ModalsModule.openModal(id);
+        window.closeModal = (id) => ModalsModule.closeModal(id);
+        window.ModalsModule = ModalsModule;
 
         // ============ CALCULATOR ============
         const calcState = { bathrooms: 1, system: 'tee' };
