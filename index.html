@@ -262,7 +262,7 @@
         .gallery-window:active { cursor: grabbing; }
         .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
         .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
-        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: lazy; cursor: zoom-in; }
+        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: lazy; }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -848,31 +848,7 @@
             font-size: 1.25rem;
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
-            z-index: 10;
         }
-        .lightbox-arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 3rem;
-            height: 3rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 1.5rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(0.625rem);
-            transition: background 0.2s ease, transform 0.2s ease;
-            z-index: 10;
-        }
-        .lightbox-arrow:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-50%) scale(1.05); }
-        .lightbox-arrow:active { transform: translateY(-50%) scale(0.95); }
-        .lightbox-prev { left: 1rem; }
-        .lightbox-next { right: 1rem; }
         .ios-social-shell {
             width: 25rem;
             max-width: calc(100vw - 1.75rem);
@@ -961,9 +937,6 @@
             .modal-box { padding: 1.125rem 0.875rem 1rem; }
             .theme-toggle { width: 2.25rem; height: 2.25rem; }
             .theme-toggle svg { width: 1.125rem; height: 1.125rem; }
-            .lightbox-arrow { width: 2.5rem; height: 2.5rem; font-size: 1.25rem; }
-            .lightbox-prev { left: 0.5rem; }
-            .lightbox-next { right: 0.5rem; }
         }
         @media (max-width: 23.75rem) {
             .logo-wrapper { width: 3.5rem; height: 3.5rem; }
@@ -1346,7 +1319,7 @@
                             <path d="M21.35 11.1H12v3.9h5.35c-.5 2.6-2.6 4.1-5.35 4.1-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8c1.4 0 2.7.5 3.7 1.4l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12s3.6 8 8 8c4.6 0 7.7-3.2 7.7-7.9 0-.5 0-1-.1-1z" fill="#4285F4"/>
                             <path d="M3.5 6.5l3.2 2.3C7.3 7.3 9.5 6 12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12c0 .8.1 1.5.3 2.2l-.8-7.7z" fill="#EA4335"/>
                             <path d="M12 21c2.8 0 5.3-1 7-2.7l-3.2-2.5c-1 .7-2.3 1.1-3.8 1.1-2.8 0-5.1-1.9-5.9-4.4l-3.2 2.5C4.3 18.3 7.9 21 12 21z" fill="#34A853"/>
-                            <path d="M21.35 11.1H12v3.9h5.35c-.3 1.4-1 2.6-2.1 3.5l3.2 2.5c1.9-1.8 3-4.3 3-7.4 0-.5 0-1-.1-1.5l.1-1 z" fill="#FBBC05"/>
+                            <path d="M21.35 11.1H12v3.9h5.35c-.3 1.4-1 2.6-2.1 3.5l3.2 2.5c1.9-1.8 3-4.3 3-7.4 0-.5 0-1-.1-1.5l.1-1z" fill="#FBBC05"/>
                         </svg>
                         Залишити відгук у Google
                     </a>
@@ -1384,9 +1357,7 @@
             <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
-                <button class="lightbox-arrow lightbox-prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">‹</button>
                 <img id="lightboxImage" src="" alt="" />
-                <button class="lightbox-arrow lightbox-next" id="lightboxNext" type="button" aria-label="Наступне фото">›</button>
             </div>
         </div>
     </div>
@@ -1458,98 +1429,26 @@
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
-        const lightboxPrev = document.getElementById('lightboxPrev');
-        const lightboxNext = document.getElementById('lightboxNext');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
-        let lightboxIndex = 0;
-
         const openLightbox = (i) => {
-            lightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
-            updateLightboxImage();
+            const index = Math.max(0, Math.min(totalSlides - 1, i));
+            lightboxImage.src = gallerySlides[index].src;
+            lightboxImage.alt = gallerySlides[index].alt;
+            lightboxImage.style.transform = 'scale(0.95)';
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
-            stopAutoPlay();
+            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
         };
-
-        const updateLightboxImage = () => {
-            lightboxImage.style.transform = 'scale(0.95)';
-            lightboxImage.src = gallerySlides[lightboxIndex].src;
-            lightboxImage.alt = gallerySlides[lightboxIndex].alt;
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    lightboxImage.style.transform = 'scale(1)';
-                });
-            });
-        };
-
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transform = '';
             body.style.overflow = '';
-            restartAutoPlay();
         };
-
-        const lightboxNextSlide = () => {
-            lightboxIndex = (lightboxIndex + 1) % totalSlides;
-            updateLightboxImage();
-        };
-
-        const lightboxPrevSlide = () => {
-            lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
-            updateLightboxImage();
-        };
-
-        gallerySlides.slice(0, totalSlides).forEach((slide, i) => { 
-            slide.addEventListener('click', () => openLightbox(i)); 
-        });
-
+        gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
         lightboxClose.addEventListener('click', closeLightbox);
-        lightboxNext.addEventListener('click', lightboxNextSlide);
-        lightboxPrev.addEventListener('click', lightboxPrevSlide);
-
-        lightbox.addEventListener('click', (e) => { 
-            if (e.target === lightbox) closeLightbox(); 
-        });
-
-        // Жести свайпу в лайтбоксі
-        let lbStartX = 0;
-        let lbCurrentX = 0;
-        let lbIsDragging = false;
-
-        lightbox.addEventListener('touchstart', (e) => {
-            lbStartX = e.touches[0].clientX;
-            lbCurrentX = lbStartX;
-            lbIsDragging = true;
-        }, { passive: true });
-
-        lightbox.addEventListener('touchmove', (e) => {
-            if (lbIsDragging) lbCurrentX = e.touches[0].clientX;
-        }, { passive: true });
-
-        lightbox.addEventListener('touchend', () => {
-            if (!lbIsDragging) return;
-            lbIsDragging = false;
-            const diff = lbCurrentX - lbStartX;
-            if (Math.abs(diff) >= 50) {
-                if (diff < 0) {
-                    lightboxNextSlide();
-                } else {
-                    lightboxPrevSlide();
-                }
-            }
-        });
-
+        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
         document.addEventListener('keydown', (e) => {
-            if (lightbox.classList.contains('active')) {
-                if (e.key === 'Escape') closeLightbox();
-                if (e.key === 'ArrowRight') lightboxNextSlide();
-                if (e.key === 'ArrowLeft') lightboxPrevSlide();
-            } else {
-                if (e.key === 'Escape') {
-                    const open = document.querySelector('.modal-overlay.active');
-                    if (open) closeModal(open.id);
-                }
-            }
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
         });
 
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
@@ -1597,6 +1496,12 @@
         });
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
             overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const open = document.querySelector('.modal-overlay.active');
+                if (open) closeModal(open.id);
+            }
         });
 
         document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
@@ -1665,46 +1570,120 @@
                         setTimeout(() => openModal(targetId), 300);
                     }
                 }
-            }, { passive: true });
+            });
         });
 
-        // Швидкий розрахунок та інші інтерактивні елементи
-        const segments = document.querySelectorAll('.calc-seg-btn');
-        const calcPrice = document.getElementById('calcPrice');
-        const calcPayBtn = document.getElementById('calcPayBtn');
-        const calcTelegramBtn = document.getElementById('calcTelegramBtn');
-        const currentYearEl = document.getElementById('currentYear');
-        if (currentYearEl) currentYearEl.textContent = new Date().getFullYear();
-
-        const calcState = { bathrooms: '1', system: 'tee' };
-        const prices = { '1-tee': '160 000 грн', '1-radial': '195 000 грн', '2-tee': '250 000 грн', '2-radial': '310 000 грн' };
-
-        segments.forEach((btn) => {
+        const calcState = { bathrooms: 1, system: 'tee' };
+        const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
+        const calcPriceElement = document.getElementById('calcPrice');
+        const updateCalc = () => {
+            const key = `${calcState.bathrooms}-${calcState.system}`;
+            const total = calcPrices[key] || 160000;
+            calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
+        };
+        document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
+                if (typeof gtag === 'function') {
+                    gtag('event', 'calc_button', {
+                        'event_category': 'calculator',
+                        'event_label': btn.dataset.group + '_' + btn.dataset.value
+                    });
+                }
                 const group = btn.dataset.group;
                 const value = btn.dataset.value;
+                if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
+                else if (group === 'system') calcState.system = value;
                 document.querySelectorAll(`.calc-seg-btn[data-group="${group}"]`).forEach((b) => b.classList.remove('active'));
                 btn.classList.add('active');
-                calcState[group] = value;
-                const key = `${calcState.bathrooms}-${calcState.system}`;
-                if (calcPrice && prices[key]) calcPrice.textContent = prices[key];
+                updateCalc();
             });
         });
+        if (calcPriceElement) updateCalc();
 
-        if (calcPayBtn) {
-            calcPayBtn.addEventListener('click', () => {
+        const calcPayBtn = document.getElementById('calcPayBtn');
+        const calcTelegramBtn = document.getElementById('calcTelegramBtn');
+        calcPayBtn.addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'pay_button', {
+                    'event_category': 'calculator',
+                    'event_label': 'pay_consultation'
+                });
+            }
+            openModal('modalPayment');
+        });
+        const paymentModal = document.getElementById('modalPayment');
+        paymentModal.addEventListener('click', (e) => {
+            if (e.target === paymentModal) {
+                closeModal('modalPayment');
+                calcTelegramBtn.style.display = 'flex';
                 calcPayBtn.style.display = 'none';
-                if (calcTelegramBtn) calcTelegramBtn.style.display = 'flex';
-                window.open('https://send.monobank.ua/47w3DWsRew', '_blank', 'noopener');
-            });
-        }
+            }
+        });
+        document.querySelector('#modalPayment .modal-close').addEventListener('click', () => {
+            closeModal('modalPayment');
+            calcTelegramBtn.style.display = 'flex';
+            calcPayBtn.style.display = 'none';
+        });
+        calcTelegramBtn.addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'telegram_send', {
+                    'event_category': 'calculator',
+                    'event_label': 'send_project'
+                });
+            }
+            const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
+            window.open(`https://t.me/sa_master?text=${message}`, '_blank');
+        });
 
-        if (calcTelegramBtn) {
-            calcTelegramBtn.addEventListener('click', () => {
-                const text = encodeURIComponent(`Вітаю! Оплатив консультацію та прорахунок (санвузлів: ${calcState.bathrooms}, система: ${calcState.system}). Надсилаю проєкт.`);
-                window.open(`https://t.me/sa_master?text=${text}`, '_blank', 'noopener');
-            });
-        }
+        document.querySelector('.review-google-btn').addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'google_review', {
+                    'event_category': 'reviews',
+                    'event_label': 'google_review_button'
+                });
+            }
+        });
+
+        const socialTrack = document.getElementById('socialTrack');
+        const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
+        const socialViewport = document.getElementById('socialViewport');
+        let socialPage = 0;
+        let socialStartX = 0;
+        let socialCurrentX = 0;
+        let socialDragging = false;
+        const updateSocial = (page, animate = true) => {
+            socialPage = Math.max(0, Math.min(1, page));
+            socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
+            socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
+            socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
+        };
+        socialViewport.addEventListener('touchstart', (e) => {
+            socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
+        }, { passive: true });
+        socialViewport.addEventListener('touchmove', (e) => {
+            if (socialDragging) socialCurrentX = e.touches[0].clientX;
+        }, { passive: true });
+        socialViewport.addEventListener('touchend', () => {
+            if (!socialDragging) return;
+            socialDragging = false;
+            const diff = socialCurrentX - socialStartX;
+            if (Math.abs(diff) < 45) return;
+            updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const yearSpan = document.getElementById('currentYear');
+            if (yearSpan) yearSpan.textContent = new Date().getFullYear();
+        });
+    </script>
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XECEJ8EL4T"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XECEJ8EL4T');
     </script>
 </body>
 </html>
