@@ -247,8 +247,6 @@
         .theme-toggle .icon-moon { display: block; }
         body.dark-mode .theme-toggle .icon-sun { display: block; }
         body.dark-mode .theme-toggle .icon-moon { display: none; }
-        
-        /* ===== ПОКРАЩЕНА ГАЛЕРЕЯ ===== */
         .gallery {
             position: relative;
             overflow: hidden;
@@ -260,37 +258,11 @@
             box-shadow: var(--color-glass-shadow);
             margin-top: 0.625rem;
         }
-        .gallery-window { 
-            position: relative; 
-            width: 100%; 
-            aspect-ratio: 16/10; 
-            overflow: hidden; 
-            cursor: grab;
-            touch-action: pan-y; /* Дозволяє вертикальний скрол на мобільних */
-        }
+        .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
         .gallery-window:active { cursor: grabbing; }
-        .gallery-track { 
-            display: flex; 
-            height: 100%; 
-            transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
-            will-change: transform;
-        }
-        .gallery-slide { 
-            flex: 0 0 100%; 
-            height: 100%; 
-            overflow: hidden; 
-            background: #D2D6DC;
-            position: relative;
-        }
-        .gallery-slide img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            display: block; 
-            pointer-events: none; /* Вимикаємо drag на зображеннях */
-            user-select: none;
-            -webkit-user-drag: none;
-        }
+        .gallery-track { display: flex; height: 100%; transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1); }
+        .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
+        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: lazy; decoding: async; pointer-events: none; user-select: none; -webkit-user-drag: none; }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -301,8 +273,8 @@
             display: flex;
             align-items: center;
             border-radius: 0.75rem;
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #fff;
             font-size: 0.75rem;
             font-weight: 600;
@@ -319,7 +291,7 @@
             gap: 0.25rem;
             padding: 0.25rem 0.4375rem;
             border-radius: 0.875rem;
-            background: rgba(0, 0, 0, 0.35);
+            background: rgba(0, 0, 0, 0.25);
             backdrop-filter: blur(0.75rem);
             z-index: 5;
         }
@@ -333,46 +305,7 @@
             cursor: pointer;
             padding: 0;
         }
-        .gallery-dot.active { 
-            width: 0.875rem; 
-            border-radius: 0.25rem; 
-            background: #fff; 
-        }
-        
-        /* Стрілки навігації для галереї */
-        .gallery-arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 2rem;
-            height: 2rem;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #fff;
-            font-size: 1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 6;
-            transition: background 0.2s ease, transform 0.2s ease;
-            backdrop-filter: blur(0.5rem);
-            -webkit-backdrop-filter: blur(0.5rem);
-        }
-        .gallery-arrow:hover {
-            background: rgba(0, 0, 0, 0.6);
-        }
-        .gallery-arrow:active {
-            transform: translateY(-50%) scale(0.9);
-        }
-        .gallery-arrow.prev { left: 0.5rem; }
-        .gallery-arrow.next { right: 0.5rem; }
-        .gallery-arrow:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-        
+        .gallery-dot.active { width: 0.875rem; border-radius: 0.25rem; background: #fff; }
         .widgets-section { margin: 0.625rem 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
         .widget-card {
             position: relative;
@@ -391,11 +324,7 @@
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
             opacity: 0;
-            animation: fadeInCard 0.5s ease-out forwards;
-        }
-        @keyframes fadeInCard {
-            0% { opacity: 0; transform: translateY(0.5rem); }
-            100% { opacity: 1; transform: translateY(0); }
+            animation: heroReveal 0.6s ease-out forwards;
         }
         body.dark-mode .widget-card {
             background: rgba(44, 44, 46, 0.72);
@@ -428,10 +357,10 @@
         body.dark-mode .widget-card:active {
             box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
-        .widget-card:nth-child(1) { animation-delay: 0.05s; }
-        .widget-card:nth-child(2) { animation-delay: 0.1s; }
-        .widget-card:nth-child(3) { animation-delay: 0.15s; }
-        .widget-card:nth-child(4) { animation-delay: 0.2s; }
+        .widget-card:nth-child(1) { animation-delay: 0.1s; }
+        .widget-card:nth-child(2) { animation-delay: 0.2s; }
+        .widget-card:nth-child(3) { animation-delay: 0.3s; }
+        .widget-card:nth-child(4) { animation-delay: 0.4s; }
         .widget-top {
             display: flex;
             flex-direction: column;
@@ -481,8 +410,6 @@
         .widget-text { display: none; }
         .widget-sub { display: none; }
         .widget-desc { display: none; }
-        
-        /* ===== ПОКРАЩЕНІ МОДАЛЬНІ ВІКНА ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -514,16 +441,12 @@
             transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
         .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
-        
-        /* Контейнер для скролу контенту */
         .modal-content {
             flex: 1;
             overflow-y: auto;
             padding: 1.25rem;
             -webkit-overflow-scrolling: touch;
         }
-        
-        /* Покращений хрестик закриття */
         .modal-close {
             position: absolute;
             top: 0.75rem;
@@ -554,9 +477,6 @@
             transform: rotate(90deg);
             box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
         }
-        .modal-close:active {
-            transform: rotate(90deg) scale(0.9);
-        }
         body.dark-mode .modal-close {
             background: rgba(60, 60, 67, 0.9);
             color: #F2F2F7;
@@ -567,7 +487,6 @@
             color: #fff;
             border-color: #FF453A;
         }
-        
         .modal-title {
             font-size: 1.375rem;
             font-weight: 700;
@@ -587,8 +506,6 @@
             margin: 2.5rem 0 0.5rem 0.875rem;
             border: 0.1875rem solid #fff;
         }
-        
-        /* Закріплена навігація в модальних вікнах */
         .modal-nav {
             display: flex;
             align-items: center;
@@ -973,16 +890,61 @@
             position: absolute;
             top: 0.875rem;
             right: 0.875rem;
-            width: 2.25rem;
-            height: 2.25rem;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            backdrop-filter: blur(0.625rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .lightbox-close:hover {
+            background: #FF3B30;
+            border-color: #FF3B30;
+            transform: rotate(90deg);
+        }
+        .lightbox-counter {
+            position: absolute;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 0.875rem;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+        }
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #fff;
             font-size: 1.25rem;
             cursor: pointer;
-            backdrop-filter: blur(0.625rem);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease;
         }
+        .lightbox-nav:hover {
+            background: rgba(0, 0, 0, 0.7);
+        }
+        .lightbox-nav.prev { left: 1rem; }
+        .lightbox-nav.next { right: 1rem; }
         .ios-social-shell {
             width: 25rem;
             max-width: calc(100vw - 1.75rem);
@@ -1073,7 +1035,6 @@
             .modal-nav { padding: 0.625rem 0.875rem; }
             .theme-toggle { width: 2.25rem; height: 2.25rem; }
             .theme-toggle svg { width: 1.125rem; height: 1.125rem; }
-            .gallery-arrow { width: 1.75rem; height: 1.75rem; font-size: 0.875rem; }
         }
         @media (max-width: 23.75rem) {
             .logo-wrapper { width: 3.5rem; height: 3.5rem; }
@@ -1130,18 +1091,15 @@
                 <div class="gallery">
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" decoding="async" /></div>
+                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" decoding="async" /></div>
                         </div>
-                        <button class="gallery-arrow prev" id="galleryPrev" type="button" aria-label="Попереднє фото">❮</button>
-                        <button class="gallery-arrow next" id="galleryNext" type="button" aria-label="Наступне фото">❯</button>
                         <div class="gallery-counter" id="galleryCounter" aria-live="polite">1 / 8</div>
                         <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Навігація по фото">
                             <button class="gallery-dot active" type="button" role="tab" aria-selected="true" aria-label="Фото 1"></button>
@@ -1312,13 +1270,13 @@
                         <div class="modal-title">Про роботу</div>
                         <div class="modal-lead">2 — Порядок співпраці</div>
                         <div class="modal-text">
-                            <p><strong>01. Географія</strong><br />Працюємо лише по м. Київ.</p>
-                            <p><strong>02. Умови початку робіт</strong><br />Приступаємо до виконання робіт за наявності геометрії приміщень (після штукатурних робіт) та чіткого розуміння концепції.</p>
-                            <p><strong>03. Планування графіка</strong><br />Графік плануємо завчасно — за 1–2 місяці.</p>
-                            <p><strong>04. Бронювання графіка</strong><br />Бронюємо графік після внесення авансу 50%. Аванс не повертається при перенесенні з вини замовника.</p>
-                            <p><strong>05. Комплектація</strong><br />Комплектацією займаємось самостійно: закупка, доставка, прийом товару. Можемо допомогти у виборі та закупівлі приладів.</p>
-                            <p><strong>06. Готовність об'єкта</strong><br />На момент початку робіт об'єкт має бути закомплектований сантехприладами: інсталяції для унітазів, вбудовані частини змішувачів, трапи, радіатори.</p>
-                            <p><strong>07. Ідеальні умови</strong><br />Коли закуплені сантехприлади та чорнові матеріали.</p>
+                            <p>✅ <strong>Географія</strong><br />Працюємо лише по м. Київ.</p>
+                            <p>✅ <strong>Умови початку робіт</strong><br />Приступаємо до виконання робіт за наявності геометрії приміщень (після штукатурних робіт) та чіткого розуміння концепції.</p>
+                            <p>✅ <strong>Планування графіка</strong><br />Графік плануємо завчасно — за 1–2 місяці.</p>
+                            <p>✅ <strong>Бронювання графіка</strong><br />Бронюємо графік після внесення авансу 50%. Аванс не повертається при перенесенні з вини замовника.</p>
+                            <p>✅ <strong>Комплектація</strong><br />Комплектацією займаємось самостійно: закупка, доставка, прийом товару. Можемо допомогти у виборі та закупівлі приладів.</p>
+                            <p>✅ <strong>Готовність об'єкта</strong><br />На момент початку робіт об'єкт має бути закомплектований сантехприладами: інсталяції для унітазів, вбудовані частини змішувачів, трапи, радіатори.</p>
+                            <p>✅ <strong>Ідеальні умови</strong><br />Коли закуплені сантехприлади та чорнові матеріали.</p>
                         </div>
                     </div>
                     <div class="modal-nav">
@@ -1505,7 +1463,10 @@
             <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
+                <button class="lightbox-nav prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">❮</button>
                 <img id="lightboxImage" src="" alt="" />
+                <div class="lightbox-counter" id="lightboxCounter">1 / 8</div>
+                <button class="lightbox-nav next" id="lightboxNext" type="button" aria-label="Наступне фото">❯</button>
             </div>
         </div>
     </div>
@@ -1524,12 +1485,10 @@
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
         });
 
-        // ===== ПОКРАЩЕНА ГАЛЕРЕЯ =====
+        // ===== ГАЛЕРЕЯ =====
         const track = document.getElementById('galleryTrack');
         const dots = [...document.querySelectorAll('.gallery-dot')];
         const counter = document.getElementById('galleryCounter');
-        const prevBtn = document.getElementById('galleryPrev');
-        const nextBtn = document.getElementById('galleryNext');
         const totalSlides = 8;
         let currentIndex = 0;
         let autoPlayTimer;
@@ -1539,37 +1498,20 @@
         let dragDistance = 0;
         
         const updateGallery = (animate = true) => {
-            track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
+            track.style.transition = animate ? 'transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
-            const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
-            counter.textContent = `${realIndex + 1} / ${totalSlides}`;
-            dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
-            
-            // Оновлюємо стан кнопок
-            prevBtn.disabled = currentIndex === 0;
-            nextBtn.disabled = currentIndex === totalSlides - 1;
+            counter.textContent = `${currentIndex + 1} / ${totalSlides}`;
+            dots.forEach((dot, i) => dot.classList.toggle('active', i === currentIndex));
         };
         
         const nextSlide = () => { 
-            if (currentIndex < totalSlides - 1) {
-                currentIndex++; 
-                updateGallery(); 
-            } else {
-                // Зациклення на початок
-                currentIndex = 0;
-                updateGallery();
-            }
+            currentIndex = (currentIndex + 1) % totalSlides;
+            updateGallery(); 
         };
         
         const prevSlide = () => {
-            if (currentIndex > 0) {
-                currentIndex--; 
-                updateGallery(); 
-            } else {
-                // Зациклення на кінець
-                currentIndex = totalSlides - 1;
-                updateGallery();
-            }
+            currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+            updateGallery();
         };
         
         const restartAutoPlay = () => { 
@@ -1577,19 +1519,6 @@
             autoPlayTimer = setInterval(nextSlide, 4500); 
         };
         const stopAutoPlay = () => clearInterval(autoPlayTimer);
-        
-        // Обробники для кнопок
-        prevBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            prevSlide();
-            restartAutoPlay();
-        });
-        
-        nextBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            nextSlide();
-            restartAutoPlay();
-        });
         
         dots.forEach((dot, i) => {
             dot.addEventListener('click', () => { 
@@ -1601,7 +1530,6 @@
         
         const galleryWindow = document.getElementById('galleryWindow');
         
-        // Свайп для мобільних
         galleryWindow.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX; 
             currentX = startX; 
@@ -1616,7 +1544,6 @@
             currentX = e.touches[0].clientX;
             dragDistance = currentX - startX;
             
-            // Показуємо drag ефект
             if (Math.abs(dragDistance) > 5) {
                 const offset = -currentIndex * 100 + (dragDistance / galleryWindow.offsetWidth) * 100;
                 track.style.transform = `translate3d(${offset}%, 0, 0)`;
@@ -1635,61 +1562,30 @@
             restartAutoPlay();
         });
         
-        // Mouse drag для десктопу
-        galleryWindow.addEventListener('mousedown', (e) => {
-            startX = e.clientX;
-            currentX = startX;
-            isDragging = true;
-            dragDistance = 0;
-            stopAutoPlay();
-            track.style.transition = 'none';
-            e.preventDefault();
-        });
+        galleryWindow.addEventListener('mouseenter', stopAutoPlay);
+        galleryWindow.addEventListener('mouseleave', restartAutoPlay);
         
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            currentX = e.clientX;
-            dragDistance = currentX - startX;
-            
-            if (Math.abs(dragDistance) > 5) {
-                const offset = -currentIndex * 100 + (dragDistance / galleryWindow.offsetWidth) * 100;
-                track.style.transform = `translate3d(${offset}%, 0, 0)`;
-            }
-        });
-        
-        document.addEventListener('mouseup', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            
-            if (Math.abs(dragDistance) >= 45) {
-                dragDistance < 0 ? nextSlide() : prevSlide();
-            } else {
-                updateGallery();
-            }
-            restartAutoPlay();
-        });
-        
-        // Відкриття lightbox при кліку на зображення
+        restartAutoPlay();
+
+        // ===== LIGHTBOX З ГОРТАННЯМ =====
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
+        const lightboxPrev = document.getElementById('lightboxPrev');
+        const lightboxNext = document.getElementById('lightboxNext');
+        const lightboxCounter = document.getElementById('lightboxCounter');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
+        let currentLightboxIndex = 0;
         
-        gallerySlides.forEach((slide, i) => { 
-            slide.style.pointerEvents = 'auto';
-            slide.style.cursor = 'zoom-in';
-            slide.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (dragDistance === 0 || Math.abs(dragDistance) < 5) {
-                    openLightbox(i);
-                }
-            });
-        });
+        const updateLightboxImage = () => {
+            lightboxImage.src = gallerySlides[currentLightboxIndex].src;
+            lightboxImage.alt = gallerySlides[currentLightboxIndex].alt;
+            lightboxCounter.textContent = `${currentLightboxIndex + 1} / ${totalSlides}`;
+        };
         
         const openLightbox = (i) => {
-            const index = Math.max(0, Math.min(totalSlides - 1, i));
-            lightboxImage.src = gallerySlides[index].src;
-            lightboxImage.alt = gallerySlides[index].alt;
+            currentLightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
+            updateLightboxImage();
             lightboxImage.style.transform = 'scale(0.95)';
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
@@ -1706,21 +1602,52 @@
             body.style.overflow = '';
         };
         
+        const nextLightboxImage = () => {
+            currentLightboxIndex = (currentLightboxIndex + 1) % totalSlides;
+            updateLightboxImage();
+        };
+        
+        const prevLightboxImage = () => {
+            currentLightboxIndex = (currentLightboxIndex - 1 + totalSlides) % totalSlides;
+            updateLightboxImage();
+        };
+        
+        gallerySlides.forEach((slide, i) => { 
+            slide.style.pointerEvents = 'auto';
+            slide.style.cursor = 'zoom-in';
+            slide.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (Math.abs(dragDistance) < 5) {
+                    openLightbox(i);
+                }
+            });
+        });
+        
         lightboxClose.addEventListener('click', closeLightbox);
+        lightboxPrev.addEventListener('click', prevLightboxImage);
+        lightboxNext.addEventListener('click', nextLightboxImage);
         lightbox.addEventListener('click', (e) => { 
             if (e.target === lightbox) closeLightbox(); 
         });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
-        });
         
-        restartAutoPlay();
+        document.addEventListener('keydown', (e) => {
+            if (!lightbox.classList.contains('active')) return;
+            
+            if (e.key === 'Escape') {
+                closeLightbox();
+            } else if (e.key === 'ArrowLeft') {
+                prevLightboxImage();
+            } else if (e.key === 'ArrowRight') {
+                nextLightboxImage();
+            }
+        });
 
-        // ===== ПОКРАЩЕНІ МОДАЛЬНІ ВІКНА =====
+        // ===== МОДАЛЬНІ ВІКНА =====
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
         
         const updateProgress = (activeId) => {
             const activeIndex = modalOrder.indexOf(activeId);
+            
             document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
                 const overlay = arrow.closest('.modal-overlay');
                 const currentIndex = modalOrder.indexOf(overlay.id);
@@ -1809,55 +1736,7 @@
             });
         });
 
-        // Свайп для модальних вікон
-        document.querySelectorAll('.modal-content').forEach((content) => {
-            let startX = 0;
-            let startY = 0;
-            let isHorizontal = false;
-            
-            content.addEventListener('touchstart', (e) => {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                isHorizontal = false;
-            }, { passive: true });
-            
-            content.addEventListener('touchmove', (e) => {
-                const diffX = Math.abs(e.touches[0].clientX - startX);
-                const diffY = Math.abs(e.touches[0].clientY - startY);
-                if (diffX > 30 && diffX > diffY) isHorizontal = true;
-            }, { passive: true });
-            
-            content.addEventListener('touchend', (e) => {
-                if (!isHorizontal) {
-                    const diffY = e.changedTouches[0].clientY - startY;
-                    if (diffY > 100 && content.scrollTop === 0) {
-                        const overlay = content.closest('.modal-overlay');
-                        closeModal(overlay.id);
-                    }
-                    return;
-                }
-                
-                const diff = startX - e.changedTouches[0].clientX;
-                if (Math.abs(diff) > 80) {
-                    const overlay = content.closest('.modal-overlay');
-                    const currentIndex = modalOrder.indexOf(overlay.id);
-                    
-                    let targetIndex;
-                    if (diff > 0) {
-                        targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
-                    } else {
-                        targetIndex = Math.max(currentIndex - 1, 0);
-                    }
-                    
-                    const targetId = modalOrder[targetIndex];
-                    if (targetId !== overlay.id) {
-                        closeModal(overlay.id);
-                        setTimeout(() => openModal(targetId), 300);
-                    }
-                }
-            });
-        });
-
+        // ===== КАЛЬКУЛЯТОР =====
         const calcState = { bathrooms: 1, system: 'tee' };
         const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
         const calcPriceElement = document.getElementById('calcPrice');
@@ -1929,6 +1808,7 @@
             }
         });
 
+        // ===== СОЦІАЛЬНИЙ ДОК =====
         const socialTrack = document.getElementById('socialTrack');
         const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
         const socialViewport = document.getElementById('socialViewport');
