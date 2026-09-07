@@ -261,8 +261,49 @@
         .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
         .gallery-window:active { cursor: grabbing; }
         .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
-        .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
-        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: lazy; }
+        .gallery-slide { 
+            flex: 0 0 100%; 
+            height: 100%; 
+            overflow: hidden; 
+            background: #D2D6DC; 
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gallery-slide img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block; 
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .gallery-slide img.loaded {
+            opacity: 1;
+        }
+        .gallery-slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(110deg, 
+                #D2D6DC 8%, 
+                #E5E9EE 18%, 
+                #D2D6DC 33%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s linear infinite;
+            z-index: 1;
+        }
+        .gallery-slide img.loaded + .gallery-slide::before {
+            display: none;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -849,6 +890,49 @@
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
         }
+        .lightbox-prev,
+        .lightbox-next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 1.25rem;
+            cursor: pointer;
+            backdrop-filter: blur(0.625rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .lightbox-prev:hover,
+        .lightbox-next:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-50%) scale(1.05);
+        }
+        .lightbox-prev:active,
+        .lightbox-next:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+        .lightbox-prev { left: 0.875rem; }
+        .lightbox-next { right: 0.875rem; }
+        .lightbox-counter {
+            position: absolute;
+            bottom: 1.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.75rem;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 0.875rem;
+            font-weight: 600;
+            backdrop-filter: blur(0.75rem);
+        }
         .ios-social-shell {
             width: 25rem;
             max-width: calc(100vw - 1.75rem);
@@ -965,7 +1049,7 @@
                 <div class="hero-header">
                     <div class="hero-top-row">
                         <div class="logo-wrapper">
-                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="lazy" />
+                            <img class="logo" src="logo.png" alt="SA-MASTER.PRO логотип" loading="eager" />
                         </div>
                         <div class="hero-divider"></div>
                         <div class="brand-text">
@@ -992,15 +1076,15 @@
                 <div class="gallery">
                     <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" /></div>
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" data-src="photo-1.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="lazy" data-src="photo-2.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="lazy" data-src="photo-3.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="lazy" data-src="photo-4.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-5.jpg" alt="Монтаж сантехніки — приклад 5" loading="lazy" data-src="photo-5.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-6.jpg" alt="Монтаж сантехніки — приклад 6" loading="lazy" data-src="photo-6.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-7.jpg" alt="Монтаж сантехніки — приклад 7" loading="lazy" data-src="photo-7.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="lazy" data-src="photo-8.jpg" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="lazy" data-src="photo-1.jpg" /></div>
                         </div>
                         <div class="gallery-counter" id="galleryCounter" aria-live="polite">1 / 8</div>
                         <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Навігація по фото">
@@ -1357,12 +1441,57 @@
             <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
+                <button class="lightbox-prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">←</button>
+                <button class="lightbox-next" id="lightboxNext" type="button" aria-label="Наступне фото">→</button>
                 <img id="lightboxImage" src="" alt="" />
+                <div class="lightbox-counter" id="lightboxCounter">1 / 8</div>
             </div>
         </div>
     </div>
 
     <script>
+        // Оптимізація завантаження зображень
+        document.addEventListener('DOMContentLoaded', function() {
+            const images = document.querySelectorAll('.gallery-slide img');
+            
+            // Додаємо клас loaded для першого зображення відразу
+            if (images.length > 0) {
+                images[0].classList.add('loaded');
+            }
+            
+            // Спостерігач за завантаженням зображень
+            const imageObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const src = img.getAttribute('data-src') || img.src;
+                        
+                        if (src && !img.classList.contains('loaded')) {
+                            img.src = src;
+                            img.onload = () => {
+                                img.classList.add('loaded');
+                            };
+                            img.onerror = () => {
+                                img.classList.add('loaded'); // Показуємо placeholder при помилці
+                            };
+                        }
+                        
+                        imageObserver.unobserve(img);
+                    }
+                });
+            }, {
+                rootMargin: '200px', // Завантажуємо зображення за 200px до появи
+                threshold: 0.01
+            });
+            
+            // Спостерігаємо за всіма зображеннями крім першого
+            images.forEach((img, index) => {
+                if (index > 0) {
+                    imageObserver.observe(img);
+                }
+            });
+        });
+
         const toggleBtn = document.getElementById('themeToggle');
         const body = document.body;
         const getInitialTheme = () => {
@@ -1426,29 +1555,85 @@
         });
         restartAutoPlay();
 
+        // Lightbox функціональність
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
+        const lightboxPrev = document.getElementById('lightboxPrev');
+        const lightboxNext = document.getElementById('lightboxNext');
+        const lightboxCounter = document.getElementById('lightboxCounter');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
+        let lightboxIndex = 0;
+        
         const openLightbox = (i) => {
-            const index = Math.max(0, Math.min(totalSlides - 1, i));
-            lightboxImage.src = gallerySlides[index].src;
-            lightboxImage.alt = gallerySlides[index].alt;
-            lightboxImage.style.transform = 'scale(0.95)';
+            lightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
+            updateLightboxImage();
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
-            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
         };
+        
+        const updateLightboxImage = () => {
+            lightboxImage.src = gallerySlides[lightboxIndex].src;
+            lightboxImage.alt = gallerySlides[lightboxIndex].alt;
+            lightboxCounter.textContent = `${lightboxIndex + 1} / ${totalSlides}`;
+            lightboxImage.style.transform = 'scale(0.95)';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    lightboxImage.style.transform = 'scale(1)';
+                });
+            });
+        };
+        
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transform = '';
             body.style.overflow = '';
         };
-        gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
+        
+        const lightboxPrevImage = () => {
+            lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
+            updateLightboxImage();
+        };
+        
+        const lightboxNextImage = () => {
+            lightboxIndex = (lightboxIndex + 1) % totalSlides;
+            updateLightboxImage();
+        };
+        
+        gallerySlides.forEach((slide, i) => { 
+            slide.addEventListener('click', () => openLightbox(i)); 
+        });
         lightboxClose.addEventListener('click', closeLightbox);
-        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+        lightboxPrev.addEventListener('click', lightboxPrevImage);
+        lightboxNext.addEventListener('click', lightboxNextImage);
+        lightbox.addEventListener('click', (e) => { 
+            if (e.target === lightbox) closeLightbox(); 
+        });
+        
+        // Клавіатурна навігація для lightbox
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+            if (lightbox.classList.contains('active')) {
+                if (e.key === 'Escape') closeLightbox();
+                else if (e.key === 'ArrowLeft') lightboxPrevImage();
+                else if (e.key === 'ArrowRight') lightboxNextImage();
+            }
+        });
+        
+        // Touch навігація для lightbox
+        let lightboxTouchStartX = 0;
+        let lightboxTouchEndX = 0;
+        
+        lightbox.addEventListener('touchstart', (e) => {
+            lightboxTouchStartX = e.touches[0].clientX;
+        }, { passive: true });
+        
+        lightbox.addEventListener('touchend', (e) => {
+            lightboxTouchEndX = e.changedTouches[0].clientX;
+            const diff = lightboxTouchEndX - lightboxTouchStartX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) lightboxPrevImage();
+                else lightboxNextImage();
+            }
         });
 
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
