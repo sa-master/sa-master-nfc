@@ -258,11 +258,47 @@
             box-shadow: var(--color-glass-shadow);
             margin-top: 0.625rem;
         }
-        .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
+        .gallery-window {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/10;
+            overflow: hidden;
+            cursor: grab;
+            touch-action: pan-y;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
         .gallery-window:active { cursor: grabbing; }
-        .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
-        .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
-        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: lazy; }
+        .gallery-window.dragging {
+            touch-action: none;
+            cursor: grabbing !important;
+        }
+        .gallery-track {
+            display: flex;
+            height: 100%;
+            will-change: transform;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .gallery-slide {
+            flex: 0 0 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #D2D6DC;
+            pointer-events: none;
+        }
+        .gallery-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            pointer-events: auto;
+            -webkit-user-drag: none;
+            user-drag: none;
+        }
         .gallery-counter {
             position: absolute;
             top: 0.625rem;
@@ -279,6 +315,7 @@
             font-size: 0.75rem;
             font-weight: 600;
             backdrop-filter: blur(0.75rem);
+            pointer-events: none;
         }
         .gallery-dots {
             position: absolute;
@@ -293,6 +330,7 @@
             background: rgba(0, 0, 0, 0.25);
             backdrop-filter: blur(0.75rem);
             z-index: 5;
+            pointer-events: auto;
         }
         .gallery-dot {
             width: 0.25rem;
@@ -1363,6 +1401,7 @@
     </div>
 
     <script>
+        // ============ THEME TOGGLE ============
         const toggleBtn = document.getElementById('themeToggle');
         const body = document.body;
         const getInitialTheme = () => {
@@ -1376,62 +1415,286 @@
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
         });
 
-        const track = document.getElementById('galleryTrack');
-        const dots = [...document.querySelectorAll('.gallery-dot')];
-        const counter = document.getElementById('galleryCounter');
-        const totalSlides = 8;
-        let currentIndex = 0;
-        let autoPlayTimer;
-        let isDragging = false;
-        let startX = 0;
-        let currentX = 0;
-        const updateGallery = (animate = true) => {
-            track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
-            track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
-            const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
-            counter.textContent = `${realIndex + 1} / ${totalSlides}`;
-            dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
-        };
-        const nextSlide = () => { currentIndex++; updateGallery(); };
-        const prevSlide = () => {
-            if (currentIndex <= 0) {
-                currentIndex = totalSlides;
+        // ============ GALLERY (ІЗОЛЬОВАНИЙ МОДУЛЬ) ============
+        const GalleryModule = (() => {
+            // Приватні змінні модуля
+            const track = document.getElementById('galleryTrack');
+            const galleryWindow = document.getElementById('galleryWindow');
+            const dots = [...document.querySelectorAll('.gallery-dot')];
+            const counter = document.getElementById('galleryCounter');
+            const totalSlides = 8;
+            
+            // Стан галереї
+            let currentIndex = 0;
+            let autoPlayTimer = null;
+            let isDragging = false;
+            let isTransitioning = false;
+            let startX = 0;
+            let currentX = 0;
+            let dragDistance = 0;
+            let rafId = null;
+            
+            // Перевірка наявності необхідних елементів
+            if (!track || !galleryWindow || !counter || dots.length === 0) {
+                console.warn('Gallery elements not found');
+                return { init: () => {}, destroy: () => {} };
+            }
+            
+            const updateGallery = (animate = true) => {
+                if (rafId) {
+                    cancelAnimationFrame(rafId);
+                }
+                
+                rafId = requestAnimationFrame(() => {
+                    track.style.transition = animate ? 
+                        'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 
+                        'none';
+                    track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
+                    
+                    const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
+                    if (counter) {
+                        counter.textContent = `${realIndex + 1} / ${totalSlides}`;
+                    }
+                    dots.forEach((dot, i) => {
+                        dot.classList.toggle('active', i === realIndex);
+                        dot.setAttribute('aria-selected', i === realIndex ? 'true' : 'false');
+                    });
+                });
+            };
+            
+            const nextSlide = () => {
+                if (isTransitioning || isDragging) return;
+                isTransitioning = true;
+                currentIndex++;
+                updateGallery(true);
+                
+                setTimeout(() => {
+                    if (currentIndex >= totalSlides) {
+                        currentIndex = 0;
+                        updateGallery(false);
+                    }
+                    isTransitioning = false;
+                }, 400);
+            };
+            
+            const prevSlide = () => {
+                if (isTransitioning || isDragging) return;
+                isTransitioning = true;
+                
+                if (currentIndex <= 0) {
+                    // Перехід до останнього слайда
+                    currentIndex = totalSlides;
+                    updateGallery(false);
+                    
+                    // Даємо браузеру час на рендер
+                    setTimeout(() => {
+                        currentIndex--;
+                        updateGallery(true);
+                        setTimeout(() => {
+                            isTransitioning = false;
+                        }, 400);
+                    }, 50);
+                } else {
+                    currentIndex--;
+                    updateGallery(true);
+                    setTimeout(() => {
+                        isTransitioning = false;
+                    }, 400);
+                }
+            };
+            
+            const goToSlide = (index) => {
+                if (isTransitioning || isDragging) return;
+                if (index === currentIndex) return;
+                
+                isTransitioning = true;
+                currentIndex = index;
+                updateGallery(true);
+                
+                setTimeout(() => {
+                    isTransitioning = false;
+                }, 400);
+            };
+            
+            const restartAutoPlay = () => {
+                if (autoPlayTimer) {
+                    clearInterval(autoPlayTimer);
+                }
+                autoPlayTimer = setInterval(nextSlide, 4500);
+            };
+            
+            const stopAutoPlay = () => {
+                if (autoPlayTimer) {
+                    clearInterval(autoPlayTimer);
+                    autoPlayTimer = null;
+                }
+            };
+            
+            // ============ TOUCH & MOUSE EVENTS ============
+            const handleDragStart = (clientX) => {
+                if (isTransitioning) return;
+                
+                isDragging = true;
+                startX = clientX;
+                currentX = clientX;
+                dragDistance = 0;
+                
+                stopAutoPlay();
+                track.style.transition = 'none';
+                galleryWindow.classList.add('dragging');
+                galleryWindow.style.cursor = 'grabbing';
+            };
+            
+            const handleDragMove = (clientX) => {
+                if (!isDragging || isTransitioning) return;
+                
+                currentX = clientX;
+                dragDistance = currentX - startX;
+                
+                // Обмежуємо перетягування
+                const maxDrag = galleryWindow.offsetWidth * 0.8;
+                const boundedDrag = Math.max(-maxDrag, Math.min(maxDrag, dragDistance));
+                
+                // Рухаємо слайди за пальцем
+                const offset = -currentIndex * 100;
+                const dragPercent = (boundedDrag / galleryWindow.offsetWidth) * 100;
+                
+                track.style.transform = `translate3d(calc(${offset}% + ${dragPercent}%), 0, 0)`;
+            };
+            
+            const handleDragEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                
+                galleryWindow.classList.remove('dragging');
+                galleryWindow.style.cursor = '';
+                
+                const threshold = galleryWindow.offsetWidth * 0.2; // 20% ширини для свайпу
+                
+                if (Math.abs(dragDistance) > threshold) {
+                    if (dragDistance < 0) {
+                        nextSlide();
+                    } else {
+                        prevSlide();
+                    }
+                } else {
+                    // Повертаємось до поточного слайда
+                    updateGallery(true);
+                }
+                
+                restartAutoPlay();
+            };
+            
+            // ============ EVENT LISTENERS ============
+            const addEventListeners = () => {
+                // Touch Events
+                galleryWindow.addEventListener('touchstart', (e) => {
+                    handleDragStart(e.touches[0].clientX);
+                }, { passive: true });
+                
+                galleryWindow.addEventListener('touchmove', (e) => {
+                    if (isDragging) {
+                        e.preventDefault(); // Запобігаємо скролу сторінки тільки під час перетягування
+                        handleDragMove(e.touches[0].clientX);
+                    }
+                }, { passive: false });
+                
+                galleryWindow.addEventListener('touchend', handleDragEnd);
+                galleryWindow.addEventListener('touchcancel', handleDragEnd);
+                
+                // Mouse Events (для десктопа)
+                galleryWindow.addEventListener('mousedown', (e) => {
+                    // Ігноруємо кліки по точках навігації
+                    if (e.target.closest('.gallery-dots')) return;
+                    
+                    e.preventDefault();
+                    handleDragStart(e.clientX);
+                    
+                    const handleMouseMove = (e) => {
+                        handleDragMove(e.clientX);
+                    };
+                    
+                    const handleMouseUp = () => {
+                        handleDragEnd();
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                });
+                
+                // Кліки по краях галереї
+                galleryWindow.addEventListener('click', (e) => {
+                    // Ігноруємо кліки по точках навігації
+                    if (e.target.closest('.gallery-dots')) return;
+                    
+                    if (isDragging || Math.abs(dragDistance) > 10) return;
+                    
+                    const rect = galleryWindow.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const width = rect.width;
+                    
+                    if (clickX < width * 0.2) {
+                        prevSlide();
+                    } else if (clickX > width * 0.8) {
+                        nextSlide();
+                    }
+                });
+                
+                // Кліки по точках
+                dots.forEach((dot, i) => {
+                    dot.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Запобігаємо конфлікту з кліками по галереї
+                        e.preventDefault();
+                        goToSlide(i);
+                        restartAutoPlay();
+                    });
+                });
+                
+                // Hover ефекти для десктопа
+                galleryWindow.addEventListener('mouseenter', stopAutoPlay);
+                galleryWindow.addEventListener('mouseleave', restartAutoPlay);
+                
+                // Пауза автопрокрутки коли вкладка неактивна
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        stopAutoPlay();
+                    } else {
+                        restartAutoPlay();
+                    }
+                });
+            };
+            
+            // ============ ІНІЦІАЛІЗАЦІЯ ============
+            const init = () => {
                 updateGallery(false);
-                requestAnimationFrame(() => { currentIndex--; updateGallery(); });
-            } else { currentIndex--; updateGallery(); }
-        };
-        const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
-        const stopAutoPlay = () => clearInterval(autoPlayTimer);
-        track.addEventListener('transitionend', () => {
-            if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
-        });
-        dots.forEach((dot, i) => {
-            dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
-        });
-        const galleryWindow = document.getElementById('galleryWindow');
-        galleryWindow.addEventListener('mouseenter', stopAutoPlay);
-        galleryWindow.addEventListener('mouseleave', restartAutoPlay);
-        galleryWindow.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX; currentX = startX; isDragging = true; stopAutoPlay();
-        }, { passive: true });
-        galleryWindow.addEventListener('touchmove', (e) => {
-            if (isDragging) currentX = e.touches[0].clientX;
-        }, { passive: true });
-        galleryWindow.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            const diff = currentX - startX;
-            if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
-            restartAutoPlay();
-        });
-        restartAutoPlay();
+                addEventListeners();
+                restartAutoPlay();
+            };
+            
+            // Публічний API
+            return {
+                init,
+                destroy: () => {
+                    stopAutoPlay();
+                    if (rafId) {
+                        cancelAnimationFrame(rafId);
+                    }
+                }
+            };
+        })();
+        
+        // Запускаємо галерею
+        GalleryModule.init();
 
+        // ============ LIGHTBOX ============
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
         const openLightbox = (i) => {
-            const index = Math.max(0, Math.min(totalSlides - 1, i));
+            const index = Math.max(0, Math.min(7, i));
             lightboxImage.src = gallerySlides[index].src;
             lightboxImage.alt = gallerySlides[index].alt;
             lightboxImage.style.transform = 'scale(0.95)';
@@ -1451,6 +1714,7 @@
             if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
         });
 
+        // ============ MODALS ============
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
         
         const updateProgress = (activeId) => {
@@ -1573,6 +1837,7 @@
             });
         });
 
+        // ============ CALCULATOR ============
         const calcState = { bathrooms: 1, system: 'tee' };
         const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
         const calcPriceElement = document.getElementById('calcPrice');
@@ -1600,6 +1865,7 @@
         });
         if (calcPriceElement) updateCalc();
 
+        // ============ PAYMENT ============
         const calcPayBtn = document.getElementById('calcPayBtn');
         const calcTelegramBtn = document.getElementById('calcTelegramBtn');
         calcPayBtn.addEventListener('click', () => {
@@ -1644,6 +1910,7 @@
             }
         });
 
+        // ============ SOCIAL DOCK ============
         const socialTrack = document.getElementById('socialTrack');
         const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
         const socialViewport = document.getElementById('socialViewport');
@@ -1671,6 +1938,7 @@
             updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
         });
 
+        // ============ INIT ============
         document.addEventListener('DOMContentLoaded', () => {
             const yearSpan = document.getElementById('currentYear');
             if (yearSpan) yearSpan.textContent = new Date().getFullYear();
