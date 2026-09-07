@@ -769,9 +769,9 @@ body.dark-mode .review-google-btn {
     color: #F2F2F7;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
-/* =========================
-   iOS STYLE LIGHTBOX
-   ========================= */
+/* =====================================================
+   iOS LIGHTBOX — NATIVE STYLE SLIDER
+   ===================================================== */
 
 .lightbox {
     position: fixed;
@@ -782,12 +782,8 @@ body.dark-mode .review-google-btn {
     align-items: center;
     justify-content: center;
 
-    padding: max(12px, env(safe-area-inset-top))
-             max(12px, env(safe-area-inset-right))
-             max(12px, env(safe-area-inset-bottom))
-             max(12px, env(safe-area-inset-left));
+    background: rgba(0, 0, 0, 0.90);
 
-    background: rgba(0, 0, 0, 0.86);
     backdrop-filter: blur(22px) saturate(120%);
     -webkit-backdrop-filter: blur(22px) saturate(120%);
 
@@ -796,11 +792,10 @@ body.dark-mode .review-google-btn {
     pointer-events: none;
 
     transition:
-        opacity 0.25s ease,
-        visibility 0.25s ease;
-    
+        opacity 0.22s ease,
+        visibility 0.22s ease;
+
     overscroll-behavior: contain;
-    touch-action: none;
 }
 
 .lightbox.active {
@@ -809,15 +804,16 @@ body.dark-mode .review-google-btn {
     pointer-events: auto;
 }
 
+
+/* =====================================================
+   STAGE
+   ===================================================== */
+
 .lightbox-stage {
     position: relative;
 
     width: 100%;
     height: 100%;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
 
     overflow: hidden;
 
@@ -826,32 +822,66 @@ body.dark-mode .review-google-btn {
     -webkit-user-select: none;
 }
 
-.lightbox-image-wrap {
+
+/* =====================================================
+   TRACK
+   ===================================================== */
+
+.lightbox-track {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    height: 100%;
+
+    display: flex;
+
+    will-change: transform;
+
+    transform: translate3d(0, 0, 0);
+
+    transition:
+        transform 0.42s cubic-bezier(
+            0.22,
+            0.61,
+            0.36,
+            1
+        );
+}
+
+
+/* =====================================================
+   SLIDE
+   ===================================================== */
+
+.lightbox-slide {
     position: relative;
 
-    width: 100%;
+    flex: 0 0 100vw;
+
+    width: 100vw;
     height: 100%;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
-    will-change: transform;
-    transform: translate3d(0, 0, 0) scale(0.96);
+    padding:
+        max(20px, env(safe-area-inset-top))
+        max(20px, env(safe-area-inset-right))
+        max(70px, env(safe-area-inset-bottom))
+        max(20px, env(safe-area-inset-left));
 
-    transition:
-        transform 0.42s cubic-bezier(0.22, 0.61, 0.36, 1),
-        opacity 0.25s ease;
-
-    opacity: 0;
+    box-sizing: border-box;
 }
 
-.lightbox.active .lightbox-image-wrap {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: 1;
-}
 
-.lightbox-image-wrap img {
+/* =====================================================
+   IMAGE
+   ===================================================== */
+
+.lightbox-slide img {
     display: block;
 
     max-width: 100%;
@@ -866,13 +896,19 @@ body.dark-mode .review-google-btn {
     border-radius: 14px;
 
     box-shadow:
-        0 18px 50px rgba(0, 0, 0, 0.35);
+        0 18px 55px rgba(0, 0, 0, 0.35);
 
     pointer-events: none;
 
-    -webkit-user-drag: none;
     user-select: none;
+    -webkit-user-select: none;
+    -webkit-user-drag: none;
 }
+
+
+/* =====================================================
+   CLOSE
+   ===================================================== */
 
 .lightbox-close {
     position: absolute;
@@ -880,7 +916,7 @@ body.dark-mode .review-google-btn {
     top: max(14px, env(safe-area-inset-top));
     right: max(14px, env(safe-area-inset-right));
 
-    z-index: 20;
+    z-index: 30;
 
     width: 42px;
     height: 42px;
@@ -889,6 +925,8 @@ body.dark-mode .review-google-btn {
     align-items: center;
     justify-content: center;
 
+    padding: 0;
+
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 50%;
 
@@ -896,7 +934,7 @@ body.dark-mode .review-google-btn {
 
     color: #fff;
 
-    font-size: 26px;
+    font-size: 27px;
     font-weight: 300;
     line-height: 1;
 
@@ -905,18 +943,20 @@ body.dark-mode .review-google-btn {
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
 
-    box-shadow:
-        0 6px 24px rgba(0, 0, 0, 0.25);
-
     transition:
         transform 0.18s ease,
         background 0.18s ease;
 }
 
 .lightbox-close:active {
-    transform: scale(0.9);
+    transform: scale(0.90);
     background: rgba(255, 255, 255, 0.22);
 }
+
+
+/* =====================================================
+   DESKTOP ARROWS
+   ===================================================== */
 
 .lightbox-arrow {
     position: absolute;
@@ -924,7 +964,7 @@ body.dark-mode .review-google-btn {
     top: 50%;
     transform: translateY(-50%);
 
-    z-index: 15;
+    z-index: 30;
 
     width: 46px;
     height: 46px;
@@ -933,6 +973,8 @@ body.dark-mode .review-google-btn {
     align-items: center;
     justify-content: center;
 
+    padding: 0;
+
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: 50%;
 
@@ -940,8 +982,9 @@ body.dark-mode .review-google-btn {
 
     color: #fff;
 
-    font-size: 30px;
+    font-size: 31px;
     font-weight: 300;
+    line-height: 1;
 
     cursor: pointer;
 
@@ -954,17 +997,26 @@ body.dark-mode .review-google-btn {
 }
 
 .lightbox-arrow:active {
-    transform: translateY(-50%) scale(0.9);
-    background: rgba(255, 255, 255, 0.20);
+    transform:
+        translateY(-50%)
+        scale(0.90);
+
+    background:
+        rgba(255, 255, 255, 0.20);
 }
 
 .lightbox-prev {
-    left: max(14px, env(safe-area-inset-left));
+    left: max(16px, env(safe-area-inset-left));
 }
 
 .lightbox-next {
-    right: max(14px, env(safe-area-inset-right));
+    right: max(16px, env(safe-area-inset-right));
 }
+
+
+/* =====================================================
+   COUNTER
+   ===================================================== */
 
 .lightbox-counter {
     position: absolute;
@@ -974,7 +1026,7 @@ body.dark-mode .review-google-btn {
 
     transform: translateX(-50%);
 
-    z-index: 20;
+    z-index: 30;
 
     min-width: 62px;
     height: 30px;
@@ -985,10 +1037,16 @@ body.dark-mode .review-google-btn {
     align-items: center;
     justify-content: center;
 
+    box-sizing: border-box;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, 0.12);
+
     border-radius: 15px;
 
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+        rgba(255, 255, 255, 0.12);
 
     color: #fff;
 
@@ -999,11 +1057,58 @@ body.dark-mode .review-google-btn {
     -webkit-backdrop-filter: blur(18px);
 }
 
+
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
 @media (max-width: 600px) {
 
     .lightbox {
-        padding: 0;
+        background: rgba(0, 0, 0, 0.94);
     }
+
+    .lightbox-slide {
+        padding:
+            max(16px, env(safe-area-inset-top))
+            12px
+            max(60px, env(safe-area-inset-bottom))
+            12px;
+    }
+
+    .lightbox-slide img {
+        max-width: 96vw;
+        max-height: 84dvh;
+
+        border-radius: 12px;
+    }
+
+    .lightbox-arrow {
+        display: none;
+    }
+
+    .lightbox-close {
+        width: 40px;
+        height: 40px;
+
+        font-size: 24px;
+    }
+}
+
+
+/* =====================================================
+   REDUCED MOTION
+   ===================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .lightbox,
+    .lightbox-track,
+    .lightbox-close,
+    .lightbox-arrow {
+        transition: none !important;
+    }
+}
 
     .lightbox-image-wrap img {
         max-width: 94vw;
