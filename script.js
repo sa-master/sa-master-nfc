@@ -11,7 +11,6 @@ toggleBtn.addEventListener('click', () => {
     localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
 });
 
-// Карусель
 const track = document.getElementById('galleryTrack');
 const dots = [...document.querySelectorAll('.gallery-dot')];
 const counter = document.getElementById('galleryCounter');
@@ -21,22 +20,6 @@ let autoPlayTimer;
 let isDragging = false;
 let startX = 0;
 let currentX = 0;
-
-// Попереднє завантаження зображень
-const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
-const preloadImages = () => {
-    gallerySlides.forEach((img) => {
-        const src = img.getAttribute('src');
-        if (src) {
-            const preload = new Image();
-            preload.src = src;
-        }
-    });
-};
-
-// Викликаємо попереднє завантаження після завантаження сторінки
-window.addEventListener('load', preloadImages);
-
 const updateGallery = (animate = true) => {
     track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
     track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
@@ -44,198 +27,69 @@ const updateGallery = (animate = true) => {
     counter.textContent = `${realIndex + 1} / ${totalSlides}`;
     dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
 };
-
-const nextSlide = () => { 
-    currentIndex++; 
-    updateGallery(); 
-};
-
+const nextSlide = () => { currentIndex++; updateGallery(); };
 const prevSlide = () => {
     if (currentIndex <= 0) {
         currentIndex = totalSlides;
         updateGallery(false);
         requestAnimationFrame(() => { currentIndex--; updateGallery(); });
-    } else { 
-        currentIndex--; 
-        updateGallery(); 
-    }
+    } else { currentIndex--; updateGallery(); }
 };
-
-const restartAutoPlay = () => { 
-    clearInterval(autoPlayTimer); 
-    autoPlayTimer = setInterval(nextSlide, 4500); 
-};
-
+const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
 const stopAutoPlay = () => clearInterval(autoPlayTimer);
-
 track.addEventListener('transitionend', () => {
-    if (currentIndex === totalSlides) { 
-        currentIndex = 0; 
-        updateGallery(false); 
-    }
+    if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
 });
-
 dots.forEach((dot, i) => {
-    dot.addEventListener('click', () => { 
-        currentIndex = i; 
-        updateGallery(); 
-        restartAutoPlay(); 
-    });
+    dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
 });
-
 const galleryWindow = document.getElementById('galleryWindow');
 galleryWindow.addEventListener('mouseenter', stopAutoPlay);
 galleryWindow.addEventListener('mouseleave', restartAutoPlay);
-
-// Свайп для каруселі
 galleryWindow.addEventListener('touchstart', (e) => {
-    startX = e.touches[0].clientX; 
-    currentX = startX; 
-    isDragging = true; 
-    stopAutoPlay();
+    startX = e.touches[0].clientX; currentX = startX; isDragging = true; stopAutoPlay();
 }, { passive: true });
-
 galleryWindow.addEventListener('touchmove', (e) => {
     if (isDragging) currentX = e.touches[0].clientX;
 }, { passive: true });
-
 galleryWindow.addEventListener('touchend', () => {
     if (!isDragging) return;
     isDragging = false;
     const diff = currentX - startX;
-    if (Math.abs(diff) >= 45) { 
-        diff < 0 ? nextSlide() : prevSlide(); 
-    }
+    if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
     restartAutoPlay();
 });
-
-// Гортання мишкою для каруселі
-let isMouseDragging = false;
-let mouseStartX = 0;
-let mouseCurrentX = 0;
-
-galleryWindow.addEventListener('mousedown', (e) => {
-    mouseStartX = e.clientX;
-    mouseCurrentX = mouseStartX;
-    isMouseDragging = true;
-    stopAutoPlay();
-});
-
-galleryWindow.addEventListener('mousemove', (e) => {
-    if (isMouseDragging) mouseCurrentX = e.clientX;
-});
-
-galleryWindow.addEventListener('mouseup', () => {
-    if (!isMouseDragging) return;
-    isMouseDragging = false;
-    const diff = mouseCurrentX - mouseStartX;
-    if (Math.abs(diff) >= 45) {
-        diff < 0 ? nextSlide() : prevSlide();
-    }
-    restartAutoPlay();
-});
-
-galleryWindow.addEventListener('mouseleave', () => {
-    if (isMouseDragging) {
-        isMouseDragging = false;
-        restartAutoPlay();
-    }
-});
-
 restartAutoPlay();
 
-// Lightbox
 const lightbox = document.getElementById('lightbox');
 const lightboxImage = document.getElementById('lightboxImage');
 const lightboxClose = document.getElementById('lightboxClose');
-const lightboxPrev = document.getElementById('lightboxPrev');
-const lightboxNext = document.getElementById('lightboxNext');
-const lightboxCounter = document.getElementById('lightboxCounter');
-let lightboxIndex = 0;
-
+const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
 const openLightbox = (i) => {
-    lightboxIndex = Math.max(0, Math.min(totalSlides - 1, i));
-    updateLightboxImage();
+    const index = Math.max(0, Math.min(totalSlides - 1, i));
+    lightboxImage.src = gallerySlides[index].src;
+    lightboxImage.alt = gallerySlides[index].alt;
+    lightboxImage.style.transform = 'scale(0.95)';
     lightbox.classList.add('active');
     body.style.overflow = 'hidden';
+    requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
 };
-
-const updateLightboxImage = () => {
-    lightboxImage.src = gallerySlides[lightboxIndex].src;
-    lightboxImage.alt = gallerySlides[lightboxIndex].alt;
-    lightboxCounter.textContent = `${lightboxIndex + 1} / ${totalSlides}`;
-    lightboxImage.style.transform = 'scale(0.95)';
-    requestAnimationFrame(() => { 
-        requestAnimationFrame(() => { 
-            lightboxImage.style.transform = 'scale(1)'; 
-        }); 
-    });
-};
-
 const closeLightbox = () => {
     lightbox.classList.remove('active');
     lightboxImage.style.transform = '';
     body.style.overflow = '';
 };
-
-const lightboxPrevImage = () => {
-    lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
-    updateLightboxImage();
-};
-
-const lightboxNextImage = () => {
-    lightboxIndex = (lightboxIndex + 1) % totalSlides;
-    updateLightboxImage();
-};
-
-gallerySlides.forEach((slide, i) => { 
-    slide.addEventListener('click', () => {
-        stopAutoPlay();
-        openLightbox(i); 
-    }); 
-});
-
+gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
 lightboxClose.addEventListener('click', closeLightbox);
-lightboxPrev.addEventListener('click', lightboxPrevImage);
-lightboxNext.addEventListener('click', lightboxNextImage);
-
-lightbox.addEventListener('click', (e) => { 
-    if (e.target === lightbox) closeLightbox(); 
-});
-
-// Клавіатура для lightbox
+lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
 document.addEventListener('keydown', (e) => {
-    if (lightbox.classList.contains('active')) {
-        if (e.key === 'Escape') closeLightbox();
-        else if (e.key === 'ArrowLeft') lightboxPrevImage();
-        else if (e.key === 'ArrowRight') lightboxNextImage();
-    }
+    if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
 });
 
-// Свайп для lightbox
-let lightboxStartX = 0;
-
-lightbox.addEventListener('touchstart', (e) => {
-    lightboxStartX = e.touches[0].clientX;
-}, { passive: true });
-
-lightbox.addEventListener('touchend', (e) => {
-    const diff = e.changedTouches[0].clientX - lightboxStartX;
-    if (Math.abs(diff) > 50) {
-        if (diff > 0) {
-            lightboxPrevImage();
-        } else {
-            lightboxNextImage();
-        }
-    }
-});
-
-// Модальні вікна
 const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
 
 const updateProgress = (activeId) => {
     const activeIndex = modalOrder.indexOf(activeId);
-    if (activeIndex === -1) return;
     document.querySelectorAll('.modal-progress').forEach((progress) => {
         progress.querySelectorAll('.dot').forEach((dot, i) => {
             dot.classList.toggle('active', i === activeIndex);
@@ -246,22 +100,16 @@ const updateProgress = (activeId) => {
 const openModal = (id) => {
     const modal = document.getElementById(id);
     if (!modal) return;
-    document.querySelectorAll('.modal-overlay').forEach(m => {
-        if (m.id !== id) m.classList.remove('active');
-    });
     modal.classList.add('active');
     body.style.overflow = 'hidden';
     updateProgress(id);
 };
-
 const closeModal = (id) => {
     const modal = document.getElementById(id);
     if (!modal) return;
     modal.classList.remove('active');
-    const anyOpen = document.querySelector('.modal-overlay.active');
-    if (!anyOpen) body.style.overflow = '';
+    body.style.overflow = '';
 };
-
 document.querySelectorAll('.widget-card').forEach((card) => {
     card.addEventListener('click', () => {
         if (typeof gtag === 'function') {
@@ -281,13 +129,9 @@ document.querySelectorAll('.widget-card').forEach((card) => {
         }
     });
 });
-
 document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-    overlay.addEventListener('click', (e) => { 
-        if (e.target === overlay) closeModal(overlay.id); 
-    });
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
 });
-
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         const open = document.querySelector('.modal-overlay.active');
@@ -295,14 +139,11 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Навігація модалок стрілками
 document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
     arrow.addEventListener('click', () => {
         const overlay = arrow.closest('.modal-overlay');
-        if (!overlay) return;
         const direction = arrow.dataset.direction;
         const currentIndex = modalOrder.indexOf(overlay.id);
-        if (currentIndex === -1) return;
         
         let targetIndex;
         if (direction === 'next') {
@@ -319,7 +160,6 @@ document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
     });
 });
 
-// Свайп для модалок
 document.querySelectorAll('.modal-box').forEach((box) => {
     let startX = 0;
     let startY = 0;
@@ -351,7 +191,6 @@ document.querySelectorAll('.modal-box').forEach((box) => {
         if (Math.abs(diff) > 80) {
             const overlay = box.closest('.modal-overlay');
             const currentIndex = modalOrder.indexOf(overlay.id);
-            if (currentIndex === -1) return;
             
             let targetIndex;
             if (diff > 0) {
@@ -369,17 +208,14 @@ document.querySelectorAll('.modal-box').forEach((box) => {
     });
 });
 
-// Калькулятор
 const calcState = { bathrooms: 1, system: 'tee' };
 const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
 const calcPriceElement = document.getElementById('calcPrice');
-
 const updateCalc = () => {
     const key = `${calcState.bathrooms}-${calcState.system}`;
     const total = calcPrices[key] || 160000;
     calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
 };
-
 document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
         if (typeof gtag === 'function') {
@@ -397,13 +233,10 @@ document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
         updateCalc();
     });
 });
-
 if (calcPriceElement) updateCalc();
 
-// Кнопки оплати
 const calcPayBtn = document.getElementById('calcPayBtn');
 const calcTelegramBtn = document.getElementById('calcTelegramBtn');
-
 calcPayBtn.addEventListener('click', () => {
     if (typeof gtag === 'function') {
         gtag('event', 'pay_button', {
@@ -413,7 +246,6 @@ calcPayBtn.addEventListener('click', () => {
     }
     openModal('modalPayment');
 });
-
 const paymentModal = document.getElementById('modalPayment');
 paymentModal.addEventListener('click', (e) => {
     if (e.target === paymentModal) {
@@ -422,13 +254,11 @@ paymentModal.addEventListener('click', (e) => {
         calcPayBtn.style.display = 'none';
     }
 });
-
 document.querySelector('#modalPayment .modal-close').addEventListener('click', () => {
     closeModal('modalPayment');
     calcTelegramBtn.style.display = 'flex';
     calcPayBtn.style.display = 'none';
 });
-
 calcTelegramBtn.addEventListener('click', () => {
     if (typeof gtag === 'function') {
         gtag('event', 'telegram_send', {
@@ -440,7 +270,6 @@ calcTelegramBtn.addEventListener('click', () => {
     window.open(`https://t.me/sa_master?text=${message}`, '_blank');
 });
 
-// Google Review
 document.querySelector('.review-google-btn').addEventListener('click', () => {
     if (typeof gtag === 'function') {
         gtag('event', 'google_review', {
@@ -450,7 +279,6 @@ document.querySelector('.review-google-btn').addEventListener('click', () => {
     }
 });
 
-// Соціальний слайдер
 const socialTrack = document.getElementById('socialTrack');
 const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
 const socialViewport = document.getElementById('socialViewport');
@@ -458,24 +286,18 @@ let socialPage = 0;
 let socialStartX = 0;
 let socialCurrentX = 0;
 let socialDragging = false;
-
 const updateSocial = (page, animate = true) => {
     socialPage = Math.max(0, Math.min(1, page));
     socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
     socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
     socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
 };
-
 socialViewport.addEventListener('touchstart', (e) => {
-    socialStartX = e.touches[0].clientX; 
-    socialCurrentX = socialStartX; 
-    socialDragging = true;
+    socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
 }, { passive: true });
-
 socialViewport.addEventListener('touchmove', (e) => {
     if (socialDragging) socialCurrentX = e.touches[0].clientX;
 }, { passive: true });
-
 socialViewport.addEventListener('touchend', () => {
     if (!socialDragging) return;
     socialDragging = false;
@@ -484,7 +306,6 @@ socialViewport.addEventListener('touchend', () => {
     updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
 });
 
-// Рік у футері
 document.addEventListener('DOMContentLoaded', () => {
     const yearSpan = document.getElementById('currentYear');
     if (yearSpan) yearSpan.textContent = new Date().getFullYear();
