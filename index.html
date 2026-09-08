@@ -432,8 +432,8 @@
         }
         .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         .modal-box {
-            position: relative;
-            width: 100%;
+            position: absolute;
+            width: calc(100% - 2rem);
             max-width: 25rem;
             max-height: 85vh;
             overflow-y: auto;
@@ -445,6 +445,14 @@
             transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
             will-change: transform;
             touch-action: pan-y;
+            left: 50%;
+            margin-left: -12.5rem;
+        }
+        @media (max-width: 30rem) {
+            .modal-box {
+                width: calc(100% - 1.75rem);
+                margin-left: calc(-50% + 0.875rem);
+            }
         }
         .modal-close {
             position: absolute;
@@ -1576,8 +1584,9 @@
             }
         });
 
-        // Модалки
+        // Модалки - склеєні слайди
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+        let activeModalIndex = 0;
         
         const updateProgress = (activeId) => {
             const activeIndex = modalOrder.indexOf(activeId);
@@ -1588,49 +1597,98 @@
             });
         };
         
-        const openModal = (id, direction = 'first') => {
-            const modal = document.getElementById(id);
-            if (!modal) return;
-            const modalBox = modal.querySelector('.modal-box');
-            modalBox.style.transition = 'none';
-            if (direction === 'next') {
-                modalBox.style.transform = 'translateX(100%)';
-            } else if (direction === 'prev') {
-                modalBox.style.transform = 'translateX(-100%)';
-            } else {
-                modalBox.style.transform = 'translateX(0)';
-            }
-            modal.classList.add('active');
+        const positionAllModals = (animate = false) => {
+            modalOrder.forEach((id, index) => {
+                const modal = document.getElementById(id);
+                if (!modal) return;
+                const box = modal.querySelector('.modal-box');
+                if (animate) {
+                    box.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)';
+                } else {
+                    box.style.transition = 'none';
+                }
+                box.style.transform = `translateX(${(index - activeModalIndex) * 100}%)`;
+            });
+        };
+        
+        const openModal = (id) => {
+            activeModalIndex = modalOrder.indexOf(id);
+            if (activeModalIndex === -1) return;
+            
+            // Спочатку позиціонуємо всі модалки без анімації
+            positionAllModals(false);
+            
+            // Показуємо активну модалку
+            modalOrder.forEach((modalId, index) => {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    if (Math.abs(index - activeModalIndex) <= 1) {
+                        modal.classList.add('active');
+                    } else {
+                        modal.classList.remove('active');
+                    }
+                }
+            });
+            
             body.style.overflow = 'hidden';
             updateProgress(id);
+            
+            // Анімуємо до центру
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    modalBox.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)';
-                    modalBox.style.transform = 'translateX(0)';
+                    positionAllModals(true);
                 });
             });
         };
         
-        const closeModal = (id, direction = 'normal') => {
+        const closeModal = (id) => {
             const modal = document.getElementById(id);
             if (!modal) return;
-            const modalBox = modal.querySelector('.modal-box');
-            modalBox.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)';
+            modal.classList.remove('active');
+            body.style.overflow = '';
+        };
+        
+        const goToModal = (direction) => {
+            let targetIndex;
             if (direction === 'next') {
-                modalBox.style.transform = 'translateX(-100%)';
-            } else if (direction === 'prev') {
-                modalBox.style.transform = 'translateX(100%)';
+                targetIndex = Math.min(activeModalIndex + 1, modalOrder.length - 1);
+            } else {
+                targetIndex = Math.max(activeModalIndex - 1, 0);
             }
+            
+            if (targetIndex === activeModalIndex) return;
+            
+            activeModalIndex = targetIndex;
+            body.style.overflow = 'hidden';
+            updateProgress(modalOrder[activeModalIndex]);
+            
+            // Показуємо сусідні модалки
+            modalOrder.forEach((modalId, index) => {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    if (Math.abs(index - activeModalIndex) <= 1) {
+                        modal.classList.add('active');
+                    }
+                }
+            });
+            
+            // Анімуємо всі модалки
+            positionAllModals(true);
+            
+            // Ховаємо далекі модалки після анімації
             setTimeout(() => {
-                modal.classList.remove('active');
-                body.style.overflow = '';
-                modalBox.style.transition = '';
-                modalBox.style.transform = '';
+                modalOrder.forEach((modalId, index) => {
+                    if (Math.abs(index - activeModalIndex) > 1) {
+                        const modal = document.getElementById(modalId);
+                        if (modal) modal.classList.remove('active');
+                    }
+                });
             }, 500);
         };
         
         window.openModal = openModal;
         window.closeModal = closeModal;
+        window.goToModal = goToModal;
         
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
@@ -1641,19 +1699,21 @@
                     });
                 }
                 const modalId = card.dataset.modal;
-                if (modalId) openModal(modalId, 'first');
+                if (modalId) openModal(modalId);
             });
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     const modalId = card.dataset.modal;
-                    if (modalId) openModal(modalId, 'first');
+                    if (modalId) openModal(modalId);
                 }
             });
         });
         
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+            overlay.addEventListener('click', (e) => { 
+                if (e.target === overlay) closeModal(overlay.id); 
+            });
         });
         document.querySelectorAll('.modal-close').forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -1670,78 +1730,58 @@
         
         document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
             arrow.addEventListener('click', () => {
-                const overlay = arrow.closest('.modal-overlay');
                 const direction = arrow.dataset.direction;
-                const currentIndex = modalOrder.indexOf(overlay.id);
-                let targetIndex;
-                if (direction === 'next') {
-                    targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
-                } else {
-                    targetIndex = Math.max(currentIndex - 1, 0);
-                }
-                const targetId = modalOrder[targetIndex];
-                if (targetId !== overlay.id) {
-                    closeModal(overlay.id, direction);
-                    setTimeout(() => openModal(targetId, direction), 500);
-                }
+                goToModal(direction);
             });
         });
         
+        // Свайпи для склеєних модалок
         document.querySelectorAll('.modal-box').forEach((box) => {
             let startX = 0;
             let currentX = 0;
             let isDragging = false;
+            
             box.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
                 currentX = startX;
                 isDragging = true;
-                box.style.transition = 'none';
+                positionAllModals(false);
             }, { passive: true });
+            
             box.addEventListener('touchmove', (e) => {
                 if (!isDragging) return;
                 currentX = e.touches[0].clientX;
                 const diffX = currentX - startX;
-                if (Math.abs(diffX) > 10) {
-                    box.style.transform = `translateX(${diffX}px)`;
-                    e.preventDefault();
-                }
+                const containerWidth = box.parentElement.offsetWidth;
+                const offset = diffX / containerWidth * 100;
+                
+                modalOrder.forEach((id, index) => {
+                    const m = document.getElementById(id);
+                    if (!m) return;
+                    const b = m.querySelector('.modal-box');
+                    const baseOffset = (index - activeModalIndex) * 100;
+                    b.style.transform = `translateX(${baseOffset + offset}%)`;
+                });
+                
+                e.preventDefault();
             }, { passive: false });
+            
             box.addEventListener('touchend', () => {
                 if (!isDragging) return;
                 isDragging = false;
+                
                 const diffX = currentX - startX;
-                const overlay = box.closest('.modal-overlay');
-                const currentIndex = modalOrder.indexOf(overlay.id);
-                box.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)';
-                if (Math.abs(diffX) > 100) {
-                    if (diffX < 0 && currentIndex < modalOrder.length - 1) {
-                        const targetId = modalOrder[currentIndex + 1];
-                        box.style.transform = 'translateX(-100%)';
-                        setTimeout(() => {
-                            overlay.classList.remove('active');
-                            box.style.transition = '';
-                            box.style.transform = '';
-                            openModal(targetId, 'next');
-                        }, 500);
-                    } else if (diffX > 0 && currentIndex > 0) {
-                        const targetId = modalOrder[currentIndex - 1];
-                        box.style.transform = 'translateX(100%)';
-                        setTimeout(() => {
-                            overlay.classList.remove('active');
-                            box.style.transition = '';
-                            box.style.transform = '';
-                            openModal(targetId, 'prev');
-                        }, 500);
+                const threshold = 100;
+                
+                if (Math.abs(diffX) > threshold) {
+                    if (diffX < 0) {
+                        goToModal('next');
                     } else {
-                        box.style.transform = 'translateX(0)';
+                        goToModal('prev');
                     }
                 } else {
-                    box.style.transform = 'translateX(0)';
+                    positionAllModals(true);
                 }
-                setTimeout(() => {
-                    box.style.transition = '';
-                    box.style.transform = '';
-                }, 550);
             });
         });
 
