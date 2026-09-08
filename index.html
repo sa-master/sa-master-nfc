@@ -64,7 +64,7 @@
             --radius-modal: 1.25rem;
             --radius-social: 1.75rem;
             --radius-gallery: 1.25rem;
-            --transition: 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+            --transition: 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
         body.dark-mode {
             --color-primary: #0A84FF;
@@ -144,8 +144,6 @@
             display: flex;
             flex-direction: column;
         }
-        
-        /* Шапка - зовнішній вигляд як у першому коді, анімація як у другому */
         .hero {
             position: relative;
             overflow: hidden;
@@ -224,7 +222,6 @@
             line-height: 1;
             text-transform: lowercase;
             animation: titleReveal 0.7s ease-out forwards;
-            will-change: transform, opacity;
         }
         .brand-sub {
             font-size: clamp(0.75rem, 2vw, 0.875rem);
@@ -269,7 +266,6 @@
         .theme-toggle .icon-moon { display: block; }
         body.dark-mode .theme-toggle .icon-sun { display: block; }
         body.dark-mode .theme-toggle .icon-moon { display: none; }
-        
         .gallery {
             position: relative;
             overflow: hidden;
@@ -439,6 +435,7 @@
             visibility: hidden;
             pointer-events: none;
             transition: opacity 0.3s ease, visibility 0.3s ease;
+            overflow: hidden;
         }
         .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         .modal-box {
@@ -451,10 +448,12 @@
             border-radius: var(--radius-modal);
             background: var(--color-modal-bg);
             box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.18);
-            transform: translateY(1rem) scale(0.96);
-            transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+            transform: translateX(0);
+            opacity: 1;
+            transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease;
+            will-change: transform, opacity;
+            touch-action: pan-y;
         }
-        .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
         .modal-close {
             position: absolute;
             top: 0.75rem;
@@ -832,6 +831,7 @@
             visibility: hidden;
             pointer-events: none;
             transition: opacity 0.25s ease, visibility 0.25s ease;
+            touch-action: pan-y;
         }
         .lightbox.active { opacity: 1; visibility: visible; pointer-events: auto; }
         .lightbox img {
@@ -839,10 +839,15 @@
             max-height: 90vh;
             border-radius: 0.875rem;
             object-fit: contain;
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
+            transform: scale(1);
+            transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            will-change: transform, opacity;
+            cursor: grab;
         }
-        .lightbox.active img { transform: scale(1); }
+        .lightbox img:active { cursor: grabbing; }
         .lightbox-close {
             position: absolute;
             top: 0.875rem;
@@ -856,6 +861,7 @@
             font-size: 1.25rem;
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
+            z-index: 10;
         }
         .ios-social-shell {
             width: 25rem;
@@ -879,15 +885,9 @@
             animation: socialHint 1s ease-in-out 1;
         }
         @keyframes socialHint {
-            0%, 100% {
-                transform: translate3d(0, 0, 0);
-            }
-            35% {
-                transform: translate3d(-18px, 0, 0);
-            }
-            65% {
-                transform: translate3d(0, 0, 0);
-            }
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            35% { transform: translate3d(-18px, 0, 0); }
+            65% { transform: translate3d(0, 0, 0); }
         }
         .ios-social-page {
             width: 50%;
@@ -1436,15 +1436,22 @@
         galleryWindow.addEventListener('mouseleave', restartAutoPlay);
         galleryWindow.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX; currentX = startX; isDragging = true; stopAutoPlay();
+            track.style.transition = 'none';
         }, { passive: true });
         galleryWindow.addEventListener('touchmove', (e) => {
-            if (isDragging) currentX = e.touches[0].clientX;
+            if (isDragging) {
+                currentX = e.touches[0].clientX;
+                const diff = currentX - startX;
+                const percentage = -(currentIndex * 100) + (diff / galleryWindow.offsetWidth * 100);
+                track.style.transform = `translate3d(${percentage}%, 0, 0)`;
+            }
         }, { passive: true });
         galleryWindow.addEventListener('touchend', () => {
             if (!isDragging) return;
             isDragging = false;
             const diff = currentX - startX;
             if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
+            else { updateGallery(); }
             restartAutoPlay();
         });
         restartAutoPlay();
@@ -1453,29 +1460,114 @@
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
+        let lightboxIndex = 0;
+        let lightboxStartX = 0;
+        let lightboxCurrentX = 0;
+        let lightboxDragging = false;
+        let isLightboxAnimating = false;
+        
+        const updateLightbox = (animate = true, direction = 'next') => {
+            const realIndex = lightboxIndex % totalSlides;
+            lightboxImage.src = gallerySlides[realIndex].src;
+            lightboxImage.alt = gallerySlides[realIndex].alt;
+            if (animate) {
+                lightboxImage.style.transition = 'none';
+                const offset = direction === 'next' ? 100 : -100;
+                lightboxImage.style.transform = `translateX(${offset}%) scale(0.95)`;
+                lightboxImage.style.opacity = '0';
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        lightboxImage.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease';
+                        lightboxImage.style.transform = 'translateX(0) scale(1)';
+                        lightboxImage.style.opacity = '1';
+                        setTimeout(() => { isLightboxAnimating = false; }, 500);
+                    });
+                });
+            } else {
+                lightboxImage.style.transition = 'none';
+                lightboxImage.style.transform = 'scale(1)';
+                lightboxImage.style.opacity = '1';
+                isLightboxAnimating = false;
+            }
+        };
         const openLightbox = (i) => {
-            const index = Math.max(0, Math.min(totalSlides - 1, i));
-            lightboxImage.src = gallerySlides[index].src;
-            lightboxImage.alt = gallerySlides[index].alt;
-            lightboxImage.style.transform = 'scale(0.95)';
+            lightboxIndex = i;
+            isLightboxAnimating = true;
+            updateLightbox(false);
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
-            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
+            lightboxImage.style.transform = 'scale(0.95)';
+            lightboxImage.style.opacity = '0';
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    lightboxImage.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+                    lightboxImage.style.transform = 'scale(1)';
+                    lightboxImage.style.opacity = '1';
+                    setTimeout(() => { isLightboxAnimating = false; }, 300);
+                });
+            });
         };
         const closeLightbox = () => {
             lightbox.classList.remove('active');
+            lightboxImage.style.transition = '';
             lightboxImage.style.transform = '';
+            lightboxImage.style.opacity = '';
             body.style.overflow = '';
+            isLightboxAnimating = false;
         };
+        const lightboxNextSlide = () => {
+            if (isLightboxAnimating) return;
+            isLightboxAnimating = true;
+            lightboxIndex = (lightboxIndex + 1) % totalSlides;
+            updateLightbox(true, 'next');
+        };
+        const lightboxPrevSlide = () => {
+            if (isLightboxAnimating) return;
+            isLightboxAnimating = true;
+            lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
+            updateLightbox(true, 'prev');
+        };
+        lightbox.addEventListener('touchstart', (e) => {
+            if (isLightboxAnimating) return;
+            lightboxStartX = e.touches[0].clientX;
+            lightboxCurrentX = lightboxStartX;
+            lightboxDragging = true;
+            lightboxImage.style.transition = 'none';
+        }, { passive: true });
+        lightbox.addEventListener('touchmove', (e) => {
+            if (lightboxDragging && !isLightboxAnimating) {
+                lightboxCurrentX = e.touches[0].clientX;
+                const diff = lightboxCurrentX - lightboxStartX;
+                const percentage = (diff / lightbox.offsetWidth) * 100;
+                lightboxImage.style.transform = `translateX(${percentage}%) scale(0.95)`;
+                lightboxImage.style.opacity = '0.7';
+            }
+        }, { passive: true });
+        lightbox.addEventListener('touchend', () => {
+            if (!lightboxDragging) return;
+            lightboxDragging = false;
+            const diff = lightboxCurrentX - lightboxStartX;
+            const threshold = 50;
+            if (Math.abs(diff) >= threshold) {
+                if (diff < 0) { lightboxNextSlide(); } else { lightboxPrevSlide(); }
+            } else {
+                lightboxImage.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.3s ease';
+                lightboxImage.style.transform = 'translateX(0) scale(1)';
+                lightboxImage.style.opacity = '1';
+            }
+        });
         gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
         lightboxClose.addEventListener('click', closeLightbox);
         lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+            if (lightbox.classList.contains('active')) {
+                if (e.key === 'Escape') { closeLightbox(); }
+                else if (e.key === 'ArrowLeft') { lightboxPrevSlide(); }
+                else if (e.key === 'ArrowRight') { lightboxNextSlide(); }
+            }
         });
 
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-        
         const updateProgress = (activeId) => {
             const activeIndex = modalOrder.indexOf(activeId);
             document.querySelectorAll('.modal-progress').forEach((progress) => {
@@ -1484,23 +1576,53 @@
                 });
             });
         };
-
-        const openModal = (id) => {
+        const openModal = (id, direction = 'first') => {
             const modal = document.getElementById(id);
             if (!modal) return;
+            const modalBox = modal.querySelector('.modal-box');
+            modalBox.style.transition = 'none';
+            if (direction === 'next') {
+                modalBox.style.transform = 'translateX(100%)';
+            } else if (direction === 'prev') {
+                modalBox.style.transform = 'translateX(-100%)';
+            } else {
+                modalBox.style.transform = 'translateY(20px)';
+                modalBox.style.opacity = '0';
+            }
             modal.classList.add('active');
             body.style.overflow = 'hidden';
             updateProgress(id);
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modalBox.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease';
+                    modalBox.style.transform = 'translateX(0) translateY(0)';
+                    modalBox.style.opacity = '1';
+                });
+            });
         };
-        const closeModal = (id) => {
+        const closeModal = (id, direction = 'normal') => {
             const modal = document.getElementById(id);
             if (!modal) return;
-            modal.classList.remove('active');
-            body.style.overflow = '';
+            const modalBox = modal.querySelector('.modal-box');
+            modalBox.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease';
+            if (direction === 'next') {
+                modalBox.style.transform = 'translateX(-100%)';
+            } else if (direction === 'prev') {
+                modalBox.style.transform = 'translateX(100%)';
+            } else {
+                modalBox.style.transform = 'translateY(20px)';
+                modalBox.style.opacity = '0';
+            }
+            setTimeout(() => {
+                modal.classList.remove('active');
+                body.style.overflow = '';
+                modalBox.style.transition = '';
+                modalBox.style.transform = '';
+                modalBox.style.opacity = '';
+            }, 500);
         };
         window.openModal = openModal;
         window.closeModal = closeModal;
-        
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
@@ -1510,92 +1632,102 @@
                     });
                 }
                 const modalId = card.dataset.modal;
-                if (modalId) openModal(modalId);
+                if (modalId) openModal(modalId, 'first');
             });
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     const modalId = card.dataset.modal;
-                    if (modalId) openModal(modalId);
+                    if (modalId) openModal(modalId, 'first');
                 }
             });
         });
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id, 'normal'); });
+        });
+        document.querySelectorAll('.modal-close').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const overlay = btn.closest('.modal-overlay');
+                closeModal(overlay.id, 'normal');
+            });
         });
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const open = document.querySelector('.modal-overlay.active');
-                if (open) closeModal(open.id);
+                if (open) closeModal(open.id, 'normal');
             }
         });
-
         document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
             arrow.addEventListener('click', () => {
                 const overlay = arrow.closest('.modal-overlay');
                 const direction = arrow.dataset.direction;
                 const currentIndex = modalOrder.indexOf(overlay.id);
-                
                 let targetIndex;
                 if (direction === 'next') {
                     targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
                 } else {
                     targetIndex = Math.max(currentIndex - 1, 0);
                 }
-                
                 const targetId = modalOrder[targetIndex];
                 if (targetId !== overlay.id) {
-                    closeModal(overlay.id);
-                    setTimeout(() => openModal(targetId), 300);
+                    closeModal(overlay.id, direction);
+                    setTimeout(() => openModal(targetId, direction), 500);
                 }
             });
         });
-
         document.querySelectorAll('.modal-box').forEach((box) => {
             let startX = 0;
-            let startY = 0;
-            let isHorizontal = false;
-            
+            let currentX = 0;
+            let isDragging = false;
             box.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                isHorizontal = false;
+                currentX = startX;
+                isDragging = true;
+                box.style.transition = 'none';
             }, { passive: true });
-            
             box.addEventListener('touchmove', (e) => {
-                const diffX = Math.abs(e.touches[0].clientX - startX);
-                const diffY = Math.abs(e.touches[0].clientY - startY);
-                if (diffX > 30 && diffX > diffY) isHorizontal = true;
-            }, { passive: true });
-            
-            box.addEventListener('touchend', (e) => {
-                if (!isHorizontal) {
-                    const diffY = e.changedTouches[0].clientY - startY;
-                    if (diffY > 100 && box.scrollTop === 0) {
-                        const overlay = box.closest('.modal-overlay');
-                        closeModal(overlay.id);
-                    }
-                    return;
+                if (!isDragging) return;
+                currentX = e.touches[0].clientX;
+                const diffX = currentX - startX;
+                if (Math.abs(diffX) > 10) {
+                    box.style.transform = `translateX(${diffX}px)`;
+                    e.preventDefault();
                 }
-                
-                const diff = startX - e.changedTouches[0].clientX;
-                if (Math.abs(diff) > 80) {
-                    const overlay = box.closest('.modal-overlay');
-                    const currentIndex = modalOrder.indexOf(overlay.id);
-                    
-                    let targetIndex;
-                    if (diff > 0) {
-                        targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
+            }, { passive: false });
+            box.addEventListener('touchend', () => {
+                if (!isDragging) return;
+                isDragging = false;
+                const diffX = currentX - startX;
+                const overlay = box.closest('.modal-overlay');
+                const currentIndex = modalOrder.indexOf(overlay.id);
+                box.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)';
+                if (Math.abs(diffX) > 100) {
+                    if (diffX < 0 && currentIndex < modalOrder.length - 1) {
+                        const targetId = modalOrder[currentIndex + 1];
+                        box.style.transform = 'translateX(-100%)';
+                        setTimeout(() => {
+                            closeModal(overlay.id, 'next');
+                            box.style.transform = '';
+                            setTimeout(() => openModal(targetId, 'next'), 50);
+                        }, 500);
+                    } else if (diffX > 0 && currentIndex > 0) {
+                        const targetId = modalOrder[currentIndex - 1];
+                        box.style.transform = 'translateX(100%)';
+                        setTimeout(() => {
+                            closeModal(overlay.id, 'prev');
+                            box.style.transform = '';
+                            setTimeout(() => openModal(targetId, 'prev'), 50);
+                        }, 500);
                     } else {
-                        targetIndex = Math.max(currentIndex - 1, 0);
+                        box.style.transform = 'translateX(0)';
                     }
-                    
-                    const targetId = modalOrder[targetIndex];
-                    if (targetId !== overlay.id) {
-                        closeModal(overlay.id);
-                        setTimeout(() => openModal(targetId), 300);
-                    }
+                } else {
+                    box.style.transform = 'translateX(0)';
                 }
+                setTimeout(() => {
+                    box.style.transition = '';
+                    box.style.transform = '';
+                }, 550);
             });
         });
 
@@ -1697,7 +1829,6 @@
             updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
         });
 
-        // Підказка для соціального дока
         setTimeout(function() {
             socialTrack.classList.add('social-hint');
             setTimeout(function() {
