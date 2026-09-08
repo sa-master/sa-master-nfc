@@ -94,6 +94,36 @@
             position: relative;
             padding: 0;
             transition: background 0.3s ease, color 0.3s ease;
+            /* Приховуємо скролбар для всіх браузерів */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE та Edge */
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        /* Приховуємо скролбар для WebKit (Chrome, Safari, Opera) */
+        body::-webkit-scrollbar {
+            width: 0;
+            display: none;
+        }
+        /* Глобально приховуємо скролбари для всіх елементів, де можлива прокрутка */
+        * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE та Edge */
+        }
+        *::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+            display: none;
+        }
+        .modal-box {
+            /* Зберігаємо прокрутку в модальному вікні, але приховуємо скролбар */
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .modal-box::-webkit-scrollbar {
+            width: 0;
+            display: none;
         }
         a { text-decoration: none; color: inherit; }
         :focus-visible {
@@ -439,6 +469,7 @@
             visibility: hidden;
             pointer-events: none;
             transition: opacity 0.3s ease, visibility 0.3s ease;
+            overflow: hidden;
         }
         .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         .modal-box {
@@ -453,6 +484,12 @@
             box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.18);
             transform: translateY(1rem) scale(0.96);
             transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .modal-box::-webkit-scrollbar {
+            width: 0;
+            display: none;
         }
         .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
         .modal-close {
@@ -832,6 +869,7 @@
             visibility: hidden;
             pointer-events: none;
             transition: opacity 0.25s ease, visibility 0.25s ease;
+            overflow: hidden;
         }
         .lightbox.active { opacity: 1; visibility: visible; pointer-events: auto; }
         .lightbox img {
