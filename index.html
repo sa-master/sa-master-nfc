@@ -357,6 +357,9 @@
             pointer-events: none;
             z-index: 0;
         }
+        body.dark-mode .widget-card::before {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%, rgba(10, 132, 255, 0.06) 100%);
+        }
         .widget-card:hover {
             transform: translateY(-0.125rem);
             box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.08), 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.95);
@@ -1375,6 +1378,7 @@
     </div>
 
     <script>
+        // Тема
         const toggleBtn = document.getElementById('themeToggle');
         const body = document.body;
         const getInitialTheme = () => {
@@ -1388,6 +1392,7 @@
             localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
         });
 
+        // Галерея
         const track = document.getElementById('galleryTrack');
         const dots = [...document.querySelectorAll('.gallery-dot')];
         const counter = document.getElementById('galleryCounter');
@@ -1397,6 +1402,7 @@
         let isDragging = false;
         let startX = 0;
         let currentX = 0;
+        
         const updateGallery = (animate = true) => {
             track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
@@ -1404,6 +1410,7 @@
             counter.textContent = `${realIndex + 1} / ${totalSlides}`;
             dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
         };
+        
         const nextSlide = () => { currentIndex++; updateGallery(); };
         const prevSlide = () => {
             if (currentIndex <= 0) {
@@ -1412,14 +1419,18 @@
                 requestAnimationFrame(() => { currentIndex--; updateGallery(); });
             } else { currentIndex--; updateGallery(); }
         };
+        
         const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
         const stopAutoPlay = () => clearInterval(autoPlayTimer);
+        
         track.addEventListener('transitionend', () => {
             if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
         });
+        
         dots.forEach((dot, i) => {
             dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
         });
+        
         const galleryWindow = document.getElementById('galleryWindow');
         galleryWindow.addEventListener('mouseenter', stopAutoPlay);
         galleryWindow.addEventListener('mouseleave', restartAutoPlay);
@@ -1445,6 +1456,7 @@
         });
         restartAutoPlay();
 
+        // Lightbox
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
@@ -1479,6 +1491,7 @@
                 isLightboxAnimating = false;
             }
         };
+        
         const openLightbox = (i) => {
             lightboxIndex = i;
             isLightboxAnimating = true;
@@ -1496,6 +1509,7 @@
                 });
             });
         };
+        
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transition = '';
@@ -1504,18 +1518,21 @@
             body.style.overflow = '';
             isLightboxAnimating = false;
         };
+        
         const lightboxNextSlide = () => {
             if (isLightboxAnimating) return;
             isLightboxAnimating = true;
             lightboxIndex = (lightboxIndex + 1) % totalSlides;
             updateLightbox(true, 'next');
         };
+        
         const lightboxPrevSlide = () => {
             if (isLightboxAnimating) return;
             isLightboxAnimating = true;
             lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
             updateLightbox(true, 'prev');
         };
+        
         lightbox.addEventListener('touchstart', (e) => {
             if (isLightboxAnimating) return;
             lightboxStartX = e.touches[0].clientX;
@@ -1523,6 +1540,7 @@
             lightboxDragging = true;
             lightboxImage.style.transition = 'none';
         }, { passive: true });
+        
         lightbox.addEventListener('touchmove', (e) => {
             if (lightboxDragging && !isLightboxAnimating) {
                 lightboxCurrentX = e.touches[0].clientX;
@@ -1532,6 +1550,7 @@
                 lightboxImage.style.opacity = '0.7';
             }
         }, { passive: true });
+        
         lightbox.addEventListener('touchend', () => {
             if (!lightboxDragging) return;
             lightboxDragging = false;
@@ -1545,6 +1564,7 @@
                 lightboxImage.style.opacity = '1';
             }
         });
+        
         gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
         lightboxClose.addEventListener('click', closeLightbox);
         lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
@@ -1556,7 +1576,9 @@
             }
         });
 
+        // Модалки
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+        
         const updateProgress = (activeId) => {
             const activeIndex = modalOrder.indexOf(activeId);
             document.querySelectorAll('.modal-progress').forEach((progress) => {
@@ -1565,6 +1587,7 @@
                 });
             });
         };
+        
         const openModal = (id, direction = 'first') => {
             const modal = document.getElementById(id);
             if (!modal) return;
@@ -1587,6 +1610,7 @@
                 });
             });
         };
+        
         const closeModal = (id, direction = 'normal') => {
             const modal = document.getElementById(id);
             if (!modal) return;
@@ -1596,8 +1620,6 @@
                 modalBox.style.transform = 'translateX(-100%)';
             } else if (direction === 'prev') {
                 modalBox.style.transform = 'translateX(100%)';
-            } else {
-                modalBox.style.transform = 'translateX(0)';
             }
             setTimeout(() => {
                 modal.classList.remove('active');
@@ -1606,8 +1628,10 @@
                 modalBox.style.transform = '';
             }, 500);
         };
+        
         window.openModal = openModal;
         window.closeModal = closeModal;
+        
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
@@ -1627,21 +1651,23 @@
                 }
             });
         });
+        
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id, 'normal'); });
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
         });
         document.querySelectorAll('.modal-close').forEach((btn) => {
             btn.addEventListener('click', () => {
                 const overlay = btn.closest('.modal-overlay');
-                closeModal(overlay.id, 'normal');
+                closeModal(overlay.id);
             });
         });
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const open = document.querySelector('.modal-overlay.active');
-                if (open) closeModal(open.id, 'normal');
+                if (open) closeModal(open.id);
             }
         });
+        
         document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
             arrow.addEventListener('click', () => {
                 const overlay = arrow.closest('.modal-overlay');
@@ -1660,6 +1686,7 @@
                 }
             });
         });
+        
         document.querySelectorAll('.modal-box').forEach((box) => {
             let startX = 0;
             let currentX = 0;
@@ -1691,17 +1718,19 @@
                         const targetId = modalOrder[currentIndex + 1];
                         box.style.transform = 'translateX(-100%)';
                         setTimeout(() => {
-                            closeModal(overlay.id, 'next');
+                            overlay.classList.remove('active');
+                            box.style.transition = '';
                             box.style.transform = '';
-                            setTimeout(() => openModal(targetId, 'next'), 50);
+                            openModal(targetId, 'next');
                         }, 500);
                     } else if (diffX > 0 && currentIndex > 0) {
                         const targetId = modalOrder[currentIndex - 1];
                         box.style.transform = 'translateX(100%)';
                         setTimeout(() => {
-                            closeModal(overlay.id, 'prev');
+                            overlay.classList.remove('active');
+                            box.style.transition = '';
                             box.style.transform = '';
-                            setTimeout(() => openModal(targetId, 'prev'), 50);
+                            openModal(targetId, 'prev');
                         }, 500);
                     } else {
                         box.style.transform = 'translateX(0)';
@@ -1716,6 +1745,7 @@
             });
         });
 
+        // Калькулятор
         const calcState = { bathrooms: 1, system: 'tee' };
         const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
         const calcPriceElement = document.getElementById('calcPrice');
@@ -1787,6 +1817,7 @@
             }
         });
 
+        // Соціальний док
         const socialTrack = document.getElementById('socialTrack');
         const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
         const socialViewport = document.getElementById('socialViewport');
