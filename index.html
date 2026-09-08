@@ -92,7 +92,7 @@
             background: var(--color-bg);
             -webkit-font-smoothing: antialiased;
             position: relative;
-            padding: 12px 0 20px;
+            padding: 0;
             transition: background 0.3s ease, color 0.3s ease;
         }
         a { text-decoration: none; color: inherit; }
@@ -135,9 +135,10 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            padding: 0.5rem 0 1.5rem;
         }
         .page {
-            width: min(620px, calc(100% - 20px));
+            width: min(30rem, calc(100% - 1.25rem));
             margin: 0 auto;
             flex: 1;
             display: flex;
@@ -187,6 +188,11 @@
             display: flex;
             align-items: center;
             gap: 18px;
+            animation: heroReveal 0.7s ease-out forwards;
+        }
+        @keyframes heroReveal {
+            0% { opacity: 0; transform: translateY(1.25rem); }
+            100% { opacity: 1; transform: translateY(0); }
         }
         .logo-wrapper {
             width: 120px;
@@ -200,7 +206,6 @@
             background: transparent;
             box-shadow: 0 8px 28px rgba(0, 0, 0, .12), 0 2px 8px rgba(0, 0, 0, .04);
             transition: transform .35s ease, box-shadow .35s ease;
-            animation: heroReveal 0.7s ease-out forwards;
         }
         .logo-wrapper:hover {
             transform: translateY(-3px) scale(1.03);
@@ -276,10 +281,6 @@
                 filter: blur(0);
             }
         }
-        @keyframes heroReveal {
-            0% { opacity: 0; transform: translateY(1.25rem); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
         .brand-name:hover {
             transform: perspective(600px) rotateX(3deg) scale(1.02);
             text-shadow:
@@ -317,192 +318,187 @@
             letter-spacing: .2px;
             color: #8E8E93;
             margin-top: 6px;
-            animation: heroReveal 0.7s ease-out forwards;
         }
-        body.dark-mode .brand-sub {
-            color: var(--color-text-muted);
-        }
-        
-        /* ====== ГАЛЕРЕЯ ====== */
-        .gallery {
-            position: relative;
-            overflow: hidden;
-            border-radius: var(--radius-card);
-            background: #E5E8EC;
-            box-shadow: var(--shadow-card, 0 8px 24px rgba(0, 0, 0, .08));
-            margin-top: 16px;
-        }
-        body.dark-mode .gallery {
-            background: #2C2C2E;
-        }
-        .gallery-window {
-            position: relative;
-            width: 100%;
-            overflow: hidden;
-            aspect-ratio: 16/10;
-            cursor: grab;
-        }
-        .gallery-window:active { cursor: grabbing; }
-        .gallery-track {
-            display: flex;
-            height: 100%;
-            transform: translate3d(0, 0, 0);
-            transition: transform .5s cubic-bezier(.22, .61, .36, 1);
-            will-change: transform;
-        }
-        .gallery-slide {
-            flex: 0 0 100%;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #D2D6DC;
-        }
-        .gallery-slide img {
-            width: 100%;
-            height: 100%;
+        .brand-phone {
             display: block;
-            object-fit: cover;
-            loading: eager;
-            decoding: async;
+            margin-top: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-primary);
+            white-space: nowrap;
+            transition: color 0.3s ease;
         }
-        .gallery-counter {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 5;
-            min-width: 36px;
-            height: 24px;
-            padding: 0 10px;
+        .brand-phone:hover { color: var(--color-text); text-decoration: underline; }
+        
+        .theme-toggle {
+            flex-shrink: 0;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            border: 1px solid var(--color-glass-border);
+            background: var(--color-glass-bg);
+            backdrop-filter: blur(0.75rem);
+            -webkit-backdrop-filter: blur(0.75rem);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 12px;
-            background: rgba(0, 0, 0, .45);
-            border: 1px solid rgba(255, 255, 255, .2);
+            cursor: pointer;
+            box-shadow: var(--color-glass-shadow);
+            transition: transform 0.2s ease, background 0.3s ease;
+            color: var(--color-text);
+            margin-left: 0.25rem;
+        }
+        .theme-toggle:active { transform: scale(0.9); }
+        .theme-toggle svg { width: 1.25rem; height: 1.25rem; stroke: currentColor; stroke-width: 2; fill: none; }
+        .theme-toggle .icon-sun { display: none; }
+        .theme-toggle .icon-moon { display: block; }
+        body.dark-mode .theme-toggle .icon-sun { display: block; }
+        body.dark-mode .theme-toggle .icon-moon { display: none; }
+        
+        .gallery {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-gallery);
+            background: var(--color-glass-bg);
+            backdrop-filter: blur(1.5rem) saturate(200%);
+            -webkit-backdrop-filter: blur(1.5rem) saturate(200%);
+            border: 1px solid var(--color-glass-border);
+            box-shadow: var(--color-glass-shadow);
+            margin-top: 0.625rem;
+        }
+        .gallery-window { position: relative; width: 100%; aspect-ratio: 16/10; overflow: hidden; cursor: grab; }
+        .gallery-window:active { cursor: grabbing; }
+        .gallery-track { display: flex; height: 100%; transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
+        .gallery-slide { flex: 0 0 100%; height: 100%; overflow: hidden; background: #D2D6DC; }
+        .gallery-slide img { width: 100%; height: 100%; object-fit: cover; display: block; loading: eager; decoding: async; }
+        .gallery-counter {
+            position: absolute;
+            top: 0.625rem;
+            right: 0.625rem;
+            z-index: 5;
+            padding: 0 0.625rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            border-radius: 0.75rem;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #fff;
-            font-size: 12px;
+            font-size: 0.75rem;
             font-weight: 600;
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(0.75rem);
         }
         .gallery-dots {
             position: absolute;
             left: 50%;
-            bottom: 10px;
-            z-index: 5;
+            bottom: 0.625rem;
             transform: translateX(-50%);
             display: flex;
             align-items: center;
-            gap: 4px;
-            padding: 4px 7px;
-            border-radius: 14px;
-            background: rgba(0, 0, 0, .35);
-            border: 1px solid rgba(255, 255, 255, .15);
-            backdrop-filter: blur(12px);
+            gap: 0.25rem;
+            padding: 0.25rem 0.4375rem;
+            border-radius: 0.875rem;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(0.75rem);
+            z-index: 5;
         }
         .gallery-dot {
-            width: 4px;
-            height: 4px;
-            padding: 0;
+            width: 0.25rem;
+            height: 0.25rem;
             border: 0;
             border-radius: 50%;
-            background: rgba(255, 255, 255, .5);
-            transition: width .25s ease, background .25s ease;
+            background: rgba(255, 255, 255, 0.5);
+            transition: width 0.25s ease, background 0.25s ease;
             cursor: pointer;
         }
-        .gallery-dot.active {
-            width: 14px;
-            border-radius: 4px;
-            background: #fff;
-        }
+        .gallery-dot.active { width: 0.875rem; border-radius: 0.25rem; background: #fff; }
         
-        /* ====== КАРТКИ ====== */
-        .widgets-section { margin: 16px 0 14px; }
-        .widgets-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+        .widgets-section { margin: 0.625rem 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
         .widget-card {
             position: relative;
-            padding: 14px 14px 12px;
-            border-radius: 18px;
-            background: #FFFFFF;
-            box-shadow: var(--shadow-card, 0 8px 24px rgba(0, 0, 0, .08));
-            border: 1px solid rgba(255, 255, 255, .9);
-            cursor: pointer;
-            transition: transform .25s ease, box-shadow .25s ease;
             display: flex;
             flex-direction: column;
-            min-height: 100px;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 0.75rem;
+            border-radius: var(--radius-card);
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(1.5rem) saturate(200%);
+            -webkit-backdrop-filter: blur(1.5rem) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.06), 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
             opacity: 0;
             animation: heroReveal 0.6s ease-out forwards;
         }
         body.dark-mode .widget-card {
-            background: #2C2C2E;
+            background: rgba(44, 44, 46, 0.72);
             border-color: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.35), 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+        .widget-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 40%, rgba(0, 122, 255, 0.03) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        body.dark-mode .widget-card::before {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%, rgba(10, 132, 255, 0.06) 100%);
+        }
+        .widget-card:hover {
+            transform: translateY(-0.125rem);
+            box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.08), 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+        }
+        .widget-card:active {
+            transform: scale(0.98);
         }
         .widget-card:nth-child(1) { animation-delay: 0.1s; }
         .widget-card:nth-child(2) { animation-delay: 0.2s; }
         .widget-card:nth-child(3) { animation-delay: 0.3s; }
         .widget-card:nth-child(4) { animation-delay: 0.4s; }
-        .widget-card:active {
-            transform: scale(.96);
-            box-shadow: 0 12px 32px rgba(0, 0, 0, .12), 0 4px 12px rgba(0, 0, 0, .06);
+        .widget-top {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            position: relative;
+            z-index: 1;
         }
+        .widget-card[data-modal="modalAbout"] .widget-icon { color: #007AFF; }
+        .widget-card[data-modal="modalProcess"] .widget-icon { color: #34C759; }
+        .widget-card[data-modal="modalPrice"] .widget-icon { color: #FF9500; }
+        .widget-card[data-modal="modalReviews"] .widget-icon { color: #AF52DE; }
         .widget-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
+            flex-shrink: 0;
+            width: 4rem;
+            height: 4rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 8px;
-            flex: 0 0 32px;
         }
         .widget-icon svg {
-            width: 18px;
-            height: 18px;
-            display: block;
-            stroke-width: 2;
+            width: 100%;
+            height: 100%;
+            stroke-width: 1.2;
             fill: none;
+            stroke: currentColor;
         }
-        .widget-card[data-modal="modalAbout"] .widget-icon { background: rgba(0, 122, 255, .10); }
-        .widget-card[data-modal="modalAbout"] .widget-icon svg { stroke: #007AFF; }
-        .widget-card[data-modal="modalProcess"] .widget-icon { background: rgba(52, 199, 89, .10); }
-        .widget-card[data-modal="modalProcess"] .widget-icon svg { stroke: #34C759; }
-        .widget-card[data-modal="modalPrice"] .widget-icon { background: rgba(255, 149, 0, .10); }
-        .widget-card[data-modal="modalPrice"] .widget-icon svg { stroke: #FF9500; }
-        .widget-card[data-modal="modalReviews"] .widget-icon { background: rgba(175, 82, 222, .10); }
-        .widget-card[data-modal="modalReviews"] .widget-icon svg { stroke: #AF52DE; }
         .widget-title {
-            font-size: 16px;
-            font-weight: 700;
-            line-height: 1.2;
-            letter-spacing: -.3px;
+            font-size: 0.8125rem;
+            font-weight: 600;
             color: var(--color-text);
-        }
-        .widget-sub {
-            font-size: 13px;
-            line-height: 1.35;
-            color: var(--color-text-secondary);
-            margin-top: 2px;
-            flex: 1;
-        }
-        .widget-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 10px;
-            font-weight: 700;
-            color: var(--color-text-secondary);
-            background: rgba(142, 142, 147, .10);
-            padding: 2px 10px;
-            border-radius: 8px;
-            letter-spacing: .4px;
+            text-align: center;
+            width: 100%;
+            position: relative;
+            z-index: 1;
         }
         
-        /* ====== МОДАЛКИ ====== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -510,101 +506,77 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 18px;
-            background: rgba(0, 0, 0, .45);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(1.25rem);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transition: opacity .3s ease, visibility .3s ease;
-            overflow: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
+        .modal-overlay.active { opacity: 1; visibility: visible; pointer-events: auto; }
         .modal-box {
             position: relative;
             width: 100%;
-            max-width: 420px;
+            max-width: 25rem;
             max-height: 85vh;
             overflow-y: auto;
-            padding: 24px 20px 22px;
-            border-radius: 28px;
+            padding: 1.25rem;
+            border-radius: var(--radius-modal);
             background: var(--color-modal-bg);
-            box-shadow: 0 24px 64px rgba(0, 0, 0, .18);
-            transform: translateX(0) scale(1);
-            opacity: 1;
-            transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease;
-            will-change: transform, opacity;
-            touch-action: pan-y;
+            box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.18);
+            transform: translateY(1rem) scale(0.96);
+            transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
         }
+        .modal-overlay.active .modal-box { transform: translateY(0) scale(1); }
         .modal-close {
             position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 36px;
-            height: 36px;
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 2rem;
+            height: 2rem;
             border: 0;
             border-radius: 50%;
-            background: rgba(120, 130, 140, .08);
-            color: #8E8E93;
-            font-size: 20px;
-            line-height: 1;
+            background: rgba(120, 130, 140, 0.08);
+            color: var(--color-text-muted);
+            font-size: 1.125rem;
             cursor: pointer;
             z-index: 5;
-            transition: background .2s ease;
-        }
-        .modal-close:active {
-            background: rgba(120, 130, 140, .16);
         }
         .modal-title {
-            font-size: 24px;
-            font-weight: 800;
-            letter-spacing: -.5px;
+            font-size: 1.375rem;
+            font-weight: 700;
             color: var(--color-modal-title);
+            padding-right: 3rem;
         }
-        .modal-lead {
-            margin-top: 4px;
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--color-primary);
-        }
-        .modal-text {
-            margin-top: 16px;
-            font-size: 16px;
-            line-height: 1.6;
-            color: var(--color-modal-text);
-        }
-        .modal-text p { margin: 0 0 12px; }
+        .modal-lead { margin-top: 0.25rem; font-size: 0.875rem; font-weight: 600; color: var(--color-primary); }
+        .modal-text { margin-top: 0.875rem; font-size: 0.9375rem; line-height: 1.6; color: var(--color-modal-text); }
+        .modal-text p { margin: 0 0 0.625rem; }
         .modal-text strong { color: var(--color-modal-title); }
         .modal-photo {
-            display: block;
-            width: 96px;
-            height: 96px;
+            float: right;
+            width: 5rem;
+            height: 5rem;
             object-fit: cover;
             border-radius: 50%;
-            margin: 0 auto 14px;
-            border: 3px solid #fff;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+            margin: 2.5rem 0 0.5rem 0.875rem;
+            border: 0.1875rem solid #fff;
         }
         .modal-nav {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-top: 20px;
-            gap: 12px;
+            margin-top: 1.25rem;
+            gap: 0.75rem;
         }
         .modal-nav-arrow {
-            width: 40px;
-            height: 40px;
+            width: 2.5rem;
+            height: 2.5rem;
             border: 1px solid rgba(120, 130, 140, 0.2);
             border-radius: 50%;
             background: rgba(120, 130, 140, 0.08);
             color: var(--color-text-secondary);
-            font-size: 20px;
+            font-size: 1.25rem;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -618,12 +590,12 @@
         .modal-nav-arrow:active { transform: scale(0.95); }
         .modal-progress {
             display: flex;
-            gap: 8px;
+            gap: 0.5rem;
             align-items: center;
         }
         .modal-progress .dot {
-            width: 8px;
-            height: 8px;
+            width: 0.5rem;
+            height: 0.5rem;
             border-radius: 50%;
             background: rgba(120, 130, 140, 0.25);
             transition: background 0.3s ease, transform 0.3s ease;
@@ -632,52 +604,294 @@
             background: var(--color-primary);
             transform: scale(1.4);
         }
-        
-        /* ====== PAYMENT ====== */
-        .payment-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            margin-top: 18px;
-        }
+        .payment-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
         .payment-btn {
             position: relative;
-            min-height: 84px;
+            min-height: 4.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
-            border-radius: 20px;
+            gap: 0.25rem;
+            border-radius: 1.125rem;
             color: #fff;
-            font-size: 13px;
+            font-size: 0.75rem;
             font-weight: 700;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, .10), inset 0 1px 0 rgba(255, 255, 255, .25);
-            transition: transform .18s ease;
-            overflow: hidden;
+            transition: transform 0.18s ease;
             cursor: pointer;
         }
-        .payment-btn:active { transform: scale(.94); }
-        .payment-btn::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: linear-gradient(135deg, rgba(255, 255, 255, .2), transparent 43%);
-            pointer-events: none;
-        }
-        .payment-btn svg {
-            position: relative;
-            z-index: 2;
-            width: 38px;
-            height: 38px;
-            display: block;
-        }
-        .payment-btn span { position: relative; z-index: 2; }
+        .payment-btn:active { transform: scale(0.94); }
+        .payment-btn svg { width: 2.125rem; height: 2.125rem; }
         .payment-btn.privat { background: linear-gradient(145deg, #67D45B, #159C35); }
         .payment-btn.mono { background: linear-gradient(145deg, #303034, #09090A); }
-        
-        /* ====== LIGHTBOX ====== */
+        .calc {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 1rem;
+            background: rgba(0, 122, 255, 0.04);
+            border: 1px solid rgba(0, 122, 255, 0.12);
+        }
+        .calc-title { font-size: 1rem; font-weight: 700; color: var(--color-modal-title); }
+        .calc-subtitle { font-size: 0.8125rem; color: var(--color-modal-text); margin-top: 0.25rem; margin-bottom: 0.875rem; }
+        .calc-group { margin-bottom: 0.75rem; }
+        .calc-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-modal-text);
+            margin-bottom: 0.375rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .calc-segment {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            background: rgba(120, 130, 140, 0.12);
+            padding: 2px;
+            border-radius: 0.5625rem;
+        }
+        .calc-seg-btn {
+            padding: 0.5rem 0.625rem;
+            border: none;
+            border-radius: 0.4375rem;
+            background: transparent;
+            color: var(--color-text);
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+            white-space: nowrap;
+        }
+        .calc-seg-btn.active {
+            background: #ffffff;
+            color: var(--color-text);
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1), 0 0 1px rgba(0, 0, 0, 0.05);
+        }
+        body.dark-mode .calc-seg-btn.active {
+            background: #48484A;
+            color: #ffffff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        }
+        .calc-result {
+            margin-top: 1rem;
+            padding: 0.875rem;
+            border-radius: 0.75rem;
+            background: rgba(0, 122, 255, 0.08);
+            text-align: center;
+        }
+        .calc-result-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-modal-text);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .calc-result-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--color-primary);
+            margin-top: 0.25rem;
+        }
+        .calc-result-note { font-size: 0.6875rem; color: var(--color-text-muted); margin-top: 0.375rem; }
+        .calc-detail {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            padding: 0.875rem;
+            border-radius: 0.875rem;
+            background: rgba(52, 199, 89, 0.05);
+            border: 1px solid rgba(52, 199, 89, 0.15);
+        }
+        .calc-detail-icon {
+            flex-shrink: 0;
+            width: 2.25rem;
+            height: 2.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #34C759;
+        }
+        .calc-detail-icon svg { width: 2.25rem; height: 2.25rem; }
+        .calc-detail-text { flex: 1; min-width: 0; }
+        .calc-detail-title { font-size: 0.875rem; font-weight: 600; color: var(--color-modal-title); }
+        .calc-detail-desc { font-size: 0.75rem; color: var(--color-modal-text); margin-top: 0.125rem; line-height: 1.3; }
+        .calc-detail-price { flex-shrink: 0; font-size: 1rem; font-weight: 700; color: #34C759; }
+        .calc-pay-btn {
+            display: block;
+            width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.9375rem;
+            border: none;
+            border-radius: 0.875rem;
+            background: #34C759;
+            color: #fff;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            letter-spacing: -0.1px;
+            cursor: pointer;
+            transition: opacity 0.2s ease, transform 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .calc-pay-btn:hover { opacity: 0.9; }
+        .calc-pay-btn:active { opacity: 0.7; transform: scale(0.98); }
+        .calc-telegram-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.9375rem;
+            border: none;
+            border-radius: 0.875rem;
+            background: #007AFF;
+            color: #fff;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            letter-spacing: -0.1px;
+            cursor: pointer;
+            transition: opacity 0.2s ease, transform 0.15s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .calc-telegram-btn:hover { opacity: 0.9; }
+        .calc-telegram-btn:active { opacity: 0.7; transform: scale(0.98); }
+        .calc-telegram-btn svg { width: 1.375rem; height: 1.375rem; }
+        .result-highlight {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.875rem;
+            background: rgba(175, 82, 222, 0.05);
+            border: 1px solid rgba(175, 82, 222, 0.12);
+            text-align: center;
+        }
+        .result-highlight p {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: var(--color-modal-text);
+        }
+        .result-highlight-sub {
+            font-size: 0.875rem;
+            color: var(--color-text-muted);
+            margin-top: 0.5rem;
+        }
+        .review-section-title {
+            margin-top: 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--color-modal-title);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .review-stars {
+            font-size: 0.875rem;
+            color: #FF9500;
+            letter-spacing: 2px;
+            margin-bottom: 0.375rem;
+        }
+        .review-philosophy {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.875rem;
+            background: rgba(175, 82, 222, 0.05);
+            border: 1px solid rgba(175, 82, 222, 0.12);
+        }
+        .review-philosophy p { margin: 0 0 0.5rem; }
+        .review-philosophy p:last-child { margin-bottom: 0; }
+        .review-item {
+            margin-top: 0.75rem;
+            padding: 1rem;
+            border-radius: 0.875rem;
+            background: #ffffff;
+            border: 1px solid rgba(120, 130, 140, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 0 1px rgba(0, 0, 0, 0.04);
+        }
+        body.dark-mode .review-item {
+            background: #2C2C2E;
+            border-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .review-item-text {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: var(--color-modal-text);
+            font-style: italic;
+        }
+        .review-item-author {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--color-modal-title);
+            margin-top: 0.625rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .review-item-author::before {
+            content: "";
+            display: inline-block;
+            width: 1.5rem;
+            height: 1px;
+            background: rgba(120, 130, 140, 0.4);
+        }
+        .review-social-links {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .review-social-btn {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(1rem);
+            -webkit-backdrop-filter: blur(1rem);
+            color: var(--color-text-secondary);
+        }
+        .review-social-btn:hover {
+            transform: scale(1.08);
+            background: rgba(255, 255, 255, 0.55);
+        }
+        .review-google-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 1rem;
+            padding: 0.9375rem;
+            border: none;
+            border-radius: 0.875rem;
+            background: #ffffff;
+            color: #1C1C1E;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            letter-spacing: -0.1px;
+            cursor: pointer;
+            transition: opacity 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.05);
+            -webkit-tap-highlight-color: transparent;
+            text-decoration: none;
+        }
+        .review-google-btn:hover { opacity: 0.85; }
+        .review-google-btn:active { opacity: 0.7; transform: scale(0.98); }
+        .review-google-btn svg { width: 1.375rem; height: 1.375rem; }
+        body.dark-mode .review-google-btn {
+            background: #3A3A3C;
+            color: #F2F2F7;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
         .lightbox {
             position: fixed;
             inset: 0;
@@ -685,114 +899,52 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 12px;
-            background: rgba(0, 0, 0, .85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(1rem);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
-            transition: opacity .25s ease, visibility .25s ease;
-            touch-action: pan-y;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
         }
-        .lightbox.active {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-        }
-        .lightbox-content {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            max-width: 100%;
-            max-height: 90vh;
-        }
+        .lightbox.active { opacity: 1; visibility: visible; pointer-events: auto; }
         .lightbox img {
             max-width: 100%;
-            max-height: 85vh;
-            display: block;
-            border-radius: 14px;
+            max-height: 90vh;
+            border-radius: 0.875rem;
             object-fit: contain;
-            box-shadow: 0 16px 48px rgba(0, 0, 0, .4);
-            transform: scale(1);
-            transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-            will-change: transform, opacity;
-            cursor: grab;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
         }
-        .lightbox img:active { cursor: grabbing; }
+        .lightbox.active img { transform: scale(1); }
         .lightbox-close {
             position: absolute;
-            top: 14px;
-            right: 14px;
-            z-index: 10;
-            width: 38px;
-            height: 38px;
-            border: 1px solid rgba(255, 255, 255, .15);
-            border-radius: 50%;
-            background: rgba(255, 255, 255, .08);
-            color: #fff;
-            font-size: 22px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-        }
-        .lightbox-nav {
-            width: 48px;
-            height: 48px;
+            top: 0.875rem;
+            right: 0.875rem;
+            width: 2.25rem;
+            height: 2.25rem;
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.08);
             color: #fff;
-            font-size: 32px;
+            font-size: 1.25rem;
             cursor: pointer;
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s ease, transform 0.2s ease;
-            flex-shrink: 0;
-            z-index: 10;
-            line-height: 1;
-            padding-bottom: 4px;
-        }
-        .lightbox-nav:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: scale(1.05);
-        }
-        .lightbox-nav:active { transform: scale(0.95); }
-        .lightbox-counter {
-            position: absolute;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 8px 16px;
-            border-radius: 16px;
-            background: rgba(0, 0, 0, 0.5);
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            backdrop-filter: blur(10px);
-            z-index: 10;
+            backdrop-filter: blur(0.625rem);
         }
         
-        /* ====== SOCIAL DOCK ====== */
+        /* ====== SOCIAL DOCK З АНІМАЦІЄЮ ====== */
         .ios-social-shell {
-            width: 350px;
-            max-width: calc(100vw - 28px);
-            margin: 24px auto 8px;
-            padding: 11px 5px 10px;
+            width: 25rem;
+            max-width: calc(100vw - 1.75rem);
+            margin: 0.625rem auto 0.5rem;
+            padding: 0.625rem 0.375rem 0.5625rem;
             background: linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(244, 248, 250, .68));
             border: 1px solid rgba(255, 255, 255, .92);
             box-shadow: 0 16px 38px rgba(38, 75, 91, .13), 0 3px 10px rgba(38, 75, 91, .06), inset 0 1px 0 rgba(255, 255, 255, .96), inset 0 -1px 0 rgba(130, 155, 165, .08);
             backdrop-filter: blur(24px) saturate(170%);
             -webkit-backdrop-filter: blur(24px) saturate(170%);
+            border-radius: var(--radius-social);
             overflow: hidden;
-            border-radius: 31px;
             animation: heroReveal 0.7s ease-out forwards;
             animation-delay: 0.5s;
             opacity: 0;
@@ -802,59 +954,49 @@
             border-color: rgba(255, 255, 255, 0.12);
             box-shadow: 0 16px 38px rgba(0, 0, 0, 0.4);
         }
-        .ios-social-viewport {
-            width: 100%;
-            overflow: hidden;
-            touch-action: pan-y;
-        }
-        .ios-social-track {
-            display: flex;
-            width: 200%;
-            transform: translate3d(0, 0, 0);
-            transition: transform .48s cubic-bezier(.22, .61, .36, 1);
-            will-change: transform;
-        }
+        .ios-social-viewport { width: 100%; overflow: hidden; touch-action: pan-y; }
+        .ios-social-track { display: flex; width: 200%; transition: transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1); }
         .ios-social-track.social-hint {
             animation: socialHint 1s ease-in-out 1;
         }
         @keyframes socialHint {
-            0%, 100% { transform: translate3d(0, 0, 0); }
-            35% { transform: translate3d(-18px, 0, 0); }
-            65% { transform: translate3d(0, 0, 0); }
+            0%, 100% {
+                transform: translate3d(0, 0, 0);
+            }
+            35% {
+                transform: translate3d(-18px, 0, 0);
+            }
+            65% {
+                transform: translate3d(0, 0, 0);
+            }
         }
         .ios-social-page {
             width: 50%;
             flex: 0 0 50%;
             display: grid;
-            grid-template-columns: repeat(4, 68px);
-            column-gap: 14px;
+            grid-template-columns: repeat(4, 4.5rem);
+            column-gap: 0.875rem;
             justify-content: center;
-            padding: 0 2px;
+            padding: 0 0.125rem;
         }
-        .ios-social-item {
-            width: 68px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
+        .ios-social-item { width: 4.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.3125rem; }
         .ios-social-icon-wrap {
             position: relative;
-            width: 68px;
-            height: 68px;
+            width: 4.5rem;
+            height: 4.5rem;
         }
         .ios-social-button {
             position: relative;
-            width: 68px;
-            height: 68px;
+            width: 4.5rem;
+            height: 4.5rem;
+            border-radius: 1.125rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 0;
-            border-radius: 18px;
             color: #fff;
             overflow: hidden;
             cursor: pointer;
+            border: none;
             box-shadow: 0 7px 15px rgba(44, 67, 76, .16), 0 2px 5px rgba(44, 67, 76, .09), inset 0 1px 0 rgba(255, 255, 255, .55), inset 0 -1px 0 rgba(0, 0, 0, .06);
             transition: transform .18s ease, box-shadow .18s ease;
         }
@@ -873,9 +1015,8 @@
         .ios-social-button svg {
             position: relative;
             z-index: 2;
-            width: 42px;
-            height: 42px;
-            display: block;
+            width: 2.75rem;
+            height: 2.75rem;
             filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .10));
         }
         .ios-phone { background: linear-gradient(145deg, #55f36d 0%, #31dc50 48%, #18c83b 100%); }
@@ -885,93 +1026,65 @@
         .ios-youtube { background: linear-gradient(145deg, #ff5c5c, #ff0000); }
         .ios-telegram { background: linear-gradient(145deg, #5bc9ff, #229ed9); }
         .ios-viber { background: linear-gradient(145deg, #a486ff, #665cac); }
-        .ios-payment { background: linear-gradient(145deg, #57c2ff, var(--color-primary)); }
+        .ios-payment { background: linear-gradient(145deg, #55f36d, #31dc50); }
         .ios-social-label {
-            font-size: 11px;
-            line-height: 1.1;
+            font-size: 0.6875rem;
             font-weight: 500;
-            color: #4d5d65;
-            white-space: nowrap;
+            color: var(--color-text-secondary);
             text-align: center;
-            letter-spacing: -.1px;
         }
-        body.dark-mode .ios-social-label { color: var(--color-text-muted); }
-        .ios-social-pagination {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-            margin-top: 7px;
-        }
+        .ios-social-pagination { display: flex; justify-content: center; gap: 0.3125rem; margin-top: 0.375rem; }
         .ios-social-page-dot {
-            width: 5px;
-            height: 5px;
+            width: 0.3125rem;
+            height: 0.3125rem;
             border-radius: 50%;
-            background: rgba(77, 93, 101, .28);
-            transition: width .25s ease, background .25s ease;
+            background: var(--color-text-muted);
+            transition: width 0.25s ease, background 0.25s ease;
         }
         .ios-social-page-dot.active {
-            width: 15px;
-            border-radius: 5px;
-            background: #6d858f;
+            width: 0.875rem;
+            border-radius: 0.3125rem;
+            background: var(--color-text-secondary);
         }
-        
-        /* ====== FOOTER ====== */
         .site-footer { width: 100%; margin: 0.5rem auto 0; padding: 0.25rem 0.75rem; text-align: center; }
         .footer-text { font-size: 0.6875rem; font-weight: 500; color: var(--color-footer-text); line-height: 1.2; margin: 0; }
-        
-        @media(max-width:480px) {
-            .page { width: calc(100% - 14px); }
+        @media (max-width: 30rem) {
+            .page { width: calc(100% - 0.875rem); }
             .hero { padding: 18px 14px 16px; border-radius: 24px; }
             .logo-wrapper { width: 88px; height: 88px; flex-basis: 88px; }
             .logo { padding: 5px; }
             .brand-name { font-size: 24px; letter-spacing: 1px; }
             .brand-badge { font-size: 12px; padding: 1px 10px; }
             .brand-sub { font-size: 13px; margin-top: 4px; }
-            .widgets-grid { gap: 8px; }
-            .widget-card { padding: 12px 12px 10px; min-height: 84px; border-radius: 16px; }
-            .widget-icon { width: 28px; height: 28px; flex: 0 0 28px; border-radius: 8px; margin-bottom: 6px; }
-            .widget-icon svg { width: 16px; height: 16px; }
-            .widget-title { font-size: 14px; }
-            .widget-sub { font-size: 12px; }
-            .widget-badge { font-size: 8px; top: 8px; right: 8px; padding: 1px 8px; }
-            .ios-social-shell { padding: 10px 5px 9px; border-radius: 31px; }
-            .ios-social-button { width: 60px; height: 60px; }
-            .ios-social-button svg { width: 36px; height: 36px; }
-            .ios-social-label { font-size: 10px; }
-            .ios-social-page { grid-template-columns: repeat(4, 60px); column-gap: 10px; }
-            .ios-social-item { width: 60px; gap: 5px; }
-            .ios-social-icon-wrap { width: 60px; height: 60px; }
-            .modal-box { padding: 20px 16px 18px; border-radius: 24px; }
-            .modal-title { font-size: 22px; }
-            .modal-lead { font-size: 14px; }
-            .modal-text { font-size: 15px; }
-            .payment-btn { min-height: 70px; border-radius: 16px; font-size: 12px; }
-            .payment-btn svg { width: 32px; height: 32px; }
-            .payment-buttons { gap: 10px; }
+            .widgets-section { gap: 0.625rem; margin: 0.5rem 0; }
+            .widget-card { padding: 0.75rem; border-radius: 0.75rem; }
+            .widget-icon { width: 3rem; height: 3rem; }
+            .widget-title { font-size: 0.75rem; }
+            .ios-social-shell { width: 22.5rem; margin: 0.5rem auto 0.375rem; }
+            .ios-social-page { grid-template-columns: repeat(4, 4rem); column-gap: 0.625rem; }
+            .ios-social-item { width: 4rem; }
+            .ios-social-icon-wrap { width: 4rem; height: 4rem; }
+            .ios-social-button { width: 4rem; height: 4rem; }
+            .ios-social-button svg { width: 2.5rem; height: 2.5rem; }
+            .modal-box { padding: 1.125rem 0.875rem 1rem; }
         }
-        @media(max-width:380px) {
+        @media (max-width: 23.75rem) {
             .hero { padding: 14px 12px 12px; border-radius: 20px; }
             .logo-wrapper { width: 72px; height: 72px; flex-basis: 72px; }
-            .logo { padding: 4px; }
             .brand-name { font-size: 20px; letter-spacing: 0.5px; }
             .brand-badge { font-size: 10px; padding: 1px 8px; }
             .brand-sub { font-size: 12px; margin-top: 3px; }
-            .widgets-grid { gap: 6px; }
-            .widget-card { padding: 10px 10px 8px; min-height: 72px; border-radius: 14px; }
-            .widget-icon { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 7px; margin-bottom: 4px; }
-            .widget-icon svg { width: 14px; height: 14px; }
-            .widget-title { font-size: 13px; }
-            .widget-sub { font-size: 11px; }
-            .widget-badge { font-size: 7px; top: 6px; right: 6px; padding: 1px 6px; }
-            .ios-social-shell { width: 320px; max-width: calc(100vw - 24px); border-radius: 30px; }
-            .ios-social-button { width: 52px; height: 52px; border-radius: 16px; }
-            .ios-social-button svg { width: 30px; height: 30px; }
-            .ios-social-label { font-size: 9px; }
-            .ios-social-page { grid-template-columns: repeat(4, 52px); column-gap: 8px; }
-            .ios-social-item { width: 52px; gap: 4px; }
-            .ios-social-icon-wrap { width: 52px; height: 52px; }
-            .modal-text { font-size: 14px; }
+            .widgets-section { gap: 0.5rem; margin: 0.375rem 0; }
+            .widget-card { padding: 0.625rem; border-radius: 0.625rem; }
+            .widget-icon { width: 2.5rem; height: 2.5rem; }
+            .widget-title { font-size: 0.6875rem; }
+            .ios-social-shell { width: 20rem; margin: 0.375rem auto 0.25rem; }
+            .ios-social-page { grid-template-columns: repeat(4, 3.75rem); column-gap: 0.5rem; }
+            .ios-social-item { width: 3.75rem; }
+            .ios-social-icon-wrap { width: 3.75rem; height: 3.75rem; }
+            .ios-social-button { width: 3.75rem; height: 3.75rem; }
+            .ios-social-button svg { width: 2.25rem; height: 2.25rem; }
+            .footer-text { font-size: 0.5625rem; }
         }
     </style>
 </head>
@@ -979,7 +1092,6 @@
     <div class="background-layer"></div>
     <div class="content-wrapper">
         <div class="page">
-            <!-- ====== ШАПКА ====== -->
             <section class="hero">
                 <div class="hero-header">
                     <div class="logo-wrapper">
@@ -993,14 +1105,22 @@
                             </a>
                         </div>
                         <div class="brand-sub">комплексний монтаж сантехніки</div>
-                        <a href="tel:+380979111871" style="display:block;margin-top:4px;font-size:14px;font-weight:600;color:var(--color-primary);">+38 (097) 911-18-71</a>
+                        <a href="tel:+380979111871" class="brand-phone">+38 (097) 911-18-71</a>
                     </div>
+                    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Перемкнути тему">
+                        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"/>
+                            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                        </svg>
+                        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+                        </svg>
+                    </button>
                 </div>
-
                 <div class="gallery">
-                    <div class="gallery-window" id="galleryWindow">
+                    <div class="gallery-window" id="galleryWindow" role="region" aria-label="Галерея робіт">
                         <div class="gallery-track" id="galleryTrack">
-                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" decoding="async" fetchpriority="high" /></div>
+                            <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" decoding="async" /></div>
                             <div class="gallery-slide"><img src="photo-2.jpg" alt="Монтаж сантехніки — приклад 2" loading="eager" decoding="async" /></div>
                             <div class="gallery-slide"><img src="photo-3.jpg" alt="Монтаж сантехніки — приклад 3" loading="eager" decoding="async" /></div>
                             <div class="gallery-slide"><img src="photo-4.jpg" alt="Монтаж сантехніки — приклад 4" loading="eager" decoding="async" /></div>
@@ -1010,60 +1130,63 @@
                             <div class="gallery-slide"><img src="photo-8.jpg" alt="Монтаж сантехніки — приклад 8" loading="eager" decoding="async" /></div>
                             <div class="gallery-slide"><img src="photo-1.jpg" alt="Монтаж сантехніки — приклад 1" loading="eager" decoding="async" /></div>
                         </div>
-                        <div class="gallery-counter" id="galleryCounter">1 / 8</div>
-                        <div class="gallery-dots" id="galleryDots">
-                            <button class="gallery-dot active" type="button" aria-label="Фото 1"></button>
-                            <button class="gallery-dot" type="button" aria-label="Фото 2"></button>
-                            <button class="gallery-dot" type="button" aria-label="Фото 3"></button>
-                            <button class="gallery-dot" type="button" aria-label="Фото 4"></button>
-                            <button class="gallery-dot" type="button" aria-label="Фото 5"></button>
-                            <button class="gallery-dot" type="button" aria-label="Фото 6"></button>
-                            <button class="gallery-dot" type="button" aria-label="Фото 7"></button>
-                            <button class="gallery-dot" type="button" aria-label="Фото 8"></button>
+                        <div class="gallery-counter" id="galleryCounter" aria-live="polite">1 / 8</div>
+                        <div class="gallery-dots" id="galleryDots" role="tablist" aria-label="Навігація по фото">
+                            <button class="gallery-dot active" type="button" role="tab" aria-selected="true" aria-label="Фото 1"></button>
+                            <button class="gallery-dot" type="button" role="tab" aria-selected="false" aria-label="Фото 2"></button>
+                            <button class="gallery-dot" type="button" role="tab" aria-selected="false" aria-label="Фото 3"></button>
+                            <button class="gallery-dot" type="button" role="tab" aria-selected="false" aria-label="Фото 4"></button>
+                            <button class="gallery-dot" type="button" role="tab" aria-selected="false" aria-label="Фото 5"></button>
+                            <button class="gallery-dot" type="button" role="tab" aria-selected="false" aria-label="Фото 6"></button>
+                            <button class="gallery-dot" type="button" role="tab" aria-selected="false" aria-label="Фото 7"></button>
+                            <button class="gallery-dot" type="button" role="tab" aria-selected="false" aria-label="Фото 8"></button>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- ====== КАРТКИ ====== -->
-            <section class="widgets-section">
-                <div class="widgets-grid">
-                    <div class="widget-card" data-modal="modalAbout" role="button" tabindex="0">
+            <section class="widgets-section" aria-label="Інформація про послуги">
+                <div class="widget-card" data-modal="modalAbout" role="button" tabindex="0" aria-label="Дізнатися про нас">
+                    <div class="widget-top">
                         <div class="widget-icon">
-                            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
                         </div>
                         <div class="widget-title">ПРО НАС</div>
-                        <div class="widget-sub">Досвід, який залишається за стінами</div>
-                        <div class="widget-badge">01</div>
                     </div>
-                    <div class="widget-card" data-modal="modalProcess" role="button" tabindex="0">
+                </div>
+                <div class="widget-card" data-modal="modalProcess" role="button" tabindex="0" aria-label="Дізнатися про процес роботи">
+                    <div class="widget-top">
                         <div class="widget-icon">
-                            <svg viewBox="0 0 24 24"><path d="M14.7 6.3a5 5 0 0 0-6.9 6.9L3 18.9V21h2.1l4.8-4.8a5 5 0 0 0 6.9-6.9l-2.9 2.9-2.1-2.1 2.9-2.9z"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 0-6.9 6.9L3 18.9V21h2.1l4.8-4.8a5 5 0 0 0 6.9-6.9l-2.9 2.9-2.1-2.1 2.9-2.9z"/></svg>
                         </div>
                         <div class="widget-title">ПРО РОБОТУ</div>
-                        <div class="widget-sub">Від задуму — до бездоганного результату</div>
-                        <div class="widget-badge">02</div>
                     </div>
-                    <div class="widget-card" data-modal="modalPrice" role="button" tabindex="0">
+                </div>
+                <div class="widget-card" data-modal="modalPrice" role="button" tabindex="0" aria-label="Дізнатися про вартість">
+                    <div class="widget-top">
                         <div class="widget-icon">
-                            <svg viewBox="0 0 24 24"><path d="M20 7H5a2 2 0 0 1-2-2 2 2 0 0 1 2-2h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1"/><path d="M16 13a2 2 0 0 0 0-4"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 7H5a2 2 0 0 1-2-2 2 2 0 0 1 2-2h13v4"/>
+                                <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1"/>
+                                <path d="M16 13a2 2 0 0 0 0-4"/>
+                            </svg>
                         </div>
                         <div class="widget-title">ПРО ВАРТІСТЬ</div>
-                        <div class="widget-sub">Якість не починається з цифри</div>
-                        <div class="widget-badge">03</div>
                     </div>
-                    <div class="widget-card" data-modal="modalReviews" role="button" tabindex="0">
+                </div>
+                <div class="widget-card" data-modal="modalReviews" role="button" tabindex="0" aria-label="Дізнатися про результати">
+                    <div class="widget-top">
                         <div class="widget-icon">
-                            <svg viewBox="0 0 24 24"><path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10z"/>
+                                <path d="M9 12l2 2 4-4"/>
+                            </svg>
                         </div>
                         <div class="widget-title">ПРО РЕЗУЛЬТАТ</div>
-                        <div class="widget-sub">Те, що не видно. Працює роками.</div>
-                        <div class="widget-badge">04</div>
                     </div>
                 </div>
             </section>
 
-            <!-- ====== SOCIAL DOCK ====== -->
             <div class="ios-social-shell">
                 <div class="ios-social-viewport" id="socialViewport">
                     <div class="ios-social-track" id="socialTrack">
@@ -1094,7 +1217,7 @@
                             </div>
                             <div class="ios-social-item">
                                 <div class="ios-social-icon-wrap">
-                                    <a class="ios-social-button ios-facebook" href="https://www.facebook.com/share/1977uk6VHF/?mibextid=wwXIfr" target="_blank" rel="noopener" aria-label="Facebook">
+                                    <a class="ios-social-button ios-facebook" href="https://www.facebook.com/santehmaster/" target="_blank" rel="noopener" aria-label="Facebook">
                                         <svg viewBox="0 0 24 24"><path d="M13.5 21V13.9H16L16.4 11H13.5V9.15C13.5 8.31 13.73 7.74 14.92 7.74H16.5V5.16C16.23 5.12 15.29 5 14.2 5C11.92 5 10.36 6.39 10.36 8.95V11H7.9V13.9H10.36V21H13.5Z" fill="white"/></svg>
                                     </a>
                                 </div>
@@ -1129,7 +1252,11 @@
                             <div class="ios-social-item">
                                 <div class="ios-social-icon-wrap">
                                     <button class="ios-social-button ios-payment" type="button" onclick="openModal('modalPayment')" aria-label="Оплата">
-                                        <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" fill="white"/><path d="M3 9H21" stroke="#1976D2" stroke-width="2"/><circle cx="16.5" cy="14" r="1.5" fill="#1976D2"/></svg>
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <rect x="3" y="5" width="18" height="14" rx="3" fill="white"/>
+                                            <path d="M3 9H21" stroke="#1976D2" stroke-width="2"/>
+                                            <circle cx="16.5" cy="14" r="1.5" fill="#1976D2"/>
+                                        </svg>
                                     </button>
                                 </div>
                                 <div class="ios-social-label">Оплата</div>
@@ -1143,12 +1270,11 @@
                 </div>
             </div>
 
-            <!-- ====== FOOTER ====== -->
             <footer class="site-footer">
                 <p class="footer-text">© <span id="currentYear">2026</span> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
             </footer>
 
-            <!-- ====== MODALS ====== -->
+            <!-- Модальні вікна -->
             <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalAbout')" aria-label="Закрити">×</button>
@@ -1369,22 +1495,16 @@
                 </div>
             </div>
 
-            <!-- ====== LIGHTBOX ====== -->
+            <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
-                <div class="lightbox-content">
-                    <button class="lightbox-nav lightbox-prev" id="lightboxPrev" aria-label="Попереднє фото">‹</button>
-                    <img id="lightboxImage" src="" alt="" />
-                    <button class="lightbox-nav lightbox-next" id="lightboxNext" aria-label="Наступне фото">›</button>
-                </div>
-                <div class="lightbox-counter" id="lightboxCounter">1 / 8</div>
+                <img id="lightboxImage" src="" alt="" />
             </div>
         </div>
     </div>
 
     <script>
-        // ============ ТЕМА ============
-        const toggleBtn = document.getElementById('themeToggle') || document.createElement('button');
+        const toggleBtn = document.getElementById('themeToggle');
         const body = document.body;
         const getInitialTheme = () => {
             const saved = localStorage.getItem('theme');
@@ -1392,8 +1512,11 @@
             return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         };
         if (getInitialTheme() === 'dark') body.classList.add('dark-mode');
+        toggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
+        });
 
-        // ============ ГАЛЕРЕЯ ============
         const track = document.getElementById('galleryTrack');
         const dots = [...document.querySelectorAll('.gallery-dot')];
         const counter = document.getElementById('galleryCounter');
@@ -1403,7 +1526,6 @@
         let isDragging = false;
         let startX = 0;
         let currentX = 0;
-
         const updateGallery = (animate = true) => {
             track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
@@ -1411,7 +1533,6 @@
             counter.textContent = `${realIndex + 1} / ${totalSlides}`;
             dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
         };
-
         const nextSlide = () => { currentIndex++; updateGallery(); };
         const prevSlide = () => {
             if (currentIndex <= 0) {
@@ -1420,18 +1541,14 @@
                 requestAnimationFrame(() => { currentIndex--; updateGallery(); });
             } else { currentIndex--; updateGallery(); }
         };
-
         const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
         const stopAutoPlay = () => clearInterval(autoPlayTimer);
-
         track.addEventListener('transitionend', () => {
             if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
         });
-
         dots.forEach((dot, i) => {
             dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
         });
-
         const galleryWindow = document.getElementById('galleryWindow');
         galleryWindow.addEventListener('mouseenter', stopAutoPlay);
         galleryWindow.addEventListener('mouseleave', restartAutoPlay);
@@ -1450,173 +1567,31 @@
         });
         restartAutoPlay();
 
-        // ============ LIGHTBOX ============
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
-        const lightboxPrev = document.getElementById('lightboxPrev');
-        const lightboxNext = document.getElementById('lightboxNext');
-        const lightboxCounter = document.getElementById('lightboxCounter');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
-        
-        let lightboxIndex = 0;
-        let lightboxStartX = 0;
-        let lightboxCurrentX = 0;
-        let lightboxDragging = false;
-        let isAnimating = false;
-        
-        const updateLightbox = (animate = true, direction = 'next') => {
-            const realIndex = lightboxIndex % totalSlides;
-            lightboxImage.src = gallerySlides[realIndex].src;
-            lightboxImage.alt = gallerySlides[realIndex].alt;
-            lightboxCounter.textContent = `${realIndex + 1} / ${totalSlides}`;
-            
-            if (animate) {
-                lightboxImage.style.transition = 'none';
-                const offset = direction === 'next' ? 100 : -100;
-                lightboxImage.style.transform = `translateX(${offset}%) scale(0.95)`;
-                lightboxImage.style.opacity = '0';
-                
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        lightboxImage.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease';
-                        lightboxImage.style.transform = 'translateX(0) scale(1)';
-                        lightboxImage.style.opacity = '1';
-                        
-                        setTimeout(() => { isAnimating = false; }, 500);
-                    });
-                });
-            } else {
-                lightboxImage.style.transition = 'none';
-                lightboxImage.style.transform = 'scale(1)';
-                lightboxImage.style.opacity = '1';
-                isAnimating = false;
-            }
-        };
-        
         const openLightbox = (i) => {
-            lightboxIndex = i;
-            isAnimating = true;
-            updateLightbox(false);
+            const index = Math.max(0, Math.min(totalSlides - 1, i));
+            lightboxImage.src = gallerySlides[index].src;
+            lightboxImage.alt = gallerySlides[index].alt;
+            lightboxImage.style.transform = 'scale(0.95)';
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
-            
-            lightboxImage.style.transform = 'scale(0.95)';
-            lightboxImage.style.opacity = '0';
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    lightboxImage.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-                    lightboxImage.style.transform = 'scale(1)';
-                    lightboxImage.style.opacity = '1';
-                    setTimeout(() => { isAnimating = false; }, 300);
-                });
-            });
+            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
         };
-        
         const closeLightbox = () => {
             lightbox.classList.remove('active');
-            lightboxImage.style.transition = '';
             lightboxImage.style.transform = '';
-            lightboxImage.style.opacity = '';
             body.style.overflow = '';
-            isAnimating = false;
         };
-        
-        const lightboxNextSlide = () => {
-            if (isAnimating) return;
-            isAnimating = true;
-            lightboxIndex = (lightboxIndex + 1) % totalSlides;
-            updateLightbox(true, 'next');
-        };
-        
-        const lightboxPrevSlide = () => {
-            if (isAnimating) return;
-            isAnimating = true;
-            lightboxIndex = (lightboxIndex - 1 + totalSlides) % totalSlides;
-            updateLightbox(true, 'prev');
-        };
-        
-        lightbox.addEventListener('touchstart', (e) => {
-            if (isAnimating) return;
-            lightboxStartX = e.touches[0].clientX;
-            lightboxCurrentX = lightboxStartX;
-            lightboxDragging = true;
-            lightboxImage.style.transition = 'none';
-        }, { passive: true });
-        
-        lightbox.addEventListener('touchmove', (e) => {
-            if (lightboxDragging && !isAnimating) {
-                lightboxCurrentX = e.touches[0].clientX;
-                const diff = lightboxCurrentX - lightboxStartX;
-                const percentage = (diff / lightbox.offsetWidth) * 100;
-                lightboxImage.style.transform = `translateX(${percentage}%) scale(0.95)`;
-                lightboxImage.style.opacity = '0.7';
-            }
-        }, { passive: true });
-        
-        lightbox.addEventListener('touchend', () => {
-            if (!lightboxDragging) return;
-            lightboxDragging = false;
-            const diff = lightboxCurrentX - lightboxStartX;
-            const threshold = 50;
-            
-            if (Math.abs(diff) >= threshold) {
-                if (diff < 0) { lightboxNextSlide(); } else { lightboxPrevSlide(); }
-            } else {
-                lightboxImage.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.3s ease';
-                lightboxImage.style.transform = 'translateX(0) scale(1)';
-                lightboxImage.style.opacity = '1';
-            }
-        });
-        
-        lightbox.addEventListener('mousedown', (e) => {
-            if (isAnimating || e.target !== lightboxImage) return;
-            lightboxStartX = e.clientX;
-            lightboxDragging = true;
-            lightboxImage.style.transition = 'none';
-            e.preventDefault();
-        });
-        
-        document.addEventListener('mousemove', (e) => {
-            if (lightboxDragging && !isAnimating) {
-                lightboxCurrentX = e.clientX;
-                const diff = lightboxCurrentX - lightboxStartX;
-                const percentage = (diff / lightbox.offsetWidth) * 100;
-                lightboxImage.style.transform = `translateX(${percentage}%) scale(0.95)`;
-                lightboxImage.style.opacity = '0.7';
-            }
-        });
-        
-        document.addEventListener('mouseup', () => {
-            if (!lightboxDragging) return;
-            lightboxDragging = false;
-            const diff = lightboxCurrentX - lightboxStartX;
-            const threshold = 50;
-            
-            if (Math.abs(diff) >= threshold) {
-                if (diff < 0) { lightboxNextSlide(); } else { lightboxPrevSlide(); }
-            } else {
-                lightboxImage.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.3s ease';
-                lightboxImage.style.transform = 'translateX(0) scale(1)';
-                lightboxImage.style.opacity = '1';
-            }
-        });
-        
         gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
         lightboxClose.addEventListener('click', closeLightbox);
-        lightboxNext.addEventListener('click', lightboxNextSlide);
-        lightboxPrev.addEventListener('click', lightboxPrevSlide);
         lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
-        
         document.addEventListener('keydown', (e) => {
-            if (lightbox.classList.contains('active')) {
-                if (e.key === 'Escape') { closeLightbox(); }
-                else if (e.key === 'ArrowLeft') { lightboxPrevSlide(); }
-                else if (e.key === 'ArrowRight') { lightboxNextSlide(); }
-            }
+            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
         });
 
-        // ============ МОДАЛКИ ============
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
         
         const updateProgress = (activeId) => {
@@ -1628,69 +1603,22 @@
             });
         };
 
-        const openModal = (id, direction = 'first') => {
+        const openModal = (id) => {
             const modal = document.getElementById(id);
             if (!modal) return;
-            const modalBox = modal.querySelector('.modal-box');
-            
-            if (direction === 'next') {
-                modalBox.style.transition = 'none';
-                modalBox.style.transform = 'translateX(100%)';
-                modalBox.style.opacity = '0';
-            } else if (direction === 'prev') {
-                modalBox.style.transition = 'none';
-                modalBox.style.transform = 'translateX(-100%)';
-                modalBox.style.opacity = '0';
-            } else {
-                modalBox.style.transition = 'none';
-                modalBox.style.transform = 'scale(0.95)';
-                modalBox.style.opacity = '0';
-            }
-            
             modal.classList.add('active');
             body.style.overflow = 'hidden';
             updateProgress(id);
-            
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    modalBox.style.transition = 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease';
-                    modalBox.style.transform = 'translateX(0) scale(1)';
-                    modalBox.style.opacity = '1';
-                });
-            });
         };
-
-        const closeModal = (id, direction = 'normal') => {
+        const closeModal = (id) => {
             const modal = document.getElementById(id);
             if (!modal) return;
-            const modalBox = modal.querySelector('.modal-box');
-            
-            if (direction === 'next') {
-                modalBox.style.transition = 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease';
-                modalBox.style.transform = 'translateX(-100%)';
-                modalBox.style.opacity = '0';
-            } else if (direction === 'prev') {
-                modalBox.style.transition = 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease';
-                modalBox.style.transform = 'translateX(100%)';
-                modalBox.style.opacity = '0';
-            } else {
-                modalBox.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-                modalBox.style.transform = 'scale(0.95)';
-                modalBox.style.opacity = '0';
-            }
-            
-            setTimeout(() => {
-                modal.classList.remove('active');
-                body.style.overflow = '';
-                modalBox.style.transition = '';
-                modalBox.style.transform = '';
-                modalBox.style.opacity = '';
-            }, 400);
+            modal.classList.remove('active');
+            body.style.overflow = '';
         };
-
         window.openModal = openModal;
         window.closeModal = closeModal;
-
+        
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
@@ -1700,34 +1628,23 @@
                     });
                 }
                 const modalId = card.dataset.modal;
-                if (modalId) openModal(modalId, 'first');
+                if (modalId) openModal(modalId);
             });
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     const modalId = card.dataset.modal;
-                    if (modalId) openModal(modalId, 'first');
+                    if (modalId) openModal(modalId);
                 }
             });
         });
-
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
-            overlay.addEventListener('click', (e) => { 
-                if (e.target === overlay) closeModal(overlay.id, 'normal'); 
-            });
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
         });
-
-        document.querySelectorAll('.modal-close').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const overlay = btn.closest('.modal-overlay');
-                closeModal(overlay.id, 'normal');
-            });
-        });
-
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const open = document.querySelector('.modal-overlay.active');
-                if (open) closeModal(open.id, 'normal');
+                if (open) closeModal(open.id);
             }
         });
 
@@ -1746,84 +1663,68 @@
                 
                 const targetId = modalOrder[targetIndex];
                 if (targetId !== overlay.id) {
-                    closeModal(overlay.id, direction);
-                    setTimeout(() => openModal(targetId, direction), 400);
+                    closeModal(overlay.id);
+                    setTimeout(() => openModal(targetId), 300);
                 }
             });
         });
 
         document.querySelectorAll('.modal-box').forEach((box) => {
             let startX = 0;
-            let currentX = 0;
-            let isDragging = false;
+            let startY = 0;
+            let isHorizontal = false;
             
             box.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
-                currentX = startX;
-                isDragging = true;
-                box.style.transition = 'none';
+                startY = e.touches[0].clientY;
+                isHorizontal = false;
             }, { passive: true });
             
             box.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                currentX = e.touches[0].clientX;
-                const diffX = currentX - startX;
-                if (Math.abs(diffX) > 10) {
-                    box.style.transform = `translateX(${diffX}px)`;
-                    e.preventDefault();
-                }
-            }, { passive: false });
+                const diffX = Math.abs(e.touches[0].clientX - startX);
+                const diffY = Math.abs(e.touches[0].clientY - startY);
+                if (diffX > 30 && diffX > diffY) isHorizontal = true;
+            }, { passive: true });
             
-            box.addEventListener('touchend', () => {
-                if (!isDragging) return;
-                isDragging = false;
-                const diffX = currentX - startX;
-                const overlay = box.closest('.modal-overlay');
-                const currentIndex = modalOrder.indexOf(overlay.id);
-                box.style.transition = 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)';
-                
-                if (Math.abs(diffX) > 100) {
-                    if (diffX < 0 && currentIndex < modalOrder.length - 1) {
-                        const targetId = modalOrder[currentIndex + 1];
-                        box.style.transform = 'translateX(-100%)';
-                        setTimeout(() => {
-                            closeModal(overlay.id, 'next');
-                            box.style.transform = '';
-                            setTimeout(() => openModal(targetId, 'next'), 50);
-                        }, 400);
-                    } else if (diffX > 0 && currentIndex > 0) {
-                        const targetId = modalOrder[currentIndex - 1];
-                        box.style.transform = 'translateX(100%)';
-                        setTimeout(() => {
-                            closeModal(overlay.id, 'prev');
-                            box.style.transform = '';
-                            setTimeout(() => openModal(targetId, 'prev'), 50);
-                        }, 400);
-                    } else {
-                        box.style.transform = 'translateX(0)';
+            box.addEventListener('touchend', (e) => {
+                if (!isHorizontal) {
+                    const diffY = e.changedTouches[0].clientY - startY;
+                    if (diffY > 100 && box.scrollTop === 0) {
+                        const overlay = box.closest('.modal-overlay');
+                        closeModal(overlay.id);
                     }
-                } else {
-                    box.style.transform = 'translateX(0)';
+                    return;
                 }
                 
-                setTimeout(() => {
-                    box.style.transition = '';
-                    box.style.transform = '';
-                }, 500);
+                const diff = startX - e.changedTouches[0].clientX;
+                if (Math.abs(diff) > 80) {
+                    const overlay = box.closest('.modal-overlay');
+                    const currentIndex = modalOrder.indexOf(overlay.id);
+                    
+                    let targetIndex;
+                    if (diff > 0) {
+                        targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
+                    } else {
+                        targetIndex = Math.max(currentIndex - 1, 0);
+                    }
+                    
+                    const targetId = modalOrder[targetIndex];
+                    if (targetId !== overlay.id) {
+                        closeModal(overlay.id);
+                        setTimeout(() => openModal(targetId), 300);
+                    }
+                }
             });
         });
 
-        // ============ КАЛЬКУЛЯТОР ============
         const calcState = { bathrooms: 1, system: 'tee' };
         const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
         const calcPriceElement = document.getElementById('calcPrice');
-        
         const updateCalc = () => {
             const key = `${calcState.bathrooms}-${calcState.system}`;
             const total = calcPrices[key] || 160000;
             calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
         };
-        
         document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
@@ -1845,53 +1746,40 @@
 
         const calcPayBtn = document.getElementById('calcPayBtn');
         const calcTelegramBtn = document.getElementById('calcTelegramBtn');
-        
-        if (calcPayBtn) {
-            calcPayBtn.addEventListener('click', () => {
-                if (typeof gtag === 'function') {
-                    gtag('event', 'pay_button', {
-                        'event_category': 'calculator',
-                        'event_label': 'pay_consultation'
-                    });
-                }
-                openModal('modalPayment');
-            });
-        }
-        
+        calcPayBtn.addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'pay_button', {
+                    'event_category': 'calculator',
+                    'event_label': 'pay_consultation'
+                });
+            }
+            openModal('modalPayment');
+        });
         const paymentModal = document.getElementById('modalPayment');
-        if (paymentModal) {
-            paymentModal.addEventListener('click', (e) => {
-                if (e.target === paymentModal) {
-                    closeModal('modalPayment');
-                    if (calcTelegramBtn) calcTelegramBtn.style.display = 'flex';
-                    if (calcPayBtn) calcPayBtn.style.display = 'none';
-                }
-            });
-        }
-        
-        const paymentCloseBtn = document.querySelector('#modalPayment .modal-close');
-        if (paymentCloseBtn) {
-            paymentCloseBtn.addEventListener('click', () => {
+        paymentModal.addEventListener('click', (e) => {
+            if (e.target === paymentModal) {
                 closeModal('modalPayment');
-                if (calcTelegramBtn) calcTelegramBtn.style.display = 'flex';
-                if (calcPayBtn) calcPayBtn.style.display = 'none';
-            });
-        }
-        
-        if (calcTelegramBtn) {
-            calcTelegramBtn.addEventListener('click', () => {
-                if (typeof gtag === 'function') {
-                    gtag('event', 'telegram_send', {
-                        'event_category': 'calculator',
-                        'event_label': 'send_project'
-                    });
-                }
-                const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
-                window.open(`https://t.me/sa_master?text=${message}`, '_blank');
-            });
-        }
+                calcTelegramBtn.style.display = 'flex';
+                calcPayBtn.style.display = 'none';
+            }
+        });
+        document.querySelector('#modalPayment .modal-close').addEventListener('click', () => {
+            closeModal('modalPayment');
+            calcTelegramBtn.style.display = 'flex';
+            calcPayBtn.style.display = 'none';
+        });
+        calcTelegramBtn.addEventListener('click', () => {
+            if (typeof gtag === 'function') {
+                gtag('event', 'telegram_send', {
+                    'event_category': 'calculator',
+                    'event_label': 'send_project'
+                });
+            }
+            const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
+            window.open(`https://t.me/sa_master?text=${message}`, '_blank');
+        });
 
-        document.querySelector('.review-google-btn')?.addEventListener('click', () => {
+        document.querySelector('.review-google-btn').addEventListener('click', () => {
             if (typeof gtag === 'function') {
                 gtag('event', 'google_review', {
                     'event_category': 'reviews',
@@ -1900,7 +1788,6 @@
             }
         });
 
-        // ============ SOCIAL DOCK ============
         const socialTrack = document.getElementById('socialTrack');
         const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
         const socialViewport = document.getElementById('socialViewport');
@@ -1908,24 +1795,18 @@
         let socialStartX = 0;
         let socialCurrentX = 0;
         let socialDragging = false;
-        
         const updateSocial = (page, animate = true) => {
             socialPage = Math.max(0, Math.min(1, page));
             socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
             socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
             socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
         };
-        
         socialViewport.addEventListener('touchstart', (e) => {
-            socialStartX = e.touches[0].clientX; 
-            socialCurrentX = socialStartX; 
-            socialDragging = true;
+            socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
         }, { passive: true });
-        
         socialViewport.addEventListener('touchmove', (e) => {
             if (socialDragging) socialCurrentX = e.touches[0].clientX;
         }, { passive: true });
-        
         socialViewport.addEventListener('touchend', () => {
             if (!socialDragging) return;
             socialDragging = false;
@@ -1942,7 +1823,6 @@
             }, 1100);
         }, 900);
 
-        // ============ РІК ============
         document.addEventListener('DOMContentLoaded', () => {
             const yearSpan = document.getElementById('currentYear');
             if (yearSpan) yearSpan.textContent = new Date().getFullYear();
