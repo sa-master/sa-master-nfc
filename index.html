@@ -357,17 +357,11 @@
             pointer-events: none;
             z-index: 0;
         }
-        body.dark-mode .widget-card::before {
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%, rgba(10, 132, 255, 0.06) 100%);
-        }
         .widget-card:hover {
             transform: translateY(-0.125rem);
             box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.08), 0 0.25rem 0.5rem rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.95);
         }
-        .widget-card:active {
-            transform: scale(0.98);
-            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
-        }
+        .widget-card:active { transform: scale(0.98); }
         .widget-card:nth-child(1) { animation-delay: 0.1s; }
         .widget-card:nth-child(2) { animation-delay: 0.2s; }
         .widget-card:nth-child(3) { animation-delay: 0.3s; }
@@ -417,10 +411,6 @@
             position: relative;
             z-index: 1;
         }
-        .widget-chevron { display: none; }
-        .widget-text { display: none; }
-        .widget-sub { display: none; }
-        .widget-desc { display: none; }
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -449,9 +439,8 @@
             background: var(--color-modal-bg);
             box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.18);
             transform: translateX(0);
-            opacity: 1;
-            transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease;
-            will-change: transform, opacity;
+            transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+            will-change: transform;
             touch-action: pan-y;
         }
         .modal-close {
@@ -1581,23 +1570,20 @@
             if (!modal) return;
             const modalBox = modal.querySelector('.modal-box');
             modalBox.style.transition = 'none';
-            modalBox.style.opacity = '1';
             if (direction === 'next') {
                 modalBox.style.transform = 'translateX(100%)';
             } else if (direction === 'prev') {
                 modalBox.style.transform = 'translateX(-100%)';
             } else {
-                modalBox.style.transform = 'translateY(20px)';
-                modalBox.style.opacity = '0';
+                modalBox.style.transform = 'translateX(0)';
             }
             modal.classList.add('active');
             body.style.overflow = 'hidden';
             updateProgress(id);
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    modalBox.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease';
-                    modalBox.style.transform = 'translateX(0) translateY(0)';
-                    modalBox.style.opacity = '1';
+                    modalBox.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)';
+                    modalBox.style.transform = 'translateX(0)';
                 });
             });
         };
@@ -1605,23 +1591,19 @@
             const modal = document.getElementById(id);
             if (!modal) return;
             const modalBox = modal.querySelector('.modal-box');
-            modalBox.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.5s ease';
+            modalBox.style.transition = 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)';
             if (direction === 'next') {
                 modalBox.style.transform = 'translateX(-100%)';
-                modalBox.style.opacity = '1';
             } else if (direction === 'prev') {
                 modalBox.style.transform = 'translateX(100%)';
-                modalBox.style.opacity = '1';
             } else {
-                modalBox.style.transform = 'translateY(20px)';
-                modalBox.style.opacity = '0';
+                modalBox.style.transform = 'translateX(0)';
             }
             setTimeout(() => {
                 modal.classList.remove('active');
                 body.style.overflow = '';
                 modalBox.style.transition = '';
                 modalBox.style.transform = '';
-                modalBox.style.opacity = '';
             }, 500);
         };
         window.openModal = openModal;
