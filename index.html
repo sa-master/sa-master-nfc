@@ -879,6 +879,7 @@
             object-fit: contain;
             transform: scale(0.95);
             transition: transform 0.3s ease;
+            cursor: default;
         }
         .lightbox.active img { transform: scale(1); }
         .lightbox-close {
@@ -894,6 +895,58 @@
             font-size: 1.25rem;
             cursor: pointer;
             backdrop-filter: blur(0.625rem);
+            z-index: 10;
+        }
+        .lightbox-prev,
+        .lightbox-next {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            backdrop-filter: blur(0.625rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            z-index: 10;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .lightbox-prev {
+            left: 0.75rem;
+        }
+        .lightbox-next {
+            right: 0.75rem;
+        }
+        .lightbox-prev:hover,
+        .lightbox-next:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .lightbox-prev:active,
+        .lightbox-next:active {
+            background: rgba(255, 255, 255, 0.35);
+            transform: translateY(-50%) scale(0.95);
+        }
+        .lightbox-counter {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 0.875rem;
+            font-weight: 600;
+            backdrop-filter: blur(0.625rem);
+            z-index: 10;
         }
         .ios-social-shell {
             width: 25rem;
@@ -1001,6 +1054,14 @@
             .modal-box { padding: 1.125rem 0.875rem 1rem; }
             .theme-toggle { width: 2.25rem; height: 2.25rem; }
             .theme-toggle svg { width: 1.125rem; height: 1.125rem; }
+            .lightbox-prev,
+            .lightbox-next {
+                width: 2.5rem;
+                height: 2.5rem;
+                font-size: 1.25rem;
+            }
+            .lightbox-prev { left: 0.5rem; }
+            .lightbox-next { right: 0.5rem; }
         }
         @media (max-width: 23.75rem) {
             .logo-wrapper { width: 3.5rem; height: 3.5rem; }
@@ -1418,7 +1479,10 @@
             <!-- Lightbox -->
             <div class="lightbox" id="lightbox">
                 <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Закрити">×</button>
+                <button class="lightbox-prev" id="lightboxPrev" type="button" aria-label="Попереднє фото">‹</button>
                 <img id="lightboxImage" src="" alt="" />
+                <button class="lightbox-next" id="lightboxNext" type="button" aria-label="Наступне фото">›</button>
+                <div class="lightbox-counter" id="lightboxCounter">1 / 8</div>
             </div>
         </div>
     </div>
@@ -1487,29 +1551,100 @@
         });
         restartAutoPlay();
 
+        // Lightbox з покращеною навігацією
         const lightbox = document.getElementById('lightbox');
         const lightboxImage = document.getElementById('lightboxImage');
         const lightboxClose = document.getElementById('lightboxClose');
+        const lightboxPrev = document.getElementById('lightboxPrev');
+        const lightboxNext = document.getElementById('lightboxNext');
+        const lightboxCounter = document.getElementById('lightboxCounter');
         const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
+        let lightboxCurrentIndex = 0;
+        let lightboxTouchStartX = 0;
+        let lightboxTouchEndX = 0;
+
+        const updateLightboxImage = () => {
+            lightboxImage.src = gallerySlides[lightboxCurrentIndex].src;
+            lightboxImage.alt = gallerySlides[lightboxCurrentIndex].alt;
+            lightboxCounter.textContent = `${lightboxCurrentIndex + 1} / ${totalSlides}`;
+        };
+
         const openLightbox = (i) => {
-            const index = Math.max(0, Math.min(totalSlides - 1, i));
-            lightboxImage.src = gallerySlides[index].src;
-            lightboxImage.alt = gallerySlides[index].alt;
+            lightboxCurrentIndex = Math.max(0, Math.min(totalSlides - 1, i));
+            updateLightboxImage();
             lightboxImage.style.transform = 'scale(0.95)';
             lightbox.classList.add('active');
             body.style.overflow = 'hidden';
-            requestAnimationFrame(() => { requestAnimationFrame(() => { lightboxImage.style.transform = 'scale(1)'; }); });
+            requestAnimationFrame(() => { 
+                requestAnimationFrame(() => { 
+                    lightboxImage.style.transform = 'scale(1)'; 
+                }); 
+            });
         };
+
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transform = '';
             body.style.overflow = '';
         };
-        gallerySlides.forEach((slide, i) => { slide.addEventListener('click', () => openLightbox(i)); });
+
+        const goToPrevSlide = () => {
+            lightboxCurrentIndex = (lightboxCurrentIndex - 1 + totalSlides) % totalSlides;
+            updateLightboxImage();
+        };
+
+        const goToNextSlide = () => {
+            lightboxCurrentIndex = (lightboxCurrentIndex + 1) % totalSlides;
+            updateLightboxImage();
+        };
+
+        // Кліки по фото в галереї
+        gallerySlides.forEach((slide, i) => { 
+            slide.addEventListener('click', () => openLightbox(i)); 
+        });
+
+        // Кнопки навігації в лайтбоксі
         lightboxClose.addEventListener('click', closeLightbox);
-        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+        lightboxPrev.addEventListener('click', goToPrevSlide);
+        lightboxNext.addEventListener('click', goToNextSlide);
+
+        // Закриття при кліку поза фото
+        lightbox.addEventListener('click', (e) => { 
+            if (e.target === lightbox) closeLightbox(); 
+        });
+
+        // Свайпи в лайтбоксі
+        lightbox.addEventListener('touchstart', (e) => {
+            lightboxTouchStartX = e.touches[0].clientX;
+            lightboxTouchEndX = e.touches[0].clientX;
+        }, { passive: true });
+
+        lightbox.addEventListener('touchmove', (e) => {
+            lightboxTouchEndX = e.touches[0].clientX;
+        }, { passive: true });
+
+        lightbox.addEventListener('touchend', () => {
+            const swipeDistance = lightboxTouchEndX - lightboxTouchStartX;
+            if (Math.abs(swipeDistance) > 50) {
+                if (swipeDistance > 0) {
+                    goToPrevSlide();
+                } else {
+                    goToNextSlide();
+                }
+            }
+        });
+
+        // Клавіатурна навігація
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+            if (!lightbox.classList.contains('active')) return;
+            
+            if (e.key === 'Escape') {
+                closeLightbox();
+            } else if (e.key === 'ArrowLeft') {
+                goToPrevSlide();
+            } else if (e.key === 'ArrowRight') {
+                goToNextSlide();
+            }
         });
 
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
