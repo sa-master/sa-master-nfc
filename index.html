@@ -1707,7 +1707,7 @@
             updateLightboxImage();
             lightboxImage.style.transform = 'scale(0.95)';
             lightbox.classList.add('active');
-            body.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
             requestAnimationFrame(() => { 
                 requestAnimationFrame(() => { 
                     lightboxImage.style.transform = 'scale(1)'; 
@@ -1718,7 +1718,7 @@
         const closeLightbox = () => {
             lightbox.classList.remove('active');
             lightboxImage.style.transform = '';
-            body.style.overflow = '';
+            document.body.style.overflow = '';
         };
 
         const goToPrevSlide = () => {
@@ -1819,11 +1819,13 @@
             updateProgress(modalOrder[currentModalIndex]);
         };
 
-        function openModal(id) {
+        window.openModal = function(id) {
             if (id === 'modalPayment') {
                 const paymentModal = document.getElementById('modalPayment');
-                paymentModal.classList.add('active');
-                body.style.overflow = 'hidden';
+                if (paymentModal) {
+                    paymentModal.classList.add('active');
+                    document.body.style.overflow = 'hidden';
+                }
                 return;
             }
             
@@ -1832,25 +1834,39 @@
             
             modalCarousel.classList.add('active');
             goToModal(index);
-            body.style.overflow = 'hidden';
-        }
+            document.body.style.overflow = 'hidden';
+        };
 
-        function closeModal(id) {
+        window.closeModal = function(id) {
             if (id === 'modalPayment') {
                 const paymentModal = document.getElementById('modalPayment');
-                paymentModal.classList.remove('active');
-                body.style.overflow = '';
+                if (paymentModal) {
+                    paymentModal.classList.remove('active');
+                    document.body.style.overflow = '';
+                }
                 return;
             }
             
             if (modalOrder.includes(id)) {
                 modalCarousel.classList.remove('active');
-                body.style.overflow = '';
+                document.body.style.overflow = '';
             }
-        }
+        };
 
-        window.openModal = openModal;
-        window.closeModal = closeModal;
+        // Додатковий обробник для хрестиків
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const onclickAttr = this.getAttribute('onclick');
+                if (onclickAttr) {
+                    const match = onclickAttr.match(/'([^']+)'/);
+                    if (match) {
+                        window.closeModal(match[1]);
+                    }
+                }
+            });
+        });
 
         // Навігація
         document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
@@ -1965,32 +1981,19 @@
 
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
-                if (typeof gtag === 'function') {
-                    gtag('event', 'card_open', {
-                        'event_category': 'cards',
-                        'event_label': card.dataset.modal
-                    });
-                }
                 const modalId = card.dataset.modal;
-                if (modalId) openModal(modalId);
-            });
-            card.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    const modalId = card.dataset.modal;
-                    if (modalId) openModal(modalId);
-                }
+                if (modalId) window.openModal(modalId);
             });
         });
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (modalCarousel.classList.contains('active')) {
-                    closeModal(modalOrder[currentModalIndex]);
+                    window.closeModal(modalOrder[currentModalIndex]);
                 }
                 const paymentModal = document.getElementById('modalPayment');
                 if (paymentModal && paymentModal.classList.contains('active')) {
-                    closeModal('modalPayment');
+                    window.closeModal('modalPayment');
                 }
             }
         });
@@ -2006,12 +2009,6 @@
         };
         document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
-                if (typeof gtag === 'function') {
-                    gtag('event', 'calc_button', {
-                        'event_category': 'calculator',
-                        'event_label': btn.dataset.group + '_' + btn.dataset.value
-                    });
-                }
                 const group = btn.dataset.group;
                 const value = btn.dataset.value;
                 if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
@@ -2026,32 +2023,15 @@
         const calcPayBtn = document.getElementById('calcPayBtn');
         const calcTelegramBtn = document.getElementById('calcTelegramBtn');
         calcPayBtn.addEventListener('click', () => {
-            if (typeof gtag === 'function') {
-                gtag('event', 'pay_button', {
-                    'event_category': 'calculator',
-                    'event_label': 'pay_consultation'
-                });
-            }
-            openModal('modalPayment');
+            window.openModal('modalPayment');
         });
         calcTelegramBtn.addEventListener('click', () => {
-            if (typeof gtag === 'function') {
-                gtag('event', 'telegram_send', {
-                    'event_category': 'calculator',
-                    'event_label': 'send_project'
-                });
-            }
             const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
             window.open(`https://t.me/sa_master?text=${message}`, '_blank');
         });
 
         document.querySelector('.review-google-btn').addEventListener('click', () => {
-            if (typeof gtag === 'function') {
-                gtag('event', 'google_review', {
-                    'event_category': 'reviews',
-                    'event_label': 'google_review_button'
-                });
-            }
+            // Google review
         });
 
         // Соціальні кнопки
