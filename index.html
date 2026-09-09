@@ -1790,9 +1790,16 @@
         const openModal = (id) => {
             const modal = document.getElementById(id);
             if (!modal) return;
+            const box = modal.querySelector('.modal-box');
+            if (box) {
+                box.style.transition = 'none';
+                box.style.transform = 'translateX(0)';
+                box.style.opacity = '1';
+            }
             modal.classList.add('active');
             body.style.overflow = 'hidden';
             updateProgress(id);
+            void modal.offsetHeight;
         };
         
         const closeModal = (id) => {
@@ -1864,17 +1871,20 @@
             let currentX = 0;
             let isTracking = false;
             let isHorizontalSwipe = false;
+            let isAnimating = false;
             
             box.addEventListener('touchstart', (e) => {
+                if (isAnimating) return;
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
                 currentX = startX;
                 isTracking = true;
                 isHorizontalSwipe = false;
+                box.style.transition = 'none';
             }, { passive: true });
             
             box.addEventListener('touchmove', (e) => {
-                if (!isTracking) return;
+                if (!isTracking || isAnimating) return;
                 
                 const diffX = e.touches[0].clientX - startX;
                 const diffY = e.touches[0].clientY - startY;
@@ -1892,24 +1902,24 @@
                     
                     const limitedTranslate = Math.max(-maxTranslate, Math.min(maxTranslate, translateX));
                     
-                    box.style.transition = 'none';
                     box.style.transform = `translateX(${limitedTranslate}px)`;
-                    box.style.opacity = 1 - Math.abs(limitedTranslate) / maxTranslate * 0.5;
+                    box.style.opacity = 1 - Math.abs(limitedTranslate) / maxTranslate * 0.3;
                 }
             }, { passive: true });
             
             box.addEventListener('touchend', () => {
-                if (!isTracking) return;
+                if (!isTracking || isAnimating) return;
                 isTracking = false;
                 
                 if (!isHorizontalSwipe) {
+                    box.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+                    box.style.transform = 'translateX(0)';
+                    box.style.opacity = '1';
                     return;
                 }
                 
                 const diffX = currentX - startX;
                 const threshold = window.innerWidth * 0.2;
-                
-                box.style.transition = 'transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.3s ease';
                 
                 if (Math.abs(diffX) > threshold) {
                     const overlay = box.closest('.modal-overlay');
@@ -1924,20 +1934,30 @@
                     
                     const targetId = modalOrder[targetIndex];
                     
-                    box.style.transform = `translateX(${diffX < 0 ? '-100%' : '100%'})`;
-                    box.style.opacity = '0';
-                    
-                    setTimeout(() => {
-                        box.style.transition = 'none';
-                        box.style.transform = 'translateX(0)';
-                        box.style.opacity = '1';
+                    if (targetId !== overlay.id) {
+                        isAnimating = true;
                         
-                        if (targetId !== overlay.id) {
+                        box.style.transition = 'transform 0.25s ease-out, opacity 0.25s ease-out';
+                        box.style.transform = `translateX(${diffX < 0 ? '-100%' : '100%'})`;
+                        box.style.opacity = '0';
+                        
+                        setTimeout(() => {
                             closeModal(overlay.id);
                             openModal(targetId);
-                        }
-                    }, 300);
+                            
+                            box.style.transition = 'none';
+                            box.style.transform = 'translateX(0)';
+                            box.style.opacity = '1';
+                            
+                            isAnimating = false;
+                        }, 250);
+                    } else {
+                        box.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+                        box.style.transform = 'translateX(0)';
+                        box.style.opacity = '1';
+                    }
                 } else {
+                    box.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
                     box.style.transform = 'translateX(0)';
                     box.style.opacity = '1';
                 }
