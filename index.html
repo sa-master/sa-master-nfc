@@ -511,6 +511,8 @@
             box-shadow: none;
             padding: calc(1.5rem + var(--safe-area-top)) 1.25rem 1.25rem;
             margin-bottom: 0;
+            transition: none;
+            transform: none;
         }
         
         .modal-close {
@@ -593,7 +595,7 @@
             height: 5rem;
             object-fit: cover;
             border-radius: 50%;
-            margin: 1rem 0 0.5rem 0.75rem;
+            margin: 0 0 0.5rem 0.75rem;
             border: 0.1875rem solid #fff;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
@@ -1165,6 +1167,22 @@
             .theme-toggle svg { width: 1rem; height: 1rem; }
             .footer-text { font-size: 0.5625rem; }
         }
+        
+        /* Анімація контенту для модалок */
+        .modal-content-anim {
+            animation: slideInRight 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+        .modal-content-anim.reverse {
+            animation: slideInLeft 0.4s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+        }
+        @keyframes slideInRight {
+            0% { opacity: 0; transform: translateX(3rem); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+            0% { opacity: 0; transform: translateX(-3rem); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
     </style>
 </head>
 <body>
@@ -1349,25 +1367,27 @@
             <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalAbout')" aria-label="Закрити">×</button>
-                    <div class="modal-header">
-                        <div class="modal-header-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
+                    <div class="modal-content-anim">
+                        <div class="modal-header">
+                            <div class="modal-header-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
+                            </div>
+                            <div>
+                                <div class="modal-title">Про нас</div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="modal-title">Про нас</div>
+                        <img class="modal-photo" src="your-photo.jpg" alt="Сергій" loading="lazy" />
+                        <div class="modal-text">
+                            <p>Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою, і надалі продовжую вдосконалювати свою майстерність.</p>
+                            <p>Сантехніка для мене — це більше ніж професія. Це справа, якою я живу.</p>
+                            <p>Відвідую різні навчальні семінари, на деяких з них і сам виступаю в ролі спікера, де ділюсь досвідом з колегами.</p>
+                            <p>Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
+                            <p>У роботі мені допомагають перевірені майстри, з якими ми разом виконуємо проєкти.</p>
+                            <p>Наша мета — реалізувати роботу якісно, щоб сантехніка працювала бездоганно багато років, а за потреби її можна було без проблем модернізувати.</p>
+                            <p>Саме тому використовуємо лише якісні матеріали перевірених роками світових брендів.</p>
+                            <p>Спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва.</p>
+                            <p>Працюємо з дизайн-проєктами без посередників.</p>
                         </div>
-                    </div>
-                    <img class="modal-photo" src="your-photo.jpg" alt="Сергій" loading="lazy" />
-                    <div class="modal-text">
-                        <p>Мене звати <strong>Сергій</strong>. Понад <strong>20 років</strong> я працюю із сантехнікою, і надалі продовжую вдосконалювати свою майстерність.</p>
-                        <p>Сантехніка для мене — це більше ніж професія. Це справа, якою я живу.</p>
-                        <p>Відвідую різні навчальні семінари, на деяких з них і сам виступаю в ролі спікера, де ділюсь досвідом з колегами.</p>
-                        <p>Є <strong>амбасадором Geberit, GROHE та Akvantis</strong>.</p>
-                        <p>У роботі мені допомагають перевірені майстри, з якими ми разом виконуємо проєкти.</p>
-                        <p>Наша мета — реалізувати роботу якісно, щоб сантехніка працювала бездоганно багато років, а за потреби її можна було без проблем модернізувати.</p>
-                        <p>Саме тому використовуємо лише якісні матеріали перевірених роками світових брендів.</p>
-                        <p>Спеціалізуємось на <strong>комплексному монтажі сантехніки</strong> в новобудовах Києва.</p>
-                        <p>Працюємо з дизайн-проєктами без посередників.</p>
                     </div>
                 </div>
                 <div class="modal-nav">
@@ -1385,22 +1405,24 @@
             <div class="modal-overlay" id="modalProcess" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalProcess')" aria-label="Закрити">×</button>
-                    <div class="modal-header">
-                        <div class="modal-header-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 0-6.9 6.9L3 18.9V21h2.1l4.8-4.8a5 5 0 0 0 6.9-6.9l-2.9 2.9-2.1-2.1 2.9-2.9z"/></svg>
+                    <div class="modal-content-anim">
+                        <div class="modal-header">
+                            <div class="modal-header-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 0-6.9 6.9L3 18.9V21h2.1l4.8-4.8a5 5 0 0 0 6.9-6.9l-2.9 2.9-2.1-2.1 2.9-2.9z"/></svg>
+                            </div>
+                            <div>
+                                <div class="modal-title">Про роботу</div>
+                            </div>
                         </div>
-                        <div>
-                            <div class="modal-title">Про роботу</div>
+                        <div class="modal-text">
+                            <p><strong>1.</strong> Працюємо лише по м. Київ.</p>
+                            <p><strong>2.</strong> Приступаємо до виконання робіт за наявності геометрії приміщень (після штукатурних робіт) та чіткого розуміння концепції.</p>
+                            <p><strong>3.</strong> Графік плануємо завчасно — за 1–2 місяці.</p>
+                            <p><strong>4.</strong> Бронюємо графік після внесення авансу 50%. Аванс не повертається при перенесенні з вини замовника.</p>
+                            <p><strong>5.</strong> Комплектацією займаємось самостійно: закупка, доставка, прийом товару. Можемо допомогти у виборі та закупівлі приладів.</p>
+                            <p><strong>6.</strong> На момент початку робіт об'єкт має бути закомплектований сантехприладами: інсталяції для унітазів, вбудовані частини змішувачів, трапи, радіатори.</p>
+                            <p><strong>7.</strong> Коли закуплені сантехприлади та чорнові матеріали.</p>
                         </div>
-                    </div>
-                    <div class="modal-text">
-                        <p><strong>1.</strong> Працюємо лише по м. Київ.</p>
-                        <p><strong>2.</strong> Приступаємо до виконання робіт за наявності геометрії приміщень (після штукатурних робіт) та чіткого розуміння концепції.</p>
-                        <p><strong>3.</strong> Графік плануємо завчасно — за 1–2 місяці.</p>
-                        <p><strong>4.</strong> Бронюємо графік після внесення авансу 50%. Аванс не повертається при перенесенні з вини замовника.</p>
-                        <p><strong>5.</strong> Комплектацією займаємось самостійно: закупка, доставка, прийом товару. Можемо допомогти у виборі та закупівлі приладів.</p>
-                        <p><strong>6.</strong> На момент початку робіт об'єкт має бути закомплектований сантехприладами: інсталяції для унітазів, вбудовані частини змішувачів, трапи, радіатори.</p>
-                        <p><strong>7.</strong> Коли закуплені сантехприлади та чорнові матеріали.</p>
                     </div>
                 </div>
                 <div class="modal-nav">
@@ -1418,75 +1440,77 @@
             <div class="modal-overlay" id="modalPrice" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalPrice')" aria-label="Закрити">×</button>
-                    <div class="modal-header">
-                        <div class="modal-header-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M20 7H5a2 2 0 0 1-2-2 2 2 0 0 1 2-2h13v4"/>
-                                <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1"/>
-                                <path d="M16 13a2 2 0 0 0 0-4"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="modal-title">Про вартість</div>
-                        </div>
-                    </div>
-                    <div class="modal-text">
-                        <p>Кожен проєкт має власну площу, кількість санвузлів та технічні рішення.</p>
-                        <p>Спочатку аналізуємо <strong>дизайн-проєкт</strong>, потім формуємо розрахунок.</p>
-                        <p>Ми не працюємо за демпінговими цінами. Вартість наших послуг відповідає рівню експертизи, якості матеріалів та гарантії на виконані роботи.</p>
-                        <p><strong>Оплата 2 000 грн</strong> — це оплата консультації та детального прорахунку вартості робіт.</p>
-                        <p><strong>Матеріали прораховуються на об'єкті</strong> після розрахунку вартості робіт, консультації та затвердженого графіка початку робіт.</p>
-                    </div>
-
-                    <div class="calc">
-                        <div class="calc-title">Швидкий розрахунок</div>
-                        <div class="calc-subtitle">Оберіть параметри вашого проєкту</div>
-                        <div class="calc-group">
-                            <div class="calc-label">Санвузли</div>
-                            <div class="calc-segment">
-                                <button class="calc-seg-btn active" data-group="bathrooms" data-value="1" type="button">Один</button>
-                                <button class="calc-seg-btn" data-group="bathrooms" data-value="2" type="button">Два</button>
+                    <div class="modal-content-anim">
+                        <div class="modal-header">
+                            <div class="modal-header-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20 7H5a2 2 0 0 1-2-2 2 2 0 0 1 2-2h13v4"/>
+                                    <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1"/>
+                                    <path d="M16 13a2 2 0 0 0 0-4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="modal-title">Про вартість</div>
                             </div>
                         </div>
-                        <div class="calc-group">
-                            <div class="calc-label">Система</div>
-                            <div class="calc-segment">
-                                <button class="calc-seg-btn active" data-group="system" data-value="tee" type="button">Трійникова</button>
-                                <button class="calc-seg-btn" data-group="system" data-value="radial" type="button">Променева</button>
+                        <div class="modal-text">
+                            <p>Кожен проєкт має власну площу, кількість санвузлів та технічні рішення.</p>
+                            <p>Спочатку аналізуємо <strong>дизайн-проєкт</strong>, потім формуємо розрахунок.</p>
+                            <p>Ми не працюємо за демпінговими цінами. Вартість наших послуг відповідає рівню експертизи, якості матеріалів та гарантії на виконані роботи.</p>
+                            <p><strong>Оплата 2 000 грн</strong> — це оплата консультації та детального прорахунку вартості робіт.</p>
+                            <p><strong>Матеріали прораховуються на об'єкті</strong> після розрахунку вартості робіт, консультації та затвердженого графіка початку робіт.</p>
+                        </div>
+
+                        <div class="calc">
+                            <div class="calc-title">Швидкий розрахунок</div>
+                            <div class="calc-subtitle">Оберіть параметри вашого проєкту</div>
+                            <div class="calc-group">
+                                <div class="calc-label">Санвузли</div>
+                                <div class="calc-segment">
+                                    <button class="calc-seg-btn active" data-group="bathrooms" data-value="1" type="button">Один</button>
+                                    <button class="calc-seg-btn" data-group="bathrooms" data-value="2" type="button">Два</button>
+                                </div>
+                            </div>
+                            <div class="calc-group">
+                                <div class="calc-label">Система</div>
+                                <div class="calc-segment">
+                                    <button class="calc-seg-btn active" data-group="system" data-value="tee" type="button">Трійникова</button>
+                                    <button class="calc-seg-btn" data-group="system" data-value="radial" type="button">Променева</button>
+                                </div>
+                            </div>
+                            <div class="calc-result">
+                                <div class="calc-result-label">Орієнтовна вартість робіт</div>
+                                <div class="calc-result-value" id="calcPrice">160 000 грн</div>
+                                <div class="calc-result-note">Точний прорахунок — після консультації та погодження технічних моментів</div>
                             </div>
                         </div>
-                        <div class="calc-result">
-                            <div class="calc-result-label">Орієнтовна вартість робіт</div>
-                            <div class="calc-result-value" id="calcPrice">160 000 грн</div>
-                            <div class="calc-result-note">Точний прорахунок — після консультації та погодження технічних моментів</div>
-                        </div>
-                    </div>
 
-                    <div class="calc-detail">
-                        <div class="calc-detail-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M9 12l2 2 4-4"/>
-                                <circle cx="12" cy="12" r="9"/>
+                        <div class="calc-detail">
+                            <div class="calc-detail-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M9 12l2 2 4-4"/>
+                                    <circle cx="12" cy="12" r="9"/>
+                                </svg>
+                            </div>
+                            <div class="calc-detail-text">
+                                <div class="calc-detail-title">Детальний прорахунок вартості робіт</div>
+                                <div class="calc-detail-desc">Консультація, аналіз проєкту та детальний прорахунок вартості робіт</div>
+                            </div>
+                            <div class="calc-detail-price">2 000 грн</div>
+                        </div>
+
+                        <button class="calc-pay-btn" id="calcPayBtn" type="button">
+                            Оплатити консультацію та прорахунок
+                        </button>
+
+                        <button class="calc-telegram-btn" id="calcTelegramBtn" type="button" style="display: none;">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M20.66 4.31L3.95 10.75C2.81 11.19 2.82 11.8 3.74 12.07L8.03 13.41L9.67 18.42C9.87 18.97 9.77 19.19 10.36 19.19C10.82 19.19 11.02 18.98 11.27 18.74L13.35 16.72L17.68 19.92C18.48 20.36 19.06 20.13 19.26 19.18L22.11 5.74C22.39 4.59 21.67 4.07 20.66 4.31Z"/>
+                                <path d="M8.18 13.1L17.91 7.08C18.39 6.79 18.83 6.95 18.47 7.27L10.59 14.38L10.29 17.43L9.06 13.64L8.18 13.1Z" fill="#5BC9FF"/>
                             </svg>
-                        </div>
-                        <div class="calc-detail-text">
-                            <div class="calc-detail-title">Детальний прорахунок вартості робіт</div>
-                            <div class="calc-detail-desc">Консультація, аналіз проєкту та детальний прорахунок вартості робіт</div>
-                        </div>
-                        <div class="calc-detail-price">2 000 грн</div>
+                            Надіслати проєкт та чек у Telegram
+                        </button>
                     </div>
-
-                    <button class="calc-pay-btn" id="calcPayBtn" type="button">
-                        Оплатити консультацію та прорахунок
-                    </button>
-
-                    <button class="calc-telegram-btn" id="calcTelegramBtn" type="button" style="display: none;">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20.66 4.31L3.95 10.75C2.81 11.19 2.82 11.8 3.74 12.07L8.03 13.41L9.67 18.42C9.87 18.97 9.77 19.19 10.36 19.19C10.82 19.19 11.02 18.98 11.27 18.74L13.35 16.72L17.68 19.92C18.48 20.36 19.06 20.13 19.26 19.18L22.11 5.74C22.39 4.59 21.67 4.07 20.66 4.31Z"/>
-                            <path d="M8.18 13.1L17.91 7.08C18.39 6.79 18.83 6.95 18.47 7.27L10.59 14.38L10.29 17.43L9.06 13.64L8.18 13.1Z" fill="#5BC9FF"/>
-                        </svg>
-                        Надіслати проєкт та чек у Telegram
-                    </button>
                 </div>
                 <div class="modal-nav">
                     <button class="modal-nav-arrow" data-direction="prev" aria-label="Назад">←</button>
@@ -1503,71 +1527,73 @@
             <div class="modal-overlay" id="modalReviews" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalReviews')" aria-label="Закрити">×</button>
-                    <div class="modal-header">
-                        <div class="modal-header-icon">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10z"/>
-                                <path d="M9 12l2 2 4-4"/>
+                    <div class="modal-content-anim">
+                        <div class="modal-header">
+                            <div class="modal-header-icon">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 22s8-3 8-10V5l-8-3-8 3v7c0 7 8 10 8 10z"/>
+                                    <path d="M9 12l2 2 4-4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <div class="modal-title">Про результат</div>
+                            </div>
+                        </div>
+
+                        <div class="result-highlight">
+                            <p>Результат — коли про сантехніку <strong>не потрібно думати</strong> роками.</p>
+                            <p class="result-highlight-sub">Найважливіше залишається за стінами.</p>
+                        </div>
+
+                        <div class="review-section-title">Що кажуть клієнти</div>
+
+                        <div class="review-item">
+                            <div class="review-stars">★★★★★</div>
+                            <div class="review-item-text">«Оперативно почали роботи, зробили все дуже гарно. Рекомендую!»</div>
+                            <div class="review-item-author">— Hanna Torosh</div>
+                        </div>
+
+                        <div class="review-item">
+                            <div class="review-stars">★★★★★</div>
+                            <div class="review-item-text">«Чорнова сантехніка виконана бездоганно. Чистий об'єкт після робіт!»</div>
+                            <div class="review-item-author">— Pavlo Mogylevskyi</div>
+                        </div>
+
+                        <div class="review-item">
+                            <div class="review-stars">★★★★★</div>
+                            <div class="review-item-text">«Професіонали, які знають свою роботу і не перестають вдосконалюватися»</div>
+                            <div class="review-item-author">— Galia Tivoniak</div>
+                        </div>
+
+                        <div class="review-item">
+                            <div class="review-stars">★★★★★</div>
+                            <div class="review-item-text">«Якісна робота. Гарна комунікація. Однозначно рекомендую!»</div>
+                            <div class="review-item-author">— Ivan Pustovoi</div>
+                        </div>
+
+                        <div class="review-philosophy">
+                            <p>Відгуки про нас є майже в усіх соцмережах. Нам приємно їх читати.</p>
+                            <p>Та найкращий відгук — коли нас рекомендують знайомим.</p>
+                            <p>А коли сантехніка працює роками, і її показують гостям — це справжня емоція.</p>
+                        </div>
+
+                        <div class="review-social-links">
+                            <a href="https://g.page/r/CWpHrJ6AJRQFEAE" target="_blank" rel="noopener" class="review-social-btn" aria-label="Google Reviews">G</a>
+                            <a href="https://www.instagram.com/s/aGlnaGxpZ2h0OjE3ODk5NzMyMDM2ODI1MTU3?stkn=MTQ4N2JoaTBkZWZvaA==" target="_blank" rel="noopener" class="review-social-btn" aria-label="Instagram Reviews">IG</a>
+                            <a href="https://www.facebook.com/santehmaster/reviews/" target="_blank" rel="noopener" class="review-social-btn" aria-label="Facebook Reviews">FB</a>
+                            <a href="https://rating.faynatown.kyiv.ua/santekhniky/santekhmaster-0bc815" target="_blank" rel="noopener" class="review-social-btn" aria-label="Файна Таун">ФТ</a>
+                        </div>
+
+                        <a class="review-google-btn" href="https://g.page/r/CWpHrJ6AJRQFEAE/review" target="_blank" rel="noopener">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M21.35 11.1H12v3.9h5.35c-.5 2.6-2.6 4.1-5.35 4.1-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8c1.4 0 2.7.5 3.7 1.4l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12s3.6 8 8 8c4.6 0 7.7-3.2 7.7-7.9 0-.5 0-1-.1-1z" fill="#4285F4"/>
+                                <path d="M3.5 6.5l3.2 2.3C7.3 7.3 9.5 6 12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12c0 .8.1 1.5.3 2.2l-.8-7.7z" fill="#EA4335"/>
+                                <path d="M12 21c2.8 0 5.3-1 7-2.7l-3.2-2.5c-1 .7-2.3 1.1-3.8 1.1-2.8 0-5.1-1.9-5.9-4.4l-3.2 2.5C4.3 18.3 7.9 21 12 21z" fill="#34A853"/>
+                                <path d="M21.35 11.1H12v3.9h5.35c-.3 1.4-1 2.6-2.1 3.5l3.2 2.5c1.9-1.8 3-4.3 3-7.4 0-.5 0-1-.1-1.5l.1-1z" fill="#FBBC05"/>
                             </svg>
-                        </div>
-                        <div>
-                            <div class="modal-title">Про результат</div>
-                        </div>
+                            Залишити відгук у Google
+                        </a>
                     </div>
-
-                    <div class="result-highlight">
-                        <p>Результат — коли про сантехніку <strong>не потрібно думати</strong> роками.</p>
-                        <p class="result-highlight-sub">Найважливіше залишається за стінами.</p>
-                    </div>
-
-                    <div class="review-section-title">Що кажуть клієнти</div>
-
-                    <div class="review-item">
-                        <div class="review-stars">★★★★★</div>
-                        <div class="review-item-text">«Оперативно почали роботи, зробили все дуже гарно. Рекомендую!»</div>
-                        <div class="review-item-author">— Hanna Torosh</div>
-                    </div>
-
-                    <div class="review-item">
-                        <div class="review-stars">★★★★★</div>
-                        <div class="review-item-text">«Чорнова сантехніка виконана бездоганно. Чистий об'єкт після робіт!»</div>
-                        <div class="review-item-author">— Pavlo Mogylevskyi</div>
-                    </div>
-
-                    <div class="review-item">
-                        <div class="review-stars">★★★★★</div>
-                        <div class="review-item-text">«Професіонали, які знають свою роботу і не перестають вдосконалюватися»</div>
-                        <div class="review-item-author">— Galia Tivoniak</div>
-                    </div>
-
-                    <div class="review-item">
-                        <div class="review-stars">★★★★★</div>
-                        <div class="review-item-text">«Якісна робота. Гарна комунікація. Однозначно рекомендую!»</div>
-                        <div class="review-item-author">— Ivan Pustovoi</div>
-                    </div>
-
-                    <div class="review-philosophy">
-                        <p>Відгуки про нас є майже в усіх соцмережах. Нам приємно їх читати.</p>
-                        <p>Та найкращий відгук — коли нас рекомендують знайомим.</p>
-                        <p>А коли сантехніка працює роками, і її показують гостям — це справжня емоція.</p>
-                    </div>
-
-                    <div class="review-social-links">
-                        <a href="https://g.page/r/CWpHrJ6AJRQFEAE" target="_blank" rel="noopener" class="review-social-btn" aria-label="Google Reviews">G</a>
-                        <a href="https://www.instagram.com/s/aGlnaGxpZ2h0OjE3ODk5NzMyMDM2ODI1MTU3?stkn=MTQ4N2JoaTBkZWZvaA==" target="_blank" rel="noopener" class="review-social-btn" aria-label="Instagram Reviews">IG</a>
-                        <a href="https://www.facebook.com/santehmaster/reviews/" target="_blank" rel="noopener" class="review-social-btn" aria-label="Facebook Reviews">FB</a>
-                        <a href="https://rating.faynatown.kyiv.ua/santekhniky/santekhmaster-0bc815" target="_blank" rel="noopener" class="review-social-btn" aria-label="Файна Таун">ФТ</a>
-                    </div>
-
-                    <a class="review-google-btn" href="https://g.page/r/CWpHrJ6AJRQFEAE/review" target="_blank" rel="noopener">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M21.35 11.1H12v3.9h5.35c-.5 2.6-2.6 4.1-5.35 4.1-3.2 0-5.8-2.6-5.8-5.8s2.6-5.8 5.8-5.8c1.4 0 2.7.5 3.7 1.4l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12s3.6 8 8 8c4.6 0 7.7-3.2 7.7-7.9 0-.5 0-1-.1-1z" fill="#4285F4"/>
-                            <path d="M3.5 6.5l3.2 2.3C7.3 7.3 9.5 6 12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9C17.3 5.3 14.8 4 12 4 7.6 4 4 7.6 4 12c0 .8.1 1.5.3 2.2l-.8-7.7z" fill="#EA4335"/>
-                            <path d="M12 21c2.8 0 5.3-1 7-2.7l-3.2-2.5c-1 .7-2.3 1.1-3.8 1.1-2.8 0-5.1-1.9-5.9-4.4l-3.2 2.5C4.3 18.3 7.9 21 12 21z" fill="#34A853"/>
-                            <path d="M21.35 11.1H12v3.9h5.35c-.3 1.4-1 2.6-2.1 3.5l3.2 2.5c1.9-1.8 3-4.3 3-7.4 0-.5 0-1-.1-1.5l.1-1z" fill="#FBBC05"/>
-                        </svg>
-                        Залишити відгук у Google
-                    </a>
                 </div>
                 <div class="modal-nav">
                     <button class="modal-nav-arrow" data-direction="prev" aria-label="Назад">←</button>
@@ -1780,19 +1806,33 @@
             });
         };
 
-        const openModal = (id) => {
+        const openModal = (id, direction = 'right') => {
             const modal = document.getElementById(id);
             if (!modal) return;
+            
+            const contentAnim = modal.querySelector('.modal-content-anim');
+            if (contentAnim) {
+                contentAnim.classList.remove('modal-content-anim', 'reverse');
+                void contentAnim.offsetWidth;
+                if (direction === 'left') {
+                    contentAnim.classList.add('reverse');
+                } else {
+                    contentAnim.classList.add('modal-content-anim');
+                }
+            }
+            
             modal.classList.add('active');
             body.style.overflow = 'hidden';
             updateProgress(id);
         };
+        
         const closeModal = (id) => {
             const modal = document.getElementById(id);
             if (!modal) return;
             modal.classList.remove('active');
             body.style.overflow = '';
         };
+        
         window.openModal = openModal;
         window.closeModal = closeModal;
         
@@ -1805,19 +1845,21 @@
                     });
                 }
                 const modalId = card.dataset.modal;
-                if (modalId) openModal(modalId);
+                if (modalId) openModal(modalId, 'right');
             });
             card.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     const modalId = card.dataset.modal;
-                    if (modalId) openModal(modalId);
+                    if (modalId) openModal(modalId, 'right');
                 }
             });
         });
+        
         document.querySelectorAll('.modal-overlay').forEach((overlay) => {
             overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(overlay.id); });
         });
+        
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const open = document.querySelector('.modal-overlay.active');
@@ -1840,8 +1882,9 @@
                 
                 const targetId = modalOrder[targetIndex];
                 if (targetId !== overlay.id) {
+                    const animDirection = direction === 'next' ? 'right' : 'left';
                     closeModal(overlay.id);
-                    setTimeout(() => openModal(targetId), 300);
+                    setTimeout(() => openModal(targetId, animDirection), 100);
                 }
             });
         });
@@ -1872,19 +1915,22 @@
                     const overlay = box.closest('.modal-overlay');
                     const currentIndex = modalOrder.indexOf(overlay.id);
                     
-                    if (currentIndex === -1) return; // Не модалка картки
+                    if (currentIndex === -1) return;
                     
                     let targetIndex;
+                    let animDirection;
                     if (diff > 0) {
                         targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
+                        animDirection = 'right';
                     } else {
                         targetIndex = Math.max(currentIndex - 1, 0);
+                        animDirection = 'left';
                     }
                     
                     const targetId = modalOrder[targetIndex];
                     if (targetId !== overlay.id) {
                         closeModal(overlay.id);
-                        setTimeout(() => openModal(targetId), 300);
+                        setTimeout(() => openModal(targetId, animDirection), 100);
                     }
                 }
             });
