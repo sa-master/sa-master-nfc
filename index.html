@@ -1619,496 +1619,239 @@
     </div>
 
     <script>
-        // Глобальні функції
-        window.openModal = function(id) {
-            if (id === 'modalPayment') {
-                document.getElementById('modalPayment').classList.add('active');
-                document.body.style.overflow = 'hidden';
-                return;
-            }
-            
-            const modalCarousel = document.getElementById('modalCarousel');
-            modalCarousel.classList.add('active');
-            
-            const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-            const index = modalOrder.indexOf(id);
-            if (index !== -1) {
-                window.goToModal(index);
-            }
-            document.body.style.overflow = 'hidden';
-        };
+// Глобальні функції - визначені ПЕРШИМИ
+window.openModal = function(id) {
+    console.log('openModal:', id);
+    if (id === 'modalPayment') {
+        var pm = document.getElementById('modalPayment');
+        if (pm) { pm.classList.add('active'); document.body.style.overflow = 'hidden'; }
+        return;
+    }
+    var mc = document.getElementById('modalCarousel');
+    if (mc) { mc.classList.add('active'); mc.style.pointerEvents = 'auto'; }
+    var order = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+    var idx = order.indexOf(id);
+    if (idx !== -1) window.goToModal(idx);
+    document.body.style.overflow = 'hidden';
+};
 
-        window.closeModal = function(id) {
-            if (id === 'modalPayment') {
-                document.getElementById('modalPayment').classList.remove('active');
-                document.body.style.overflow = '';
-                return;
-            }
-            
-            const modalCarousel = document.getElementById('modalCarousel');
-            modalCarousel.classList.remove('active');
-            document.body.style.overflow = '';
-        };
+window.closeModal = function(id) {
+    console.log('closeModal:', id);
+    if (id === 'modalPayment') {
+        var pm = document.getElementById('modalPayment');
+        if (pm) { pm.classList.remove('active'); document.body.style.overflow = ''; }
+        return;
+    }
+    var mc = document.getElementById('modalCarousel');
+    if (mc) { mc.classList.remove('active'); mc.style.pointerEvents = 'none'; document.body.style.overflow = ''; }
+};
 
-        window.goToModal = function(index) {
-            const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-            const currentModalIndex = Math.max(0, Math.min(modalOrder.length - 1, index));
-            
-            modalOrder.forEach((id, i) => {
-                const modal = document.getElementById(id);
-                if (modal) {
-                    if (i === currentModalIndex) {
-                        modal.classList.add('active');
-                        modal.style.zIndex = '2';
-                        modal.style.opacity = '1';
-                        modal.style.transform = 'translateX(0)';
-                        modal.style.visibility = 'visible';
-                    } else {
-                        modal.classList.remove('active');
-                        modal.style.zIndex = '1';
-                        modal.style.opacity = '0';
-                        modal.style.visibility = 'hidden';
-                        modal.style.transform = i < currentModalIndex ? 'translateX(-100%)' : 'translateX(100%)';
-                    }
-                }
-            });
-            
-            window.currentModalIndex = currentModalIndex;
-        };
-
-        // Делеговані обробники подій
-        document.addEventListener('click', function(e) {
-            // Хрестики
-            const closeBtn = e.target.closest('[data-close]');
-            if (closeBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                window.closeModal(closeBtn.getAttribute('data-close'));
-                return;
+window.goToModal = function(index) {
+    console.log('goToModal:', index);
+    var order = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+    var current = Math.max(0, Math.min(order.length - 1, index));
+    window.currentModalIndex = current;
+    
+    order.forEach(function(id, i) {
+        var m = document.getElementById(id);
+        if (m) {
+            if (i === current) {
+                m.classList.add('active');
+                m.style.zIndex = '2';
+                m.style.opacity = '1';
+                m.style.transform = 'translateX(0)';
+                m.style.visibility = 'visible';
+            } else {
+                m.classList.remove('active');
+                m.style.zIndex = '1';
+                m.style.opacity = '0';
+                m.style.visibility = 'hidden';
+                m.style.transform = i < current ? 'translateX(-100%)' : 'translateX(100%)';
             }
-            
-            // Кнопки відкриття
-            const openBtn = e.target.closest('[data-open]');
-            if (openBtn) {
-                e.preventDefault();
-                window.openModal(openBtn.getAttribute('data-open'));
-                return;
-            }
-            
-            // Картки
-            const card = e.target.closest('.widget-card');
-            if (card) {
-                const modalId = card.getAttribute('data-modal');
-                if (modalId) {
-                    window.openModal(modalId);
-                }
-            }
+        }
+    });
+    
+    document.querySelectorAll('.modal-progress').forEach(function(p) {
+        p.querySelectorAll('.dot').forEach(function(d, i) {
+            d.classList.toggle('active', i === current);
         });
+    });
+};
 
-        // Ініціалізація після завантаження DOM
-        document.addEventListener('DOMContentLoaded', function() {
-            // Тема
-            const toggleBtn = document.getElementById('themeToggle');
-            const body = document.body;
-            const getInitialTheme = () => {
-                const saved = localStorage.getItem('theme');
-                if (saved) return saved;
-                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            };
-            if (getInitialTheme() === 'dark') body.classList.add('dark-mode');
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', () => {
-                    body.classList.toggle('dark-mode');
-                    localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
-                });
-            }
+// Делегований обробник кліків - ОДИН на весь документ
+document.addEventListener('click', function(e) {
+    // Хрестик
+    var close = e.target.closest('.modal-close');
+    if (close) {
+        e.preventDefault();
+        e.stopPropagation();
+        var id = close.getAttribute('data-close');
+        console.log('Close clicked:', id);
+        if (id) window.closeModal(id);
+        return;
+    }
+    
+    // Кнопка відкриття
+    var open = e.target.closest('[data-open]');
+    if (open) {
+        e.preventDefault();
+        var id = open.getAttribute('data-open');
+        console.log('Open clicked:', id);
+        if (id) window.openModal(id);
+        return;
+    }
+    
+    // Картка
+    var card = e.target.closest('.widget-card');
+    if (card) {
+        var id = card.getAttribute('data-modal');
+        console.log('Card clicked:', id);
+        if (id) window.openModal(id);
+        return;
+    }
+    
+    // Стрілка навігації
+    var arrow = e.target.closest('.modal-nav-arrow');
+    if (arrow) {
+        e.preventDefault();
+        e.stopPropagation();
+        var dir = arrow.getAttribute('data-direction');
+        var cur = window.currentModalIndex || 0;
+        console.log('Arrow clicked:', dir, 'current:', cur);
+        if (dir === 'next') window.goToModal(cur + 1);
+        if (dir === 'prev') window.goToModal(cur - 1);
+        return;
+    }
+});
 
-            // Галерея
-            const track = document.getElementById('galleryTrack');
-            const dots = [...document.querySelectorAll('.gallery-dot')];
-            const counter = document.getElementById('galleryCounter');
-            const totalSlides = 8;
-            let currentIndex = 0;
-            let autoPlayTimer;
-            let isDragging = false;
-            let startX = 0;
-            let currentX = 0;
-            
-            const updateGallery = (animate = true) => {
-                if (!track) return;
-                track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
-                track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
-                const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
-                if (counter) counter.textContent = `${realIndex + 1} / ${totalSlides}`;
-                dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
-            };
-            
-            const nextSlide = () => { currentIndex++; updateGallery(); };
-            const prevSlide = () => {
-                if (currentIndex <= 0) {
-                    currentIndex = totalSlides;
-                    updateGallery(false);
-                    requestAnimationFrame(() => { currentIndex--; updateGallery(); });
-                } else { currentIndex--; updateGallery(); }
-            };
-            const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
-            const stopAutoPlay = () => clearInterval(autoPlayTimer);
-            
-            if (track) {
-                track.addEventListener('transitionend', () => {
-                    if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
-                });
-            }
-            
-            dots.forEach((dot, i) => {
-                dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
-            });
-            
-            const galleryWindow = document.getElementById('galleryWindow');
-            if (galleryWindow) {
-                galleryWindow.addEventListener('mouseenter', stopAutoPlay);
-                galleryWindow.addEventListener('mouseleave', restartAutoPlay);
-                galleryWindow.addEventListener('touchstart', (e) => {
-                    startX = e.touches[0].clientX; currentX = startX; isDragging = true; stopAutoPlay();
-                }, { passive: true });
-                galleryWindow.addEventListener('touchmove', (e) => {
-                    if (isDragging) currentX = e.touches[0].clientX;
-                }, { passive: true });
-                galleryWindow.addEventListener('touchend', () => {
-                    if (!isDragging) return;
-                    isDragging = false;
-                    const diff = currentX - startX;
-                    if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
-                    restartAutoPlay();
-                });
-            }
-            
-            restartAutoPlay();
-
-            // Lightbox
-            const lightbox = document.getElementById('lightbox');
-            const lightboxImage = document.getElementById('lightboxImage');
-            const lightboxClose = document.getElementById('lightboxClose');
-            const lightboxPrev = document.getElementById('lightboxPrev');
-            const lightboxNext = document.getElementById('lightboxNext');
-            const lightboxCounter = document.getElementById('lightboxCounter');
-            const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
-            let lightboxCurrentIndex = 0;
-            let lightboxTouchStartX = 0;
-            let lightboxTouchEndX = 0;
-
-            const updateLightboxImage = () => {
-                if (!lightboxImage || !gallerySlides[lightboxCurrentIndex]) return;
-                lightboxImage.src = gallerySlides[lightboxCurrentIndex].src;
-                lightboxImage.alt = gallerySlides[lightboxCurrentIndex].alt;
-                if (lightboxCounter) lightboxCounter.textContent = `${lightboxCurrentIndex + 1} / ${totalSlides}`;
-            };
-
-            const openLightbox = (i) => {
-                if (!lightbox) return;
-                lightboxCurrentIndex = Math.max(0, Math.min(totalSlides - 1, i));
-                updateLightboxImage();
-                lightboxImage.style.transform = 'scale(0.95)';
-                lightbox.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                requestAnimationFrame(() => { 
-                    requestAnimationFrame(() => { 
-                        lightboxImage.style.transform = 'scale(1)'; 
-                    }); 
-                });
-            };
-
-            const closeLightbox = () => {
-                if (!lightbox) return;
-                lightbox.classList.remove('active');
-                lightboxImage.style.transform = '';
-                document.body.style.overflow = '';
-            };
-
-            const goToPrevSlide = () => {
-                lightboxCurrentIndex = (lightboxCurrentIndex - 1 + totalSlides) % totalSlides;
-                updateLightboxImage();
-            };
-
-            const goToNextSlide = () => {
-                lightboxCurrentIndex = (lightboxCurrentIndex + 1) % totalSlides;
-                updateLightboxImage();
-            };
-
-            gallerySlides.forEach((slide, i) => { 
-                slide.addEventListener('click', () => openLightbox(i)); 
-            });
-
-            if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
-            if (lightboxPrev) lightboxPrev.addEventListener('click', goToPrevSlide);
-            if (lightboxNext) lightboxNext.addEventListener('click', goToNextSlide);
-
-            if (lightbox) {
-                lightbox.addEventListener('click', (e) => { 
-                    if (e.target === lightbox) closeLightbox(); 
-                });
-
-                lightbox.addEventListener('touchstart', (e) => {
-                    lightboxTouchStartX = e.touches[0].clientX;
-                    lightboxTouchEndX = e.touches[0].clientX;
-                }, { passive: true });
-
-                lightbox.addEventListener('touchmove', (e) => {
-                    lightboxTouchEndX = e.touches[0].clientX;
-                }, { passive: true });
-
-                lightbox.addEventListener('touchend', () => {
-                    const swipeDistance = lightboxTouchEndX - lightboxTouchStartX;
-                    if (Math.abs(swipeDistance) > 50) {
-                        if (swipeDistance > 0) {
-                            goToPrevSlide();
-                        } else {
-                            goToNextSlide();
-                        }
-                    }
-                });
-            }
-
-            document.addEventListener('keydown', (e) => {
-                if (lightbox && lightbox.classList.contains('active')) {
-                    if (e.key === 'Escape') {
-                        closeLightbox();
-                    } else if (e.key === 'ArrowLeft') {
-                        goToPrevSlide();
-                    } else if (e.key === 'ArrowRight') {
-                        goToNextSlide();
-                    }
-                }
-                
-                if (e.key === 'Escape') {
-                    const modalCarousel = document.getElementById('modalCarousel');
-                    if (modalCarousel && modalCarousel.classList.contains('active')) {
-                        window.closeModal('modalAbout');
-                    }
-                    const paymentModal = document.getElementById('modalPayment');
-                    if (paymentModal && paymentModal.classList.contains('active')) {
-                        window.closeModal('modalPayment');
-                    }
-                }
-            });
-
-            // Навігація модалок
-            document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
-                arrow.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const direction = arrow.dataset.direction;
-                    const currentIdx = window.currentModalIndex || 0;
-                    
-                    if (direction === 'next') {
-                        window.goToModal(currentIdx + 1);
-                    } else {
-                        window.goToModal(currentIdx - 1);
-                    }
-                });
-            });
-
-            // Свайпи для каруселі
-            const modalCarousel = document.getElementById('modalCarousel');
-            let touchStartX = 0;
-            let touchCurrentX = 0;
-            let isSwiping = false;
-
-            if (modalCarousel) {
-                modalCarousel.addEventListener('touchstart', (e) => {
-                    touchStartX = e.touches[0].clientX;
-                    touchCurrentX = touchStartX;
-                    isSwiping = true;
-                    
-                    const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-                    const activeModal = document.querySelector('.modal-overlay.active');
-                    const currentIdx = activeModal ? modalOrder.indexOf(activeModal.id) : 0;
-                    
-                    const activeEl = document.getElementById(modalOrder[currentIdx]);
-                    if (activeEl) {
-                        activeEl.style.transition = 'none';
-                    }
-                    
-                    const nextIndex = currentIdx + 1;
-                    const prevIndex = currentIdx - 1;
-                    
-                    if (nextIndex < modalOrder.length) {
-                        const nextModal = document.getElementById(modalOrder[nextIndex]);
-                        if (nextModal) {
-                            nextModal.style.transition = 'none';
-                            nextModal.style.visibility = 'visible';
-                            nextModal.style.opacity = '1';
-                            nextModal.style.transform = 'translateX(100%)';
-                            nextModal.style.zIndex = '1';
-                        }
-                    }
-                    
-                    if (prevIndex >= 0) {
-                        const prevModal = document.getElementById(modalOrder[prevIndex]);
-                        if (prevModal) {
-                            prevModal.style.transition = 'none';
-                            prevModal.style.visibility = 'visible';
-                            prevModal.style.opacity = '1';
-                            prevModal.style.transform = 'translateX(-100%)';
-                            prevModal.style.zIndex = '1';
-                        }
-                    }
-                }, { passive: true });
-
-                modalCarousel.addEventListener('touchmove', (e) => {
-                    if (!isSwiping) return;
-                    
-                    touchCurrentX = e.touches[0].clientX;
-                    const diff = touchCurrentX - touchStartX;
-                    
-                    const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-                    const activeModal = document.querySelector('.modal-overlay.active');
-                    const currentIdx = activeModal ? modalOrder.indexOf(activeModal.id) : 0;
-                    
-                    const activeEl = document.getElementById(modalOrder[currentIdx]);
-                    if (activeEl) {
-                        activeEl.style.transform = `translateX(${diff}px)`;
-                        activeEl.style.zIndex = '2';
-                    }
-                    
-                    const nextIndex = currentIdx + 1;
-                    const prevIndex = currentIdx - 1;
-                    
-                    if (diff < 0 && nextIndex < modalOrder.length) {
-                        const nextModal = document.getElementById(modalOrder[nextIndex]);
-                        if (nextModal) {
-                            nextModal.style.transform = `translateX(${window.innerWidth + diff}px)`;
-                        }
-                    }
-                    
-                    if (diff > 0 && prevIndex >= 0) {
-                        const prevModal = document.getElementById(modalOrder[prevIndex]);
-                        if (prevModal) {
-                            prevModal.style.transform = `translateX(${-window.innerWidth + diff}px)`;
-                        }
-                    }
-                }, { passive: true });
-
-                modalCarousel.addEventListener('touchend', () => {
-                    if (!isSwiping) return;
-                    isSwiping = false;
-                    
-                    const diff = touchCurrentX - touchStartX;
-                    const threshold = window.innerWidth * 0.25;
-                    
-                    const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-                    const activeModal = document.querySelector('.modal-overlay.active');
-                    const currentIdx = activeModal ? modalOrder.indexOf(activeModal.id) : 0;
-                    
-                    let targetIndex = currentIdx;
-                    
-                    if (Math.abs(diff) > threshold) {
-                        if (diff < 0) {
-                            targetIndex = Math.min(currentIdx + 1, modalOrder.length - 1);
-                        } else {
-                            targetIndex = Math.max(currentIdx - 1, 0);
-                        }
-                    }
-                    
-                    modalOrder.forEach(id => {
-                        const modal = document.getElementById(id);
-                        if (modal) {
-                            modal.style.transition = 'transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.35s ease';
-                        }
-                    });
-                    
-                    window.goToModal(targetIndex);
-                });
-            }
-
-            // Калькулятор
-            const calcState = { bathrooms: 1, system: 'tee' };
-            const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
-            const calcPriceElement = document.getElementById('calcPrice');
-            const updateCalc = () => {
-                if (!calcPriceElement) return;
-                const key = `${calcState.bathrooms}-${calcState.system}`;
-                const total = calcPrices[key] || 160000;
-                calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
-            };
-            document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const group = btn.dataset.group;
-                    const value = btn.dataset.value;
-                    if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
-                    else if (group === 'system') calcState.system = value;
-                    document.querySelectorAll(`.calc-seg-btn[data-group="${group}"]`).forEach((b) => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    updateCalc();
-                });
-            });
+// Решта ініціалізації
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM ready');
+    
+    // Тема
+    var tb = document.getElementById('themeToggle');
+    if (tb) {
+        tb.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        });
+    }
+    var saved = localStorage.getItem('theme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark-mode');
+    }
+    
+    // Галерея
+    var track = document.getElementById('galleryTrack');
+    var dots = document.querySelectorAll('.gallery-dot');
+    var counter = document.getElementById('galleryCounter');
+    var totalSlides = 8;
+    var currentIndex = 0;
+    var autoPlay;
+    
+    function updateGallery(animate) {
+        if (!track) return;
+        track.style.transition = animate === false ? 'none' : 'transform 0.5s';
+        track.style.transform = 'translate3d(-' + (currentIndex * 100) + '%,0,0)';
+        var real = currentIndex >= totalSlides ? 0 : currentIndex;
+        if (counter) counter.textContent = (real + 1) + ' / ' + totalSlides;
+        dots.forEach(function(d, i) { d.classList.toggle('active', i === real); });
+    }
+    
+    function nextSlide() { currentIndex++; updateGallery(); }
+    function prevSlide() {
+        if (currentIndex <= 0) { currentIndex = totalSlides; updateGallery(false); requestAnimationFrame(function() { currentIndex--; updateGallery(); }); }
+        else { currentIndex--; updateGallery(); }
+    }
+    function restartAuto() { clearInterval(autoPlay); autoPlay = setInterval(nextSlide, 4500); }
+    function stopAuto() { clearInterval(autoPlay); }
+    
+    if (track) track.addEventListener('transitionend', function() { if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); } });
+    dots.forEach(function(d, i) { d.addEventListener('click', function() { currentIndex = i; updateGallery(); restartAuto(); }); });
+    var gw = document.getElementById('galleryWindow');
+    if (gw) { gw.addEventListener('mouseenter', stopAuto); gw.addEventListener('mouseleave', restartAuto); }
+    restartAuto();
+    
+    // Lightbox
+    var lb = document.getElementById('lightbox');
+    var lbImg = document.getElementById('lightboxImage');
+    var lbClose = document.getElementById('lightboxClose');
+    var lbPrev = document.getElementById('lightboxPrev');
+    var lbNext = document.getElementById('lightboxNext');
+    var lbCounter = document.getElementById('lightboxCounter');
+    var slides = document.querySelectorAll('.gallery-slide img');
+    var lbIndex = 0;
+    
+    function updateLb() {
+        if (!lbImg || !slides[lbIndex]) return;
+        lbImg.src = slides[lbIndex].src;
+        if (lbCounter) lbCounter.textContent = (lbIndex + 1) + ' / ' + totalSlides;
+    }
+    function openLb(i) { lbIndex = Math.max(0, Math.min(totalSlides - 1, i)); updateLb(); if (lb) { lb.classList.add('active'); document.body.style.overflow = 'hidden'; } }
+    function closeLb() { if (lb) { lb.classList.remove('active'); document.body.style.overflow = ''; } }
+    function prevLb() { lbIndex = (lbIndex - 1 + totalSlides) % totalSlides; updateLb(); }
+    function nextLb() { lbIndex = (lbIndex + 1) % totalSlides; updateLb(); }
+    
+    slides.forEach(function(s, i) { s.addEventListener('click', function() { openLb(i); }); });
+    if (lbClose) lbClose.addEventListener('click', closeLb);
+    if (lbPrev) lbPrev.addEventListener('click', prevLb);
+    if (lbNext) lbNext.addEventListener('click', nextLb);
+    if (lb) lb.addEventListener('click', function(e) { if (e.target === lb) closeLb(); });
+    
+    // Калькулятор
+    var calcState = { bathrooms: 1, system: 'tee' };
+    var calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
+    var calcEl = document.getElementById('calcPrice');
+    function updateCalc() {
+        if (!calcEl) return;
+        var total = calcPrices[calcState.bathrooms + '-' + calcState.system] || 160000;
+        calcEl.textContent = total.toLocaleString('uk-UA') + ' грн';
+    }
+    document.querySelectorAll('.calc-seg-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var g = btn.getAttribute('data-group');
+            var v = btn.getAttribute('data-value');
+            if (g === 'bathrooms') calcState.bathrooms = parseInt(v);
+            if (g === 'system') calcState.system = v;
+            document.querySelectorAll('.calc-seg-btn[data-group="' + g + '"]').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
             updateCalc();
-
-            const calcPayBtn = document.getElementById('calcPayBtn');
-            const calcTelegramBtn = document.getElementById('calcTelegramBtn');
-            if (calcPayBtn) {
-                calcPayBtn.addEventListener('click', () => {
-                    window.openModal('modalPayment');
-                });
-            }
-            if (calcTelegramBtn) {
-                calcTelegramBtn.addEventListener('click', () => {
-                    const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
-                    window.open(`https://t.me/sa_master?text=${message}`, '_blank');
-                });
-            }
-
-            // Соціальні кнопки
-            const socialTrack = document.getElementById('socialTrack');
-            const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
-            const socialViewport = document.getElementById('socialViewport');
-            let socialPage = 0;
-            let socialStartX = 0;
-            let socialCurrentX = 0;
-            let socialDragging = false;
-            const updateSocial = (page, animate = true) => {
-                if (!socialTrack) return;
-                socialPage = Math.max(0, Math.min(1, page));
-                socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
-                socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
-                socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
-            };
-            if (socialViewport) {
-                socialViewport.addEventListener('touchstart', (e) => {
-                    socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
-                }, { passive: true });
-                socialViewport.addEventListener('touchmove', (e) => {
-                    if (socialDragging) socialCurrentX = e.touches[0].clientX;
-                }, { passive: true });
-                socialViewport.addEventListener('touchend', () => {
-                    if (!socialDragging) return;
-                    socialDragging = false;
-                    const diff = socialCurrentX - socialStartX;
-                    if (Math.abs(diff) < 45) return;
-                    updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
-                });
-            }
-
-            setTimeout(function() {
-                if (socialTrack) {
-                    socialTrack.classList.add('social-hint');
-                    setTimeout(function() {
-                        socialTrack.classList.remove('social-hint');
-                    }, 1100);
-                }
-            }, 900);
-
-            const yearSpan = document.getElementById('currentYear');
-            if (yearSpan) yearSpan.textContent = new Date().getFullYear();
         });
-    </script>
-
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XECEJ8EL4T"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-XECEJ8EL4T');
-    </script>
+    });
+    updateCalc();
+    
+    var payBtn = document.getElementById('calcPayBtn');
+    if (payBtn) payBtn.addEventListener('click', function() { window.openModal('modalPayment'); });
+    
+    // Соціальні кнопки
+    var sTrack = document.getElementById('socialTrack');
+    var sDots = document.querySelectorAll('.ios-social-page-dot');
+    var sViewport = document.getElementById('socialViewport');
+    var sPage = 0;
+    function updateSocial(p) {
+        if (!sTrack) return;
+        sPage = Math.max(0, Math.min(1, p));
+        sTrack.style.transform = 'translate3d(-' + (sPage * 50) + '%,0,0)';
+        sDots.forEach(function(d, i) { d.classList.toggle('active', i === sPage); });
+    }
+    if (sViewport) {
+        var sStart = 0;
+        var sDrag = false;
+        sViewport.addEventListener('touchstart', function(e) { sStart = e.touches[0].clientX; sDrag = true; }, {passive: true});
+        sViewport.addEventListener('touchend', function(e) {
+            if (!sDrag) return;
+            sDrag = false;
+            var diff = e.changedTouches[0].clientX - sStart;
+            if (Math.abs(diff) < 45) return;
+            updateSocial(diff < 0 ? sPage + 1 : sPage - 1);
+        });
+    }
+    
+    var year = document.getElementById('currentYear');
+    if (year) year.textContent = new Date().getFullYear();
+    
+    console.log('Initialization complete');
+});
+</script>
 </body>
 </html>
