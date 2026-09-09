@@ -1618,383 +1618,240 @@
         <div class="lightbox-counter" id="lightboxCounter">1 / 8</div>
     </div>
 
-    // ============ ОПТИМІЗОВАНИЙ JAVASCRIPT ============
-(function() {
-    'use strict';
-    
-    // Конфігурація
-    var CONFIG = {
-        modalOrder: ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'],
-        totalSlides: 8,
-        autoplayInterval: 4500,
-        calcPrices: {
-            '1-tee': 160000,
-            '1-radial': 240000,
-            '2-tee': 340000,
-            '2-radial': 420000
-        }
-    };
-    
-    // Кешування DOM елементів
-    var DOM = {};
-    
-    function cacheDOM() {
-        DOM.body = document.body;
-        DOM.modalCarousel = document.getElementById('modalCarousel');
-        DOM.paymentModal = document.getElementById('modalPayment');
-        DOM.galleryTrack = document.getElementById('galleryTrack');
-        DOM.galleryWindow = document.getElementById('galleryWindow');
-        DOM.galleryCounter = document.getElementById('galleryCounter');
-        DOM.lightbox = document.getElementById('lightbox');
-        DOM.lightboxImage = document.getElementById('lightboxImage');
-        DOM.lightboxClose = document.getElementById('lightboxClose');
-        DOM.lightboxPrev = document.getElementById('lightboxPrev');
-        DOM.lightboxNext = document.getElementById('lightboxNext');
-        DOM.lightboxCounter = document.getElementById('lightboxCounter');
-        DOM.calcPrice = document.getElementById('calcPrice');
-        DOM.calcPayBtn = document.getElementById('calcPayBtn');
-        DOM.socialTrack = document.getElementById('socialTrack');
-        DOM.socialViewport = document.getElementById('socialViewport');
-        DOM.themeToggle = document.getElementById('themeToggle');
-        DOM.currentYear = document.getElementById('currentYear');
+    <script>
+// Глобальні функції - визначені ПЕРШИМИ
+window.openModal = function(id) {
+    console.log('openModal:', id);
+    if (id === 'modalPayment') {
+        var pm = document.getElementById('modalPayment');
+        if (pm) { pm.classList.add('active'); document.body.style.overflow = 'hidden'; }
+        return;
     }
+    var mc = document.getElementById('modalCarousel');
+    if (mc) { mc.classList.add('active'); mc.style.pointerEvents = 'auto'; }
+    var order = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+    var idx = order.indexOf(id);
+    if (idx !== -1) window.goToModal(idx);
+    document.body.style.overflow = 'hidden';
+};
+
+window.closeModal = function(id) {
+    console.log('closeModal:', id);
+    if (id === 'modalPayment') {
+        var pm = document.getElementById('modalPayment');
+        if (pm) { pm.classList.remove('active'); document.body.style.overflow = ''; }
+        return;
+    }
+    var mc = document.getElementById('modalCarousel');
+    if (mc) { mc.classList.remove('active'); mc.style.pointerEvents = 'none'; document.body.style.overflow = ''; }
+};
+
+window.goToModal = function(index) {
+    console.log('goToModal:', index);
+    var order = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+    var current = Math.max(0, Math.min(order.length - 1, index));
+    window.currentModalIndex = current;
     
-    // ============ МОДАЛКИ ============
-    var ModalManager = {
-        currentIndex: 0,
-        
-        open: function(id) {
-            if (id === 'modalPayment') {
-                if (DOM.paymentModal) {
-                    DOM.paymentModal.classList.add('active');
-                    DOM.body.style.overflow = 'hidden';
-                }
-                return;
-            }
-            
-            var index = CONFIG.modalOrder.indexOf(id);
-            if (index === -1) return;
-            
-            if (DOM.modalCarousel) {
-                DOM.modalCarousel.classList.add('active');
-                DOM.modalCarousel.style.pointerEvents = 'auto';
-            }
-            
-            this.goTo(index);
-            DOM.body.style.overflow = 'hidden';
-        },
-        
-        close: function(id) {
-            if (id === 'modalPayment') {
-                if (DOM.paymentModal) {
-                    DOM.paymentModal.classList.remove('active');
-                    DOM.body.style.overflow = '';
-                }
-                return;
-            }
-            
-            if (DOM.modalCarousel) {
-                DOM.modalCarousel.classList.remove('active');
-                DOM.modalCarousel.style.pointerEvents = 'none';
-                DOM.body.style.overflow = '';
-            }
-        },
-        
-        goTo: function(index) {
-            this.currentIndex = Math.max(0, Math.min(CONFIG.modalOrder.length - 1, index));
-            
-            CONFIG.modalOrder.forEach(function(id, i) {
-                var modal = document.getElementById(id);
-                if (!modal) return;
-                
-                var isActive = i === ModalManager.currentIndex;
-                modal.classList.toggle('active', isActive);
-                modal.style.zIndex = isActive ? '2' : '1';
-                modal.style.opacity = isActive ? '1' : '0';
-                modal.style.visibility = isActive ? 'visible' : 'hidden';
-                modal.style.transform = isActive ? 'translateX(0)' : 
-                    (i < ModalManager.currentIndex ? 'translateX(-100%)' : 'translateX(100%)');
-            });
-            
-            document.querySelectorAll('.modal-progress').forEach(function(progress) {
-                progress.querySelectorAll('.dot').forEach(function(dot, i) {
-                    dot.classList.toggle('active', i === ModalManager.currentIndex);
-                });
-            });
-        }
-    };
-    
-    // ============ ГАЛЕРЕЯ ============
-    var Gallery = {
-        currentIndex: 0,
-        autoPlayTimer: null,
-        
-        init: function() {
-            var self = this;
-            var dots = document.querySelectorAll('.gallery-dot');
-            
-            dots.forEach(function(dot, i) {
-                dot.addEventListener('click', function() {
-                    self.currentIndex = i;
-                    self.update();
-                    self.restartAutoPlay();
-                });
-            });
-            
-            if (DOM.galleryTrack) {
-                DOM.galleryTrack.addEventListener('transitionend', function() {
-                    if (self.currentIndex === CONFIG.totalSlides) {
-                        self.currentIndex = 0;
-                        self.update(false);
-                    }
-                });
-            }
-            
-            if (DOM.galleryWindow) {
-                DOM.galleryWindow.addEventListener('mouseenter', function() { self.stopAutoPlay(); });
-                DOM.galleryWindow.addEventListener('mouseleave', function() { self.restartAutoPlay(); });
-            }
-            
-            this.restartAutoPlay();
-        },
-        
-        update: function(animate) {
-            if (!DOM.galleryTrack) return;
-            
-            DOM.galleryTrack.style.transition = animate === false ? 'none' : 'transform 0.5s';
-            DOM.galleryTrack.style.transform = 'translate3d(-' + (this.currentIndex * 100) + '%,0,0)';
-            
-            var real = this.currentIndex >= CONFIG.totalSlides ? 0 : this.currentIndex;
-            if (DOM.galleryCounter) {
-                DOM.galleryCounter.textContent = (real + 1) + ' / ' + CONFIG.totalSlides;
-            }
-            
-            document.querySelectorAll('.gallery-dot').forEach(function(dot, i) {
-                dot.classList.toggle('active', i === real);
-            });
-        },
-        
-        next: function() {
-            this.currentIndex++;
-            this.update();
-        },
-        
-        prev: function() {
-            if (this.currentIndex <= 0) {
-                this.currentIndex = CONFIG.totalSlides;
-                this.update(false);
-                var self = this;
-                requestAnimationFrame(function() {
-                    self.currentIndex--;
-                    self.update();
-                });
+    order.forEach(function(id, i) {
+        var m = document.getElementById(id);
+        if (m) {
+            if (i === current) {
+                m.classList.add('active');
+                m.style.zIndex = '2';
+                m.style.opacity = '1';
+                m.style.transform = 'translateX(0)';
+                m.style.visibility = 'visible';
             } else {
-                this.currentIndex--;
-                this.update();
+                m.classList.remove('active');
+                m.style.zIndex = '1';
+                m.style.opacity = '0';
+                m.style.visibility = 'hidden';
+                m.style.transform = i < current ? 'translateX(-100%)' : 'translateX(100%)';
             }
-        },
-        
-        restartAutoPlay: function() {
-            this.stopAutoPlay();
-            var self = this;
-            this.autoPlayTimer = setInterval(function() { self.next(); }, CONFIG.autoplayInterval);
-        },
-        
-        stopAutoPlay: function() {
-            clearInterval(this.autoPlayTimer);
         }
-    };
+    });
     
-    // ============ LIGHTBOX ============
-    var Lightbox = {
-        currentIndex: 0,
-        
-        open: function(index) {
-            var slides = document.querySelectorAll('.gallery-slide img');
-            this.currentIndex = Math.max(0, Math.min(CONFIG.totalSlides - 1, index));
-            this.update(slides);
-            
-            if (DOM.lightbox) {
-                DOM.lightbox.classList.add('active');
-                DOM.body.style.overflow = 'hidden';
-            }
-        },
-        
-        close: function() {
-            if (DOM.lightbox) {
-                DOM.lightbox.classList.remove('active');
-                DOM.body.style.overflow = '';
-            }
-        },
-        
-        update: function(slides) {
-            if (!DOM.lightboxImage || !slides || !slides[this.currentIndex]) return;
-            DOM.lightboxImage.src = slides[this.currentIndex].src;
-            if (DOM.lightboxCounter) {
-                DOM.lightboxCounter.textContent = (this.currentIndex + 1) + ' / ' + CONFIG.totalSlides;
-            }
-        },
-        
-        prev: function() {
-            var slides = document.querySelectorAll('.gallery-slide img');
-            this.currentIndex = (this.currentIndex - 1 + CONFIG.totalSlides) % CONFIG.totalSlides;
-            this.update(slides);
-        },
-        
-        next: function() {
-            var slides = document.querySelectorAll('.gallery-slide img');
-            this.currentIndex = (this.currentIndex + 1) % CONFIG.totalSlides;
-            this.update(slides);
-        }
-    };
-    
-    // ============ КАЛЬКУЛЯТОР ============
-    var Calculator = {
-        state: { bathrooms: 1, system: 'tee' },
-        
-        init: function() {
-            var self = this;
-            document.querySelectorAll('.calc-seg-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var group = btn.getAttribute('data-group');
-                    var value = btn.getAttribute('data-value');
-                    
-                    if (group === 'bathrooms') self.state.bathrooms = parseInt(value);
-                    if (group === 'system') self.state.system = value;
-                    
-                    document.querySelectorAll('.calc-seg-btn[data-group="' + group + '"]').forEach(function(b) {
-                        b.classList.remove('active');
-                    });
-                    btn.classList.add('active');
-                    self.update();
-                });
-            });
-            
-            this.update();
-        },
-        
-        update: function() {
-            if (!DOM.calcPrice) return;
-            var key = this.state.bathrooms + '-' + this.state.system;
-            var total = CONFIG.calcPrices[key] || 160000;
-            DOM.calcPrice.textContent = total.toLocaleString('uk-UA') + ' грн';
-        }
-    };
-    
-    // ============ ДЕЛЕГОВАНІ ПОДІЇ ============
-    function initDelegatedEvents() {
-        document.addEventListener('click', function(e) {
-            // Хрестики
-            var closeBtn = e.target.closest('.modal-close');
-            if (closeBtn) {
-                e.preventDefault();
-                e.stopPropagation();
-                var closeId = closeBtn.getAttribute('data-close');
-                if (closeId) ModalManager.close(closeId);
-                return;
-            }
-            
-            // Кнопки відкриття
-            var openBtn = e.target.closest('[data-open]');
-            if (openBtn) {
-                e.preventDefault();
-                var openId = openBtn.getAttribute('data-open');
-                if (openId) ModalManager.open(openId);
-                return;
-            }
-            
-            // Картки
-            var card = e.target.closest('.widget-card');
-            if (card) {
-                var modalId = card.getAttribute('data-modal');
-                if (modalId) ModalManager.open(modalId);
-                return;
-            }
-            
-            // Стрілки навігації
-            var arrow = e.target.closest('.modal-nav-arrow');
-            if (arrow) {
-                e.preventDefault();
-                e.stopPropagation();
-                var direction = arrow.getAttribute('data-direction');
-                if (direction === 'next') ModalManager.goTo(ModalManager.currentIndex + 1);
-                if (direction === 'prev') ModalManager.goTo(ModalManager.currentIndex - 1);
-                return;
-            }
-            
-            // Кнопка оплати
-            if (e.target.closest('#calcPayBtn')) {
-                ModalManager.open('modalPayment');
-                return;
-            }
+    document.querySelectorAll('.modal-progress').forEach(function(p) {
+        p.querySelectorAll('.dot').forEach(function(d, i) {
+            d.classList.toggle('active', i === current);
         });
-        
-        // Escape
-        document.addEventListener('keydown', function(e) {
-            if (e.key !== 'Escape') return;
-            
-            if (DOM.lightbox && DOM.lightbox.classList.contains('active')) {
-                Lightbox.close();
-            }
-            if (DOM.modalCarousel && DOM.modalCarousel.classList.contains('active')) {
-                ModalManager.close('modalAbout');
-            }
-            if (DOM.paymentModal && DOM.paymentModal.classList.contains('active')) {
-                ModalManager.close('modalPayment');
-            }
+    });
+};
+
+// Делегований обробник кліків - ОДИН на весь документ
+document.addEventListener('click', function(e) {
+    // Хрестик
+    var close = e.target.closest('.modal-close');
+    if (close) {
+        e.preventDefault();
+        e.stopPropagation();
+        var id = close.getAttribute('data-close');
+        console.log('Close clicked:', id);
+        if (id) window.closeModal(id);
+        return;
+    }
+    
+    // Кнопка відкриття
+    var open = e.target.closest('[data-open]');
+    if (open) {
+        e.preventDefault();
+        var id = open.getAttribute('data-open');
+        console.log('Open clicked:', id);
+        if (id) window.openModal(id);
+        return;
+    }
+    
+    // Картка
+    var card = e.target.closest('.widget-card');
+    if (card) {
+        var id = card.getAttribute('data-modal');
+        console.log('Card clicked:', id);
+        if (id) window.openModal(id);
+        return;
+    }
+    
+    // Стрілка навігації
+    var arrow = e.target.closest('.modal-nav-arrow');
+    if (arrow) {
+        e.preventDefault();
+        e.stopPropagation();
+        var dir = arrow.getAttribute('data-direction');
+        var cur = window.currentModalIndex || 0;
+        console.log('Arrow clicked:', dir, 'current:', cur);
+        if (dir === 'next') window.goToModal(cur + 1);
+        if (dir === 'prev') window.goToModal(cur - 1);
+        return;
+    }
+});
+
+// Решта ініціалізації
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM ready');
+    
+    // Тема
+    var tb = document.getElementById('themeToggle');
+    if (tb) {
+        tb.addEventListener('click', function() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        });
+    }
+    var saved = localStorage.getItem('theme');
+    if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark-mode');
+    }
+    
+    // Галерея
+    var track = document.getElementById('galleryTrack');
+    var dots = document.querySelectorAll('.gallery-dot');
+    var counter = document.getElementById('galleryCounter');
+    var totalSlides = 8;
+    var currentIndex = 0;
+    var autoPlay;
+    
+    function updateGallery(animate) {
+        if (!track) return;
+        track.style.transition = animate === false ? 'none' : 'transform 0.5s';
+        track.style.transform = 'translate3d(-' + (currentIndex * 100) + '%,0,0)';
+        var real = currentIndex >= totalSlides ? 0 : currentIndex;
+        if (counter) counter.textContent = (real + 1) + ' / ' + totalSlides;
+        dots.forEach(function(d, i) { d.classList.toggle('active', i === real); });
+    }
+    
+    function nextSlide() { currentIndex++; updateGallery(); }
+    function prevSlide() {
+        if (currentIndex <= 0) { currentIndex = totalSlides; updateGallery(false); requestAnimationFrame(function() { currentIndex--; updateGallery(); }); }
+        else { currentIndex--; updateGallery(); }
+    }
+    function restartAuto() { clearInterval(autoPlay); autoPlay = setInterval(nextSlide, 4500); }
+    function stopAuto() { clearInterval(autoPlay); }
+    
+    if (track) track.addEventListener('transitionend', function() { if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); } });
+    dots.forEach(function(d, i) { d.addEventListener('click', function() { currentIndex = i; updateGallery(); restartAuto(); }); });
+    var gw = document.getElementById('galleryWindow');
+    if (gw) { gw.addEventListener('mouseenter', stopAuto); gw.addEventListener('mouseleave', restartAuto); }
+    restartAuto();
+    
+    // Lightbox
+    var lb = document.getElementById('lightbox');
+    var lbImg = document.getElementById('lightboxImage');
+    var lbClose = document.getElementById('lightboxClose');
+    var lbPrev = document.getElementById('lightboxPrev');
+    var lbNext = document.getElementById('lightboxNext');
+    var lbCounter = document.getElementById('lightboxCounter');
+    var slides = document.querySelectorAll('.gallery-slide img');
+    var lbIndex = 0;
+    
+    function updateLb() {
+        if (!lbImg || !slides[lbIndex]) return;
+        lbImg.src = slides[lbIndex].src;
+        if (lbCounter) lbCounter.textContent = (lbIndex + 1) + ' / ' + totalSlides;
+    }
+    function openLb(i) { lbIndex = Math.max(0, Math.min(totalSlides - 1, i)); updateLb(); if (lb) { lb.classList.add('active'); document.body.style.overflow = 'hidden'; } }
+    function closeLb() { if (lb) { lb.classList.remove('active'); document.body.style.overflow = ''; } }
+    function prevLb() { lbIndex = (lbIndex - 1 + totalSlides) % totalSlides; updateLb(); }
+    function nextLb() { lbIndex = (lbIndex + 1) % totalSlides; updateLb(); }
+    
+    slides.forEach(function(s, i) { s.addEventListener('click', function() { openLb(i); }); });
+    if (lbClose) lbClose.addEventListener('click', closeLb);
+    if (lbPrev) lbPrev.addEventListener('click', prevLb);
+    if (lbNext) lbNext.addEventListener('click', nextLb);
+    if (lb) lb.addEventListener('click', function(e) { if (e.target === lb) closeLb(); });
+    
+    // Калькулятор
+    var calcState = { bathrooms: 1, system: 'tee' };
+    var calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
+    var calcEl = document.getElementById('calcPrice');
+    function updateCalc() {
+        if (!calcEl) return;
+        var total = calcPrices[calcState.bathrooms + '-' + calcState.system] || 160000;
+        calcEl.textContent = total.toLocaleString('uk-UA') + ' грн';
+    }
+    document.querySelectorAll('.calc-seg-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var g = btn.getAttribute('data-group');
+            var v = btn.getAttribute('data-value');
+            if (g === 'bathrooms') calcState.bathrooms = parseInt(v);
+            if (g === 'system') calcState.system = v;
+            document.querySelectorAll('.calc-seg-btn[data-group="' + g + '"]').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            updateCalc();
+        });
+    });
+    updateCalc();
+    
+    var payBtn = document.getElementById('calcPayBtn');
+    if (payBtn) payBtn.addEventListener('click', function() { window.openModal('modalPayment'); });
+    
+    // Соціальні кнопки
+    var sTrack = document.getElementById('socialTrack');
+    var sDots = document.querySelectorAll('.ios-social-page-dot');
+    var sViewport = document.getElementById('socialViewport');
+    var sPage = 0;
+    function updateSocial(p) {
+        if (!sTrack) return;
+        sPage = Math.max(0, Math.min(1, p));
+        sTrack.style.transform = 'translate3d(-' + (sPage * 50) + '%,0,0)';
+        sDots.forEach(function(d, i) { d.classList.toggle('active', i === sPage); });
+    }
+    if (sViewport) {
+        var sStart = 0;
+        var sDrag = false;
+        sViewport.addEventListener('touchstart', function(e) { sStart = e.touches[0].clientX; sDrag = true; }, {passive: true});
+        sViewport.addEventListener('touchend', function(e) {
+            if (!sDrag) return;
+            sDrag = false;
+            var diff = e.changedTouches[0].clientX - sStart;
+            if (Math.abs(diff) < 45) return;
+            updateSocial(diff < 0 ? sPage + 1 : sPage - 1);
         });
     }
     
-    // ============ ІНІЦІАЛІЗАЦІЯ ============
-    function init() {
-        cacheDOM();
-        
-        // Тема
-        if (DOM.themeToggle) {
-            DOM.themeToggle.addEventListener('click', function() {
-                DOM.body.classList.toggle('dark-mode');
-                localStorage.setItem('theme', DOM.body.classList.contains('dark-mode') ? 'dark' : 'light');
-            });
-        }
-        
-        var savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            DOM.body.classList.add('dark-mode');
-        }
-        
-        // Ініціалізація модулів
-        Gallery.init();
-        Calculator.init();
-        initDelegatedEvents();
-        
-        // Lightbox події
-        if (DOM.lightboxClose) DOM.lightboxClose.addEventListener('click', function() { Lightbox.close(); });
-        if (DOM.lightboxPrev) DOM.lightboxPrev.addEventListener('click', function() { Lightbox.prev(); });
-        if (DOM.lightboxNext) DOM.lightboxNext.addEventListener('click', function() { Lightbox.next(); });
-        
-        if (DOM.lightbox) {
-            DOM.lightbox.addEventListener('click', function(e) {
-                if (e.target === DOM.lightbox) Lightbox.close();
-            });
-        }
-        
-        // Кліки по фото
-        document.querySelectorAll('.gallery-slide img').forEach(function(slide, i) {
-            slide.addEventListener('click', function() { Lightbox.open(i); });
-        });
-        
-        // Рік
-        if (DOM.currentYear) {
-            DOM.currentYear.textContent = new Date().getFullYear();
-        }
-    }
+    var year = document.getElementById('currentYear');
+    if (year) year.textContent = new Date().getFullYear();
     
-    // Запуск
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
+    console.log('Initialization complete');
+});
+</script>
 </body>
 </html>
