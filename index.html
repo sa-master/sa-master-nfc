@@ -1328,7 +1328,7 @@
                                 <div class="ios-social-label">Viber</div>
                             </div>
                             <div class="ios-social-item">
-                                <button class="ios-social-button ios-payment" type="button" onclick="openModal('modalPayment')" aria-label="Оплата">
+                                <button class="ios-social-button ios-payment" type="button" data-open="modalPayment" aria-label="Оплата">
                                     <svg viewBox="0 0 24 24" fill="none">
                                         <rect x="3" y="5" width="18" height="14" rx="3" fill="white"/>
                                         <path d="M3 9H21" stroke="#1976D2" stroke-width="2"/>
@@ -1356,7 +1356,7 @@
     <div class="modal-carousel-container" id="modalCarousel">
         <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
             <div class="modal-box">
-                <button class="modal-close" type="button" onclick="closeModal('modalAbout')" aria-label="Закрити">×</button>
+                <button class="modal-close" type="button" data-close="modalAbout" aria-label="Закрити">×</button>
                 <div class="modal-header">
                     <div class="modal-header-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
@@ -1392,7 +1392,7 @@
 
         <div class="modal-overlay" id="modalProcess" role="dialog" aria-modal="true">
             <div class="modal-box">
-                <button class="modal-close" type="button" onclick="closeModal('modalProcess')" aria-label="Закрити">×</button>
+                <button class="modal-close" type="button" data-close="modalProcess" aria-label="Закрити">×</button>
                 <div class="modal-header">
                     <div class="modal-header-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 0-6.9 6.9L3 18.9V21h2.1l4.8-4.8a5 5 0 0 0 6.9-6.9l-2.9 2.9-2.1-2.1 2.9-2.9z"/></svg>
@@ -1425,7 +1425,7 @@
 
         <div class="modal-overlay" id="modalPrice" role="dialog" aria-modal="true">
             <div class="modal-box">
-                <button class="modal-close" type="button" onclick="closeModal('modalPrice')" aria-label="Закрити">×</button>
+                <button class="modal-close" type="button" data-close="modalPrice" aria-label="Закрити">×</button>
                 <div class="modal-header">
                     <div class="modal-header-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1510,7 +1510,7 @@
 
         <div class="modal-overlay" id="modalReviews" role="dialog" aria-modal="true">
             <div class="modal-box">
-                <button class="modal-close" type="button" onclick="closeModal('modalReviews')" aria-label="Закрити">×</button>
+                <button class="modal-close" type="button" data-close="modalReviews" aria-label="Закрити">×</button>
                 <div class="modal-header">
                     <div class="modal-header-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1593,7 +1593,7 @@
     <!-- Класична модалка оплати -->
     <div class="modal-payment-overlay" id="modalPayment">
         <div class="modal-payment-box">
-            <button class="modal-close" type="button" onclick="closeModal('modalPayment')" aria-label="Закрити">×</button>
+            <button class="modal-close" type="button" data-close="modalPayment" aria-label="Закрити">×</button>
             <div class="modal-title">Оплата</div>
             <div class="modal-lead">Оберіть зручний спосіб</div>
             <div class="payment-buttons">
@@ -1619,178 +1619,40 @@
     </div>
 
     <script>
-        // Тема
-        const toggleBtn = document.getElementById('themeToggle');
-        const body = document.body;
-        const getInitialTheme = () => {
-            const saved = localStorage.getItem('theme');
-            if (saved) return saved;
-            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        };
-        if (getInitialTheme() === 'dark') body.classList.add('dark-mode');
-        toggleBtn.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
-        });
-
-        // Галерея
-        const track = document.getElementById('galleryTrack');
-        const dots = [...document.querySelectorAll('.gallery-dot')];
-        const counter = document.getElementById('galleryCounter');
-        const totalSlides = 8;
-        let currentIndex = 0;
-        let autoPlayTimer;
-        let isDragging = false;
-        let startX = 0;
-        let currentX = 0;
-        const updateGallery = (animate = true) => {
-            track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
-            track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
-            const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
-            counter.textContent = `${realIndex + 1} / ${totalSlides}`;
-            dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
-        };
-        const nextSlide = () => { currentIndex++; updateGallery(); };
-        const prevSlide = () => {
-            if (currentIndex <= 0) {
-                currentIndex = totalSlides;
-                updateGallery(false);
-                requestAnimationFrame(() => { currentIndex--; updateGallery(); });
-            } else { currentIndex--; updateGallery(); }
-        };
-        const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
-        const stopAutoPlay = () => clearInterval(autoPlayTimer);
-        track.addEventListener('transitionend', () => {
-            if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
-        });
-        dots.forEach((dot, i) => {
-            dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
-        });
-        const galleryWindow = document.getElementById('galleryWindow');
-        galleryWindow.addEventListener('mouseenter', stopAutoPlay);
-        galleryWindow.addEventListener('mouseleave', restartAutoPlay);
-        galleryWindow.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX; currentX = startX; isDragging = true; stopAutoPlay();
-        }, { passive: true });
-        galleryWindow.addEventListener('touchmove', (e) => {
-            if (isDragging) currentX = e.touches[0].clientX;
-        }, { passive: true });
-        galleryWindow.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
-            const diff = currentX - startX;
-            if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
-            restartAutoPlay();
-        });
-        restartAutoPlay();
-
-        // Lightbox
-        const lightbox = document.getElementById('lightbox');
-        const lightboxImage = document.getElementById('lightboxImage');
-        const lightboxClose = document.getElementById('lightboxClose');
-        const lightboxPrev = document.getElementById('lightboxPrev');
-        const lightboxNext = document.getElementById('lightboxNext');
-        const lightboxCounter = document.getElementById('lightboxCounter');
-        const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
-        let lightboxCurrentIndex = 0;
-        let lightboxTouchStartX = 0;
-        let lightboxTouchEndX = 0;
-
-        const updateLightboxImage = () => {
-            lightboxImage.src = gallerySlides[lightboxCurrentIndex].src;
-            lightboxImage.alt = gallerySlides[lightboxCurrentIndex].alt;
-            lightboxCounter.textContent = `${lightboxCurrentIndex + 1} / ${totalSlides}`;
-        };
-
-        const openLightbox = (i) => {
-            lightboxCurrentIndex = Math.max(0, Math.min(totalSlides - 1, i));
-            updateLightboxImage();
-            lightboxImage.style.transform = 'scale(0.95)';
-            lightbox.classList.add('active');
+        // Глобальні функції
+        window.openModal = function(id) {
+            if (id === 'modalPayment') {
+                document.getElementById('modalPayment').classList.add('active');
+                document.body.style.overflow = 'hidden';
+                return;
+            }
+            
+            const modalCarousel = document.getElementById('modalCarousel');
+            modalCarousel.classList.add('active');
+            
+            const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+            const index = modalOrder.indexOf(id);
+            if (index !== -1) {
+                window.goToModal(index);
+            }
             document.body.style.overflow = 'hidden';
-            requestAnimationFrame(() => { 
-                requestAnimationFrame(() => { 
-                    lightboxImage.style.transform = 'scale(1)'; 
-                }); 
-            });
         };
 
-        const closeLightbox = () => {
-            lightbox.classList.remove('active');
-            lightboxImage.style.transform = '';
+        window.closeModal = function(id) {
+            if (id === 'modalPayment') {
+                document.getElementById('modalPayment').classList.remove('active');
+                document.body.style.overflow = '';
+                return;
+            }
+            
+            const modalCarousel = document.getElementById('modalCarousel');
+            modalCarousel.classList.remove('active');
             document.body.style.overflow = '';
         };
 
-        const goToPrevSlide = () => {
-            lightboxCurrentIndex = (lightboxCurrentIndex - 1 + totalSlides) % totalSlides;
-            updateLightboxImage();
-        };
-
-        const goToNextSlide = () => {
-            lightboxCurrentIndex = (lightboxCurrentIndex + 1) % totalSlides;
-            updateLightboxImage();
-        };
-
-        gallerySlides.forEach((slide, i) => { 
-            slide.addEventListener('click', () => openLightbox(i)); 
-        });
-
-        lightboxClose.addEventListener('click', closeLightbox);
-        lightboxPrev.addEventListener('click', goToPrevSlide);
-        lightboxNext.addEventListener('click', goToNextSlide);
-
-        lightbox.addEventListener('click', (e) => { 
-            if (e.target === lightbox) closeLightbox(); 
-        });
-
-        lightbox.addEventListener('touchstart', (e) => {
-            lightboxTouchStartX = e.touches[0].clientX;
-            lightboxTouchEndX = e.touches[0].clientX;
-        }, { passive: true });
-
-        lightbox.addEventListener('touchmove', (e) => {
-            lightboxTouchEndX = e.touches[0].clientX;
-        }, { passive: true });
-
-        lightbox.addEventListener('touchend', () => {
-            const swipeDistance = lightboxTouchEndX - lightboxTouchStartX;
-            if (Math.abs(swipeDistance) > 50) {
-                if (swipeDistance > 0) {
-                    goToPrevSlide();
-                } else {
-                    goToNextSlide();
-                }
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (!lightbox.classList.contains('active')) return;
-            
-            if (e.key === 'Escape') {
-                closeLightbox();
-            } else if (e.key === 'ArrowLeft') {
-                goToPrevSlide();
-            } else if (e.key === 'ArrowRight') {
-                goToNextSlide();
-            }
-        });
-
-        // Модальна карусель
-        const modalCarousel = document.getElementById('modalCarousel');
-        const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-        let currentModalIndex = 0;
-
-        const updateProgress = (activeId) => {
-            const activeIndex = modalOrder.indexOf(activeId);
-            document.querySelectorAll('.modal-progress').forEach((progress) => {
-                progress.querySelectorAll('.dot').forEach((dot, i) => {
-                    dot.classList.toggle('active', i === activeIndex);
-                });
-            });
-        };
-
-        const goToModal = (index) => {
-            currentModalIndex = Math.max(0, Math.min(modalOrder.length - 1, index));
+        window.goToModal = function(index) {
+            const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+            const currentModalIndex = Math.max(0, Math.min(modalOrder.length - 1, index));
             
             modalOrder.forEach((id, i) => {
                 const modal = document.getElementById(id);
@@ -1806,270 +1668,435 @@
                         modal.style.zIndex = '1';
                         modal.style.opacity = '0';
                         modal.style.visibility = 'hidden';
-                        
-                        if (i < currentModalIndex) {
-                            modal.style.transform = 'translateX(-100%)';
-                        } else {
-                            modal.style.transform = 'translateX(100%)';
-                        }
+                        modal.style.transform = i < currentModalIndex ? 'translateX(-100%)' : 'translateX(100%)';
                     }
                 }
             });
             
-            updateProgress(modalOrder[currentModalIndex]);
+            window.currentModalIndex = currentModalIndex;
         };
 
-        window.openModal = function(id) {
-            if (id === 'modalPayment') {
-                const paymentModal = document.getElementById('modalPayment');
-                if (paymentModal) {
-                    paymentModal.classList.add('active');
-                    document.body.style.overflow = 'hidden';
-                }
-                return;
-            }
-            
-            const index = modalOrder.indexOf(id);
-            if (index === -1) return;
-            
-            modalCarousel.classList.add('active');
-            goToModal(index);
-            document.body.style.overflow = 'hidden';
-        };
-
-        window.closeModal = function(id) {
-            if (id === 'modalPayment') {
-                const paymentModal = document.getElementById('modalPayment');
-                if (paymentModal) {
-                    paymentModal.classList.remove('active');
-                    document.body.style.overflow = '';
-                }
-                return;
-            }
-            
-            if (modalOrder.includes(id)) {
-                modalCarousel.classList.remove('active');
-                document.body.style.overflow = '';
-            }
-        };
-
-        // Додатковий обробник для хрестиків
-        document.querySelectorAll('.modal-close').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+        // Делеговані обробники подій
+        document.addEventListener('click', function(e) {
+            // Хрестики
+            const closeBtn = e.target.closest('[data-close]');
+            if (closeBtn) {
                 e.preventDefault();
                 e.stopPropagation();
-                const onclickAttr = this.getAttribute('onclick');
-                if (onclickAttr) {
-                    const match = onclickAttr.match(/'([^']+)'/);
-                    if (match) {
-                        window.closeModal(match[1]);
+                window.closeModal(closeBtn.getAttribute('data-close'));
+                return;
+            }
+            
+            // Кнопки відкриття
+            const openBtn = e.target.closest('[data-open]');
+            if (openBtn) {
+                e.preventDefault();
+                window.openModal(openBtn.getAttribute('data-open'));
+                return;
+            }
+            
+            // Картки
+            const card = e.target.closest('.widget-card');
+            if (card) {
+                const modalId = card.getAttribute('data-modal');
+                if (modalId) {
+                    window.openModal(modalId);
+                }
+            }
+        });
+
+        // Ініціалізація після завантаження DOM
+        document.addEventListener('DOMContentLoaded', function() {
+            // Тема
+            const toggleBtn = document.getElementById('themeToggle');
+            const body = document.body;
+            const getInitialTheme = () => {
+                const saved = localStorage.getItem('theme');
+                if (saved) return saved;
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            };
+            if (getInitialTheme() === 'dark') body.classList.add('dark-mode');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    body.classList.toggle('dark-mode');
+                    localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
+                });
+            }
+
+            // Галерея
+            const track = document.getElementById('galleryTrack');
+            const dots = [...document.querySelectorAll('.gallery-dot')];
+            const counter = document.getElementById('galleryCounter');
+            const totalSlides = 8;
+            let currentIndex = 0;
+            let autoPlayTimer;
+            let isDragging = false;
+            let startX = 0;
+            let currentX = 0;
+            
+            const updateGallery = (animate = true) => {
+                if (!track) return;
+                track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
+                track.style.transform = `translate3d(-${currentIndex * 100}%, 0, 0)`;
+                const realIndex = currentIndex >= totalSlides ? 0 : currentIndex;
+                if (counter) counter.textContent = `${realIndex + 1} / ${totalSlides}`;
+                dots.forEach((dot, i) => dot.classList.toggle('active', i === realIndex));
+            };
+            
+            const nextSlide = () => { currentIndex++; updateGallery(); };
+            const prevSlide = () => {
+                if (currentIndex <= 0) {
+                    currentIndex = totalSlides;
+                    updateGallery(false);
+                    requestAnimationFrame(() => { currentIndex--; updateGallery(); });
+                } else { currentIndex--; updateGallery(); }
+            };
+            const restartAutoPlay = () => { clearInterval(autoPlayTimer); autoPlayTimer = setInterval(nextSlide, 4500); };
+            const stopAutoPlay = () => clearInterval(autoPlayTimer);
+            
+            if (track) {
+                track.addEventListener('transitionend', () => {
+                    if (currentIndex === totalSlides) { currentIndex = 0; updateGallery(false); }
+                });
+            }
+            
+            dots.forEach((dot, i) => {
+                dot.addEventListener('click', () => { currentIndex = i; updateGallery(); restartAutoPlay(); });
+            });
+            
+            const galleryWindow = document.getElementById('galleryWindow');
+            if (galleryWindow) {
+                galleryWindow.addEventListener('mouseenter', stopAutoPlay);
+                galleryWindow.addEventListener('mouseleave', restartAutoPlay);
+                galleryWindow.addEventListener('touchstart', (e) => {
+                    startX = e.touches[0].clientX; currentX = startX; isDragging = true; stopAutoPlay();
+                }, { passive: true });
+                galleryWindow.addEventListener('touchmove', (e) => {
+                    if (isDragging) currentX = e.touches[0].clientX;
+                }, { passive: true });
+                galleryWindow.addEventListener('touchend', () => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    const diff = currentX - startX;
+                    if (Math.abs(diff) >= 45) { diff < 0 ? nextSlide() : prevSlide(); }
+                    restartAutoPlay();
+                });
+            }
+            
+            restartAutoPlay();
+
+            // Lightbox
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightboxImage');
+            const lightboxClose = document.getElementById('lightboxClose');
+            const lightboxPrev = document.getElementById('lightboxPrev');
+            const lightboxNext = document.getElementById('lightboxNext');
+            const lightboxCounter = document.getElementById('lightboxCounter');
+            const gallerySlides = [...document.querySelectorAll('.gallery-slide img')];
+            let lightboxCurrentIndex = 0;
+            let lightboxTouchStartX = 0;
+            let lightboxTouchEndX = 0;
+
+            const updateLightboxImage = () => {
+                if (!lightboxImage || !gallerySlides[lightboxCurrentIndex]) return;
+                lightboxImage.src = gallerySlides[lightboxCurrentIndex].src;
+                lightboxImage.alt = gallerySlides[lightboxCurrentIndex].alt;
+                if (lightboxCounter) lightboxCounter.textContent = `${lightboxCurrentIndex + 1} / ${totalSlides}`;
+            };
+
+            const openLightbox = (i) => {
+                if (!lightbox) return;
+                lightboxCurrentIndex = Math.max(0, Math.min(totalSlides - 1, i));
+                updateLightboxImage();
+                lightboxImage.style.transform = 'scale(0.95)';
+                lightbox.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                requestAnimationFrame(() => { 
+                    requestAnimationFrame(() => { 
+                        lightboxImage.style.transform = 'scale(1)'; 
+                    }); 
+                });
+            };
+
+            const closeLightbox = () => {
+                if (!lightbox) return;
+                lightbox.classList.remove('active');
+                lightboxImage.style.transform = '';
+                document.body.style.overflow = '';
+            };
+
+            const goToPrevSlide = () => {
+                lightboxCurrentIndex = (lightboxCurrentIndex - 1 + totalSlides) % totalSlides;
+                updateLightboxImage();
+            };
+
+            const goToNextSlide = () => {
+                lightboxCurrentIndex = (lightboxCurrentIndex + 1) % totalSlides;
+                updateLightboxImage();
+            };
+
+            gallerySlides.forEach((slide, i) => { 
+                slide.addEventListener('click', () => openLightbox(i)); 
+            });
+
+            if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+            if (lightboxPrev) lightboxPrev.addEventListener('click', goToPrevSlide);
+            if (lightboxNext) lightboxNext.addEventListener('click', goToNextSlide);
+
+            if (lightbox) {
+                lightbox.addEventListener('click', (e) => { 
+                    if (e.target === lightbox) closeLightbox(); 
+                });
+
+                lightbox.addEventListener('touchstart', (e) => {
+                    lightboxTouchStartX = e.touches[0].clientX;
+                    lightboxTouchEndX = e.touches[0].clientX;
+                }, { passive: true });
+
+                lightbox.addEventListener('touchmove', (e) => {
+                    lightboxTouchEndX = e.touches[0].clientX;
+                }, { passive: true });
+
+                lightbox.addEventListener('touchend', () => {
+                    const swipeDistance = lightboxTouchEndX - lightboxTouchStartX;
+                    if (Math.abs(swipeDistance) > 50) {
+                        if (swipeDistance > 0) {
+                            goToPrevSlide();
+                        } else {
+                            goToNextSlide();
+                        }
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (lightbox && lightbox.classList.contains('active')) {
+                    if (e.key === 'Escape') {
+                        closeLightbox();
+                    } else if (e.key === 'ArrowLeft') {
+                        goToPrevSlide();
+                    } else if (e.key === 'ArrowRight') {
+                        goToNextSlide();
+                    }
+                }
+                
+                if (e.key === 'Escape') {
+                    const modalCarousel = document.getElementById('modalCarousel');
+                    if (modalCarousel && modalCarousel.classList.contains('active')) {
+                        window.closeModal('modalAbout');
+                    }
+                    const paymentModal = document.getElementById('modalPayment');
+                    if (paymentModal && paymentModal.classList.contains('active')) {
+                        window.closeModal('modalPayment');
                     }
                 }
             });
-        });
 
-        // Навігація
-        document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
-            arrow.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const direction = arrow.dataset.direction;
-                if (direction === 'next') {
-                    goToModal(currentModalIndex + 1);
-                } else {
-                    goToModal(currentModalIndex - 1);
-                }
+            // Навігація модалок
+            document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
+                arrow.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const direction = arrow.dataset.direction;
+                    const currentIdx = window.currentModalIndex || 0;
+                    
+                    if (direction === 'next') {
+                        window.goToModal(currentIdx + 1);
+                    } else {
+                        window.goToModal(currentIdx - 1);
+                    }
+                });
             });
-        });
 
-        // Свайпи
-        let touchStartX = 0;
-        let touchCurrentX = 0;
-        let isSwiping = false;
+            // Свайпи для каруселі
+            const modalCarousel = document.getElementById('modalCarousel');
+            let touchStartX = 0;
+            let touchCurrentX = 0;
+            let isSwiping = false;
 
-        modalCarousel.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchCurrentX = touchStartX;
-            isSwiping = true;
-            
-            const activeModal = document.getElementById(modalOrder[currentModalIndex]);
-            if (activeModal) {
-                activeModal.style.transition = 'none';
-            }
-            
-            const nextIndex = currentModalIndex + 1;
-            const prevIndex = currentModalIndex - 1;
-            
-            if (nextIndex < modalOrder.length) {
-                const nextModal = document.getElementById(modalOrder[nextIndex]);
-                if (nextModal) {
-                    nextModal.style.transition = 'none';
-                    nextModal.style.visibility = 'visible';
-                    nextModal.style.opacity = '1';
-                    nextModal.style.transform = 'translateX(100%)';
-                    nextModal.style.zIndex = '1';
-                }
-            }
-            
-            if (prevIndex >= 0) {
-                const prevModal = document.getElementById(modalOrder[prevIndex]);
-                if (prevModal) {
-                    prevModal.style.transition = 'none';
-                    prevModal.style.visibility = 'visible';
-                    prevModal.style.opacity = '1';
-                    prevModal.style.transform = 'translateX(-100%)';
-                    prevModal.style.zIndex = '1';
-                }
-            }
-        }, { passive: true });
+            if (modalCarousel) {
+                modalCarousel.addEventListener('touchstart', (e) => {
+                    touchStartX = e.touches[0].clientX;
+                    touchCurrentX = touchStartX;
+                    isSwiping = true;
+                    
+                    const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+                    const activeModal = document.querySelector('.modal-overlay.active');
+                    const currentIdx = activeModal ? modalOrder.indexOf(activeModal.id) : 0;
+                    
+                    const activeEl = document.getElementById(modalOrder[currentIdx]);
+                    if (activeEl) {
+                        activeEl.style.transition = 'none';
+                    }
+                    
+                    const nextIndex = currentIdx + 1;
+                    const prevIndex = currentIdx - 1;
+                    
+                    if (nextIndex < modalOrder.length) {
+                        const nextModal = document.getElementById(modalOrder[nextIndex]);
+                        if (nextModal) {
+                            nextModal.style.transition = 'none';
+                            nextModal.style.visibility = 'visible';
+                            nextModal.style.opacity = '1';
+                            nextModal.style.transform = 'translateX(100%)';
+                            nextModal.style.zIndex = '1';
+                        }
+                    }
+                    
+                    if (prevIndex >= 0) {
+                        const prevModal = document.getElementById(modalOrder[prevIndex]);
+                        if (prevModal) {
+                            prevModal.style.transition = 'none';
+                            prevModal.style.visibility = 'visible';
+                            prevModal.style.opacity = '1';
+                            prevModal.style.transform = 'translateX(-100%)';
+                            prevModal.style.zIndex = '1';
+                        }
+                    }
+                }, { passive: true });
 
-        modalCarousel.addEventListener('touchmove', (e) => {
-            if (!isSwiping) return;
-            
-            touchCurrentX = e.touches[0].clientX;
-            const diff = touchCurrentX - touchStartX;
-            
-            const activeModal = document.getElementById(modalOrder[currentModalIndex]);
-            if (activeModal) {
-                activeModal.style.transform = `translateX(${diff}px)`;
-                activeModal.style.zIndex = '2';
-            }
-            
-            const nextIndex = currentModalIndex + 1;
-            const prevIndex = currentModalIndex - 1;
-            
-            if (diff < 0 && nextIndex < modalOrder.length) {
-                const nextModal = document.getElementById(modalOrder[nextIndex]);
-                if (nextModal) {
-                    nextModal.style.transform = `translateX(${window.innerWidth + diff}px)`;
-                }
-            }
-            
-            if (diff > 0 && prevIndex >= 0) {
-                const prevModal = document.getElementById(modalOrder[prevIndex]);
-                if (prevModal) {
-                    prevModal.style.transform = `translateX(${-window.innerWidth + diff}px)`;
-                }
-            }
-        }, { passive: true });
+                modalCarousel.addEventListener('touchmove', (e) => {
+                    if (!isSwiping) return;
+                    
+                    touchCurrentX = e.touches[0].clientX;
+                    const diff = touchCurrentX - touchStartX;
+                    
+                    const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+                    const activeModal = document.querySelector('.modal-overlay.active');
+                    const currentIdx = activeModal ? modalOrder.indexOf(activeModal.id) : 0;
+                    
+                    const activeEl = document.getElementById(modalOrder[currentIdx]);
+                    if (activeEl) {
+                        activeEl.style.transform = `translateX(${diff}px)`;
+                        activeEl.style.zIndex = '2';
+                    }
+                    
+                    const nextIndex = currentIdx + 1;
+                    const prevIndex = currentIdx - 1;
+                    
+                    if (diff < 0 && nextIndex < modalOrder.length) {
+                        const nextModal = document.getElementById(modalOrder[nextIndex]);
+                        if (nextModal) {
+                            nextModal.style.transform = `translateX(${window.innerWidth + diff}px)`;
+                        }
+                    }
+                    
+                    if (diff > 0 && prevIndex >= 0) {
+                        const prevModal = document.getElementById(modalOrder[prevIndex]);
+                        if (prevModal) {
+                            prevModal.style.transform = `translateX(${-window.innerWidth + diff}px)`;
+                        }
+                    }
+                }, { passive: true });
 
-        modalCarousel.addEventListener('touchend', () => {
-            if (!isSwiping) return;
-            isSwiping = false;
-            
-            const diff = touchCurrentX - touchStartX;
-            const threshold = window.innerWidth * 0.25;
-            
-            let targetIndex = currentModalIndex;
-            
-            if (Math.abs(diff) > threshold) {
-                if (diff < 0) {
-                    targetIndex = Math.min(currentModalIndex + 1, modalOrder.length - 1);
-                } else {
-                    targetIndex = Math.max(currentModalIndex - 1, 0);
-                }
+                modalCarousel.addEventListener('touchend', () => {
+                    if (!isSwiping) return;
+                    isSwiping = false;
+                    
+                    const diff = touchCurrentX - touchStartX;
+                    const threshold = window.innerWidth * 0.25;
+                    
+                    const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
+                    const activeModal = document.querySelector('.modal-overlay.active');
+                    const currentIdx = activeModal ? modalOrder.indexOf(activeModal.id) : 0;
+                    
+                    let targetIndex = currentIdx;
+                    
+                    if (Math.abs(diff) > threshold) {
+                        if (diff < 0) {
+                            targetIndex = Math.min(currentIdx + 1, modalOrder.length - 1);
+                        } else {
+                            targetIndex = Math.max(currentIdx - 1, 0);
+                        }
+                    }
+                    
+                    modalOrder.forEach(id => {
+                        const modal = document.getElementById(id);
+                        if (modal) {
+                            modal.style.transition = 'transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.35s ease';
+                        }
+                    });
+                    
+                    window.goToModal(targetIndex);
+                });
             }
-            
-            modalOrder.forEach(id => {
-                const modal = document.getElementById(id);
-                if (modal) {
-                    modal.style.transition = 'transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.35s ease';
-                }
+
+            // Калькулятор
+            const calcState = { bathrooms: 1, system: 'tee' };
+            const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
+            const calcPriceElement = document.getElementById('calcPrice');
+            const updateCalc = () => {
+                if (!calcPriceElement) return;
+                const key = `${calcState.bathrooms}-${calcState.system}`;
+                const total = calcPrices[key] || 160000;
+                calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
+            };
+            document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const group = btn.dataset.group;
+                    const value = btn.dataset.value;
+                    if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
+                    else if (group === 'system') calcState.system = value;
+                    document.querySelectorAll(`.calc-seg-btn[data-group="${group}"]`).forEach((b) => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    updateCalc();
+                });
             });
-            
-            goToModal(targetIndex);
-        });
+            updateCalc();
 
-        document.querySelectorAll('.widget-card').forEach((card) => {
-            card.addEventListener('click', () => {
-                const modalId = card.dataset.modal;
-                if (modalId) window.openModal(modalId);
-            });
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                if (modalCarousel.classList.contains('active')) {
-                    window.closeModal(modalOrder[currentModalIndex]);
-                }
-                const paymentModal = document.getElementById('modalPayment');
-                if (paymentModal && paymentModal.classList.contains('active')) {
-                    window.closeModal('modalPayment');
-                }
+            const calcPayBtn = document.getElementById('calcPayBtn');
+            const calcTelegramBtn = document.getElementById('calcTelegramBtn');
+            if (calcPayBtn) {
+                calcPayBtn.addEventListener('click', () => {
+                    window.openModal('modalPayment');
+                });
             }
-        });
+            if (calcTelegramBtn) {
+                calcTelegramBtn.addEventListener('click', () => {
+                    const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
+                    window.open(`https://t.me/sa_master?text=${message}`, '_blank');
+                });
+            }
 
-        // Калькулятор
-        const calcState = { bathrooms: 1, system: 'tee' };
-        const calcPrices = { '1-tee': 160000, '1-radial': 240000, '2-tee': 340000, '2-radial': 420000 };
-        const calcPriceElement = document.getElementById('calcPrice');
-        const updateCalc = () => {
-            const key = `${calcState.bathrooms}-${calcState.system}`;
-            const total = calcPrices[key] || 160000;
-            calcPriceElement.textContent = `${total.toLocaleString('uk-UA')} грн`;
-        };
-        document.querySelectorAll('.calc-seg-btn').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const group = btn.dataset.group;
-                const value = btn.dataset.value;
-                if (group === 'bathrooms') calcState.bathrooms = parseInt(value);
-                else if (group === 'system') calcState.system = value;
-                document.querySelectorAll(`.calc-seg-btn[data-group="${group}"]`).forEach((b) => b.classList.remove('active'));
-                btn.classList.add('active');
-                updateCalc();
-            });
-        });
-        if (calcPriceElement) updateCalc();
+            // Соціальні кнопки
+            const socialTrack = document.getElementById('socialTrack');
+            const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
+            const socialViewport = document.getElementById('socialViewport');
+            let socialPage = 0;
+            let socialStartX = 0;
+            let socialCurrentX = 0;
+            let socialDragging = false;
+            const updateSocial = (page, animate = true) => {
+                if (!socialTrack) return;
+                socialPage = Math.max(0, Math.min(1, page));
+                socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
+                socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
+                socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
+            };
+            if (socialViewport) {
+                socialViewport.addEventListener('touchstart', (e) => {
+                    socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
+                }, { passive: true });
+                socialViewport.addEventListener('touchmove', (e) => {
+                    if (socialDragging) socialCurrentX = e.touches[0].clientX;
+                }, { passive: true });
+                socialViewport.addEventListener('touchend', () => {
+                    if (!socialDragging) return;
+                    socialDragging = false;
+                    const diff = socialCurrentX - socialStartX;
+                    if (Math.abs(diff) < 45) return;
+                    updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
+                });
+            }
 
-        const calcPayBtn = document.getElementById('calcPayBtn');
-        const calcTelegramBtn = document.getElementById('calcTelegramBtn');
-        calcPayBtn.addEventListener('click', () => {
-            window.openModal('modalPayment');
-        });
-        calcTelegramBtn.addEventListener('click', () => {
-            const message = encodeURIComponent('Добрий день! Я оплатив консультацію та детальний прорахунок вартості робіт. Надсилаю проєкт та чек про оплату.');
-            window.open(`https://t.me/sa_master?text=${message}`, '_blank');
-        });
-
-        document.querySelector('.review-google-btn').addEventListener('click', () => {
-            // Google review
-        });
-
-        // Соціальні кнопки
-        const socialTrack = document.getElementById('socialTrack');
-        const socialDots = [...document.querySelectorAll('.ios-social-page-dot')];
-        const socialViewport = document.getElementById('socialViewport');
-        let socialPage = 0;
-        let socialStartX = 0;
-        let socialCurrentX = 0;
-        let socialDragging = false;
-        const updateSocial = (page, animate = true) => {
-            socialPage = Math.max(0, Math.min(1, page));
-            socialTrack.style.transition = animate ? 'transform 0.48s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
-            socialTrack.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
-            socialDots.forEach((dot, i) => dot.classList.toggle('active', i === socialPage));
-        };
-        socialViewport.addEventListener('touchstart', (e) => {
-            socialStartX = e.touches[0].clientX; socialCurrentX = socialStartX; socialDragging = true;
-        }, { passive: true });
-        socialViewport.addEventListener('touchmove', (e) => {
-            if (socialDragging) socialCurrentX = e.touches[0].clientX;
-        }, { passive: true });
-        socialViewport.addEventListener('touchend', () => {
-            if (!socialDragging) return;
-            socialDragging = false;
-            const diff = socialCurrentX - socialStartX;
-            if (Math.abs(diff) < 45) return;
-            updateSocial(diff < 0 ? socialPage + 1 : socialPage - 1);
-        });
-
-        setTimeout(function() {
-            socialTrack.classList.add('social-hint');
             setTimeout(function() {
-                socialTrack.classList.remove('social-hint');
-            }, 1100);
-        }, 900);
+                if (socialTrack) {
+                    socialTrack.classList.add('social-hint');
+                    setTimeout(function() {
+                        socialTrack.classList.remove('social-hint');
+                    }, 1100);
+                }
+            }, 900);
 
-        document.addEventListener('DOMContentLoaded', () => {
             const yearSpan = document.getElementById('currentYear');
             if (yearSpan) yearSpan.textContent = new Date().getFullYear();
         });
