@@ -438,7 +438,6 @@
             position: relative;
             z-index: 1;
         }
-        .widget-chevron, .widget-text, .widget-sub, .widget-desc { display: none; }
         
         /* Модальні вікна */
         .modal-overlay {
@@ -513,7 +512,12 @@
             margin-bottom: 0;
             transition: none;
             transform: none;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
         }
         
         .modal-close {
@@ -1584,7 +1588,7 @@
                 </div>
             </div>
 
-            <!-- Модалка оплати - окрема, як картка -->
+            <!-- Модалка оплати -->
             <div class="modal-overlay" id="modalPayment" role="dialog" aria-modal="true">
                 <div class="modal-box">
                     <button class="modal-close" type="button" onclick="closeModal('modalPayment')" aria-label="Закрити">×</button>
@@ -1857,64 +1861,70 @@
         document.querySelectorAll('.modal-box').forEach((box) => {
             let startX = 0;
             let startY = 0;
-            let isHorizontal = false;
-            let currentTranslateX = 0;
+            let currentX = 0;
+            let isTracking = false;
+            let isHorizontalSwipe = false;
             
             box.addEventListener('touchstart', (e) => {
                 startX = e.touches[0].clientX;
                 startY = e.touches[0].clientY;
-                isHorizontal = false;
-                currentTranslateX = 0;
-                box.style.transition = 'none';
+                currentX = startX;
+                isTracking = true;
+                isHorizontalSwipe = false;
             }, { passive: true });
             
             box.addEventListener('touchmove', (e) => {
+                if (!isTracking) return;
+                
                 const diffX = e.touches[0].clientX - startX;
                 const diffY = e.touches[0].clientY - startY;
                 
-                if (!isHorizontal && Math.abs(diffX) > 20 && Math.abs(diffX) > Math.abs(diffY)) {
-                    isHorizontal = true;
+                if (!isHorizontalSwipe && Math.abs(diffX) > 15) {
+                    if (Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+                        isHorizontalSwipe = true;
+                    }
                 }
                 
-                if (isHorizontal) {
-                    currentTranslateX = diffX;
-                    const maxTranslate = window.innerWidth * 0.5;
-                    if (Math.abs(currentTranslateX) > maxTranslate) {
-                        currentTranslateX = Math.sign(currentTranslateX) * maxTranslate;
-                    }
-                    box.style.transform = `translateX(${currentTranslateX}px)`;
-                    box.style.opacity = 1 - Math.abs(currentTranslateX) / maxTranslate;
+                if (isHorizontalSwipe) {
+                    currentX = e.touches[0].clientX;
+                    const translateX = currentX - startX;
+                    const maxTranslate = window.innerWidth * 0.4;
+                    
+                    const limitedTranslate = Math.max(-maxTranslate, Math.min(maxTranslate, translateX));
+                    
+                    box.style.transition = 'none';
+                    box.style.transform = `translateX(${limitedTranslate}px)`;
+                    box.style.opacity = 1 - Math.abs(limitedTranslate) / maxTranslate * 0.5;
                 }
             }, { passive: true });
             
-            box.addEventListener('touchend', (e) => {
-                if (!isHorizontal) {
-                    box.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-                    box.style.transform = 'translateX(0)';
-                    box.style.opacity = '1';
+            box.addEventListener('touchend', () => {
+                if (!isTracking) return;
+                isTracking = false;
+                
+                if (!isHorizontalSwipe) {
                     return;
                 }
                 
-                const threshold = window.innerWidth * 0.25;
+                const diffX = currentX - startX;
+                const threshold = window.innerWidth * 0.2;
+                
                 box.style.transition = 'transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.3s ease';
                 
-                if (Math.abs(currentTranslateX) > threshold) {
+                if (Math.abs(diffX) > threshold) {
                     const overlay = box.closest('.modal-overlay');
                     const currentIndex = modalOrder.indexOf(overlay.id);
                     
                     let targetIndex;
-                    if (currentTranslateX < 0) {
-                        // Свайп вліво - наступна модалка
+                    if (diffX < 0) {
                         targetIndex = Math.min(currentIndex + 1, modalOrder.length - 1);
                     } else {
-                        // Свайп вправо - попередня модалка
                         targetIndex = Math.max(currentIndex - 1, 0);
                     }
                     
                     const targetId = modalOrder[targetIndex];
                     
-                    // Анімуємо вихід
-                    box.style.transform = `translateX(${currentTranslateX < 0 ? '-100%' : '100%'})`;
+                    box.style.transform = `translateX(${diffX < 0 ? '-100%' : '100%'})`;
                     box.style.opacity = '0';
                     
                     setTimeout(() => {
