@@ -447,35 +447,35 @@
             width: 100%;
             height: 100%;
             z-index: 11000;
-            display: flex;
             pointer-events: none;
-            will-change: transform;
+            opacity: 0;
+            visibility: hidden;
+            background: var(--color-modal-bg);
         }
         .modal-carousel-container.active {
             pointer-events: auto;
+            opacity: 1;
+            visibility: visible;
         }
-        
         .modal-overlay {
-            position: relative;
-            flex: 0 0 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
-            align-items: stretch;
-            justify-content: flex-start;
-            padding: 0;
             background: var(--color-modal-bg);
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s ease;
-            pointer-events: auto;
+            transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.35s ease;
+            will-change: transform, opacity;
         }
         .modal-overlay.active {
             opacity: 1;
             visibility: visible;
+            z-index: 2;
         }
-        
         .modal-box {
             position: relative;
             width: 100%;
@@ -483,14 +483,12 @@
             overflow-y: auto;
             overflow-x: hidden;
             padding: calc(1.5rem + var(--safe-area-top)) 1.25rem 1.25rem;
-            background: var(--color-modal-bg);
             scrollbar-width: none;
             -ms-overflow-style: none;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
         }
         .modal-box::-webkit-scrollbar { width: 0; display: none; }
-        
         .modal-close {
             position: absolute;
             top: 0.75rem;
@@ -520,7 +518,6 @@
             transform: scale(0.95);
             background: rgba(120, 130, 140, 0.3);
         }
-        
         .modal-header {
             display: flex;
             align-items: center;
@@ -575,7 +572,6 @@
             border: 0.1875rem solid #fff;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
-        
         .modal-nav {
             display: flex;
             align-items: center;
@@ -624,7 +620,6 @@
             background: var(--color-primary);
             transform: scale(1.4);
         }
-        
         .payment-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
         .payment-btn {
             position: relative;
@@ -1322,7 +1317,7 @@
     <div class="modal-carousel-container" id="modalCarousel">
         <div class="modal-overlay" id="modalAbout" role="dialog" aria-modal="true">
             <div class="modal-box">
-                <button class="modal-close" type="button" onclick="closeModal('modalAbout')" aria-label="Закрити">×</button>
+                <button class="modal-close" type="button" data-close="modalAbout" aria-label="Закрити">×</button>
                 <div class="modal-header">
                     <div class="modal-header-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3" stroke-linecap="round"/></svg>
@@ -1358,7 +1353,7 @@
 
         <div class="modal-overlay" id="modalProcess" role="dialog" aria-modal="true">
             <div class="modal-box">
-                <button class="modal-close" type="button" onclick="closeModal('modalProcess')" aria-label="Закрити">×</button>
+                <button class="modal-close" type="button" data-close="modalProcess" aria-label="Закрити">×</button>
                 <div class="modal-header">
                     <div class="modal-header-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 0-6.9 6.9L3 18.9V21h2.1l4.8-4.8a5 5 0 0 0 6.9-6.9l-2.9 2.9-2.1-2.1 2.9-2.9z"/></svg>
@@ -1391,7 +1386,7 @@
 
         <div class="modal-overlay" id="modalPrice" role="dialog" aria-modal="true">
             <div class="modal-box">
-                <button class="modal-close" type="button" onclick="closeModal('modalPrice')" aria-label="Закрити">×</button>
+                <button class="modal-close" type="button" data-close="modalPrice" aria-label="Закрити">×</button>
                 <div class="modal-header">
                     <div class="modal-header-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1476,7 +1471,7 @@
 
         <div class="modal-overlay" id="modalReviews" role="dialog" aria-modal="true">
             <div class="modal-box">
-                <button class="modal-close" type="button" onclick="closeModal('modalReviews')" aria-label="Закрити">×</button>
+                <button class="modal-close" type="button" data-close="modalReviews" aria-label="Закрити">×</button>
                 <div class="modal-header">
                     <div class="modal-header-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1557,9 +1552,9 @@
     </div>
 
     <!-- Модалка оплати -->
-    <div class="modal-overlay" id="modalPayment" role="dialog" aria-modal="true" style="position: fixed; z-index: 11500;">
+    <div class="modal-overlay" id="modalPayment" role="dialog" aria-modal="true" style="position: fixed; z-index: 11500; background: var(--color-modal-bg);">
         <div class="modal-box" style="max-width: 25rem; max-height: 85vh; border-radius: 1.25rem; box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.18);">
-            <button class="modal-close" type="button" onclick="closeModal('modalPayment')" aria-label="Закрити">×</button>
+            <button class="modal-close" type="button" data-close="modalPayment" aria-label="Закрити">×</button>
             <div class="modal-title">Оплата</div>
             <div class="modal-lead">Оберіть зручний спосіб</div>
             <div class="payment-buttons">
@@ -1745,7 +1740,7 @@
         const modalCarousel = document.getElementById('modalCarousel');
         const modalOrder = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
         let currentModalIndex = 0;
-        
+
         const updateProgress = (activeId) => {
             const activeIndex = modalOrder.indexOf(activeId);
             document.querySelectorAll('.modal-progress').forEach((progress) => {
@@ -1755,16 +1750,30 @@
             });
         };
 
-        const goToModal = (index, animate = true) => {
+        const goToModal = (index) => {
             currentModalIndex = Math.max(0, Math.min(modalOrder.length - 1, index));
-            
-            modalCarousel.style.transition = animate ? 'transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1)' : 'none';
-            modalCarousel.style.transform = `translateX(-${currentModalIndex * 100}%)`;
             
             modalOrder.forEach((id, i) => {
                 const modal = document.getElementById(id);
                 if (modal) {
-                    modal.classList.toggle('active', i === currentModalIndex);
+                    if (i === currentModalIndex) {
+                        modal.classList.add('active');
+                        modal.style.zIndex = '2';
+                        modal.style.opacity = '1';
+                        modal.style.transform = 'translateX(0)';
+                        modal.style.visibility = 'visible';
+                    } else {
+                        modal.classList.remove('active');
+                        modal.style.zIndex = '1';
+                        modal.style.opacity = '0';
+                        modal.style.visibility = 'hidden';
+                        
+                        if (i < currentModalIndex) {
+                            modal.style.transform = 'translateX(-100%)';
+                        } else {
+                            modal.style.transform = 'translateX(100%)';
+                        }
+                    }
                 }
             });
             
@@ -1774,69 +1783,144 @@
         const openModal = (id) => {
             const index = modalOrder.indexOf(id);
             if (index === -1) {
-                // Для модалки оплати
                 const modal = document.getElementById(id);
                 if (modal) {
                     modal.classList.add('active');
+                    modal.style.opacity = '1';
+                    modal.style.visibility = 'visible';
                     body.style.overflow = 'hidden';
                 }
                 return;
             }
             
             modalCarousel.classList.add('active');
-            goToModal(index, false);
+            modalCarousel.style.opacity = '1';
+            modalCarousel.style.visibility = 'visible';
+            goToModal(index);
             body.style.overflow = 'hidden';
         };
-        
+
         const closeModal = (id) => {
             if (modalOrder.includes(id)) {
                 modalCarousel.classList.remove('active');
+                modalCarousel.style.opacity = '0';
+                modalCarousel.style.visibility = 'hidden';
                 body.style.overflow = '';
             } else {
                 const modal = document.getElementById(id);
                 if (modal) {
                     modal.classList.remove('active');
+                    modal.style.opacity = '0';
+                    modal.style.visibility = 'hidden';
                     body.style.overflow = '';
                 }
             }
         };
-        
+
         window.openModal = openModal;
         window.closeModal = closeModal;
-        
-        // Свайпи для каруселі
+
+        // Обробники для хрестиків
+        document.querySelectorAll('[data-close]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const modalId = btn.getAttribute('data-close');
+                closeModal(modalId);
+            });
+        });
+
+        // Навігація
+        document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
+            arrow.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const direction = arrow.dataset.direction;
+                if (direction === 'next') {
+                    goToModal(currentModalIndex + 1);
+                } else {
+                    goToModal(currentModalIndex - 1);
+                }
+            });
+        });
+
+        // Свайпи
         let touchStartX = 0;
         let touchCurrentX = 0;
         let isSwiping = false;
-        
+
         modalCarousel.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
             touchCurrentX = touchStartX;
             isSwiping = true;
-            modalCarousel.style.transition = 'none';
+            
+            // Показуємо сусідні модалки
+            const activeModal = document.getElementById(modalOrder[currentModalIndex]);
+            if (activeModal) {
+                activeModal.style.transition = 'none';
+            }
+            
+            const nextIndex = currentModalIndex + 1;
+            const prevIndex = currentModalIndex - 1;
+            
+            if (nextIndex < modalOrder.length) {
+                const nextModal = document.getElementById(modalOrder[nextIndex]);
+                if (nextModal) {
+                    nextModal.style.transition = 'none';
+                    nextModal.style.visibility = 'visible';
+                    nextModal.style.opacity = '1';
+                    nextModal.style.transform = 'translateX(100%)';
+                    nextModal.style.zIndex = '1';
+                }
+            }
+            
+            if (prevIndex >= 0) {
+                const prevModal = document.getElementById(modalOrder[prevIndex]);
+                if (prevModal) {
+                    prevModal.style.transition = 'none';
+                    prevModal.style.visibility = 'visible';
+                    prevModal.style.opacity = '1';
+                    prevModal.style.transform = 'translateX(-100%)';
+                    prevModal.style.zIndex = '1';
+                }
+            }
         }, { passive: true });
-        
+
         modalCarousel.addEventListener('touchmove', (e) => {
             if (!isSwiping) return;
             
             touchCurrentX = e.touches[0].clientX;
             const diff = touchCurrentX - touchStartX;
-            const containerWidth = window.innerWidth;
-            const currentTranslate = -currentModalIndex * 100;
-            let translateX = currentTranslate + (diff / containerWidth) * 100;
             
-            const minTranslate = -(modalOrder.length - 1) * 100;
-            translateX = Math.max(minTranslate, Math.min(0, translateX));
+            const activeModal = document.getElementById(modalOrder[currentModalIndex]);
+            if (activeModal) {
+                activeModal.style.transform = `translateX(${diff}px)`;
+                activeModal.style.zIndex = '2';
+            }
             
-            modalCarousel.style.transform = `translateX(${translateX}%)`;
+            const nextIndex = currentModalIndex + 1;
+            const prevIndex = currentModalIndex - 1;
+            
+            if (diff < 0 && nextIndex < modalOrder.length) {
+                const nextModal = document.getElementById(modalOrder[nextIndex]);
+                if (nextModal) {
+                    nextModal.style.transform = `translateX(${window.innerWidth + diff}px)`;
+                }
+            }
+            
+            if (diff > 0 && prevIndex >= 0) {
+                const prevModal = document.getElementById(modalOrder[prevIndex]);
+                if (prevModal) {
+                    prevModal.style.transform = `translateX(${-window.innerWidth + diff}px)`;
+                }
+            }
         }, { passive: true });
-        
+
         modalCarousel.addEventListener('touchend', () => {
             if (!isSwiping) return;
             isSwiping = false;
             
             const diff = touchCurrentX - touchStartX;
-            const threshold = window.innerWidth * 0.2;
+            const threshold = window.innerWidth * 0.25;
             
             let targetIndex = currentModalIndex;
             
@@ -1848,9 +1932,17 @@
                 }
             }
             
+            // Відновлюємо transitions
+            modalOrder.forEach(id => {
+                const modal = document.getElementById(id);
+                if (modal) {
+                    modal.style.transition = 'transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.35s ease';
+                }
+            });
+            
             goToModal(targetIndex);
         });
-        
+
         document.querySelectorAll('.widget-card').forEach((card) => {
             card.addEventListener('click', () => {
                 if (typeof gtag === 'function') {
@@ -1870,18 +1962,7 @@
                 }
             });
         });
-        
-        document.querySelectorAll('.modal-nav-arrow').forEach((arrow) => {
-            arrow.addEventListener('click', () => {
-                const direction = arrow.dataset.direction;
-                if (direction === 'next') {
-                    goToModal(currentModalIndex + 1);
-                } else {
-                    goToModal(currentModalIndex - 1);
-                }
-            });
-        });
-        
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 if (modalCarousel.classList.contains('active')) {
@@ -1941,7 +2022,7 @@
                 calcPayBtn.style.display = 'none';
             }
         });
-        document.querySelector('#modalPayment .modal-close').addEventListener('click', () => {
+        document.querySelector('#modalPayment [data-close]').addEventListener('click', () => {
             closeModal('modalPayment');
             calcTelegramBtn.style.display = 'flex';
             calcPayBtn.style.display = 'none';
