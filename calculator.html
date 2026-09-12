@@ -5,42 +5,35 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
 <title>Калькулятор сантехніка</title>
-
-<meta
-  name="description"
-  content="Калькулятор сантехніка — кошторис вартості сантехнічних робіт."
->
+<meta name="description" content="Калькулятор вартості сантехнічних робіт.">
 
 <style>
 :root{
   --bg:#f2f2f7;
-  --card:rgba(255,255,255,.72);
-  --card-solid:#fff;
+  --card:rgba(255,255,255,.86);
+  --solid:#fff;
   --text:#111;
   --muted:#777;
-  --line:rgba(0,0,0,.08);
+  --line:rgba(0,0,0,.09);
   --blue:#007aff;
-  --blue-soft:rgba(0,122,255,.12);
-  --green:#34c759;
+  --blue-soft:rgba(0,122,255,.10);
   --red:#ff3b30;
-  --control-bg:rgba(255,255,255,.78);
+  --control-bg:rgba(255,255,255,.92);
   --shadow:0 10px 35px rgba(0,0,0,.08);
-  --radius:22px;
 }
 
-html.dark{
-  --bg:#111214;
-  --card:rgba(30,31,35,.78);
-  --card-solid:#1e1f23;
+html[data-theme="dark"]{
+  --bg:#101114;
+  --card:rgba(29,30,35,.90);
+  --solid:#1d1e23;
   --text:#f5f5f7;
-  --muted:#9b9ba1;
-  --line:rgba(255,255,255,.09);
+  --muted:#999;
+  --line:rgba(255,255,255,.11);
   --blue:#0a84ff;
-  --blue-soft:rgba(10,132,255,.18);
-  --green:#30d158;
+  --blue-soft:rgba(10,132,255,.17);
   --red:#ff453a;
   --control-bg:#292b31;
-  --shadow:0 12px 35px rgba(0,0,0,.28);
+  --shadow:0 10px 35px rgba(0,0,0,.35);
 }
 
 *{
@@ -50,17 +43,23 @@ html.dark{
 
 html,
 body{
-  margin:0;
-  padding:0;
+  width:100%;
+  height:100%;
   min-height:100%;
+  margin:0;
   background:var(--bg);
   color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",sans-serif;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,Arial,sans-serif;
 }
 
 body{
   min-height:100dvh;
-  overflow-x:hidden;
+  padding:
+    max(12px,env(safe-area-inset-top))
+    12px
+    max(12px,env(safe-area-inset-bottom))
+    12px;
+  overflow:hidden;
 }
 
 button,
@@ -72,36 +71,33 @@ textarea{
 button{
   border:0;
   cursor:pointer;
+  color:inherit;
+  -webkit-user-select:none;
+  user-select:none;
+  touch-action:manipulation;
 }
 
 .app{
-  width:min(100%,560px);
-  min-height:100dvh;
+  width:100%;
+  max-width:560px;
+  height:calc(
+    100dvh -
+    max(12px,env(safe-area-inset-top)) -
+    max(12px,env(safe-area-inset-bottom))
+  );
   margin:0 auto;
-  padding:
-    max(14px,env(safe-area-inset-top))
-    14px
-    max(18px,env(safe-area-inset-bottom))
-    14px;
   display:flex;
   flex-direction:column;
 }
 
-.glass{
-  background:var(--card);
-  border:1px solid var(--line);
-  box-shadow:var(--shadow);
-  backdrop-filter:blur(22px);
-  -webkit-backdrop-filter:blur(22px);
-}
-
 .header{
-  position:relative;
+  flex:0 0 auto;
+  min-height:50px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  padding:8px 2px 14px;
+  margin-bottom:8px;
 }
 
 .brand{
@@ -110,479 +106,676 @@ button{
 
 .brand-title{
   font-size:22px;
-  line-height:1.05;
-  font-weight:800;
-  letter-spacing:-.03em;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  line-height:1;
+  font-weight:850;
+  letter-spacing:-.7px;
 }
 
 .brand-sub{
   margin-top:4px;
   color:var(--muted);
-  font-size:12px;
-  line-height:1.2;
+  font-size:11px;
+  line-height:1.1;
+}
+
+.print-profile{
+  display:none;
 }
 
 .header-actions{
   display:flex;
-  gap:7px;
-  flex:0 0 auto;
-}
-
-.icon-btn{
-  width:40px;
-  height:40px;
-  border-radius:14px;
-  background:var(--control-bg);
-  color:var(--text);
-  border:1px solid var(--line);
-  display:flex;
   align-items:center;
-  justify-content:center;
-  font-size:18px;
-  box-shadow:0 4px 12px rgba(0,0,0,.04);
-}
-
-.icon-btn:active,
-.action-btn:active,
-.tab:active,
-.catalog-row:active,
-.work-row:active{
-  transform:scale(.98);
-}
-
-.project-card{
-  border-radius:var(--radius);
-  padding:14px;
-  margin-bottom:10px;
-}
-
-.field{
-  display:flex;
-  flex-direction:column;
   gap:6px;
 }
 
-.field + .field{
-  margin-top:10px;
-}
-
-.field-label{
-  font-size:11px;
-  color:var(--muted);
-  padding-left:4px;
-}
-
-input,
-textarea{
-  width:100%;
+.header-btn{
+  width:38px;
+  height:38px;
+  flex:0 0 38px;
+  border-radius:50%;
+  background:var(--card);
   border:1px solid var(--line);
-  outline:none;
-  background:var(--control-bg);
+  box-shadow:var(--shadow);
+  font-size:17px;
+  display:grid;
+  place-items:center;
+}
+
+.header-btn:active{
+  background:var(--blue);
+  color:#fff;
+}
+
+.main-card{
+  min-height:0;
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  padding:10px;
+}
+
+.project-bar{
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin-bottom:8px;
+}
+
+.project-field{
+  min-width:0;
+  height:34px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:rgba(120,120,128,.07);
   color:var(--text);
-  border-radius:14px;
-  padding:11px 13px;
-  min-height:42px;
+  padding:0 9px;
+  outline:none;
+  font-size:11px;
 }
 
-textarea{
-  min-height:84px;
-  resize:vertical;
-}
-
-input:focus,
-textarea:focus{
-  border-color:rgba(0,122,255,.4);
+.project-field:focus{
+  border-color:var(--blue);
   box-shadow:0 0 0 3px var(--blue-soft);
 }
 
 .tabs{
+  flex:0 0 auto;
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:7px;
-  margin-bottom:10px;
+  gap:4px;
+  padding:4px;
+  margin-bottom:9px;
+  background:rgba(120,120,128,.10);
+  border-radius:13px;
 }
 
 .tab{
-  min-height:40px;
-  border-radius:14px;
-  background:var(--control-bg);
-  border:1px solid var(--line);
+  min-height:34px;
+  border-radius:10px;
+  background:transparent;
   color:var(--muted);
-  font-weight:700;
+  font-size:13px;
+  font-weight:750;
 }
 
 .tab.active{
-  color:#fff;
-  background:var(--blue);
-  border-color:var(--blue);
+  background:var(--solid);
+  color:var(--text);
+  box-shadow:0 2px 7px rgba(0,0,0,.08);
 }
 
-.estimate-card{
-  border-radius:var(--radius);
-  overflow:hidden;
+.section-head{
+  flex:0 0 auto;
   display:flex;
-  flex-direction:column;
-  min-height:0;
-  flex:1;
-}
-
-.estimate-head{
-  padding:12px 14px 9px;
-  display:flex;
-  justify-content:space-between;
   align-items:center;
-  gap:10px;
-  border-bottom:1px solid var(--line);
+  justify-content:space-between;
+  gap:8px;
+  min-height:27px;
+  margin:0 2px 5px;
 }
 
-.estimate-title{
+.section-title{
+  font-size:11px;
   font-weight:800;
-  font-size:14px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.45px;
 }
 
-.estimate-total-small{
-  font-weight:800;
+.section-action{
   color:var(--blue);
-  white-space:nowrap;
+  background:transparent;
+  font-size:11px;
+  font-weight:700;
+  padding:4px 2px;
 }
 
 .estimate-list{
-  overflow:auto;
+  flex:1 1 auto;
   min-height:0;
-  flex:1;
-  overscroll-behavior:contain;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  overflow-y:auto;
+  overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-}
-
-.empty{
-  padding:35px 20px;
-  text-align:center;
-  color:var(--muted);
-  font-size:13px;
+  overscroll-behavior:contain;
+  padding:0 1px 2px 0;
+  scrollbar-width:thin;
 }
 
 .estimate-row{
+  flex:0 0 47px;
+  min-height:47px;
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:8px;
+  grid-template-columns:minmax(0,1fr) auto auto auto;
   align-items:center;
-  padding:9px 12px;
-  border-bottom:1px solid var(--line);
+  gap:5px;
+  padding:5px 6px 5px 9px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(120,120,128,.055);
 }
 
-.estimate-main{
+.estimate-info{
   min-width:0;
+  cursor:pointer;
 }
 
 .estimate-name{
-  font-size:13px;
-  font-weight:650;
-  line-height:1.2;
-  word-break:break-word;
+  font-size:12px;
+  line-height:1.15;
+  font-weight:680;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .estimate-meta{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  margin-top:3px;
-  color:var(--muted);
-  font-size:10px;
-}
-
-.estimate-price{
-  text-align:right;
-  white-space:nowrap;
-}
-
-.price-main{
-  font-size:13px;
-  font-weight:800;
-}
-
-.price-unit{
-  color:var(--muted);
-  font-size:10px;
   margin-top:2px;
+  color:var(--muted);
+  font-size:9px;
+  line-height:1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .qty-control{
+  height:29px;
   display:flex;
   align-items:center;
-  justify-content:flex-end;
-  gap:5px;
-  margin-top:4px;
+  gap:1px;
+  padding:2px;
+  border-radius:8px;
+  background:rgba(120,120,128,.10);
+  border:1px solid var(--line);
 }
 
 .qty-btn{
   width:25px;
   height:25px;
-  border-radius:9px;
+  flex:0 0 25px;
+  border-radius:6px;
   background:var(--control-bg);
   border:1px solid var(--line);
-  color:var(--text);
-  font-weight:800;
+  color:var(--blue);
+  font-size:16px;
+  font-weight:850;
+  display:grid;
+  place-items:center;
   line-height:1;
 }
 
+.qty-btn:active{
+  background:var(--blue);
+  color:#fff;
+}
+
 .qty-value{
-  min-width:18px;
+  min-width:21px;
   text-align:center;
+  font-size:11px;
+  font-weight:800;
+}
+
+.estimate-price{
+  min-width:67px;
+  text-align:right;
+  font-size:11px;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.estimate-remove{
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  border-radius:8px;
+  background:rgba(120,120,128,.08);
+  border:1px solid var(--line);
+  color:var(--muted);
+  font-size:20px;
+  font-weight:500;
+  display:grid;
+  place-items:center;
+  line-height:1;
+  padding:0;
+}
+
+.estimate-remove:active{
+  background:var(--red);
+  border-color:var(--red);
+  color:#fff;
+}
+
+.empty{
+  min-height:80px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  border:1px dashed var(--line);
+  border-radius:13px;
+  color:var(--muted);
+  font-size:11px;
+  padding:12px;
+}
+
+.bottom-panel{
+  flex:0 0 auto;
+  padding-top:7px;
+}
+
+.total-box{
+  min-height:49px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:8px 11px;
+  border-radius:13px;
+  background:var(--blue-soft);
+}
+
+.total-label{
+  color:var(--muted);
   font-size:11px;
   font-weight:700;
 }
 
-.estimate-actions{
-  display:flex;
-  gap:7px;
-  padding:10px;
-  border-top:1px solid var(--line);
+.total-value{
+  font-size:19px;
+  line-height:1;
+  font-weight:850;
+  letter-spacing:-.4px;
+  white-space:nowrap;
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  margin-top:6px;
 }
 
 .action-btn{
-  flex:1;
-  min-height:42px;
-  border-radius:14px;
-  font-weight:750;
-  font-size:13px;
+  min-height:37px;
+  border-radius:11px;
+  background:rgba(120,120,128,.09);
   border:1px solid var(--line);
-  background:var(--control-bg);
-  color:var(--text);
+  font-size:11px;
+  font-weight:750;
 }
 
 .action-btn.primary{
-  color:#fff;
   background:var(--blue);
+  color:#fff;
   border-color:var(--blue);
 }
 
-.action-btn.secondary{
-  color:var(--blue);
+.catalog-open{
+  width:100%;
+  min-height:42px;
+  margin-top:6px;
+  border-radius:12px;
+  background:var(--blue);
+  color:#fff;
+  font-size:13px;
+  font-weight:800;
+  box-shadow:0 5px 16px rgba(0,122,255,.18);
 }
 
-.action-btn.danger{
-  color:var(--red);
+.print-total{
+  display:none;
 }
 
-.bottom-total{
-  padding:10px 14px 4px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+/* =========================================================
+   MODALS
+========================================================= */
 
-.bottom-total-label{
-  color:var(--muted);
-  font-size:12px;
-}
-
-.bottom-total-value{
-  font-size:21px;
-  font-weight:850;
-  letter-spacing:-.03em;
-}
-
-.modal-backdrop{
+.modal{
   position:fixed;
   inset:0;
-  z-index:100;
-  background:rgba(0,0,0,.38);
+  z-index:1000;
   display:none;
   align-items:flex-end;
   justify-content:center;
-  padding:12px;
+  padding:10px;
+  background:rgba(0,0,0,.28);
 }
 
-.modal-backdrop.show{
+.modal.show{
   display:flex;
 }
 
-.modal{
-  width:min(100%,560px);
-  max-height:min(88dvh,760px);
+.sheet{
+  width:min(560px,100%);
+  max-height:92dvh;
   overflow:hidden;
-  border-radius:26px;
-  background:var(--card-solid);
-  border:1px solid var(--line);
-  box-shadow:0 25px 80px rgba(0,0,0,.3);
   display:flex;
   flex-direction:column;
-  animation:modalIn .18s ease-out;
+  background:var(--solid);
+  color:var(--text);
+  border:1px solid var(--line);
+  border-radius:23px;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);
 }
 
-@keyframes modalIn{
-  from{
-    transform:translateY(15px);
-    opacity:0;
-  }
-  to{
-    transform:none;
-    opacity:1;
-  }
-}
-
-.modal-head{
-  padding:15px 16px 12px;
+.sheet-head{
+  flex:0 0 auto;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  border-bottom:1px solid var(--line);
+  padding:13px 14px 9px;
 }
 
-.modal-title{
-  font-weight:800;
+.sheet-title{
   font-size:17px;
+  font-weight:850;
+  letter-spacing:-.3px;
 }
 
 .close-btn{
-  width:34px;
-  height:34px;
-  border-radius:11px;
-  background:var(--control-bg);
-  color:var(--text);
+  width:38px;
+  height:38px;
+  flex:0 0 38px;
+  border-radius:50%;
+  background:rgba(120,120,128,.12);
   border:1px solid var(--line);
-  font-size:21px;
+  color:var(--text);
+  font-size:25px;
+  font-weight:400;
+  display:grid;
+  place-items:center;
   line-height:1;
+  padding:0;
 }
 
-.modal-body{
-  overflow:auto;
-  padding:14px;
-  -webkit-overflow-scrolling:touch;
+.close-btn:active{
+  background:var(--blue);
+  color:#fff;
 }
 
-.catalog-list,
-.work-list{
+.catalog-body{
+  min-height:0;
   display:flex;
   flex-direction:column;
-  gap:7px;
+  padding:0 13px 13px;
 }
 
-.catalog-row,
-.work-row{
+.search{
+  flex:0 0 auto;
   width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:11px 12px;
-  min-height:52px;
-  border-radius:15px;
-  background:var(--control-bg);
+  height:40px;
   border:1px solid var(--line);
+  border-radius:12px;
+  outline:none;
+  background:rgba(120,120,128,.07);
   color:var(--text);
-  text-align:left;
+  padding:0 12px;
+  font-size:13px;
+  margin-bottom:8px;
 }
 
-.catalog-info,
+.search:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px var(--blue-soft);
+}
+
+.catalog-tabs{
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:4px;
+  padding:4px;
+  background:rgba(120,120,128,.10);
+  border-radius:12px;
+  margin-bottom:8px;
+}
+
+.catalog-tab{
+  height:32px;
+  border-radius:9px;
+  background:transparent;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:750;
+}
+
+.catalog-tab.active{
+  background:var(--solid);
+  color:var(--text);
+  box-shadow:0 2px 7px rgba(0,0,0,.07);
+}
+
+.work-list{
+  height:430px;
+  min-height:360px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding-right:2px;
+  scrollbar-width:thin;
+}
+
+.work-item{
+  width:100%;
+  min-height:60px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+  padding:7px 8px 7px 10px;
+  margin-bottom:5px;
+  border:1px solid var(--line);
+  border-radius:13px;
+  background:rgba(120,120,128,.055);
+  text-align:left;
+  cursor:pointer;
+}
+
+.work-item:active{
+  transform:scale(.99);
+  background:var(--blue-soft);
+}
+
+.work-item:focus-visible{
+  outline:2px solid var(--blue);
+  outline-offset:2px;
+}
+
 .work-info{
   min-width:0;
 }
 
-.catalog-name,
 .work-name{
-  font-size:13px;
-  font-weight:700;
+  font-size:12px;
   line-height:1.2;
+  font-weight:700;
 }
 
-.catalog-meta,
 .work-meta{
   margin-top:3px;
-  font-size:10px;
   color:var(--muted);
+  font-size:9px;
+  line-height:1;
 }
 
-.catalog-price{
-  flex:0 0 auto;
+.work-price{
   color:var(--blue);
+  font-size:11px;
   font-weight:800;
+  white-space:nowrap;
+}
+
+.work-control{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  height:30px;
+  padding:2px;
+  border-radius:8px;
+  background:var(--blue-soft);
+  border:1px solid var(--line);
+}
+
+.work-control button{
+  width:25px;
+  height:25px;
+  flex:0 0 25px;
+  border-radius:6px;
+  background:var(--control-bg);
+  border:1px solid var(--line);
+  color:var(--blue);
+  font-size:17px;
+  font-weight:900;
+  display:grid;
+  place-items:center;
+  line-height:1;
+  padding:0;
+}
+
+.work-control button:active{
+  background:var(--blue);
+  color:#fff;
+}
+
+.work-control span{
+  min-width:20px;
+  text-align:center;
+  color:var(--text);
+  font-size:11px;
+  font-weight:850;
+}
+
+.catalog-footer{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding-top:8px;
+}
+
+.catalog-count{
+  color:var(--muted);
+  font-size:10px;
+}
+
+.new-work-btn{
+  min-height:35px;
+  padding:0 12px;
+  border-radius:10px;
+  background:rgba(120,120,128,.10);
+  border:1px solid var(--line);
+  color:var(--blue);
+  font-size:11px;
+  font-weight:750;
+}
+
+.form-body{
+  padding:0 14px 14px;
+  overflow-y:auto;
+}
+
+.field{
+  margin-bottom:10px;
+}
+
+.field label{
+  display:block;
+  margin:0 0 5px 2px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:700;
+}
+
+.input,
+.textarea{
+  width:100%;
+  min-height:42px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  outline:none;
+  background:rgba(120,120,128,.07);
+  color:var(--text);
+  padding:0 11px;
   font-size:13px;
 }
 
-.plus{
-  flex:0 0 auto;
-  width:31px;
-  height:31px;
-  border-radius:10px;
+.textarea{
+  min-height:70px;
+  padding:10px 11px;
+  resize:none;
+}
+
+.input:focus,
+.textarea:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px var(--blue-soft);
+}
+
+.form-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  margin-top:5px;
+}
+
+.form-btn{
+  min-height:41px;
+  border-radius:11px;
+  background:rgba(120,120,128,.09);
+  border:1px solid var(--line);
+  font-size:12px;
+  font-weight:750;
+}
+
+.form-btn.primary{
   background:var(--blue);
   color:#fff;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:19px;
-  font-weight:700;
+  border-color:var(--blue);
 }
 
-.modal-foot{
-  padding:10px 14px;
-  border-top:1px solid var(--line);
-  display:flex;
-  gap:7px;
+.form-btn.danger{
+  color:var(--red);
 }
 
-.section-title{
-  margin:14px 2px 7px;
-  color:var(--muted);
-  font-size:11px;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:.04em;
-}
-
-.price-editor{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) 120px;
-  gap:8px;
-  align-items:center;
-}
-
-.price-editor input{
-  text-align:right;
-}
-
-.profile-logo-preview{
-  width:90px;
-  height:60px;
-  border-radius:14px;
-  border:1px dashed var(--line);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
-  color:var(--muted);
-  font-size:10px;
-  margin-top:6px;
-}
-
-.profile-logo-preview img{
-  width:100%;
-  height:100%;
-  object-fit:contain;
-}
-
-.hidden{
-  display:none!important;
+.price-current{
+  margin:0 0 10px;
+  padding:10px 11px;
+  border-radius:11px;
+  background:var(--blue-soft);
+  font-size:12px;
 }
 
 .toast{
   position:fixed;
-  z-index:300;
   left:50%;
-  bottom:max(20px,env(safe-area-inset-bottom));
-  transform:translate(-50%,15px);
-  background:#222;
-  color:#fff;
-  padding:10px 14px;
-  border-radius:14px;
-  font-size:12px;
+  bottom:max(18px,env(safe-area-inset-bottom));
+  z-index:3000;
+  transform:translate(-50%,20px);
   opacity:0;
   pointer-events:none;
-  transition:.2s ease;
+  padding:9px 13px;
+  border-radius:11px;
+  background:#222;
+  color:#fff;
+  font-size:11px;
+  font-weight:650;
+  transition:.22s ease;
+  max-width:calc(100vw - 30px);
+  text-align:center;
 }
 
 .toast.show{
@@ -590,17 +783,76 @@ textarea:focus{
   transform:translate(-50%,0);
 }
 
-/* ---------------------------------------
-   PRINT
---------------------------------------- */
+/* =========================================================
+   RESPONSIVE
+========================================================= */
 
-.print-profile{
-  display:none;
+@media(max-height:700px){
+
+  .header{
+    min-height:44px;
+    margin-bottom:6px;
+  }
+
+  .brand-title{
+    font-size:20px;
+  }
+
+  .header-btn{
+    width:35px;
+    height:35px;
+    flex-basis:35px;
+  }
+
+  .main-card{
+    padding:8px;
+  }
+
+  .estimate-row{
+    flex-basis:44px;
+    min-height:44px;
+  }
+
+  .work-list{
+    height:390px;
+    min-height:330px;
+  }
 }
 
-.print-total{
-  display:none;
+@media(max-width:380px){
+
+  .estimate-row{
+    grid-template-columns:minmax(0,1fr) auto auto;
+  }
+
+  .estimate-price{
+    grid-column:2;
+    grid-row:1;
+    min-width:60px;
+  }
+
+  .qty-control{
+    grid-column:2;
+    grid-row:2;
+  }
+
+  .estimate-remove{
+    grid-column:3;
+    grid-row:1 / span 2;
+  }
+
+  .estimate-name{
+    font-size:11px;
+  }
+
+  .estimate-meta{
+    font-size:8px;
+  }
 }
+
+/* =========================================================
+   PRINT / PDF
+========================================================= */
 
 @media print{
 
@@ -611,104 +863,58 @@ textarea:focus{
 
   html,
   body{
+    width:auto;
+    height:auto;
+    min-height:0;
+    overflow:visible;
     background:#fff!important;
     color:#111!important;
-  }
-
-  body{
-    min-height:auto;
+    padding:0;
   }
 
   .app{
     width:100%;
     max-width:none;
-    min-height:auto;
-    padding:0;
+    height:auto;
+    margin:0;
   }
 
   .header{
-    padding:0 0 10px;
-    border-bottom:1px solid #ddd;
+    margin-bottom:14px;
   }
 
   .header-actions,
-  .project-card,
+  .project-bar,
   .tabs,
-  .estimate-actions,
-  .bottom-total,
-  .modal-backdrop,
+  .section-action,
+  .bottom-panel,
+  .modal,
   .toast{
     display:none!important;
   }
 
+  .main-card{
+    display:block;
+    width:100%;
+    border:0;
+    border-radius:0;
+    box-shadow:none;
+    background:#fff!important;
+    padding:0;
+  }
+
   .brand-title{
     color:#111!important;
-    font-size:21px;
   }
 
   .brand-sub{
-    color:#555!important;
-  }
-
-  .estimate-card{
-    display:block;
-    overflow:visible;
-    min-height:0;
-    box-shadow:none!important;
-    background:#fff!important;
-    border:0!important;
-  }
-
-  .estimate-head{
-    padding:10px 0;
-    border-bottom:1px solid #ddd;
-  }
-
-  .estimate-title{
-    color:#111!important;
-  }
-
-  .estimate-total-small{
-    color:#111!important;
-  }
-
-  .estimate-list{
-    overflow:visible;
-    display:block;
-  }
-
-  .estimate-row{
-    padding:7px 0;
-    border-bottom:1px solid #eee;
-    break-inside:avoid;
-  }
-
-  .estimate-name,
-  .price-main{
-    color:#111!important;
-  }
-
-  .estimate-meta,
-  .price-unit{
     color:#666!important;
-  }
-
-  .qty-btn{
-    display:none!important;
-  }
-
-  .qty-control{
-    margin-top:2px;
-  }
-
-  .qty-value{
-    color:#555!important;
   }
 
   .print-profile{
     display:block!important;
-    margin-top:10px;
-    padding-top:9px;
+    margin-top:8px;
+    padding-top:8px;
     border-top:1px solid #ddd;
     color:#111!important;
   }
@@ -716,8 +922,6 @@ textarea:focus{
   .print-profile-logo{
     max-width:90px;
     max-height:45px;
-    width:auto;
-    height:auto;
     object-fit:contain;
     display:block;
     margin-bottom:6px;
@@ -725,8 +929,8 @@ textarea:focus{
 
   .print-profile-brand{
     font-size:16px;
-    font-weight:800;
     line-height:1.2;
+    font-weight:800;
     color:#111!important;
   }
 
@@ -739,25 +943,89 @@ textarea:focus{
     line-height:1.3;
   }
 
+  .section-head{
+    margin-bottom:8px;
+    margin-top:14px;
+  }
+
+  .section-title{
+    color:#555!important;
+  }
+
+  .estimate-list{
+    display:block;
+    overflow:visible;
+    height:auto;
+    max-height:none;
+    padding:0;
+  }
+
+  .estimate-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    width:100%;
+    min-height:38px;
+    height:auto;
+    break-inside:avoid;
+    page-break-inside:avoid;
+    background:#fff!important;
+    border-color:#ddd!important;
+    color:#111!important;
+    padding:7px 8px;
+    margin-bottom:5px;
+  }
+
+  .estimate-name{
+    color:#111!important;
+  }
+
+  .estimate-meta{
+    color:#666!important;
+  }
+
+  .estimate-price{
+    color:#111!important;
+    min-width:80px;
+  }
+
+  .estimate-remove,
+  .qty-control{
+    display:none!important;
+  }
+
+  .empty{
+    color:#666!important;
+    border-color:#ccc!important;
+  }
+
   .print-total{
     display:flex!important;
-    margin-top:14px;
-    padding-top:10px;
-    border-top:2px solid #111;
-    justify-content:space-between;
     align-items:center;
+    justify-content:space-between;
+    gap:15px;
+    width:100%;
+    margin-top:18px;
+    padding:12px 14px;
+    border:1px solid #ccc;
+    border-radius:10px;
+    background:#f1f5ff!important;
+    color:#111!important;
+    break-inside:avoid;
+    page-break-inside:avoid;
   }
 
   .print-total-label{
     font-size:13px;
     font-weight:700;
-    color:#111!important;
+    color:#444!important;
   }
 
   .print-total-value{
-    font-size:19px;
+    font-size:18px;
+    line-height:1;
     font-weight:850;
     color:#111!important;
+    white-space:nowrap;
   }
 }
 </style>
@@ -767,62 +1035,63 @@ textarea:focus{
 
 <div class="app">
 
-  <header class="header">
-    <div class="brand">
-      <div id="brandTitle" class="brand-title">
-        Калькулятор сантехніка
-      </div>
+<header class="header">
 
-      <div id="brandSub" class="brand-sub">
-        Калькулятор сантехніка
-      </div>
+  <div class="brand">
 
-      <!-- Друкована інформація майстра -->
-      <div id="printProfile" class="print-profile"></div>
+    <div id="brandTitle" class="brand-title">
+      Калькулятор сантехніка
     </div>
 
-    <div class="header-actions">
-      <button
-        id="themeBtn"
-        class="icon-btn"
-        type="button"
-        aria-label="Тема"
-      >☾</button>
-
-      <button
-        id="settingsBtn"
-        class="icon-btn"
-        type="button"
-        aria-label="Налаштування"
-      >⚙︎</button>
-    </div>
-  </header>
-
-
-  <section class="project-card glass">
-
-    <div class="field">
-      <div class="field-label">Клієнт</div>
-      <input
-        id="clientInput"
-        type="text"
-        placeholder="Ім’я клієнта"
-        autocomplete="off"
-      >
+    <div id="brandSub" class="brand-sub">
+      Кошторис вартості робіт
     </div>
 
-    <div class="field">
-      <div class="field-label">Об’єкт</div>
-      <input
-        id="objectInput"
-        type="text"
-        placeholder="ЖК / адреса"
-        autocomplete="off"
-      >
-    </div>
+    <div id="printProfile" class="print-profile"></div>
 
-  </section>
+  </div>
 
+  <div class="header-actions">
+
+    <button
+      id="settingsButton"
+      class="header-btn"
+      type="button"
+      aria-label="Налаштування"
+    >⚙</button>
+
+    <button
+      id="themeButton"
+      class="header-btn"
+      type="button"
+      aria-label="Змінити тему"
+    >☾</button>
+
+  </div>
+
+</header>
+
+<main class="main-card">
+
+  <div class="project-bar">
+
+    <input
+      id="clientInput"
+      class="project-field"
+      type="text"
+      placeholder="Клієнт"
+      autocomplete="off"
+    >
+
+    <input
+      id="objectInput"
+      class="project-field"
+      type="text"
+      placeholder="Об'єкт"
+      autocomplete="off"
+    >
+
+  </div>
 
   <div class="tabs">
 
@@ -830,89 +1099,31 @@ textarea:focus{
       id="roughTab"
       class="tab active"
       type="button"
-      data-tab="rough"
-    >
-      Чорновий монтаж
-    </button>
+    >Чорнові</button>
 
     <button
       id="finishTab"
       class="tab"
       type="button"
-      data-tab="finish"
-    >
-      Чистовий монтаж
-    </button>
+    >Чистові</button>
 
   </div>
 
+  <div class="section-head">
 
-  <section class="estimate-card glass">
-
-    <div class="estimate-head">
-      <div class="estimate-title">
-        Кошторис
-      </div>
-
-      <div
-        id="estimateTotalSmall"
-        class="estimate-total-small"
-      >
-        0 ₴
-      </div>
+    <div class="section-title">
+      Додані роботи
     </div>
 
-    <div
-      id="estimateList"
-      class="estimate-list"
-    ></div>
+    <button
+      id="clearEstimateBtn"
+      class="section-action"
+      type="button"
+    >Очистити</button>
 
-    <div class="estimate-actions">
-
-      <button
-        id="newBtn"
-        class="action-btn"
-        type="button"
-      >
-        Нова робота
-      </button>
-
-      <button
-        id="pdfBtn"
-        class="action-btn primary"
-        type="button"
-      >
-        PDF кошторис
-      </button>
-
-      <button
-        id="addBtn"
-        class="action-btn secondary"
-        type="button"
-      >
-        ＋ Робота
-      </button>
-
-    </div>
-
-  </section>
-
-
-  <div class="bottom-total">
-    <div class="bottom-total-label">
-      Загальна вартість робіт
-    </div>
-
-    <div
-      id="bottomTotalValue"
-      class="bottom-total-value"
-    >
-      0 ₴
-    </div>
   </div>
 
-
-  <!-- PRINT ONLY TOTAL -->
+  <div id="estimateList" class="estimate-list"></div>
 
   <div class="print-total">
 
@@ -923,62 +1134,120 @@ textarea:focus{
     <div
       id="printTotalValue"
       class="print-total-value"
-    >
-      0 ₴
-    </div>
+    >0 ₴</div>
 
   </div>
 
+  <div class="bottom-panel">
+
+    <div class="total-box">
+
+      <div class="total-label">
+        Загальна вартість робіт
+      </div>
+
+      <div id="totalValue" class="total-value">
+        0 ₴
+      </div>
+
+    </div>
+
+    <div class="actions">
+
+      <button
+        id="newWorkButton"
+        class="action-btn"
+        type="button"
+      >＋ Нова позиція</button>
+
+      <button
+        id="printButton"
+        class="action-btn primary"
+        type="button"
+      >PDF кошторис</button>
+
+    </div>
+
+    <button
+      id="catalogOpenButton"
+      class="catalog-open"
+      type="button"
+    >＋ Додати роботу</button>
+
+  </div>
+
+</main>
+
 </div>
 
-
-<!-- =====================================================
+<!-- =======================================================
      CATALOG MODAL
-===================================================== -->
+======================================================= -->
 
 <div
   id="catalogModal"
-  class="modal-backdrop"
-  aria-hidden="true"
+  class="modal"
 >
 
-  <div class="modal">
+  <div class="sheet">
 
-    <div class="modal-head">
+    <div class="sheet-head">
 
-      <div class="modal-title">
+      <div class="sheet-title">
         Додати роботу
       </div>
 
       <button
         class="close-btn"
         type="button"
-        data-close="catalogModal"
+        data-close-modal="catalogModal"
         aria-label="Закрити"
-      >
-        ×
-      </button>
+      >×</button>
 
     </div>
 
-    <div class="modal-body">
+    <div class="catalog-body">
 
-      <div
-        id="catalogList"
-        class="catalog-list"
-      ></div>
-
-    </div>
-
-    <div class="modal-foot">
-
-      <button
-        id="customWorkBtn"
-        class="action-btn primary"
-        type="button"
+      <input
+        id="workSearch"
+        class="search"
+        type="search"
+        placeholder="Пошук: раді, бойл, уніт..."
+        autocomplete="off"
       >
-        Додати власну роботу
-      </button>
+
+      <div class="catalog-tabs">
+
+        <button
+          id="catalogRoughTab"
+          class="catalog-tab active"
+          type="button"
+        >Чорнові</button>
+
+        <button
+          id="catalogFinishTab"
+          class="catalog-tab"
+          type="button"
+        >Чистові</button>
+
+      </div>
+
+      <div id="workList" class="work-list"></div>
+
+      <div class="catalog-footer">
+
+        <div
+          id="catalogCount"
+          class="catalog-count"
+        ></div>
+
+        <button
+          id="createWorkButton"
+          class="new-work-btn"
+          type="button"
+        >＋ Створити позицію</button>
+
+      </div>
 
     </div>
 
@@ -986,96 +1255,104 @@ textarea:focus{
 
 </div>
 
-
-<!-- =====================================================
+<!-- =======================================================
      WORK MODAL
-===================================================== -->
+======================================================= -->
 
 <div
   id="workModal"
-  class="modal-backdrop"
-  aria-hidden="true"
+  class="modal"
 >
 
-  <div class="modal">
+  <div class="sheet">
 
-    <div class="modal-head">
+    <div class="sheet-head">
 
       <div
         id="workModalTitle"
-        class="modal-title"
-      >
-        Нова робота
-      </div>
+        class="sheet-title"
+      >Нова позиція</div>
 
       <button
         class="close-btn"
         type="button"
-        data-close="workModal"
+        data-close-modal="workModal"
         aria-label="Закрити"
-      >
-        ×
-      </button>
+      >×</button>
 
     </div>
 
-    <div class="modal-body">
+    <div class="form-body">
 
       <div class="field">
-        <div class="field-label">Назва роботи</div>
+
+        <label for="workName">
+          Назва роботи
+        </label>
 
         <input
           id="workName"
+          class="input"
           type="text"
-          placeholder="Наприклад: Монтаж бойлера"
+          placeholder="Наприклад, Монтаж фільтра"
         >
+
       </div>
 
-
       <div class="field">
-        <div class="field-label">Кількість</div>
+
+        <label for="workUnit">
+          Одиниця виміру
+        </label>
 
         <input
-          id="workQty"
-          type="number"
-          min="1"
-          step="1"
-          value="1"
+          id="workUnit"
+          class="input"
+          type="text"
+          placeholder="шт, компл, м.п."
         >
+
       </div>
 
-
       <div class="field">
-        <div class="field-label">Ціна за одиницю</div>
+
+        <label for="workPrice">
+          Ціна, грн
+        </label>
 
         <input
           id="workPrice"
+          class="input"
           type="number"
           min="0"
           step="1"
-          value="0"
+          placeholder="0"
         >
+
       </div>
 
-    </div>
+      <div class="form-actions">
 
-    <div class="modal-foot">
+        <button
+          id="cancelWorkButton"
+          class="form-btn"
+          type="button"
+        >Скасувати</button>
+
+        <button
+          id="saveWorkButton"
+          class="form-btn primary"
+          type="button"
+        >Зберегти</button>
+
+      </div>
 
       <button
-        id="deleteWorkBtn"
-        class="action-btn danger"
+        id="deleteWorkButton"
+        class="form-btn danger"
         type="button"
-      >
-        Видалити
-      </button>
-
-      <button
-        id="saveWorkBtn"
-        class="action-btn primary"
-        type="button"
-      >
-        Зберегти
-      </button>
+        style="display:none;width:100%;margin-top:7px"
+      >Видалити позицію</button>
 
     </div>
 
@@ -1083,56 +1360,77 @@ textarea:focus{
 
 </div>
 
-
-<!-- =====================================================
+<!-- =======================================================
      PRICE MODAL
-===================================================== -->
+======================================================= -->
 
 <div
   id="priceModal"
-  class="modal-backdrop"
-  aria-hidden="true"
+  class="modal"
 >
 
-  <div class="modal">
+  <div class="sheet">
 
-    <div class="modal-head">
+    <div class="sheet-head">
 
-      <div class="modal-title">
-        Мій прайс
+      <div class="sheet-title">
+        Ціна позиції
       </div>
 
       <button
         class="close-btn"
         type="button"
-        data-close="priceModal"
+        data-close-modal="priceModal"
         aria-label="Закрити"
-      >
-        ×
-      </button>
+      >×</button>
 
     </div>
 
-    <div class="modal-body">
-
-      <div class="section-title">
-        Чорновий монтаж
-      </div>
+    <div class="form-body">
 
       <div
-        id="roughPriceList"
-        class="work-list"
+        id="priceCurrent"
+        class="price-current"
       ></div>
 
+      <div class="field">
 
-      <div class="section-title">
-        Чистовий монтаж
+        <label for="priceInput">
+          Ціна для цього кошторису, грн
+        </label>
+
+        <input
+          id="priceInput"
+          class="input"
+          type="number"
+          min="0"
+          step="1"
+        >
+
       </div>
 
-      <div
-        id="finishPriceList"
-        class="work-list"
-      ></div>
+      <div class="form-actions">
+
+        <button
+          id="cancelPriceButton"
+          class="form-btn"
+          type="button"
+        >Скасувати</button>
+
+        <button
+          id="savePriceButton"
+          class="form-btn primary"
+          type="button"
+        >Зберегти</button>
+
+      </div>
+
+      <button
+        id="resetPriceButton"
+        class="form-btn"
+        type="button"
+        style="width:100%;margin-top:7px"
+      >Повернути базову ціну</button>
 
     </div>
 
@@ -1140,142 +1438,108 @@ textarea:focus{
 
 </div>
 
-
-<!-- =====================================================
+<!-- =======================================================
      SETTINGS MODAL
-===================================================== -->
+======================================================= -->
 
 <div
   id="settingsModal"
-  class="modal-backdrop"
-  aria-hidden="true"
+  class="modal"
 >
 
-  <div class="modal">
+  <div class="sheet">
 
-    <div class="modal-head">
+    <div class="sheet-head">
 
-      <div class="modal-title">
-        Майстер
+      <div class="sheet-title">
+        Мій профіль
       </div>
 
       <button
         class="close-btn"
         type="button"
-        data-close="settingsModal"
+        data-close-modal="settingsModal"
         aria-label="Закрити"
-      >
-        ×
-      </button>
+      >×</button>
 
     </div>
 
-    <div class="modal-body">
+    <div class="form-body">
 
       <div class="field">
 
-        <div class="field-label">
+        <label for="profileBrand">
           Назва / бренд
-        </div>
+        </label>
 
         <input
           id="profileBrand"
+          class="input"
           type="text"
-          placeholder="Наприклад: SA-MASTER.PRO"
+          placeholder="Наприклад, SA-MASTER.PRO"
         >
 
       </div>
 
-
       <div class="field">
 
-        <div class="field-label">
-          Ім’я майстра
-        </div>
+        <label for="profileName">
+          Ім'я майстра
+        </label>
 
         <input
           id="profileName"
+          class="input"
           type="text"
-          placeholder="Ім’я та прізвище"
+          placeholder="Ваше ім'я"
         >
 
       </div>
 
-
       <div class="field">
 
-        <div class="field-label">
+        <label for="profilePhone">
           Телефон
-        </div>
+        </label>
 
         <input
           id="profilePhone"
+          class="input"
           type="tel"
-          placeholder="097..."
+          placeholder="+380..."
         >
 
       </div>
 
-
       <div class="field">
 
-        <div class="field-label">
+        <label for="profileDetails">
           Додаткова інформація
-        </div>
+        </label>
 
         <textarea
           id="profileDetails"
-          placeholder="Адреса, сайт, реквізити або інша інформація"
+          class="textarea"
+          placeholder="Адреса, реквізити або інша інформація для кошторису"
         ></textarea>
 
       </div>
 
+      <div class="form-actions">
 
-      <div class="field">
+        <button
+          id="cancelSettingsButton"
+          class="form-btn"
+          type="button"
+        >Скасувати</button>
 
-        <div class="field-label">
-          Логотип
-        </div>
-
-        <input
-          id="profileLogoInput"
-          type="file"
-          accept="image/*"
-        >
-
-        <div
-          id="profileLogoPreview"
-          class="profile-logo-preview"
-        >
-          Логотип не додано
-        </div>
+        <button
+          id="saveSettingsButton"
+          class="form-btn primary"
+          type="button"
+        >Зберегти</button>
 
       </div>
-
-
-      <div class="section-title">
-        Дані використовуються у кошторисі та паспорті клієнта
-      </div>
-
-    </div>
-
-    <div class="modal-foot">
-
-      <button
-        id="openPriceBtn"
-        class="action-btn secondary"
-        type="button"
-      >
-        Мій прайс
-      </button>
-
-      <button
-        id="saveSettingsBtn"
-        class="action-btn primary"
-        type="button"
-      >
-        Зберегти
-      </button>
 
     </div>
 
@@ -1283,41 +1547,90 @@ textarea:focus{
 
 </div>
 
-
-<div
-  id="toast"
-  class="toast"
-></div>
-
+<div id="toast" class="toast"></div>
 
 <script>
-"use strict";
 
-/* =====================================================
+/* =========================================================
    PRODUCT
-===================================================== */
+========================================================= */
 
 const PRODUCT={
   name:"Калькулятор сантехніка",
-  version:7
+  version:6
 };
 
+/* =========================================================
+   DEFAULT CATALOG
+========================================================= */
 
-/* =====================================================
+const defaultDB={
+
+  rough:[
+    {id:"r1",name:"Монтаж радіатора",unit:"шт",price:2500},
+    {id:"r2",name:"Монтаж запірно-регулюючого вузла",unit:"компл",price:7000},
+    {id:"r3",name:"Монтаж гребінки",unit:"шт",price:5000},
+    {id:"r4",name:"Оздоблення технічної зони",unit:"компл",price:5000},
+    {id:"r5",name:"Врізка в каналізаційний стояк",unit:"компл",price:4000},
+    {id:"r6",name:"Монтаж вбудованого змішувача",unit:"шт",price:3000},
+    {id:"r7",name:"Монтаж інсталяції",unit:"шт",price:4000},
+    {id:"r8",name:"Монтаж душового трапа",unit:"шт",price:4000},
+    {id:"r9",name:"Монтаж вбудованого сифона",unit:"шт",price:2000},
+    {id:"r10",name:"Монтаж вуличного крана",unit:"шт",price:3000},
+    {id:"r11",name:"Монтаж виводу ВК",unit:"шт",price:1500},
+    {id:"r12",name:"Укладання труб в ізоляції",unit:"компл",price:10000},
+    {id:"r13",name:"Виготовлення штроб",unit:"компл",price:10000},
+    {id:"r14",name:"Зароблення штроб",unit:"компл",price:8000},
+    {id:"r15",name:"Заміна каналізаційного стояка",unit:"шт",price:5000},
+    {id:"r16",name:"Знешумлення каналізаційного стояка",unit:"шт",price:4000},
+    {id:"r17",name:"Монтаж конвектора",unit:"шт",price:5000},
+    {id:"r18",name:"Монтаж дизайнерського радіатора",unit:"шт",price:5000}
+  ],
+
+  finish:[
+    {id:"f1",name:"Монтаж та обв’язка бойлера",unit:"компл",price:7000},
+    {id:"f2",name:"Монтаж та обв’язка водоочистки",unit:"компл",price:10000},
+    {id:"f3",name:"Підключення ванни",unit:"шт",price:3500},
+    {id:"f4",name:"Монтаж душової системи",unit:"шт",price:3500},
+    {id:"f5",name:"Підключення умивальника",unit:"шт",price:3500},
+    {id:"f6",name:"Монтаж гігієнічного душа",unit:"шт",price:2000},
+    {id:"f7",name:"Монтаж унітазу",unit:"шт",price:4000},
+    {id:"f8",name:"Монтаж рушникосушки",unit:"шт",price:3000},
+    {id:"f9",name:"Монтаж аксесуарів",unit:"шт",price:700},
+    {id:"f10",name:"Монтаж пралки/сушки",unit:"компл",price:6000}
+  ]
+
+};
+
+/* =========================================================
+   STATE
+========================================================= */
+
+let db={
+  rough:[],
+  finish:[]
+};
+
+let estimate=[];
+let profile=null;
+
+let mainCategory="rough";
+let catalogCategory="rough";
+
+let editingWorkId=null;
+let editingWorkCategory=null;
+let editingPriceLineId=null;
+
+/* =========================================================
    HELPERS
-===================================================== */
+========================================================= */
 
-const $=id=>document.getElementById(id);
-
-function money(value){
-  const n=Number(value)||0;
-
-  return n.toLocaleString("uk-UA",{
-    maximumFractionDigits:0
-  })+" ₴";
+function $(id){
+  return document.getElementById(id);
 }
 
 function esc(value){
+
   return String(value??"")
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
@@ -1326,262 +1639,79 @@ function esc(value){
     .replace(/'/g,"&#039;");
 }
 
-function uid(prefix="id"){
-  return prefix+"_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,7);
+function money(value){
+
+  return Number(value||0)
+    .toLocaleString("uk-UA")+" ₴";
 }
 
-function toast(message){
+function uid(){
+
+  return Date.now().toString(36)+
+    Math.random().toString(36).slice(2,7);
+}
+
+function showToast(message){
 
   const el=$("toast");
 
   if(!el)return;
 
   el.textContent=message;
-
   el.classList.add("show");
 
-  clearTimeout(window.__toastTimer);
+  clearTimeout(showToast.timer);
 
-  window.__toastTimer=setTimeout(()=>{
+  showToast.timer=setTimeout(()=>{
+
     el.classList.remove("show");
-  },2200);
+
+  },1800);
 }
 
-
-/* =====================================================
-   DEFAULT CATALOG
-===================================================== */
-
-const DEFAULT_CATALOG={
-
-  rough:[
-
-    {
-      id:"r1",
-      name:"Монтаж радіатора",
-      price:2500
-    },
-
-    {
-      id:"r2",
-      name:"Монтаж запірно-регулюючого вузла",
-      price:7000
-    },
-
-    {
-      id:"r3",
-      name:"Монтаж гребінки",
-      price:5000
-    },
-
-    {
-      id:"r4",
-      name:"Оздоблення технічної зони",
-      price:5000
-    },
-
-    {
-      id:"r5",
-      name:"Врізка в каналізаційний стояк",
-      price:4000
-    },
-
-    {
-      id:"r6",
-      name:"Монтаж вбудованого змішувача",
-      price:3000
-    },
-
-    {
-      id:"r7",
-      name:"Монтаж інсталяції",
-      price:4000
-    },
-
-    {
-      id:"r8",
-      name:"Монтаж душового трапа",
-      price:4000
-    },
-
-    {
-      id:"r9",
-      name:"Монтаж вбудованого сифона",
-      price:2000
-    },
-
-    {
-      id:"r10",
-      name:"Монтаж вуличного крана",
-      price:3000
-    },
-
-    {
-      id:"r11",
-      name:"Монтаж виводу ВК",
-      price:1500
-    },
-
-    {
-      id:"r12",
-      name:"Укладання труб в ізоляції",
-      price:10000
-    },
-
-    {
-      id:"r13",
-      name:"Виготовлення штроб",
-      price:10000
-    },
-
-    {
-      id:"r14",
-      name:"Зароблення штроб",
-      price:8000
-    },
-
-    {
-      id:"r15",
-      name:"Заміна каналізаційного стояка",
-      price:5000
-    },
-
-    {
-      id:"r16",
-      name:"Знешумлення каналізаційного стояка",
-      price:4000
-    },
-
-    {
-      id:"r17",
-      name:"Монтаж конвектора",
-      price:5000
-    },
-
-    {
-      id:"r18",
-      name:"Монтаж дизайнерського радіатора",
-      price:5000
-    }
-
-  ],
-
-
-  finish:[
-
-    {
-      id:"f1",
-      name:"Монтаж та обв’язка бойлера",
-      price:7000
-    },
-
-    {
-      id:"f2",
-      name:"Монтаж та обв’язка водоочистки",
-      price:10000
-    },
-
-    {
-      id:"f3",
-      name:"Підключення ванни",
-      price:3500
-    },
-
-    {
-      id:"f4",
-      name:"Монтаж душової системи",
-      price:3500
-    },
-
-    {
-      id:"f5",
-      name:"Підключення умивальника",
-      price:3500
-    },
-
-    {
-      id:"f6",
-      name:"Монтаж гігієнічного душа",
-      price:2000
-    },
-
-    {
-      id:"f7",
-      name:"Монтаж унітазу",
-      price:4000
-    },
-
-    {
-      id:"f8",
-      name:"Монтаж рушникосушки",
-      price:3000
-    },
-
-    {
-      id:"f9",
-      name:"Монтаж аксесуарів",
-      price:700
-    },
-
-    {
-      id:"f10",
-      name:"Монтаж пралки/сушки",
-      price:6000
-    }
-
-  ]
-
-};
-
-
-/* =====================================================
+/* =========================================================
    PROFILE
-===================================================== */
+========================================================= */
 
-let profile={
-
+const defaultProfile={
   brand:"SA-MASTER.PRO",
-
   name:"Сергій Мельник",
-
   phone:"0979111871",
-
   details:"",
-
   logo:""
-
 };
-
 
 function loadProfile(){
 
   try{
 
     const raw=
-      localStorage.getItem("plumber_calc_profile");
+      localStorage.getItem(
+        "plumber_calc_profile"
+      );
 
-    if(raw){
+    if(!raw){
 
-      const saved=JSON.parse(raw);
+      localStorage.setItem(
+        "plumber_calc_profile",
+        JSON.stringify(defaultProfile)
+      );
 
-      profile={
-        ...profile,
-        ...saved
-      };
-
+      return {...defaultProfile};
     }
 
-  }catch(error){
+    const data=JSON.parse(raw);
 
-    console.warn(
-      "Не вдалося завантажити профіль",
-      error
-    );
+    return{
+      ...defaultProfile,
+      ...(data&&typeof data==="object"?data:{})
+    };
 
+  }catch{
+
+    return {...defaultProfile};
   }
-
 }
-
 
 function saveProfile(){
 
@@ -1595,18 +1725,11 @@ function saveProfile(){
   }catch(error){
 
     console.warn(
-      "Не вдалося зберегти профіль",
+      "Не вдалося зберегти профіль:",
       error
     );
-
   }
-
 }
-
-
-/* =====================================================
-   PROFILE RENDER
-===================================================== */
 
 function renderProfile(){
 
@@ -1619,11 +1742,12 @@ function renderProfile(){
       ? "Калькулятор вартості робіт"
       : "Калькулятор сантехніка";
 
+  const printProfile=
+    $("printProfile");
 
-  const printProfile=$("printProfile");
-
-  if(!printProfile)return;
-
+  if(!printProfile){
+    return;
+  }
 
   const brand=
     String(profile.brand||"").trim();
@@ -1640,9 +1764,7 @@ function renderProfile(){
   const logo=
     String(profile.logo||"").trim();
 
-
   let html="";
-
 
   if(logo){
 
@@ -1656,7 +1778,6 @@ function renderProfile(){
 
   }
 
-
   if(brand){
 
     html+=`
@@ -1666,7 +1787,6 @@ function renderProfile(){
     `;
 
   }
-
 
   if(name){
 
@@ -1678,7 +1798,6 @@ function renderProfile(){
 
   }
 
-
   if(phone){
 
     html+=`
@@ -1688,7 +1807,6 @@ function renderProfile(){
     `;
 
   }
-
 
   if(details){
 
@@ -1700,220 +1818,257 @@ function renderProfile(){
 
   }
 
-
   printProfile.innerHTML=html;
-
 }
 
-
-/* =====================================================
+/* =========================================================
    CATALOG
-===================================================== */
+========================================================= */
 
-let catalog={
-  rough:[],
-  finish:[]
-};
+function cloneDefaults(){
 
+  return{
 
-function cloneCatalog(){
+    rough:
+      defaultDB.rough.map(
+        item=>({...item})
+      ),
 
-  return JSON.parse(
-    JSON.stringify(DEFAULT_CATALOG)
-  );
+    finish:
+      defaultDB.finish.map(
+        item=>({...item})
+      )
 
+  };
 }
-
 
 function normalizeCatalog(data){
 
+  const source=
+    data&&typeof data==="object"
+      ? data
+      : {};
+
   const result={
-    rough:[],
-    finish:[]
+
+    rough:
+      Array.isArray(source.rough)
+        ? source.rough
+            .filter(Boolean)
+            .map(item=>({...item}))
+        : [],
+
+    finish:
+      Array.isArray(source.finish)
+        ? source.finish
+            .filter(Boolean)
+            .map(item=>({...item}))
+        : []
+
   };
 
+  ["rough","finish"].forEach(category=>{
 
-  ["rough","finish"].forEach(section=>{
+    defaultDB[category].forEach(defaultItem=>{
 
-    const source=
-      Array.isArray(data?.[section])
-        ? data[section]
-        : [];
+      const exists=
+        result[category].some(
+          item=>item.id===defaultItem.id
+        );
 
+      if(!exists){
 
-    result[section]=source
-      .map(item=>({
+        result[category].push({
+          ...defaultItem
+        });
 
-        id:String(item.id||uid(section)),
+      }
 
-        name:String(item.name||"Без назви"),
-
-        price:Number(item.price)||0
-
-      }))
-      .filter(item=>item.name.trim());
+    });
 
   });
 
+  result.rough=
+    result.rough.filter(
+      item=>
+        item.id!=="f4" &&
+        item.id!=="f8"
+    );
 
   return result;
-
 }
 
+function loadDB(){
 
-function loadCatalog(){
+  let stored=null;
 
   try{
 
     const raw=
-      localStorage.getItem("plumber_calc_catalog");
+      localStorage.getItem(
+        "plumber_calc_catalog"
+      );
 
     if(raw){
-
-      catalog=
-        normalizeCatalog(JSON.parse(raw));
-
-    }else{
-
-      catalog=
-        cloneCatalog();
-
+      stored=JSON.parse(raw);
     }
 
   }catch(error){
 
     console.warn(
-      "Не вдалося завантажити прайс",
+      "Помилка читання каталогу:",
       error
     );
 
-    catalog=
-      cloneCatalog();
+  }
+
+  if(
+    !stored ||
+    typeof stored!=="object"
+  ){
+
+    try{
+
+      const old=
+        localStorage.getItem(
+          "samaster_db"
+        );
+
+      if(old){
+        stored=JSON.parse(old);
+      }
+
+    }catch{}
 
   }
 
-}
-
-
-function saveCatalog(){
+  const result=
+    normalizeCatalog(stored);
 
   try{
 
     localStorage.setItem(
       "plumber_calc_catalog",
-      JSON.stringify(catalog)
+      JSON.stringify(result)
+    );
+
+  }catch{}
+
+  return result;
+}
+
+function saveDB(){
+
+  db=normalizeCatalog(db);
+
+  try{
+
+    localStorage.setItem(
+      "plumber_calc_catalog",
+      JSON.stringify(db)
     );
 
   }catch(error){
 
     console.warn(
-      "Не вдалося зберегти прайс",
+      "Помилка збереження каталогу:",
       error
     );
 
   }
-
 }
 
+function ensureCatalog(){
 
-/* =====================================================
+  db=normalizeCatalog(db);
+
+  return db;
+}
+
+/* =========================================================
    ESTIMATE
-===================================================== */
+========================================================= */
 
-let estimate=[];
+function migrateEstimate(data){
 
-let currentTab="rough";
+  if(!Array.isArray(data)){
+    return [];
+  }
 
-let editingEstimateId=null;
+  return data
+    .filter(Boolean)
+    .map(item=>({...item}))
+    .map(item=>{
 
+      if(item.workId==="r19"){
+
+        return{
+          ...item,
+          workId:"f4",
+          cat:"finish",
+          name:"Монтаж душової системи",
+          unit:item.unit||"шт"
+        };
+
+      }
+
+      if(item.workId==="r20"){
+
+        return{
+          ...item,
+          workId:"f8",
+          cat:"finish",
+          name:"Монтаж рушникосушки",
+          unit:item.unit||"шт"
+        };
+
+      }
+
+      return item;
+
+    });
+}
 
 function loadEstimate(){
+
+  let data=null;
 
   try{
 
     const raw=
-      localStorage.getItem("plumber_calc_estimate")
-      ||
-      localStorage.getItem("samaster_estimate");
+      localStorage.getItem(
+        "plumber_calc_estimate"
+      );
 
     if(raw){
-
-      const parsed=JSON.parse(raw);
-
-      if(Array.isArray(parsed)){
-
-        estimate=
-          parsed.map(normalizeEstimateItem);
-
-      }else{
-
-        estimate=[];
-
-      }
-
+      data=JSON.parse(raw);
     }
 
-  }catch(error){
+  }catch{}
 
-    console.warn(
-      "Не вдалося завантажити кошторис",
-      error
-    );
+  if(!Array.isArray(data)){
 
-    estimate=[];
+    try{
+
+      const old=
+        localStorage.getItem(
+          "samaster_estimate"
+        );
+
+      if(old){
+        data=JSON.parse(old);
+      }
+
+    }catch{}
 
   }
 
+  return migrateEstimate(
+    Array.isArray(data)
+      ? data
+      : []
+  );
 }
-
-
-function normalizeEstimateItem(item){
-
-  const basePrice=
-    Number(
-      item.basePrice ??
-      item.price ??
-      0
-    )||0;
-
-  const price=
-    Number(
-      item.price ??
-      basePrice
-    )||0;
-
-  const qty=
-    Math.max(
-      1,
-      Number(item.qty)||1
-    );
-
-
-  return {
-
-    id:String(item.id||uid("line")),
-
-    workId:item.workId
-      ? String(item.workId)
-      : null,
-
-    section:
-      item.section==="finish"
-        ? "finish"
-        : "rough",
-
-    name:String(item.name||"Без назви"),
-
-    basePrice,
-
-    price,
-
-    qty
-
-  };
-
-}
-
 
 function saveEstimate(){
 
@@ -1924,22 +2079,46 @@ function saveEstimate(){
       JSON.stringify(estimate)
     );
 
-    localStorage.setItem(
-      "samaster_estimate",
-      JSON.stringify(estimate)
-    );
+  }catch{}
 
-  }catch(error){
+  savePassportEstimate();
 
-    console.warn(
-      "Не вдалося зберегти кошторис",
-      error
-    );
+  window.dispatchEvent(
+    new CustomEvent(
+      "plumber:estimate-updated",
+      {
+        detail:{estimate}
+      }
+    )
+  );
+}
+
+function findWork(workId){
+
+  ensureCatalog();
+
+  for(
+    const category of ["rough","finish"]
+  ){
+
+    const item=
+      db[category].find(
+        work=>work.id===workId
+      );
+
+    if(item){
+
+      return{
+        ...item,
+        cat:category
+      };
+
+    }
 
   }
 
+  return null;
 }
-
 
 function getEstimateTotal(){
 
@@ -1947,87 +2126,85 @@ function getEstimateTotal(){
     (sum,item)=>
       sum+
       Number(item.price||0)*
-      Number(item.qty||1),
+      Number(item.qty||0),
     0
   );
-
 }
 
-
-function getSectionTotal(section){
-
-  return estimate
-    .filter(item=>item.section===section)
-    .reduce(
-      (sum,item)=>
-        sum+
-        Number(item.price||0)*
-        Number(item.qty||1),
-      0
-    );
-
-}
-
-
-/* =====================================================
-   PROJECT DATA
-===================================================== */
-
-function saveProject(){
-
-  try{
-
-    const project={
-
-      client:$("clientInput").value.trim(),
-
-      object:$("objectInput").value.trim()
-
-    };
-
-    localStorage.setItem(
-      "plumber_calc_project",
-      JSON.stringify(project)
-    );
-
-  }catch(error){
-
-    console.warn(error);
-
-  }
-
-}
-
+/* =========================================================
+   PROJECT
+========================================================= */
 
 function loadProject(){
 
   try{
 
     const raw=
-      localStorage.getItem("plumber_calc_project");
+      localStorage.getItem(
+        "plumber_calc_project"
+      );
 
-    if(!raw)return;
+    if(!raw){
 
-    const project=JSON.parse(raw)||{};
+      return{
+        client:"",
+        object:""
+      };
 
-    $("clientInput").value=
-      project.client||"";
+    }
 
-    $("objectInput").value=
-      project.object||"";
+    const data=JSON.parse(raw);
 
-  }catch(error){
+    return{
+      client:"",
+      object:"",
+      ...(data&&typeof data==="object"?data:{})
+    };
 
-    console.warn(error);
+  }catch{
+
+    return{
+      client:"",
+      object:""
+    };
 
   }
-
 }
 
+let project=loadProject();
 
-/* =====================================================
-   ESTIMATE ID
-===================================================== */
+function updateProject(){
+
+  project.client=
+    $("clientInput").value.trim();
+
+  project.object=
+    $("objectInput").value.trim();
+
+  try{
+
+    localStorage.setItem(
+      "plumber_calc_project",
+      JSON.stringify(project)
+    );
+
+  }catch{}
+
+  savePassportEstimate();
+}
+
+function renderProject(){
+
+  $("clientInput").value=
+    project.client||"";
+
+  $("objectInput").value=
+    project.object||"";
+}
+
+/* =========================================================
+   PASSPORT
+========================================================= */
 
 function getEstimateId(){
 
@@ -2038,7 +2215,11 @@ function getEstimateId(){
 
   if(!id){
 
-    id=uid("estimate");
+    id=
+      "PL-"+
+      Date.now()
+        .toString(36)
+        .toUpperCase();
 
     localStorage.setItem(
       "plumber_calc_estimate_id",
@@ -2048,11 +2229,9 @@ function getEstimateId(){
   }
 
   return id;
-
 }
 
-
-function getEstimateCreated(){
+function getCreatedAt(){
 
   let value=
     localStorage.getItem(
@@ -2072,34 +2251,31 @@ function getEstimateCreated(){
   }
 
   return value;
-
 }
 
+function savePassportEstimate(){
 
-/* =====================================================
-   PASSPORT
-===================================================== */
+  if(!profile){
+    return;
+  }
 
-function buildPassport(){
+  const passport={
 
-  return {
+    type:"plumber-estimate",
 
-    product:{
-      name:PRODUCT.name,
-      version:PRODUCT.version
-    },
+    version:3,
+
+    product:PRODUCT.name,
 
     estimateId:getEstimateId(),
 
-    createdAt:getEstimateCreated(),
+    createdAt:getCreatedAt(),
 
-    client:{
-      name:$("clientInput").value.trim()
-    },
+    updatedAt:new Date().toISOString(),
 
-    object:{
-      address:$("objectInput").value.trim()
-    },
+    status:"draft",
+
+    currency:"UAH",
 
     master:{
       brand:profile.brand||"",
@@ -2109,45 +2285,47 @@ function buildPassport(){
       logo:profile.logo||""
     },
 
-    estimate:estimate.map(item=>({
+    client:project.client||"",
 
-      id:item.id,
+    object:project.object||"",
 
-      workId:item.workId,
+    total:getEstimateTotal(),
 
-      section:item.section,
+    itemCount:
+      estimate.reduce(
+        (sum,item)=>
+          sum+Number(item.qty||0),
+        0
+      ),
 
-      name:item.name,
+    items:
+      estimate.map(item=>({
 
-      basePrice:Number(item.basePrice)||0,
+        id:item.lineId,
 
-      price:Number(item.price)||0,
+        workId:item.workId,
 
-      qty:Number(item.qty)||1,
+        name:item.name,
 
-      total:
-        (Number(item.price)||0)*
-        (Number(item.qty)||1)
+        category:item.cat,
 
-    })),
+        unit:item.unit,
 
-    totals:{
-      rough:getSectionTotal("rough"),
-      finish:getSectionTotal("finish"),
-      total:getEstimateTotal()
-    }
+        quantity:Number(item.qty||0),
+
+        basePrice:Number(item.basePrice||0),
+
+        price:Number(item.price||0),
+
+        total:
+          Number(item.price||0)*
+          Number(item.qty||0)
+
+      }))
 
   };
 
-}
-
-
-function savePassportEstimate(){
-
   try{
-
-    const passport=
-      buildPassport();
 
     localStorage.setItem(
       "plumber_calc_passport",
@@ -2159,173 +2337,198 @@ function savePassportEstimate(){
       JSON.stringify(passport)
     );
 
-  }catch(error){
-
-    console.warn(
-      "Не вдалося зберегти паспорт",
-      error
-    );
-
-  }
+  }catch{}
 
 }
 
+/* =========================================================
+   MAIN CATEGORY
+========================================================= */
 
-/* =====================================================
-   RENDER ESTIMATE
-===================================================== */
+function setMainCategory(category){
+
+  mainCategory=
+    category==="finish"
+      ? "finish"
+      : "rough";
+
+  $("roughTab")
+    .classList.toggle(
+      "active",
+      mainCategory==="rough"
+    );
+
+  $("finishTab")
+    .classList.toggle(
+      "active",
+      mainCategory==="finish"
+    );
+
+  renderEstimate();
+}
+
+/* =========================================================
+   ESTIMATE RENDER
+========================================================= */
 
 function renderEstimate(){
 
-  const list=$("estimateList");
+  const list=
+    $("estimateList");
 
-  if(!list)return;
+  if(!list){
+    return;
+  }
 
+  const items=
+    estimate.filter(
+      item=>item.cat===mainCategory
+    );
 
-  if(!estimate.length){
+  if(!items.length){
 
     list.innerHTML=`
       <div class="empty">
-        Додайте роботи до кошторису
+        У цій категорії ще немає доданих робіт
       </div>
     `;
 
   }else{
 
     list.innerHTML=
-      estimate.map(item=>{
+      items.map(item=>{
 
         const total=
           Number(item.price||0)*
-          Number(item.qty||1);
+          Number(item.qty||0);
 
+        return`
 
-        return `
-          <div
-            class="estimate-row"
-            data-estimate-id="${esc(item.id)}"
-          >
+          <div class="estimate-row">
 
-            <div class="estimate-main">
+            <div
+              class="estimate-info"
+              data-price-line="${esc(item.lineId)}"
+            >
 
               <div class="estimate-name">
                 ${esc(item.name)}
               </div>
 
               <div class="estimate-meta">
-                ${
-                  item.section==="finish"
-                    ? "Чистовий"
-                    : "Чорновий"
-                }
-
+                ${esc(item.unit)}
                 ·
-
-                ${money(item.price)} / од.
+                ${money(item.price)}
+                / ${esc(item.unit)}
               </div>
 
             </div>
 
+            <div class="qty-control">
+
+              <button
+                class="qty-btn"
+                type="button"
+                data-qty-line="${esc(item.lineId)}"
+                data-qty-delta="-1"
+                aria-label="Зменшити"
+              >−</button>
+
+              <div class="qty-value">
+                ${Number(item.qty||0)}
+              </div>
+
+              <button
+                class="qty-btn"
+                type="button"
+                data-qty-line="${esc(item.lineId)}"
+                data-qty-delta="1"
+                aria-label="Збільшити"
+              >+</button>
+
+            </div>
 
             <div class="estimate-price">
-
-              <div class="price-main">
-                ${money(total)}
-              </div>
-
-              <div class="qty-control">
-
-                <button
-                  type="button"
-                  class="qty-btn"
-                  data-qty-minus="${esc(item.id)}"
-                  aria-label="Зменшити"
-                >
-                  −
-                </button>
-
-                <div class="qty-value">
-                  ${item.qty}
-                </div>
-
-                <button
-                  type="button"
-                  class="qty-btn"
-                  data-qty-plus="${esc(item.id)}"
-                  aria-label="Збільшити"
-                >
-                  +
-                </button>
-
-              </div>
-
+              ${money(total)}
             </div>
 
+            <button
+              class="estimate-remove"
+              type="button"
+              data-remove-line="${esc(item.lineId)}"
+              aria-label="Видалити позицію"
+            >×</button>
+
           </div>
+
         `;
 
       }).join("");
 
   }
 
-
   const total=
     getEstimateTotal();
 
-
-  $("estimateTotalSmall").textContent=
+  $("totalValue").textContent=
     money(total);
 
-  $("bottomTotalValue").textContent=
+  $("printTotalValue").textContent=
     money(total);
 
-
-  saveEstimate();
-
+  $("clearEstimateBtn").style.visibility=
+    estimate.length
+      ? "visible"
+      : "hidden";
 }
 
+/* =========================================================
+   ADD / QUANTITY / REMOVE
+========================================================= */
 
-/* =====================================================
-   ADD CATALOG WORK
-===================================================== */
+function addWork(workId){
 
-function addCatalogWork(section,id){
+  ensureCatalog();
 
   const item=
-    catalog[section].find(
-      work=>work.id===id
+    findWork(workId);
+
+  if(!item){
+
+    showToast(
+      "Позицію не знайдено"
     );
 
-  if(!item)return;
-
+    return;
+  }
 
   const existing=
     estimate.find(
-      line=>
-        line.workId===item.id &&
-        line.section===section
+      line=>line.workId===workId
     );
-
 
   if(existing){
 
-    existing.qty+=1;
+    existing.qty=
+      Number(existing.qty||0)+1;
 
   }else{
 
     estimate.push({
 
-      id:uid("line"),
+      lineId:uid(),
 
       workId:item.id,
 
-      section,
-
       name:item.name,
 
-      basePrice:Number(item.price)||0,
+      unit:item.unit,
 
-      price:Number(item.price)||0,
+      cat:item.cat,
+
+      basePrice:Number(item.price||0),
+
+      price:Number(item.price||0),
 
       qty:1
 
@@ -2333,274 +2536,649 @@ function addCatalogWork(section,id){
 
   }
 
+  saveEstimate();
+
+  renderEstimate();
+  renderAddWorkList();
+
+  showToast("Позицію додано");
+}
+
+function changeQty(lineId,delta){
+
+  const item=
+    estimate.find(
+      line=>line.lineId===lineId
+    );
+
+  if(!item){
+    return;
+  }
+
+  item.qty=
+    Number(item.qty||0)+
+    Number(delta||0);
+
+  if(item.qty<=0){
+
+    estimate=
+      estimate.filter(
+        line=>line.lineId!==lineId
+      );
+
+  }
 
   saveEstimate();
 
   renderEstimate();
-
-  closeModal("catalogModal");
-
+  renderAddWorkList();
 }
 
+function removeEstimateLine(lineId){
 
-/* =====================================================
-   CUSTOM WORK
-===================================================== */
+  const exists=
+    estimate.some(
+      line=>line.lineId===lineId
+    );
 
-function openNewWork(){
+  if(!exists){
+    return;
+  }
 
-  editingEstimateId=null;
+  estimate=
+    estimate.filter(
+      line=>line.lineId!==lineId
+    );
+
+  saveEstimate();
+
+  renderEstimate();
+  renderAddWorkList();
+
+  showToast("Позицію видалено");
+}
+
+/* =========================================================
+   CLEAR
+========================================================= */
+
+function clearEstimate(){
+
+  if(!estimate.length){
+    return;
+  }
+
+  if(
+    !confirm(
+      "Очистити весь кошторис?"
+    )
+  ){
+    return;
+  }
+
+  estimate=[];
+
+  localStorage.removeItem(
+    "plumber_calc_estimate_id"
+  );
+
+  localStorage.removeItem(
+    "plumber_calc_estimate_created"
+  );
+
+  saveEstimate();
+
+  renderEstimate();
+  renderAddWorkList();
+
+  showToast("Кошторис очищено");
+}
+
+/* =========================================================
+   CATALOG
+========================================================= */
+
+function openCatalog(){
+
+  ensureCatalog();
+
+  catalogCategory=
+    mainCategory==="finish"
+      ? "finish"
+      : "rough";
+
+  $("workSearch").value="";
+
+  updateCatalogTabs();
+
+  renderAddWorkList();
+
+  openModal("catalogModal");
+
+  setTimeout(()=>{
+
+    $("workSearch").focus();
+
+  },100);
+}
+
+function setCatalogCategory(category){
+
+  catalogCategory=
+    category==="finish"
+      ? "finish"
+      : "rough";
+
+  updateCatalogTabs();
+  renderAddWorkList();
+}
+
+function updateCatalogTabs(){
+
+  $("catalogRoughTab")
+    .classList.toggle(
+      "active",
+      catalogCategory==="rough"
+    );
+
+  $("catalogFinishTab")
+    .classList.toggle(
+      "active",
+      catalogCategory==="finish"
+    );
+}
+
+function renderAddWorkList(){
+
+  const list=
+    $("workList");
+
+  if(!list){
+    return;
+  }
+
+  ensureCatalog();
+
+  const query=
+    String(
+      $("workSearch")?.value||""
+    )
+      .trim()
+      .toLowerCase();
+
+  const source=
+    Array.isArray(db[catalogCategory])
+      ? db[catalogCategory]
+      : [];
+
+  const filtered=
+    source.filter(item=>{
+
+      if(!item){
+        return false;
+      }
+
+      if(!query){
+        return true;
+      }
+
+      const name=
+        String(item.name||"")
+          .toLowerCase();
+
+      const unit=
+        String(item.unit||"")
+          .toLowerCase();
+
+      return(
+        name.includes(query)||
+        unit.includes(query)
+      );
+
+    });
+
+  $("catalogCount").textContent=
+    `${filtered.length} позицій`;
+
+  if(!filtered.length){
+
+    list.innerHTML=`
+      <div class="empty">
+        Нічого не знайдено
+      </div>
+    `;
+
+    return;
+  }
+
+  list.innerHTML=
+    filtered
+      .map(renderAddWorkItem)
+      .join("");
+}
+
+function renderAddWorkItem(item){
+
+  const existing=
+    estimate.find(
+      line=>line.workId===item.id
+    );
+
+  let controls="";
+
+  if(existing){
+
+    controls=`
+
+      <div class="work-control">
+
+        <button
+          type="button"
+          data-qty-line="${esc(existing.lineId)}"
+          data-qty-delta="-1"
+          aria-label="Зменшити"
+        >−</button>
+
+        <span>
+          ${Number(existing.qty||0)}
+        </span>
+
+        <button
+          type="button"
+          data-qty-line="${esc(existing.lineId)}"
+          data-qty-delta="1"
+          aria-label="Збільшити"
+        >+</button>
+
+      </div>
+
+    `;
+
+  }else{
+
+    controls=`
+
+      <div class="work-price">
+        ${money(item.price)}
+      </div>
+
+    `;
+
+  }
+
+  return`
+
+    <div
+      class="work-item"
+      data-add-work="${esc(item.id)}"
+      data-edit-work="${esc(item.id)}"
+      role="button"
+      tabindex="0"
+    >
+
+      <div class="work-info">
+
+        <div class="work-name">
+          ${esc(item.name)}
+        </div>
+
+        <div class="work-meta">
+          ${esc(item.unit)}
+        </div>
+
+      </div>
+
+      ${controls}
+
+    </div>
+
+  `;
+}
+
+/* =========================================================
+   WORK MODAL
+========================================================= */
+
+function openNewWorkModal(){
+
+  editingWorkId=null;
+
+  editingWorkCategory=
+    $("catalogModal").classList.contains("show")
+      ? catalogCategory
+      : mainCategory;
 
   $("workModalTitle").textContent=
-    "Нова робота";
+    "Нова позиція";
 
   $("workName").value="";
+  $("workUnit").value="";
+  $("workPrice").value="";
 
-  $("workQty").value="1";
-
-  $("workPrice").value="0";
-
-  $("deleteWorkBtn").classList.add("hidden");
+  $("deleteWorkButton").style.display=
+    "none";
 
   openModal("workModal");
 
+  setTimeout(()=>{
+
+    $("workName").focus();
+
+  },100);
 }
 
-
-function openEditWork(id){
+function openEditWorkModal(workId){
 
   const item=
-    estimate.find(
-      line=>line.id===id
-    );
+    findWork(workId);
 
-  if(!item)return;
+  if(!item){
+    return;
+  }
 
-
-  editingEstimateId=id;
+  editingWorkId=item.id;
+  editingWorkCategory=item.cat;
 
   $("workModalTitle").textContent=
-    "Редагувати роботу";
+    "Редагувати позицію";
 
   $("workName").value=
     item.name;
 
-  $("workQty").value=
-    item.qty;
+  $("workUnit").value=
+    item.unit;
 
   $("workPrice").value=
     item.price;
 
-  $("deleteWorkBtn").classList.remove("hidden");
+  $("deleteWorkButton").style.display=
+    "block";
 
   openModal("workModal");
-
 }
-
 
 function saveWork(){
 
   const name=
     $("workName").value.trim();
 
-  const qty=
-    Math.max(
-      1,
-      Number($("workQty").value)||1
-    );
+  const unit=
+    $("workUnit").value.trim();
 
   const price=
-    Math.max(
-      0,
-      Number($("workPrice").value)||0
-    );
-
+    Number($("workPrice").value);
 
   if(!name){
 
-    toast("Вкажіть назву роботи");
+    showToast(
+      "Вкажіть назву роботи"
+    );
 
     return;
-
   }
 
+  if(!unit){
 
-  if(editingEstimateId){
+    showToast(
+      "Вкажіть одиницю"
+    );
+
+    return;
+  }
+
+  if(
+    !Number.isFinite(price)||
+    price<0
+  ){
+
+    showToast(
+      "Вкажіть коректну ціну"
+    );
+
+    return;
+  }
+
+  if(editingWorkId){
 
     const item=
-      estimate.find(
-        line=>
-          line.id===editingEstimateId
-      );
+      findWork(editingWorkId);
 
-    if(item){
+    if(!item){
+      return;
+    }
 
-      item.name=name;
+    item.name=name;
+    item.unit=unit;
+    item.price=price;
 
-      item.qty=qty;
+    estimate.forEach(line=>{
 
-      item.price=price;
+      if(line.workId===item.id){
 
-      if(item.basePrice===undefined){
-
-        item.basePrice=price;
+        line.name=name;
+        line.unit=unit;
+        line.basePrice=price;
 
       }
 
-    }
-
-  }else{
-
-    estimate.push({
-
-      id:uid("line"),
-
-      workId:null,
-
-      section:currentTab,
-
-      name,
-
-      basePrice:price,
-
-      price,
-
-      qty
-
     });
 
+    saveDB();
+    saveEstimate();
+
+    closeModal("workModal");
+
+    renderEstimate();
+    renderAddWorkList();
+
+    showToast(
+      "Позицію оновлено"
+    );
+
+    return;
   }
 
+  ensureCatalog();
 
-  saveEstimate();
+  const category=
+    editingWorkCategory==="finish"
+      ? "finish"
+      : "rough";
 
-  renderEstimate();
+  db[category].push({
+
+    id:
+      category+"-"+uid(),
+
+    name,
+    unit,
+    price
+
+  });
+
+  saveDB();
 
   closeModal("workModal");
 
-}
+  renderAddWorkList();
 
+  showToast(
+    "Позицію створено"
+  );
+}
 
 function deleteCurrentWork(){
 
-  if(!editingEstimateId)return;
+  if(!editingWorkId){
+    return;
+  }
 
+  deleteWork(editingWorkId);
+}
+
+function deleteWork(workId){
+
+  const item=
+    findWork(workId);
+
+  if(!item){
+    return;
+  }
+
+  if(
+    !confirm(
+      `Видалити "${item.name}" з каталогу?`
+    )
+  ){
+    return;
+  }
+
+  db[item.cat]=
+    db[item.cat].filter(
+      work=>work.id!==workId
+    );
 
   estimate=
     estimate.filter(
-      item=>item.id!==editingEstimateId
+      line=>line.workId!==workId
     );
 
+  saveDB();
+  saveEstimate();
+
+  closeModal("workModal");
+
+  renderEstimate();
+  renderAddWorkList();
+
+  showToast(
+    "Позицію видалено"
+  );
+}
+
+/* =========================================================
+   PRICE
+========================================================= */
+
+function openPriceModal(lineId){
+
+  const item=
+    estimate.find(
+      line=>line.lineId===lineId
+    );
+
+  if(!item){
+    return;
+  }
+
+  editingPriceLineId=lineId;
+
+  $("priceCurrent").innerHTML=`
+
+    <strong>
+      ${esc(item.name)}
+    </strong>
+
+    <br>
+
+    <span style="color:var(--muted)">
+      Базова ціна:
+      ${money(item.basePrice)}
+    </span>
+
+  `;
+
+  $("priceInput").value=
+    item.price;
+
+  openModal("priceModal");
+
+  setTimeout(()=>{
+
+    $("priceInput").focus();
+    $("priceInput").select();
+
+  },100);
+}
+
+function savePrice(){
+
+  if(!editingPriceLineId){
+    return;
+  }
+
+  const item=
+    estimate.find(
+      line=>line.lineId===editingPriceLineId
+    );
+
+  if(!item){
+    return;
+  }
+
+  const price=
+    Number($("priceInput").value);
+
+  if(
+    !Number.isFinite(price)||
+    price<0
+  ){
+
+    showToast(
+      "Вкажіть коректну ціну"
+    );
+
+    return;
+  }
+
+  item.price=price;
+
+  saveEstimate();
+
+  closeModal("priceModal");
+
+  renderEstimate();
+
+  showToast(
+    "Ціну змінено"
+  );
+}
+
+function resetPriceToBase(){
+
+  if(!editingPriceLineId){
+    return;
+  }
+
+  const item=
+    estimate.find(
+      line=>line.lineId===editingPriceLineId
+    );
+
+  if(!item){
+    return;
+  }
+
+  item.price=
+    Number(item.basePrice||0);
+
+  $("priceInput").value=
+    item.price;
 
   saveEstimate();
 
   renderEstimate();
 
-  closeModal("workModal");
-
+  showToast(
+    "Повернуто базову ціну"
+  );
 }
 
-
-/* =====================================================
-   PRICE EDITOR
-===================================================== */
-
-function renderPriceList(section){
-
-  const target=
-    section==="rough"
-      ? $("roughPriceList")
-      : $("finishPriceList");
-
-
-  if(!target)return;
-
-
-  target.innerHTML=
-    catalog[section].map(item=>`
-
-      <div
-        class="work-row"
-        data-price-id="${esc(item.id)}"
-        data-price-section="${esc(section)}"
-      >
-
-        <div class="work-info">
-
-          <div class="work-name">
-            ${esc(item.name)}
-          </div>
-
-          <div class="work-meta">
-            Базова ціна
-          </div>
-
-        </div>
-
-
-        <div class="price-editor">
-
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value="${Number(item.price)||0}"
-            data-price-input="${esc(item.id)}"
-            data-price-section="${esc(section)}"
-          >
-
-        </div>
-
-      </div>
-
-    `).join("");
-
-}
-
-
-function renderPriceModal(){
-
-  renderPriceList("rough");
-
-  renderPriceList("finish");
-
-}
-
-
-function updateCatalogPrice(section,id,value){
-
-  const item=
-    catalog[section].find(
-      work=>work.id===id
-    );
-
-  if(!item)return;
-
-
-  item.price=
-    Math.max(
-      0,
-      Number(value)||0
-    );
-
-
-  saveCatalog();
-
-
-  /*
-    Важливо:
-    існуючі позиції кошторису не змінюємо.
-    Новий прайс застосовується до нових додавань.
-  */
-
-}
-
-
-/* =====================================================
+/* =========================================================
    SETTINGS
-===================================================== */
+========================================================= */
 
-function renderSettings(){
+function openSettings(){
 
   $("profileBrand").value=
     profile.brand||"";
@@ -2614,393 +3192,137 @@ function renderSettings(){
   $("profileDetails").value=
     profile.details||"";
 
-
-  renderLogoPreview();
-
+  openModal("settingsModal");
 }
-
-
-function renderLogoPreview(){
-
-  const preview=
-    $("profileLogoPreview");
-
-  if(!preview)return;
-
-
-  if(profile.logo){
-
-    preview.innerHTML=`
-      <img
-        src="${esc(profile.logo)}"
-        alt=""
-      >
-    `;
-
-  }else{
-
-    preview.textContent=
-      "Логотип не додано";
-
-  }
-
-}
-
 
 function saveSettings(){
 
-  profile.brand=
-    $("profileBrand").value.trim();
+  profile={
 
-  profile.name=
-    $("profileName").value.trim();
+    ...profile,
 
-  profile.phone=
-    $("profilePhone").value.trim();
+    brand:
+      $("profileBrand").value.trim(),
 
-  profile.details=
-    $("profileDetails").value.trim();
+    name:
+      $("profileName").value.trim(),
 
+    phone:
+      $("profilePhone").value.trim(),
 
-  saveProfile();
-
-  renderProfile();
-
-  savePassportEstimate();
-
-  closeModal("settingsModal");
-
-  toast("Профіль збережено");
-
-}
-
-
-/* =====================================================
-   LOGO
-===================================================== */
-
-function handleLogoUpload(event){
-
-  const file=
-    event.target.files?.[0];
-
-  if(!file)return;
-
-
-  if(!file.type.startsWith("image/")){
-
-    toast("Оберіть зображення");
-
-    return;
-
-  }
-
-
-  const reader=
-    new FileReader();
-
-
-  reader.onload=()=>{
-
-    profile.logo=
-      String(reader.result||"");
-
-    renderLogoPreview();
+    details:
+      $("profileDetails").value.trim()
 
   };
 
-
-  reader.readAsDataURL(file);
-
-}
-
-
-/* =====================================================
-   MODALS
-===================================================== */
-
-function openModal(id){
-
-  const modal=$(id);
-
-  if(!modal)return;
-
-  modal.classList.add("show");
-
-  modal.setAttribute(
-    "aria-hidden",
-    "false"
-  );
-
-  document.body.style.overflow="hidden";
-
-}
-
-
-function closeModal(id){
-
-  const modal=$(id);
-
-  if(!modal)return;
-
-  modal.classList.remove("show");
-
-  modal.setAttribute(
-    "aria-hidden",
-    "true"
-  );
-
-  const opened=
-    document.querySelector(
-      ".modal-backdrop.show"
-    );
-
-  if(!opened){
-
-    document.body.style.overflow="";
-
-  }
-
-}
-
-
-/* =====================================================
-   THEME
-===================================================== */
-
-function loadTheme(){
-
-  const theme=
-    localStorage.getItem(
-      "plumber_calc_theme"
-    );
-
-
-  if(theme==="dark"){
-
-    document.documentElement.classList.add(
-      "dark"
-    );
-
-  }
-
-
-  updateThemeButton();
-
-}
-
-
-function saveTheme(){
-
-  localStorage.setItem(
-    "plumber_calc_theme",
-    document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light"
-  );
-
-}
-
-
-function updateThemeButton(){
-
-  $("themeBtn").textContent=
-    document.documentElement.classList.contains("dark")
-      ? "☀︎"
-      : "☾";
-
-}
-
-
-function toggleTheme(){
-
-  document.documentElement.classList.toggle(
-    "dark"
-  );
-
-  saveTheme();
-
-  updateThemeButton();
-
-}
-
-
-/* =====================================================
-   TABS
-===================================================== */
-
-function setTab(tab){
-
-  currentTab=
-    tab==="finish"
-      ? "finish"
-      : "rough";
-
-
-  $("roughTab").classList.toggle(
-    "active",
-    currentTab==="rough"
-  );
-
-  $("finishTab").classList.toggle(
-    "active",
-    currentTab==="finish"
-  );
-
-}
-
-
-/* =====================================================
-   PRINT / PDF
-===================================================== */
-
-function printEstimate(){
-
-  saveProject();
-
-  saveEstimate();
+  saveProfile();
 
   savePassportEstimate();
 
+  renderProfile();
+
+  closeModal("settingsModal");
+
+  showToast(
+    "Профіль збережено"
+  );
+}
+
+/* =========================================================
+   PDF
+========================================================= */
+
+function printEstimate(){
+
+  if(!estimate.length){
+
+    showToast(
+      "Спочатку додайте роботи"
+    );
+
+    return;
+  }
+
+  renderProfile();
 
   const total=
     getEstimateTotal();
 
-
   $("printTotalValue").textContent=
     money(total);
 
-
-  /*
-    Дуже важливо:
-    перед window.print() ще раз оновлюємо
-    друкований профіль.
-
-    Це гарантує, що PDF бере актуальні
-    дані з "Майстер", а не старий текст.
-  */
-
-  renderProfile();
-
-
-  /*
-    Дамо браузеру один кадр для оновлення
-    DOM перед викликом системного друку.
-  */
+  savePassportEstimate();
 
   requestAnimationFrame(()=>{
 
-    requestAnimationFrame(()=>{
-
-      window.print();
-
-    });
+    window.print();
 
   });
-
 }
 
-
-/* =====================================================
-   NEW ESTIMATE
-===================================================== */
-
-function newEstimate(){
-
-  const hasData=
-    estimate.length>0 ||
-    $("clientInput").value.trim() ||
-    $("objectInput").value.trim();
-
-
-  if(
-    hasData &&
-    !confirm("Створити новий кошторис?")
-  ){
-
-    return;
-
-  }
-
-
-  estimate=[];
-
-  $("clientInput").value="";
-
-  $("objectInput").value="";
-
-
-  const id=
-    uid("estimate");
-
-
-  localStorage.setItem(
-    "plumber_calc_estimate_id",
-    id
-  );
-
-
-  localStorage.setItem(
-    "plumber_calc_estimate_created",
-    new Date().toISOString()
-  );
-
-
-  saveEstimate();
-
-  saveProject();
-
-  renderEstimate();
-
-  toast("Створено новий кошторис");
-
-}
-
-
-/* =====================================================
-   EXPORT JSON
-===================================================== */
+/* =========================================================
+   JSON
+========================================================= */
 
 function exportJSON(){
 
   const data={
 
-    product:{
-      name:PRODUCT.name,
-      version:PRODUCT.version
-    },
+    type:"plumber-estimate",
+
+    version:3,
+
+    product:PRODUCT.name,
+
+    estimateId:getEstimateId(),
+
+    createdAt:getCreatedAt(),
+
+    exportedAt:
+      new Date().toISOString(),
 
     master:{
       ...profile
     },
 
-    project:{
-      client:$("clientInput").value.trim(),
-      object:$("objectInput").value.trim()
-    },
+    client:
+      project.client||"",
 
-    estimateId:getEstimateId(),
+    object:
+      project.object||"",
 
-    createdAt:getEstimateCreated(),
+    total:
+      getEstimateTotal(),
 
-    estimate:estimate.map(item=>({
+    items:
+      estimate.map(item=>({
 
-      ...item,
+        id:item.lineId,
 
-      total:
-        Number(item.price||0)*
-        Number(item.qty||1)
+        workId:item.workId,
 
-    })),
+        name:item.name,
 
-    totals:{
-      rough:getSectionTotal("rough"),
-      finish:getSectionTotal("finish"),
-      total:getEstimateTotal()
-    }
+        category:item.cat,
+
+        unit:item.unit,
+
+        quantity:
+          Number(item.qty||0),
+
+        basePrice:
+          Number(item.basePrice||0),
+
+        price:
+          Number(item.price||0),
+
+        total:
+          Number(item.price||0)*
+          Number(item.qty||0)
+
+      }))
 
   };
-
 
   const blob=
     new Blob(
@@ -3012,22 +3334,19 @@ function exportJSON(){
         )
       ],
       {
-        type:"application/json"
+        type:
+          "application/json;charset=utf-8"
       }
     );
 
-
   const url=
     URL.createObjectURL(blob);
-
 
   const a=
     document.createElement("a");
 
   a.href=url;
-
-  a.download=
-    "koshtorys-santekhnik.json";
+  a.download="plumber-estimate.json";
 
   document.body.appendChild(a);
 
@@ -3037,452 +3356,259 @@ function exportJSON(){
 
   URL.revokeObjectURL(url);
 
+  showToast(
+    "JSON експортовано"
+  );
 }
 
+/* =========================================================
+   MODALS
+========================================================= */
 
-/* =====================================================
-   EVENT: ESTIMATE
-===================================================== */
+function openModal(id){
 
-$("estimateList").addEventListener(
+  const modal=$(id);
+
+  if(modal){
+
+    modal.classList.add("show");
+
+  }
+}
+
+function closeModal(id){
+
+  const modal=$(id);
+
+  if(modal){
+
+    modal.classList.remove("show");
+
+  }
+}
+
+function closeAllModals(){
+
+  document
+    .querySelectorAll(".modal.show")
+    .forEach(modal=>{
+
+      modal.classList.remove("show");
+
+    });
+
+}
+
+/* =========================================================
+   EVENT DELEGATION
+   УСІ ДИНАМІЧНІ КНОПКИ ТУТ
+========================================================= */
+
+document.addEventListener(
   "click",
-  event=>{
+  function(event){
 
-    const plus=
+    /* -----------------------------------------
+       Закриття модалки
+    ----------------------------------------- */
+
+    const closeButton=
       event.target.closest(
-        "[data-qty-plus]"
+        "[data-close-modal]"
       );
 
-    if(plus){
+    if(closeButton){
 
-      const id=
-        plus.dataset.qtyPlus;
+      event.preventDefault();
+      event.stopPropagation();
 
-      const item=
-        estimate.find(
-          line=>line.id===id
-        );
-
-      if(item){
-
-        item.qty+=1;
-
-        saveEstimate();
-
-        renderEstimate();
-
-      }
+      closeModal(
+        closeButton.dataset.closeModal
+      );
 
       return;
-
     }
 
+    /* -----------------------------------------
+       Видалення позиції з кошторису
+    ----------------------------------------- */
 
-    const minus=
+    const removeButton=
       event.target.closest(
-        "[data-qty-minus]"
+        "[data-remove-line]"
       );
 
-    if(minus){
+    if(removeButton){
 
-      const id=
-        minus.dataset.qtyMinus;
+      event.preventDefault();
+      event.stopPropagation();
 
-      const item=
-        estimate.find(
-          line=>line.id===id
-        );
-
-      if(item){
-
-        item.qty-=1;
-
-
-        if(item.qty<=0){
-
-          estimate=
-            estimate.filter(
-              line=>line.id!==id
-            );
-
-        }
-
-
-        saveEstimate();
-
-        renderEstimate();
-
-      }
+      removeEstimateLine(
+        removeButton.dataset.removeLine
+      );
 
       return;
-
     }
 
-  }
-);
+    /* -----------------------------------------
+       + / − кількість
+    ----------------------------------------- */
 
-
-/*
-  Редагування позиції:
-  подвійний клік / contextmenu.
-
-  На iPhone contextmenu не є зручним,
-  тому додатково підтримуємо подвійний клік.
-*/
-
-$("estimateList").addEventListener(
-  "dblclick",
-  event=>{
-
-    const row=
+    const qtyButton=
       event.target.closest(
-        ".estimate-row"
+        "[data-qty-line]"
       );
 
-    if(!row)return;
+    if(qtyButton){
 
+      event.preventDefault();
+      event.stopPropagation();
 
-    openEditWork(
-      row.dataset.estimateId
-    );
+      changeQty(
+        qtyButton.dataset.qtyLine,
+        Number(
+          qtyButton.dataset.qtyDelta
+        )
+      );
 
-  }
+      return;
+    }
+
+    /* -----------------------------------------
+       Редагування ціни
+    ----------------------------------------- */
+
+    const priceLine=
+      event.target.closest(
+        "[data-price-line]"
+      );
+
+    if(priceLine){
+
+      openPriceModal(
+        priceLine.dataset.priceLine
+      );
+
+      return;
+    }
+
+    /* -----------------------------------------
+       Додавання роботи
+    ----------------------------------------- */
+
+    const workItem=
+      event.target.closest(
+        "[data-add-work]"
+      );
+
+    if(workItem){
+
+      /*
+        Якщо натиснули + або −,
+        його обробник вище вже спрацював.
+      */
+
+      if(
+        event.target.closest(
+          "[data-qty-line]"
+        )
+      ){
+        return;
+      }
+
+      addWork(
+        workItem.dataset.addWork
+      );
+
+      return;
+    }
+
+  },
+  false
 );
 
+/* =========================================================
+   KEYBOARD FOR CATALOG ITEMS
+========================================================= */
 
-$("estimateList").addEventListener(
-  "contextmenu",
-  event=>{
+document.addEventListener(
+  "keydown",
+  function(event){
+
+    if(
+      event.key!=="Enter" &&
+      event.key!==" "
+    ){
+      return;
+    }
+
+    const item=
+      event.target.closest(
+        "[data-add-work]"
+      );
+
+    if(!item){
+      return;
+    }
+
+    if(
+      event.target.closest(
+        "[data-qty-line]"
+      )
+    ){
+      return;
+    }
 
     event.preventDefault();
 
-    const row=
-      event.target.closest(
-        ".estimate-row"
-      );
-
-    if(!row)return;
-
-
-    openEditWork(
-      row.dataset.estimateId
+    addWork(
+      item.dataset.addWork
     );
 
   }
 );
 
+/* =========================================================
+   CONTEXT MENU = EDIT CATALOG POSITION
+========================================================= */
 
-/* =====================================================
-   EVENT: CATALOG
-===================================================== */
+document.addEventListener(
+  "contextmenu",
+  function(event){
 
-$("catalogList").addEventListener(
-  "click",
-  event=>{
-
-    const row=
+    const item=
       event.target.closest(
-        "[data-catalog-id]"
+        "[data-edit-work]"
       );
 
-    if(!row)return;
+    if(!item){
+      return;
+    }
 
+    event.preventDefault();
 
-    addCatalogWork(
-      row.dataset.catalogSection,
-      row.dataset.catalogId
+    openEditWorkModal(
+      item.dataset.editWork
     );
 
   }
 );
 
-
-/* =====================================================
-   EVENT: PRICE
-===================================================== */
-
-$("priceModal").addEventListener(
-  "change",
-  event=>{
-
-    const input=
-      event.target.closest(
-        "[data-price-input]"
-      );
-
-    if(!input)return;
-
-
-    updateCatalogPrice(
-      input.dataset.priceSection,
-      input.dataset.priceInput,
-      input.value
-    );
-
-  }
-);
-
-
-/* =====================================================
-   RENDER CATALOG
-===================================================== */
-
-function renderCatalog(){
-
-  const list=
-    $("catalogList");
-
-  if(!list)return;
-
-
-  const items=
-    catalog[currentTab];
-
-
-  if(!items.length){
-
-    list.innerHTML=`
-      <div class="empty">
-        У цьому розділі поки немає робіт.
-      </div>
-    `;
-
-    return;
-
-  }
-
-
-  list.innerHTML=
-    items.map(item=>`
-
-      <button
-        type="button"
-        class="catalog-row"
-        data-catalog-id="${esc(item.id)}"
-        data-catalog-section="${esc(currentTab)}"
-      >
-
-        <div class="catalog-info">
-
-          <div class="catalog-name">
-            ${esc(item.name)}
-          </div>
-
-          <div class="catalog-meta">
-            ${
-              currentTab==="finish"
-                ? "Чистовий монтаж"
-                : "Чорновий монтаж"
-            }
-          </div>
-
-        </div>
-
-
-        <div class="catalog-price">
-          ${money(item.price)}
-        </div>
-
-
-        <div class="plus">
-          +
-        </div>
-
-      </button>
-
-    `).join("");
-
-}
-
-
-/* =====================================================
-   TAB EVENTS
-===================================================== */
-
-$("roughTab").addEventListener(
-  "click",
-  ()=>{
-    setTab("rough");
-    renderCatalog();
-  }
-);
-
-
-$("finishTab").addEventListener(
-  "click",
-  ()=>{
-    setTab("finish");
-    renderCatalog();
-  }
-);
-
-
-/* =====================================================
-   HEADER EVENTS
-===================================================== */
-
-$("themeBtn").addEventListener(
-  "click",
-  toggleTheme
-);
-
-
-$("settingsBtn").addEventListener(
-  "click",
-  ()=>{
-
-    renderSettings();
-
-    openModal("settingsModal");
-
-  }
-);
-
-
-/* =====================================================
-   MAIN ACTIONS
-===================================================== */
-
-$("addBtn").addEventListener(
-  "click",
-  ()=>{
-
-    renderCatalog();
-
-    openModal("catalogModal");
-
-  }
-);
-
-
-$("customWorkBtn").addEventListener(
-  "click",
-  ()=>{
-
-    closeModal("catalogModal");
-
-    openNewWork();
-
-  }
-);
-
-
-$("newBtn").addEventListener(
-  "click",
-  newEstimate
-);
-
-
-$("pdfBtn").addEventListener(
-  "click",
-  printEstimate
-);
-
-
-/* =====================================================
-   WORK MODAL
-===================================================== */
-
-$("saveWorkBtn").addEventListener(
-  "click",
-  saveWork
-);
-
-
-$("deleteWorkBtn").addEventListener(
-  "click",
-  deleteCurrentWork
-);
-
-
-/* =====================================================
-   SETTINGS
-===================================================== */
-
-$("saveSettingsBtn").addEventListener(
-  "click",
-  saveSettings
-);
-
-
-$("openPriceBtn").addEventListener(
-  "click",
-  ()=>{
-
-    closeModal("settingsModal");
-
-    renderPriceModal();
-
-    openModal("priceModal");
-
-  }
-);
-
-
-$("profileLogoInput").addEventListener(
-  "change",
-  handleLogoUpload
-);
-
-
-/* =====================================================
-   PROJECT INPUT
-===================================================== */
-
-$("clientInput").addEventListener(
-  "input",
-  saveProject
-);
-
-
-$("objectInput").addEventListener(
-  "input",
-  saveProject
-);
-
-
-/* =====================================================
-   CLOSE BUTTONS
-===================================================== */
+/* =========================================================
+   MODAL BACKGROUND
+========================================================= */
 
 document.addEventListener(
   "click",
-  event=>{
-
-    const button=
-      event.target.closest(
-        "[data-close]"
-      );
-
-    if(!button)return;
-
-
-    closeModal(
-      button.dataset.close
-    );
-
-  }
-);
-
-
-/* =====================================================
-   CLOSE ON BACKDROP
-===================================================== */
-
-document.addEventListener(
-  "click",
-  event=>{
+  function(event){
 
     if(
       !event.target.classList.contains(
-        "modal-backdrop"
+        "modal"
       )
     ){
-
       return;
-
     }
-
 
     closeModal(
       event.target.id
@@ -3491,147 +3617,278 @@ document.addEventListener(
   }
 );
 
-
-/* =====================================================
-   ESC
-===================================================== */
+/* =========================================================
+   ESCAPE
+========================================================= */
 
 document.addEventListener(
   "keydown",
-  event=>{
+  function(event){
 
-    if(event.key!=="Escape")return;
+    if(event.key==="Escape"){
 
-
-    const modal=
-      document.querySelector(
-        ".modal-backdrop.show"
-      );
-
-
-    if(modal){
-
-      closeModal(
-        modal.id
-      );
+      closeAllModals();
 
     }
 
   }
 );
 
+/* =========================================================
+   THEME
+========================================================= */
 
-/* =====================================================
-   MIGRATION
-===================================================== */
+function applyTheme(theme){
 
-function migrateEstimate(){
+  const value=
+    theme==="dark"
+      ? "dark"
+      : "light";
 
-  /*
-    Старі версії калькулятора могли містити
-    позиції f4/f8 у чорновому масиві.
-    Тут залишаємо захист старих даних,
-    щоб оновлення не ламало існуючі кошториси.
-  */
+  document.documentElement
+    .dataset.theme=value;
 
-  if(!Array.isArray(estimate)){
+  try{
 
-    estimate=[];
+    localStorage.setItem(
+      "plumber_calc_theme",
+      value
+    );
 
-    return;
+  }catch{}
 
-  }
-
-
-  estimate=
-    estimate.filter(item=>{
-
-      if(
-        item.section==="rough" &&
-        (
-          item.id==="f4" ||
-          item.id==="f8"
-        )
-      ){
-
-        return false;
-
-      }
-
-      return true;
-
-    });
-
-
-  estimate=
-    estimate.map(item=>{
-
-      /*
-        Підтримка старих ID,
-        якщо вони зустрічаються у старому
-        збереженому кошторисі.
-      */
-
-      if(item.workId==="r19"){
-
-        item.section="finish";
-
-        item.workId="f4";
-
-      }
-
-
-      if(item.workId==="r20"){
-
-        item.section="finish";
-
-        item.workId="f8";
-
-      }
-
-
-      return normalizeEstimateItem(item);
-
-    });
-
-
-  saveEstimate();
-
+  $("themeButton").textContent=
+    value==="dark"
+      ? "☀"
+      : "☾";
 }
 
+function initTheme(){
 
-/* =====================================================
+  let saved=null;
+
+  try{
+
+    saved=
+      localStorage.getItem(
+        "plumber_calc_theme"
+      );
+
+  }catch{}
+
+  applyTheme(
+    saved==="dark"
+      ? "dark"
+      : "light"
+  );
+}
+
+function toggleTheme(){
+
+  const current=
+    document.documentElement
+      .dataset.theme||
+    "light";
+
+  applyTheme(
+    current==="dark"
+      ? "light"
+      : "dark"
+  );
+}
+
+/* =========================================================
+   STATIC BUTTON EVENTS
+========================================================= */
+
+function bindEvents(){
+
+  $("settingsButton")
+    .addEventListener(
+      "click",
+      openSettings
+    );
+
+  $("themeButton")
+    .addEventListener(
+      "click",
+      toggleTheme
+    );
+
+  $("roughTab")
+    .addEventListener(
+      "click",
+      ()=>setMainCategory("rough")
+    );
+
+  $("finishTab")
+    .addEventListener(
+      "click",
+      ()=>setMainCategory("finish")
+    );
+
+  $("clearEstimateBtn")
+    .addEventListener(
+      "click",
+      clearEstimate
+    );
+
+  $("newWorkButton")
+    .addEventListener(
+      "click",
+      openNewWorkModal
+    );
+
+  $("printButton")
+    .addEventListener(
+      "click",
+      printEstimate
+    );
+
+  $("catalogOpenButton")
+    .addEventListener(
+      "click",
+      openCatalog
+    );
+
+  $("workSearch")
+    .addEventListener(
+      "input",
+      renderAddWorkList
+    );
+
+  $("catalogRoughTab")
+    .addEventListener(
+      "click",
+      ()=>setCatalogCategory("rough")
+    );
+
+  $("catalogFinishTab")
+    .addEventListener(
+      "click",
+      ()=>setCatalogCategory("finish")
+    );
+
+  $("createWorkButton")
+    .addEventListener(
+      "click",
+      openNewWorkModal
+    );
+
+  $("cancelWorkButton")
+    .addEventListener(
+      "click",
+      ()=>closeModal("workModal")
+    );
+
+  $("saveWorkButton")
+    .addEventListener(
+      "click",
+      saveWork
+    );
+
+  $("deleteWorkButton")
+    .addEventListener(
+      "click",
+      deleteCurrentWork
+    );
+
+  $("cancelPriceButton")
+    .addEventListener(
+      "click",
+      ()=>closeModal("priceModal")
+    );
+
+  $("savePriceButton")
+    .addEventListener(
+      "click",
+      savePrice
+    );
+
+  $("resetPriceButton")
+    .addEventListener(
+      "click",
+      resetPriceToBase
+    );
+
+  $("cancelSettingsButton")
+    .addEventListener(
+      "click",
+      ()=>closeModal("settingsModal")
+    );
+
+  $("saveSettingsButton")
+    .addEventListener(
+      "click",
+      saveSettings
+    );
+
+  $("clientInput")
+    .addEventListener(
+      "input",
+      updateProject
+    );
+
+  $("objectInput")
+    .addEventListener(
+      "input",
+      updateProject
+    );
+}
+
+/* =========================================================
    INIT
-===================================================== */
+========================================================= */
 
 function init(){
 
-  loadTheme();
+  profile=
+    loadProfile();
 
-  loadProfile();
+  db=
+    loadDB();
 
-  loadCatalog();
+  ensureCatalog();
 
-  loadEstimate();
+  estimate=
+    loadEstimate();
 
-  migrateEstimate();
+  project=
+    loadProject();
 
-  loadProject();
+  initTheme();
 
   renderProfile();
 
+  renderProject();
+
+  bindEvents();
+
+  setMainCategory("rough");
+
+  updateCatalogTabs();
+
   renderEstimate();
 
-  renderCatalog();
-
-  renderSettings();
-
-  setTab("rough");
-
+  renderAddWorkList();
 }
 
+if(
+  document.readyState===
+  "loading"
+){
 
-init();
+  document.addEventListener(
+    "DOMContentLoaded",
+    init,
+    {once:true}
+  );
+
+}else{
+
+  init();
+
+}
 
 </script>
 
