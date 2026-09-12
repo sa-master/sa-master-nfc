@@ -19,8 +19,8 @@
     {"@context":"https://schema.org","@type":"Plumber","name":"SA-MASTER.PRO","url":"https://sa-master.pro/","telephone":"+380979111871"}
     </script>
     <style>
-        :root{--p:#007AFF;--t:#1C1C1E;--ts:#3A3A3C;--tm:#8E8E93;--bg:#E3F0FA;--bgs:#F2F6FB;--bge:#EAF1FA;--gb:rgba(255,255,255,.45);--gbr:rgba(255,255,255,.65);--gs:0 .5rem 2rem rgba(0,0,0,.08);--mb:rgba(255,255,255,.98);--mt:#5F6C73;--mtt:#1C1C1E;--ft:#6D6D72;--ph:#007AFF;--rc:.875rem;--rm:1.25rem;--rs:1.75rem;--rg:1.25rem;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
-        .dark{--p:#0A84FF;--t:#F2F2F7;--ts:#C7C7CC;--tm:#8E8E93;--bg:#1C1C1E;--bgs:#2C2C2E;--bge:#1C1C1E;--gb:rgba(44,44,46,.55);--gbr:rgba(255,255,255,.12);--gs:0 .5rem 2rem rgba(0,0,0,.4);--mb:rgba(28,28,30,.98);--mt:#C7C7CC;--mtt:#F2F2F7;--ft:#8E8E93;--ph:#7EC8FF}
+        :root{--p:#007AFF;--t:#1C1C1E;--ts:#3A3A3C;--tm:#8E8E93;--bg:#E3F0FA;--bgs:#F2F6FB;--bge:#EAF1FA;--gb:rgba(255,255,255,.45);--gbr:rgba(255,255,255,.65);--gs:0 .5rem 2rem rgba(0,0,0,.08);--mb:#FFFFFF;--mt:#5F6C73;--mtt:#1C1C1E;--ft:#6D6D72;--ph:#007AFF;--rc:.875rem;--rm:1.25rem;--rs:1.75rem;--rg:1.25rem;--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
+        .dark{--p:#0A84FF;--t:#F2F2F7;--ts:#C7C7CC;--tm:#8E8E93;--bg:#1C1C1E;--bgs:#2C2C2E;--bge:#1C1C1E;--gb:rgba(44,44,46,.55);--gbr:rgba(255,255,255,.12);--gs:0 .5rem 2rem rgba(0,0,0,.4);--mb:#1C1C1E;--mt:#C7C7CC;--mtt:#F2F2F7;--ft:#8E8E93;--ph:#7EC8FF}
         *{box-sizing:border-box;margin:0;padding:0}
         html{scroll-behavior:smooth}
         body{min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;color:var(--t);background:var(--bg);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;scrollbar-width:none;overflow-y:auto;overflow-x:hidden}
@@ -181,7 +181,7 @@
         .sf{width:100%;margin:.5rem auto 0;padding:.25rem .75rem;text-align:center}
         .ft{font-size:.75rem;font-weight:500;color:var(--ft);line-height:1.2}
 
-        /* REQUEST CHAT */
+        /* REQUEST CHAT — виправлено проти мигання */
         .request-modal{
             position:fixed;
             inset:0;
@@ -195,11 +195,13 @@
             align-items:center;
             justify-content:center;
             padding:0;
-            background:rgba(0,0,0,.45);
-            backdrop-filter:blur(1.25rem);
-            -webkit-backdrop-filter:blur(1.25rem);
+            background:var(--mb);
             overscroll-behavior:none;
-            overflow:hidden
+            overflow:hidden;
+            transform:translateZ(0);
+            -webkit-transform:translateZ(0);
+            backface-visibility:hidden;
+            -webkit-backface-visibility:hidden
         }
         .request-modal.act{display:flex}
         .request-box{
@@ -214,8 +216,11 @@
             overflow:hidden;
             box-sizing:border-box;
             background:var(--mb);
-            box-shadow:0 1.5rem 4rem rgba(0,0,0,.22);
-            contain:layout
+            contain:layout paint;
+            isolation:isolate;
+            will-change:transform;
+            transform:translateZ(0);
+            -webkit-transform:translateZ(0)
         }
         .request-head{
             flex:0 0 auto;
@@ -295,13 +300,16 @@
             border:1px solid rgba(120,130,140,.25);
             border-radius:.875rem;
             outline:0;
-            background:rgba(120,130,140,.07);
+            background:#fff;
             color:var(--mtt);
             font-size:16px;
             line-height:1.3;
             -webkit-appearance:none;
-            appearance:none
+            appearance:none;
+            transform:translateZ(0);
+            -webkit-transform:translateZ(0)
         }
+        .dark .chat-input{background:#2C2C2E}
         .chat-input:focus{border-color:#007AFF;box-shadow:0 0 0 3px rgba(0,122,255,.1)}
         .chat-send{
             flex:0 0 3rem;
@@ -329,9 +337,17 @@
         .chat-final-btn.submit{background:#007AFF;color:#fff}
         .chat-final-btn.submit:disabled{opacity:.6}
 
+        /* Прибираємо артефакти під модалкою, коли вона відкрита */
+        body.chat-open .bg,
+        body.chat-open .cw{
+            visibility:hidden
+        }
+
         @media(min-width:30.01rem){
             .request-box{height:min(48rem,100dvh);max-height:calc(100dvh - 2rem);border-radius:1.25rem}
-            .request-modal{padding:1rem}
+            .request-modal{padding:1rem;background:rgba(0,0,0,.5)}
+            body.chat-open .bg,
+            body.chat-open .cw{visibility:visible}
         }
         @media(max-width:30rem){
             .page{width:calc(100% - .875rem)}
@@ -623,7 +639,7 @@
 
     function chatScroll(){
         var b=$('chatBody');if(!b)return;
-        setTimeout(function(){b.scrollTo({top:b.scrollHeight,behavior:'smooth'})},30)
+        setTimeout(function(){b.scrollTop=b.scrollHeight},50)
     }
     function chatBot(t){
         var b=$('chatBody');if(!b)return;
@@ -661,16 +677,18 @@
         s.innerHTML='<svg viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/></svg>';
         w.append(i,s);b.appendChild(w);
 
+        var scrollTimer=null;
         function scrollToInput(){
-            setTimeout(function(){
-                w.scrollIntoView({block:'nearest',behavior:'smooth'});
+            if(scrollTimer)clearTimeout(scrollTimer);
+            scrollTimer=setTimeout(function(){
                 b.scrollTop=b.scrollHeight;
-            },150)
+                w.scrollIntoView({block:'end',behavior:'auto'});
+            },250)
         }
 
         i.addEventListener('focus',scrollToInput);
 
-        setTimeout(function(){i.focus()},30);
+        setTimeout(function(){i.focus()},50);
 
         function sub(){
             var v=i.value.trim();if(!v){i.focus();return}
@@ -687,7 +705,10 @@
     }
     function openRequest(){
         var m=$('requestModal');if(!m)return;
-        clearChat();m.classList.add('act');lock();
+        clearChat();
+        document.body.classList.add('chat-open');
+        m.classList.add('act');
+        lock();
         chatBot('Вітаю. Щоб зрозуміти, чи можемо взяти ваш об’єкт у роботу, поставлю кілька коротких запитань.');
         chatBot('Що вас цікавить?');
         addOptions([
@@ -700,6 +721,7 @@
     }
     function closeRequest(){
         var m=$('requestModal');if(m)m.classList.remove('act');
+        document.body.classList.remove('chat-open');
         unlock()
     }
     function afterType(v,l){
