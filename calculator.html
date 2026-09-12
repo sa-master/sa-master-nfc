@@ -1,0 +1,2155 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+<title>SA-MASTER.PRO — Калькулятор</title>
+<meta name="theme-color" content="#f4f6f8">
+
+<style>
+:root{
+  --blue:#007aff;
+  --blue2:#005ecb;
+  --bg:#f4f6f8;
+  --card:rgba(255,255,255,.84);
+  --white:#fff;
+  --text:#111;
+  --muted:#777;
+  --line:#e2e2e2;
+  --soft:#e9ebee;
+  --red:#ff3b30;
+  --green:#34c759;
+}
+
+*{box-sizing:border-box}
+
+html{
+  -webkit-text-size-adjust:100%;
+}
+
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at 50% -10%,rgba(0,122,255,.08),transparent 35%),
+    var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Arial,sans-serif;
+}
+
+button,input,select{
+  font:inherit;
+}
+
+button{
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+
+.app{
+  width:100%;
+  max-width:560px;
+  margin:0 auto;
+  padding:
+    max(18px,env(safe-area-inset-top))
+    14px
+    max(45px,env(safe-area-inset-bottom));
+}
+
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:16px;
+}
+
+.logo{
+  font-size:21px;
+  font-weight:800;
+  letter-spacing:-.7px;
+}
+
+.logo span{
+  color:var(--blue);
+}
+
+.header-actions{
+  display:flex;
+  gap:6px;
+}
+
+.card{
+  background:var(--card);
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:22px;
+  padding:16px;
+  margin-bottom:12px;
+  box-shadow:0 8px 28px rgba(0,0,0,.055);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+
+.section-title{
+  font-weight:800;
+  margin-bottom:11px;
+}
+
+.btn{
+  border:0;
+  border-radius:13px;
+  padding:12px 14px;
+  font-weight:700;
+  background:var(--blue);
+  color:#fff;
+}
+
+.btn:active{
+  transform:scale(.98);
+}
+
+.btn.gray{
+  background:var(--soft);
+  color:#222;
+}
+
+.btn.red{
+  background:var(--red);
+}
+
+.btn.small{
+  padding:8px 10px;
+  font-size:13px;
+}
+
+.tabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:3px;
+  background:var(--soft);
+  padding:3px;
+  border-radius:13px;
+  margin-bottom:12px;
+}
+
+.tab{
+  border:0;
+  background:transparent;
+  border-radius:10px;
+  padding:10px;
+  font-weight:700;
+  color:#333;
+}
+
+.tab.active{
+  background:#fff;
+  color:var(--blue);
+  box-shadow:0 2px 7px rgba(0,0,0,.08);
+}
+
+select,
+input{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:12px 13px;
+  background:#fff;
+  color:var(--text);
+  outline:none;
+  min-width:0;
+}
+
+input:focus,
+select:focus{
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(0,122,255,.08);
+}
+
+.row{
+  display:grid;
+  grid-template-columns:1fr 105px;
+  gap:8px;
+  margin-top:8px;
+}
+
+.work{
+  padding:14px 0;
+  border-bottom:1px solid rgba(0,0,0,.07);
+}
+
+.work:last-child{
+  border-bottom:0;
+}
+
+.work-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.work-name{
+  font-weight:700;
+  line-height:1.25;
+}
+
+.work-base{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.35;
+  margin-top:4px;
+}
+
+.work-price{
+  color:var(--blue);
+  font-weight:800;
+  white-space:nowrap;
+  text-align:right;
+}
+
+.work-controls{
+  display:grid;
+  grid-template-columns:72px 1fr 43px;
+  gap:7px;
+  margin-top:9px;
+}
+
+.qty{
+  text-align:center;
+}
+
+.price-input{
+  text-align:right;
+}
+
+.icon-btn{
+  border:0;
+  border-radius:12px;
+  background:var(--soft);
+  color:#222;
+  font-size:19px;
+}
+
+.icon-btn.delete{
+  color:var(--red);
+}
+
+.reset{
+  margin-top:7px;
+  padding:2px 0;
+  border:0;
+  background:transparent;
+  color:var(--blue);
+  font-size:13px;
+  font-weight:600;
+}
+
+.empty{
+  text-align:center;
+  color:var(--muted);
+  padding:17px 5px;
+  font-size:14px;
+}
+
+.subtotal{
+  display:flex;
+  justify-content:space-between;
+  padding-top:13px;
+  font-weight:750;
+}
+
+.total-card{
+  padding:18px;
+}
+
+.total-line{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:12px;
+}
+
+.total-label{
+  color:var(--muted);
+  font-size:14px;
+}
+
+.total-value{
+  font-size:31px;
+  font-weight:850;
+  letter-spacing:-1px;
+  white-space:nowrap;
+}
+
+.summary-row{
+  display:flex;
+  justify-content:space-between;
+  margin-top:9px;
+  font-size:14px;
+  color:var(--muted);
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.price-list{
+  max-height:65vh;
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+.price-category{
+  font-weight:800;
+  margin:6px 0 8px;
+}
+
+.price-category:not(:first-child){
+  margin-top:20px;
+}
+
+.price-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px 0;
+  border-bottom:1px solid rgba(0,0,0,.07);
+}
+
+.price-item:last-child{
+  border-bottom:0;
+}
+
+.price-info{
+  min-width:0;
+}
+
+.price-name{
+  font-weight:650;
+  line-height:1.25;
+}
+
+.price-value{
+  color:var(--muted);
+  font-size:12px;
+  margin-top:3px;
+}
+
+.price-buttons{
+  display:flex;
+  gap:6px;
+  flex-shrink:0;
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:20;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  padding:12px;
+}
+
+.modal.open{
+  display:flex;
+}
+
+.sheet{
+  width:min(560px,100%);
+  max-height:90vh;
+  overflow:auto;
+  background:#f7f7f8;
+  border-radius:24px;
+  padding:18px;
+  box-shadow:0 -10px 40px rgba(0,0,0,.2);
+  -webkit-overflow-scrolling:touch;
+}
+
+.sheet h3{
+  margin:0 0 14px;
+}
+
+.sheet-label{
+  color:var(--muted);
+  font-size:13px;
+  margin-bottom:7px;
+}
+
+.sheet .row{
+  grid-template-columns:1fr 1fr;
+}
+
+.field{
+  margin-bottom:12px;
+}
+
+.sheet-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:14px;
+}
+
+.delete-work{
+  width:100%;
+  margin-top:12px;
+}
+
+.note{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.4;
+  margin-top:9px;
+}
+
+@media(max-width:380px){
+  .work-controls{
+    grid-template-columns:65px 1fr 42px;
+  }
+
+  .total-value{
+    font-size:27px;
+  }
+
+  .header-actions{
+    gap:4px;
+  }
+
+  .btn{
+    padding:11px 12px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header class="header">
+    <div class="logo">SA-MASTER<span>.PRO</span></div>
+
+    <div class="header-actions">
+      <button class="btn gray small" onclick="openPriceBase()">Ціни</button>
+      <button class="btn small" onclick="openNewWork()">＋</button>
+    </div>
+  </header>
+
+
+  <!-- ДОДАВАННЯ ПОЗИЦІЇ -->
+  <section class="card">
+
+    <div class="section-title">Додати роботу</div>
+
+    <div class="tabs">
+      <button
+        id="roughTab"
+        class="tab active"
+        onclick="setCategory('rough')">
+        Чорновий
+      </button>
+
+      <button
+        id="finishTab"
+        class="tab"
+        onclick="setCategory('finish')">
+        Чистовий
+      </button>
+    </div>
+
+    <select id="workSelect"></select>
+
+    <div class="row">
+      <input
+        id="qtyInput"
+        type="number"
+        min="0.01"
+        step="0.01"
+        value="1"
+        placeholder="Кількість">
+
+      <button
+        class="btn"
+        onclick="addWork()">
+        Додати
+      </button>
+    </div>
+
+  </section>
+
+
+  <!-- ЧОРНОВИЙ -->
+  <section class="card">
+
+    <div class="section-title">Чорновий монтаж</div>
+
+    <div id="roughItems"></div>
+
+    <div class="subtotal">
+      <span>Разом чорновий</span>
+      <strong id="roughTotal">0 грн</strong>
+    </div>
+
+  </section>
+
+
+  <!-- ЧИСТОВИЙ -->
+  <section class="card">
+
+    <div class="section-title">Чистовий монтаж</div>
+
+    <div id="finishItems"></div>
+
+    <div class="subtotal">
+      <span>Разом чистовий</span>
+      <strong id="finishTotal">0 грн</strong>
+    </div>
+
+  </section>
+
+
+  <!-- ЗАГАЛЬНА СУМА -->
+  <section class="card total-card">
+
+    <div class="total-line">
+      <div>
+        <div class="total-label">Загальна вартість</div>
+      </div>
+
+      <div
+        id="grandTotal"
+        class="total-value">
+        0 грн
+      </div>
+    </div>
+
+    <div class="summary-row">
+      <span>Позицій</span>
+      <span id="itemCount">0</span>
+    </div>
+
+  </section>
+
+
+  <!-- ДІЇ -->
+  <section class="card">
+
+    <div class="actions">
+
+      <button
+        class="btn gray"
+        onclick="clearEstimate()">
+        Очистити
+      </button>
+
+      <button
+        class="btn"
+        onclick="exportData()">
+        Експорт
+      </button>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<!-- МОДАЛЬНЕ ВІКНО: НОВА / РЕДАГУВАННЯ РОБОТИ -->
+<div
+  id="modal"
+  class="modal"
+  onclick="modalBackgroundClick(event)">
+
+  <div class="sheet">
+
+    <h3 id="modalTitle">Нова робота</h3>
+
+    <div class="field">
+      <div class="sheet-label">Назва роботи</div>
+
+      <input
+        id="newName"
+        type="text"
+        placeholder="Наприклад: Монтаж радіатора">
+    </div>
+
+
+    <div class="field">
+      <div class="sheet-label">Базова ціна, грн</div>
+
+      <input
+        id="newPrice"
+        type="number"
+        min="0"
+        step="100"
+        placeholder="2500">
+    </div>
+
+
+    <div class="row">
+
+      <div class="field">
+        <div class="sheet-label">Категорія</div>
+
+        <select id="newCategory">
+          <option value="rough">Чорновий</option>
+          <option value="finish">Чистовий</option>
+        </select>
+      </div>
+
+
+      <div class="field">
+        <div class="sheet-label">Одиниця</div>
+
+        <select id="newUnit">
+          <option value="шт">шт</option>
+          <option value="компл">компл</option>
+          <option value="м.п.">м.п.</option>
+          <option value="м²">м²</option>
+          <option value="м³">м³</option>
+          <option value="год">год</option>
+        </select>
+      </div>
+
+    </div>
+
+
+    <div class="note">
+      Зміна базової ціни не змінює позиції,
+      які вже додані до поточного кошторису.
+    </div>
+
+
+    <button
+      id="deleteWorkButton"
+      class="btn red delete-work"
+      onclick="deleteEditingWork()"
+      style="display:none">
+      Видалити роботу
+    </button>
+
+
+    <div class="sheet-actions">
+
+      <button
+        class="btn gray"
+        onclick="closeModal()">
+        Скасувати
+      </button>
+
+      <button
+        class="btn"
+        onclick="saveModal()">
+        Зберегти
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+
+<!-- МОДАЛЬНЕ ВІКНО: БАЗА ЦІН -->
+<div
+  id="priceModal"
+  class="modal"
+  onclick="priceModalBackgroundClick(event)">
+
+  <div class="sheet">
+
+    <h3>База цін</h3>
+
+    <div class="note">
+      Тут редагуються базові ціни для нових кошторисів.
+      Уже додані позиції не змінюються.
+    </div>
+
+    <div
+      id="priceBaseList"
+      class="price-list"
+      style="margin-top:14px">
+    </div>
+
+    <div class="sheet-actions">
+
+      <button
+        class="btn"
+        style="grid-column:1/-1"
+        onclick="closePriceBase()">
+        Закрити
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+
+/* =========================================================
+   БАЗОВА БАЗА ЦІН
+   ========================================================= */
+
+const defaultDB = [
+
+  /* ЧОРНОВИЙ */
+
+  {
+    id:'r1',
+    name:'Монтаж радіатора',
+    unit:'шт',
+    price:2500,
+    cat:'rough'
+  },
+
+  {
+    id:'r2',
+    name:'Монтаж запірно-регулюючого вузла',
+    unit:'компл',
+    price:7000,
+    cat:'rough'
+  },
+
+  {
+    id:'r3',
+    name:'Монтаж гребінки',
+    unit:'шт',
+    price:5000,
+    cat:'rough'
+  },
+
+  {
+    id:'r4',
+    name:'Оздоблення технічної зони',
+    unit:'компл',
+    price:5000,
+    cat:'rough'
+  },
+
+  {
+    id:'r5',
+    name:'Врізка в каналізаційний стояк',
+    unit:'компл',
+    price:4000,
+    cat:'rough'
+  },
+
+  {
+    id:'r6',
+    name:'Монтаж вбудованого змішувача',
+    unit:'шт',
+    price:3000,
+    cat:'rough'
+  },
+
+  {
+    id:'r7',
+    name:'Монтаж інсталяції',
+    unit:'шт',
+    price:4000,
+    cat:'rough'
+  },
+
+  {
+    id:'r8',
+    name:'Монтаж душового трапа',
+    unit:'шт',
+    price:4000,
+    cat:'rough'
+  },
+
+  {
+    id:'r9',
+    name:'Монтаж вбудованого сифона',
+    unit:'шт',
+    price:2000,
+    cat:'rough'
+  },
+
+  {
+    id:'r10',
+    name:'Монтаж вуличного крана',
+    unit:'шт',
+    price:3000,
+    cat:'rough'
+  },
+
+  {
+    id:'r11',
+    name:'Монтаж виводу ВК',
+    unit:'шт',
+    price:1500,
+    cat:'rough'
+  },
+
+  {
+    id:'r12',
+    name:'Укладання труб в ізоляції',
+    unit:'компл',
+    price:10000,
+    cat:'rough'
+  },
+
+  {
+    id:'r13',
+    name:'Виготовлення штроб',
+    unit:'компл',
+    price:10000,
+    cat:'rough'
+  },
+
+  {
+    id:'r14',
+    name:'Зароблення штроб',
+    unit:'компл',
+    price:8000,
+    cat:'rough'
+  },
+
+  {
+    id:'r15',
+    name:'Заміна каналізаційного стояка',
+    unit:'шт',
+    price:5000,
+    cat:'rough'
+  },
+
+  {
+    id:'r16',
+    name:'Знешумлення каналізаційного стояка',
+    unit:'шт',
+    price:4000,
+    cat:'rough'
+  },
+
+  {
+    id:'r17',
+    name:'Монтаж конвектора',
+    unit:'шт',
+    price:5000,
+    cat:'rough'
+  },
+
+  {
+    id:'r18',
+    name:'Монтаж дизайнерського радіатора',
+    unit:'шт',
+    price:5000,
+    cat:'rough'
+  },
+
+  {
+    id:'r19',
+    name:'Монтаж душової системи',
+    unit:'шт',
+    price:4000,
+    cat:'rough'
+  },
+
+  {
+    id:'r20',
+    name:'Монтаж рушникосушки',
+    unit:'шт',
+    price:3000,
+    cat:'rough'
+  },
+
+
+  /* ЧИСТОВИЙ */
+
+  {
+    id:'f1',
+    name:'Монтаж та обв’язка бойлера',
+    unit:'компл',
+    price:7000,
+    cat:'finish'
+  },
+
+  {
+    id:'f2',
+    name:'Монтаж та обв’язка водоочистки',
+    unit:'компл',
+    price:10000,
+    cat:'finish'
+  },
+
+  {
+    id:'f3',
+    name:'Підключення ванни',
+    unit:'шт',
+    price:3500,
+    cat:'finish'
+  },
+
+  {
+    id:'f4',
+    name:'Монтаж душової системи',
+    unit:'шт',
+    price:3500,
+    cat:'finish'
+  },
+
+  {
+    id:'f5',
+    name:'Підключення умивальника',
+    unit:'шт',
+    price:3500,
+    cat:'finish'
+  },
+
+  {
+    id:'f6',
+    name:'Монтаж гігієнічного душа',
+    unit:'шт',
+    price:2000,
+    cat:'finish'
+  },
+
+  {
+    id:'f7',
+    name:'Монтаж унітазу',
+    unit:'шт',
+    price:4000,
+    cat:'finish'
+  },
+
+  {
+    id:'f8',
+    name:'Монтаж рушникосушки',
+    unit:'шт',
+    price:3000,
+    cat:'finish'
+  },
+
+  {
+    id:'f9',
+    name:'Монтаж аксесуарів',
+    unit:'шт',
+    price:700,
+    cat:'finish'
+  },
+
+  {
+    id:'f10',
+    name:'Монтаж пралки/сушки',
+    unit:'компл',
+    price:6000,
+    cat:'finish'
+  }
+
+];
+
+
+/* =========================================================
+   СТАН
+   ========================================================= */
+
+let db = loadDB();
+
+let estimate = loadEstimate();
+
+let category = 'rough';
+
+let modalMode = 'new';
+
+let editingId = null;
+
+
+/* =========================================================
+   DOM
+   ========================================================= */
+
+const $ = id => document.getElementById(id);
+
+
+/* =========================================================
+   ДОПОМІЖНІ ФУНКЦІЇ
+   ========================================================= */
+
+function money(value){
+
+  return new Intl.NumberFormat('uk-UA')
+    .format(Math.round(Number(value) || 0));
+
+}
+
+
+function esc(value){
+
+  return String(value ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+
+}
+
+
+function makeId(prefix='id'){
+
+  return prefix +
+    Date.now().toString(36) +
+    Math.random().toString(36).slice(2,8);
+
+}
+
+
+/* =========================================================
+   LOCAL STORAGE — БАЗА
+   ========================================================= */
+
+function loadDB(){
+
+  try{
+
+    const raw = localStorage.getItem('samaster_db');
+
+    if(!raw){
+
+      return JSON.parse(JSON.stringify(defaultDB));
+
+    }
+
+    const data = JSON.parse(raw);
+
+    if(!Array.isArray(data) || !data.length){
+
+      return JSON.parse(JSON.stringify(defaultDB));
+
+    }
+
+    return data.map((item,index)=>({
+
+      id:item.id || ('old'+index+Date.now()),
+
+      name:item.name || 'Без назви',
+
+      unit:item.unit || 'шт',
+
+      price:Number(
+        item.price ??
+        item.basePrice ??
+        0
+      ),
+
+      cat:
+        item.cat ||
+        item.category ||
+        'rough'
+
+    }));
+
+  }catch(error){
+
+    console.error('Помилка завантаження бази:',error);
+
+    return JSON.parse(JSON.stringify(defaultDB));
+
+  }
+
+}
+
+
+function saveDB(){
+
+  localStorage.setItem(
+    'samaster_db',
+    JSON.stringify(db)
+  );
+
+}
+
+
+/* =========================================================
+   LOCAL STORAGE — КОШТОРИС
+   ========================================================= */
+
+function loadEstimate(){
+
+  try{
+
+    const raw =
+      localStorage.getItem('samaster_estimate');
+
+    if(!raw){
+
+      return [];
+
+    }
+
+    const data = JSON.parse(raw);
+
+    if(!Array.isArray(data)){
+
+      return [];
+
+    }
+
+    return data.map((item,index)=>{
+
+      const work =
+        db.find(w =>
+          w.id === item.workId ||
+          w.id === item.id
+        );
+
+      return {
+
+        lineId:
+          item.lineId ||
+          makeId('line'),
+
+        workId:
+          item.workId ||
+          (work ? work.id : item.id),
+
+        name:
+          item.name ||
+          (work ? work.name : 'Без назви'),
+
+        unit:
+          item.unit ||
+          (work ? work.unit : 'шт'),
+
+        cat:
+          item.cat ||
+          item.category ||
+          (work ? work.cat : 'rough'),
+
+        basePrice:Number(
+          item.basePrice ??
+          item.price ??
+          (work ? work.price : 0)
+        ),
+
+        price:Number(
+          item.price ??
+          item.basePrice ??
+          (work ? work.price : 0)
+        ),
+
+        qty:Number(item.qty) > 0
+          ? Number(item.qty)
+          : 1
+
+      };
+
+    });
+
+  }catch(error){
+
+    console.error(
+      'Помилка завантаження кошторису:',
+      error
+    );
+
+    return [];
+
+  }
+
+}
+
+
+function saveEstimate(){
+
+  localStorage.setItem(
+    'samaster_estimate',
+    JSON.stringify(estimate)
+  );
+
+}
+
+
+/* =========================================================
+   КАТЕГОРІЇ
+   ========================================================= */
+
+function setCategory(cat){
+
+  category = cat;
+
+  $('roughTab')
+    .classList.toggle(
+      'active',
+      cat === 'rough'
+    );
+
+  $('finishTab')
+    .classList.toggle(
+      'active',
+      cat === 'finish'
+    );
+
+  renderSelect();
+
+}
+
+
+/* =========================================================
+   СПИСОК РОБІТ ДЛЯ ДОДАВАННЯ
+   ========================================================= */
+
+function renderSelect(){
+
+  const select = $('workSelect');
+
+  const list =
+    db.filter(item =>
+      item.cat === category
+    );
+
+  if(!list.length){
+
+    select.innerHTML =
+      '<option value="">Немає робіт</option>';
+
+    return;
+
+  }
+
+  select.innerHTML = list.map(item => {
+
+    return `
+      <option value="${esc(item.id)}">
+        ${esc(item.name)} — ${money(item.price)} грн/${esc(item.unit)}
+      </option>
+    `;
+
+  }).join('');
+
+}
+
+
+/* =========================================================
+   ДОДАТИ РОБОТУ ДО КОШТОРИСУ
+   ========================================================= */
+
+function addWork(){
+
+  const workId =
+    $('workSelect').value;
+
+  const work =
+    db.find(item =>
+      item.id === workId
+    );
+
+  if(!work){
+
+    return;
+
+  }
+
+  let qty =
+    Number($('qtyInput').value);
+
+  if(!Number.isFinite(qty) || qty <= 0){
+
+    qty = 1;
+
+  }
+
+  const line = {
+
+    lineId:makeId('line'),
+
+    workId:work.id,
+
+    name:work.name,
+
+    unit:work.unit,
+
+    cat:work.cat,
+
+    basePrice:Number(work.price),
+
+    price:Number(work.price),
+
+    qty:qty
+
+  };
+
+  estimate.push(line);
+
+  saveEstimate();
+
+  renderEstimate();
+
+  $('qtyInput').value = 1;
+
+}
+
+
+/* =========================================================
+   ЗМІНА КІЛЬКОСТІ
+   ========================================================= */
+
+function changeQty(lineId,value){
+
+  const item =
+    estimate.find(x =>
+      x.lineId === lineId
+    );
+
+  if(!item){
+
+    return;
+
+  }
+
+  let qty = Number(value);
+
+  if(!Number.isFinite(qty) || qty <= 0){
+
+    qty = 1;
+
+  }
+
+  item.qty = qty;
+
+  saveEstimate();
+
+  renderEstimate();
+
+}
+
+
+/* =========================================================
+   ЗМІНА ЦІНИ В ПОТОЧНОМУ КОШТОРИСІ
+   ========================================================= */
+
+function changePrice(lineId,value){
+
+  const item =
+    estimate.find(x =>
+      x.lineId === lineId
+    );
+
+  if(!item){
+
+    return;
+
+  }
+
+  let price = Number(value);
+
+  if(!Number.isFinite(price) || price < 0){
+
+    price = 0;
+
+  }
+
+  item.price = price;
+
+  saveEstimate();
+
+  renderEstimate();
+
+}
+
+
+/* =========================================================
+   ПОВЕРНУТИ БАЗОВУ ЦІНУ
+   ========================================================= */
+
+function resetPrice(lineId){
+
+  const item =
+    estimate.find(x =>
+      x.lineId === lineId
+    );
+
+  if(!item){
+
+    return;
+
+  }
+
+  item.price =
+    Number(item.basePrice);
+
+  saveEstimate();
+
+  renderEstimate();
+
+}
+
+
+/* =========================================================
+   ВИДАЛИТИ ПОЗИЦІЮ З КОШТОРИСУ
+   ========================================================= */
+
+function removeItem(lineId){
+
+  estimate =
+    estimate.filter(item =>
+      item.lineId !== lineId
+    );
+
+  saveEstimate();
+
+  renderEstimate();
+
+}
+
+
+/* =========================================================
+   РЕНДЕР КОШТОРИСУ
+   ========================================================= */
+
+function renderEstimate(){
+
+  renderGroup(
+    'rough',
+    $('roughItems'),
+    $('roughTotal')
+  );
+
+  renderGroup(
+    'finish',
+    $('finishItems'),
+    $('finishTotal')
+  );
+
+
+  const roughTotal =
+    estimate
+      .filter(x => x.cat === 'rough')
+      .reduce(
+        (sum,x) =>
+          sum + x.price * x.qty,
+        0
+      );
+
+
+  const finishTotal =
+    estimate
+      .filter(x => x.cat === 'finish')
+      .reduce(
+        (sum,x) =>
+          sum + x.price * x.qty,
+        0
+      );
+
+
+  const total =
+    roughTotal + finishTotal;
+
+
+  $('grandTotal').textContent =
+    money(total) + ' грн';
+
+
+  $('itemCount').textContent =
+    estimate.length;
+
+}
+
+
+/* =========================================================
+   РЕНДЕР ОДНІЄЇ КАТЕГОРІЇ
+   ========================================================= */
+
+function renderGroup(cat,container,totalElement){
+
+  const items =
+    estimate.filter(x =>
+      x.cat === cat
+    );
+
+
+  if(!items.length){
+
+    container.innerHTML =
+      '<div class="empty">Позицій поки немає</div>';
+
+    totalElement.textContent =
+      '0 грн';
+
+    return;
+
+  }
+
+
+  let total = 0;
+
+
+  container.innerHTML =
+    items.map(item => {
+
+      const sum =
+        item.price * item.qty;
+
+      total += sum;
+
+
+      const lineId =
+        JSON.stringify(item.lineId);
+
+
+      return `
+
+        <div class="work">
+
+          <div class="work-head">
+
+            <div>
+
+              <div class="work-name">
+                ${esc(item.name)}
+              </div>
+
+              <div class="work-base">
+                База:
+                ${money(item.basePrice)}
+                грн/${esc(item.unit)}
+              </div>
+
+            </div>
+
+            <div class="work-price">
+              ${money(sum)} грн
+            </div>
+
+          </div>
+
+
+          <div class="work-controls">
+
+            <input
+              class="qty"
+              type="number"
+              min="0.01"
+              step="0.01"
+              value="${item.qty}"
+              onchange="changeQty(${lineId},this.value)"
+              aria-label="Кількість">
+
+
+            <input
+              class="price-input"
+              type="number"
+              min="0"
+              step="100"
+              value="${item.price}"
+              onchange="changePrice(${lineId},this.value)"
+              aria-label="Ціна">
+
+
+            <button
+              class="icon-btn delete"
+              onclick="removeItem(${lineId})"
+              title="Видалити">
+              ×
+            </button>
+
+          </div>
+
+
+          <button
+            class="reset"
+            onclick="resetPrice(${lineId})">
+
+            ↩ Базова ціна:
+            ${money(item.basePrice)} грн
+
+          </button>
+
+        </div>
+
+      `;
+
+    }).join('');
+
+
+  totalElement.textContent =
+    money(total) + ' грн';
+
+}
+
+
+/* =========================================================
+   ОЧИСТИТИ КОШТОРИС
+   ========================================================= */
+
+function clearEstimate(){
+
+  if(!estimate.length){
+
+    return;
+
+  }
+
+  const ok =
+    confirm(
+      'Очистити весь поточний кошторис?'
+    );
+
+  if(!ok){
+
+    return;
+
+  }
+
+  estimate = [];
+
+  saveEstimate();
+
+  renderEstimate();
+
+}
+
+
+/* =========================================================
+   МОДАЛЬНЕ ВІКНО — НОВА РОБОТА
+   ========================================================= */
+
+function openNewWork(){
+
+  modalMode = 'new';
+
+  editingId = null;
+
+
+  $('modalTitle').textContent =
+    'Нова робота';
+
+
+  $('newName').value = '';
+
+  $('newPrice').value = '';
+
+  $('newCategory').value =
+    category;
+
+  $('newUnit').value =
+    'шт';
+
+
+  $('deleteWorkButton')
+    .style.display = 'none';
+
+
+  $('modal')
+    .classList.add('open');
+
+
+  setTimeout(() => {
+
+    $('newName').focus();
+
+  },50);
+
+}
+
+
+/* =========================================================
+   МОДАЛЬНЕ ВІКНО — РЕДАГУВАННЯ
+   ========================================================= */
+
+function editBasePrice(id){
+
+  const work =
+    db.find(item =>
+      item.id === id
+    );
+
+  if(!work){
+
+    return;
+
+  }
+
+  modalMode = 'edit';
+
+  editingId = id;
+
+
+  $('modalTitle').textContent =
+    'Редагувати роботу';
+
+
+  $('newName').value =
+    work.name;
+
+  $('newPrice').value =
+    work.price;
+
+  $('newCategory').value =
+    work.cat;
+
+  $('newUnit').value =
+    work.unit;
+
+
+  $('deleteWorkButton')
+    .style.display = 'block';
+
+
+  $('priceModal')
+    .classList.remove('open');
+
+
+  $('modal')
+    .classList.add('open');
+
+}
+
+
+/* =========================================================
+   ЗБЕРЕГТИ НОВУ / ВІДРЕДАГОВАНУ РОБОТУ
+   ========================================================= */
+
+function saveModal(){
+
+  const name =
+    $('newName').value.trim();
+
+  const price =
+    Number($('newPrice').value);
+
+  const cat =
+    $('newCategory').value;
+
+  const unit =
+    $('newUnit').value;
+
+
+  if(!name){
+
+    alert('Вкажіть назву роботи.');
+
+    return;
+
+  }
+
+
+  if(
+    !Number.isFinite(price) ||
+    price < 0
+  ){
+
+    alert('Вкажіть коректну ціну.');
+
+    return;
+
+  }
+
+
+  if(modalMode === 'new'){
+
+    const prefix =
+      cat === 'rough'
+        ? 'r'
+        : 'f';
+
+
+    db.push({
+
+      id:makeId(prefix),
+
+      name:name,
+
+      unit:unit,
+
+      price:price,
+
+      cat:cat
+
+    });
+
+  }else{
+
+    const work =
+      db.find(item =>
+        item.id === editingId
+      );
+
+    if(!work){
+
+      return;
+
+    }
+
+
+    /*
+      ВАЖЛИВО:
+
+      Тут змінюється тільки база.
+
+      Позиції, які вже є в estimate,
+      залишаються зі своєю власною
+      basePrice та price.
+    */
+
+    work.name = name;
+
+    work.price = price;
+
+    work.cat = cat;
+
+    work.unit = unit;
+
+  }
+
+
+  saveDB();
+
+  renderSelect();
+
+  renderEstimate();
+
+  renderPriceBase();
+
+  closeModal();
+
+}
+
+
+/* =========================================================
+   ВИДАЛЕННЯ РОБОТИ З БАЗИ
+   ========================================================= */
+
+function deleteEditingWork(){
+
+  if(
+    modalMode !== 'edit' ||
+    !editingId
+  ){
+
+    return;
+
+  }
+
+
+  const work =
+    db.find(item =>
+      item.id === editingId
+    );
+
+  if(!work){
+
+    return;
+
+  }
+
+
+  const ok =
+    confirm(
+      `Видалити "${work.name}" з бази цін?`
+    );
+
+  if(!ok){
+
+    return;
+
+  }
+
+
+  /*
+    ВАЖЛИВО:
+
+    Видаляємо тільки з бази.
+
+    Уже створені позиції кошторису
+    не видаляються.
+  */
+
+  db =
+    db.filter(item =>
+      item.id !== editingId
+    );
+
+
+  saveDB();
+
+  renderSelect();
+
+  renderEstimate();
+
+  renderPriceBase();
+
+  closeModal();
+
+}
+
+
+/* =========================================================
+   ЗАКРИТИ МОДАЛЬНЕ ВІКНО
+   ========================================================= */
+
+function closeModal(){
+
+  $('modal')
+    .classList.remove('open');
+
+}
+
+
+/* =========================================================
+   МОДАЛЬНЕ ВІКНО БАЗИ ЦІН
+   ========================================================= */
+
+function openPriceBase(){
+
+  renderPriceBase();
+
+  $('priceModal')
+    .classList.add('open');
+
+}
+
+
+function closePriceBase(){
+
+  $('priceModal')
+    .classList.remove('open');
+
+}
+
+
+/* =========================================================
+   РЕНДЕР БАЗИ ЦІН
+   ========================================================= */
+
+function renderPriceBase(){
+
+  const container =
+    $('priceBaseList');
+
+
+  const rough =
+    db.filter(item =>
+      item.cat === 'rough'
+    );
+
+
+  const finish =
+    db.filter(item =>
+      item.cat === 'finish'
+    );
+
+
+  let html = '';
+
+
+  html += `
+    <div class="price-category">
+      Чорновий монтаж
+    </div>
+  `;
+
+
+  if(!rough.length){
+
+    html +=
+      '<div class="empty">Немає позицій</div>';
+
+  }else{
+
+    html += rough.map(renderPriceItem).join('');
+
+  }
+
+
+  html += `
+    <div class="price-category">
+      Чистовий монтаж
+    </div>
+  `;
+
+
+  if(!finish.length){
+
+    html +=
+      '<div class="empty">Немає позицій</div>';
+
+  }else{
+
+    html += finish.map(renderPriceItem).join('');
+
+  }
+
+
+  container.innerHTML = html;
+
+}
+
+
+function renderPriceItem(item){
+
+  return `
+
+    <div class="price-item">
+
+      <div class="price-info">
+
+        <div class="price-name">
+          ${esc(item.name)}
+        </div>
+
+        <div class="price-value">
+          ${money(item.price)} грн/${esc(item.unit)}
+        </div>
+
+      </div>
+
+
+      <div class="price-buttons">
+
+        <button
+          class="btn gray small"
+          onclick="editBasePrice('${esc(item.id)}')">
+          Змінити
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================================================
+   ЗАКРИТТЯ ПО КЛІКУ НА ФОН
+   ========================================================= */
+
+function modalBackgroundClick(event){
+
+  if(event.target === $('modal')){
+
+    closeModal();
+
+  }
+
+}
+
+
+function priceModalBackgroundClick(event){
+
+  if(event.target === $('priceModal')){
+
+    closePriceBase();
+
+  }
+
+}
+
+
+/* =========================================================
+   ESC — ЗАКРИТТЯ МОДАЛЬНИХ ВІКОН
+   ========================================================= */
+
+document.addEventListener(
+  'keydown',
+  event => {
+
+    if(event.key !== 'Escape'){
+
+      return;
+
+    }
+
+    closeModal();
+
+    closePriceBase();
+
+  }
+);
+
+
+/* =========================================================
+   ЕКСПОРТ
+   ========================================================= */
+
+function exportData(){
+
+  const backup = {
+
+    app:'SA-MASTER.PRO Calculator',
+
+    version:1,
+
+    exportedAt:
+      new Date().toISOString(),
+
+    database:db,
+
+    estimate:estimate
+
+  };
+
+
+  const json =
+    JSON.stringify(
+      backup,
+      null,
+      2
+    );
+
+
+  const blob =
+    new Blob(
+      [json],
+      {
+        type:'application/json'
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(blob);
+
+
+  const a =
+    document.createElement('a');
+
+
+  const date =
+    new Date()
+      .toISOString()
+      .slice(0,10);
+
+
+  a.href = url;
+
+  a.download =
+    `sa-master-calculator-backup-${date}.json`;
+
+
+  document.body.appendChild(a);
+
+  a.click();
+
+  a.remove();
+
+
+  setTimeout(() => {
+
+    URL.revokeObjectURL(url);
+
+  },1000);
+
+}
+
+
+/* =========================================================
+   СТАРТ
+   ========================================================= */
+
+renderSelect();
+
+renderEstimate();
+
+</script>
+
+</body>
+</html>
