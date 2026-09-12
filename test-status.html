@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SA-MASTER — тест статусу</title>
+
+<style>
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;
+  max-width:600px;
+  margin:40px auto;
+  padding:20px;
+  background:#f5f5f7;
+  color:#111;
+}
+button{
+  width:100%;
+  padding:16px;
+  border:0;
+  border-radius:14px;
+  background:#007aff;
+  color:white;
+  font-size:17px;
+  font-weight:600;
+}
+pre{
+  margin-top:20px;
+  padding:16px;
+  border-radius:14px;
+  background:white;
+  overflow:auto;
+  white-space:pre-wrap;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Тест статусу SA-MASTER</h2>
+
+<p>
+Заявка: <b>SM-R-2026-006</b><br>
+Об'єкт: <b>SM-2026-002</b>
+</p>
+
+<button onclick="changeStatus()">
+Змінити статус на «Опрацювання»
+</button>
+
+<pre id="result">Результат з'явиться тут...</pre>
+
+<script>
+async function changeStatus(){
+
+  const result = document.getElementById('result');
+
+  result.textContent = 'Виконується запит...';
+
+  try{
+
+    const response = await fetch(
+      'https://sa-master-worker.c6hht469s9.workers.dev/request/SM-R-2026-006/status',
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({
+          status:'processing'
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    result.textContent =
+      JSON.stringify(data,null,2);
+
+  }catch(error){
+
+    result.textContent =
+      'ПОМИЛКА:\n' + error.message;
+
+  }
+}
+</script>
+
+</body>
+</html>
