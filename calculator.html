@@ -1490,8 +1490,7 @@ const defaultDB={
     {id:"r15",name:"Заміна каналізаційного стояка",unit:"шт",price:5000},
     {id:"r16",name:"Знешумлення каналізаційного стояка",unit:"шт",price:4000},
     {id:"r17",name:"Монтаж конвектора",unit:"шт",price:5000},
-    {id:"r18",name:"Монтаж дизайнерського радіатора",unit:"шт",price:5000},
-    {id:"r19",name:"Монтаж душової системи",unit:"шт",price:4000}
+    {id:"r18",name:"Монтаж дизайнерського радіатора",unit:"шт",price:5000}
   ],
 
   finish:[
@@ -1516,7 +1515,6 @@ const defaultDB={
 
 let db=loadDB();
 let estimate=loadEstimate();
-
 let profile=loadProfile();
 
 let mainCategory="rough";
@@ -1663,11 +1661,6 @@ function loadDB(){
       }
     }
 
-    /*
-      Переносимо існуючий каталог SA-MASTER,
-      якщо він уже є у браузері.
-    */
-
     const old=
       localStorage.getItem(
         "samaster_db"
@@ -1707,25 +1700,114 @@ function loadDB(){
   return copy;
 }
 
+
+/* =========================================================
+   DATABASE MIGRATION
+========================================================= */
+
 function migrateDB(data){
 
   let changed=false;
 
   /*
-    r20 "Монтаж рушникосушки"
-    має бути тільки в finish.
+    ---------------------------------------------------------
+    r19 "Монтаж душової системи"
+    переносимо з Чорнових у Чистові → f4.
+    ---------------------------------------------------------
   */
 
-  const oldIndex=
+  const oldShowerIndex=
+    data.rough.findIndex(
+      item=>item.id==="r19"
+    );
+
+  if(oldShowerIndex!==-1){
+
+    const old=
+      data.rough.splice(
+        oldShowerIndex,
+        1
+      )[0];
+
+    changed=true;
+
+    /*
+      Якщо f4 вже існує — нічого не дублюємо.
+      Якщо f4 відсутній — створюємо його
+      з ціною старого r19.
+    */
+
+    if(
+      !data.finish.some(
+        item=>item.id==="f4"
+      )
+    ){
+
+      data.finish.push({
+        id:"f4",
+        name:"Монтаж душової системи",
+        unit:old.unit||"шт",
+        price:Number(old.price??3500)
+      });
+    }
+  }
+
+  /*
+    Навіть якщо r19 був у каталозі помилково
+    в іншому місці, гарантовано прибираємо його
+    з Чорнових.
+  */
+
+  const roughWithoutShower=
+    data.rough.filter(
+      item=>item.id!=="r19"
+    );
+
+  if(
+    roughWithoutShower.length!==data.rough.length
+  ){
+
+    data.rough=roughWithoutShower;
+    changed=true;
+  }
+
+  /*
+    Гарантуємо наявність f4 у Чистових.
+  */
+
+  if(
+    !data.finish.some(
+      item=>item.id==="f4"
+    )
+  ){
+
+    data.finish.push({
+      id:"f4",
+      name:"Монтаж душової системи",
+      unit:"шт",
+      price:3500
+    });
+
+    changed=true;
+  }
+
+  /*
+    ---------------------------------------------------------
+    r20 "Монтаж рушникосушки"
+    переносимо з Чорнових у Чистові → f8.
+    ---------------------------------------------------------
+  */
+
+  const oldTowelIndex=
     data.rough.findIndex(
       item=>item.id==="r20"
     );
 
-  if(oldIndex!==-1){
+  if(oldTowelIndex!==-1){
 
     const old=
       data.rough.splice(
-        oldIndex,
+        oldTowelIndex,
         1
       )[0];
 
@@ -1746,10 +1828,27 @@ function migrateDB(data){
     }
   }
 
-  data.rough=
+  /*
+    Гарантовано прибираємо f8 з Чорнових,
+    якщо він там опинився.
+  */
+
+  const roughWithoutTowel=
     data.rough.filter(
       item=>item.id!=="f8"
     );
+
+  if(
+    roughWithoutTowel.length!==data.rough.length
+  ){
+
+    data.rough=roughWithoutTowel;
+    changed=true;
+  }
+
+  /*
+    Гарантуємо наявність f8 у Чистових.
+  */
 
   if(
     !data.finish.some(
@@ -1807,10 +1906,6 @@ function loadEstimate(){
       );
     }
 
-    /*
-      Підхоплюємо старий кошторис.
-    */
-
     const old=
       localStorage.getItem(
         "samaster_estimate"
@@ -1836,6 +1931,11 @@ function loadEstimate(){
   return [];
 }
 
+
+/* =========================================================
+   ESTIMATE MIGRATION
+========================================================= */
+
 function migrateEstimate(data){
 
   if(!Array.isArray(data)){
@@ -1844,12 +1944,89 @@ function migrateEstimate(data){
 
   let changed=false;
 
-  const oldLines=
+  /*
+    ---------------------------------------------------------
+    r19 → f4
+    Монтаж душової системи
+    ---------------------------------------------------------
+  */
+
+  const oldShowerLines=
+    data.filter(
+      item=>item.workId==="r19"
+    );
+
+  if(oldShowerLines.length){
+
+    const f4Line=
+      data.find(
+        item=>item.workId==="f4"
+      );
+
+    if(f4Line){
+
+      /*
+        Якщо f4 уже є в кошторисі,
+        просто додаємо кількість старого r19.
+        Ціна існуючого f4 зберігається.
+      */
+
+      oldShowerLines.forEach(oldLine=>{
+
+        f4Line.qty=
+          Number(f4Line.qty||0)+
+          Number(oldLine.qty||0);
+
+      });
+
+      data=
+        data.filter(
+          item=>item.workId!=="r19"
+        );
+
+    }else{
+
+      /*
+        Якщо f4 ще немає,
+        перетворюємо старий рядок r19
+        у f4, зберігаючи його ціну,
+        кількість та інші дані.
+      */
+
+      data=
+        data.map(item=>{
+
+          if(item.workId!=="r19"){
+            return item;
+          }
+
+          return{
+            ...item,
+            workId:"f4",
+            cat:"finish",
+            name:"Монтаж душової системи",
+            unit:item.unit||"шт"
+          };
+
+        });
+    }
+
+    changed=true;
+  }
+
+  /*
+    ---------------------------------------------------------
+    r20 → f8
+    Монтаж рушникосушки
+    ---------------------------------------------------------
+  */
+
+  const oldTowelLines=
     data.filter(
       item=>item.workId==="r20"
     );
 
-  if(oldLines.length){
+  if(oldTowelLines.length){
 
     const f8Line=
       data.find(
@@ -1858,10 +2035,12 @@ function migrateEstimate(data){
 
     if(f8Line){
 
-      oldLines.forEach(oldLine=>{
+      oldTowelLines.forEach(oldLine=>{
+
         f8Line.qty=
           Number(f8Line.qty||0)+
           Number(oldLine.qty||0);
+
       });
 
       data=
@@ -1885,11 +2064,48 @@ function migrateEstimate(data){
             name:"Монтаж рушникосушки",
             unit:item.unit||"шт"
           };
+
         });
     }
 
     changed=true;
   }
+
+  /*
+    Додаткова нормалізація:
+    якщо позиції вже мають f4/f8,
+    вони повинні належати Чистовым.
+  */
+
+  data=
+    data.map(item=>{
+
+      if(item.workId==="f4"){
+
+        changed=true;
+
+        return{
+          ...item,
+          cat:"finish",
+          name:"Монтаж душової системи",
+          unit:item.unit||"шт"
+        };
+      }
+
+      if(item.workId==="f8"){
+
+        changed=true;
+
+        return{
+          ...item,
+          cat:"finish",
+          name:"Монтаж рушникосушки",
+          unit:item.unit||"шт"
+        };
+      }
+
+      return item;
+    });
 
   if(changed){
 
@@ -2157,10 +2373,6 @@ function savePassportEstimate(){
     JSON.stringify(passport)
   );
 
-  /*
-    Сумісність зі старою версією.
-  */
-
   localStorage.setItem(
     "samaster_passport_estimate",
     JSON.stringify(passport)
@@ -2404,11 +2616,6 @@ function clearEstimate(){
   }
 
   estimate=[];
-
-  /*
-    Новий кошторис отримує
-    новий номер.
-  */
 
   localStorage.removeItem(
     "plumber_calc_estimate_id"
@@ -2690,25 +2897,12 @@ function saveWork(){
     item.unit=unit;
     item.price=price;
 
-    /*
-      Ціна каталогу змінюється,
-      але вже створений кошторис
-      не повинен автоматично
-      змінювати свою ціну.
-    */
-
     estimate.forEach(line=>{
 
       if(line.workId===item.id){
 
         line.name=name;
         line.unit=unit;
-
-        /*
-          basePrice оновлюємо,
-          price кошторису залишаємо.
-        */
-
         line.basePrice=price;
       }
     });
@@ -2982,9 +3176,6 @@ function printEstimate(){
 
 /* =========================================================
    JSON
-   Залишаємо як технічний
-   інструмент для майбутньої
-   синхронізації / Worker / CRM.
 ========================================================= */
 
 function exportJSON(){
