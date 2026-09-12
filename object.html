@@ -1,1 +1,1481 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
+<title>Об'єкт — SA-MASTER.PRO</title>
+<meta name="description" content="Цифровий паспорт об'єкта SA-MASTER.PRO">
+
+<link rel="icon" href="logo.png">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+
+:root{
+  --blue:#007AFF;
+  --bg:#f2f2f7;
+  --card:rgba(255,255,255,.72);
+  --card-solid:#fff;
+  --text:#111;
+  --muted:#777;
+  --line:rgba(0,0,0,.08);
+  --green:#34c759;
+  --red:#ff3b30;
+  --shadow:0 12px 35px rgba(0,0,0,.08);
+}
+
+[data-theme="dark"]{
+  --bg:#111;
+  --card:rgba(35,35,38,.75);
+  --card-solid:#242426;
+  --text:#fff;
+  --muted:#aaa;
+  --line:rgba(255,255,255,.1);
+  --shadow:0 12px 35px rgba(0,0,0,.28);
+}
+
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html{
+  scroll-behavior:smooth;
+}
+
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Arial,sans-serif;
+}
+
+button{
+  font:inherit;
+}
+
+.page{
+  width:min(100%,620px);
+  margin:auto;
+  padding:
+    max(18px,env(safe-area-inset-top))
+    16px
+    calc(35px + env(safe-area-inset-bottom));
+}
+
+/* HEADER */
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:18px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  text-decoration:none;
+  color:var(--text);
+}
+
+.brand img{
+  width:40px;
+  height:40px;
+  object-fit:contain;
+}
+
+.brand-name{
+  font-family:"Russo One",sans-serif;
+  font-size:15px;
+  letter-spacing:.3px;
+}
+
+.brand-sub{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:2px;
+}
+
+.icon-btn{
+  width:40px;
+  height:40px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--card);
+  color:var(--text);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+}
+
+/* HERO */
+
+.hero{
+  position:relative;
+  padding:24px 20px;
+  border:1px solid var(--line);
+  border-radius:28px;
+  background:var(--card);
+  backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+
+.hero::after{
+  content:"";
+  position:absolute;
+  width:180px;
+  height:180px;
+  right:-80px;
+  top:-80px;
+  background:rgba(0,122,255,.13);
+  filter:blur(30px);
+  border-radius:50%;
+  pointer-events:none;
+}
+
+.eyebrow{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:7px;
+}
+
+.object-name{
+  font-family:"Russo One",sans-serif;
+  font-size:27px;
+  line-height:1.15;
+  margin:0 0 9px;
+}
+
+.address{
+  color:var(--muted);
+  font-size:14px;
+  line-height:1.4;
+}
+
+.status-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:18px;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 11px;
+  border-radius:13px;
+  background:rgba(52,199,89,.12);
+  color:var(--green);
+  font-size:12px;
+  font-weight:600;
+}
+
+.badge.blue{
+  background:rgba(0,122,255,.1);
+  color:var(--blue);
+}
+
+.start{
+  margin-top:17px;
+  padding-top:15px;
+  border-top:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+}
+
+.start-label{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.start-date{
+  font-size:15px;
+  font-weight:600;
+}
+
+/* QUICK MENU */
+
+.menu{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:9px;
+  margin-top:14px;
+}
+
+.menu button{
+  min-width:0;
+  padding:13px 5px;
+  border:1px solid var(--line);
+  border-radius:18px;
+  background:var(--card);
+  color:var(--text);
+  cursor:pointer;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+}
+
+.menu-icon{
+  display:block;
+  font-size:21px;
+  margin-bottom:5px;
+}
+
+.menu-label{
+  display:block;
+  font-size:10px;
+  color:var(--muted);
+}
+
+/* SECTIONS */
+
+.section{
+  margin-top:14px;
+  padding:18px;
+  border:1px solid var(--line);
+  border-radius:24px;
+  background:var(--card);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  box-shadow:0 7px 25px rgba(0,0,0,.035);
+}
+
+.section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+}
+
+.section-title h2{
+  margin:0;
+  font-size:17px;
+}
+
+.section-title span{
+  font-size:12px;
+  color:var(--muted);
+}
+
+/* FINANCE */
+
+.finance{
+  display:grid;
+  gap:9px;
+}
+
+.finance-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 13px;
+  border-radius:15px;
+  background:rgba(127,127,127,.07);
+}
+
+.finance-label{
+  color:var(--muted);
+  font-size:13px;
+}
+
+.finance-value{
+  font-size:14px;
+  font-weight:600;
+}
+
+.finance-value.balance{
+  color:var(--green);
+}
+
+/* WORKS */
+
+.work{
+  padding:12px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.work:last-child{
+  border-bottom:0;
+  padding-bottom:0;
+}
+
+.work-top{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.work-name{
+  font-size:13px;
+  line-height:1.35;
+}
+
+.work-total{
+  white-space:nowrap;
+  font-size:13px;
+  font-weight:600;
+}
+
+.work-bottom{
+  display:flex;
+  justify-content:space-between;
+  margin-top:5px;
+  color:var(--muted);
+  font-size:11px;
+}
+
+.total-box{
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  font-size:16px;
+  font-weight:700;
+}
+
+/* EMPTY */
+
+.empty{
+  padding:18px 5px 5px;
+  color:var(--muted);
+  text-align:center;
+  font-size:13px;
+}
+
+/* MODAL */
+
+.modal{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  background:rgba(0,0,0,.35);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+}
+
+.modal.show{
+  display:flex;
+}
+
+.sheet{
+  width:min(100%,620px);
+  max-height:88vh;
+  overflow:auto;
+  padding:
+    12px
+    18px
+    calc(25px + env(safe-area-inset-bottom));
+  border-radius:28px 28px 0 0;
+  background:var(--card-solid);
+  color:var(--text);
+  box-shadow:0 -15px 45px rgba(0,0,0,.2);
+  animation:up .22s ease-out;
+}
+
+@keyframes up{
+  from{transform:translateY(30px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+
+.handle{
+  width:38px;
+  height:5px;
+  border-radius:5px;
+  background:rgba(127,127,127,.35);
+  margin:0 auto 15px;
+}
+
+.sheet-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:15px;
+}
+
+.sheet-head h3{
+  margin:0;
+  font-size:19px;
+}
+
+.close{
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:50%;
+  background:rgba(127,127,127,.12);
+  color:var(--text);
+  font-size:20px;
+  cursor:pointer;
+}
+
+/* EVENT */
+
+.event{
+  position:relative;
+  padding:0 0 18px 24px;
+}
+
+.event::before{
+  content:"";
+  position:absolute;
+  left:4px;
+  top:4px;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:var(--blue);
+}
+
+.event::after{
+  content:"";
+  position:absolute;
+  left:8px;
+  top:15px;
+  bottom:0;
+  width:1px;
+  background:var(--line);
+}
+
+.event:last-child::after{
+  display:none;
+}
+
+.event-date{
+  color:var(--muted);
+  font-size:11px;
+  margin-bottom:5px;
+}
+
+.event-text{
+  font-size:13px;
+  line-height:1.45;
+}
+
+/* FILE */
+
+.file{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 0;
+  border-bottom:1px solid var(--line);
+}
+
+.file:last-child{
+  border-bottom:0;
+}
+
+.file-icon{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  background:rgba(0,122,255,.1);
+  font-size:18px;
+}
+
+.file-name{
+  font-size:13px;
+}
+
+.file-meta{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:10px;
+}
+
+/* IMPORTANT */
+
+.important{
+  padding:13px;
+  border-radius:15px;
+  background:rgba(255,193,7,.1);
+  margin-bottom:9px;
+}
+
+.important:last-child{
+  margin-bottom:0;
+}
+
+.important-title{
+  font-size:13px;
+  font-weight:600;
+}
+
+.important-text{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.4;
+}
+
+/* FOOTER */
+
+.footer{
+  text-align:center;
+  color:var(--muted);
+  font-size:10px;
+  margin-top:25px;
+}
+
+.error{
+  text-align:center;
+  padding:40px 15px;
+}
+
+.error-icon{
+  font-size:40px;
+  margin-bottom:12px;
+}
+
+.error h2{
+  margin:0 0 8px;
+  font-size:18px;
+}
+
+.error p{
+  margin:0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
+}
+
+/* LOADING */
+
+.loading{
+  padding:35px 10px;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px;
+}
+
+.spinner{
+  width:25px;
+  height:25px;
+  margin:0 auto 12px;
+  border:3px solid rgba(127,127,127,.2);
+  border-top-color:var(--blue);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+@media(max-width:360px){
+  .menu{
+    gap:6px;
+  }
+
+  .menu button{
+    padding-left:2px;
+    padding-right:2px;
+  }
+
+  .object-name{
+    font-size:24px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <header class="topbar">
+
+    <a class="brand" href="https://sa-master.pro/">
+      <img src="logo.png" alt="SA-MASTER.PRO">
+      <div>
+        <div class="brand-name">SA-MASTER.PRO</div>
+        <div class="brand-sub">цифровий паспорт об'єкта</div>
+      </div>
+    </a>
+
+    <button class="icon-btn" id="themeBtn" aria-label="Змінити тему">
+      ◐
+    </button>
+
+  </header>
+
+  <main id="app">
+
+    <div class="loading">
+      <div class="spinner"></div>
+      Завантаження даних об'єкта…
+    </div>
+
+  </main>
+
+  <div class="footer">
+    SA-MASTER.PRO · цифровий паспорт об'єкта
+  </div>
+
+</div>
+
+
+<!-- MODAL -->
+
+<div class="modal" id="modal">
+  <div class="sheet">
+
+    <div class="handle"></div>
+
+    <div class="sheet-head">
+      <h3 id="modalTitle">Інформація</h3>
+
+      <button class="close" id="closeModal">
+        ×
+      </button>
+    </div>
+
+    <div id="modalContent"></div>
+
+  </div>
+</div>
+
+
+<script>
+
+const API =
+  "https://sa-master-worker.c6hht469s9.workers.dev/object/";
+
+const params =
+  new URLSearchParams(location.search);
+
+const objectCode =
+  params.get("code") || "SM-2026-001";
+
+const app =
+  document.getElementById("app");
+
+const modal =
+  document.getElementById("modal");
+
+const modalTitle =
+  document.getElementById("modalTitle");
+
+const modalContent =
+  document.getElementById("modalContent");
+
+let DATA = null;
+
+
+/* -------------------------
+   HELPERS
+------------------------- */
+
+function esc(value){
+
+  if(value === null || value === undefined)
+    return "";
+
+  return String(value)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+
+function money(value){
+
+  return new Intl.NumberFormat("uk-UA")
+    .format(Number(value || 0))
+    + " грн";
+
+}
+
+
+function formatDate(value){
+
+  if(!value) return "—";
+
+  const parts =
+    value.split("-");
+
+  if(parts.length === 3){
+
+    return `${parts[2]}.${parts[1]}.${parts[0]}`;
+
+  }
+
+  return value;
+
+}
+
+
+function formatDateTime(value){
+
+  if(!value) return "—";
+
+  const d =
+    new Date(value.replace(" ","T"));
+
+  if(Number.isNaN(d.getTime()))
+    return value;
+
+  return d.toLocaleString(
+    "uk-UA",
+    {
+      day:"2-digit",
+      month:"2-digit",
+      year:"numeric",
+      hour:"2-digit",
+      minute:"2-digit"
+    }
+  );
+
+}
+
+
+/* -------------------------
+   LOAD OBJECT
+------------------------- */
+
+async function loadObject(){
+
+  try{
+
+    const response =
+      await fetch(
+        API + encodeURIComponent(objectCode),
+        {
+          cache:"no-store"
+        }
+      );
+
+    if(!response.ok)
+      throw new Error("HTTP " + response.status);
+
+    const json =
+      await response.json();
+
+    if(!json.ok || !json.object)
+      throw new Error("Об'єкт не знайдено");
+
+    DATA = json;
+
+    render();
+
+  }catch(error){
+
+    console.error(error);
+
+    app.innerHTML = `
+
+      <div class="section error">
+
+        <div class="error-icon">⚠️</div>
+
+        <h2>Не вдалося завантажити об'єкт</h2>
+
+        <p>
+          Перевірте посилання або спробуйте
+          відкрити сторінку ще раз.
+        </p>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* -------------------------
+   MAIN RENDER
+------------------------- */
+
+function render(){
+
+  const o =
+    DATA.object;
+
+  const financial =
+    DATA.financial || {};
+
+  const works =
+    DATA.estimate_items || [];
+
+  const estimate =
+    DATA.estimates?.[0];
+
+  const important =
+    DATA.important || [];
+
+  const files =
+    DATA.files || [];
+
+  const events =
+    [...(DATA.events || [])]
+      .sort(
+        (a,b)=>
+          new Date(b.created_at) -
+          new Date(a.created_at)
+      );
+
+  const status =
+    o.status === "in_progress"
+      ? "В РОБОТІ"
+      : o.status === "completed"
+      ? "ЗАВЕРШЕНО"
+      : o.status === "new"
+      ? "НОВИЙ"
+      : o.status;
+
+
+  app.innerHTML = `
+
+    <!-- HERO -->
+
+    <section class="hero">
+
+      <div class="eyebrow">
+        ОБ'ЄКТ ${esc(o.object_code)}
+      </div>
+
+      <h1 class="object-name">
+        ${esc(o.name || "Об'єкт")}
+      </h1>
+
+      <div class="address">
+        ${esc(o.address || "Адреса не вказана")}
+      </div>
+
+      <div class="status-row">
+
+        <div class="badge">
+          ● ${esc(status)}
+        </div>
+
+        <div class="badge blue">
+          🔧 ${esc(o.work_type || "Роботи")}
+        </div>
+
+      </div>
+
+      ${
+        o.planned_start_date
+        ? `
+          <div class="start">
+
+            <div class="start-label">
+              Запланований початок робіт
+            </div>
+
+            <div class="start-date">
+              ${formatDate(o.planned_start_date)}
+            </div>
+
+          </div>
+        `
+        : ""
+      }
+
+    </section>
+
+
+    <!-- QUICK MENU -->
+
+    <div class="menu">
+
+      <button data-panel="important">
+        <span class="menu-icon">📌</span>
+        <span class="menu-label">
+          Важливе
+        </span>
+      </button>
+
+      <button data-panel="files">
+        <span class="menu-icon">📎</span>
+        <span class="menu-label">
+          Файли
+        </span>
+      </button>
+
+      <button data-panel="works">
+        <span class="menu-icon">🔧</span>
+        <span class="menu-label">
+          Роботи
+        </span>
+      </button>
+
+      <button data-panel="history">
+        <span class="menu-icon">🕐</span>
+        <span class="menu-label">
+          Історія
+        </span>
+      </button>
+
+    </div>
+
+
+    <!-- FINANCE -->
+
+    <section class="section">
+
+      <div class="section-title">
+
+        <h2>Фінанси</h2>
+
+        ${
+          estimate
+          ? `<span>${esc(estimate.title)}</span>`
+          : ""
+        }
+
+      </div>
+
+      <div class="finance">
+
+        <div class="finance-row">
+
+          <div class="finance-label">
+            Вартість робіт
+          </div>
+
+          <div class="finance-value">
+            ${money(
+              works.reduce(
+                (sum,item)=>
+                  sum + Number(item.total || 0),
+                0
+              )
+            )}
+          </div>
+
+        </div>
+
+        <div class="finance-row">
+
+          <div class="finance-label">
+            Коштів на матеріали отримано
+          </div>
+
+          <div class="finance-value">
+            ${money(financial.received)}
+          </div>
+
+        </div>
+
+        <div class="finance-row">
+
+          <div class="finance-label">
+            Матеріалів фактично витрачено
+          </div>
+
+          <div class="finance-value">
+            ${money(financial.spent)}
+          </div>
+
+        </div>
+
+        <div class="finance-row">
+
+          <div class="finance-label">
+            Залишок коштів на матеріали
+          </div>
+
+          <div class="finance-value balance">
+            ${money(financial.balance)}
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- WORKS PREVIEW -->
+
+    <section class="section">
+
+      <div class="section-title">
+
+        <h2>Роботи</h2>
+
+        <span>
+          ${works.length} позицій
+        </span>
+
+      </div>
+
+      ${
+        works.length
+        ? works.slice(0,5).map(item => `
+
+          <div class="work">
+
+            <div class="work-top">
+
+              <div class="work-name">
+                ${esc(item.description)}
+              </div>
+
+              <div class="work-total">
+                ${money(item.total)}
+              </div>
+
+            </div>
+
+            <div class="work-bottom">
+
+              <span>
+                ${esc(item.quantity)}
+                ×
+                ${money(item.unit_price)}
+              </span>
+
+            </div>
+
+          </div>
+
+        `).join("")
+        : `
+          <div class="empty">
+            Роботи ще не додані.
+          </div>
+        `
+      }
+
+      ${
+        works.length > 5
+        ? `
+          <button
+            data-panel="works"
+            style="
+              width:100%;
+              margin-top:12px;
+              padding:12px;
+              border:0;
+              border-radius:14px;
+              background:rgba(0,122,255,.1);
+              color:var(--blue);
+              cursor:pointer;
+            "
+          >
+            Показати всі роботи
+          </button>
+        `
+        : ""
+      }
+
+      ${
+        works.length
+        ? `
+          <div class="total-box">
+
+            <span>
+              Разом
+            </span>
+
+            <span>
+              ${money(
+                works.reduce(
+                  (sum,item)=>
+                    sum + Number(item.total || 0),
+                  0
+                )
+              )}
+            </span>
+
+          </div>
+        `
+        : ""
+      }
+
+    </section>
+
+  `;
+
+
+  document
+    .querySelectorAll("[data-panel]")
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => openPanel(button.dataset.panel)
+      );
+
+    });
+
+}
+
+
+/* -------------------------
+   PANELS
+------------------------- */
+
+function openPanel(type){
+
+  if(!DATA) return;
+
+  const content = {
+
+    important: renderImportant(),
+
+    files: renderFiles(),
+
+    works: renderWorks(),
+
+    history: renderHistory()
+
+  };
+
+  const titles = {
+
+    important:"📌 Важливе",
+
+    files:"📎 Файли",
+
+    works:"🔧 Роботи",
+
+    history:"🕐 Історія"
+
+  };
+
+  modalTitle.textContent =
+    titles[type] || "Інформація";
+
+  modalContent.innerHTML =
+    content[type] || "";
+
+  modal.classList.add("show");
+
+  document.body.style.overflow="hidden";
+
+}
+
+
+function closeModal(){
+
+  modal.classList.remove("show");
+
+  document.body.style.overflow="";
+
+}
+
+
+document
+  .getElementById("closeModal")
+  .addEventListener(
+    "click",
+    closeModal
+  );
+
+
+modal.addEventListener(
+  "click",
+  event => {
+
+    if(event.target === modal)
+      closeModal();
+
+  }
+);
+
+
+/* -------------------------
+   IMPORTANT
+------------------------- */
+
+function renderImportant(){
+
+  const items =
+    DATA.important || [];
+
+  if(!items.length){
+
+    return `
+      <div class="empty">
+        Тут поки немає важливих записів.
+      </div>
+    `;
+
+  }
+
+  return items.map(item => `
+
+    <div class="important">
+
+      <div class="important-title">
+        📌 ${esc(item.title)}
+      </div>
+
+      ${
+        item.content
+        ? `
+          <div class="important-text">
+            ${esc(item.content)}
+          </div>
+        `
+        : ""
+      }
+
+    </div>
+
+  `).join("");
+
+}
+
+
+/* -------------------------
+   FILES
+------------------------- */
+
+function renderFiles(){
+
+  const files =
+    DATA.files || [];
+
+  if(!files.length){
+
+    return `
+      <div class="empty">
+        Файлів поки немає.
+      </div>
+    `;
+
+  }
+
+  return files.map(file => `
+
+    <div class="file">
+
+      <div class="file-icon">
+        📎
+      </div>
+
+      <div>
+
+        <div class="file-name">
+          ${esc(file.name)}
+        </div>
+
+        <div class="file-meta">
+
+          ${esc(file.file_type || "Файл")}
+
+          · версія
+          ${esc(file.version || 1)}
+
+          ·
+          ${formatDateTime(file.created_at)}
+
+        </div>
+
+      </div>
+
+    </div>
+
+  `).join("");
+
+}
+
+
+/* -------------------------
+   WORKS
+------------------------- */
+
+function renderWorks(){
+
+  const works =
+    DATA.estimate_items || [];
+
+  if(!works.length){
+
+    return `
+      <div class="empty">
+        Роботи ще не додані.
+      </div>
+    `;
+
+  }
+
+  const total =
+    works.reduce(
+      (sum,item)=>
+        sum + Number(item.total || 0),
+      0
+    );
+
+  return `
+
+    ${
+      works.map(item => `
+
+        <div class="work">
+
+          <div class="work-top">
+
+            <div class="work-name">
+              ${esc(item.description)}
+            </div>
+
+            <div class="work-total">
+              ${money(item.total)}
+            </div>
+
+          </div>
+
+          <div class="work-bottom">
+
+            <span>
+              Кількість:
+              ${esc(item.quantity)}
+            </span>
+
+            <span>
+              ${money(item.unit_price)} / од.
+            </span>
+
+          </div>
+
+        </div>
+
+      `).join("")
+    }
+
+    <div class="total-box">
+
+      <span>
+        Загальна вартість
+      </span>
+
+      <span>
+        ${money(total)}
+      </span>
+
+    </div>
+
+  `;
+
+}
+
+
+/* -------------------------
+   HISTORY
+------------------------- */
+
+function renderHistory(){
+
+  const events =
+    [...(DATA.events || [])]
+      .sort(
+        (a,b)=>
+          new Date(b.created_at) -
+          new Date(a.created_at)
+      );
+
+  if(!events.length){
+
+    return `
+      <div class="empty">
+        Історія поки порожня.
+      </div>
+    `;
+
+  }
+
+  return events.map(event => `
+
+    <div class="event">
+
+      <div class="event-date">
+        ${formatDateTime(event.created_at)}
+      </div>
+
+      <div class="event-text">
+        ${esc(event.content)}
+      </div>
+
+    </div>
+
+  `).join("");
+
+}
+
+
+/* -------------------------
+   THEME
+------------------------- */
+
+const savedTheme =
+  localStorage.getItem("sa-theme");
+
+if(savedTheme)
+  document.documentElement.dataset.theme =
+    savedTheme;
+
+document
+  .getElementById("themeBtn")
+  .addEventListener(
+    "click",
+    () => {
+
+      const current =
+        document.documentElement.dataset.theme;
+
+      const next =
+        current === "dark"
+          ? "light"
+          : "dark";
+
+      document.documentElement.dataset.theme =
+        next;
+
+      localStorage.setItem(
+        "sa-theme",
+        next
+      );
+
+    }
+  );
+
+
+/* -------------------------
+   ESC CLOSE
+------------------------- */
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if(event.key === "Escape")
+      closeModal();
+
+  }
+);
+
+
+/* -------------------------
+   START
+------------------------- */
+
+loadObject();
+
+</script>
+
+</body>
+</html>
