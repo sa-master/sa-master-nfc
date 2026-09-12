@@ -192,7 +192,7 @@ html[data-theme="dark"] .card{
 
 
 /* =========================================================
-   THEME BUTTON
+   THEME
    ========================================================= */
 
 .theme-btn{
@@ -273,57 +273,7 @@ html[data-theme="dark"] .card{
 }
 
 .search input::-webkit-search-cancel-button{
-  -webkit-appearance:none;
-}
-
-
-/* =========================================================
-   QUICK / FREQUENT
-   ========================================================= */
-
-.quick-title{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
-  margin:4px 0 7px;
-  color:var(--muted);
-  font-size:12px;
-  font-weight:700;
-}
-
-.quick-list{
-  display:flex;
-  gap:7px;
-  overflow-x:auto;
-  padding:1px 1px 9px;
-  margin-bottom:2px;
-  scrollbar-width:none;
-  -webkit-overflow-scrolling:touch;
-}
-
-.quick-list::-webkit-scrollbar{
-  display:none;
-}
-
-.quick-item{
-  flex:0 0 auto;
-  border:0;
-  border-radius:12px;
-  padding:9px 11px;
-  background:var(--soft);
-  color:var(--text);
-  font-size:12px;
-  font-weight:650;
-  white-space:nowrap;
-}
-
-.quick-item:active{
-  transform:scale(.97);
-}
-
-.quick-item.added{
-  color:var(--blue);
+  -webkit-appearance:auto;
 }
 
 
@@ -331,23 +281,50 @@ html[data-theme="dark"] .card{
    ADD WORK LIST
    ========================================================= */
 
+/*
+   Список спеціально обмежений приблизно 7 позиціями.
+   Прокручування тільки вручну.
+*/
+
 .work-list{
-  max-height:min(52vh,460px);
+  height:448px;
+  max-height:448px;
   overflow-y:auto;
   overflow-x:hidden;
+
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
+
+  scrollbar-width:thin;
+
   padding-right:2px;
+
+  /*
+    Запобігаємо будь-якому програмному
+    "перестрибуванню" списку.
+  */
+  scroll-behavior:auto;
 }
 
 .add-work-item{
   display:flex;
   align-items:center;
   gap:9px;
-  padding:11px 0;
+
+  padding:10px 0;
+
   border-bottom:1px solid var(--line);
+
   min-height:64px;
+
   cursor:pointer;
+
+  /*
+    Важливо для мобільного:
+    рядок не повинен випадково
+    масштабуватися або виділятися.
+  */
+  -webkit-tap-highlight-color:transparent;
 }
 
 .add-work-item:last-child{
@@ -423,12 +400,6 @@ html[data-theme="dark"] .card{
   font-size:24px;
   line-height:1;
   font-weight:400;
-}
-
-.add-btn.added{
-  background:var(--green);
-  font-size:20px;
-  font-weight:800;
 }
 
 .add-btn:active{
@@ -591,9 +562,12 @@ html[data-theme="dark"] .card{
   inset:0;
   z-index:20;
   background:rgba(0,0,0,.45);
+
   display:none;
+
   align-items:flex-end;
   justify-content:center;
+
   padding:12px;
 }
 
@@ -605,17 +579,22 @@ html[data-theme="dark"] .card{
   width:min(560px,100%);
   max-height:90vh;
   overflow:auto;
+
   background:var(--white);
   color:var(--text);
+
   border-radius:24px;
   padding:18px;
+
   box-shadow:0 -10px 40px rgba(0,0,0,.2);
+
   -webkit-overflow-scrolling:touch;
 }
 
 .sheet.catalog-sheet{
   max-height:90vh;
   overflow:hidden;
+
   display:flex;
   flex-direction:column;
 }
@@ -702,8 +681,7 @@ html[data-theme="dark"] .card{
 }
 
 .catalog-body .work-list{
-  flex:1 1 auto;
-  min-height:0;
+  flex:0 0 auto;
 }
 
 .catalog-footer{
@@ -766,6 +744,11 @@ html[data-theme="dark"] .card{
 
 @media(max-width:380px){
 
+  .work-list{
+    height:434px;
+    max-height:434px;
+  }
+
   .work-controls{
     grid-template-columns:65px 1fr 42px;
   }
@@ -782,11 +765,8 @@ html[data-theme="dark"] .card{
     padding:11px 12px;
   }
 
-  .quick-item{
-    padding:8px 10px;
-  }
-
 }
+
 </style>
 </head>
 
@@ -912,15 +892,19 @@ html[data-theme="dark"] .card{
   <div class="total-line">
 
     <div>
+
       <div class="total-label">
         Загальна вартість
       </div>
+
     </div>
 
     <div
       id="grandTotal"
       class="total-value">
+
       0 грн
+
     </div>
 
   </div>
@@ -951,13 +935,17 @@ html[data-theme="dark"] .card{
     <button
       class="btn gray"
       onclick="clearEstimate()">
+
       Очистити
+
     </button>
 
     <button
       class="btn"
       onclick="exportData()">
+
       Експорт
+
     </button>
 
   </div>
@@ -1034,21 +1022,11 @@ html[data-theme="dark"] .card{
       </div>
 
 
-      <div
-        id="quickSection"
-        style="display:none">
-
-        <div class="quick-title">
-          <span>Часто використовуєте</span>
-        </div>
-
-        <div
-          id="quickList"
-          class="quick-list">
-        </div>
-
-      </div>
-
+      <!--
+        ВАЖЛИВО:
+        Ніяких "Популярних" або додаткових
+        горизонтальних списків тут немає.
+      -->
 
       <div
         id="addWorkList"
@@ -1685,61 +1663,6 @@ function savePassportEstimate(){
 
 
 /* =========================================================
-   ВИКОРИСТАННЯ ПОЗИЦІЙ
-   ========================================================= */
-
-function loadUsage(){
-
-  try{
-
-    const raw=
-      localStorage.getItem(
-        'samaster_work_usage'
-      );
-
-    if(!raw)
-      return {};
-
-    const data=
-      JSON.parse(raw);
-
-    return data&&typeof data==='object'
-      ?data
-      :{};
-
-  }catch{
-
-    return {};
-
-  }
-
-}
-
-
-function saveUsage(usage){
-
-  localStorage.setItem(
-    'samaster_work_usage',
-    JSON.stringify(usage)
-  );
-
-}
-
-
-function registerWorkUsage(workId){
-
-  const usage=
-    loadUsage();
-
-  usage[workId]=
-    Number(usage[workId]||0)+1;
-
-  saveUsage(usage);
-
-}
-
-
-/* =========================================================
    КАТАЛОГ
    ========================================================= */
 
@@ -1750,12 +1673,11 @@ function openCatalog(){
 
   renderAddWorkList();
 
-  setTimeout(
-    ()=>{
-      $('workSearch').focus();
-    },
-    80
-  );
+  /*
+    Пошук НЕ фокусується автоматично.
+    Це дозволяє одразу бачити позиції
+    і працювати пальцем зі списком.
+  */
 
 }
 
@@ -1799,14 +1721,35 @@ function setCategory(cat){
       cat==='finish'
     );
 
+  /*
+    При перемиканні категорії
+    повертаємо список на початок.
+    Це не автоскрол після додавання,
+    а нормальна зміна іншого списку.
+  */
+
+  const list=$('addWorkList');
+
+  if(list)
+    list.scrollTop=0;
+
   renderAddWorkList();
 
 }
 
 
 /* =========================================================
-   СПИСОК РОБІТ
+   ПОШУК
    ========================================================= */
+
+function normalizeSearch(value){
+
+  return String(value||'')
+    .toLowerCase()
+    .trim();
+
+}
+
 
 function renderAddWorkList(){
 
@@ -1816,15 +1759,18 @@ function renderAddWorkList(){
   if(!container)
     return;
 
+
   const search=
-    ($('workSearch')?.value||'')
-      .trim()
-      .toLowerCase();
+    normalizeSearch(
+      $('workSearch')?.value
+    );
+
 
   const categoryItems=
     db.filter(
       item=>item.cat===category
     );
+
 
   const list=
     categoryItems.filter(item=>{
@@ -1832,11 +1778,13 @@ function renderAddWorkList(){
       if(!search)
         return true;
 
+
       const name=
-        item.name.toLowerCase();
+        normalizeSearch(item.name);
 
       const unit=
-        item.unit.toLowerCase();
+        normalizeSearch(item.unit);
+
 
       return(
         name.includes(search)||
@@ -1844,12 +1792,6 @@ function renderAddWorkList(){
       );
 
     });
-
-
-  renderQuickList(
-    categoryItems,
-    search
-  );
 
 
   $('catalogCount').textContent=
@@ -1868,112 +1810,24 @@ function renderAddWorkList(){
   }
 
 
+  /*
+    Зберігаємо поточну позицію прокрутки.
+    Це важливо: натискання + або −
+    не повинно кидати майстра на початок.
+  */
+
+  const currentScroll=
+    container.scrollTop;
+
+
   container.innerHTML=
     list
       .map(renderAddWorkItem)
       .join('');
 
-}
 
-
-function renderQuickList(
-  categoryItems,
-  search
-){
-
-  const section=
-    $('quickSection');
-
-  const container=
-    $('quickList');
-
-  if(!section||!container)
-    return;
-
-
-  if(search){
-
-    section.style.display='none';
-    container.innerHTML='';
-    return;
-
-  }
-
-
-  const usage=
-    loadUsage();
-
-
-  const sorted=
-    [...categoryItems]
-      .sort(
-        (a,b)=>
-          Number(usage[b.id]||0)-
-          Number(usage[a.id]||0)
-      );
-
-
-  const used=
-    sorted.filter(
-      item=>Number(usage[item.id]||0)>0
-    );
-
-
-  const source=
-    used.length
-      ?used
-      :categoryItems.slice(0,5);
-
-
-  const quick=
-    source.slice(0,6);
-
-
-  if(!quick.length){
-
-    section.style.display='none';
-    container.innerHTML='';
-    return;
-
-  }
-
-
-  section.style.display='block';
-
-
-  container.innerHTML=
-    quick
-      .map(item=>{
-
-        const existing=
-          estimate.find(
-            x=>x.workId===item.id
-          );
-
-        return `
-
-          <button
-            class="quick-item ${existing?'added':''}"
-            onclick="addWork('${esc(item.id)}')">
-
-            ${esc(shortWorkName(item.name))}
-
-          </button>
-
-        `;
-
-      })
-      .join('');
-
-}
-
-
-function shortWorkName(name){
-
-  if(name.length<=26)
-    return name;
-
-  return name.slice(0,25)+'…';
+  container.scrollTop=
+    currentScroll;
 
 }
 
@@ -2003,12 +1857,17 @@ function pluralWorks(n){
 }
 
 
+/* =========================================================
+   РЕНДЕР ПОЗИЦІЇ КАТАЛОГУ
+   ========================================================= */
+
 function renderAddWorkItem(item){
 
   const existing=
     estimate.find(
       x=>x.workId===item.id
     );
+
 
   if(existing){
 
@@ -2154,17 +2013,22 @@ function addWork(workId){
   }
 
 
-  registerWorkUsage(work.id);
-
   saveEstimate();
   renderEstimate();
+
+  /*
+    Важливо:
+    renderAddWorkList() зберігає scrollTop,
+    тому список не стрибає після натискання +.
+  */
+
   renderAddWorkList();
 
 }
 
 
 /* =========================================================
-   ЗМЕНШЕННЯ КІЛЬКОСТІ З КАТАЛОГУ
+   ЗМЕНШЕННЯ КІЛЬКОСТІ
    ========================================================= */
 
 function removeOneFromCatalog(workId){
