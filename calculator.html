@@ -41,8 +41,7 @@ html[data-theme="dark"]{
   -webkit-tap-highlight-color:transparent;
 }
 
-html,
-body{
+html,body{
   width:100%;
   height:100%;
   min-height:100%;
@@ -62,9 +61,7 @@ body{
   overflow:hidden;
 }
 
-button,
-input,
-textarea{
+button,input,textarea{
   font:inherit;
 }
 
@@ -724,7 +721,6 @@ button{
 }
 
 @media(max-height:700px){
-
   .header{
     min-height:44px;
     margin-bottom:6px;
@@ -756,7 +752,6 @@ button{
 }
 
 @media(max-width:380px){
-
   .estimate-row{
     grid-template-columns:minmax(0,1fr) auto auto;
   }
@@ -787,7 +782,6 @@ button{
 }
 
 @media print{
-
   body{
     overflow:visible;
     background:#fff;
@@ -864,7 +858,6 @@ button{
 <header class="header">
 
   <div class="brand">
-
     <div id="brandTitle" class="brand-title">
       Калькулятор сантехніка
     </div>
@@ -872,7 +865,6 @@ button{
     <div id="brandSub" class="brand-sub">
       Кошторис вартості робіт
     </div>
-
   </div>
 
   <div class="header-actions">
@@ -1376,16 +1368,16 @@ button{
 
 const PRODUCT={
   name:"Калькулятор сантехніка",
-  version:3
+  version:4
 };
 
 
 /* =========================================================
    DEFAULT CATALOG
+   ЦЕ ГОЛОВНЕ ДЖЕРЕЛО СТАНДАРТНИХ ПОЗИЦІЙ
 ========================================================= */
 
 const defaultDB={
-
   rough:[
     {id:"r1",name:"Монтаж радіатора",unit:"шт",price:2500},
     {id:"r2",name:"Монтаж запірно-регулюючого вузла",unit:"компл",price:7000},
@@ -1419,7 +1411,6 @@ const defaultDB={
     {id:"f9",name:"Монтаж аксесуарів",unit:"шт",price:700},
     {id:"f10",name:"Монтаж пралки/сушки",unit:"компл",price:6000}
   ]
-
 };
 
 
@@ -1427,9 +1418,13 @@ const defaultDB={
    STATE
 ========================================================= */
 
-let db=loadDB();
-let estimate=loadEstimate();
-let profile=loadProfile();
+let db={
+  rough:[],
+  finish:[]
+};
+
+let estimate=[];
+let profile=null;
 
 let mainCategory="rough";
 let catalogCategory="rough";
@@ -1518,14 +1513,12 @@ function loadProfile(){
 
     return{
       ...defaultProfile,
-      ...data
+      ...(data&&typeof data==="object"?data:{})
     };
 
   }catch{
 
-    return{
-      ...defaultProfile
-    };
+    return {...defaultProfile};
   }
 }
 
@@ -1551,25 +1544,137 @@ function renderProfile(){
 
 
 /* =========================================================
-   DATABASE
+   CATALOG CORE
 ========================================================= */
 
 /*
-  Додає відсутні стандартні позиції,
-  але НЕ видаляє власні позиції майстра.
+  Важливо:
+
+  defaultDB завжди є джерелом стандартних позицій.
+
+  localStorage може:
+  - не існувати;
+  - бути порожнім;
+  - бути пошкодженим;
+  - містити стару структуру;
+  - містити власні роботи майстра.
+
+  Ми НІКОЛИ не дозволяємо localStorage
+  зробити стандартний каталог порожнім.
 */
 
-function mergeDefaultCatalog(data){
+function cloneDefaults(){
+
+  return{
+    rough:defaultDB.rough.map(
+      item=>({...item})
+    ),
+
+    finish:defaultDB.finish.map(
+      item=>({...item})
+    )
+  };
+}
+
+
+function normalizeCatalog(data){
+
+  const source=
+    data &&
+    typeof data==="object"
+      ? data
+      : {};
 
   const result={
-    rough:Array.isArray(data?.rough)
-      ? [...data.rough]
+    rough:Array.isArray(source.rough)
+      ? source.rough.filter(Boolean).map(
+          item=>({...item})
+        )
       : [],
 
-    finish:Array.isArray(data?.finish)
-      ? [...data.finish]
+    finish:Array.isArray(source.finish)
+      ? source.finish.filter(Boolean).map(
+          item=>({...item})
+        )
       : []
   };
+
+  /*
+    Старі r19/r20 переносимо
+    до правильних категорій.
+  */
+
+  const oldR19=
+    result.rough.find(
+      item=>item.id==="r19"
+    );
+
+  if(oldR19){
+
+    if(
+      !result.finish.some(
+        item=>item.id==="f4"
+      )
+    ){
+
+      result.finish.push({
+        id:"f4",
+        name:"Монтаж душової системи",
+        unit:oldR19.unit||"шт",
+        price:Number(oldR19.price??3500)
+      });
+    }
+
+    result.rough=
+      result.rough.filter(
+        item=>item.id!=="r19"
+      );
+  }
+
+  const oldR20=
+    result.rough.find(
+      item=>item.id==="r20"
+    );
+
+  if(oldR20){
+
+    if(
+      !result.finish.some(
+        item=>item.id==="f8"
+      )
+    ){
+
+      result.finish.push({
+        id:"f8",
+        name:"Монтаж рушникосушки",
+        unit:oldR20.unit||"шт",
+        price:Number(oldR20.price??3000)
+      });
+    }
+
+    result.rough=
+      result.rough.filter(
+        item=>item.id!=="r20"
+      );
+  }
+
+  /*
+    Якщо f4/f8 випадково опинилися
+    в rough — прибираємо.
+  */
+
+  result.rough=
+    result.rough.filter(
+      item=>item.id!=="f4" &&
+            item.id!=="f8"
+    );
+
+  /*
+    Додаємо відсутні стандартні позиції.
+
+    Власну позицію з тим самим id
+    не перезаписуємо.
+  */
 
   ["rough","finish"].forEach(category=>{
 
@@ -1577,8 +1682,7 @@ function mergeDefaultCatalog(data){
 
       const exists=
         result[category].some(
-          item=>item &&
-            item.id===defaultItem.id
+          item=>item.id===defaultItem.id
         );
 
       if(!exists){
@@ -1586,20 +1690,71 @@ function mergeDefaultCatalog(data){
         result[category].push({
           ...defaultItem
         });
-
       }
 
     });
 
   });
 
+  /*
+    Гарантуємо правильну назву f4/f8,
+    але НЕ змінюємо їхню ціну.
+  */
+
+  const f4=
+    result.finish.find(
+      item=>item.id==="f4"
+    );
+
+  if(f4){
+
+    f4.name="Монтаж душової системи";
+    f4.unit=f4.unit||"шт";
+    f4.price=Number(f4.price??3500);
+  }
+
+  const f8=
+    result.finish.find(
+      item=>item.id==="f8"
+    );
+
+  if(f8){
+
+    f8.name="Монтаж рушникосушки";
+    f8.unit=f8.unit||"шт";
+    f8.price=Number(f8.price??3000);
+  }
+
+  /*
+    Фінальна страховка.
+  */
+
+  if(!result.rough.length){
+
+    result.rough=
+      defaultDB.rough.map(
+        item=>({...item})
+      );
+  }
+
+  if(!result.finish.length){
+
+    result.finish=
+      defaultDB.finish.map(
+        item=>({...item})
+      );
+  }
+
   return result;
 }
 
+
 function loadDB(){
 
+  let stored=null;
+
   /*
-    1. Новий каталог
+    Новий каталог.
   */
 
   try{
@@ -1610,339 +1765,86 @@ function loadDB(){
       );
 
     if(raw){
-
-      const parsed=JSON.parse(raw);
-
-      if(parsed && typeof parsed==="object"){
-
-        const merged=
-          mergeDefaultCatalog(parsed);
-
-        const migrated=
-          migrateDB(merged);
-
-        localStorage.setItem(
-          "plumber_calc_catalog",
-          JSON.stringify(migrated)
-        );
-
-        return migrated;
-      }
+      stored=JSON.parse(raw);
     }
 
   }catch(error){
 
     console.warn(
-      "Помилка читання plumber_calc_catalog:",
+      "Не вдалося прочитати каталог:",
       error
     );
   }
 
 
   /*
-    2. Старий каталог SA-MASTER
+    Якщо нового каталогу немає,
+    пробуємо старий.
+  */
+
+  if(
+    !stored ||
+    typeof stored!=="object"
+  ){
+
+    try{
+
+      const old=
+        localStorage.getItem(
+          "samaster_db"
+        );
+
+      if(old){
+        stored=JSON.parse(old);
+      }
+
+    }catch(error){
+
+      console.warn(
+        "Не вдалося прочитати старий каталог:",
+        error
+      );
+    }
+  }
+
+
+  /*
+    Формуємо НОВИЙ каталог
+    незалежно від стану localStorage.
+  */
+
+  const result=
+    normalizeCatalog(stored);
+
+
+  /*
+    Важливо:
+    записуємо вже нормалізований каталог.
   */
 
   try{
 
-    const old=
-      localStorage.getItem(
-        "samaster_db"
-      );
-
-    if(old){
-
-      const parsed=JSON.parse(old);
-
-      if(parsed && typeof parsed==="object"){
-
-        const merged=
-          mergeDefaultCatalog(parsed);
-
-        const migrated=
-          migrateDB(merged);
-
-        localStorage.setItem(
-          "plumber_calc_catalog",
-          JSON.stringify(migrated)
-        );
-
-        return migrated;
-      }
-    }
+    localStorage.setItem(
+      "plumber_calc_catalog",
+      JSON.stringify(result)
+    );
 
   }catch(error){
 
     console.warn(
-      "Помилка читання samaster_db:",
+      "Не вдалося зберегти каталог:",
       error
-    );
-  }
-
-
-  /*
-    3. Каталогу немає —
-       створюємо повний стандартний.
-  */
-
-  const copy={
-    rough:defaultDB.rough.map(
-      item=>({...item})
-    ),
-
-    finish:defaultDB.finish.map(
-      item=>({...item})
-    )
-  };
-
-  const migrated=
-    migrateDB(copy);
-
-  localStorage.setItem(
-    "plumber_calc_catalog",
-    JSON.stringify(migrated)
-  );
-
-  return migrated;
-}
-
-
-/* =========================================================
-   DATABASE MIGRATION
-========================================================= */
-
-function migrateDB(data){
-
-  const result={
-    rough:Array.isArray(data?.rough)
-      ? [...data.rough]
-      : [],
-
-    finish:Array.isArray(data?.finish)
-      ? [...data.finish]
-      : []
-  };
-
-  let changed=false;
-
-
-  /*
-    ---------------------------------------------------------
-    r19 → f4
-    Монтаж душової системи
-    ---------------------------------------------------------
-  */
-
-  const oldShower=
-    result.rough.filter(
-      item=>item?.id==="r19"
-    );
-
-  if(oldShower.length){
-
-    const old=oldShower[0];
-
-    const existingF4=
-      result.finish.find(
-        item=>item?.id==="f4"
-      );
-
-    if(!existingF4){
-
-      result.finish.push({
-        id:"f4",
-        name:"Монтаж душової системи",
-        unit:old.unit||"шт",
-        price:Number(old.price??3500)
-      });
-
-    }
-
-    result.rough=
-      result.rough.filter(
-        item=>item?.id!=="r19"
-      );
-
-    changed=true;
-  }
-
-
-  /*
-    Навіть якщо r19 не був знайдений
-    вище, прибираємо його з Чорнових.
-  */
-
-  const roughWithoutR19=
-    result.rough.filter(
-      item=>item?.id!=="r19"
-    );
-
-  if(
-    roughWithoutR19.length!==result.rough.length
-  ){
-
-    result.rough=roughWithoutR19;
-    changed=true;
-  }
-
-
-  /*
-    Гарантуємо f4.
-  */
-
-  if(
-    !result.finish.some(
-      item=>item?.id==="f4"
-    )
-  ){
-
-    result.finish.push({
-      id:"f4",
-      name:"Монтаж душової системи",
-      unit:"шт",
-      price:3500
-    });
-
-    changed=true;
-  }
-
-
-  /*
-    ---------------------------------------------------------
-    r20 → f8
-    Монтаж рушникосушки
-    ---------------------------------------------------------
-  */
-
-  const oldTowel=
-    result.rough.filter(
-      item=>item?.id==="r20"
-    );
-
-  if(oldTowel.length){
-
-    const old=oldTowel[0];
-
-    const existingF8=
-      result.finish.find(
-        item=>item?.id==="f8"
-      );
-
-    if(!existingF8){
-
-      result.finish.push({
-        id:"f8",
-        name:"Монтаж рушникосушки",
-        unit:old.unit||"шт",
-        price:Number(old.price??3000)
-      });
-
-    }
-
-    result.rough=
-      result.rough.filter(
-        item=>item?.id!=="r20"
-      );
-
-    changed=true;
-  }
-
-
-  /*
-    Гарантовано прибираємо f8 з Чорнових.
-  */
-
-  const roughWithoutF8=
-    result.rough.filter(
-      item=>item?.id!=="f8"
-    );
-
-  if(
-    roughWithoutF8.length!==result.rough.length
-  ){
-
-    result.rough=roughWithoutF8;
-    changed=true;
-  }
-
-
-  /*
-    Гарантуємо f8.
-  */
-
-  if(
-    !result.finish.some(
-      item=>item?.id==="f8"
-    )
-  ){
-
-    result.finish.push({
-      id:"f8",
-      name:"Монтаж рушникосушки",
-      unit:"шт",
-      price:3000
-    });
-
-    changed=true;
-  }
-
-
-  /*
-    ---------------------------------------------------------
-    Нормалізація стандартних позицій.
-    Якщо f4/f8 уже існують, вони залишають
-    індивідуальну ціну майстра.
-    ---------------------------------------------------------
-  */
-
-  result.finish=
-    result.finish.map(item=>{
-
-      if(!item){
-        return item;
-      }
-
-      if(item.id==="f4"){
-
-        return{
-          ...item,
-          name:"Монтаж душової системи",
-          unit:item.unit||"шт",
-          price:Number(item.price??3500)
-        };
-      }
-
-      if(item.id==="f8"){
-
-        return{
-          ...item,
-          name:"Монтаж рушникосушки",
-          unit:item.unit||"шт",
-          price:Number(item.price??3000)
-        };
-      }
-
-      return item;
-
-    });
-
-
-  /*
-    Якщо були зміни — зберігаємо.
-  */
-
-  if(changed){
-
-    localStorage.setItem(
-      "plumber_calc_catalog",
-      JSON.stringify(result)
     );
   }
 
   return result;
 }
 
+
 function saveDB(){
+
+  db=
+    normalizeCatalog(db);
 
   localStorage.setItem(
     "plumber_calc_catalog",
@@ -1951,76 +1853,66 @@ function saveDB(){
 }
 
 
-/* =========================================================
-   ESTIMATE
-========================================================= */
+/*
+  Примусове відновлення.
+  Використовується тільки якщо каталог
+  якимось чином реально став порожнім.
+*/
 
-function loadEstimate(){
+function ensureCatalog(){
 
-  try{
+  const beforeRough=
+    Array.isArray(db?.rough)
+      ? db.rough.length
+      : 0;
 
-    const raw=
-      localStorage.getItem(
-        "plumber_calc_estimate"
-      );
+  const beforeFinish=
+    Array.isArray(db?.finish)
+      ? db.finish.length
+      : 0;
 
-    if(raw){
+  db=
+    normalizeCatalog(db);
 
-      const parsed=
-        JSON.parse(raw);
+  const afterRough=db.rough.length;
+  const afterFinish=db.finish.length;
 
-      return migrateEstimate(parsed);
-    }
+  if(
+    beforeRough!==afterRough ||
+    beforeFinish!==afterFinish
+  ){
 
-  }catch(error){
-
-    console.warn(
-      "Помилка читання кошторису:",
-      error
-    );
+    saveDB();
   }
 
+  return db;
+}
 
-  /*
-    Старий ключ.
-  */
 
-  try{
+/*
+  Окрема команда для повного скидання
+  стандартного каталогу.
 
-    const old=
-      localStorage.getItem(
-        "samaster_estimate"
-      );
+  Власні роботи навмисно не використовуємо,
+  коли викликається саме ця функція.
+*/
 
-    if(old){
+function resetCatalogToDefaults(){
 
-      const parsed=
-        migrateEstimate(
-          JSON.parse(old)
-        );
+  db=cloneDefaults();
 
-      localStorage.setItem(
-        "plumber_calc_estimate",
-        JSON.stringify(parsed)
-      );
+  saveDB();
 
-      return parsed;
-    }
+  renderAddWorkList();
 
-  }catch(error){
-
-    console.warn(
-      "Помилка читання старого кошторису:",
-      error
-    );
-  }
-
-  return [];
+  showToast(
+    "Стандартний каталог відновлено"
+  );
 }
 
 
 /* =========================================================
-   ESTIMATE MIGRATION
+   ESTIMATE
 ========================================================= */
 
 function migrateEstimate(data){
@@ -2030,60 +1922,50 @@ function migrateEstimate(data){
   }
 
   let result=
-    data.map(item=>({...item}));
-
-  let changed=false;
+    data
+      .filter(Boolean)
+      .map(item=>({...item}));
 
 
   /*
-    ---------------------------------------------------------
     r19 → f4
-    ---------------------------------------------------------
   */
 
-  const oldShowerLines=
+  const oldShower=
     result.filter(
-      item=>item?.workId==="r19"
+      item=>item.workId==="r19"
     );
 
-  if(oldShowerLines.length){
+  if(oldShower.length){
 
-    const f4Line=
+    const existing=
       result.find(
-        item=>item?.workId==="f4"
+        item=>item.workId==="f4"
       );
 
-    if(f4Line){
+    if(existing){
 
-      oldShowerLines.forEach(oldLine=>{
+      oldShower.forEach(item=>{
 
-        f4Line.qty=
-          Number(f4Line.qty||0)+
-          Number(oldLine.qty||0);
+        existing.qty=
+          Number(existing.qty||0)+
+          Number(item.qty||0);
 
       });
 
       result=
         result.filter(
-          item=>item?.workId!=="r19"
+          item=>item.workId!=="r19"
         );
 
     }else{
 
-      /*
-        Якщо f4 немає —
-        перетворюємо ПЕРШИЙ r19 у f4,
-        а наступні r19 додаємо до його кількості.
-      */
-
-      const first=
-        oldShowerLines[0];
+      const first=oldShower[0];
 
       const totalQty=
-        oldShowerLines.reduce(
+        oldShower.reduce(
           (sum,item)=>
-            sum+
-            Number(item.qty||0),
+            sum+Number(item.qty||0),
           0
         );
 
@@ -2101,65 +1983,56 @@ function migrateEstimate(data){
                 unit:item.unit||"шт",
                 qty:totalQty
               };
-
             }
 
             return item;
-
           })
           .filter(
-            item=>item?.workId!=="r19"
+            item=>item.workId!=="r19"
           );
-
     }
-
-    changed=true;
   }
 
 
   /*
-    ---------------------------------------------------------
     r20 → f8
-    ---------------------------------------------------------
   */
 
-  const oldTowelLines=
+  const oldTowel=
     result.filter(
-      item=>item?.workId==="r20"
+      item=>item.workId==="r20"
     );
 
-  if(oldTowelLines.length){
+  if(oldTowel.length){
 
-    const f8Line=
+    const existing=
       result.find(
-        item=>item?.workId==="f8"
+        item=>item.workId==="f8"
       );
 
-    if(f8Line){
+    if(existing){
 
-      oldTowelLines.forEach(oldLine=>{
+      oldTowel.forEach(item=>{
 
-        f8Line.qty=
-          Number(f8Line.qty||0)+
-          Number(oldLine.qty||0);
+        existing.qty=
+          Number(existing.qty||0)+
+          Number(item.qty||0);
 
       });
 
       result=
         result.filter(
-          item=>item?.workId!=="r20"
+          item=>item.workId!=="r20"
         );
 
     }else{
 
-      const first=
-        oldTowelLines[0];
+      const first=oldTowel[0];
 
       const totalQty=
-        oldTowelLines.reduce(
+        oldTowel.reduce(
           (sum,item)=>
-            sum+
-            Number(item.qty||0),
+            sum+Number(item.qty||0),
           0
         );
 
@@ -2177,19 +2050,14 @@ function migrateEstimate(data){
                 unit:item.unit||"шт",
                 qty:totalQty
               };
-
             }
 
             return item;
-
           })
           .filter(
-            item=>item?.workId!=="r20"
+            item=>item.workId!=="r20"
           );
-
     }
-
-    changed=true;
   }
 
 
@@ -2200,59 +2068,85 @@ function migrateEstimate(data){
   result=
     result.map(item=>{
 
-      if(item?.workId==="f4"){
+      if(item.workId==="f4"){
 
-        const normalized={
+        return{
           ...item,
           cat:"finish",
           name:"Монтаж душової системи",
           unit:item.unit||"шт"
         };
-
-        if(
-          item.cat!=="finish" ||
-          item.name!=="Монтаж душової системи"
-        ){
-          changed=true;
-        }
-
-        return normalized;
       }
 
-      if(item?.workId==="f8"){
+      if(item.workId==="f8"){
 
-        const normalized={
+        return{
           ...item,
           cat:"finish",
           name:"Монтаж рушникосушки",
           unit:item.unit||"шт"
         };
-
-        if(
-          item.cat!=="finish" ||
-          item.name!=="Монтаж рушникосушки"
-        ){
-          changed=true;
-        }
-
-        return normalized;
       }
 
       return item;
-
     });
 
 
-  if(changed){
-
-    localStorage.setItem(
-      "plumber_calc_estimate",
-      JSON.stringify(result)
-    );
-  }
+  localStorage.setItem(
+    "plumber_calc_estimate",
+    JSON.stringify(result)
+  );
 
   return result;
 }
+
+
+function loadEstimate(){
+
+  let data=null;
+
+  try{
+
+    const raw=
+      localStorage.getItem(
+        "plumber_calc_estimate"
+      );
+
+    if(raw){
+      data=JSON.parse(raw);
+    }
+
+  }catch(error){
+
+    console.warn(
+      "Помилка читання кошторису:",
+      error
+    );
+  }
+
+  if(!Array.isArray(data)){
+
+    try{
+
+      const old=
+        localStorage.getItem(
+          "samaster_estimate"
+        );
+
+      if(old){
+        data=JSON.parse(old);
+      }
+
+    }catch{}
+  }
+
+  return migrateEstimate(
+    Array.isArray(data)
+      ? data
+      : []
+  );
+}
+
 
 function saveEstimate(){
 
@@ -2267,42 +2161,39 @@ function saveEstimate(){
     new CustomEvent(
       "plumber:estimate-updated",
       {
-        detail:{
-          estimate
-        }
+        detail:{estimate}
       }
     )
   );
 }
 
+
 function findWork(workId){
 
+  ensureCatalog();
+
   for(
-    const cat of ["rough","finish"]
+    const category of ["rough","finish"]
   ){
 
-    const list=
-      Array.isArray(db[cat])
-        ? db[cat]
-        : [];
-
     const item=
-      list.find(
-        x=>x &&
-          x.id===workId
+      db[category].find(
+        work=>work &&
+          work.id===workId
       );
 
     if(item){
 
       return{
         ...item,
-        cat
+        cat:category
       };
     }
   }
 
   return null;
 }
+
 
 function getEstimateTotal(){
 
@@ -2337,10 +2228,12 @@ function loadProject(){
       };
     }
 
+    const data=JSON.parse(raw);
+
     return{
       client:"",
       object:"",
-      ...JSON.parse(raw)
+      ...(data&&typeof data==="object"?data:{})
     };
 
   }catch{
@@ -2353,6 +2246,7 @@ function loadProject(){
 }
 
 let project=loadProject();
+
 
 function updateProject(){
 
@@ -2369,6 +2263,7 @@ function updateProject(){
 
   savePassportEstimate();
 }
+
 
 function renderProject(){
 
@@ -2407,6 +2302,7 @@ function getEstimateId(){
   return id;
 }
 
+
 function getCreatedAt(){
 
   let value=
@@ -2428,13 +2324,18 @@ function getCreatedAt(){
   return value;
 }
 
+
 function savePassportEstimate(){
+
+  if(!profile){
+    return;
+  }
 
   const passport={
 
     type:"plumber-estimate",
 
-    version:2,
+    version:3,
 
     product:PRODUCT.name,
 
@@ -2442,8 +2343,7 @@ function savePassportEstimate(){
 
     createdAt:getCreatedAt(),
 
-    updatedAt:
-      new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
 
     status:"draft",
 
@@ -2495,14 +2395,11 @@ function savePassportEstimate(){
 
         unit:item.unit,
 
-        quantity:
-          Number(item.qty||0),
+        quantity:Number(item.qty||0),
 
-        basePrice:
-          Number(item.basePrice||0),
+        basePrice:Number(item.basePrice||0),
 
-        price:
-          Number(item.price||0),
+        price:Number(item.price||0),
 
         total:
           Number(item.price||0)*
@@ -2524,7 +2421,7 @@ function savePassportEstimate(){
 
 
 /* =========================================================
-   CATEGORY
+   MAIN CATEGORY
 ========================================================= */
 
 function setMainCategory(category){
@@ -2556,8 +2453,11 @@ function setMainCategory(category){
 
 function renderEstimate(){
 
-  const list=
-    $("estimateList");
+  const list=$("estimateList");
+
+  if(!list){
+    return;
+  }
 
   const items=
     estimate.filter(
@@ -2656,8 +2556,9 @@ function renderEstimate(){
 
 function addWork(workId){
 
-  const item=
-    findWork(workId);
+  ensureCatalog();
+
+  const item=findWork(workId);
 
   if(!item){
 
@@ -2699,7 +2600,6 @@ function addWork(workId){
         Number(item.price||0),
 
       qty:1
-
     });
   }
 
@@ -2711,6 +2611,7 @@ function addWork(workId){
   showToast("Позицію додано");
 }
 
+
 function changeQty(lineId,delta){
 
   const item=
@@ -2718,7 +2619,9 @@ function changeQty(lineId,delta){
       x=>x.lineId===lineId
     );
 
-  if(!item) return;
+  if(!item){
+    return;
+  }
 
   item.qty=
     Number(item.qty||0)+
@@ -2737,6 +2640,7 @@ function changeQty(lineId,delta){
   renderEstimate();
   renderAddWorkList();
 }
+
 
 function removeEstimateLine(lineId){
 
@@ -2785,45 +2689,47 @@ function clearEstimate(){
   renderEstimate();
   renderAddWorkList();
 
-  showToast("Кошторис очищено");
+  showToast(
+    "Кошторис очищено"
+  );
 }
 
 
 /* =========================================================
-   CATALOG
+   CATALOG UI
 ========================================================= */
 
 function openCatalog(){
 
   /*
-    Додаткова страховка:
-    перед відкриттям каталогу гарантуємо,
-    що стандартні роботи існують.
+    КРИТИЧНО:
+    кожне відкриття каталогу спочатку
+    перевіряє та відновлює його.
   */
 
-  db=
-    migrateDB(
-      mergeDefaultCatalog(db)
-    );
-
-  $("catalogModal")
-    .classList.add("show");
-
-  $("workSearch").value="";
+  ensureCatalog();
 
   catalogCategory=
-    mainCategory;
+    mainCategory==="finish"
+      ? "finish"
+      : "rough";
+
+  $("workSearch").value="";
 
   updateCatalogTabs();
 
   renderAddWorkList();
 
+  $("catalogModal")
+    .classList.add("show");
+
   setTimeout(()=>{
 
     $("workSearch").focus();
 
-  },120);
+  },100);
 }
+
 
 function setCatalogCategory(category){
 
@@ -2835,6 +2741,7 @@ function setCatalogCategory(category){
   updateCatalogTabs();
   renderAddWorkList();
 }
+
 
 function updateCatalogTabs(){
 
@@ -2851,46 +2758,33 @@ function updateCatalogTabs(){
     );
 }
 
+
 function renderAddWorkList(){
 
-  const list=
-    $("workList");
+  const list=$("workList");
 
   if(!list){
     return;
   }
 
   /*
-    Ще одна страховка:
-    якщо каталог якимось чином став порожнім,
-    відновлюємо стандартні позиції.
+    Завжди перевіряємо каталог.
   */
 
-  if(
-    !Array.isArray(db.rough) ||
-    !Array.isArray(db.finish)
-  ){
-
-    db=
-      mergeDefaultCatalog(db);
-
-    db=
-      migrateDB(db);
-
-    saveDB();
-  }
+  ensureCatalog();
 
   const query=
     String(
       $("workSearch")?.value||""
     )
-    .trim()
-    .toLowerCase();
+      .trim()
+      .toLowerCase();
 
   const source=
     Array.isArray(db[catalogCategory])
       ? db[catalogCategory]
       : [];
+
 
   const filtered=
     source.filter(item=>{
@@ -2915,13 +2809,19 @@ function renderAddWorkList(){
         name.includes(query) ||
         unit.includes(query)
       );
-
     });
+
 
   $("catalogCount").textContent=
     `${filtered.length} позицій`;
 
+
   if(!filtered.length){
+
+    /*
+      Теоретично сюди більше не повинні
+      потрапляти стандартні категорії.
+    */
 
     list.innerHTML=`
       <div class="empty">
@@ -2932,11 +2832,13 @@ function renderAddWorkList(){
     return;
   }
 
+
   list.innerHTML=
     filtered
       .map(renderAddWorkItem)
       .join("");
 }
+
 
 function renderAddWorkItem(item){
 
@@ -2948,35 +2850,36 @@ function renderAddWorkItem(item){
   const controls=
     existing
 
-    ? `
+      ? `
 
-      <div class="work-control">
+        <div class="work-control">
 
-        <button
-          type="button"
-          onclick="event.stopPropagation();changeQty('${esc(existing.lineId)}',-1)"
-        >−</button>
+          <button
+            type="button"
+            onclick="event.stopPropagation();changeQty('${esc(existing.lineId)}',-1)"
+          >−</button>
 
-        <span>
-          ${Number(existing.qty||0)}
-        </span>
+          <span>
+            ${Number(existing.qty||0)}
+          </span>
 
-        <button
-          type="button"
-          onclick="event.stopPropagation();changeQty('${esc(existing.lineId)}',1)"
-        >+</button>
+          <button
+            type="button"
+            onclick="event.stopPropagation();changeQty('${esc(existing.lineId)}',1)"
+          >+</button>
 
-      </div>
+        </div>
 
-    `
+      `
 
-    : `
+      : `
 
-      <div class="work-price">
-        ${money(item.price)}
-      </div>
+        <div class="work-price">
+          ${money(item.price)}
+        </div>
 
-    `;
+      `;
+
 
   return`
 
@@ -3015,8 +2918,18 @@ function openNewWorkModal(){
 
   editingWorkId=null;
 
+  /*
+    Якщо відкрито з каталогу —
+    беремо категорію каталогу.
+
+    Якщо з головного екрану —
+    беремо активну категорію.
+  */
+
   editingWorkCategory=
-    catalogCategory||mainCategory;
+    $("catalogModal").classList.contains("show")
+      ? catalogCategory
+      : mainCategory;
 
   $("workModalTitle")
     .textContent="Нова позиція";
@@ -3036,12 +2949,14 @@ function openNewWorkModal(){
   },100);
 }
 
+
 function openEditWorkModal(workId){
 
-  const item=
-    findWork(workId);
+  const item=findWork(workId);
 
-  if(!item) return;
+  if(!item){
+    return;
+  }
 
   editingWorkId=item.id;
   editingWorkCategory=item.cat;
@@ -3060,6 +2975,7 @@ function openEditWorkModal(workId){
     .classList.add("show");
 }
 
+
 function saveWork(){
 
   const name=
@@ -3077,6 +2993,7 @@ function saveWork(){
       $("workPrice").value
     );
 
+
   if(!name){
 
     showToast(
@@ -3086,6 +3003,7 @@ function saveWork(){
     return;
   }
 
+
   if(!unit){
 
     showToast(
@@ -3094,6 +3012,7 @@ function saveWork(){
 
     return;
   }
+
 
   if(
     !Number.isFinite(price) ||
@@ -3109,7 +3028,7 @@ function saveWork(){
 
 
   /*
-    Редагування
+    РЕДАГУВАННЯ
   */
 
   if(editingWorkId){
@@ -3117,11 +3036,23 @@ function saveWork(){
     const item=
       findWork(editingWorkId);
 
-    if(!item) return;
+    if(!item){
+      return;
+    }
 
     item.name=name;
     item.unit=unit;
     item.price=price;
+
+
+    /*
+      У кошторисі basePrice оновлюємо,
+      але price не чіпаємо.
+
+      Тобто якщо майстер вручну змінив
+      ціну саме для цього кошторису —
+      вона залишиться.
+    */
 
     estimate.forEach(line=>{
 
@@ -3134,6 +3065,7 @@ function saveWork(){
       }
 
     });
+
 
     saveDB();
     saveEstimate();
@@ -3152,8 +3084,10 @@ function saveWork(){
 
 
   /*
-    Нова позиція
+    НОВА ПОЗИЦІЯ
   */
+
+  ensureCatalog();
 
   const category=
     editingWorkCategory==="finish"
@@ -3171,7 +3105,6 @@ function saveWork(){
     name,
     unit,
     price
-
   });
 
   saveDB();
@@ -3185,26 +3118,30 @@ function saveWork(){
   );
 }
 
+
 function deleteCurrentWork(){
 
-  if(!editingWorkId) return;
+  if(!editingWorkId){
+    return;
+  }
 
   deleteWork(editingWorkId);
 }
 
+
 function deleteWork(workId){
 
-  const item=
-    findWork(workId);
+  const item=findWork(workId);
 
-  if(!item) return;
+  if(!item){
+    return;
+  }
 
   if(
     !confirm(
       `Видалити "${item.name}" з каталогу?`
     )
   ){
-
     return;
   }
 
@@ -3243,7 +3180,9 @@ function openPriceModal(lineId){
       x=>x.lineId===lineId
     );
 
-  if(!item) return;
+  if(!item){
+    return;
+  }
 
   editingPriceLineId=lineId;
 
@@ -3262,8 +3201,7 @@ function openPriceModal(lineId){
 
   `;
 
-  $("priceInput").value=
-    item.price;
+  $("priceInput").value=item.price;
 
   $("priceModal")
     .classList.add("show");
@@ -3276,16 +3214,21 @@ function openPriceModal(lineId){
   },100);
 }
 
+
 function savePrice(){
 
-  if(!editingPriceLineId) return;
+  if(!editingPriceLineId){
+    return;
+  }
 
   const item=
     estimate.find(
       x=>x.lineId===editingPriceLineId
     );
 
-  if(!item) return;
+  if(!item){
+    return;
+  }
 
   const price=
     Number(
@@ -3317,16 +3260,21 @@ function savePrice(){
   );
 }
 
+
 function resetPriceToBase(){
 
-  if(!editingPriceLineId) return;
+  if(!editingPriceLineId){
+    return;
+  }
 
   const item=
     estimate.find(
       x=>x.lineId===editingPriceLineId
     );
 
-  if(!item) return;
+  if(!item){
+    return;
+  }
 
   item.price=
     Number(item.basePrice||0);
@@ -3366,6 +3314,7 @@ function openSettings(){
     .classList.add("show");
 }
 
+
 function saveSettings(){
 
   profile={
@@ -3391,7 +3340,6 @@ function saveSettings(){
       $("profileDetails")
         .value
         .trim()
-
   };
 
   saveProfile();
@@ -3409,7 +3357,7 @@ function saveSettings(){
 
 
 /* =========================================================
-   PDF / PRINT
+   PDF
 ========================================================= */
 
 function printEstimate(){
@@ -3439,7 +3387,7 @@ function exportJSON(){
 
     type:"plumber-estimate",
 
-    version:2,
+    version:3,
 
     product:PRODUCT.name,
 
@@ -3490,8 +3438,8 @@ function exportJSON(){
           Number(item.qty||0)
 
       }))
-
   };
+
 
   const blob=
     new Blob(
@@ -3507,6 +3455,7 @@ function exportJSON(){
           "application/json;charset=utf-8"
       }
     );
+
 
   const url=
     URL.createObjectURL(blob);
@@ -3539,10 +3488,13 @@ function exportJSON(){
 
 function closeModal(id){
 
-  $(id)
-    .classList
-    .remove("show");
+  const modal=$(id);
+
+  if(modal){
+    modal.classList.remove("show");
+  }
 }
+
 
 function modalBackgroundClick(event,id){
 
@@ -3550,10 +3502,10 @@ function modalBackgroundClick(event,id){
     event.target===
     $(id)
   ){
-
     closeModal(id);
   }
 }
+
 
 document.addEventListener(
   "keydown",
@@ -3570,7 +3522,6 @@ document.addEventListener(
       .forEach(modal=>{
         modal.classList.remove("show");
       });
-
   }
 );
 
@@ -3596,6 +3547,7 @@ function applyTheme(theme){
         : "☾";
 }
 
+
 function initTheme(){
 
   const saved=
@@ -3609,6 +3561,7 @@ function initTheme(){
       : "light"
   );
 }
+
 
 function toggleTheme(){
 
@@ -3629,17 +3582,58 @@ function toggleTheme(){
    INIT
 ========================================================= */
 
-initTheme();
+function init(){
 
-renderProfile();
+  /*
+    Порядок тут навмисно такий:
 
-renderProject();
+    1. Профіль
+    2. Каталог
+    3. Кошторис
+    4. Проєкт
+    5. Інтерфейс
+  */
 
-renderEstimate();
+  profile=loadProfile();
 
-updateCatalogTabs();
+  db=loadDB();
 
-renderAddWorkList();
+  ensureCatalog();
+
+  estimate=loadEstimate();
+
+  project=loadProject();
+
+  initTheme();
+
+  renderProfile();
+
+  renderProject();
+
+  setMainCategory("rough");
+
+  updateCatalogTabs();
+
+  renderEstimate();
+
+  renderAddWorkList();
+}
+
+
+if(
+  document.readyState==="loading"
+){
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    init,
+    {once:true}
+  );
+
+}else{
+
+  init();
+}
 
 </script>
 
