@@ -10,31 +10,28 @@
 <style>
 :root{
   --bg:#f2f2f7;
-  --bg2:#ffffff;
-  --card:rgba(255,255,255,.78);
-  --card-solid:#fff;
+  --bg2:#fff;
+  --card:rgba(255,255,255,.82);
+  --solid:#fff;
   --text:#111;
   --muted:#777;
   --line:rgba(0,0,0,.09);
   --blue:#007aff;
   --blue-soft:rgba(0,122,255,.10);
-  --green:#34c759;
   --red:#ff3b30;
   --shadow:0 10px 35px rgba(0,0,0,.08);
-  --radius:22px;
 }
 
 html[data-theme="dark"]{
   --bg:#101114;
   --bg2:#18191d;
-  --card:rgba(29,30,35,.82);
-  --card-solid:#1d1e23;
+  --card:rgba(29,30,35,.86);
+  --solid:#1d1e23;
   --text:#f5f5f7;
   --muted:#999;
   --line:rgba(255,255,255,.10);
   --blue:#0a84ff;
   --blue-soft:rgba(10,132,255,.16);
-  --green:#30d158;
   --red:#ff453a;
   --shadow:0 10px 35px rgba(0,0,0,.35);
 }
@@ -46,19 +43,23 @@ html[data-theme="dark"]{
 
 html,
 body{
-  margin:0;
+  width:100%;
+  height:100%;
   min-height:100%;
+  margin:0;
   background:var(--bg);
   color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,Arial,sans-serif;
 }
 
 body{
+  min-height:100dvh;
   padding:
-    max(16px,env(safe-area-inset-top))
-    14px
-    max(24px,env(safe-area-inset-bottom))
-    14px;
+    max(12px,env(safe-area-inset-top))
+    12px
+    max(12px,env(safe-area-inset-bottom))
+    12px;
+  overflow:hidden;
 }
 
 button,
@@ -70,24 +71,35 @@ button{
   border:0;
   cursor:pointer;
   color:inherit;
+  -webkit-user-select:none;
+  user-select:none;
 }
+
+/* =========================================================
+   APP
+========================================================= */
 
 .app{
   width:100%;
   max-width:560px;
+  height:calc(100dvh - max(12px,env(safe-area-inset-top)) - max(12px,env(safe-area-inset-bottom)));
   margin:0 auto;
+  display:flex;
+  flex-direction:column;
 }
 
-/* =========================
+/* =========================================================
    HEADER
-========================= */
+========================================================= */
 
 .header{
+  flex:0 0 auto;
+  min-height:50px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:12px;
-  margin-bottom:14px;
+  margin-bottom:8px;
 }
 
 .brand{
@@ -95,23 +107,23 @@ button{
 }
 
 .brand-title{
-  font-size:23px;
-  line-height:1.05;
-  font-weight:800;
+  font-size:22px;
+  line-height:1;
+  font-weight:850;
   letter-spacing:-.7px;
 }
 
 .brand-sub{
   margin-top:4px;
   color:var(--muted);
-  font-size:12px;
-  line-height:1.2;
+  font-size:11px;
+  line-height:1.1;
 }
 
 .theme-btn{
-  width:40px;
-  height:40px;
-  flex:0 0 40px;
+  width:38px;
+  height:38px;
+  flex:0 0 38px;
   border-radius:50%;
   background:var(--card);
   border:1px solid var(--line);
@@ -121,111 +133,146 @@ button{
   place-items:center;
 }
 
-/* =========================
-   MAIN CARD
-========================= */
+/* =========================================================
+   MAIN
+========================================================= */
 
 .main-card{
+  min-height:0;
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+
   background:var(--card);
   border:1px solid var(--line);
-  border-radius:var(--radius);
+  border-radius:22px;
   box-shadow:var(--shadow);
+
   backdrop-filter:blur(24px);
   -webkit-backdrop-filter:blur(24px);
-  padding:14px;
+
+  padding:10px;
 }
 
-/* =========================
-   TABS
-========================= */
+/* =========================================================
+   MAIN TABS
+========================================================= */
 
 .tabs{
+  flex:0 0 auto;
+
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:5px;
+  gap:4px;
+
   padding:4px;
+  margin-bottom:9px;
+
   background:rgba(120,120,128,.10);
-  border-radius:14px;
-  margin-bottom:12px;
+  border-radius:13px;
 }
 
 .tab{
-  min-height:36px;
-  border-radius:11px;
+  min-height:34px;
+  border-radius:10px;
   background:transparent;
   color:var(--muted);
-  font-size:14px;
-  font-weight:700;
+  font-size:13px;
+  font-weight:750;
 }
 
 .tab.active{
-  background:var(--card-solid);
+  background:var(--solid);
   color:var(--text);
-  box-shadow:0 2px 8px rgba(0,0,0,.08);
+  box-shadow:0 2px 7px rgba(0,0,0,.08);
 }
 
-/* =========================
-   ESTIMATE
-========================= */
+/* =========================================================
+   ESTIMATE HEADER
+========================================================= */
 
 .section-head{
+  flex:0 0 auto;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
-  margin:3px 2px 7px;
+  gap:8px;
+
+  min-height:27px;
+  margin:0 2px 5px;
 }
 
 .section-title{
-  font-size:13px;
+  font-size:11px;
   font-weight:800;
   color:var(--muted);
   text-transform:uppercase;
-  letter-spacing:.4px;
+  letter-spacing:.45px;
 }
 
 .section-action{
   color:var(--blue);
-  background:none;
-  font-size:12px;
+  background:transparent;
+  font-size:11px;
   font-weight:700;
   padding:4px 2px;
 }
 
+/* =========================================================
+   ESTIMATE LIST
+========================================================= */
+
 .estimate-list{
+  flex:1 1 auto;
+  min-height:0;
+
   display:flex;
   flex-direction:column;
   gap:4px;
-  max-height:235px;
+
   overflow-y:auto;
   overflow-x:hidden;
+
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
-  padding-right:1px;
+
+  padding:0 1px 2px 0;
+
+  scrollbar-width:thin;
 }
 
-/* КОМПАКТНИЙ РЯДОК ДОДАНОЇ ПОЗИЦІЇ */
+/* =========================================================
+   ESTIMATE ROW
+========================================================= */
 
 .estimate-row{
-  min-height:48px;
+  flex:0 0 47px;
+  min-height:47px;
+
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto auto;
+  grid-template-columns:minmax(0,1fr) auto auto auto;
   align-items:center;
-  gap:7px;
-  padding:6px 7px 6px 10px;
+  gap:5px;
+
+  padding:5px 6px 5px 9px;
+
   border:1px solid var(--line);
-  border-radius:13px;
+  border-radius:12px;
+
   background:rgba(120,120,128,.055);
 }
 
 .estimate-info{
   min-width:0;
+  cursor:pointer;
 }
 
 .estimate-name{
-  font-size:13px;
-  line-height:1.18;
-  font-weight:650;
+  font-size:12px;
+  line-height:1.15;
+  font-weight:680;
+
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
@@ -234,58 +281,85 @@ button{
 .estimate-meta{
   margin-top:2px;
   color:var(--muted);
-  font-size:10px;
-  line-height:1.1;
+  font-size:9px;
+  line-height:1;
+
   white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
+/* =========================================================
+   QUANTITY
+========================================================= */
+
 .qty-control{
+  height:29px;
+
   display:flex;
   align-items:center;
-  gap:2px;
-  height:31px;
+  gap:1px;
+
   padding:2px;
-  border-radius:9px;
+
+  border-radius:8px;
   background:rgba(120,120,128,.10);
-  flex:0 0 auto;
 }
 
 .qty-btn{
-  width:27px;
-  height:27px;
-  border-radius:7px;
+  width:25px;
+  height:25px;
+
+  border-radius:6px;
   background:transparent;
+
   color:var(--blue);
-  font-size:17px;
+  font-size:16px;
   font-weight:600;
+
   display:grid;
   place-items:center;
   line-height:1;
 }
 
 .qty-value{
-  min-width:25px;
+  min-width:21px;
+
   text-align:center;
-  font-size:12px;
-  font-weight:750;
+
+  font-size:11px;
+  font-weight:800;
 }
 
+/* =========================================================
+   PRICE
+========================================================= */
+
 .estimate-price{
-  min-width:72px;
+  min-width:67px;
+
   text-align:right;
-  font-size:12px;
-  font-weight:750;
+
+  font-size:11px;
+  font-weight:800;
+
   white-space:nowrap;
 }
+
+/* =========================================================
+   REMOVE
+========================================================= */
 
 .estimate-remove{
   width:24px;
   height:24px;
+
   border-radius:7px;
   background:transparent;
+
   color:var(--muted);
   font-size:16px;
-  line-height:1;
+
   display:grid;
   place-items:center;
 }
@@ -295,64 +369,89 @@ button{
   background:rgba(255,59,48,.10);
 }
 
+/* =========================================================
+   EMPTY
+========================================================= */
+
 .empty{
-  min-height:66px;
+  min-height:80px;
+
   display:flex;
   align-items:center;
   justify-content:center;
+
   text-align:center;
+
   border:1px dashed var(--line);
-  border-radius:14px;
+  border-radius:13px;
+
   color:var(--muted);
-  font-size:12px;
+  font-size:11px;
+
   padding:12px;
 }
 
-/* =========================
+/* =========================================================
+   BOTTOM PANEL
+========================================================= */
+
+.bottom-panel{
+  flex:0 0 auto;
+  padding-top:7px;
+}
+
+/* =========================================================
    TOTAL
-========================= */
+========================================================= */
 
 .total-box{
-  margin-top:9px;
-  padding:11px 12px;
-  border-radius:15px;
-  background:var(--blue-soft);
+  min-height:49px;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
+
+  padding:8px 11px;
+
+  border-radius:13px;
+  background:var(--blue-soft);
 }
 
 .total-label{
   color:var(--muted);
-  font-size:12px;
+  font-size:11px;
   font-weight:700;
 }
 
 .total-value{
-  font-size:20px;
+  font-size:19px;
+  line-height:1;
   font-weight:850;
-  letter-spacing:-.5px;
+  letter-spacing:-.4px;
   white-space:nowrap;
 }
 
-/* =========================
+/* =========================================================
    ACTIONS
-========================= */
+========================================================= */
 
 .actions{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-top:10px;
+  gap:6px;
+  margin-top:6px;
 }
 
 .action-btn{
-  min-height:43px;
-  border-radius:13px;
+  min-height:37px;
+
+  border-radius:11px;
+
   background:rgba(120,120,128,.09);
   border:1px solid var(--line);
-  font-size:13px;
+
+  font-size:11px;
   font-weight:750;
 }
 
@@ -362,38 +461,42 @@ button{
   border-color:var(--blue);
 }
 
-.action-btn.danger{
-  color:var(--red);
-}
-
-/* =========================
+/* =========================================================
    CATALOG BUTTON
-========================= */
+========================================================= */
 
 .catalog-open{
   width:100%;
-  min-height:46px;
-  margin-top:9px;
-  border-radius:14px;
+  min-height:42px;
+
+  margin-top:6px;
+
+  border-radius:12px;
+
   background:var(--blue);
   color:#fff;
-  font-size:14px;
+
+  font-size:13px;
   font-weight:800;
-  box-shadow:0 6px 18px rgba(0,122,255,.20);
+
+  box-shadow:0 5px 16px rgba(0,122,255,.18);
 }
 
-/* =========================
-   MODALS
-========================= */
+/* =========================================================
+   MODAL
+========================================================= */
 
 .modal{
   position:fixed;
   inset:0;
   z-index:1000;
+
   display:none;
   align-items:flex-end;
   justify-content:center;
-  padding:12px;
+
+  padding:10px;
+
   background:rgba(0,0,0,.28);
 }
 
@@ -403,28 +506,35 @@ button{
 
 .sheet{
   width:min(560px,100%);
-  max-height:90vh;
+  max-height:92dvh;
+
   overflow:hidden;
+
   display:flex;
   flex-direction:column;
-  background:var(--card-solid);
+
+  background:var(--solid);
   color:var(--text);
+
   border:1px solid var(--line);
-  border-radius:24px;
+  border-radius:23px;
+
   box-shadow:0 20px 60px rgba(0,0,0,.25);
 }
 
 .sheet-head{
   flex:0 0 auto;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:10px;
-  padding:14px 15px 10px;
+
+  padding:13px 14px 9px;
 }
 
 .sheet-title{
-  font-size:18px;
+  font-size:17px;
   font-weight:850;
   letter-spacing:-.3px;
 }
@@ -432,36 +542,50 @@ button{
 .close-btn{
   width:34px;
   height:34px;
+
   border-radius:50%;
+
   background:rgba(120,120,128,.10);
   color:var(--muted);
+
   font-size:20px;
+
   display:grid;
   place-items:center;
 }
 
-/* =========================
+/* =========================================================
    CATALOG
-========================= */
+========================================================= */
 
 .catalog-body{
   min-height:0;
+
   display:flex;
   flex-direction:column;
-  padding:0 14px 14px;
+
+  padding:0 13px 13px;
 }
 
 .search{
+  flex:0 0 auto;
+
   width:100%;
-  height:42px;
+  height:40px;
+
   border:1px solid var(--line);
-  border-radius:13px;
+  border-radius:12px;
+
   outline:none;
+
   background:rgba(120,120,128,.07);
   color:var(--text);
-  padding:0 13px;
-  font-size:14px;
-  margin-bottom:9px;
+
+  padding:0 12px;
+
+  font-size:13px;
+
+  margin-bottom:8px;
 }
 
 .search:focus{
@@ -470,55 +594,75 @@ button{
 }
 
 .catalog-tabs{
+  flex:0 0 auto;
+
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:5px;
+  gap:4px;
+
   padding:4px;
+
   background:rgba(120,120,128,.10);
-  border-radius:13px;
-  margin-bottom:9px;
+  border-radius:12px;
+
+  margin-bottom:8px;
 }
 
 .catalog-tab{
-  height:34px;
-  border-radius:10px;
+  height:32px;
+
+  border-radius:9px;
+
   background:transparent;
   color:var(--muted);
-  font-size:12px;
+
+  font-size:11px;
   font-weight:750;
 }
 
 .catalog-tab.active{
-  background:var(--card-solid);
+  background:var(--solid);
   color:var(--text);
+
   box-shadow:0 2px 7px rgba(0,0,0,.07);
 }
 
-/* 6–8 ПОЗИЦІЙ У ВИДИМІЙ ОБЛАСТІ */
+/* =========================================================
+   CATALOG LIST
+========================================================= */
 
 .work-list{
-  height:448px;
+  height:430px;
   min-height:360px;
+
   overflow-y:auto;
   overflow-x:hidden;
+
   -webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;
+
   padding-right:2px;
+
   scrollbar-width:thin;
 }
 
 .work-item{
   width:100%;
-  min-height:62px;
+  min-height:60px;
+
   display:grid;
   grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
-  gap:10px;
-  padding:8px 9px 8px 11px;
+  gap:9px;
+
+  padding:7px 8px 7px 10px;
   margin-bottom:5px;
+
   border:1px solid var(--line);
-  border-radius:14px;
+  border-radius:13px;
+
   background:rgba(120,120,128,.055);
+
   text-align:left;
 }
 
@@ -532,109 +676,136 @@ button{
 }
 
 .work-name{
-  font-size:13px;
+  font-size:12px;
   line-height:1.2;
   font-weight:700;
 }
 
 .work-meta{
   margin-top:3px;
+
   color:var(--muted);
-  font-size:10px;
-  line-height:1.1;
+  font-size:9px;
+  line-height:1;
 }
 
 .work-price{
   color:var(--blue);
-  font-size:12px;
+
+  font-size:11px;
   font-weight:800;
+
   white-space:nowrap;
 }
 
 .work-control{
   display:flex;
   align-items:center;
-  gap:3px;
-  height:32px;
+  gap:2px;
+
+  height:30px;
   padding:2px;
-  border-radius:9px;
+
+  border-radius:8px;
+
   background:var(--blue-soft);
 }
 
 .work-control button{
-  width:27px;
-  height:27px;
-  border-radius:7px;
+  width:25px;
+  height:25px;
+
+  border-radius:6px;
+
   background:transparent;
   color:var(--blue);
-  font-size:17px;
+
+  font-size:16px;
+
   display:grid;
   place-items:center;
 }
 
 .work-control span{
-  min-width:22px;
+  min-width:20px;
+
   text-align:center;
-  font-size:12px;
+
+  font-size:11px;
   font-weight:800;
 }
 
 .catalog-footer{
   flex:0 0 auto;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
-  padding-top:9px;
+  gap:8px;
+
+  padding-top:8px;
 }
 
 .catalog-count{
   color:var(--muted);
-  font-size:11px;
+  font-size:10px;
 }
 
 .new-work-btn{
-  min-height:37px;
-  padding:0 13px;
-  border-radius:11px;
+  min-height:35px;
+
+  padding:0 12px;
+
+  border-radius:10px;
+
   background:rgba(120,120,128,.10);
   border:1px solid var(--line);
+
   color:var(--blue);
-  font-size:12px;
+
+  font-size:11px;
   font-weight:750;
 }
 
-/* =========================
+/* =========================================================
    FORMS
-========================= */
+========================================================= */
 
 .form-body{
-  padding:0 15px 15px;
+  padding:0 14px 14px;
   overflow-y:auto;
 }
 
 .field{
-  margin-bottom:11px;
+  margin-bottom:10px;
 }
 
 .field label{
   display:block;
+
   margin:0 0 5px 2px;
+
   color:var(--muted);
-  font-size:11px;
+
+  font-size:10px;
   font-weight:700;
 }
 
 .input{
   width:100%;
-  min-height:43px;
+  min-height:42px;
+
   border:1px solid var(--line);
-  border-radius:12px;
+  border-radius:11px;
+
   outline:none;
+
   background:rgba(120,120,128,.07);
   color:var(--text);
-  padding:0 12px;
-  font-size:14px;
+
+  padding:0 11px;
+
+  font-size:13px;
 }
 
 .input:focus{
@@ -645,16 +816,20 @@ button{
 .form-actions{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:8px;
+  gap:7px;
+
   margin-top:5px;
 }
 
 .form-btn{
-  min-height:43px;
-  border-radius:12px;
+  min-height:41px;
+
+  border-radius:11px;
+
   background:rgba(120,120,128,.09);
   border:1px solid var(--line);
-  font-size:13px;
+
+  font-size:12px;
   font-weight:750;
 }
 
@@ -668,38 +843,53 @@ button{
   color:var(--red);
 }
 
-/* =========================
-   PRICE EDIT
-========================= */
+/* =========================================================
+   PRICE
+========================================================= */
 
 .price-current{
   margin:0 0 10px;
-  padding:10px 12px;
-  border-radius:12px;
+
+  padding:10px 11px;
+
+  border-radius:11px;
+
   background:var(--blue-soft);
-  font-size:13px;
+
+  font-size:12px;
 }
 
-/* =========================
+/* =========================================================
    TOAST
-========================= */
+========================================================= */
 
 .toast{
   position:fixed;
+
   left:50%;
   bottom:max(18px,env(safe-area-inset-bottom));
+
   z-index:3000;
+
   transform:translate(-50%,20px);
   opacity:0;
+
   pointer-events:none;
-  padding:10px 14px;
-  border-radius:12px;
+
+  padding:9px 13px;
+
+  border-radius:11px;
+
   background:#222;
   color:#fff;
-  font-size:12px;
+
+  font-size:11px;
   font-weight:650;
+
   transition:.22s ease;
-  max-width:calc(100vw - 32px);
+
+  max-width:calc(100vw - 30px);
+
   text-align:center;
 }
 
@@ -708,41 +898,74 @@ button{
   transform:translate(-50%,0);
 }
 
-/* =========================
-   SHORT SCREENS
-========================= */
+/* =========================================================
+   SMALL HEIGHT DEVICES
+========================================================= */
 
 @media(max-height:700px){
+
+  .header{
+    min-height:44px;
+    margin-bottom:6px;
+  }
+
+  .brand-title{
+    font-size:20px;
+  }
+
+  .theme-btn{
+    width:35px;
+    height:35px;
+    flex-basis:35px;
+  }
+
+  .main-card{
+    padding:8px;
+  }
+
+  .estimate-row{
+    flex-basis:44px;
+    min-height:44px;
+  }
+
   .work-list{
     height:390px;
     min-height:330px;
   }
-
-  .estimate-list{
-    max-height:190px;
-  }
 }
 
-@media(max-width:390px){
+/* =========================================================
+   VERY NARROW SCREEN
+========================================================= */
+
+@media(max-width:380px){
+
   .estimate-row{
-    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-columns:minmax(0,1fr) auto auto;
   }
 
   .estimate-price{
     grid-column:2;
     grid-row:1;
+    min-width:60px;
   }
 
   .qty-control{
-    grid-column:1;
+    grid-column:2;
     grid-row:2;
-    justify-self:start;
   }
 
   .estimate-remove{
-    grid-column:2;
-    grid-row:2;
-    justify-self:end;
+    grid-column:3;
+    grid-row:1 / span 2;
+  }
+
+  .estimate-name{
+    font-size:11px;
+  }
+
+  .estimate-meta{
+    font-size:8px;
   }
 }
 </style>
@@ -753,6 +976,7 @@ button{
 <div class="app">
 
   <header class="header">
+
     <div class="brand">
       <div class="brand-title">SA-MASTER.PRO</div>
       <div class="brand-sub">Калькулятор вартості робіт</div>
@@ -765,11 +989,13 @@ button{
       onclick="toggleTheme()"
       aria-label="Змінити тему"
     >☾</button>
+
   </header>
 
   <main class="main-card">
 
     <div class="tabs">
+
       <button
         id="roughTab"
         class="tab active"
@@ -783,10 +1009,14 @@ button{
         type="button"
         onclick="setMainCategory('finish')"
       >Чистові</button>
+
     </div>
 
     <div class="section-head">
-      <div class="section-title">Додані роботи</div>
+
+      <div class="section-title">
+        Додані роботи
+      </div>
 
       <button
         id="clearEstimateBtn"
@@ -794,52 +1024,72 @@ button{
         type="button"
         onclick="clearEstimate()"
       >Очистити</button>
+
     </div>
 
     <div id="estimateList" class="estimate-list"></div>
 
-    <div class="total-box">
-      <div>
-        <div class="total-label">Загальна вартість робіт</div>
+    <div class="bottom-panel">
+
+      <div class="total-box">
+
+        <div class="total-label">
+          Загальна вартість робіт
+        </div>
+
+        <div
+          id="totalValue"
+          class="total-value"
+        >0 ₴</div>
+
       </div>
 
-      <div id="totalValue" class="total-value">0 ₴</div>
-    </div>
+      <div class="actions">
 
-    <div class="actions">
+        <button
+          class="action-btn"
+          type="button"
+          onclick="openNewWorkModal()"
+        >＋ Нова позиція</button>
+
+        <button
+          class="action-btn"
+          type="button"
+          onclick="exportJSON()"
+        >Експорт JSON</button>
+
+      </div>
+
       <button
-        class="action-btn"
+        class="catalog-open"
         type="button"
-        onclick="openNewWorkModal()"
-      >＋ Нова позиція</button>
+        onclick="openCatalog()"
+      >＋ Додати роботу</button>
 
-      <button
-        class="action-btn"
-        type="button"
-        onclick="exportJSON()"
-      >Експорт JSON</button>
     </div>
-
-    <button
-      class="catalog-open"
-      type="button"
-      onclick="openCatalog()"
-    >＋ Додати роботу</button>
 
   </main>
+
 </div>
 
 
-<!-- =========================
+<!-- =======================================================
      CATALOG MODAL
-========================= -->
+======================================================= -->
 
-<div id="catalogModal" class="modal" onclick="modalBackgroundClick(event,'catalogModal')">
+<div
+  id="catalogModal"
+  class="modal"
+  onclick="modalBackgroundClick(event,'catalogModal')"
+>
 
-  <div class="sheet catalog-sheet">
+  <div class="sheet">
 
     <div class="sheet-head">
-      <div class="sheet-title">Додати роботу</div>
+
+      <div class="sheet-title">
+        Додати роботу
+      </div>
 
       <button
         class="close-btn"
@@ -847,6 +1097,7 @@ button{
         onclick="closeModal('catalogModal')"
         aria-label="Закрити"
       >×</button>
+
     </div>
 
     <div class="catalog-body">
@@ -861,6 +1112,7 @@ button{
       >
 
       <div class="catalog-tabs">
+
         <button
           id="catalogRoughTab"
           class="catalog-tab active"
@@ -874,67 +1126,101 @@ button{
           type="button"
           onclick="setCatalogCategory('finish')"
         >Чистові</button>
+
       </div>
 
-      <div id="workList" class="work-list"></div>
+      <div
+        id="workList"
+        class="work-list"
+      ></div>
 
       <div class="catalog-footer">
-        <div id="catalogCount" class="catalog-count"></div>
+
+        <div
+          id="catalogCount"
+          class="catalog-count"
+        ></div>
 
         <button
           class="new-work-btn"
           type="button"
           onclick="openNewWorkModal()"
         >＋ Створити позицію</button>
+
       </div>
 
     </div>
+
   </div>
+
 </div>
 
 
-<!-- =========================
-     NEW / EDIT WORK MODAL
-========================= -->
+<!-- =======================================================
+     NEW / EDIT WORK
+======================================================= -->
 
-<div id="workModal" class="modal" onclick="modalBackgroundClick(event,'workModal')">
+<div
+  id="workModal"
+  class="modal"
+  onclick="modalBackgroundClick(event,'workModal')"
+>
 
   <div class="sheet">
 
     <div class="sheet-head">
-      <div id="workModalTitle" class="sheet-title">Нова позиція</div>
+
+      <div
+        id="workModalTitle"
+        class="sheet-title"
+      >Нова позиція</div>
 
       <button
         class="close-btn"
         type="button"
         onclick="closeModal('workModal')"
       >×</button>
+
     </div>
 
     <div class="form-body">
 
       <div class="field">
-        <label for="workName">Назва роботи</label>
+
+        <label for="workName">
+          Назва роботи
+        </label>
+
         <input
           id="workName"
           class="input"
           type="text"
           placeholder="Наприклад, Монтаж фільтра"
         >
+
       </div>
 
       <div class="field">
-        <label for="workUnit">Одиниця виміру</label>
+
+        <label for="workUnit">
+          Одиниця виміру
+        </label>
+
         <input
           id="workUnit"
           class="input"
           type="text"
           placeholder="шт, компл, м.п."
         >
+
       </div>
 
       <div class="field">
-        <label for="workPrice">Базова ціна, грн</label>
+
+        <label for="workPrice">
+          Базова ціна, грн
+        </label>
+
         <input
           id="workPrice"
           class="input"
@@ -943,6 +1229,7 @@ button{
           step="1"
           placeholder="0"
         >
+
       </div>
 
       <div class="form-actions">
@@ -954,7 +1241,6 @@ button{
         >Скасувати</button>
 
         <button
-          id="saveWorkButton"
           class="form-btn primary"
           type="button"
           onclick="saveWork()"
@@ -967,38 +1253,55 @@ button{
         class="form-btn danger"
         type="button"
         onclick="deleteCurrentWork()"
-        style="display:none;width:100%;margin-top:8px"
+        style="display:none;width:100%;margin-top:7px"
       >Видалити позицію</button>
 
     </div>
+
   </div>
+
 </div>
 
 
-<!-- =========================
+<!-- =======================================================
      PRICE MODAL
-========================= -->
+======================================================= -->
 
-<div id="priceModal" class="modal" onclick="modalBackgroundClick(event,'priceModal')">
+<div
+  id="priceModal"
+  class="modal"
+  onclick="modalBackgroundClick(event,'priceModal')"
+>
 
   <div class="sheet">
 
     <div class="sheet-head">
-      <div class="sheet-title">Ціна позиції</div>
+
+      <div class="sheet-title">
+        Ціна позиції
+      </div>
 
       <button
         class="close-btn"
         type="button"
         onclick="closeModal('priceModal')"
       >×</button>
+
     </div>
 
     <div class="form-body">
 
-      <div id="priceCurrent" class="price-current"></div>
+      <div
+        id="priceCurrent"
+        class="price-current"
+      ></div>
 
       <div class="field">
-        <label for="priceInput">Ціна для кошторису, грн</label>
+
+        <label for="priceInput">
+          Ціна для кошторису, грн
+        </label>
+
         <input
           id="priceInput"
           class="input"
@@ -1006,6 +1309,7 @@ button{
           min="0"
           step="1"
         >
+
       </div>
 
       <div class="form-actions">
@@ -1028,15 +1332,20 @@ button{
         class="form-btn"
         type="button"
         onclick="resetPriceToBase()"
-        style="width:100%;margin-top:8px"
+        style="width:100%;margin-top:7px"
       >Повернути базову ціну</button>
 
     </div>
+
   </div>
+
 </div>
 
 
-<div id="toast" class="toast"></div>
+<div
+  id="toast"
+  class="toast"
+></div>
 
 
 <script>
@@ -1044,8 +1353,9 @@ button{
    DEFAULT DATABASE
 ========================================================= */
 
-const defaultDB = {
-  rough: [
+const defaultDB={
+
+  rough:[
     {id:"r1",name:"Монтаж радіатора",unit:"шт",price:2500},
     {id:"r2",name:"Монтаж запірно-регулюючого вузла",unit:"компл",price:7000},
     {id:"r3",name:"Монтаж гребінки",unit:"шт",price:5000},
@@ -1064,11 +1374,10 @@ const defaultDB = {
     {id:"r16",name:"Знешумлення каналізаційного стояка",unit:"шт",price:4000},
     {id:"r17",name:"Монтаж конвектора",unit:"шт",price:5000},
     {id:"r18",name:"Монтаж дизайнерського радіатора",unit:"шт",price:5000},
-    {id:"r19",name:"Монтаж душової системи",unit:"шт",price:4000},
-    {id:"r20",name:"Монтаж рушникосушки",unit:"шт",price:3000}
+    {id:"r19",name:"Монтаж душової системи",unit:"шт",price:4000}
   ],
 
-  finish: [
+  finish:[
     {id:"f1",name:"Монтаж та обв’язка бойлера",unit:"компл",price:7000},
     {id:"f2",name:"Монтаж та обв’язка водоочистки",unit:"компл",price:10000},
     {id:"f3",name:"Підключення ванни",unit:"шт",price:3500},
@@ -1087,17 +1396,15 @@ const defaultDB = {
    STATE
 ========================================================= */
 
-let db = loadDB();
+let db=loadDB();
+let estimate=loadEstimate();
 
-let estimate = loadEstimate();
+let mainCategory="rough";
+let catalogCategory="rough";
 
-let mainCategory = "rough";
-let catalogCategory = "rough";
-
-let editingWorkId = null;
-let editingWorkCategory = null;
-
-let editingPriceLineId = null;
+let editingWorkId=null;
+let editingWorkCategory=null;
+let editingPriceLineId=null;
 
 
 /* =========================================================
@@ -1109,7 +1416,7 @@ function $(id){
 }
 
 function esc(value){
-  return String(value ?? "")
+  return String(value??"")
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;")
@@ -1118,22 +1425,23 @@ function esc(value){
 }
 
 function money(value){
-  return Number(value || 0).toLocaleString("uk-UA") + " ₴";
+  return Number(value||0).toLocaleString("uk-UA")+" ₴";
 }
 
 function uid(){
-  return Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  return Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 }
 
 function showToast(message){
-  const el = $("toast");
 
-  el.textContent = message;
+  const el=$("toast");
+
+  el.textContent=message;
   el.classList.add("show");
 
   clearTimeout(showToast.timer);
 
-  showToast.timer = setTimeout(()=>{
+  showToast.timer=setTimeout(()=>{
     el.classList.remove("show");
   },1800);
 }
@@ -1144,30 +1452,150 @@ function showToast(message){
 ========================================================= */
 
 function loadDB(){
+
   try{
-    const raw = localStorage.getItem("samaster_db");
+
+    const raw=localStorage.getItem("samaster_db");
 
     if(!raw){
-      const copy = structuredClone(defaultDB);
-      localStorage.setItem("samaster_db",JSON.stringify(copy));
+
+      const copy=structuredClone(defaultDB);
+
+      localStorage.setItem(
+        "samaster_db",
+        JSON.stringify(copy)
+      );
+
       return copy;
     }
 
-    const parsed = JSON.parse(raw);
+    const parsed=JSON.parse(raw);
 
-    if(!parsed || !Array.isArray(parsed.rough) || !Array.isArray(parsed.finish)){
-      return structuredClone(defaultDB);
+    if(
+      !parsed ||
+      !Array.isArray(parsed.rough) ||
+      !Array.isArray(parsed.finish)
+    ){
+      const copy=structuredClone(defaultDB);
+
+      localStorage.setItem(
+        "samaster_db",
+        JSON.stringify(copy)
+      );
+
+      return copy;
+    }
+
+    /*
+      Міграція старої позиції r20:
+      "Монтаж рушникосушки" переносимо
+      з чорнових у чистові як f8.
+    */
+
+    let changed=false;
+
+    const oldRoughIndex=
+      parsed.rough.findIndex(
+        item=>item.id==="r20"
+      );
+
+    if(oldRoughIndex!==-1){
+
+      const oldItem=
+        parsed.rough.splice(
+          oldRoughIndex,
+          1
+        )[0];
+
+      changed=true;
+
+      const finishHasF8=
+        parsed.finish.some(
+          item=>item.id==="f8"
+        );
+
+      if(!finishHasF8){
+
+        parsed.finish.push({
+          id:"f8",
+          name:"Монтаж рушникосушки",
+          unit:oldItem.unit||"шт",
+          price:Number(
+            oldItem.price??3000
+          )
+        });
+
+      }
+    }
+
+    /*
+      Додатково гарантуємо наявність f8.
+    */
+
+    if(
+      !parsed.finish.some(
+        item=>item.id==="f8"
+      )
+    ){
+
+      parsed.finish.push({
+        id:"f8",
+        name:"Монтаж рушникосушки",
+        unit:"шт",
+        price:3000
+      });
+
+      changed=true;
+    }
+
+    /*
+      Якщо f8 випадково опинився ще й у rough,
+      прибираємо його звідти.
+    */
+
+    const roughBefore=
+      parsed.rough.length;
+
+    parsed.rough=
+      parsed.rough.filter(
+        item=>item.id!=="f8"
+      );
+
+    if(
+      parsed.rough.length!==roughBefore
+    ){
+      changed=true;
+    }
+
+    if(changed){
+
+      localStorage.setItem(
+        "samaster_db",
+        JSON.stringify(parsed)
+      );
     }
 
     return parsed;
 
   }catch{
-    return structuredClone(defaultDB);
+
+    const copy=structuredClone(defaultDB);
+
+    localStorage.setItem(
+      "samaster_db",
+      JSON.stringify(copy)
+    );
+
+    return copy;
   }
 }
 
 function saveDB(){
-  localStorage.setItem("samaster_db",JSON.stringify(db));
+
+  localStorage.setItem(
+    "samaster_db",
+    JSON.stringify(db)
+  );
 }
 
 
@@ -1176,21 +1604,96 @@ function saveDB(){
 ========================================================= */
 
 function loadEstimate(){
+
   try{
-    const raw = localStorage.getItem("samaster_estimate");
+
+    const raw=
+      localStorage.getItem(
+        "samaster_estimate"
+      );
 
     if(!raw) return [];
 
-    const parsed = JSON.parse(raw);
+    const parsed=JSON.parse(raw);
 
-    return Array.isArray(parsed) ? parsed : [];
+    if(!Array.isArray(parsed)){
+      return [];
+    }
+
+    /*
+      Міграція старого r20 у f8
+      у вже створеному кошторисі.
+    */
+
+    let changed=false;
+
+    const oldLines=
+      parsed.filter(
+        item=>item.workId==="r20"
+      );
+
+    if(oldLines.length){
+
+      const f8Line=
+        parsed.find(
+          item=>item.workId==="f8"
+        );
+
+      if(f8Line){
+
+        oldLines.forEach(oldLine=>{
+
+          f8Line.qty=
+            Number(f8Line.qty||0)+
+            Number(oldLine.qty||0);
+
+        });
+
+        return parsed.filter(
+          item=>item.workId!=="r20"
+        ).map(item=>item.workId==="f8"
+          ?{
+              ...item,
+              cat:"finish",
+              name:"Монтаж рушникосушки",
+              unit:item.unit||"шт"
+            }
+          :item
+        );
+
+      }
+
+      oldLines.forEach(item=>{
+
+        item.workId="f8";
+        item.cat="finish";
+        item.name="Монтаж рушникосушки";
+        item.unit=item.unit||"шт";
+
+        changed=true;
+
+      });
+    }
+
+    if(changed){
+
+      localStorage.setItem(
+        "samaster_estimate",
+        JSON.stringify(parsed)
+      );
+    }
+
+    return parsed;
 
   }catch{
+
     return [];
+
   }
 }
 
 function saveEstimate(){
+
   localStorage.setItem(
     "samaster_estimate",
     JSON.stringify(estimate)
@@ -1199,18 +1702,25 @@ function saveEstimate(){
   savePassportEstimate();
 
   window.dispatchEvent(
-    new CustomEvent("samaster:estimate-updated",{
-      detail:{estimate}
-    })
+    new CustomEvent(
+      "samaster:estimate-updated",
+      {detail:{estimate}}
+    )
   );
 }
 
 function findWork(workId){
+
   for(const cat of ["rough","finish"]){
-    const item = db[cat].find(x => x.id === workId);
+
+    const item=
+      db[cat].find(
+        x=>x.id===workId
+      );
 
     if(item){
-      return {
+
+      return{
         ...item,
         cat
       };
@@ -1221,30 +1731,40 @@ function findWork(workId){
 }
 
 function getEstimateTotal(){
+
   return estimate.reduce(
-    (sum,item)=>sum + Number(item.price || 0) * Number(item.qty || 0),
+    (sum,item)=>
+      sum+
+      Number(item.price||0)*
+      Number(item.qty||0),
     0
   );
 }
 
 
 /* =========================================================
-   PASSPORT ESTIMATE
+   PASSPORT
 ========================================================= */
 
 function savePassportEstimate(){
 
-  const estimateId =
-    localStorage.getItem("samaster_estimate_id") ||
-    ("SM-" + Date.now().toString(36).toUpperCase());
+  const estimateId=
+    localStorage.getItem(
+      "samaster_estimate_id"
+    ) ||
+    "SM-"+Date.now()
+      .toString(36)
+      .toUpperCase();
 
   localStorage.setItem(
     "samaster_estimate_id",
     estimateId
   );
 
-  const createdAt =
-    localStorage.getItem("samaster_estimate_created") ||
+  const createdAt=
+    localStorage.getItem(
+      "samaster_estimate_created"
+    ) ||
     new Date().toISOString();
 
   localStorage.setItem(
@@ -1252,40 +1772,69 @@ function savePassportEstimate(){
     createdAt
   );
 
-  const passport = {
+  const passport={
+
     type:"sa-master-estimate",
     version:1,
+
     estimateId,
+
     createdAt,
-    updatedAt:new Date().toISOString(),
+
+    updatedAt:
+      new Date().toISOString(),
+
     status:"draft",
+
     currency:"UAH",
 
     categories:{
-      rough:estimate.filter(x=>x.cat==="rough").length,
-      finish:estimate.filter(x=>x.cat==="finish").length
+      rough:
+        estimate.filter(
+          x=>x.cat==="rough"
+        ).length,
+
+      finish:
+        estimate.filter(
+          x=>x.cat==="finish"
+        ).length
     },
 
     total:getEstimateTotal(),
 
-    itemCount:estimate.reduce(
-      (sum,x)=>sum + Number(x.qty || 0),
-      0
-    ),
+    itemCount:
+      estimate.reduce(
+        (sum,x)=>
+          sum+Number(x.qty||0),
+        0
+      ),
 
-    items:estimate.map(item=>({
-      id:item.lineId,
-      workId:item.workId,
-      name:item.name,
-      category:item.cat,
-      unit:item.unit,
-      quantity:Number(item.qty || 0),
-      basePrice:Number(item.basePrice || 0),
-      price:Number(item.price || 0),
-      total:
-        Number(item.price || 0) *
-        Number(item.qty || 0)
-    }))
+    items:
+      estimate.map(item=>({
+
+        id:item.lineId,
+
+        workId:item.workId,
+
+        name:item.name,
+
+        category:item.cat,
+
+        unit:item.unit,
+
+        quantity:
+          Number(item.qty||0),
+
+        basePrice:
+          Number(item.basePrice||0),
+
+        price:
+          Number(item.price||0),
+
+        total:
+          Number(item.price||0)*
+          Number(item.qty||0)
+      }))
   };
 
   localStorage.setItem(
@@ -1301,16 +1850,16 @@ function savePassportEstimate(){
 
 function setMainCategory(category){
 
-  mainCategory = category;
+  mainCategory=category;
 
   $("roughTab").classList.toggle(
     "active",
-    category === "rough"
+    category==="rough"
   );
 
   $("finishTab").classList.toggle(
     "active",
-    category === "finish"
+    category==="finish"
   );
 
   renderEstimate();
@@ -1323,15 +1872,16 @@ function setMainCategory(category){
 
 function renderEstimate(){
 
-  const list = $("estimateList");
+  const list=$("estimateList");
 
-  const items = estimate.filter(
-    item => item.cat === mainCategory
-  );
+  const items=
+    estimate.filter(
+      item=>item.cat===mainCategory
+    );
 
   if(!items.length){
 
-    list.innerHTML = `
+    list.innerHTML=`
       <div class="empty">
         У цій категорії ще немає доданих робіт
       </div>
@@ -1339,67 +1889,79 @@ function renderEstimate(){
 
   }else{
 
-    list.innerHTML = items.map(item => {
+    list.innerHTML=
+      items.map(item=>{
 
-      const total =
-        Number(item.price || 0) *
-        Number(item.qty || 0);
+        const total=
+          Number(item.price||0)*
+          Number(item.qty||0);
 
-      return `
-        <div class="estimate-row">
+        return`
 
-          <div
-            class="estimate-info"
-            onclick="openPriceModal('${esc(item.lineId)}')"
-          >
-            <div class="estimate-name">
-              ${esc(item.name)}
+          <div class="estimate-row">
+
+            <div
+              class="estimate-info"
+              onclick="openPriceModal('${esc(item.lineId)}')"
+            >
+
+              <div class="estimate-name">
+                ${esc(item.name)}
+              </div>
+
+              <div class="estimate-meta">
+                ${esc(item.unit)}
+                ·
+                ${money(item.price)}
+                / ${esc(item.unit)}
+              </div>
+
             </div>
 
-            <div class="estimate-meta">
-              ${esc(item.unit)} · ${money(item.price)} / ${esc(item.unit)}
-            </div>
-          </div>
+            <div class="qty-control">
 
-          <div class="qty-control">
+              <button
+                class="qty-btn"
+                type="button"
+                onclick="changeQty('${esc(item.lineId)}',-1)"
+              >−</button>
+
+              <div class="qty-value">
+                ${Number(item.qty||0)}
+              </div>
+
+              <button
+                class="qty-btn"
+                type="button"
+                onclick="changeQty('${esc(item.lineId)}',1)"
+              >+</button>
+
+            </div>
+
+            <div class="estimate-price">
+              ${money(total)}
+            </div>
 
             <button
+              class="estimate-remove"
               type="button"
-              onclick="changeQty('${esc(item.lineId)}',-1)"
-            >−</button>
-
-            <div class="qty-value">
-              ${Number(item.qty || 0)}
-            </div>
-
-            <button
-              type="button"
-              onclick="changeQty('${esc(item.lineId)}',1)"
-            >+</button>
+              onclick="removeEstimateLine('${esc(item.lineId)}')"
+              aria-label="Видалити"
+            >×</button>
 
           </div>
+        `;
 
-          <div class="estimate-price">
-            ${money(total)}
-          </div>
-
-          <button
-            class="estimate-remove"
-            type="button"
-            onclick="removeEstimateLine('${esc(item.lineId)}')"
-            aria-label="Видалити"
-          >×</button>
-
-        </div>
-      `;
-    }).join("");
+      }).join("");
   }
 
-  $("totalValue").textContent =
+  $("totalValue").textContent=
     money(getEstimateTotal());
 
-  $("clearEstimateBtn").style.visibility =
-    estimate.length ? "visible" : "hidden";
+  $("clearEstimateBtn").style.visibility=
+    estimate.length
+      ? "visible"
+      : "hidden";
 }
 
 
@@ -1409,29 +1971,40 @@ function renderEstimate(){
 
 function addWork(workId){
 
-  const item = findWork(workId);
+  const item=findWork(workId);
 
   if(!item) return;
 
-  const existing = estimate.find(
-    x => x.workId === workId
-  );
+  const existing=
+    estimate.find(
+      x=>x.workId===workId
+    );
 
   if(existing){
 
-    existing.qty =
-      Number(existing.qty || 0) + 1;
+    existing.qty=
+      Number(existing.qty||0)+1;
 
   }else{
 
     estimate.push({
+
       lineId:uid(),
+
       workId:item.id,
+
       name:item.name,
+
       unit:item.unit,
+
       cat:item.cat,
-      basePrice:Number(item.price || 0),
-      price:Number(item.price || 0),
+
+      basePrice:
+        Number(item.price||0),
+
+      price:
+        Number(item.price||0),
+
       qty:1
     });
   }
@@ -1446,19 +2019,23 @@ function addWork(workId){
 
 function changeQty(lineId,delta){
 
-  const item = estimate.find(
-    x => x.lineId === lineId
-  );
+  const item=
+    estimate.find(
+      x=>x.lineId===lineId
+    );
 
   if(!item) return;
 
-  item.qty =
-    Number(item.qty || 0) + Number(delta || 0);
+  item.qty=
+    Number(item.qty||0)+
+    Number(delta||0);
 
-  if(item.qty <= 0){
-    estimate = estimate.filter(
-      x => x.lineId !== lineId
-    );
+  if(item.qty<=0){
+
+    estimate=
+      estimate.filter(
+        x=>x.lineId!==lineId
+      );
   }
 
   saveEstimate();
@@ -1469,9 +2046,10 @@ function changeQty(lineId,delta){
 
 function removeEstimateLine(lineId){
 
-  estimate = estimate.filter(
-    x => x.lineId !== lineId
-  );
+  estimate=
+    estimate.filter(
+      x=>x.lineId!==lineId
+    );
 
   saveEstimate();
 
@@ -1488,9 +2066,15 @@ function clearEstimate(){
 
   if(!estimate.length) return;
 
-  if(!confirm("Очистити весь кошторис?")) return;
+  if(
+    !confirm(
+      "Очистити весь кошторис?"
+    )
+  ){
+    return;
+  }
 
-  estimate = [];
+  estimate=[];
 
   saveEstimate();
 
@@ -1507,11 +2091,13 @@ function clearEstimate(){
 
 function openCatalog(){
 
-  $("catalogModal").classList.add("show");
+  $("catalogModal")
+    .classList.add("show");
 
-  $("workSearch").value = "";
+  $("workSearch").value="";
 
-  catalogCategory = mainCategory;
+  catalogCategory=
+    mainCategory;
 
   updateCatalogTabs();
 
@@ -1524,7 +2110,7 @@ function openCatalog(){
 
 function setCatalogCategory(category){
 
-  catalogCategory = category;
+  catalogCategory=category;
 
   updateCatalogTabs();
 
@@ -1533,46 +2119,54 @@ function setCatalogCategory(category){
 
 function updateCatalogTabs(){
 
-  $("catalogRoughTab").classList.toggle(
-    "active",
-    catalogCategory === "rough"
-  );
+  $("catalogRoughTab")
+    .classList.toggle(
+      "active",
+      catalogCategory==="rough"
+    );
 
-  $("catalogFinishTab").classList.toggle(
-    "active",
-    catalogCategory === "finish"
-  );
+  $("catalogFinishTab")
+    .classList.toggle(
+      "active",
+      catalogCategory==="finish"
+    );
 }
 
 function renderAddWorkList(){
 
-  const list = $("workList");
+  const list=$("workList");
 
-  const query =
-    $("workSearch").value
+  const query=
+    $("workSearch")
+      .value
       .trim()
       .toLowerCase();
 
-  const source =
-    db[catalogCategory] || [];
+  const source=
+    db[catalogCategory]||[];
 
-  const filtered =
-    source.filter(item => {
+  const filtered=
+    source.filter(item=>{
 
       if(!query) return true;
 
-      return (
-        item.name.toLowerCase().includes(query) ||
-        item.unit.toLowerCase().includes(query)
+      return(
+        item.name
+          .toLowerCase()
+          .includes(query) ||
+
+        item.unit
+          .toLowerCase()
+          .includes(query)
       );
     });
 
-  $("catalogCount").textContent =
+  $("catalogCount").textContent=
     `${filtered.length} позицій`;
 
   if(!filtered.length){
 
-    list.innerHTML = `
+    list.innerHTML=`
       <div class="empty">
         Нічого не знайдено
       </div>
@@ -1581,20 +2175,25 @@ function renderAddWorkList(){
     return;
   }
 
-  list.innerHTML =
-    filtered.map(renderAddWorkItem).join("");
+  list.innerHTML=
+    filtered
+      .map(renderAddWorkItem)
+      .join("");
 }
 
 function renderAddWorkItem(item){
 
-  const existing =
+  const existing=
     estimate.find(
-      x => x.workId === item.id
+      x=>x.workId===item.id
     );
 
-  const controls = existing
+  const controls=
+
+    existing
 
     ? `
+
       <div class="work-control">
 
         <button
@@ -1603,7 +2202,7 @@ function renderAddWorkItem(item){
         >−</button>
 
         <span>
-          ${Number(existing.qty || 0)}
+          ${Number(existing.qty||0)}
         </span>
 
         <button
@@ -1612,15 +2211,19 @@ function renderAddWorkItem(item){
         >+</button>
 
       </div>
+
     `
 
     : `
+
       <div class="work-price">
         ${money(item.price)}
       </div>
+
     `;
 
-  return `
+  return`
+
     <button
       class="work-item"
       type="button"
@@ -1642,6 +2245,7 @@ function renderAddWorkItem(item){
       ${controls}
 
     </button>
+
   `;
 }
 
@@ -1652,20 +2256,23 @@ function renderAddWorkItem(item){
 
 function openNewWorkModal(){
 
-  editingWorkId = null;
-  editingWorkCategory = catalogCategory;
+  editingWorkId=null;
 
-  $("workModalTitle").textContent =
-    "Нова позиція";
+  editingWorkCategory=
+    catalogCategory||mainCategory;
 
-  $("workName").value = "";
-  $("workUnit").value = "";
-  $("workPrice").value = "";
+  $("workModalTitle")
+    .textContent="Нова позиція";
 
-  $("deleteWorkButton").style.display =
-    "none";
+  $("workName").value="";
+  $("workUnit").value="";
+  $("workPrice").value="";
 
-  $("workModal").classList.add("show");
+  $("deleteWorkButton")
+    .style.display="none";
+
+  $("workModal")
+    .classList.add("show");
 
   setTimeout(()=>{
     $("workName").focus();
@@ -1674,75 +2281,94 @@ function openNewWorkModal(){
 
 function openEditWorkModal(workId){
 
-  const item = findWork(workId);
+  const item=findWork(workId);
 
   if(!item) return;
 
-  editingWorkId = item.id;
-  editingWorkCategory = item.cat;
+  editingWorkId=item.id;
+  editingWorkCategory=item.cat;
 
-  $("workModalTitle").textContent =
-    "Редагувати позицію";
+  $("workModalTitle")
+    .textContent="Редагувати позицію";
 
-  $("workName").value =
-    item.name;
+  $("workName").value=item.name;
+  $("workUnit").value=item.unit;
+  $("workPrice").value=item.price;
 
-  $("workUnit").value =
-    item.unit;
+  $("deleteWorkButton")
+    .style.display="block";
 
-  $("workPrice").value =
-    item.price;
-
-  $("deleteWorkButton").style.display =
-    "block";
-
-  $("workModal").classList.add("show");
+  $("workModal")
+    .classList.add("show");
 }
 
 function saveWork(){
 
-  const name =
-    $("workName").value.trim();
+  const name=
+    $("workName")
+      .value
+      .trim();
 
-  const unit =
-    $("workUnit").value.trim();
+  const unit=
+    $("workUnit")
+      .value
+      .trim();
 
-  const price =
-    Number($("workPrice").value);
+  const price=
+    Number(
+      $("workPrice").value
+    );
 
   if(!name){
-    showToast("Вкажіть назву роботи");
+
+    showToast(
+      "Вкажіть назву роботи"
+    );
+
     return;
   }
 
   if(!unit){
-    showToast("Вкажіть одиницю");
+
+    showToast(
+      "Вкажіть одиницю"
+    );
+
     return;
   }
 
-  if(!Number.isFinite(price) || price < 0){
-    showToast("Вкажіть коректну ціну");
+  if(
+    !Number.isFinite(price) ||
+    price<0
+  ){
+
+    showToast(
+      "Вкажіть коректну ціну"
+    );
+
     return;
   }
 
   if(editingWorkId){
 
-    const item =
+    const item=
       findWork(editingWorkId);
 
     if(item){
 
-      item.name = name;
-      item.unit = unit;
-      item.price = price;
+      item.name=name;
+      item.unit=unit;
+      item.price=price;
 
       estimate.forEach(line=>{
 
-        if(line.workId === item.id){
+        if(
+          line.workId===item.id
+        ){
 
-          line.name = name;
-          line.unit = unit;
-          line.basePrice = price;
+          line.name=name;
+          line.unit=unit;
+          line.basePrice=price;
         }
       });
 
@@ -1754,22 +2380,25 @@ function saveWork(){
       renderEstimate();
       renderAddWorkList();
 
-      showToast("Позицію оновлено");
+      showToast(
+        "Позицію оновлено"
+      );
     }
 
   }else{
 
-    const id =
-      editingWorkCategory +
-      "-" +
+    const id=
+      editingWorkCategory+
+      "-"+
       uid();
 
-    db[editingWorkCategory].push({
-      id,
-      name,
-      unit,
-      price
-    });
+    db[editingWorkCategory]
+      .push({
+        id,
+        name,
+        unit,
+        price
+      });
 
     saveDB();
 
@@ -1777,8 +2406,14 @@ function saveWork(){
 
     renderAddWorkList();
 
-    showToast("Позицію створено");
+    showToast(
+      "Позицію створено"
+    );
   }
+}
+
+function openEditFromCatalog(workId){
+  openEditWorkModal(workId);
 }
 
 function deleteCurrentWork(){
@@ -1790,7 +2425,7 @@ function deleteCurrentWork(){
 
 function deleteWork(workId){
 
-  const item = findWork(workId);
+  const item=findWork(workId);
 
   if(!item) return;
 
@@ -1802,14 +2437,14 @@ function deleteWork(workId){
     return;
   }
 
-  db[item.cat] =
+  db[item.cat]=
     db[item.cat].filter(
-      x => x.id !== workId
+      x=>x.id!==workId
     );
 
-  estimate =
+  estimate=
     estimate.filter(
-      x => x.workId !== workId
+      x=>x.workId!==workId
     );
 
   saveDB();
@@ -1820,7 +2455,9 @@ function deleteWork(workId){
   renderEstimate();
   renderAddWorkList();
 
-  showToast("Позицію видалено");
+  showToast(
+    "Позицію видалено"
+  );
 }
 
 
@@ -1830,54 +2467,70 @@ function deleteWork(workId){
 
 function openPriceModal(lineId){
 
-  const item =
+  const item=
     estimate.find(
-      x => x.lineId === lineId
+      x=>x.lineId===lineId
     );
 
   if(!item) return;
 
-  editingPriceLineId = lineId;
+  editingPriceLineId=lineId;
 
-  $("priceCurrent").innerHTML = `
-    <strong>${esc(item.name)}</strong><br>
+  $("priceCurrent").innerHTML=`
+    <strong>
+      ${esc(item.name)}
+    </strong>
+    <br>
     <span style="color:var(--muted)">
-      Базова ціна: ${money(item.basePrice)}
+      Базова ціна:
+      ${money(item.basePrice)}
     </span>
   `;
 
-  $("priceInput").value =
+  $("priceInput").value=
     item.price;
 
-  $("priceModal").classList.add("show");
+  $("priceModal")
+    .classList.add("show");
 
   setTimeout(()=>{
+
     $("priceInput").focus();
     $("priceInput").select();
+
   },100);
 }
 
 function savePrice(){
 
-  if(!editingPriceLineId) return;
+  if(!editingPriceLineId)
+    return;
 
-  const item =
+  const item=
     estimate.find(
-      x => x.lineId === editingPriceLineId
+      x=>x.lineId===editingPriceLineId
     );
 
   if(!item) return;
 
-  const price =
-    Number($("priceInput").value);
+  const price=
+    Number(
+      $("priceInput").value
+    );
 
-  if(!Number.isFinite(price) || price < 0){
+  if(
+    !Number.isFinite(price) ||
+    price<0
+  ){
 
-    showToast("Вкажіть коректну ціну");
+    showToast(
+      "Вкажіть коректну ціну"
+    );
+
     return;
   }
 
-  item.price = price;
+  item.price=price;
 
   saveEstimate();
 
@@ -1885,31 +2538,36 @@ function savePrice(){
 
   renderEstimate();
 
-  showToast("Ціну змінено");
+  showToast(
+    "Ціну змінено"
+  );
 }
 
 function resetPriceToBase(){
 
-  if(!editingPriceLineId) return;
+  if(!editingPriceLineId)
+    return;
 
-  const item =
+  const item=
     estimate.find(
-      x => x.lineId === editingPriceLineId
+      x=>x.lineId===editingPriceLineId
     );
 
   if(!item) return;
 
-  item.price =
-    Number(item.basePrice || 0);
+  item.price=
+    Number(item.basePrice||0);
 
-  $("priceInput").value =
+  $("priceInput").value=
     item.price;
 
   saveEstimate();
 
   renderEstimate();
 
-  showToast("Повернуто базову ціну");
+  showToast(
+    "Повернуто базову ціну"
+  );
 }
 
 
@@ -1919,64 +2577,80 @@ function resetPriceToBase(){
 
 function exportJSON(){
 
-  const data = {
+  const data={
 
     type:"sa-master-estimate",
+
     version:1,
 
     estimateId:
       localStorage.getItem(
         "samaster_estimate_id"
-      ) || null,
+      )||null,
 
     createdAt:
       localStorage.getItem(
         "samaster_estimate_created"
-      ) || null,
+      )||null,
 
     exportedAt:
       new Date().toISOString(),
 
-    total:getEstimateTotal(),
+    total:
+      getEstimateTotal(),
 
-    items:estimate.map(item=>({
+    items:
+      estimate.map(item=>({
 
-      id:item.lineId,
-      workId:item.workId,
-      name:item.name,
-      category:item.cat,
-      unit:item.unit,
+        id:item.lineId,
 
-      quantity:Number(item.qty || 0),
+        workId:item.workId,
 
-      basePrice:
-        Number(item.basePrice || 0),
+        name:item.name,
 
-      price:
-        Number(item.price || 0),
+        category:item.cat,
 
-      total:
-        Number(item.price || 0) *
-        Number(item.qty || 0)
+        unit:item.unit,
 
-    }))
+        quantity:
+          Number(item.qty||0),
+
+        basePrice:
+          Number(item.basePrice||0),
+
+        price:
+          Number(item.price||0),
+
+        total:
+          Number(item.price||0)*
+          Number(item.qty||0)
+      }))
   };
 
-  const blob =
+  const blob=
     new Blob(
-      [JSON.stringify(data,null,2)],
-      {type:"application/json;charset=utf-8"}
+      [
+        JSON.stringify(
+          data,
+          null,
+          2
+        )
+      ],
+      {
+        type:
+          "application/json;charset=utf-8"
+      }
     );
 
-  const url =
+  const url=
     URL.createObjectURL(blob);
 
-  const a =
+  const a=
     document.createElement("a");
 
-  a.href = url;
+  a.href=url;
 
-  a.download =
+  a.download=
     "sa-master-estimate.json";
 
   document.body.appendChild(a);
@@ -1987,7 +2661,9 @@ function exportJSON(){
 
   URL.revokeObjectURL(url);
 
-  showToast("JSON експортовано");
+  showToast(
+    "JSON експортовано"
+  );
 }
 
 
@@ -1997,26 +2673,40 @@ function exportJSON(){
 
 function closeModal(id){
 
-  $(id).classList.remove("show");
+  $(id)
+    .classList
+    .remove("show");
 }
 
 function modalBackgroundClick(event,id){
 
-  if(event.target === $(id)){
+  if(
+    event.target===
+    $(id)
+  ){
+
     closeModal(id);
   }
 }
 
 document.addEventListener(
   "keydown",
-  event => {
+  event=>{
 
-    if(event.key !== "Escape") return;
+    if(
+      event.key!=="Escape"
+    ){
+      return;
+    }
 
     document
-      .querySelectorAll(".modal.show")
+      .querySelectorAll(
+        ".modal.show"
+      )
       .forEach(modal=>{
-        modal.classList.remove("show");
+        modal.classList.remove(
+          "show"
+        );
       });
   }
 );
@@ -2028,29 +2718,30 @@ document.addEventListener(
 
 function applyTheme(theme){
 
-  document.documentElement.dataset.theme =
-    theme;
+  document.documentElement
+    .dataset.theme=theme;
 
   localStorage.setItem(
     "samaster_theme_mode",
     theme
   );
 
-  $("themeButton").textContent =
-    theme === "dark"
-      ? "☀"
-      : "☾";
+  $("themeButton")
+    .textContent=
+      theme==="dark"
+        ? "☀"
+        : "☾";
 }
 
 function initTheme(){
 
-  const saved =
+  const saved=
     localStorage.getItem(
       "samaster_theme_mode"
     );
 
   applyTheme(
-    saved === "dark"
+    saved==="dark"
       ? "dark"
       : "light"
   );
@@ -2058,12 +2749,13 @@ function initTheme(){
 
 function toggleTheme(){
 
-  const current =
-    document.documentElement.dataset.theme ||
+  const current=
+    document.documentElement
+      .dataset.theme ||
     "light";
 
   applyTheme(
-    current === "dark"
+    current==="dark"
       ? "light"
       : "dark"
   );
