@@ -19,6 +19,7 @@
   --blue:#007aff;
   --blue-soft:rgba(0,122,255,.10);
   --red:#ff3b30;
+  --control-bg:rgba(255,255,255,.86);
   --shadow:0 10px 35px rgba(0,0,0,.08);
 }
 
@@ -33,6 +34,7 @@ html[data-theme="dark"]{
   --blue:#0a84ff;
   --blue-soft:rgba(10,132,255,.16);
   --red:#ff453a;
+  --control-bg:#292b31;
   --shadow:0 10px 35px rgba(0,0,0,.35);
 }
 
@@ -283,19 +285,26 @@ button{
   padding:2px;
   border-radius:8px;
   background:rgba(120,120,128,.10);
+  border:1px solid var(--line);
 }
 
 .qty-btn{
   width:25px;
   height:25px;
   border-radius:6px;
-  background:transparent;
+  background:var(--control-bg);
+  border:1px solid var(--line);
   color:var(--blue);
   font-size:16px;
-  font-weight:600;
+  font-weight:850;
   display:grid;
   place-items:center;
   line-height:1;
+}
+
+.qty-btn:active{
+  background:var(--blue);
+  color:#fff;
 }
 
 .qty-value{
@@ -405,6 +414,19 @@ button{
   font-weight:800;
   box-shadow:0 5px 16px rgba(0,122,255,.18);
 }
+
+/* =========================================================
+   PRINT TOTAL
+========================================================= */
+
+.print-total{
+  display:none;
+}
+
+
+/* =========================================================
+   MODALS
+========================================================= */
 
 .modal{
   position:fixed;
@@ -536,11 +558,20 @@ button{
   border-radius:13px;
   background:rgba(120,120,128,.055);
   text-align:left;
+  cursor:pointer;
+  transition:
+    transform .12s ease,
+    background .12s ease;
 }
 
 .work-item:active{
   transform:scale(.99);
   background:var(--blue-soft);
+}
+
+.work-item:focus-visible{
+  outline:2px solid var(--blue);
+  outline-offset:2px;
 }
 
 .work-info{
@@ -575,24 +606,36 @@ button{
   padding:2px;
   border-radius:8px;
   background:var(--blue-soft);
+  border:1px solid var(--line);
 }
 
 .work-control button{
   width:25px;
   height:25px;
+  flex:0 0 25px;
   border-radius:6px;
-  background:transparent;
+  background:var(--control-bg);
+  border:1px solid var(--line);
   color:var(--blue);
-  font-size:16px;
+  font-size:17px;
+  font-weight:900;
   display:grid;
   place-items:center;
+  line-height:1;
+  opacity:1;
+}
+
+.work-control button:active{
+  background:var(--blue);
+  color:#fff;
 }
 
 .work-control span{
   min-width:20px;
   text-align:center;
+  color:var(--text);
   font-size:11px;
-  font-weight:800;
+  font-weight:850;
 }
 
 .catalog-footer{
@@ -721,6 +764,7 @@ button{
 }
 
 @media(max-height:700px){
+
   .header{
     min-height:44px;
     margin-bottom:6px;
@@ -752,6 +796,7 @@ button{
 }
 
 @media(max-width:380px){
+
   .estimate-row{
     grid-template-columns:minmax(0,1fr) auto auto;
   }
@@ -781,17 +826,38 @@ button{
   }
 }
 
+
+/* =========================================================
+   PRINT / PDF
+========================================================= */
+
 @media print{
+
+  @page{
+    size:auto;
+    margin:12mm;
+  }
+
+  html,
   body{
+    width:auto;
+    height:auto;
+    min-height:0;
     overflow:visible;
-    background:#fff;
-    color:#111;
+    background:#fff!important;
+    color:#111!important;
     padding:0;
   }
 
   .app{
+    width:100%;
     max-width:none;
     height:auto;
+    margin:0;
+  }
+
+  .header{
+    margin-bottom:14px;
   }
 
   .header-actions,
@@ -806,46 +872,110 @@ button{
 
   .main-card{
     display:block;
+    width:100%;
     border:0;
+    border-radius:0;
     box-shadow:none;
-    background:#fff;
+    background:#fff!important;
     padding:0;
   }
 
+  .brand-title{
+    color:#111!important;
+  }
+
+  .brand-sub{
+    color:#666!important;
+  }
+
+  .section-head{
+    margin-bottom:8px;
+  }
+
+  .section-title{
+    color:#555!important;
+  }
+
   .estimate-list{
+    display:block;
     overflow:visible;
+    height:auto;
+    max-height:none;
+    padding:0;
   }
 
   .estimate-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    width:100%;
+    min-height:38px;
+    height:auto;
     break-inside:avoid;
-    background:#fff;
-    border-color:#ddd;
+    page-break-inside:avoid;
+    background:#fff!important;
+    border-color:#ddd!important;
+    color:#111!important;
+    padding:7px 8px;
+    margin-bottom:5px;
   }
 
-  .estimate-info{
-    cursor:default;
+  .estimate-name{
+    color:#111!important;
+  }
+
+  .estimate-meta{
+    color:#666!important;
+  }
+
+  .estimate-price{
+    color:#111!important;
+    min-width:80px;
   }
 
   .estimate-remove,
   .qty-control{
-    display:none;
+    display:none!important;
   }
 
-  .estimate-row{
-    grid-template-columns:minmax(0,1fr) auto;
+  .empty{
+    color:#666!important;
+    border-color:#ccc!important;
   }
 
-  .total-box{
-    margin-top:20px;
-    background:#f1f5ff;
+  /*
+    Окремий друкований блок загальної суми.
+    Він НЕ залежить від bottom-panel,
+    тому гарантовано потрапляє у PDF.
+  */
+
+  .print-total{
+    display:flex!important;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+    width:100%;
+    margin-top:18px;
+    padding:12px 14px;
+    border:1px solid #ccc;
+    border-radius:10px;
+    background:#f1f5ff!important;
+    color:#111!important;
+    break-inside:avoid;
+    page-break-inside:avoid;
   }
 
-  .brand-title{
-    color:#111;
+  .print-total-label{
+    font-size:13px;
+    font-weight:700;
+    color:#444!important;
   }
 
-  .brand-sub{
-    color:#666;
+  .print-total-value{
+    font-size:18px;
+    line-height:1;
+    font-weight:850;
+    color:#111!important;
+    white-space:nowrap;
   }
 }
 </style>
@@ -858,6 +988,7 @@ button{
 <header class="header">
 
   <div class="brand">
+
     <div id="brandTitle" class="brand-title">
       Калькулятор сантехніка
     </div>
@@ -865,6 +996,7 @@ button{
     <div id="brandSub" class="brand-sub">
       Кошторис вартості робіт
     </div>
+
   </div>
 
   <div class="header-actions">
@@ -947,6 +1079,20 @@ button{
 
   <div id="estimateList" class="estimate-list"></div>
 
+  <!-- Друкується тільки у PDF -->
+  <div class="print-total">
+
+    <div class="print-total-label">
+      Загальна вартість робіт
+    </div>
+
+    <div
+      id="printTotalValue"
+      class="print-total-value"
+    >0 ₴</div>
+
+  </div>
+
   <div class="bottom-panel">
 
     <div class="total-box">
@@ -990,7 +1136,9 @@ button{
 </div>
 
 
-<!-- CATALOG -->
+<!-- =======================================================
+     CATALOG
+======================================================= -->
 
 <div
   id="catalogModal"
@@ -998,65 +1146,67 @@ button{
   onclick="modalBackgroundClick(event,'catalogModal')"
 >
 
-<div class="sheet">
+  <div class="sheet">
 
-  <div class="sheet-head">
+    <div class="sheet-head">
 
-    <div class="sheet-title">
-      Додати роботу
-    </div>
-
-    <button
-      class="close-btn"
-      type="button"
-      onclick="closeModal('catalogModal')"
-    >×</button>
-
-  </div>
-
-  <div class="catalog-body">
-
-    <input
-      id="workSearch"
-      class="search"
-      type="search"
-      placeholder="Пошук: раді, бойл, уніт..."
-      autocomplete="off"
-      oninput="renderAddWorkList()"
-    >
-
-    <div class="catalog-tabs">
+      <div class="sheet-title">
+        Додати роботу
+      </div>
 
       <button
-        id="catalogRoughTab"
-        class="catalog-tab active"
+        class="close-btn"
         type="button"
-        onclick="setCatalogCategory('rough')"
-      >Чорнові</button>
-
-      <button
-        id="catalogFinishTab"
-        class="catalog-tab"
-        type="button"
-        onclick="setCatalogCategory('finish')"
-      >Чистові</button>
+        onclick="closeModal('catalogModal')"
+      >×</button>
 
     </div>
 
-    <div id="workList" class="work-list"></div>
+    <div class="catalog-body">
 
-    <div class="catalog-footer">
+      <input
+        id="workSearch"
+        class="search"
+        type="search"
+        placeholder="Пошук: раді, бойл, уніт..."
+        autocomplete="off"
+        oninput="renderAddWorkList()"
+      >
 
-      <div
-        id="catalogCount"
-        class="catalog-count"
-      ></div>
+      <div class="catalog-tabs">
 
-      <button
-        class="new-work-btn"
-        type="button"
-        onclick="openNewWorkModal()"
-      >＋ Створити позицію</button>
+        <button
+          id="catalogRoughTab"
+          class="catalog-tab active"
+          type="button"
+          onclick="setCatalogCategory('rough')"
+        >Чорнові</button>
+
+        <button
+          id="catalogFinishTab"
+          class="catalog-tab"
+          type="button"
+          onclick="setCatalogCategory('finish')"
+        >Чистові</button>
+
+      </div>
+
+      <div id="workList" class="work-list"></div>
+
+      <div class="catalog-footer">
+
+        <div
+          id="catalogCount"
+          class="catalog-count"
+        ></div>
+
+        <button
+          class="new-work-btn"
+          type="button"
+          onclick="openNewWorkModal()"
+        >＋ Створити позицію</button>
+
+      </div>
 
     </div>
 
@@ -1064,10 +1214,10 @@ button{
 
 </div>
 
-</div>
 
-
-<!-- WORK -->
+<!-- =======================================================
+     WORK
+======================================================= -->
 
 <div
   id="workModal"
@@ -1075,104 +1225,106 @@ button{
   onclick="modalBackgroundClick(event,'workModal')"
 >
 
-<div class="sheet">
+  <div class="sheet">
 
-  <div class="sheet-head">
+    <div class="sheet-head">
 
-    <div
-      id="workModalTitle"
-      class="sheet-title"
-    >Нова позиція</div>
-
-    <button
-      class="close-btn"
-      type="button"
-      onclick="closeModal('workModal')"
-    >×</button>
-
-  </div>
-
-  <div class="form-body">
-
-    <div class="field">
-
-      <label for="workName">
-        Назва роботи
-      </label>
-
-      <input
-        id="workName"
-        class="input"
-        type="text"
-        placeholder="Наприклад, Монтаж фільтра"
-      >
-
-    </div>
-
-    <div class="field">
-
-      <label for="workUnit">
-        Одиниця виміру
-      </label>
-
-      <input
-        id="workUnit"
-        class="input"
-        type="text"
-        placeholder="шт, компл, м.п."
-      >
-
-    </div>
-
-    <div class="field">
-
-      <label for="workPrice">
-        Ціна, грн
-      </label>
-
-      <input
-        id="workPrice"
-        class="input"
-        type="number"
-        min="0"
-        step="1"
-        placeholder="0"
-      >
-
-    </div>
-
-    <div class="form-actions">
+      <div
+        id="workModalTitle"
+        class="sheet-title"
+      >Нова позиція</div>
 
       <button
-        class="form-btn"
+        class="close-btn"
         type="button"
         onclick="closeModal('workModal')"
-      >Скасувати</button>
-
-      <button
-        class="form-btn primary"
-        type="button"
-        onclick="saveWork()"
-      >Зберегти</button>
+      >×</button>
 
     </div>
 
-    <button
-      id="deleteWorkButton"
-      class="form-btn danger"
-      type="button"
-      onclick="deleteCurrentWork()"
-      style="display:none;width:100%;margin-top:7px"
-    >Видалити позицію</button>
+    <div class="form-body">
+
+      <div class="field">
+
+        <label for="workName">
+          Назва роботи
+        </label>
+
+        <input
+          id="workName"
+          class="input"
+          type="text"
+          placeholder="Наприклад, Монтаж фільтра"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label for="workUnit">
+          Одиниця виміру
+        </label>
+
+        <input
+          id="workUnit"
+          class="input"
+          type="text"
+          placeholder="шт, компл, м.п."
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label for="workPrice">
+          Ціна, грн
+        </label>
+
+        <input
+          id="workPrice"
+          class="input"
+          type="number"
+          min="0"
+          step="1"
+          placeholder="0"
+        >
+
+      </div>
+
+      <div class="form-actions">
+
+        <button
+          class="form-btn"
+          type="button"
+          onclick="closeModal('workModal')"
+        >Скасувати</button>
+
+        <button
+          class="form-btn primary"
+          type="button"
+          onclick="saveWork()"
+        >Зберегти</button>
+
+      </div>
+
+      <button
+        id="deleteWorkButton"
+        class="form-btn danger"
+        type="button"
+        onclick="deleteCurrentWork()"
+        style="display:none;width:100%;margin-top:7px"
+      >Видалити позицію</button>
+
+    </div>
 
   </div>
 
 </div>
 
-</div>
 
-
-<!-- PRICE -->
+<!-- =======================================================
+     PRICE
+======================================================= -->
 
 <div
   id="priceModal"
@@ -1180,76 +1332,78 @@ button{
   onclick="modalBackgroundClick(event,'priceModal')"
 >
 
-<div class="sheet">
+  <div class="sheet">
 
-  <div class="sheet-head">
+    <div class="sheet-head">
 
-    <div class="sheet-title">
-      Ціна позиції
-    </div>
+      <div class="sheet-title">
+        Ціна позиції
+      </div>
 
-    <button
-      class="close-btn"
-      type="button"
-      onclick="closeModal('priceModal')"
-    >×</button>
-
-  </div>
-
-  <div class="form-body">
-
-    <div
-      id="priceCurrent"
-      class="price-current"
-    ></div>
-
-    <div class="field">
-
-      <label for="priceInput">
-        Ціна для цього кошторису, грн
-      </label>
-
-      <input
-        id="priceInput"
-        class="input"
-        type="number"
-        min="0"
-        step="1"
-      >
+      <button
+        class="close-btn"
+        type="button"
+        onclick="closeModal('priceModal')"
+      >×</button>
 
     </div>
 
-    <div class="form-actions">
+    <div class="form-body">
+
+      <div
+        id="priceCurrent"
+        class="price-current"
+      ></div>
+
+      <div class="field">
+
+        <label for="priceInput">
+          Ціна для цього кошторису, грн
+        </label>
+
+        <input
+          id="priceInput"
+          class="input"
+          type="number"
+          min="0"
+          step="1"
+        >
+
+      </div>
+
+      <div class="form-actions">
+
+        <button
+          class="form-btn"
+          type="button"
+          onclick="closeModal('priceModal')"
+        >Скасувати</button>
+
+        <button
+          class="form-btn primary"
+          type="button"
+          onclick="savePrice()"
+        >Зберегти</button>
+
+      </div>
 
       <button
         class="form-btn"
         type="button"
-        onclick="closeModal('priceModal')"
-      >Скасувати</button>
-
-      <button
-        class="form-btn primary"
-        type="button"
-        onclick="savePrice()"
-      >Зберегти</button>
+        onclick="resetPriceToBase()"
+        style="width:100%;margin-top:7px"
+      >Повернути базову ціну</button>
 
     </div>
-
-    <button
-      class="form-btn"
-      type="button"
-      onclick="resetPriceToBase()"
-      style="width:100%;margin-top:7px"
-    >Повернути базову ціну</button>
 
   </div>
 
 </div>
 
-</div>
 
-
-<!-- SETTINGS -->
+<!-- =======================================================
+     SETTINGS
+======================================================= -->
 
 <div
   id="settingsModal"
@@ -1257,102 +1411,102 @@ button{
   onclick="modalBackgroundClick(event,'settingsModal')"
 >
 
-<div class="sheet">
+  <div class="sheet">
 
-  <div class="sheet-head">
+    <div class="sheet-head">
 
-    <div class="sheet-title">
-      Мій профіль
-    </div>
-
-    <button
-      class="close-btn"
-      type="button"
-      onclick="closeModal('settingsModal')"
-    >×</button>
-
-  </div>
-
-  <div class="form-body">
-
-    <div class="field">
-
-      <label for="profileBrand">
-        Назва / бренд
-      </label>
-
-      <input
-        id="profileBrand"
-        class="input"
-        type="text"
-        placeholder="Наприклад, SA-MASTER.PRO"
-      >
-
-    </div>
-
-    <div class="field">
-
-      <label for="profileName">
-        Ім'я майстра
-      </label>
-
-      <input
-        id="profileName"
-        class="input"
-        type="text"
-        placeholder="Ваше ім'я"
-      >
-
-    </div>
-
-    <div class="field">
-
-      <label for="profilePhone">
-        Телефон
-      </label>
-
-      <input
-        id="profilePhone"
-        class="input"
-        type="tel"
-        placeholder="+380..."
-      >
-
-    </div>
-
-    <div class="field">
-
-      <label for="profileDetails">
-        Додаткова інформація
-      </label>
-
-      <textarea
-        id="profileDetails"
-        class="textarea"
-        placeholder="Адреса, реквізити або інша інформація для кошторису"
-      ></textarea>
-
-    </div>
-
-    <div class="form-actions">
+      <div class="sheet-title">
+        Мій профіль
+      </div>
 
       <button
-        class="form-btn"
+        class="close-btn"
         type="button"
         onclick="closeModal('settingsModal')"
-      >Скасувати</button>
+      >×</button>
 
-      <button
-        class="form-btn primary"
-        type="button"
-        onclick="saveSettings()"
-      >Зберегти</button>
+    </div>
+
+    <div class="form-body">
+
+      <div class="field">
+
+        <label for="profileBrand">
+          Назва / бренд
+        </label>
+
+        <input
+          id="profileBrand"
+          class="input"
+          type="text"
+          placeholder="Наприклад, SA-MASTER.PRO"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label for="profileName">
+          Ім'я майстра
+        </label>
+
+        <input
+          id="profileName"
+          class="input"
+          type="text"
+          placeholder="Ваше ім'я"
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label for="profilePhone">
+          Телефон
+        </label>
+
+        <input
+          id="profilePhone"
+          class="input"
+          type="tel"
+          placeholder="+380..."
+        >
+
+      </div>
+
+      <div class="field">
+
+        <label for="profileDetails">
+          Додаткова інформація
+        </label>
+
+        <textarea
+          id="profileDetails"
+          class="textarea"
+          placeholder="Адреса, реквізити або інша інформація для кошторису"
+        ></textarea>
+
+      </div>
+
+      <div class="form-actions">
+
+        <button
+          class="form-btn"
+          type="button"
+          onclick="closeModal('settingsModal')"
+        >Скасувати</button>
+
+        <button
+          class="form-btn primary"
+          type="button"
+          onclick="saveSettings()"
+        >Зберегти</button>
+
+      </div>
 
     </div>
 
   </div>
-
-</div>
 
 </div>
 
@@ -1368,16 +1522,16 @@ button{
 
 const PRODUCT={
   name:"Калькулятор сантехніка",
-  version:4
+  version:5
 };
 
 
 /* =========================================================
    DEFAULT CATALOG
-   ЦЕ ГОЛОВНЕ ДЖЕРЕЛО СТАНДАРТНИХ ПОЗИЦІЙ
 ========================================================= */
 
 const defaultDB={
+
   rough:[
     {id:"r1",name:"Монтаж радіатора",unit:"шт",price:2500},
     {id:"r2",name:"Монтаж запірно-регулюючого вузла",unit:"компл",price:7000},
@@ -1443,6 +1597,7 @@ function $(id){
 }
 
 function esc(value){
+
   return String(value??"")
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
@@ -1452,11 +1607,13 @@ function esc(value){
 }
 
 function money(value){
+
   return Number(value||0)
     .toLocaleString("uk-UA")+" ₴";
 }
 
 function uid(){
+
   return Date.now().toString(36)+
     Math.random().toString(36).slice(2,7);
 }
@@ -1465,15 +1622,18 @@ function showToast(message){
 
   const el=$("toast");
 
-  if(!el) return;
+  if(!el)return;
 
   el.textContent=message;
+
   el.classList.add("show");
 
   clearTimeout(showToast.timer);
 
   showToast.timer=setTimeout(()=>{
+
     el.classList.remove("show");
+
   },1800);
 }
 
@@ -1524,16 +1684,26 @@ function loadProfile(){
 
 function saveProfile(){
 
-  localStorage.setItem(
-    "plumber_calc_profile",
-    JSON.stringify(profile)
-  );
+  try{
+
+    localStorage.setItem(
+      "plumber_calc_profile",
+      JSON.stringify(profile)
+    );
+
+  }catch(error){
+
+    console.warn(
+      "Не вдалося зберегти профіль:",
+      error
+    );
+  }
 }
 
 function renderProfile(){
 
   $("brandTitle").textContent=
-    profile.brand ||
+    profile.brand||
     PRODUCT.name;
 
   $("brandSub").textContent=
@@ -1547,32 +1717,20 @@ function renderProfile(){
    CATALOG CORE
 ========================================================= */
 
-/*
-  Важливо:
-
-  defaultDB завжди є джерелом стандартних позицій.
-
-  localStorage може:
-  - не існувати;
-  - бути порожнім;
-  - бути пошкодженим;
-  - містити стару структуру;
-  - містити власні роботи майстра.
-
-  Ми НІКОЛИ не дозволяємо localStorage
-  зробити стандартний каталог порожнім.
-*/
-
 function cloneDefaults(){
 
   return{
-    rough:defaultDB.rough.map(
-      item=>({...item})
-    ),
 
-    finish:defaultDB.finish.map(
-      item=>({...item})
-    )
+    rough:
+      defaultDB.rough.map(
+        item=>({...item})
+      ),
+
+    finish:
+      defaultDB.finish.map(
+        item=>({...item})
+      )
+
   };
 }
 
@@ -1580,29 +1738,29 @@ function cloneDefaults(){
 function normalizeCatalog(data){
 
   const source=
-    data &&
+    data&&
     typeof data==="object"
       ? data
       : {};
 
   const result={
-    rough:Array.isArray(source.rough)
-      ? source.rough.filter(Boolean).map(
-          item=>({...item})
-        )
-      : [],
 
-    finish:Array.isArray(source.finish)
-      ? source.finish.filter(Boolean).map(
-          item=>({...item})
-        )
-      : []
+    rough:
+      Array.isArray(source.rough)
+        ? source.rough
+            .filter(Boolean)
+            .map(item=>({...item}))
+        : [],
+
+    finish:
+      Array.isArray(source.finish)
+        ? source.finish
+            .filter(Boolean)
+            .map(item=>({...item}))
+        : []
+
   };
 
-  /*
-    Старі r19/r20 переносимо
-    до правильних категорій.
-  */
 
   const oldR19=
     result.rough.find(
@@ -1618,11 +1776,19 @@ function normalizeCatalog(data){
     ){
 
       result.finish.push({
+
         id:"f4",
+
         name:"Монтаж душової системи",
+
         unit:oldR19.unit||"шт",
-        price:Number(oldR19.price??3500)
+
+        price:Number(
+          oldR19.price??3500
+        )
+
       });
+
     }
 
     result.rough=
@@ -1630,6 +1796,7 @@ function normalizeCatalog(data){
         item=>item.id!=="r19"
       );
   }
+
 
   const oldR20=
     result.rough.find(
@@ -1645,11 +1812,19 @@ function normalizeCatalog(data){
     ){
 
       result.finish.push({
+
         id:"f8",
+
         name:"Монтаж рушникосушки",
+
         unit:oldR20.unit||"шт",
-        price:Number(oldR20.price??3000)
+
+        price:Number(
+          oldR20.price??3000
+        )
+
       });
+
     }
 
     result.rough=
@@ -1658,23 +1833,14 @@ function normalizeCatalog(data){
       );
   }
 
-  /*
-    Якщо f4/f8 випадково опинилися
-    в rough — прибираємо.
-  */
 
   result.rough=
     result.rough.filter(
-      item=>item.id!=="f4" &&
-            item.id!=="f8"
+      item=>
+        item.id!=="f4"&&
+        item.id!=="f8"
     );
 
-  /*
-    Додаємо відсутні стандартні позиції.
-
-    Власну позицію з тим самим id
-    не перезаписуємо.
-  */
 
   ["rough","finish"].forEach(category=>{
 
@@ -1690,16 +1856,13 @@ function normalizeCatalog(data){
         result[category].push({
           ...defaultItem
         });
+
       }
 
     });
 
   });
 
-  /*
-    Гарантуємо правильну назву f4/f8,
-    але НЕ змінюємо їхню ціну.
-  */
 
   const f4=
     result.finish.find(
@@ -1708,10 +1871,16 @@ function normalizeCatalog(data){
 
   if(f4){
 
-    f4.name="Монтаж душової системи";
-    f4.unit=f4.unit||"шт";
-    f4.price=Number(f4.price??3500);
+    f4.name=
+      "Монтаж душової системи";
+
+    f4.unit=
+      f4.unit||"шт";
+
+    f4.price=
+      Number(f4.price??3500);
   }
+
 
   const f8=
     result.finish.find(
@@ -1720,14 +1889,16 @@ function normalizeCatalog(data){
 
   if(f8){
 
-    f8.name="Монтаж рушникосушки";
-    f8.unit=f8.unit||"шт";
-    f8.price=Number(f8.price??3000);
+    f8.name=
+      "Монтаж рушникосушки";
+
+    f8.unit=
+      f8.unit||"шт";
+
+    f8.price=
+      Number(f8.price??3000);
   }
 
-  /*
-    Фінальна страховка.
-  */
 
   if(!result.rough.length){
 
@@ -1753,10 +1924,6 @@ function loadDB(){
 
   let stored=null;
 
-  /*
-    Новий каталог.
-  */
-
   try{
 
     const raw=
@@ -1777,13 +1944,8 @@ function loadDB(){
   }
 
 
-  /*
-    Якщо нового каталогу немає,
-    пробуємо старий.
-  */
-
   if(
-    !stored ||
+    !stored||
     typeof stored!=="object"
   ){
 
@@ -1808,19 +1970,9 @@ function loadDB(){
   }
 
 
-  /*
-    Формуємо НОВИЙ каталог
-    незалежно від стану localStorage.
-  */
-
   const result=
     normalizeCatalog(stored);
 
-
-  /*
-    Важливо:
-    записуємо вже нормалізований каталог.
-  */
 
   try{
 
@@ -1846,18 +1998,22 @@ function saveDB(){
   db=
     normalizeCatalog(db);
 
-  localStorage.setItem(
-    "plumber_calc_catalog",
-    JSON.stringify(db)
-  );
+  try{
+
+    localStorage.setItem(
+      "plumber_calc_catalog",
+      JSON.stringify(db)
+    );
+
+  }catch(error){
+
+    console.warn(
+      "Не вдалося зберегти каталог:",
+      error
+    );
+  }
 }
 
-
-/*
-  Примусове відновлення.
-  Використовується тільки якщо каталог
-  якимось чином реально став порожнім.
-*/
 
 function ensureCatalog(){
 
@@ -1874,11 +2030,14 @@ function ensureCatalog(){
   db=
     normalizeCatalog(db);
 
-  const afterRough=db.rough.length;
-  const afterFinish=db.finish.length;
+  const afterRough=
+    db.rough.length;
+
+  const afterFinish=
+    db.finish.length;
 
   if(
-    beforeRough!==afterRough ||
+    beforeRough!==afterRough||
     beforeFinish!==afterFinish
   ){
 
@@ -1888,14 +2047,6 @@ function ensureCatalog(){
   return db;
 }
 
-
-/*
-  Окрема команда для повного скидання
-  стандартного каталогу.
-
-  Власні роботи навмисно не використовуємо,
-  коли викликається саме ця функція.
-*/
 
 function resetCatalogToDefaults(){
 
@@ -1926,10 +2077,6 @@ function migrateEstimate(data){
       .filter(Boolean)
       .map(item=>({...item}));
 
-
-  /*
-    r19 → f4
-  */
 
   const oldShower=
     result.filter(
@@ -1976,16 +2123,25 @@ function migrateEstimate(data){
             if(item===first){
 
               return{
+
                 ...item,
+
                 workId:"f4",
+
                 cat:"finish",
+
                 name:"Монтаж душової системи",
+
                 unit:item.unit||"шт",
+
                 qty:totalQty
+
               };
+
             }
 
             return item;
+
           })
           .filter(
             item=>item.workId!=="r19"
@@ -1993,10 +2149,6 @@ function migrateEstimate(data){
     }
   }
 
-
-  /*
-    r20 → f8
-  */
 
   const oldTowel=
     result.filter(
@@ -2043,16 +2195,25 @@ function migrateEstimate(data){
             if(item===first){
 
               return{
+
                 ...item,
+
                 workId:"f8",
+
                 cat:"finish",
+
                 name:"Монтаж рушникосушки",
+
                 unit:item.unit||"шт",
+
                 qty:totalQty
+
               };
+
             }
 
             return item;
+
           })
           .filter(
             item=>item.workId!=="r20"
@@ -2061,41 +2222,54 @@ function migrateEstimate(data){
   }
 
 
-  /*
-    Нормалізація f4/f8.
-  */
-
   result=
     result.map(item=>{
 
       if(item.workId==="f4"){
 
         return{
+
           ...item,
+
           cat:"finish",
+
           name:"Монтаж душової системи",
+
           unit:item.unit||"шт"
+
         };
+
       }
 
       if(item.workId==="f8"){
 
         return{
+
           ...item,
+
           cat:"finish",
+
           name:"Монтаж рушникосушки",
+
           unit:item.unit||"шт"
+
         };
+
       }
 
       return item;
+
     });
 
 
-  localStorage.setItem(
-    "plumber_calc_estimate",
-    JSON.stringify(result)
-  );
+  try{
+
+    localStorage.setItem(
+      "plumber_calc_estimate",
+      JSON.stringify(result)
+    );
+
+  }catch{}
 
   return result;
 }
@@ -2124,6 +2298,7 @@ function loadEstimate(){
     );
   }
 
+
   if(!Array.isArray(data)){
 
     try{
@@ -2138,7 +2313,9 @@ function loadEstimate(){
       }
 
     }catch{}
+
   }
+
 
   return migrateEstimate(
     Array.isArray(data)
@@ -2150,10 +2327,20 @@ function loadEstimate(){
 
 function saveEstimate(){
 
-  localStorage.setItem(
-    "plumber_calc_estimate",
-    JSON.stringify(estimate)
-  );
+  try{
+
+    localStorage.setItem(
+      "plumber_calc_estimate",
+      JSON.stringify(estimate)
+    );
+
+  }catch(error){
+
+    console.warn(
+      "Не вдалося зберегти кошторис:",
+      error
+    );
+  }
 
   savePassportEstimate();
 
@@ -2178,15 +2365,19 @@ function findWork(workId){
 
     const item=
       db[category].find(
-        work=>work &&
+        work=>
+          work&&
           work.id===workId
       );
 
     if(item){
 
       return{
+
         ...item,
+
         cat:category
+
       };
     }
   }
@@ -2198,11 +2389,14 @@ function findWork(workId){
 function getEstimateTotal(){
 
   return estimate.reduce(
+
     (sum,item)=>
       sum+
       Number(item.price||0)*
       Number(item.qty||0),
+
     0
+
   );
 }
 
@@ -2231,9 +2425,15 @@ function loadProject(){
     const data=JSON.parse(raw);
 
     return{
+
       client:"",
       object:"",
-      ...(data&&typeof data==="object"?data:{})
+
+      ...(data&&
+         typeof data==="object"
+        ?data
+        :{})
+
     };
 
   }catch{
@@ -2256,10 +2456,14 @@ function updateProject(){
   project.object=
     $("objectInput").value.trim();
 
-  localStorage.setItem(
-    "plumber_calc_project",
-    JSON.stringify(project)
-  );
+  try{
+
+    localStorage.setItem(
+      "plumber_calc_project",
+      JSON.stringify(project)
+    );
+
+  }catch{}
 
   savePassportEstimate();
 }
@@ -2289,7 +2493,8 @@ function getEstimateId(){
   if(!id){
 
     id=
-      "PL-"+Date.now()
+      "PL-"+
+      Date.now()
         .toString(36)
         .toUpperCase();
 
@@ -2350,18 +2555,27 @@ function savePassportEstimate(){
     currency:"UAH",
 
     master:{
+
       brand:profile.brand||"",
+
       name:profile.name||"",
+
       phone:profile.phone||"",
+
       details:profile.details||"",
+
       logo:profile.logo||""
+
     },
 
-    client:project.client||"",
+    client:
+      project.client||"",
 
-    object:project.object||"",
+    object:
+      project.object||"",
 
     categories:{
+
       rough:
         estimate.filter(
           x=>x.cat==="rough"
@@ -2371,9 +2585,11 @@ function savePassportEstimate(){
         estimate.filter(
           x=>x.cat==="finish"
         ).length
+
     },
 
-    total:getEstimateTotal(),
+    total:
+      getEstimateTotal(),
 
     itemCount:
       estimate.reduce(
@@ -2395,28 +2611,43 @@ function savePassportEstimate(){
 
         unit:item.unit,
 
-        quantity:Number(item.qty||0),
+        quantity:
+          Number(item.qty||0),
 
-        basePrice:Number(item.basePrice||0),
+        basePrice:
+          Number(item.basePrice||0),
 
-        price:Number(item.price||0),
+        price:
+          Number(item.price||0),
 
         total:
           Number(item.price||0)*
           Number(item.qty||0)
 
       }))
+
   };
 
-  localStorage.setItem(
-    "plumber_calc_passport",
-    JSON.stringify(passport)
-  );
 
-  localStorage.setItem(
-    "samaster_passport_estimate",
-    JSON.stringify(passport)
-  );
+  try{
+
+    localStorage.setItem(
+      "plumber_calc_passport",
+      JSON.stringify(passport)
+    );
+
+    localStorage.setItem(
+      "samaster_passport_estimate",
+      JSON.stringify(passport)
+    );
+
+  }catch(error){
+
+    console.warn(
+      "Не вдалося зберегти паспорт:",
+      error
+    );
+  }
 }
 
 
@@ -2453,7 +2684,8 @@ function setMainCategory(category){
 
 function renderEstimate(){
 
-  const list=$("estimateList");
+  const list=
+    $("estimateList");
 
   if(!list){
     return;
@@ -2464,12 +2696,15 @@ function renderEstimate(){
       item=>item.cat===mainCategory
     );
 
+
   if(!items.length){
 
     list.innerHTML=`
+
       <div class="empty">
         У цій категорії ще немає доданих робіт
       </div>
+
     `;
 
   }else{
@@ -2508,6 +2743,7 @@ function renderEstimate(){
               <button
                 class="qty-btn"
                 type="button"
+                aria-label="Зменшити кількість"
                 onclick="changeQty('${esc(item.lineId)}',-1)"
               >−</button>
 
@@ -2518,6 +2754,7 @@ function renderEstimate(){
               <button
                 class="qty-btn"
                 type="button"
+                aria-label="Збільшити кількість"
                 onclick="changeQty('${esc(item.lineId)}',1)"
               >+</button>
 
@@ -2530,6 +2767,7 @@ function renderEstimate(){
             <button
               class="estimate-remove"
               type="button"
+              aria-label="Видалити позицію"
               onclick="removeEstimateLine('${esc(item.lineId)}')"
             >×</button>
 
@@ -2538,10 +2776,23 @@ function renderEstimate(){
         `;
 
       }).join("");
+
   }
 
+
+  const total=
+    getEstimateTotal();
+
   $("totalValue").textContent=
-    money(getEstimateTotal());
+    money(total);
+
+  /*
+    Окремий елемент використовується
+    саме друкованою версією.
+  */
+
+  $("printTotalValue").textContent=
+    money(total);
 
   $("clearEstimateBtn").style.visibility=
     estimate.length
@@ -2558,7 +2809,8 @@ function addWork(workId){
 
   ensureCatalog();
 
-  const item=findWork(workId);
+  const item=
+    findWork(workId);
 
   if(!item){
 
@@ -2569,10 +2821,12 @@ function addWork(workId){
     return;
   }
 
+
   const existing=
     estimate.find(
       x=>x.workId===workId
     );
+
 
   if(existing){
 
@@ -2600,15 +2854,21 @@ function addWork(workId){
         Number(item.price||0),
 
       qty:1
+
     });
+
   }
+
 
   saveEstimate();
 
   renderEstimate();
+
   renderAddWorkList();
 
-  showToast("Позицію додано");
+  showToast(
+    "Позицію додано"
+  );
 }
 
 
@@ -2623,9 +2883,11 @@ function changeQty(lineId,delta){
     return;
   }
 
+
   item.qty=
     Number(item.qty||0)+
     Number(delta||0);
+
 
   if(item.qty<=0){
 
@@ -2633,11 +2895,14 @@ function changeQty(lineId,delta){
       estimate.filter(
         x=>x.lineId!==lineId
       );
+
   }
+
 
   saveEstimate();
 
   renderEstimate();
+
   renderAddWorkList();
 }
 
@@ -2652,6 +2917,7 @@ function removeEstimateLine(lineId){
   saveEstimate();
 
   renderEstimate();
+
   renderAddWorkList();
 }
 
@@ -2674,6 +2940,7 @@ function clearEstimate(){
     return;
   }
 
+
   estimate=[];
 
   localStorage.removeItem(
@@ -2687,6 +2954,7 @@ function clearEstimate(){
   saveEstimate();
 
   renderEstimate();
+
   renderAddWorkList();
 
   showToast(
@@ -2700,12 +2968,6 @@ function clearEstimate(){
 ========================================================= */
 
 function openCatalog(){
-
-  /*
-    КРИТИЧНО:
-    кожне відкриття каталогу спочатку
-    перевіряє та відновлює його.
-  */
 
   ensureCatalog();
 
@@ -2739,6 +3001,7 @@ function setCatalogCategory(category){
       : "rough";
 
   updateCatalogTabs();
+
   renderAddWorkList();
 }
 
@@ -2761,17 +3024,15 @@ function updateCatalogTabs(){
 
 function renderAddWorkList(){
 
-  const list=$("workList");
+  const list=
+    $("workList");
 
   if(!list){
     return;
   }
 
-  /*
-    Завжди перевіряємо каталог.
-  */
-
   ensureCatalog();
+
 
   const query=
     String(
@@ -2779,6 +3040,7 @@ function renderAddWorkList(){
     )
       .trim()
       .toLowerCase();
+
 
   const source=
     Array.isArray(db[catalogCategory])
@@ -2806,9 +3068,10 @@ function renderAddWorkList(){
           .toLowerCase();
 
       return(
-        name.includes(query) ||
+        name.includes(query)||
         unit.includes(query)
       );
+
     });
 
 
@@ -2818,15 +3081,12 @@ function renderAddWorkList(){
 
   if(!filtered.length){
 
-    /*
-      Теоретично сюди більше не повинні
-      потрапляти стандартні категорії.
-    */
-
     list.innerHTML=`
+
       <div class="empty">
         Нічого не знайдено
       </div>
+
     `;
 
     return;
@@ -2847,7 +3107,9 @@ function renderAddWorkItem(item){
       x=>x.workId===item.id
     );
 
+
   const controls=
+
     existing
 
       ? `
@@ -2856,6 +3118,7 @@ function renderAddWorkItem(item){
 
           <button
             type="button"
+            aria-label="Зменшити кількість"
             onclick="event.stopPropagation();changeQty('${esc(existing.lineId)}',-1)"
           >−</button>
 
@@ -2865,6 +3128,7 @@ function renderAddWorkItem(item){
 
           <button
             type="button"
+            aria-label="Збільшити кількість"
             onclick="event.stopPropagation();changeQty('${esc(existing.lineId)}',1)"
           >+</button>
 
@@ -2881,12 +3145,28 @@ function renderAddWorkItem(item){
       `;
 
 
+  /*
+    Тут навмисно DIV, а не BUTTON.
+
+    Раніше всередині work-item,
+    який був button, знаходилися
+    ще два button для +/−.
+
+    Вкладені button є некоректним HTML
+    і могли давати проблеми на iOS/Safari.
+
+    Тепер структура коректна:
+    DIV → BUTTON + BUTTON.
+  */
+
   return`
 
-    <button
+    <div
       class="work-item"
-      type="button"
+      role="button"
+      tabindex="0"
       onclick="addWork('${esc(item.id)}')"
+      onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();addWork('${esc(item.id)}')}"
       oncontextmenu="event.preventDefault();openEditWorkModal('${esc(item.id)}')"
     >
 
@@ -2904,7 +3184,7 @@ function renderAddWorkItem(item){
 
       ${controls}
 
-    </button>
+    </div>
 
   `;
 }
@@ -2918,18 +3198,14 @@ function openNewWorkModal(){
 
   editingWorkId=null;
 
-  /*
-    Якщо відкрито з каталогу —
-    беремо категорію каталогу.
-
-    Якщо з головного екрану —
-    беремо активну категорію.
-  */
 
   editingWorkCategory=
-    $("catalogModal").classList.contains("show")
+    $("catalogModal")
+      .classList
+      .contains("show")
       ? catalogCategory
       : mainCategory;
+
 
   $("workModalTitle")
     .textContent="Нова позиція";
@@ -2945,31 +3221,44 @@ function openNewWorkModal(){
     .classList.add("show");
 
   setTimeout(()=>{
+
     $("workName").focus();
+
   },100);
 }
 
 
 function openEditWorkModal(workId){
 
-  const item=findWork(workId);
+  const item=
+    findWork(workId);
 
   if(!item){
     return;
   }
 
+
   editingWorkId=item.id;
+
   editingWorkCategory=item.cat;
+
 
   $("workModalTitle")
     .textContent="Редагувати позицію";
 
-  $("workName").value=item.name;
-  $("workUnit").value=item.unit;
-  $("workPrice").value=item.price;
+  $("workName").value=
+    item.name;
+
+  $("workUnit").value=
+    item.unit;
+
+  $("workPrice").value=
+    item.price;
+
 
   $("deleteWorkButton")
     .style.display="block";
+
 
   $("workModal")
     .classList.add("show");
@@ -3015,7 +3304,7 @@ function saveWork(){
 
 
   if(
-    !Number.isFinite(price) ||
+    !Number.isFinite(price)||
     price<0
   ){
 
@@ -3027,10 +3316,6 @@ function saveWork(){
   }
 
 
-  /*
-    РЕДАГУВАННЯ
-  */
-
   if(editingWorkId){
 
     const item=
@@ -3040,26 +3325,22 @@ function saveWork(){
       return;
     }
 
+
     item.name=name;
+
     item.unit=unit;
+
     item.price=price;
 
-
-    /*
-      У кошторисі basePrice оновлюємо,
-      але price не чіпаємо.
-
-      Тобто якщо майстер вручну змінив
-      ціну саме для цього кошторису —
-      вона залишиться.
-    */
 
     estimate.forEach(line=>{
 
       if(line.workId===item.id){
 
         line.name=name;
+
         line.unit=unit;
+
         line.basePrice=price;
 
       }
@@ -3068,11 +3349,15 @@ function saveWork(){
 
 
     saveDB();
+
     saveEstimate();
 
-    closeModal("workModal");
+    closeModal(
+      "workModal"
+    );
 
     renderEstimate();
+
     renderAddWorkList();
 
     showToast(
@@ -3083,33 +3368,39 @@ function saveWork(){
   }
 
 
-  /*
-    НОВА ПОЗИЦІЯ
-  */
-
   ensureCatalog();
+
 
   const category=
     editingWorkCategory==="finish"
       ? "finish"
       : "rough";
 
+
   const id=
     category+
     "-"+
     uid();
 
+
   db[category].push({
 
     id,
+
     name,
+
     unit,
+
     price
+
   });
+
 
   saveDB();
 
-  closeModal("workModal");
+  closeModal(
+    "workModal"
+  );
 
   renderAddWorkList();
 
@@ -3125,17 +3416,21 @@ function deleteCurrentWork(){
     return;
   }
 
-  deleteWork(editingWorkId);
+  deleteWork(
+    editingWorkId
+  );
 }
 
 
 function deleteWork(workId){
 
-  const item=findWork(workId);
+  const item=
+    findWork(workId);
 
   if(!item){
     return;
   }
+
 
   if(
     !confirm(
@@ -3145,22 +3440,29 @@ function deleteWork(workId){
     return;
   }
 
+
   db[item.cat]=
     db[item.cat].filter(
       x=>x.id!==workId
     );
+
 
   estimate=
     estimate.filter(
       x=>x.workId!==workId
     );
 
+
   saveDB();
+
   saveEstimate();
 
-  closeModal("workModal");
+  closeModal(
+    "workModal"
+  );
 
   renderEstimate();
+
   renderAddWorkList();
 
   showToast(
@@ -3184,7 +3486,9 @@ function openPriceModal(lineId){
     return;
   }
 
+
   editingPriceLineId=lineId;
+
 
   $("priceCurrent").innerHTML=`
 
@@ -3201,14 +3505,19 @@ function openPriceModal(lineId){
 
   `;
 
-  $("priceInput").value=item.price;
+
+  $("priceInput").value=
+    item.price;
+
 
   $("priceModal")
     .classList.add("show");
 
+
   setTimeout(()=>{
 
     $("priceInput").focus();
+
     $("priceInput").select();
 
   },100);
@@ -3221,6 +3530,7 @@ function savePrice(){
     return;
   }
 
+
   const item=
     estimate.find(
       x=>x.lineId===editingPriceLineId
@@ -3230,13 +3540,15 @@ function savePrice(){
     return;
   }
 
+
   const price=
     Number(
       $("priceInput").value
     );
 
+
   if(
-    !Number.isFinite(price) ||
+    !Number.isFinite(price)||
     price<0
   ){
 
@@ -3247,11 +3559,14 @@ function savePrice(){
     return;
   }
 
+
   item.price=price;
 
   saveEstimate();
 
-  closeModal("priceModal");
+  closeModal(
+    "priceModal"
+  );
 
   renderEstimate();
 
@@ -3267,6 +3582,7 @@ function resetPriceToBase(){
     return;
   }
 
+
   const item=
     estimate.find(
       x=>x.lineId===editingPriceLineId
@@ -3276,11 +3592,16 @@ function resetPriceToBase(){
     return;
   }
 
+
   item.price=
-    Number(item.basePrice||0);
+    Number(
+      item.basePrice||0
+    );
+
 
   $("priceInput").value=
     item.price;
+
 
   saveEstimate();
 
@@ -3340,10 +3661,14 @@ function saveSettings(){
       $("profileDetails")
         .value
         .trim()
+
   };
 
+
   saveProfile();
+
   savePassportEstimate();
+
   renderProfile();
 
   closeModal(
@@ -3371,9 +3696,35 @@ function printEstimate(){
     return;
   }
 
+
+  /*
+    Перед друком ще раз актуалізуємо
+    загальну суму в друкованому блоці.
+
+    Це важливо: print-total існує
+    окремо від нижньої панелі,
+    яка ховається під час друку.
+  */
+
+  const total=
+    getEstimateTotal();
+
+  $("printTotalValue").textContent=
+    money(total);
+
+
   savePassportEstimate();
 
-  window.print();
+  /*
+    Даємо браузеру короткий цикл
+    на оновлення DOM перед print.
+  */
+
+  requestAnimationFrame(()=>{
+
+    window.print();
+
+  });
 }
 
 
@@ -3391,9 +3742,11 @@ function exportJSON(){
 
     product:PRODUCT.name,
 
-    estimateId:getEstimateId(),
+    estimateId:
+      getEstimateId(),
 
-    createdAt:getCreatedAt(),
+    createdAt:
+      getCreatedAt(),
 
     exportedAt:
       new Date().toISOString(),
@@ -3438,11 +3791,13 @@ function exportJSON(){
           Number(item.qty||0)
 
       }))
+
   };
 
 
   const blob=
     new Blob(
+
       [
         JSON.stringify(
           data,
@@ -3450,10 +3805,12 @@ function exportJSON(){
           2
         )
       ],
+
       {
         type:
           "application/json;charset=utf-8"
       }
+
     );
 
 
@@ -3491,18 +3848,27 @@ function closeModal(id){
   const modal=$(id);
 
   if(modal){
-    modal.classList.remove("show");
+
+    modal.classList.remove(
+      "show"
+    );
+
   }
 }
 
 
-function modalBackgroundClick(event,id){
+function modalBackgroundClick(
+  event,
+  id
+){
 
   if(
     event.target===
     $(id)
   ){
+
     closeModal(id);
+
   }
 }
 
@@ -3520,8 +3886,13 @@ document.addEventListener(
         ".modal.show"
       )
       .forEach(modal=>{
-        modal.classList.remove("show");
+
+        modal.classList.remove(
+          "show"
+        );
+
       });
+
   }
 );
 
@@ -3584,25 +3955,19 @@ function toggleTheme(){
 
 function init(){
 
-  /*
-    Порядок тут навмисно такий:
+  profile=
+    loadProfile();
 
-    1. Профіль
-    2. Каталог
-    3. Кошторис
-    4. Проєкт
-    5. Інтерфейс
-  */
-
-  profile=loadProfile();
-
-  db=loadDB();
+  db=
+    loadDB();
 
   ensureCatalog();
 
-  estimate=loadEstimate();
+  estimate=
+    loadEstimate();
 
-  project=loadProject();
+  project=
+    loadProject();
 
   initTheme();
 
@@ -3610,7 +3975,9 @@ function init(){
 
   renderProject();
 
-  setMainCategory("rough");
+  setMainCategory(
+    "rough"
+  );
 
   updateCatalogTabs();
 
@@ -3621,7 +3988,8 @@ function init(){
 
 
 if(
-  document.readyState==="loading"
+  document.readyState===
+  "loading"
 ){
 
   document.addEventListener(
@@ -3633,6 +4001,7 @@ if(
 }else{
 
   init();
+
 }
 
 </script>
