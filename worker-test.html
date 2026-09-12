@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SA-MASTER — Worker Test</title>
+<style>
+*{
+  box-sizing:border-box;
+}
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif;
+  background:#f2f2f7;
+  color:#111;
+}
+.card{
+  width:100%;
+  max-width:480px;
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:24px;
+  padding:24px;
+  box-shadow:0 12px 40px rgba(0,0,0,.08);
+}
+h1{
+  margin:0 0 8px;
+  font-size:24px;
+}
+p{
+  margin:0 0 20px;
+  color:#666;
+  line-height:1.45;
+}
+button{
+  width:100%;
+  border:0;
+  border-radius:16px;
+  padding:16px;
+  font-size:17px;
+  font-weight:600;
+  color:#fff;
+  background:#007aff;
+  cursor:pointer;
+}
+button:disabled{
+  opacity:.6;
+}
+#status{
+  margin-top:18px;
+  font-weight:600;
+}
+pre{
+  margin-top:14px;
+  padding:14px;
+  border-radius:14px;
+  background:#f2f2f7;
+  overflow:auto;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-size:13px;
+  line-height:1.45;
+}
+.ok{
+  color:#16803c;
+}
+.error{
+  color:#c62828;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>SA-MASTER Worker Test</h1>
+  <p>
+    Перевірка PATCH для тестового об'єкта
+    <strong>SM-2026-002</strong>.
+  </p>
+  <button id="testBtn">
+    Перевірити PATCH
+  </button>
+  <div id="status"></div>
+  <pre id="result" hidden></pre>
+</div>
+<script>
+const WORKER =
+  "https://sa-master-worker.c6hht469s9.workers.dev";
+const OBJECT_CODE =
+  "SM-2026-002";
+const button =
+  document.getElementById("testBtn");
+const status =
+  document.getElementById("status");
+const result =
+  document.getElementById("result");
+button.addEventListener("click", async () => {
+  button.disabled = true;
+  status.className = "";
+  status.textContent = "Перевіряємо…";
+  result.hidden = true;
+  result.textContent = "";
+  try {
+    const response = await fetch(
+      `${WORKER}/object/${OBJECT_CODE}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          notes: "Тест оновлення об'єкта",
+          estimated_value: 20000
+        })
+      }
+    );
+    const data =
+      await response.json();
+    result.textContent =
+      JSON.stringify(data, null, 2);
+    result.hidden = false;
+    if (response.ok && data.ok) {
+      status.className = "ok";
+      status.textContent =
+        "✓ PATCH працює";
+    } else {
+      status.className = "error";
+      status.textContent =
+        "✕ Worker повернув помилку";
+    }
+  } catch (error) {
+    status.className = "error";
+    status.textContent =
+      "✕ Помилка з'єднання";
+    result.textContent =
+      error.message;
+    result.hidden = false;
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
