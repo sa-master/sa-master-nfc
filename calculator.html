@@ -118,6 +118,12 @@ button{
   padding:0 12px 8px;
 }
 
+.clientTitle{
+  padding:0 3px 5px;
+  font-size:13px;
+  font-weight:750;
+}
+
 .client{
   background:var(--card);
   border:1px solid rgba(255,255,255,.9);
@@ -180,9 +186,29 @@ button{
   font-size:15px;
 }
 
+.estimateHeadRight{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
 .count{
   color:var(--muted);
   font-size:11px;
+}
+
+.clearEstimate{
+  display:none;
+  padding:5px 7px;
+  border-radius:8px;
+  background:#fff0ef;
+  color:var(--red);
+  font-size:11px;
+  font-weight:700;
+}
+
+.clearEstimate:active{
+  background:#ffe3e0;
 }
 
 /* ================= LIST ================= */
@@ -661,6 +687,13 @@ button{
   margin:2px 2px -4px;
 }
 
+.editorHint{
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.2;
+  margin:-4px 2px 0;
+}
+
 .editorFields input,
 .editorFields select{
   width:100%;
@@ -775,6 +808,10 @@ button{
     padding-bottom:5px;
   }
 
+  .clientTitle{
+    padding-bottom:3px;
+  }
+
   .client{
     padding:7px;
   }
@@ -856,6 +893,10 @@ button{
   <!-- CLIENT -->
   <div class="clientWrap">
 
+    <div class="clientTitle">
+      Замовник
+    </div>
+
     <div class="client">
 
       <div class="fields">
@@ -898,12 +939,24 @@ button{
         Кошторис
       </strong>
 
-      <span
-        class="count"
-        id="count"
-      >
-        0 позицій
-      </span>
+      <div class="estimateHeadRight">
+
+        <span
+          class="count"
+          id="count"
+        >
+          0 позицій
+        </span>
+
+        <button
+          class="clearEstimate"
+          id="clearEstimate"
+          onclick="clearEstimate()"
+        >
+          Очистити
+        </button>
+
+      </div>
 
     </div>
 
@@ -1044,7 +1097,7 @@ button{
     <div class="editorFields">
 
       <label>
-        Коротка назва в каталозі
+        Коротка назва
       </label>
 
       <input
@@ -1052,15 +1105,23 @@ button{
         placeholder="Наприклад: Технічна зона"
       >
 
+      <div class="editorHint">
+        Для каталогу
+      </div>
+
 
       <label>
-        Повна назва в кошторисі
+        Повна назва
       </label>
 
       <input
         id="editorEstimateName"
         placeholder="Наприклад: Облаштування технічної зони"
       >
+
+      <div class="editorHint">
+        Для кошторису
+      </div>
 
 
       <label>
@@ -1643,6 +1704,9 @@ function renderEstimate(){
   const list =
     document.getElementById("list");
 
+  const clearButton =
+    document.getElementById("clearEstimate");
+
 
   if(!estimate.length){
 
@@ -1652,6 +1716,8 @@ function renderEstimate(){
         Додайте роботу або матеріал.
       </div>
     `;
+
+    clearButton.style.display = "none";
 
   }else{
 
@@ -1707,6 +1773,8 @@ function renderEstimate(){
 
     list.innerHTML = html;
 
+    clearButton.style.display = "block";
+
   }
 
 
@@ -1729,6 +1797,33 @@ function renderEstimate(){
       (estimate.length === 1
         ? "позиція"
         : "позицій");
+
+}
+
+
+function clearEstimate(){
+
+  if(!estimate.length){
+    return;
+  }
+
+
+  const confirmed =
+    confirm(
+      "Очистити весь кошторис?"
+    );
+
+
+  if(!confirmed){
+    return;
+  }
+
+
+  estimate = [];
+
+  save();
+
+  renderEstimate();
 
 }
 
