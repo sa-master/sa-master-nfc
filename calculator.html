@@ -1,500 +1,642 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  function getRowText(
+    row,
+    from = 0,
+    to = null
+  ){
 
-<title>Калькулятор сантехніка</title>
+    const end =
+      to === null
+        ? row.length - 1
+        : Math.min(
+            to,
+            row.length - 1
+          );
 
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    const parts = [];
 
-<style>
-:root{
-  --bg:#f4f6fa;
-  --card:rgba(255,255,255,.9);
-  --soft:#eef1f5;
-  --line:#e2e5ea;
-  --text:#15171a;
-  --muted:#7b8088;
-  --blue:#007aff;
-  --red:#ff3b30;
-  --shadow:0 8px 25px rgba(30,40,60,.08);
-}
+    for(
+      let i = from;
+      i <= end;
+      i++
+    ){
 
-*{box-sizing:border-box}
+      const value =
+        cleanText(row[i]);
 
-html,body{
-  margin:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  touch-action:manipulation;
-}
+      if(value){
+        parts.push(value);
+      }
+    }
 
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-}
+    return parts.join(" ");
+  }
 
-button,input,select{font:inherit}
-button{border:0;background:none;color:inherit;touch-action:manipulation}
+  function parseSheetRows(
+    rows,
+    header
+  ){
 
-.app{
-  width:100%;
-  max-width:560px;
-  height:100dvh;
-  margin:auto;
+    const columns =
+      detectDataColumns(
+        rows,
+        header
+      );
+
+    const result = [];
+
+    const context = {
+      category:"",
+      brand:"",
+      system:""
+    };
+
+    const savedRules =
+      loadImportRules();
+
+    let emptyStreak = 0;
+
+    for(
+      let rowIndex =
+        header.rowIndex + 1;
+
+      rowIndex < rows.length;
+
+      rowIndex++
+    ){
+
+      const row =
+        rows[rowIndex] || [];
+
+      const rowText =
+        getRowText(row);
+
+      if(!rowText){
+
+        emptyStreak++;
+
+        if(
+          emptyStreak > 15 &&
+          result.length
+        ){
+          break;
+        }
+
+        continue;
+      }
+
+      emptyStreak = 0;
+
+      const article =
+        cleanText(
+          row[
+            columns.articleCol
+          ]
+        );
+
+      const name =
+        cleanText(
+          row[
+            columns.nameCol
+          ]
+        );
+
+      const qty =
+        parseNumber(
+          row[
+            columns.qtyCol
+          ]
+        );
+
+      const price =
+        parseNumber(
+          row[
+            columns.priceCol
+          ]
+        );
+
+      const unit =
+        columns.unitCol >= 0
+          ? cleanText(
+              row[
+                columns.unitCol
+              ]
+            )
+          : "";
+
+      const hasProductShape =
+        name &&
+        qty !== null &&
+        qty > 0 &&
+        price !== null &&
+        price >= 0;
+
+      if(!hasProductShape){
+
+        const lower =
+          ntext(rowText);
+
+        if(
+          /разом|всього|итого|всего|пдв|ндс|до сплати|к оплате/
+            .test(lower)
+        ){
+          continue;
+        }
+
+        classifyHeading(
+          rowText,
+          context
+        );
+
+        continue;
+      }
+
+      if(
+        !isLikelyArticle(article) &&
+        !name
+      ){
+        continue;
+      }
+
+      let brand =
+        context.brand || "";
+
+      let system =
+        context.system || "";
+
+      let category =
+        context.category || "";
+
+      const detectedBrand =
+        detectBrand(
+          name,
+          article
+        );
+
+      const detectedSystem =
+        detectSystem(
+          name,
+          detectedBrand ||
+          brand
+        );
+
+      if(detectedBrand){
+        brand =
+          detectedBrand;
+      }
+
+      if(detectedSystem){
+        system =
+          detectedSystem;
+      }
+
+      const detectedCategory =
+        detectCategory(
+          name,
+          brand,
+          system
+        );
+
+      if(detectedCategory){
+        category =
+          detectedCategory;
+      }
+
+      const key =
+        ruleKey(
+          article,
+          name
+        );
+
+      const saved =
+        savedRules[key];
+
+      if(saved){
+
+        if(
+          typeof saved.category ===
+          "string"
+        ){
+          category =
+            saved.category;
+        }
+
+        if(
+          typeof saved.manufacturer ===
+          "string"
+        ){
+          brand =
+            saved.manufacturer;
+        }
+
+        if(
+          typeof saved.system ===
+          "string"
+        ){
+          system =
+            saved.system;
+        }
+      }
+
+      result.push({
+
+        rowIndex:
+          rowIndex + 1,
+
+        article,
+
+        name,
+
+        qty,
+
+        price,
+
+        unit:
+          unit || "шт",
+
+        category,
+
+        manufacturer:
+          brand,
+
+        system,
+
+        sourceText:
+          rowText
+
+      });
+    }
+
+    return result;
+  }
+
+  function chooseBestSheet(
+    workbook
+  ){
+
+    let best = null;
+
+    workbook.SheetNames
+      .forEach(
+        sheetName => {
+
+          const sheet =
+            workbook.Sheets[
+              sheetName
+            ];
+
+          const rows =
+            XLSX.utils.sheet_to_json(
+              sheet,
+              {
+                header:1,
+                raw:false,
+                defval:"",
+                blankrows:true
+              }
+            );
+
+          const header =
+            findHeaderRow(rows);
+
+          if(!header){
+            return;
+          }
+
+          const items =
+            parseSheetRows(
+              rows,
+              header
+            );
+
+          if(
+            !best ||
+            items.length >
+            best.items.length
+          ){
+
+            best = {
+              sheetName,
+              rows,
+              header,
+              items
+            };
+          }
+        }
+      );
+
+    return best;
+  }
+
+  async function handleSupplierFile(
+    event
+  ){
+
+    const file =
+      event.target.files &&
+      event.target.files[0];
+
+    event.target.value = "";
+
+    if(!file){
+      return;
+    }
+
+    if(
+      typeof XLSX ===
+      "undefined"
+    ){
+
+      alert(
+        "Модуль XLS/XLSX не завантажився."
+      );
+
+      return;
+    }
+
+    try{
+
+      const buffer =
+        await file.arrayBuffer();
+
+      const workbook =
+        XLSX.read(
+          buffer,
+          {
+            type:"array",
+            cellDates:false
+          }
+        );
+
+      const parsed =
+        chooseBestSheet(
+          workbook
+        );
+
+      if(
+        !parsed ||
+        !parsed.items.length
+      ){
+
+        alert(
+          "Не вдалося знайти таблицю товарів у цьому рахунку."
+        );
+
+        return;
+      }
+
+      pendingSupplierImport =
+        parsed.items;
+
+      importShowAll = false;
+
+      importEurRate =
+        Number(
+          localStorage.getItem(
+            EUR_RATE_KEY
+          ) || importEurRate || 0
+        );
+
+      if(
+        !Number.isFinite(importEurRate) ||
+        importEurRate < 0
+      ){
+        importEurRate = 0;
+      }
+
+      renderSupplierImport();
+
+      importSheet.classList.add(
+        "open"
+      );
+
+    }catch(error){
+
+      console.error(
+        "Supplier import error:",
+        error
+      );
+
+      alert(
+        "Не вдалося прочитати файл рахунку."
+      );
+    }
+  }
+
+  function closeSupplierImport(){
+
+    importSheet.classList.remove(
+      "open"
+    );
+
+    pendingSupplierImport = [];
+    importShowAll = false;
+  }
+
+  function categoryOptions(
+    selected
+  ){
+
+    const values = [
+      ["","Не визначено"],
+      ["fittings","Арматура"],
+      ["water","Водопостачання"],
+      ["sewer","Каналізація"],
+      ["other","Інше"]
+    ];
+
+    return values
+      .map(
+        ([value,label]) => `
+          <option
+            value="${value}"
+            ${
+              value === selected
+                ? "selected"
+                : ""
+            }
+          >
+            ${label}
+          </option>
+        `
+      )
+      .join("");
+  }
+
+  function getImportStats(){
+
+    const stats = {
+      fittings:0,
+      water:0,
+      sewer:0,
+      other:0,
+      unknown:0
+    };
+
+    pendingSupplierImport
+      .forEach(
+        item => {
+
+          if(
+            item.category &&
+            Object.prototype
+              .hasOwnProperty.call(
+                stats,
+                item.category
+              )
+          ){
+
+            stats[
+              item.category
+            ]++;
+
+          }else{
+
+            stats.unknown++;
+          }
+        }
+      );
+
+    return stats;
+  }
+
+  function getImportBrands(){
+
+    return Array.from(
+      new Set(
+        pendingSupplierImport
+          .map(
+            item =>
+              cleanText(
+                item.manufacturer
+              )
+          )
+          .filter(Boolean)
+      )
+    )
+    .sort(
+      (a,b) =>
+        a.localeCompare(
+          b,
+          "uk"
+        )
+    );
+  }
+
+  function updatePendingItem(
+    index,
+    field,
+    value
+  ){
+
+    const item =
+      pendingSupplierImport[index];
+
+    if(!item){
+      return;
+    }
+
+    item[field] =
+      cleanText(value);
+
+    if(
+      field === "category"
+    ){
+      item.category =
+        value;
+    }
+
+    renderSupplierImport();
+  }
+
+  function applyBulkCategory(){
+
+    const select =
+      document.getElementById(
+        "supplierBulkCategory"
+      );
+
+    if(!select){
+      return;
+    }
+
+    const value =
+      select.value;
+
+    if(!value){
+      return;
+    }
+
+    pendingSupplierImport
+      .forEach(
+        item => {
+
+          if(!item.category){
+            item.category =
+              value;
+          }
+        }
+      );
+
+    renderSupplierImport();
+  }
+
+  function updateImportCurrency(){
+
+    const currencySelect =
+      document.getElementById(
+        "supplierImportCurrency"
+      );
+
+    const rateInput =
+      document.getElementById(
+        "supplierImportEurRate"
+      );
+
+    if(currencySelect){
+
+      importCurrency =
+        currencySelect.value === "EUR"
+          ? "EUR"
+          : "UAH";
+    }
+
+    if(rateInput){
+
+      rateInput.disabled =
+        importCurrency === "EUR";
+    }
+  }
+
+  function updateImportRate(){
+
+    const input =
+      document.getElementById(
+        "supplierImportEurRate"
+      );
+
+    if(!input){
+      return;
+    }
+
+    const value =
+      Number(
+        String(input.value)
+          .replace(",",".")
+      );
+
+    importEurRate =
+      Number.isFinite(value) &&
+      value >= 0
+        ? value
+        : 0;
+  }
+          .catalogManage{
   display:flex;
-  flex-direction:column;
-}
-
-.header{
-  flex:0 0 auto;
-  padding:calc(9px + env(safe-area-inset-top)) 14px 7px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.logo{font-size:19px;font-weight:750;letter-spacing:-.4px}
-.subtitle{color:var(--muted);font-size:11px;margin-top:1px}
-.headerRight{display:flex;align-items:center;gap:9px}
-.date{color:var(--muted);font-size:12px}
-
-.masterButton{
-  width:32px;
-  height:32px;
-  border-radius:10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:#fff;
-  color:var(--blue);
-  box-shadow:0 3px 12px rgba(30,40,60,.06);
-}
-
-.masterButton svg{width:19px;height:19px}
-
-.clientWrap{flex:0 0 auto;padding:0 12px 8px}
-.clientTitle{padding:0 3px 5px;font-size:13px;font-weight:750}
-
-.client{
-  background:var(--card);
-  border:1px solid rgba(255,255,255,.9);
-  border-radius:17px;
-  padding:9px;
-  box-shadow:var(--shadow);
-}
-
-.fields{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.field.full{grid-column:1/-1}
-
-.field input{
-  width:100%;
-  height:36px;
-  border:0;
-  outline:0;
-  border-radius:10px;
-  background:var(--soft);
-  padding:0 10px;
-  font-size:13px;
-  color:var(--text);
-}
-
-.field input:focus{
-  background:#fff;
-  box-shadow:inset 0 0 0 1.5px var(--blue);
-}
-
-.estimate{
-  flex:1 1 auto;
-  min-height:0;
-  display:flex;
-  flex-direction:column;
-  padding:0 12px;
-}
-
-.estimateHead{
-  flex:0 0 auto;
-  padding:3px 3px 6px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.estimateHead strong{font-size:14px}
-
-.estimateHeadRight{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-
-.count{
-  color:var(--muted);
-  font-size:11px;
-}
-
-.clearEstimate{
-  display:none;
-  color:var(--red);
-  font-size:11px;
-  font-weight:650;
-}
-
-.list{
-  flex:1 1 auto;
-  min-height:0;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  padding-bottom:8px;
-}
-
-.list::-webkit-scrollbar{display:none}
-
-.empty{
-  padding:45px 20px;
-  text-align:center;
-  color:var(--muted);
-  font-size:13px;
-  line-height:1.45;
-}
-
-.section{margin-bottom:9px}
-
-.sectionTitle{
-  position:sticky;
-  top:0;
-  z-index:2;
-  background:rgba(244,246,250,.94);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  color:var(--muted);
-  font-size:10px;
-  font-weight:750;
-  letter-spacing:.5px;
-  padding:6px 4px 5px;
-}
-
-.row{
-  min-height:66px;
-  background:var(--card);
-  border:1px solid rgba(255,255,255,.9);
-  border-radius:15px;
-  box-shadow:0 3px 13px rgba(30,40,60,.05);
-  padding:9px 9px 8px 11px;
-  margin-bottom:6px;
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:8px;
-  align-items:center;
-}
-
-.name{
-  font-size:13px;
-  line-height:1.25;
-  font-weight:650;
-  overflow-wrap:anywhere;
-}
-
-.controls{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  margin-top:6px;
-}
-
-.qty{
-  display:flex;
-  align-items:center;
-  height:28px;
-  border-radius:9px;
-  background:var(--soft);
-  overflow:hidden;
-}
-
-.qty button{
-  width:29px;
-  height:28px;
-  color:var(--blue);
-  font-size:18px;
-  line-height:1;
-}
-
-.qty b{
-  min-width:24px;
-  text-align:center;
-  font-size:12px;
-}
-
-.price{
-  min-height:28px;
-  border-radius:9px;
-  background:var(--soft);
-  color:#555;
-  padding:0 8px;
-  font-size:10px;
-}
-
-.right{
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  justify-content:space-between;
-  align-self:stretch;
-  min-width:82px;
-}
-
-.lineTotal{
-  font-size:13px;
-  font-weight:750;
-  white-space:nowrap;
-}
-
-.delete{
-  width:27px;
-  height:27px;
-  border-radius:50%;
-  background:#fff0ef;
-  color:var(--red);
-  font-size:18px;
-}
-
-.bottom{
-  flex:0 0 auto;
-  padding:7px 12px calc(8px + env(safe-area-inset-bottom));
-}
-
-.totalBar{
-  height:44px;
-  background:#fff;
-  border-radius:14px;
-  box-shadow:var(--shadow);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:0 13px;
-  margin-bottom:7px;
-  font-size:13px;
-}
-
-.totalBar strong{font-size:17px}
-
-.actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-}
-
-.action{
-  height:45px;
-  border-radius:14px;
-  background:var(--blue);
-  color:#fff;
-  font-size:14px;
-  font-weight:750;
-  box-shadow:0 5px 14px rgba(0,122,255,.18);
-}
-
-.action:active{transform:scale(.98)}
-
-.sheet{
-  position:fixed;
-  inset:0;
-  z-index:30;
-  display:none;
-  align-items:flex-end;
-  background:rgba(0,0,0,.32);
-  backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px);
-}
-
-.sheet.open{display:flex}
-
-.panel{
-  width:100%;
-  max-width:560px;
-  height:min(82dvh,720px);
-  margin:auto;
-  background:#f6f7fa;
-  border-radius:22px;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-  padding-bottom:env(safe-area-inset-bottom);
-}
-
-.panelHead{
-  flex:0 0 auto;
-  padding:11px 14px 7px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.panelHead strong{
-  font-size:18px;
-}
-
-.panelHeadRight{
-  display:flex;
-  align-items:center;
-  gap:4px;
-}
-
-.catalogEditButton{
-  height:32px;
-  padding:0 9px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:var(--blue);
-  font-size:12px;
-  font-weight:700;
-}
-
-.catalogEditButton.active{
-  background:var(--blue);
-  color:#fff;
-}
-
-.close{
-  width:32px;
-  height:32px;
-  font-size:28px;
-  color:#777;
-}
-
-.search{
-  flex:0 0 auto;
-  width:calc(100% - 24px);
-  margin:0 12px 8px;
-  height:40px;
-  border:0;
-  outline:0;
-  border-radius:12px;
-  background:#e9ebef;
-  padding:0 12px;
-  font-size:14px;
-}
-
-.filters,.subFilters{
-  flex:0 0 auto;
-  display:flex;
-  gap:6px;
-  overflow-x:auto;
-  scrollbar-width:none;
-  padding:0 12px 8px;
-}
-
-.filters::-webkit-scrollbar,
-.subFilters::-webkit-scrollbar{
-  display:none;
-}
-
-.filter,.subFilter{
-  flex:0 0 auto;
-  height:30px;
-  padding:0 10px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:#555;
-  font-size:11px;
-  font-weight:650;
-}
-
-.filter.active,.subFilter.active{
-  background:var(--blue);
-  color:#fff;
-}
-
-.catalog{
-  flex:1 1 auto;
-  min-height:0;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  padding:0 12px 15px;
-}
-
-.catalog::-webkit-scrollbar{
-  display:none;
-}
-
-.catalogItem{
-  min-height:59px;
-  background:#fff;
-  border-radius:14px;
-  padding:9px 9px 9px 11px;
-  margin:6px 0;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  box-shadow:0 2px 10px rgba(30,40,60,.04);
-}
-
-.catalogItem.added{
-  box-shadow:inset 0 0 0 1.5px rgba(0,122,255,.25);
-}
-
-.catalogName{
-  font-size:13px;
-  line-height:1.25;
-  font-weight:700;
-  overflow-wrap:anywhere;
-}
-
-.catalogMeta{
-  color:var(--muted);
-  font-size:10px;
-  line-height:1.35;
-  margin-top:3px;
-}
-
-.catalogControls{
-  display:flex;
-  align-items:center;
   gap:5px;
 }
 
-.catalogQtyButton{
-  width:29px;
-  height:29px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:var(--blue);
-  font-size:18px;
-}
-
-.catalogQty{
-  min-width:27px;
-  text-align:center;
-  color:var(--blue);
-  font-size:12px;
-  font-weight:750;
-}
-
-.addIcon{
-  width:30px;
-  height:30px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:var(--blue);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  flex:0 0 auto;
-}
-
-.catalogManage{
-  display:flex;
-  gap:5px;
-}
-
-.manageEdit,.manageDelete{
+.manageEdit,
+.manageDelete{
   width:31px;
   height:31px;
   border-radius:9px;
@@ -689,9 +831,17 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
 }
 
 @media(max-width:390px){
-  .logo{font-size:17px}
-  .row{min-height:63px}
-  .name{font-size:12px}
+  .logo{
+    font-size:17px;
+  }
+
+  .row{
+    min-height:63px;
+  }
+
+  .name{
+    font-size:12px;
+  }
 }
 </style>
 </head>
@@ -703,13 +853,21 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
 <header class="header">
 
 <div>
-  <div class="logo">Калькулятор сантехніка</div>
-  <div class="subtitle">кошторис</div>
+  <div class="logo">
+    Калькулятор сантехніка
+  </div>
+
+  <div class="subtitle">
+    кошторис
+  </div>
 </div>
 
 <div class="headerRight">
 
-<div class="date" id="date"></div>
+<div
+  class="date"
+  id="date"
+></div>
 
 <button
   class="masterButton"
@@ -771,7 +929,10 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
 
 <div class="estimateHeadRight">
 
-<span class="count" id="count">
+<span
+  class="count"
+  id="count"
+>
   0 позицій
 </span>
 
@@ -787,7 +948,10 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
 
 </div>
 
-<div class="list" id="list"></div>
+<div
+  class="list"
+  id="list"
+></div>
 
 </main>
 
@@ -880,7 +1044,10 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
   oninput="renderCatalog()"
 >
 
-<div class="filters" id="filters"></div>
+<div
+  class="filters"
+  id="filters"
+></div>
 
 <div
   class="subFilters"
@@ -894,7 +1061,10 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
   style="display:none"
 ></div>
 
-<div class="catalog" id="catalog"></div>
+<div
+  class="catalog"
+  id="catalog"
+></div>
 
 </div>
 
@@ -955,7 +1125,7 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
 
 <div class="editorField">
 
-<label>
+<label id="editorPriceLabel">
   Ціна
 </label>
 
@@ -1126,8 +1296,7 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
 </div>
 
 <script>
-
-const defaultCatalog = [
+  const defaultCatalog = [
 
 {
   id:"w-rough-node",
@@ -1228,7 +1397,7 @@ const defaultCatalog = [
   manufacturer:"",
   system:"",
   article:"",
-  price:0,
+  basePriceEUR:0,
   unit:"м"
 },
 
@@ -1241,7 +1410,7 @@ const defaultCatalog = [
   manufacturer:"",
   system:"",
   article:"",
-  price:0,
+  basePriceEUR:0,
   unit:"компл."
 },
 
@@ -1254,7 +1423,7 @@ const defaultCatalog = [
   manufacturer:"",
   system:"",
   article:"",
-  price:0,
+  basePriceEUR:0,
   unit:"м"
 },
 
@@ -1267,7 +1436,7 @@ const defaultCatalog = [
   manufacturer:"",
   system:"",
   article:"",
-  price:0,
+  basePriceEUR:0,
   unit:"компл."
 },
 
@@ -1280,7 +1449,7 @@ const defaultCatalog = [
   manufacturer:"",
   system:"",
   article:"",
-  price:0,
+  basePriceEUR:0,
   unit:"шт"
 },
 
@@ -1293,20 +1462,24 @@ const defaultCatalog = [
   manufacturer:"",
   system:"",
   article:"",
-  price:0,
+  basePriceEUR:0,
   unit:"шт"
 }
 
 ];
 
 let catalog = JSON.parse(
-  localStorage.getItem("plumber_catalog") || "null"
+  localStorage.getItem(
+    "plumber_catalog"
+  ) || "null"
 );
 
 if(!Array.isArray(catalog)){
 
   catalog = JSON.parse(
-    JSON.stringify(defaultCatalog)
+    JSON.stringify(
+      defaultCatalog
+    )
   );
 
   localStorage.setItem(
@@ -1315,47 +1488,93 @@ if(!Array.isArray(catalog)){
   );
 }
 
-catalog = catalog.map(item => {
+catalog =
+  catalog.map(item => {
 
-  if(item.type === "material"){
+    if(
+      item.type ===
+      "material"
+    ){
 
-    if(typeof item.manufacturer !== "string"){
-      item.manufacturer = "";
+      if(
+        typeof item.manufacturer !==
+        "string"
+      ){
+        item.manufacturer = "";
+      }
+
+      if(
+        typeof item.system !==
+        "string"
+      ){
+        item.system = "";
+      }
+
+      if(
+        typeof item.article !==
+        "string"
+      ){
+        item.article = "";
+      }
+
+      if(
+        typeof item.category !==
+        "string"
+      ){
+        item.category = "other";
+      }
+
+      const basePriceEUR =
+        Number(
+          item.basePriceEUR
+        );
+
+      item.basePriceEUR =
+        Number.isFinite(
+          basePriceEUR
+        ) &&
+        basePriceEUR >= 0
+          ? basePriceEUR
+          : 0;
+
+      delete item.price;
     }
 
-    if(typeof item.system !== "string"){
-      item.system = "";
-    }
-
-    if(typeof item.article !== "string"){
-      item.article = "";
-    }
-
-    if(typeof item.category !== "string"){
-      item.category = "other";
-    }
-  }
-
-  return item;
-});
+    return item;
+  });
 
 localStorage.setItem(
   "plumber_catalog",
   JSON.stringify(catalog)
 );
 
-let estimate = JSON.parse(
-  localStorage.getItem("plumber_estimate") || "[]"
-);
+let estimate =
+  JSON.parse(
+    localStorage.getItem(
+      "plumber_estimate"
+    ) || "[]"
+  );
 
-let catalogMode = "work";
-let catalogFilter = "all";
-let catalogBrandFilter = "all";
-let catalogSystemFilter = "all";
-let catalogManageMode = false;
-let editingCatalogId = null;
+let catalogMode =
+  "work";
 
-const EUR_RATE_KEY = "plumber_eurRate";
+let catalogFilter =
+  "all";
+
+let catalogBrandFilter =
+  "all";
+
+let catalogSystemFilter =
+  "all";
+
+let catalogManageMode =
+  false;
+
+let editingCatalogId =
+  null;
+
+const EUR_RATE_KEY =
+  "plumber_eurRate";
 
 let eurRate =
   Number(
@@ -1365,13 +1584,17 @@ let eurRate =
   );
 
 if(
-  !Number.isFinite(eurRate) ||
+  !Number.isFinite(
+    eurRate
+  ) ||
   eurRate < 0
 ){
   eurRate = 0;
 }
 
-function getMaterialCatalogPrice(item){
+function getMaterialCatalogPrice(
+  item
+){
 
   const basePriceEUR =
     Number(
@@ -1379,15 +1602,22 @@ function getMaterialCatalogPrice(item){
     );
 
   if(
-    item.type === "material" &&
-    Number.isFinite(basePriceEUR) &&
-    basePriceEUR >= 0 &&
-    eurRate > 0
+    !Number.isFinite(
+      basePriceEUR
+    ) ||
+    basePriceEUR < 0 ||
+    !Number.isFinite(
+      eurRate
+    ) ||
+    eurRate <= 0
   ){
-    return basePriceEUR * eurRate;
+    return 0;
   }
 
-  return Number(item.price) || 0;
+  return (
+    basePriceEUR *
+    eurRate
+  );
 }
 
 function updateEurRateButton(){
@@ -1401,7 +1631,10 @@ function updateEurRateButton(){
     return;
   }
 
-  if(catalogMode !== "material"){
+  if(
+    catalogMode !==
+    "material"
+  ){
 
     button.style.display =
       "none";
@@ -1434,18 +1667,25 @@ function editEurRate(){
         : ""
     );
 
-  if(value === null){
+  if(
+    value === null
+  ){
     return;
   }
 
   const rate =
     Number(
       String(value)
-        .replace(",",".")
+        .replace(
+          ",",
+          "."
+        )
     );
 
   if(
-    !Number.isFinite(rate) ||
+    !Number.isFinite(
+      rate
+    ) ||
     rate <= 0
   ){
 
@@ -1456,7 +1696,8 @@ function editEurRate(){
     return;
   }
 
-  eurRate = rate;
+  eurRate =
+    rate;
 
   localStorage.setItem(
     EUR_RATE_KEY,
@@ -1467,35 +1708,70 @@ function editEurRate(){
   renderCatalog();
 }
 
-function normalizeText(value){
+function normalizeText(
+  value
+){
 
-  return String(value || "")
+  return String(
+    value || ""
+  )
     .trim()
     .toLowerCase()
-    .replace(/\s+/g," ");
+    .replace(
+      /\s+/g,
+      " "
+    );
 }
 
-function escapeHtml(value){
+function escapeHtml(
+  value
+){
 
-  return String(value ?? "")
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
-function money(value){
+function money(
+  value
+){
 
-  return new Intl.NumberFormat("uk-UA")
-    .format(Math.round(value)) + " грн";
+  return new Intl.NumberFormat(
+    "uk-UA"
+  )
+    .format(
+      Math.round(value)
+    ) +
+    " грн";
 }
 
 function save(){
 
   localStorage.setItem(
     "plumber_estimate",
-    JSON.stringify(estimate)
+    JSON.stringify(
+      estimate
+    )
   );
 }
 
@@ -1503,23 +1779,30 @@ function saveCatalog(){
 
   localStorage.setItem(
     "plumber_catalog",
-    JSON.stringify(catalog)
+    JSON.stringify(
+      catalog
+    )
   );
 }
 
 /* =========================
    ESTIMATE
 ========================= */
-
-function renderEstimate(){
+  function renderEstimate(){
 
   const list =
-    document.getElementById("list");
+    document.getElementById(
+      "list"
+    );
 
   const clearButton =
-    document.getElementById("clearEstimate");
+    document.getElementById(
+      "clearEstimate"
+    );
 
-  if(!estimate.length){
+  if(
+    !estimate.length
+  ){
 
     list.innerHTML = `
       <div class="empty">
@@ -1528,7 +1811,8 @@ function renderEstimate(){
       </div>
     `;
 
-    clearButton.style.display = "none";
+    clearButton.style.display =
+      "none";
 
   }else{
 
@@ -1554,7 +1838,9 @@ function renderEstimate(){
           item.type === "material"
       );
 
-    if(rough.length){
+    if(
+      rough.length
+    ){
 
       html += section(
         "ЧОРНОВИЙ МОНТАЖ",
@@ -1562,7 +1848,9 @@ function renderEstimate(){
       );
     }
 
-    if(finish.length){
+    if(
+      finish.length
+    ){
 
       html += section(
         "ЧИСТОВИЙ МОНТАЖ",
@@ -1570,7 +1858,9 @@ function renderEstimate(){
       );
     }
 
-    if(materials.length){
+    if(
+      materials.length
+    ){
 
       html += section(
         "МАТЕРІАЛИ",
@@ -1578,27 +1868,41 @@ function renderEstimate(){
       );
     }
 
-    list.innerHTML = html;
+    list.innerHTML =
+      html;
 
-    clearButton.style.display = "block";
+    clearButton.style.display =
+      "block";
   }
 
   const total =
     estimate.reduce(
-      (sum,item) =>
-        sum + item.price * item.qty,
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        item.price *
+        item.qty,
       0
     );
 
-  document.getElementById("grand")
-    .textContent = money(total);
+  document.getElementById(
+    "grand"
+  ).textContent =
+    money(total);
 
-  document.getElementById("count")
-    .textContent =
-      estimate.length + " позицій";
+  document.getElementById(
+    "count"
+  ).textContent =
+    estimate.length +
+    " позицій";
 }
 
-function section(title,items){
+function section(
+  title,
+  items
+){
 
   return `
     <div class="section">
@@ -1607,16 +1911,26 @@ function section(title,items){
         ${title}
       </div>
 
-      ${items.map(renderRow).join("")}
+      ${
+        items
+          .map(
+            renderRow
+          )
+          .join("")
+      }
 
     </div>
   `;
 }
 
-function renderRow(item){
+function renderRow(
+  item
+){
 
   const index =
-    estimate.indexOf(item);
+    estimate.indexOf(
+      item
+    );
 
   return `
     <div class="row">
@@ -1653,7 +1967,9 @@ function renderRow(item){
             class="price"
             onclick="editPrice(${index})"
           >
-            ${money(item.price)} / ${escapeHtml(item.unit)}
+            ${money(item.price)}
+            /
+            ${escapeHtml(item.unit)}
           </button>
 
         </div>
@@ -1663,7 +1979,12 @@ function renderRow(item){
       <div class="right">
 
         <div class="lineTotal">
-          ${money(item.price * item.qty)}
+          ${
+            money(
+              item.price *
+              item.qty
+            )
+          }
         </div>
 
         <button
@@ -1679,19 +2000,25 @@ function renderRow(item){
   `;
 }
 
-function changeQty(index,delta){
+function changeQty(
+  index,
+  delta
+){
 
   estimate[index].qty =
     Math.max(
       1,
-      estimate[index].qty + delta
+      estimate[index].qty +
+      delta
     );
 
   save();
   renderEstimate();
 }
 
-function removeItem(index){
+function removeItem(
+  index
+){
 
   estimate.splice(
     index,
@@ -1702,7 +2029,9 @@ function removeItem(index){
   renderEstimate();
 }
 
-function editPrice(index){
+function editPrice(
+  index
+){
 
   const value =
     prompt(
@@ -1710,22 +2039,30 @@ function editPrice(index){
       estimate[index].price
     );
 
-  if(value === null){
+  if(
+    value === null
+  ){
     return;
   }
 
   const price =
     Number(
       String(value)
-        .replace(",",".")
+        .replace(
+          ",",
+          "."
+        )
     );
 
   if(
-    Number.isFinite(price) &&
+    Number.isFinite(
+      price
+    ) &&
     price >= 0
   ){
 
-    estimate[index].price = price;
+    estimate[index].price =
+      price;
 
     save();
     renderEstimate();
@@ -1734,7 +2071,9 @@ function editPrice(index){
 
 function clearEstimate(){
 
-  if(!estimate.length){
+  if(
+    !estimate.length
+  ){
     return;
   }
 
@@ -1756,22 +2095,38 @@ function clearEstimate(){
    CATALOG
 ========================= */
 
-function openCatalog(type){
+function openCatalog(
+  type
+){
 
-  catalogMode = type;
+  catalogMode =
+    type;
 
-  catalogFilter = "all";
-  catalogBrandFilter = "all";
-  catalogSystemFilter = "all";
-  catalogManageMode = false;
+  catalogFilter =
+    "all";
+
+  catalogBrandFilter =
+    "all";
+
+  catalogSystemFilter =
+    "all";
+
+  catalogManageMode =
+    false;
 
   const editButton =
     document.getElementById(
       "catalogEditButton"
     );
 
-  editButton.classList.remove("active");
-  editButton.textContent = "✎ Каталог";
+  editButton
+    .classList
+    .remove(
+      "active"
+    );
+
+  editButton.textContent =
+    "✎ Каталог";
 
   document.getElementById(
     "panelTitle"
@@ -1782,11 +2137,14 @@ function openCatalog(type){
 
   document.getElementById(
     "search"
-  ).value = "";
+  ).value =
+    "";
 
   document.getElementById(
     "sheet"
-  ).classList.add("open");
+  ).classList.add(
+    "open"
+  );
 
   updateEurRateButton();
   renderFilters();
@@ -1799,7 +2157,9 @@ function closeCatalog(){
 
   document.getElementById(
     "sheet"
-  ).classList.remove("open");
+  ).classList.remove(
+    "open"
+  );
 }
 
 function renderFilters(){
@@ -1809,26 +2169,41 @@ function renderFilters(){
       "filters"
     );
 
-  if(catalogMode === "work"){
+  if(
+    catalogMode ===
+    "work"
+  ){
 
     box.innerHTML = `
 
       <button
-        class="filter ${catalogFilter === "all" ? "active" : ""}"
+        class="filter ${
+          catalogFilter === "all"
+            ? "active"
+            : ""
+        }"
         onclick="setFilter('all')"
       >
         Усі
       </button>
 
       <button
-        class="filter ${catalogFilter === "rough" ? "active" : ""}"
+        class="filter ${
+          catalogFilter === "rough"
+            ? "active"
+            : ""
+        }"
         onclick="setFilter('rough')"
       >
         Чорнові
       </button>
 
       <button
-        class="filter ${catalogFilter === "finish" ? "active" : ""}"
+        class="filter ${
+          catalogFilter === "finish"
+            ? "active"
+            : ""
+        }"
         onclick="setFilter('finish')"
       >
         Чистові
@@ -1841,35 +2216,55 @@ function renderFilters(){
     box.innerHTML = `
 
       <button
-        class="filter ${catalogFilter === "all" ? "active" : ""}"
+        class="filter ${
+          catalogFilter === "all"
+            ? "active"
+            : ""
+        }"
         onclick="setFilter('all')"
       >
         Усі
       </button>
 
       <button
-        class="filter ${catalogFilter === "fittings" ? "active" : ""}"
+        class="filter ${
+          catalogFilter === "fittings"
+            ? "active"
+            : ""
+        }"
         onclick="setFilter('fittings')"
       >
         Арматура
       </button>
 
       <button
-        class="filter ${catalogFilter === "water" ? "active" : ""}"
+        class="filter ${
+          catalogFilter === "water"
+            ? "active"
+            : ""
+        }"
         onclick="setFilter('water')"
       >
         Водопостачання
       </button>
 
       <button
-        class="filter ${catalogFilter === "sewer" ? "active" : ""}"
+        class="filter ${
+          catalogFilter === "sewer"
+            ? "active"
+            : ""
+        }"
         onclick="setFilter('sewer')"
       >
         Каналізація
       </button>
 
       <button
-        class="filter ${catalogFilter === "other" ? "active" : ""}"
+        class="filter ${
+          catalogFilter === "other"
+            ? "active"
+            : ""
+        }"
         onclick="setFilter('other')"
       >
         Інше
@@ -1879,12 +2274,18 @@ function renderFilters(){
   }
 }
 
-function setFilter(filter){
+function setFilter(
+  filter
+){
 
-  catalogFilter = filter;
+  catalogFilter =
+    filter;
 
-  catalogBrandFilter = "all";
-  catalogSystemFilter = "all";
+  catalogBrandFilter =
+    "all";
+
+  catalogSystemFilter =
+    "all";
 
   renderFilters();
   renderBrandFilters();
@@ -1894,21 +2295,27 @@ function setFilter(filter){
 
 function getMaterialItemsForClassification(){
 
-  return catalog.filter(item => {
+  return catalog.filter(
+    item => {
 
-    if(item.type !== "material"){
-      return false;
+      if(
+        item.type !==
+        "material"
+      ){
+        return false;
+      }
+
+      if(
+        catalogFilter !== "all" &&
+        item.category !==
+        catalogFilter
+      ){
+        return false;
+      }
+
+      return true;
     }
-
-    if(
-      catalogFilter !== "all" &&
-      item.category !== catalogFilter
-    ){
-      return false;
-    }
-
-    return true;
-  });
+  );
 }
 
 function getBrands(){
@@ -1917,26 +2324,36 @@ function getBrands(){
     new Map();
 
   getMaterialItemsForClassification()
-    .forEach(item => {
+    .forEach(
+      item => {
 
-      const value =
-        String(
-          item.manufacturer || ""
-        ).trim();
+        const value =
+          String(
+            item.manufacturer ||
+            ""
+          ).trim();
 
-      if(value){
-
-        values.set(
-          normalizeText(value),
+        if(
           value
-        );
+        ){
+
+          values.set(
+            normalizeText(
+              value
+            ),
+            value
+          );
+        }
       }
-    });
+    );
 
   return Array.from(
     values.values()
   ).sort(
-    (a,b) =>
+    (
+      a,
+      b
+    ) =>
       a.localeCompare(
         b,
         "uk"
@@ -1951,10 +2368,16 @@ function renderBrandFilters(){
       "brandFilters"
     );
 
-  if(catalogMode !== "material"){
+  if(
+    catalogMode !==
+    "material"
+  ){
 
-    box.style.display = "none";
-    box.innerHTML = "";
+    box.style.display =
+      "none";
+
+    box.innerHTML =
+      "";
 
     return;
   }
@@ -1962,33 +2385,52 @@ function renderBrandFilters(){
   const brands =
     getBrands();
 
-  if(!brands.length){
+  if(
+    !brands.length
+  ){
 
-    box.style.display = "none";
-    box.innerHTML = "";
+    box.style.display =
+      "none";
 
-    catalogBrandFilter = "all";
+    box.innerHTML =
+      "";
+
+    catalogBrandFilter =
+      "all";
 
     return;
   }
 
   if(
-    catalogBrandFilter !== "all" &&
+    catalogBrandFilter !==
+      "all" &&
     !brands.some(
       brand =>
-        normalizeText(brand) ===
-        normalizeText(catalogBrandFilter)
+        normalizeText(
+          brand
+        ) ===
+        normalizeText(
+          catalogBrandFilter
+        )
     )
   ){
-    catalogBrandFilter = "all";
+
+    catalogBrandFilter =
+      "all";
   }
 
-  box.style.display = "flex";
+  box.style.display =
+    "flex";
 
   box.innerHTML = `
 
     <button
-      class="subFilter ${catalogBrandFilter === "all" ? "active" : ""}"
+      class="subFilter ${
+        catalogBrandFilter ===
+        "all"
+          ? "active"
+          : ""
+      }"
       onclick="setBrandFilter('all')"
     >
       Усі бренди
@@ -1999,13 +2441,19 @@ function renderBrandFilters(){
         brand => {
 
           const encoded =
-            encodeURIComponent(brand);
+            encodeURIComponent(
+              brand
+            );
 
           return `
             <button
               class="subFilter ${
-                normalizeText(catalogBrandFilter) ===
-                normalizeText(brand)
+                normalizeText(
+                  catalogBrandFilter
+                ) ===
+                normalizeText(
+                  brand
+                )
                   ? "active"
                   : ""
               }"
@@ -2021,59 +2469,76 @@ function renderBrandFilters(){
   `;
 }
 
-function setBrandFilter(brand){
+function setBrandFilter(
+  brand
+){
 
-  catalogBrandFilter = brand;
-  catalogSystemFilter = "all";
+  catalogBrandFilter =
+    brand;
+
+  catalogSystemFilter =
+    "all";
 
   renderBrandFilters();
   renderSystemFilters();
   renderCatalog();
 }
-
-function getSystems(){
+  function getSystems(){
 
   const values =
     new Map();
 
   getMaterialItemsForClassification()
-    .filter(item => {
+    .filter(
+      item => {
 
-      if(
-        catalogBrandFilter === "all"
-      ){
-        return true;
-      }
+        if(
+          catalogBrandFilter ===
+          "all"
+        ){
+          return true;
+        }
 
-      return (
-        normalizeText(
-          item.manufacturer
-        ) ===
-        normalizeText(
-          catalogBrandFilter
-        )
-      );
-    })
-    .forEach(item => {
-
-      const value =
-        String(
-          item.system || ""
-        ).trim();
-
-      if(value){
-
-        values.set(
-          normalizeText(value),
-          value
+        return (
+          normalizeText(
+            item.manufacturer
+          ) ===
+          normalizeText(
+            catalogBrandFilter
+          )
         );
       }
-    });
+    )
+    .forEach(
+      item => {
+
+        const value =
+          String(
+            item.system ||
+            ""
+          ).trim();
+
+        if(
+          value
+        ){
+
+          values.set(
+            normalizeText(
+              value
+            ),
+            value
+          );
+        }
+      }
+    );
 
   return Array.from(
     values.values()
   ).sort(
-    (a,b) =>
+    (
+      a,
+      b
+    ) =>
       a.localeCompare(
         b,
         "uk"
@@ -2088,10 +2553,16 @@ function renderSystemFilters(){
       "systemFilters"
     );
 
-  if(catalogMode !== "material"){
+  if(
+    catalogMode !==
+    "material"
+  ){
 
-    box.style.display = "none";
-    box.innerHTML = "";
+    box.style.display =
+      "none";
+
+    box.innerHTML =
+      "";
 
     return;
   }
@@ -2099,33 +2570,52 @@ function renderSystemFilters(){
   const systems =
     getSystems();
 
-  if(!systems.length){
+  if(
+    !systems.length
+  ){
 
-    box.style.display = "none";
-    box.innerHTML = "";
+    box.style.display =
+      "none";
 
-    catalogSystemFilter = "all";
+    box.innerHTML =
+      "";
+
+    catalogSystemFilter =
+      "all";
 
     return;
   }
 
   if(
-    catalogSystemFilter !== "all" &&
+    catalogSystemFilter !==
+      "all" &&
     !systems.some(
       system =>
-        normalizeText(system) ===
-        normalizeText(catalogSystemFilter)
+        normalizeText(
+          system
+        ) ===
+        normalizeText(
+          catalogSystemFilter
+        )
     )
   ){
-    catalogSystemFilter = "all";
+
+    catalogSystemFilter =
+      "all";
   }
 
-  box.style.display = "flex";
+  box.style.display =
+    "flex";
 
   box.innerHTML = `
 
     <button
-      class="subFilter ${catalogSystemFilter === "all" ? "active" : ""}"
+      class="subFilter ${
+        catalogSystemFilter ===
+        "all"
+          ? "active"
+          : ""
+      }"
       onclick="setSystemFilter('all')"
     >
       Усі системи
@@ -2136,13 +2626,19 @@ function renderSystemFilters(){
         system => {
 
           const encoded =
-            encodeURIComponent(system);
+            encodeURIComponent(
+              system
+            );
 
           return `
             <button
               class="subFilter ${
-                normalizeText(catalogSystemFilter) ===
-                normalizeText(system)
+                normalizeText(
+                  catalogSystemFilter
+                ) ===
+                normalizeText(
+                  system
+                )
                   ? "active"
                   : ""
               }"
@@ -2158,9 +2654,12 @@ function renderSystemFilters(){
   `;
 }
 
-function setSystemFilter(system){
+function setSystemFilter(
+  system
+){
 
-  catalogSystemFilter = system;
+  catalogSystemFilter =
+    system;
 
   renderSystemFilters();
   renderCatalog();
@@ -2176,77 +2675,97 @@ function renderCatalog(){
     );
 
   const items =
-    catalog.filter(item => {
-
-      if(item.type !== catalogMode){
-        return false;
-      }
-
-      if(query){
-
-        const searchable = [
-          item.name,
-          item.estimateName,
-          item.article,
-          item.manufacturer,
-          item.system
-        ]
-        .map(normalizeText)
-        .join(" ");
+    catalog.filter(
+      item => {
 
         if(
-          !searchable.includes(query)
+          item.type !==
+          catalogMode
         ){
           return false;
         }
-      }
-
-      if(catalogFilter !== "all"){
 
         if(
-          item.stage !== catalogFilter &&
-          item.category !== catalogFilter
+          query
         ){
-          return false;
-        }
-      }
 
-      if(
-        catalogMode === "material" &&
-        catalogBrandFilter !== "all"
-      ){
-
-        if(
-          normalizeText(
-            item.manufacturer
-          ) !==
-          normalizeText(
-            catalogBrandFilter
-          )
-        ){
-          return false;
-        }
-      }
-
-      if(
-        catalogMode === "material" &&
-        catalogSystemFilter !== "all"
-      ){
-
-        if(
-          normalizeText(
+          const searchable = [
+            item.name,
+            item.estimateName,
+            item.article,
+            item.manufacturer,
             item.system
-          ) !==
-          normalizeText(
-            catalogSystemFilter
+          ]
+          .map(
+            normalizeText
           )
-        ){
-          return false;
-        }
-      }
+          .join(" ");
 
-      return true;
-    });
+          if(
+            !searchable.includes(
+              query
+            )
+          ){
+            return false;
+          }
+        }
+
+        if(
+          catalogFilter !==
+          "all"
+        ){
+
+          if(
+            item.stage !==
+              catalogFilter &&
+            item.category !==
+              catalogFilter
+          ){
+            return false;
+          }
+        }
+
+        if(
+          catalogMode ===
+            "material" &&
+          catalogBrandFilter !==
+            "all"
+        ){
+
+          if(
+            normalizeText(
+              item.manufacturer
+            ) !==
+            normalizeText(
+              catalogBrandFilter
+            )
+          ){
+            return false;
+          }
+        }
+
+        if(
+          catalogMode ===
+            "material" &&
+          catalogSystemFilter !==
+            "all"
+        ){
+
+          if(
+            normalizeText(
+              item.system
+            ) !==
+            normalizeText(
+              catalogSystemFilter
+            )
+          ){
+            return false;
+          }
+        }
+
+        return true;
+      }
+    );
 
   const box =
     document.getElementById(
@@ -2258,7 +2777,9 @@ function renderCatalog(){
     catalogManageMode
   );
 
-  if(!items.length){
+  if(
+    !items.length
+  ){
 
     box.innerHTML = `
 
@@ -2277,7 +2798,8 @@ function renderCatalog(){
             </button>
 
             ${
-              catalogMode === "material"
+              catalogMode ===
+              "material"
                 ? `
                   <button
                     class="catalogClear"
@@ -2299,10 +2821,14 @@ function renderCatalog(){
 
   box.innerHTML =
     items
-      .map(renderCatalogItem)
+      .map(
+        renderCatalogItem
+      )
       .join("");
 
-  if(catalogManageMode){
+  if(
+    catalogManageMode
+  ){
 
     box.innerHTML += `
 
@@ -2314,7 +2840,8 @@ function renderCatalog(){
       </button>
 
       ${
-        catalogMode === "material"
+        catalogMode ===
+        "material"
           ? `
             <button
               class="catalogClear"
@@ -2330,16 +2857,27 @@ function renderCatalog(){
   }
 }
 
-function renderCatalogItem(item){
+function renderCatalogItem(
+  item
+){
 
   const catalogPrice =
-    item.type === "material"
-      ? getMaterialCatalogPrice(item)
-      : Number(item.price) || 0;
+    item.type ===
+      "material"
+      ? getMaterialCatalogPrice(
+          item
+        )
+      : (
+          Number(
+            item.price
+          ) || 0
+        );
 
   const existing =
     estimate.find(
-      x => x.id === item.id
+      estimateItem =>
+        estimateItem.id ===
+        item.id
     );
 
   const qty =
@@ -2349,23 +2887,40 @@ function renderCatalogItem(item){
 
   const meta = [];
 
-  if(item.type === "material"){
+  if(
+    item.type ===
+    "material"
+  ){
 
-    if(item.manufacturer){
-      meta.push(item.manufacturer);
+    if(
+      item.manufacturer
+    ){
+      meta.push(
+        item.manufacturer
+      );
     }
 
-    if(item.system){
-      meta.push(item.system);
+    if(
+      item.system
+    ){
+      meta.push(
+        item.system
+      );
     }
 
-    if(item.article){
-      meta.push(item.article);
+    if(
+      item.article
+    ){
+      meta.push(
+        item.article
+      );
     }
   }
 
   const encodedId =
-    encodeURIComponent(item.id);
+    encodeURIComponent(
+      item.id
+    );
 
   const cardAction =
     catalogManageMode
@@ -2375,7 +2930,11 @@ function renderCatalogItem(item){
   return `
 
     <div
-      class="catalogItem ${qty > 0 ? "added" : ""}"
+      class="catalogItem ${
+        qty > 0
+          ? "added"
+          : ""
+      }"
     >
 
       <div
@@ -2391,7 +2950,9 @@ function renderCatalogItem(item){
 
           ${
             catalogPrice
-              ? money(catalogPrice)
+              ? money(
+                  catalogPrice
+                )
               : "ціна не задана"
           }
 
@@ -2400,7 +2961,12 @@ function renderCatalogItem(item){
 
           ${
             meta.length
-              ? " · " + escapeHtml(meta.join(" · "))
+              ? " · " +
+                escapeHtml(
+                  meta.join(
+                    " · "
+                  )
+                )
               : ""
           }
 
@@ -2475,7 +3041,9 @@ function renderCatalogItem(item){
   `;
 }
 
-function addItem(id){
+function addItem(
+  id
+){
 
   const product =
     catalog.find(
@@ -2483,17 +3051,21 @@ function addItem(id){
         item.id === id
     );
 
-  if(!product){
+  if(
+    !product
+  ){
     return;
   }
 
   if(
-    product.type === "material" &&
-    Number.isFinite(
-      Number(product.basePriceEUR)
-    ) &&
-    Number(product.basePriceEUR) > 0 &&
-    eurRate <= 0
+    product.type ===
+      "material" &&
+    (
+      !Number.isFinite(
+        eurRate
+      ) ||
+      eurRate <= 0
+    )
   ){
 
     alert(
@@ -2509,7 +3081,9 @@ function addItem(id){
         item.id === id
     );
 
-  if(existing){
+  if(
+    existing
+  ){
 
     existing.qty++;
 
@@ -2517,38 +3091,56 @@ function addItem(id){
 
     const estimateItem = {
 
-      id:product.id,
+      id:
+        product.id,
 
       name:
         product.estimateName ||
         product.name,
 
-      type:product.type,
+      type:
+        product.type,
 
-      stage:product.stage,
+      stage:
+        product.stage,
 
-      category:product.category,
+      category:
+        product.category,
 
       price:
-        product.type === "material"
-          ? getMaterialCatalogPrice(product)
-          : product.price,
+        product.type ===
+          "material"
+          ? getMaterialCatalogPrice(
+              product
+            )
+          : (
+              Number(
+                product.price
+              ) || 0
+            ),
 
-      unit:product.unit,
+      unit:
+        product.unit,
 
       qty:1
     };
 
-    if(product.type === "material"){
+    if(
+      product.type ===
+      "material"
+    ){
 
       estimateItem.manufacturer =
-        product.manufacturer || "";
+        product.manufacturer ||
+        "";
 
       estimateItem.system =
-        product.system || "";
+        product.system ||
+        "";
 
       estimateItem.article =
-        product.article || "";
+        product.article ||
+        "";
     }
 
     estimate.push(
@@ -2557,11 +3149,15 @@ function addItem(id){
   }
 
   save();
+
   renderEstimate();
   renderCatalog();
 }
 
-function catalogChangeQty(id,delta){
+function catalogChangeQty(
+  id,
+  delta
+){
 
   const index =
     estimate.findIndex(
@@ -2569,19 +3165,27 @@ function catalogChangeQty(id,delta){
         item.id === id
     );
 
-  if(index === -1){
+  if(
+    index === -1
+  ){
 
-    if(delta > 0){
-      addItem(id);
+    if(
+      delta > 0
+    ){
+      addItem(
+        id
+      );
     }
 
     return;
   }
 
-  estimate[index].qty += delta;
+  estimate[index].qty +=
+    delta;
 
   if(
-    estimate[index].qty <= 0
+    estimate[index].qty <=
+    0
   ){
 
     estimate.splice(
@@ -2591,9 +3195,14 @@ function catalogChangeQty(id,delta){
   }
 
   save();
+
   renderEstimate();
   renderCatalog();
 }
+
+/* =========================
+   MANAGE CATALOG
+========================= */
 
 function toggleCatalogManage(){
 
@@ -2605,7 +3214,9 @@ function toggleCatalogManage(){
       "catalogEditButton"
     );
 
-  if(catalogManageMode){
+  if(
+    catalogManageMode
+  ){
 
     button.classList.add(
       "active"
@@ -2632,10 +3243,13 @@ function clearMaterialCatalog(){
   const materialCount =
     catalog.filter(
       item =>
-        item.type === "material"
+        item.type ===
+        "material"
     ).length;
 
-  if(!materialCount){
+  if(
+    !materialCount
+  ){
 
     alert(
       "Каталог матеріалів уже порожній."
@@ -2655,12 +3269,18 @@ function clearMaterialCatalog(){
   catalog =
     catalog.filter(
       item =>
-        item.type !== "material"
+        item.type !==
+        "material"
     );
 
-  catalogBrandFilter = "all";
-  catalogSystemFilter = "all";
-  catalogFilter = "all";
+  catalogBrandFilter =
+    "all";
+
+  catalogSystemFilter =
+    "all";
+
+  catalogFilter =
+    "all";
 
   saveCatalog();
 
@@ -2673,8 +3293,7 @@ function clearMaterialCatalog(){
     "Каталог матеріалів очищено."
   );
 }
-
-function updateEditorGroup(){
+  function updateEditorGroup(){
 
   const type =
     document.getElementById(
@@ -2691,7 +3310,9 @@ function updateEditorGroup(){
       "editorGroupLabel"
     );
 
-  if(type === "work"){
+  if(
+    type === "work"
+  ){
 
     label.textContent =
       "Етап";
@@ -2748,6 +3369,13 @@ function updateMaterialFields(){
     type === "material"
       ? "block"
       : "none";
+
+  document.getElementById(
+    "editorPriceLabel"
+  ).textContent =
+    type === "material"
+      ? "Базова ціна, EUR"
+      : "Ціна";
 }
 
 document.getElementById(
@@ -2761,9 +3389,12 @@ document.getElementById(
   }
 );
 
-function openCatalogEditor(id = null){
+function openCatalogEditor(
+  id = null
+){
 
-  editingCatalogId = id;
+  editingCatalogId =
+    id;
 
   const item =
     id
@@ -2797,11 +3428,34 @@ function openCatalogEditor(id = null){
         )
       : "";
 
+  const editorType =
+    item
+      ? item.type
+      : catalogMode;
+
+  document.getElementById(
+    "editorType"
+  ).value =
+    editorType;
+
   document.getElementById(
     "editorPrice"
   ).value =
     item
-      ? item.price
+      ? (
+          item.type ===
+          "material"
+            ? (
+                Number(
+                  item.basePriceEUR
+                ) || 0
+              )
+            : (
+                Number(
+                  item.price
+                ) || 0
+              )
+        )
       : 0;
 
   document.getElementById(
@@ -2810,13 +3464,6 @@ function openCatalogEditor(id = null){
     item
       ? item.unit
       : "шт";
-
-  document.getElementById(
-    "editorType"
-  ).value =
-    item
-      ? item.type
-      : catalogMode;
 
   document.getElementById(
     "editorManufacturer"
@@ -2851,7 +3498,8 @@ function openCatalogEditor(id = null){
   const lockMaterialIdentity =
     !!(
       item &&
-      item.type === "material"
+      item.type ===
+      "material"
     );
 
   document.getElementById(
@@ -2867,12 +3515,15 @@ function openCatalogEditor(id = null){
   updateEditorGroup();
   updateMaterialFields();
 
-  if(item){
+  if(
+    item
+  ){
 
     document.getElementById(
       "editorGroup"
     ).value =
-      item.type === "work"
+      item.type ===
+        "work"
         ? (
             item.stage ||
             "rough"
@@ -2885,9 +3536,16 @@ function openCatalogEditor(id = null){
   }else{
 
     if(
-      catalogMode === "material" &&
-      ["water","sewer","fittings","other"]
-        .includes(catalogFilter)
+      catalogMode ===
+        "material" &&
+      [
+        "water",
+        "sewer",
+        "fittings",
+        "other"
+      ].includes(
+        catalogFilter
+      )
     ){
 
       document.getElementById(
@@ -2912,7 +3570,8 @@ function closeCatalogEditor(){
     "open"
   );
 
-  editingCatalogId = null;
+  editingCatalogId =
+    null;
 }
 
 function saveCatalogItem(){
@@ -2964,7 +3623,9 @@ function saveCatalogItem(){
       "editorArticle"
     ).value.trim();
 
-  if(!name){
+  if(
+    !name
+  ){
 
     alert(
       "Вкажіть назву."
@@ -2973,7 +3634,9 @@ function saveCatalogItem(){
     return;
   }
 
-  if(!estimateName){
+  if(
+    !estimateName
+  ){
 
     alert(
       "Вкажіть назву для кошторису."
@@ -2983,18 +3646,24 @@ function saveCatalogItem(){
   }
 
   if(
-    !Number.isFinite(price) ||
+    !Number.isFinite(
+      price
+    ) ||
     price < 0
   ){
 
     alert(
-      "Вкажіть коректну ціну."
+      type === "material"
+        ? "Вкажіть коректну базову ціну в EUR."
+        : "Вкажіть коректну ціну."
     );
 
     return;
   }
 
-  if(!unit){
+  if(
+    !unit
+  ){
 
     alert(
       "Вкажіть одиницю."
@@ -3003,22 +3672,30 @@ function saveCatalogItem(){
     return;
   }
 
-  if(editingCatalogId){
+  if(
+    editingCatalogId
+  ){
 
     const item =
       catalog.find(
         x =>
-          x.id === editingCatalogId
+          x.id ===
+          editingCatalogId
       );
 
-    if(!item){
+    if(
+      !item
+    ){
       return;
     }
 
     const wasMaterial =
-      item.type === "material";
+      item.type ===
+      "material";
 
-    if(!wasMaterial){
+    if(
+      !wasMaterial
+    ){
 
       item.name =
         name;
@@ -3027,16 +3704,18 @@ function saveCatalogItem(){
     item.estimateName =
       estimateName;
 
-    item.price =
-      price;
-
     item.unit =
       unit;
 
     item.type =
       type;
 
-    if(type === "work"){
+    if(
+      type === "work"
+    ){
+
+      item.price =
+        price;
 
       item.stage =
         group;
@@ -3047,6 +3726,11 @@ function saveCatalogItem(){
       delete item.article;
 
     }else{
+
+      item.basePriceEUR =
+        price;
+
+      delete item.price;
 
       item.category =
         group;
@@ -3059,7 +3743,9 @@ function saveCatalogItem(){
       item.system =
         system;
 
-      if(!wasMaterial){
+      if(
+        !wasMaterial
+      ){
 
         item.article =
           article;
@@ -3078,23 +3764,33 @@ function saveCatalogItem(){
           .toString(36)
           .slice(2,8),
 
-      name:name,
+      name:
+        name,
 
-      estimateName:estimateName,
+      estimateName:
+        estimateName,
 
-      price:price,
+      unit:
+        unit,
 
-      unit:unit,
-
-      type:type
+      type:
+        type
     };
 
-    if(type === "work"){
+    if(
+      type === "work"
+    ){
+
+      item.price =
+        price;
 
       item.stage =
         group;
 
     }else{
+
+      item.basePriceEUR =
+        price;
 
       item.category =
         group;
@@ -3123,8 +3819,9 @@ function saveCatalogItem(){
   renderSystemFilters();
   renderCatalog();
 }
-
-function deleteCatalogItem(id){
+  function deleteCatalogItem(
+  id
+){
 
   const item =
     catalog.find(
@@ -3132,7 +3829,9 @@ function deleteCatalogItem(id){
         x.id === id
     );
 
-  if(!item){
+  if(
+    !item
+  ){
     return;
   }
 
@@ -3156,6 +3855,10 @@ function deleteCatalogItem(id){
   renderSystemFilters();
   renderCatalog();
 }
+
+/* =========================
+   MASTER
+========================= */
 
 function openMaster(){
 
@@ -3208,32 +3911,40 @@ function saveMaster(){
   closeMaster();
 }
 
+/* =========================
+   CLIENT
+========================= */
+
 [
   "clientName",
   "clientPhone",
   "clientAddress"
 ]
-.forEach(id => {
+.forEach(
+  id => {
 
-  const input =
-    document.getElementById(id);
-
-  input.value =
-    localStorage.getItem(
-      "plumber_" + id
-    ) || "";
-
-  input.addEventListener(
-    "input",
-    () => {
-
-      localStorage.setItem(
-        "plumber_" + id,
-        input.value
+    const input =
+      document.getElementById(
+        id
       );
-    }
-  );
-});
+
+    input.value =
+      localStorage.getItem(
+        "plumber_" + id
+      ) || "";
+
+    input.addEventListener(
+      "input",
+      () => {
+
+        localStorage.setItem(
+          "plumber_" + id,
+          input.value
+        );
+      }
+    );
+  }
+);
 
 document.getElementById(
   "date"
