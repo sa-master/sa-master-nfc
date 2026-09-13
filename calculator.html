@@ -930,12 +930,12 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
 <div class="editorField full">
 
 <label>
-  Коротка назва
+  Повна назва
 </label>
 
 <input
   id="editorName"
-  placeholder="Назва"
+  placeholder="Повна назва"
 >
 
 </div>
@@ -943,7 +943,7 @@ button{border:0;background:none;color:inherit;touch-action:manipulation}
 <div class="editorField full">
 
 <label>
-  Повна назва
+  Назва для кошторису
 </label>
 
 <input
@@ -2855,17 +2855,33 @@ function openCatalogEditor(id = null){
       : "";
 
   document.getElementById(
-    "editorArticle"
-  ).value =
-    item
-      ? (
-          item.article ||
-          ""
-        )
-      : "";
+  "editorArticle"
+).value =
+  item
+    ? (
+        item.article ||
+        ""
+      )
+    : "";
 
-  updateEditorGroup();
-  updateMaterialFields();
+const lockMaterialIdentity =
+  !!(
+    item &&
+    item.type === "material"
+  );
+
+document.getElementById(
+  "editorName"
+).readOnly =
+  lockMaterialIdentity;
+
+document.getElementById(
+  "editorArticle"
+).readOnly =
+  lockMaterialIdentity;
+
+updateEditorGroup();
+updateMaterialFields();
 
   if(item){
 
@@ -3015,14 +3031,17 @@ function saveCatalogItem(){
       return;
     }
 
-    item.name =
-      name;
+    if(item.type !== "material"){
 
-    item.estimateName =
-      estimateName;
+  item.name =
+    name;
+}
 
-    item.price =
-      price;
+item.estimateName =
+  estimateName;
+
+item.price =
+  price;
 
     item.unit =
       unit;
@@ -3051,10 +3070,12 @@ function saveCatalogItem(){
         manufacturer;
 
       item.system =
-        system;
+  system;
 
-      item.article =
-        article;
+/*
+  Артикул існуючого матеріалу
+  не змінюємо.
+*/
     }
 
   }else{
