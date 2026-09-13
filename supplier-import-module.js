@@ -1843,7 +1843,6 @@
           }
         ).join("")
       }
-
       ${
         !importShowAll &&
         !unknown.length &&
@@ -1851,11 +1850,18 @@
           ? `
             <div class="importEmpty">
               Показано перші 20 позицій.
+              <br><br>
+              <button
+                type="button"
+                class="importSoftButton"
+                id="supplierShowAll"
+              >
+                Показати всі
+              </button>
             </div>
           `
           : ""
       }
-
     `;
 
     const currencySelect =
@@ -1894,6 +1900,20 @@
       bulkButton.onclick =
         applyBulkCategory;
     }
+     const showAllButton =
+  document.getElementById(
+    "supplierShowAll"
+  );
+
+if(showAllButton){
+
+  showAllButton.onclick =
+    () => {
+
+      importShowAll = true;
+      renderSupplierImport();
+    };
+}
 
     const toggleButton =
       document.getElementById(
