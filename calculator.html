@@ -1,636 +1,551 @@
-  function getRowText(
-    row,
-    from = 0,
-    to = null
-  ){
-
-    const end =
-      to === null
-        ? row.length - 1
-        : Math.min(
-            to,
-            row.length - 1
-          );
-
-    const parts = [];
-
-    for(
-      let i = from;
-      i <= end;
-      i++
-    ){
-
-      const value =
-        cleanText(row[i]);
-
-      if(value){
-        parts.push(value);
-      }
-    }
-
-    return parts.join(" ");
-  }
-
-  function parseSheetRows(
-    rows,
-    header
-  ){
-
-    const columns =
-      detectDataColumns(
-        rows,
-        header
-      );
-
-    const result = [];
-
-    const context = {
-      category:"",
-      brand:"",
-      system:""
-    };
-
-    const savedRules =
-      loadImportRules();
-
-    let emptyStreak = 0;
-
-    for(
-      let rowIndex =
-        header.rowIndex + 1;
-
-      rowIndex < rows.length;
-
-      rowIndex++
-    ){
-
-      const row =
-        rows[rowIndex] || [];
-
-      const rowText =
-        getRowText(row);
-
-      if(!rowText){
-
-        emptyStreak++;
-
-        if(
-          emptyStreak > 15 &&
-          result.length
-        ){
-          break;
-        }
-
-        continue;
-      }
-
-      emptyStreak = 0;
-
-      const article =
-        cleanText(
-          row[
-            columns.articleCol
-          ]
-        );
-
-      const name =
-        cleanText(
-          row[
-            columns.nameCol
-          ]
-        );
-
-      const qty =
-        parseNumber(
-          row[
-            columns.qtyCol
-          ]
-        );
-
-      const price =
-        parseNumber(
-          row[
-            columns.priceCol
-          ]
-        );
-
-      const unit =
-        columns.unitCol >= 0
-          ? cleanText(
-              row[
-                columns.unitCol
-              ]
-            )
-          : "";
-
-      const hasProductShape =
-        name &&
-        qty !== null &&
-        qty > 0 &&
-        price !== null &&
-        price >= 0;
-
-      if(!hasProductShape){
-
-        const lower =
-          ntext(rowText);
-
-        if(
-          /разом|всього|итого|всего|пдв|ндс|до сплати|к оплате/
-            .test(lower)
-        ){
-          continue;
-        }
-
-        classifyHeading(
-          rowText,
-          context
-        );
-
-        continue;
-      }
-
-      if(
-        !isLikelyArticle(article) &&
-        !name
-      ){
-        continue;
-      }
-
-      let brand =
-        context.brand || "";
-
-      let system =
-        context.system || "";
-
-      let category =
-        context.category || "";
-
-      const detectedBrand =
-        detectBrand(
-          name,
-          article
-        );
-
-      const detectedSystem =
-        detectSystem(
-          name,
-          detectedBrand ||
-          brand
-        );
-
-      if(detectedBrand){
-        brand =
-          detectedBrand;
-      }
-
-      if(detectedSystem){
-        system =
-          detectedSystem;
-      }
-
-      const detectedCategory =
-        detectCategory(
-          name,
-          brand,
-          system
-        );
-
-      if(detectedCategory){
-        category =
-          detectedCategory;
-      }
-
-      const key =
-        ruleKey(
-          article,
-          name
-        );
-
-      const saved =
-        savedRules[key];
-
-      if(saved){
-
-        if(
-          typeof saved.category ===
-          "string"
-        ){
-          category =
-            saved.category;
-        }
-
-        if(
-          typeof saved.manufacturer ===
-          "string"
-        ){
-          brand =
-            saved.manufacturer;
-        }
-
-        if(
-          typeof saved.system ===
-          "string"
-        ){
-          system =
-            saved.system;
-        }
-      }
-
-      result.push({
-
-        rowIndex:
-          rowIndex + 1,
-
-        article,
-
-        name,
-
-        qty,
-
-        price,
-
-        unit:
-          unit || "шт",
-
-        category,
-
-        manufacturer:
-          brand,
-
-        system,
-
-        sourceText:
-          rowText
-
-      });
-    }
-
-    return result;
-  }
-
-  function chooseBestSheet(
-    workbook
-  ){
-
-    let best = null;
-
-    workbook.SheetNames
-      .forEach(
-        sheetName => {
-
-          const sheet =
-            workbook.Sheets[
-              sheetName
-            ];
-
-          const rows =
-            XLSX.utils.sheet_to_json(
-              sheet,
-              {
-                header:1,
-                raw:false,
-                defval:"",
-                blankrows:true
-              }
-            );
-
-          const header =
-            findHeaderRow(rows);
-
-          if(!header){
-            return;
-          }
-
-          const items =
-            parseSheetRows(
-              rows,
-              header
-            );
-
-          if(
-            !best ||
-            items.length >
-            best.items.length
-          ){
-
-            best = {
-              sheetName,
-              rows,
-              header,
-              items
-            };
-          }
-        }
-      );
-
-    return best;
-  }
-
-  async function handleSupplierFile(
-    event
-  ){
-
-    const file =
-      event.target.files &&
-      event.target.files[0];
-
-    event.target.value = "";
-
-    if(!file){
-      return;
-    }
-
-    if(
-      typeof XLSX ===
-      "undefined"
-    ){
-
-      alert(
-        "Модуль XLS/XLSX не завантажився."
-      );
-
-      return;
-    }
-
-    try{
-
-      const buffer =
-        await file.arrayBuffer();
-
-      const workbook =
-        XLSX.read(
-          buffer,
-          {
-            type:"array",
-            cellDates:false
-          }
-        );
-
-      const parsed =
-        chooseBestSheet(
-          workbook
-        );
-
-      if(
-        !parsed ||
-        !parsed.items.length
-      ){
-
-        alert(
-          "Не вдалося знайти таблицю товарів у цьому рахунку."
-        );
-
-        return;
-      }
-
-      pendingSupplierImport =
-        parsed.items;
-
-      importShowAll = false;
-
-      importEurRate =
-        Number(
-          localStorage.getItem(
-            EUR_RATE_KEY
-          ) || importEurRate || 0
-        );
-
-      if(
-        !Number.isFinite(importEurRate) ||
-        importEurRate < 0
-      ){
-        importEurRate = 0;
-      }
-
-      renderSupplierImport();
-
-      importSheet.classList.add(
-        "open"
-      );
-
-    }catch(error){
-
-      console.error(
-        "Supplier import error:",
-        error
-      );
-
-      alert(
-        "Не вдалося прочитати файл рахунку."
-      );
-    }
-  }
-
-  function closeSupplierImport(){
-
-    importSheet.classList.remove(
-      "open"
-    );
-
-    pendingSupplierImport = [];
-    importShowAll = false;
-  }
-
-  function categoryOptions(
-    selected
-  ){
-
-    const values = [
-      ["","Не визначено"],
-      ["fittings","Арматура"],
-      ["water","Водопостачання"],
-      ["sewer","Каналізація"],
-      ["other","Інше"]
-    ];
-
-    return values
-      .map(
-        ([value,label]) => `
-          <option
-            value="${value}"
-            ${
-              value === selected
-                ? "selected"
-                : ""
-            }
-          >
-            ${label}
-          </option>
-        `
-      )
-      .join("");
-  }
-
-  function getImportStats(){
-
-    const stats = {
-      fittings:0,
-      water:0,
-      sewer:0,
-      other:0,
-      unknown:0
-    };
-
-    pendingSupplierImport
-      .forEach(
-        item => {
-
-          if(
-            item.category &&
-            Object.prototype
-              .hasOwnProperty.call(
-                stats,
-                item.category
-              )
-          ){
-
-            stats[
-              item.category
-            ]++;
-
-          }else{
-
-            stats.unknown++;
-          }
-        }
-      );
-
-    return stats;
-  }
-
-  function getImportBrands(){
-
-    return Array.from(
-      new Set(
-        pendingSupplierImport
-          .map(
-            item =>
-              cleanText(
-                item.manufacturer
-              )
-          )
-          .filter(Boolean)
-      )
-    )
-    .sort(
-      (a,b) =>
-        a.localeCompare(
-          b,
-          "uk"
-        )
-    );
-  }
-
-  function updatePendingItem(
-    index,
-    field,
-    value
-  ){
-
-    const item =
-      pendingSupplierImport[index];
-
-    if(!item){
-      return;
-    }
-
-    item[field] =
-      cleanText(value);
-
-    if(
-      field === "category"
-    ){
-      item.category =
-        value;
-    }
-
-    renderSupplierImport();
-  }
-
-  function applyBulkCategory(){
-
-    const select =
-      document.getElementById(
-        "supplierBulkCategory"
-      );
-
-    if(!select){
-      return;
-    }
-
-    const value =
-      select.value;
-
-    if(!value){
-      return;
-    }
-
-    pendingSupplierImport
-      .forEach(
-        item => {
-
-          if(!item.category){
-            item.category =
-              value;
-          }
-        }
-      );
-
-    renderSupplierImport();
-  }
-
-  function updateImportCurrency(){
-
-    const currencySelect =
-      document.getElementById(
-        "supplierImportCurrency"
-      );
-
-    const rateInput =
-      document.getElementById(
-        "supplierImportEurRate"
-      );
-
-    if(currencySelect){
-
-      importCurrency =
-        currencySelect.value === "EUR"
-          ? "EUR"
-          : "UAH";
-    }
-
-    if(rateInput){
-
-      rateInput.disabled =
-        importCurrency === "EUR";
-    }
-  }
-
-  function updateImportRate(){
-
-    const input =
-      document.getElementById(
-        "supplierImportEurRate"
-      );
-
-    if(!input){
-      return;
-    }
-
-    const value =
-      Number(
-        String(input.value)
-          .replace(",",".")
-      );
-
-    importEurRate =
-      Number.isFinite(value) &&
-      value >= 0
-        ? value
-        : 0;
-  }
-          .catalogManage{
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+
+<title>Калькулятор сантехніка</title>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --bg:#f4f6fa;
+  --card:rgba(255,255,255,.9);
+  --soft:#eef1f5;
+  --line:#e2e5ea;
+  --text:#15171a;
+  --muted:#7b8088;
+  --blue:#007aff;
+  --red:#ff3b30;
+  --shadow:0 8px 25px rgba(30,40,60,.08);
+}
+
+*{box-sizing:border-box}
+
+html,body{
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  touch-action:manipulation;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+}
+
+button,input,select{font:inherit}
+
+button{
+  border:0;
+  background:none;
+  color:inherit;
+  touch-action:manipulation;
+}
+
+.app{
+  width:100%;
+  max-width:560px;
+  height:100dvh;
+  margin:auto;
+  display:flex;
+  flex-direction:column;
+}
+
+.header{
+  flex:0 0 auto;
+  padding:calc(9px + env(safe-area-inset-top)) 14px 7px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.logo{
+  font-size:19px;
+  font-weight:750;
+  letter-spacing:-.4px;
+}
+
+.subtitle{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:1px;
+}
+
+.headerRight{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+
+.date{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.masterButton{
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff;
+  color:var(--blue);
+  box-shadow:0 3px 12px rgba(30,40,60,.06);
+}
+
+.masterButton svg{
+  width:19px;
+  height:19px;
+}
+
+.clientWrap{
+  flex:0 0 auto;
+  padding:0 12px 8px;
+}
+
+.clientTitle{
+  padding:0 3px 5px;
+  font-size:13px;
+  font-weight:750;
+}
+
+.client{
+  background:var(--card);
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:17px;
+  padding:9px;
+  box-shadow:var(--shadow);
+}
+
+.fields{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+
+.field.full{
+  grid-column:1/-1;
+}
+
+.field input{
+  width:100%;
+  height:36px;
+  border:0;
+  outline:0;
+  border-radius:10px;
+  background:var(--soft);
+  padding:0 10px;
+  font-size:13px;
+  color:var(--text);
+}
+
+.field input:focus{
+  background:#fff;
+  box-shadow:inset 0 0 0 1.5px var(--blue);
+}
+
+.estimate{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  padding:0 12px;
+}
+
+.estimateHead{
+  flex:0 0 auto;
+  padding:3px 3px 6px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.estimateHead strong{
+  font-size:14px;
+}
+
+.estimateHeadRight{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.count{
+  color:var(--muted);
+  font-size:11px;
+}
+
+.clearEstimate{
+  display:none;
+  color:var(--red);
+  font-size:11px;
+  font-weight:650;
+}
+
+.list{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding-bottom:8px;
+}
+
+.list::-webkit-scrollbar{
+  display:none;
+}
+
+.empty{
+  padding:45px 20px;
+  text-align:center;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+}
+
+.section{
+  margin-bottom:9px;
+}
+
+.sectionTitle{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:rgba(244,246,250,.94);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  color:var(--muted);
+  font-size:10px;
+  font-weight:750;
+  letter-spacing:.5px;
+  padding:6px 4px 5px;
+}
+
+.row{
+  min-height:66px;
+  background:var(--card);
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:15px;
+  box-shadow:0 3px 13px rgba(30,40,60,.05);
+  padding:9px 9px 8px 11px;
+  margin-bottom:6px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+
+.name{
+  font-size:13px;
+  line-height:1.25;
+  font-weight:650;
+  overflow-wrap:anywhere;
+}
+
+.controls{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-top:6px;
+}
+
+.qty{
+  display:flex;
+  align-items:center;
+  height:28px;
+  border-radius:9px;
+  background:var(--soft);
+  overflow:hidden;
+}
+
+.qty button{
+  width:29px;
+  height:28px;
+  color:var(--blue);
+  font-size:18px;
+  line-height:1;
+}
+
+.qty b{
+  min-width:24px;
+  text-align:center;
+  font-size:12px;
+}
+
+.price{
+  min-height:28px;
+  border-radius:9px;
+  background:var(--soft);
+  color:#555;
+  padding:0 8px;
+  font-size:10px;
+}
+
+.right{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:space-between;
+  align-self:stretch;
+  min-width:82px;
+}
+
+.lineTotal{
+  font-size:13px;
+  font-weight:750;
+  white-space:nowrap;
+}
+
+.delete{
+  width:27px;
+  height:27px;
+  border-radius:50%;
+  background:#fff0ef;
+  color:var(--red);
+  font-size:18px;
+}
+
+.bottom{
+  flex:0 0 auto;
+  padding:7px 12px calc(8px + env(safe-area-inset-bottom));
+}
+
+.totalBar{
+  height:44px;
+  background:#fff;
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 13px;
+  margin-bottom:7px;
+  font-size:13px;
+}
+
+.totalBar strong{
+  font-size:17px;
+}
+
+.actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+
+.action{
+  height:45px;
+  border-radius:14px;
+  background:var(--blue);
+  color:#fff;
+  font-size:14px;
+  font-weight:750;
+  box-shadow:0 5px 14px rgba(0,122,255,.18);
+}
+
+.action:active{
+  transform:scale(.98);
+}
+
+.sheet{
+  position:fixed;
+  inset:0;
+  z-index:30;
+  display:none;
+  align-items:flex-end;
+  background:rgba(0,0,0,.32);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+
+.sheet.open{
+  display:flex;
+}
+
+.panel{
+  width:100%;
+  max-width:560px;
+  height:min(82dvh,720px);
+  margin:auto;
+  background:#f6f7fa;
+  border-radius:22px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+.panelHead{
+  flex:0 0 auto;
+  padding:11px 14px 7px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.panelHead strong{
+  font-size:18px;
+}
+
+.panelHeadRight{
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+
+.catalogEditButton{
+  height:32px;
+  padding:0 9px;
+  border-radius:9px;
+  background:#e9ebef;
+  color:var(--blue);
+  font-size:12px;
+  font-weight:700;
+}
+
+.catalogEditButton.active{
+  background:var(--blue);
+  color:#fff;
+}
+
+.close{
+  width:32px;
+  height:32px;
+  font-size:28px;
+  color:#777;
+}
+
+.search{
+  flex:0 0 auto;
+  width:calc(100% - 24px);
+  margin:0 12px 8px;
+  height:40px;
+  border:0;
+  outline:0;
+  border-radius:12px;
+  background:#e9ebef;
+  padding:0 12px;
+  font-size:14px;
+}
+
+.filters,
+.subFilters{
+  flex:0 0 auto;
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  padding:0 12px 8px;
+}
+
+.filters::-webkit-scrollbar,
+.subFilters::-webkit-scrollbar{
+  display:none;
+}
+
+.filter,
+.subFilter{
+  flex:0 0 auto;
+  height:30px;
+  padding:0 10px;
+  border-radius:9px;
+  background:#e9ebef;
+  color:#555;
+  font-size:11px;
+  font-weight:650;
+}
+
+.filter.active,
+.subFilter.active{
+  background:var(--blue);
+  color:#fff;
+}
+
+.catalog{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding:0 12px 15px;
+}
+
+.catalog::-webkit-scrollbar{
+  display:none;
+}
+
+.catalogItem{
+  min-height:59px;
+  background:#fff;
+  border-radius:14px;
+  padding:9px 9px 9px 11px;
+  margin:6px 0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  box-shadow:0 2px 10px rgba(30,40,60,.04);
+}
+
+.catalogItem.added{
+  box-shadow:inset 0 0 0 1.5px rgba(0,122,255,.25);
+}
+
+.catalogName{
+  font-size:13px;
+  line-height:1.25;
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+
+.catalogMeta{
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.35;
+  margin-top:3px;
+}
+
+.catalogControls{
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.catalogQtyButton{
+  width:29px;
+  height:29px;
+  border-radius:9px;
+  background:#e9ebef;
+  color:var(--blue);
+  font-size:18px;
+}
+
+.catalogQty{
+  min-width:27px;
+  text-align:center;
+  color:var(--blue);
+  font-size:12px;
+  font-weight:750;
+}
+
+.addIcon{
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  background:#e9ebef;
+  color:var(--blue);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:18px;
+  flex:0 0 auto;
+}
+  .catalogManage{
   display:flex;
   gap:5px;
 }
