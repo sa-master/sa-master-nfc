@@ -412,11 +412,11 @@
               let score = 0;
               let articleCol = -1;
               let qtyCol = -1;
-              let priceCol = -1;
-              let pricePriority = -1;
-              let regularPriceCol = -1;
-              let discountPriceCol = -1;
               let nameHeaderCol = -1;
+
+              let genericPriceCol = -1;
+              let explicitRetailPriceCol = -1;
+              let explicitMasterPriceCol = -1;
 
               row.forEach(
                 (cell,col) => {
@@ -456,50 +456,43 @@
                     }
                   }
 
-                  const isDiscountPrice =
-                    /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price/
-                      .test(text) &&
-                    !/без зниж|без скид/
+                  const isExplicitRetailPrice =
+                    /ціна.*без\s*зниж|цена.*без\s*скид|retail.*price|list.*price/
                       .test(text);
 
-                  const isRegularPrice =
-                    /(^|\s)ціна($|\s)|(^|\s)цена($|\s)|price|ціна.*без зниж|цена.*без скид/
+                  const isExplicitMasterPrice =
+                    /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price/
                       .test(text) &&
-                    !isDiscountPrice;
+                    !isExplicitRetailPrice;
 
-                  if(isDiscountPrice && discountPriceCol < 0){
-                    discountPriceCol = col;
-                  }
+                  const isGenericPrice =
+                    /(^|\s)ціна($|\s)|(^|\s)цена($|\s)|^price$/
+                      .test(text) &&
+                    !isExplicitRetailPrice &&
+                    !isExplicitMasterPrice;
 
-                  if(isRegularPrice && regularPriceCol < 0){
-                    regularPriceCol = col;
+                  if(
+                    isExplicitRetailPrice &&
+                    explicitRetailPriceCol < 0
+                  ){
+                    explicitRetailPriceCol = col;
+                    score += 5;
                   }
 
                   if(
-                    isDiscountPrice ||
-                    isRegularPrice
+                    isExplicitMasterPrice &&
+                    explicitMasterPriceCol < 0
                   ){
+                    explicitMasterPriceCol = col;
+                    score += 5;
+                  }
 
-                    const priority =
-                      isDiscountPrice
-                        ? 2
-                        : 1;
-
-                    score +=
-                      isDiscountPrice
-                        ? 5
-                        : 4;
-
-                    if(
-                      priority >
-                      pricePriority
-                    ){
-                      pricePriority =
-                        priority;
-
-                      priceCol =
-                        col;
-                    }
+                  if(
+                    isGenericPrice &&
+                    genericPriceCol < 0
+                  ){
+                    genericPriceCol = col;
+                    score += 4;
                   }
 
                   if(
@@ -517,6 +510,55 @@
                   }
                 }
               );
+
+              let regularPriceCol = -1;
+              let discountPriceCol = -1;
+              let priceCol = -1;
+
+              if(
+                explicitRetailPriceCol >= 0 &&
+                genericPriceCol >= 0
+              ){
+                regularPriceCol =
+                  explicitRetailPriceCol;
+
+                discountPriceCol =
+                  genericPriceCol;
+
+                priceCol =
+                  genericPriceCol;
+
+              }else if(
+                explicitMasterPriceCol >= 0 &&
+                genericPriceCol >= 0
+              ){
+                regularPriceCol =
+                  genericPriceCol;
+
+                discountPriceCol =
+                  explicitMasterPriceCol;
+
+                priceCol =
+                  explicitMasterPriceCol;
+
+              }else if(
+                explicitRetailPriceCol >= 0
+              ){
+                priceCol =
+                  explicitRetailPriceCol;
+
+              }else if(
+                explicitMasterPriceCol >= 0
+              ){
+                priceCol =
+                  explicitMasterPriceCol;
+
+              }else if(
+                genericPriceCol >= 0
+              ){
+                priceCol =
+                  genericPriceCol;
+              }
 
               if(
                 qtyCol >= 0 &&
@@ -578,63 +620,56 @@
           );
 
         let nameCol =
-          header.nameHeaderCol >= 0
-            ? header.nameHeaderCol
-            : startName;
+          startName;
 
-        if(
-          header.nameHeaderCol < 0
+        let bestNameScore =
+          -1;
+
+        for(
+          let col = startName;
+          col <= endName;
+          col++
         ){
 
-          let bestNameScore =
-            -1;
+          let count = 0;
+          let chars = 0;
 
-          for(
-            let col = startName;
-            col <= endName;
-            col++
+          sample.forEach(
+            row => {
+
+              const value =
+                cleanText(
+                  row[col]
+                );
+
+              if(
+                value &&
+                !isUnit(value) &&
+                parseNumber(value) === null &&
+                value.length >= 4
+              ){
+
+                count++;
+                chars +=
+                  value.length;
+              }
+            }
+          );
+
+          const score =
+            count * 100 +
+            chars;
+
+          if(
+            score >
+            bestNameScore
           ){
 
-            let count = 0;
-            let chars = 0;
+            bestNameScore =
+              score;
 
-            sample.forEach(
-              row => {
-
-                const value =
-                  cleanText(
-                    row[col]
-                  );
-
-                if(
-                  value &&
-                  !isUnit(value) &&
-                  parseNumber(value) === null &&
-                  value.length >= 4
-                ){
-
-                  count++;
-                  chars +=
-                    value.length;
-                }
-              }
-            );
-
-            const score =
-              count * 100 +
-              chars;
-
-            if(
-              score >
-              bestNameScore
-            ){
-
-              bestNameScore =
-                score;
-
-              nameCol =
-                col;
-            }
+            nameCol =
+              col;
           }
         }
 
