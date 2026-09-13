@@ -634,6 +634,30 @@
       );
 
     const rules = [
+      [
+        /go[\s-]*plast/,
+        "GO-PLAST"
+      ],
+
+      [
+        /\bviega\b/,
+        "Viega"
+      ],
+
+      [
+        /k[\s-]*flex/,
+        "K-FLEX"
+      ],
+
+      [
+        /\boventrop\b/,
+        "Oventrop"
+      ],
+
+      [
+        /\bvalsir\b/,
+        "Valsir"
+      ],
 
       [
         /geberit/,
