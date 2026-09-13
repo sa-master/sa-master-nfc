@@ -426,7 +426,8 @@ button{
   gap:4px;
 }
 
-.catalogEditButton{
+.catalogEditButton,
+.catalogImportButton{
   height:32px;
   padding:0 9px;
   border-radius:9px;
@@ -442,13 +443,6 @@ button{
 }
 
 .catalogImportButton{
-  height:32px;
-  padding:0 9px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:var(--blue);
-  font-size:12px;
-  font-weight:700;
   display:none;
 }
 
@@ -488,7 +482,7 @@ button{
   display:flex;
   gap:6px;
   overflow-x:auto;
-  padding:0 12px 9px;
+  padding:0 12px 7px;
   white-space:nowrap;
   scrollbar-width:none;
 }
@@ -510,6 +504,36 @@ button{
   color:white;
 }
 
+/* ================= BRAND / SYSTEM FILTERS ================= */
+
+.subFilters{
+  flex:0 0 auto;
+  display:flex;
+  gap:6px;
+  overflow-x:auto;
+  padding:0 12px 9px;
+  white-space:nowrap;
+  scrollbar-width:none;
+}
+
+.subFilters::-webkit-scrollbar{
+  display:none;
+}
+
+.subFilter{
+  padding:6px 10px;
+  border-radius:999px;
+  background:#eef0f4;
+  color:#555;
+  font-size:11px;
+  font-weight:650;
+}
+
+.subFilter.active{
+  background:#dcecff;
+  color:var(--blue);
+}
+
 /* ================= CATALOG ================= */
 
 .catalog{
@@ -526,6 +550,20 @@ button{
   font-size:10px;
   font-weight:800;
   letter-spacing:.5px;
+}
+
+.catalogBrandTitle{
+  padding:9px 3px 4px;
+  color:#555;
+  font-size:11px;
+  font-weight:800;
+}
+
+.catalogSystemTitle{
+  padding:7px 3px 3px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:750;
 }
 
 .catalogItem{
@@ -560,6 +598,7 @@ button{
   margin-top:3px;
   color:var(--muted);
   font-size:11px;
+  line-height:1.3;
 }
 
 .catalogControls{
@@ -777,7 +816,7 @@ button{
   margin-top:4px;
   color:var(--muted);
   font-size:10px;
-  line-height:1.35;
+  line-height:1.4;
 }
 
 .importButtons{
@@ -1015,166 +1054,81 @@ button{
 
 <div class="app">
 
-  <!-- HEADER -->
-  <header class="header">
+<header class="header">
 
-    <div>
-      <div class="logo">
-        Калькулятор сантехніка
-      </div>
+  <div>
+    <div class="logo">Калькулятор сантехніка</div>
+    <div class="subtitle">кошторис</div>
+  </div>
 
-      <div class="subtitle">
-        кошторис
-      </div>
-    </div>
+  <div class="headerRight">
 
-    <div class="headerRight">
+    <div class="date" id="date"></div>
 
-      <div class="date" id="date"></div>
-
-      <button
-        class="masterButton"
-        onclick="openMaster()"
-        aria-label="Дані майстра"
-      >
-        <svg viewBox="0 0 24 24" fill="none">
-          <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="1.8"/>
-          <path
-            d="M3.8 19c.7-3.2 2.4-5 5.2-5s4.5 1.8 5.2 5"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-          <path
-            d="M15 5.5l1.2 1.2m1.7-1.7l1.2 1.2m-2.3 1.9l1.2 1.2"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-          <path
-            d="M16.2 9.2l3.2-3.2"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
-
-    </div>
-
-  </header>
-
-
-  <!-- CLIENT -->
-  <div class="clientWrap">
-
-    <div class="clientTitle">
-      Замовник
-    </div>
-
-    <div class="client">
-
-      <div class="fields">
-
-        <div class="field">
-          <input
-            id="clientName"
-            placeholder="Ім’я та прізвище"
-          >
-        </div>
-
-        <div class="field">
-          <input
-            id="clientPhone"
-            placeholder="Телефон"
-            inputmode="tel"
-          >
-        </div>
-
-        <div class="field full">
-          <input
-            id="clientAddress"
-            placeholder="Адреса об’єкта"
-          >
-        </div>
-
-      </div>
-
-    </div>
+    <button
+      class="masterButton"
+      onclick="openMaster()"
+      aria-label="Дані майстра"
+    >
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="1.8"/>
+        <path
+          d="M3.8 19c.7-3.2 2.4-5 5.2-5s4.5 1.8 5.2 5"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+        <path
+          d="M15 5.5l1.2 1.2m1.7-1.7l1.2 1.2m-2.3 1.9l1.2 1.2"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+        <path
+          d="M16.2 9.2l3.2-3.2"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
 
   </div>
 
+</header>
 
-  <!-- ESTIMATE -->
-  <main class="estimate">
 
-    <div class="estimateHead">
+<div class="clientWrap">
 
-      <strong>
-        Кошторис
-      </strong>
+  <div class="clientTitle">
+    Замовник
+  </div>
 
-      <div class="estimateHeadRight">
+  <div class="client">
 
-        <span
-          class="count"
-          id="count"
+    <div class="fields">
+
+      <div class="field">
+        <input
+          id="clientName"
+          placeholder="Ім’я та прізвище"
         >
-          0 позицій
-        </span>
-
-        <button
-          class="clearEstimate"
-          id="clearEstimate"
-          onclick="clearEstimate()"
-        >
-          Очистити
-        </button>
-
       </div>
 
-    </div>
+      <div class="field">
+        <input
+          id="clientPhone"
+          placeholder="Телефон"
+          inputmode="tel"
+        >
+      </div>
 
-
-    <div
-      class="list"
-      id="list"
-    ></div>
-
-  </main>
-
-
-  <!-- BOTTOM -->
-  <div class="bottom">
-
-    <div class="totalBar">
-
-      <span>
-        Разом
-      </span>
-
-      <strong id="grand">
-        0 грн
-      </strong>
-
-    </div>
-
-
-    <div class="actions">
-
-      <button
-        class="action"
-        onclick="openCatalog('work')"
-      >
-        ＋ Робота
-      </button>
-
-      <button
-        class="action"
-        onclick="openCatalog('material')"
-      >
-        ＋ Матеріал
-      </button>
+      <div class="field full">
+        <input
+          id="clientAddress"
+          placeholder="Адреса об’єкта"
+        >
+      </div>
 
     </div>
 
@@ -1183,7 +1137,72 @@ button{
 </div>
 
 
+<main class="estimate">
+
+  <div class="estimateHead">
+
+    <strong>Кошторис</strong>
+
+    <div class="estimateHeadRight">
+
+      <span class="count" id="count">
+        0 позицій
+      </span>
+
+      <button
+        class="clearEstimate"
+        id="clearEstimate"
+        onclick="clearEstimate()"
+      >
+        Очистити
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="list" id="list"></div>
+
+</main>
+
+
+<div class="bottom">
+
+  <div class="totalBar">
+
+    <span>Разом</span>
+
+    <strong id="grand">
+      0 грн
+    </strong>
+
+  </div>
+
+  <div class="actions">
+
+    <button
+      class="action"
+      onclick="openCatalog('work')"
+    >
+      ＋ Робота
+    </button>
+
+    <button
+      class="action"
+      onclick="openCatalog('material')"
+    >
+      ＋ Матеріал
+    </button>
+
+  </div>
+
+</div>
+
+</div>
+
+
 <!-- CATALOG -->
+
 <div
   class="sheet"
   id="sheet"
@@ -1243,6 +1262,20 @@ button{
 
 
     <div
+      class="subFilters"
+      id="brandFilters"
+      style="display:none"
+    ></div>
+
+
+    <div
+      class="subFilters"
+      id="systemFilters"
+      style="display:none"
+    ></div>
+
+
+    <div
       class="catalog"
       id="catalog"
     ></div>
@@ -1253,6 +1286,7 @@ button{
 
 
 <!-- IMPORT -->
+
 <div
   class="importSheet"
   id="importSheet"
@@ -1327,7 +1361,6 @@ button{
 </div>
 
 
-<!-- HIDDEN FILE INPUT -->
 <input
   type="file"
   id="importFile"
@@ -1337,6 +1370,7 @@ button{
 
 
 <!-- CATALOG EDITOR -->
+
 <div
   class="editorSheet"
   id="editorSheet"
@@ -1363,9 +1397,7 @@ button{
 
     <div class="editorFields">
 
-      <label>
-        Коротка назва
-      </label>
+      <label>Коротка назва</label>
 
       <input
         id="editorName"
@@ -1377,9 +1409,7 @@ button{
       </div>
 
 
-      <label>
-        Повна назва
-      </label>
+      <label>Повна назва</label>
 
       <input
         id="editorEstimateName"
@@ -1391,35 +1421,25 @@ button{
       </div>
 
 
-      <!-- MATERIAL DATA -->
-
       <div id="materialFields" style="display:none">
 
         <div class="editorFields">
 
-          <label>
-            Виробник
-          </label>
+          <label>Виробник</label>
 
           <input
             id="editorManufacturer"
             placeholder="Наприклад: Geberit"
           >
 
-
-          <label>
-            Система / тип
-          </label>
+          <label>Система / тип</label>
 
           <input
             id="editorSystem"
             placeholder="Наприклад: FlowFit"
           >
 
-
-          <label>
-            Артикул
-          </label>
+          <label>Артикул</label>
 
           <input
             id="editorArticle"
@@ -1436,9 +1456,7 @@ button{
       </div>
 
 
-      <label>
-        Ціна
-      </label>
+      <label>Ціна</label>
 
       <input
         id="editorPrice"
@@ -1450,9 +1468,7 @@ button{
       >
 
 
-      <label>
-        Одиниця
-      </label>
+      <label>Одиниця</label>
 
       <input
         id="editorUnit"
@@ -1460,13 +1476,18 @@ button{
       >
 
 
-      <label>
-        Тип
-      </label>
+      <label>Тип</label>
 
       <select id="editorType">
-        <option value="work">Робота</option>
-        <option value="material">Матеріал</option>
+
+        <option value="work">
+          Робота
+        </option>
+
+        <option value="material">
+          Матеріал
+        </option>
+
       </select>
 
 
@@ -1502,6 +1523,7 @@ button{
 
 
 <!-- MASTER -->
+
 <div
   class="masterSheet"
   id="masterSheet"
@@ -1512,9 +1534,7 @@ button{
 
     <div class="masterHead">
 
-      <strong>
-        Дані майстра
-      </strong>
+      <strong>Дані майстра</strong>
 
       <button
         class="close"
@@ -1989,6 +2009,10 @@ catalog =
         item.article = "";
       }
 
+      if(typeof item.category !== "string"){
+        item.category = "other";
+      }
+
     }
 
     return item;
@@ -2012,6 +2036,8 @@ let estimate =
 
 let catalogMode = "work";
 let catalogFilter = "all";
+let catalogBrandFilter = "all";
+let catalogSystemFilter = "all";
 let catalogManageMode = false;
 let editingCatalogId = null;
 
@@ -2031,6 +2057,7 @@ function money(value){
 
 }
 
+
 function save(){
 
   localStorage.setItem(
@@ -2040,12 +2067,35 @@ function save(){
 
 }
 
+
 function saveCatalog(){
 
   localStorage.setItem(
     "plumber_catalog",
     JSON.stringify(catalog)
   );
+
+}
+
+
+function normalizeText(value){
+
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g," ");
+
+}
+
+
+function escapeHtml(value){
+
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 
 }
 
@@ -2194,7 +2244,7 @@ function renderRow(item){
       <div>
 
         <div class="name">
-          ${item.name}
+          ${escapeHtml(item.name)}
         </div>
 
         <div class="controls">
@@ -2226,7 +2276,7 @@ function renderRow(item){
             class="price"
             onclick="editPrice(${index})"
           >
-            ${money(item.price)} / ${item.unit}
+            ${money(item.price)} / ${escapeHtml(item.unit)}
           </button>
 
         </div>
@@ -2375,6 +2425,8 @@ function openCatalog(type){
 
   catalogMode = type;
   catalogFilter = "all";
+  catalogBrandFilter = "all";
+  catalogSystemFilter = "all";
   catalogManageMode = false;
 
   document.getElementById(
@@ -2395,6 +2447,8 @@ function openCatalog(type){
   updateImportButton();
 
   renderFilters();
+  renderBrandFilters();
+  renderSystemFilters();
   renderCatalog();
 
   setTimeout(
@@ -2463,7 +2517,8 @@ function updateImportButton(){
   if(
     catalogManageMode &&
     document.getElementById("sheet")
-      .classList.contains("open")
+      .classList.contains("open") &&
+    catalogMode === "material"
   ){
 
     button.classList.add("show");
@@ -2478,7 +2533,7 @@ function updateImportButton(){
 
 
 /* =========================================================
-   ФІЛЬТРИ
+   ФІЛЬТРИ КАТЕГОРІЙ
 ========================================================= */
 
 function renderFilters(){
@@ -2594,8 +2649,304 @@ function renderFilters(){
 function setFilter(filter){
 
   catalogFilter = filter;
+  catalogBrandFilter = "all";
+  catalogSystemFilter = "all";
 
   renderFilters();
+  renderBrandFilters();
+  renderSystemFilters();
+  renderCatalog();
+
+}
+
+
+/* =========================================================
+   БРЕНДИ
+========================================================= */
+
+function getMaterialItemsForClassification(){
+
+  return catalog.filter(item => {
+
+    if(item.type !== "material"){
+      return false;
+    }
+
+    if(
+      catalogFilter !== "all" &&
+      item.category !== catalogFilter
+    ){
+      return false;
+    }
+
+    return true;
+
+  });
+
+}
+
+
+function getBrands(){
+
+  const values = new Map();
+
+  getMaterialItemsForClassification()
+    .forEach(item => {
+
+      const value =
+        String(item.manufacturer || "")
+          .trim();
+
+      if(value){
+
+        values.set(
+          normalizeText(value),
+          value
+        );
+
+      }
+
+    });
+
+  return Array.from(values.entries())
+    .sort((a,b) =>
+      a[1].localeCompare(
+        b[1],
+        "uk"
+      )
+    )
+    .map(x => x[1]);
+
+}
+
+
+function renderBrandFilters(){
+
+  const box =
+    document.getElementById("brandFilters");
+
+  if(catalogMode !== "material"){
+
+    box.style.display = "none";
+    box.innerHTML = "";
+
+    return;
+
+  }
+
+  const brands =
+    getBrands();
+
+  if(!brands.length){
+
+    catalogBrandFilter = "all";
+    box.style.display = "none";
+    box.innerHTML = "";
+
+    return;
+
+  }
+
+  if(
+    catalogBrandFilter !== "all" &&
+    !brands.some(
+      brand =>
+        normalizeText(brand) ===
+        normalizeText(catalogBrandFilter)
+    )
+  ){
+
+    catalogBrandFilter = "all";
+
+  }
+
+  box.style.display = "flex";
+
+  box.innerHTML = `
+
+    <button
+      class="subFilter ${
+        catalogBrandFilter === "all"
+          ? "active"
+          : ""
+      }"
+      onclick="setBrandFilter('all')"
+    >
+      Усі бренди
+    </button>
+
+    ${
+      brands
+        .map(
+          brand => `
+            <button
+              class="subFilter ${
+                normalizeText(catalogBrandFilter) ===
+                normalizeText(brand)
+                  ? "active"
+                  : ""
+              }"
+              onclick="setBrandFilter(${JSON.stringify(brand)})"
+            >
+              ${escapeHtml(brand)}
+            </button>
+          `
+        )
+        .join("")
+    }
+
+  `;
+
+}
+
+
+function setBrandFilter(brand){
+
+  catalogBrandFilter = brand;
+  catalogSystemFilter = "all";
+
+  renderBrandFilters();
+  renderSystemFilters();
+  renderCatalog();
+
+}
+
+
+/* =========================================================
+   СИСТЕМИ
+========================================================= */
+
+function getSystems(){
+
+  const values = new Map();
+
+  getMaterialItemsForClassification()
+    .filter(item => {
+
+      if(
+        catalogBrandFilter === "all"
+      ){
+        return true;
+      }
+
+      return normalizeText(item.manufacturer) ===
+        normalizeText(catalogBrandFilter);
+
+    })
+    .forEach(item => {
+
+      const value =
+        String(item.system || "")
+          .trim();
+
+      if(value){
+
+        values.set(
+          normalizeText(value),
+          value
+        );
+
+      }
+
+    });
+
+  return Array.from(values.entries())
+    .sort((a,b) =>
+      a[1].localeCompare(
+        b[1],
+        "uk"
+      )
+    )
+    .map(x => x[1]);
+
+}
+
+
+function renderSystemFilters(){
+
+  const box =
+    document.getElementById("systemFilters");
+
+  if(catalogMode !== "material"){
+
+    box.style.display = "none";
+    box.innerHTML = "";
+
+    return;
+
+  }
+
+  const systems =
+    getSystems();
+
+  if(!systems.length){
+
+    catalogSystemFilter = "all";
+    box.style.display = "none";
+    box.innerHTML = "";
+
+    return;
+
+  }
+
+  if(
+    catalogSystemFilter !== "all" &&
+    !systems.some(
+      system =>
+        normalizeText(system) ===
+        normalizeText(catalogSystemFilter)
+    )
+  ){
+
+    catalogSystemFilter = "all";
+
+  }
+
+  box.style.display = "flex";
+
+  box.innerHTML = `
+
+    <button
+      class="subFilter ${
+        catalogSystemFilter === "all"
+          ? "active"
+          : ""
+      }"
+      onclick="setSystemFilter('all')"
+    >
+      Усі системи
+    </button>
+
+    ${
+      systems
+        .map(
+          system => `
+            <button
+              class="subFilter ${
+                normalizeText(catalogSystemFilter) ===
+                normalizeText(system)
+                  ? "active"
+                  : ""
+              }"
+              onclick="setSystemFilter(${JSON.stringify(system)})"
+            >
+              ${escapeHtml(system)}
+            </button>
+          `
+        )
+        .join("")
+    }
+
+  `;
+
+}
+
+
+function setSystemFilter(system){
+
+  catalogSystemFilter = system;
+
+  renderSystemFilters();
   renderCatalog();
 
 }
@@ -2624,28 +2975,23 @@ function renderCatalog(){
       if(
         query &&
         !(
-          item.name
-            .toLowerCase()
+          normalizeText(item.name)
             .includes(query) ||
-          item.estimateName
-            .toLowerCase()
+          normalizeText(item.estimateName)
             .includes(query) ||
           (
             item.article &&
-            item.article
-              .toLowerCase()
+            normalizeText(item.article)
               .includes(query)
           ) ||
           (
             item.manufacturer &&
-            item.manufacturer
-              .toLowerCase()
+            normalizeText(item.manufacturer)
               .includes(query)
           ) ||
           (
             item.system &&
-            item.system
-              .toLowerCase()
+            normalizeText(item.system)
               .includes(query)
           )
         )
@@ -2653,14 +2999,40 @@ function renderCatalog(){
         return false;
       }
 
-      if(catalogFilter === "all"){
-        return true;
+      if(catalogFilter !== "all"){
+
+        if(
+          item.stage !== catalogFilter &&
+          item.category !== catalogFilter
+        ){
+          return false;
+        }
+
       }
 
-      return (
-        item.stage === catalogFilter ||
-        item.category === catalogFilter
-      );
+      if(
+        catalogMode === "material" &&
+        catalogBrandFilter !== "all" &&
+        normalizeText(item.manufacturer) !==
+        normalizeText(catalogBrandFilter)
+      ){
+
+        return false;
+
+      }
+
+      if(
+        catalogMode === "material" &&
+        catalogSystemFilter !== "all" &&
+        normalizeText(item.system) !==
+        normalizeText(catalogSystemFilter)
+      ){
+
+        return false;
+
+      }
+
+      return true;
 
     });
 
@@ -2697,198 +3069,192 @@ function renderCatalog(){
 
   }
 
-  let groups = {};
 
-  items.forEach(item => {
+  /* -------------------------------------------------------
+     РОБОТИ
+  ------------------------------------------------------- */
 
-    let group;
+  if(catalogMode === "work"){
 
-    if(item.type === "work"){
+    let groups = {};
 
-      group =
+    items.forEach(item => {
+
+      const group =
         item.stage === "rough"
           ? "Чорнові"
           : "Чистові";
 
-    }else{
-
-      if(item.category === "water"){
-        group = "Водопостачання";
+      if(!groups[group]){
+        groups[group] = [];
       }
 
-      else if(item.category === "sewer"){
-        group = "Каналізація";
-      }
+      groups[group].push(item);
 
-      else if(item.category === "fittings"){
-        group = "Арматура";
-      }
+    });
 
-      else{
-        group = "Інше";
-      }
+    box.innerHTML =
+      Object.entries(groups)
+        .map(
+          ([group,groupItems]) => `
 
-    }
+            <div class="catalogTitle">
+              ${group}
+            </div>
 
-    if(!groups[group]){
-      groups[group] = [];
-    }
+            ${groupItems
+              .map(renderCatalogItem)
+              .join("")}
 
-    groups[group].push(item);
+          `
+        )
+        .join("");
 
-  });
+  }
 
-  box.innerHTML =
-    Object.entries(groups)
-      .map(
-        ([group,items]) => `
 
+  /* -------------------------------------------------------
+     МАТЕРІАЛИ
+  ------------------------------------------------------- */
+
+  else{
+
+    const categories = [
+      ["water","Водопостачання"],
+      ["sewer","Каналізація"],
+      ["fittings","Арматура"],
+      ["other","Інше"]
+    ];
+
+    let html = "";
+
+    categories.forEach(
+      ([categoryKey,categoryName]) => {
+
+        const categoryItems =
+          items.filter(
+            item =>
+              item.category === categoryKey
+          );
+
+        if(!categoryItems.length){
+          return;
+        }
+
+        html += `
           <div class="catalogTitle">
-            ${group}
+            ${categoryName}
           </div>
+        `;
 
-          ${items
-            .map(
-              item => {
+        const brandGroups = {};
 
-                const existing =
-                  estimate.find(
-                    x => x.id === item.id
-                  );
+        categoryItems.forEach(item => {
 
-                const qty =
-                  existing
-                    ? existing.qty
-                    : 0;
+          const brand =
+            String(item.manufacturer || "")
+              .trim() ||
+            "Без бренду";
 
-                return `
+          const brandKey =
+            normalizeText(brand);
 
-                  <div
-                    class="catalogItem ${
-                      qty > 0 ? "added" : ""
-                    }"
-                  >
+          if(!brandGroups[brandKey]){
+            brandGroups[brandKey] = {
+              name:brand,
+              items:[]
+            };
+          }
 
-                    <div
-                      onclick="${
-                        catalogManageMode
-                          ? ""
-                          : `addItem('${item.id}')`
-                      }"
-                      style="flex:1;min-width:0"
-                    >
+          brandGroups[brandKey]
+            .items
+            .push(item);
 
-                      <div class="catalogName">
-                        ${item.name}
-                      </div>
+        });
 
-                      <div class="catalogMeta">
 
-                        ${
-                          item.price
-                            ? money(item.price)
-                            : "ціна не задана"
-                        }
+        Object.values(brandGroups)
+          .sort((a,b) =>
+            a.name.localeCompare(
+              b.name,
+              "uk"
+            )
+          )
+          .forEach(
+            brandGroup => {
 
-                        ·
-                        ${item.unit}
+              html += `
+                <div class="catalogBrandTitle">
+                  ${escapeHtml(brandGroup.name)}
+                </div>
+              `;
 
-                        ${
-                          item.type === "material" &&
-                          item.manufacturer
-                            ? ` · ${item.manufacturer}`
-                            : ""
-                        }
+              const systemGroups = {};
 
-                        ${
-                          item.type === "material" &&
-                          item.system
-                            ? ` · ${item.system}`
-                            : ""
-                        }
+              brandGroup.items.forEach(item => {
 
-                      </div>
+                const system =
+                  String(item.system || "")
+                    .trim() ||
+                  "Без системи";
 
-                    </div>
+                const key =
+                  normalizeText(system);
 
-                    ${
-                      catalogManageMode
+                if(!systemGroups[key]){
+                  systemGroups[key] = {
+                    name:system,
+                    items:[]
+                  };
+                }
 
-                      ? `
+                systemGroups[key]
+                  .items
+                  .push(item);
 
-                        <div class="catalogManage">
+              });
 
-                          <button
-                            class="manageEdit"
-                            onclick="openCatalogEditor('${item.id}')"
-                            aria-label="Редагувати"
-                          >
-                            ✎
-                          </button>
 
-                          <button
-                            class="manageDelete"
-                            onclick="deleteCatalogItem('${item.id}')"
-                            aria-label="Видалити"
-                          >
-                            ×
-                          </button>
+              Object.values(systemGroups)
+                .sort((a,b) =>
+                  a.name.localeCompare(
+                    b.name,
+                    "uk"
+                  )
+                )
+                .forEach(
+                  systemGroup => {
 
+                    if(
+                      systemGroup.name !==
+                      "Без системи"
+                    ){
+
+                      html += `
+                        <div class="catalogSystemTitle">
+                          ${escapeHtml(systemGroup.name)}
                         </div>
+                      `;
 
-                      `
-
-                      : qty > 0
-
-                      ? `
-
-                        <div class="catalogControls">
-
-                          <button
-                            class="catalogQtyButton"
-                            onclick="catalogChangeQty('${item.id}',-1)"
-                          >
-                            −
-                          </button>
-
-                          <button
-                            class="catalogQty"
-                            onclick="editCatalogQty('${item.id}')"
-                          >
-                            ×${qty}
-                          </button>
-
-                          <button
-                            class="catalogQtyButton"
-                            onclick="catalogChangeQty('${item.id}',1)"
-                          >
-                            +
-                          </button>
-
-                        </div>
-
-                      `
-
-                      : `
-
-                        <span class="addIcon">
-                          ＋
-                        </span>
-
-                      `
                     }
 
-                  </div>
+                    html += systemGroup.items
+                      .map(renderCatalogItem)
+                      .join("");
 
-                `;
+                  }
+                );
 
-              }
-            )
-            .join("")}
+            }
+          );
 
-        `
-      )
-      .join("");
+      }
+    );
+
+    box.innerHTML = html;
+
+  }
+
 
   if(catalogManageMode){
 
@@ -2902,6 +3268,135 @@ function renderCatalog(){
     `;
 
   }
+
+}
+
+
+function renderCatalogItem(item){
+
+  const existing =
+    estimate.find(
+      x => x.id === item.id
+    );
+
+  const qty =
+    existing
+      ? existing.qty
+      : 0;
+
+  return `
+
+    <div
+      class="catalogItem ${
+        qty > 0 ? "added" : ""
+      }"
+    >
+
+      <div
+        onclick="${
+          catalogManageMode
+            ? ""
+            : `addItem(${JSON.stringify(item.id)})`
+        }"
+        style="flex:1;min-width:0"
+      >
+
+        <div class="catalogName">
+          ${escapeHtml(item.name)}
+        </div>
+
+        <div class="catalogMeta">
+
+          ${
+            item.price
+              ? money(item.price)
+              : "ціна не задана"
+          }
+
+          ·
+          ${escapeHtml(item.unit)}
+
+          ${
+            item.type === "material" &&
+            item.article
+              ? ` · ${escapeHtml(item.article)}`
+              : ""
+          }
+
+        </div>
+
+      </div>
+
+      ${
+        catalogManageMode
+
+        ? `
+
+          <div class="catalogManage">
+
+            <button
+              class="manageEdit"
+              onclick="openCatalogEditor(${JSON.stringify(item.id)})"
+              aria-label="Редагувати"
+            >
+              ✎
+            </button>
+
+            <button
+              class="manageDelete"
+              onclick="deleteCatalogItem(${JSON.stringify(item.id)})"
+              aria-label="Видалити"
+            >
+              ×
+            </button>
+
+          </div>
+
+        `
+
+        : qty > 0
+
+        ? `
+
+          <div class="catalogControls">
+
+            <button
+              class="catalogQtyButton"
+              onclick="catalogChangeQty(${JSON.stringify(item.id)},-1)"
+            >
+              −
+            </button>
+
+            <button
+              class="catalogQty"
+              onclick="editCatalogQty(${JSON.stringify(item.id)})"
+            >
+              ×${qty}
+            </button>
+
+            <button
+              class="catalogQtyButton"
+              onclick="catalogChangeQty(${JSON.stringify(item.id)},1)"
+            >
+              +
+            </button>
+
+          </div>
+
+        `
+
+        : `
+
+          <span class="addIcon">
+            ＋
+          </span>
+
+        `
+      }
+
+    </div>
+
+  `;
 
 }
 
@@ -3413,10 +3908,8 @@ function saveCatalogItem(){
       catalog.find(
         item =>
           item.type === "material" &&
-          String(item.article || "")
-            .trim()
-            .toLowerCase() ===
-          article.toLowerCase() &&
+          normalizeText(item.article) ===
+          normalizeText(article) &&
           item.id !== editingCatalogId
       );
 
@@ -3524,6 +4017,8 @@ function saveCatalogItem(){
   closeCatalogEditor();
 
   renderFilters();
+  renderBrandFilters();
+  renderSystemFilters();
   renderCatalog();
 
 }
@@ -3559,6 +4054,10 @@ function deleteCatalogItem(id){
     );
 
   saveCatalog();
+
+  renderFilters();
+  renderBrandFilters();
+  renderSystemFilters();
   renderCatalog();
 
 }
@@ -3571,8 +4070,15 @@ function deleteCatalogItem(id){
 function openImport(){
 
   if(
-    !window.XLSX
+    catalogMode !== "material" ||
+    !catalogManageMode
   ){
+
+    return;
+
+  }
+
+  if(!window.XLSX){
 
     alert(
       "Модуль імпорту XLS/XLSX не завантажився."
@@ -3603,6 +4109,19 @@ function normalizeHeader(value){
     .trim()
     .toLowerCase()
     .replace(/\s+/g," ");
+
+}
+
+
+function findExactColumn(headers,text){
+
+  const target =
+    normalizeHeader(text);
+
+  return headers.findIndex(
+    header =>
+      normalizeHeader(header) === target
+  );
 
 }
 
@@ -3694,6 +4213,38 @@ function normalizeArticle(value){
 }
 
 
+function normalizeUnit(value){
+
+  const unit =
+    String(value || "")
+      .trim()
+      .toLowerCase();
+
+  if(
+    unit === "шт." ||
+    unit === "шт"
+  ){
+    return "шт";
+  }
+
+  if(unit === "м."){
+
+    return "м";
+
+  }
+
+  if(unit === "комплект"){
+
+    return "компл.";
+
+  }
+
+  return String(value || "")
+    .trim();
+
+}
+
+
 function getImportCategory(){
 
   if(
@@ -3711,19 +4262,482 @@ function getImportCategory(){
 }
 
 
-function makeImportId(){
+/* =========================================================
+   ВИЗНАЧЕННЯ КАТЕГОРІЇ З КОНТЕКСТУ НАКЛАДНОЇ
+========================================================= */
 
-  return (
-    "import-" +
-    Date.now() +
-    "-" +
-    Math.random()
-      .toString(36)
-      .slice(2,9)
+function detectCategoryFromText(text,current){
+
+  const value =
+    normalizeText(text);
+
+  if(!value){
+    return current || "other";
+  }
+
+  if(
+    value.includes("канализа") ||
+    value.includes("каналіза") ||
+    value.includes("сифон") ||
+    value.includes("htsafe") ||
+    value.includes("skolan") ||
+    value.includes("ostendorf")
+  ){
+
+    return "sewer";
+
+  }
+
+  if(
+    value.includes("запор") ||
+    value.includes("запір") ||
+    value.includes("арматур") ||
+    value.includes("кран") ||
+    value.includes("редуктор") ||
+    value.includes("фільтр") ||
+    value.includes("фильтр") ||
+    value.includes("різьб") ||
+    value.includes("резьб") ||
+    value.includes("bonomi") ||
+    value.includes("tiemme") ||
+    value.includes("pattaroni")
+  ){
+
+    return "fittings";
+
+  }
+
+  if(
+    value.includes("водопостач") ||
+    value.includes("водоснабж") ||
+    value.includes("трубопровод") ||
+    value.includes("tece") ||
+    value.includes("teceflex") ||
+    value.includes("flowfit") ||
+    value.includes("tecefloor")
+  ){
+
+    return "water";
+
+  }
+
+  if(
+    value.includes("комплектуюч") ||
+    value.includes("комплектующ") ||
+    value.includes("кріплення") ||
+    value.includes("крепление") ||
+    value.includes("ізоляц") ||
+    value.includes("изоляц")
+  ){
+
+    return "other";
+
+  }
+
+  return current || "other";
+
+}
+
+
+/* =========================================================
+   ВИЗНАЧЕННЯ БРЕНДУ / СИСТЕМИ
+========================================================= */
+
+function getKnownManufacturers(){
+
+  const values = new Map();
+
+  catalog
+    .filter(
+      item =>
+        item.type === "material"
+    )
+    .forEach(item => {
+
+      const manufacturer =
+        String(item.manufacturer || "")
+          .trim();
+
+      if(manufacturer){
+
+        values.set(
+          normalizeText(manufacturer),
+          manufacturer
+        );
+
+      }
+
+    });
+
+  return Array.from(values.values())
+    .sort(
+      (a,b) =>
+        b.length - a.length
+    );
+
+}
+
+
+function getKnownSystems(){
+
+  const values = new Map();
+
+  catalog
+    .filter(
+      item =>
+        item.type === "material"
+    )
+    .forEach(item => {
+
+      const system =
+        String(item.system || "")
+          .trim();
+
+      if(system){
+
+        values.set(
+          normalizeText(system),
+          system
+        );
+
+      }
+
+    });
+
+  return Array.from(values.values())
+    .sort(
+      (a,b) =>
+        b.length - a.length
+    );
+
+}
+
+
+function findTextMatch(text,list){
+
+  const normalized =
+    normalizeText(text);
+
+  for(const value of list){
+
+    if(
+      normalized.includes(
+        normalizeText(value)
+      )
+    ){
+
+      return value;
+
+    }
+
+  }
+
+  return "";
+
+}
+
+
+function classifyImportProduct(
+  fullName,
+  contextManufacturer,
+  contextSystem
+){
+
+  let manufacturer =
+    String(
+      contextManufacturer || ""
+    ).trim();
+
+  let system =
+    String(
+      contextSystem || ""
+    ).trim();
+
+
+  /* Спочатку шукаємо систему в повній назві */
+
+  const knownSystems =
+    getKnownSystems();
+
+  const systemFromName =
+    findTextMatch(
+      fullName,
+      knownSystems
+    );
+
+  if(systemFromName){
+    system = systemFromName;
+  }
+
+
+  /* Потім бренд у повній назві */
+
+  const knownManufacturers =
+    getKnownManufacturers();
+
+  const manufacturerFromName =
+    findTextMatch(
+      fullName,
+      knownManufacturers
+    );
+
+  if(manufacturerFromName){
+    manufacturer = manufacturerFromName;
+  }
+
+
+  return {
+    manufacturer,
+    system
+  };
+
+}
+
+
+/* =========================================================
+   РОЗПІЗНАВАННЯ КОНТЕКСТНИХ РЯДКІВ
+========================================================= */
+
+function looksLikeContextText(text){
+
+  const value =
+    normalizeText(text);
+
+  if(!value){
+    return false;
+  }
+
+  if(
+    value.length > 70
+  ){
+    return false;
+  }
+
+  if(
+    value.match(
+      /^\d+[\.\)]/
+    )
+  ){
+
+    return true;
+
+  }
+
+  const knownBrands = [
+    "ostendorf",
+    "tece",
+    "geвerit",
+    "geberit",
+    "skolan",
+    "pattaroni",
+    "bonomi",
+    "tiemme",
+    "sanflex",
+    "meibes"
+  ];
+
+  if(
+    knownBrands.some(
+      brand =>
+        value.includes(brand)
+    )
+  ){
+
+    return true;
+
+  }
+
+  const contextWords = [
+    "канализа",
+    "каналіза",
+    "водопостач",
+    "трубопровод",
+    "запірна арматура",
+    "запорная арматура",
+    "фільтри",
+    "фильтры",
+    "різьба",
+    "резьба",
+    "комплектуюч",
+    "комплектующ",
+    "кріплення",
+    "крепление",
+    "сифони",
+    "труби",
+    "трубы"
+  ];
+
+  return contextWords.some(
+    word =>
+      value.includes(word)
   );
 
 }
 
+
+function contextFromRow(
+  row,
+  articleCol,
+  productCol,
+  quantityCol,
+  basePriceCol
+){
+
+  const values =
+    row
+      .map(
+        value =>
+          String(value ?? "")
+            .trim()
+      )
+      .filter(Boolean);
+
+  if(!values.length){
+    return "";
+  }
+
+
+  const product =
+    productCol >= 0
+      ? String(
+          row[productCol] ?? ""
+        ).trim()
+      : "";
+
+
+  if(product){
+    return product;
+  }
+
+
+  /* Якщо колонка Товар порожня,
+     шукаємо текстовий осередок */
+
+  for(const value of values){
+
+    if(
+      value.length > 1 &&
+      !Number.isFinite(
+        parseImportNumber(value)
+      )
+    ){
+
+      return value;
+
+    }
+
+  }
+
+  return "";
+
+}
+
+
+function looksLikeUnit(value){
+
+  const unit =
+    normalizeUnit(value);
+
+  return [
+    "шт",
+    "м",
+    "компл.",
+    "компл",
+    "кг",
+    "л",
+    "пара",
+    "уп",
+    "рул"
+  ].includes(unit);
+
+}
+
+
+function findUnitInRow(
+  row,
+  quantityCol,
+  basePriceCol
+){
+
+  if(quantityCol < 0){
+    return "";
+  }
+
+  /* У твоїй накладній одиниця
+     стоїть одразу після кількості */
+
+  const afterQuantity =
+    row[quantityCol + 1];
+
+  if(
+    looksLikeUnit(afterQuantity)
+  ){
+
+    return normalizeUnit(
+      afterQuantity
+    );
+
+  }
+
+
+  /* Резервний пошук між кількістю
+     та ціною без знижки */
+
+  if(
+    basePriceCol > quantityCol
+  ){
+
+    for(
+      let i = quantityCol + 1;
+      i < basePriceCol;
+      i++
+    ){
+
+      if(
+        looksLikeUnit(row[i])
+      ){
+
+        return normalizeUnit(
+          row[i]
+        );
+
+      }
+
+    }
+
+  }
+
+  return "";
+
+}
+
+
+function findBasePriceColumn(headers){
+
+  const exact =
+    findExactColumn(
+      headers,
+      "ціна без знижки"
+    );
+
+  if(exact !== -1){
+    return exact;
+  }
+
+  return findColumn(
+    headers,
+    [
+      "ціна без знижки",
+      "цена без скидки"
+    ]
+  );
+
+}
+
+
+/* =========================================================
+   ІМПОРТ ФАЙЛУ
+========================================================= */
 
 async function handleImportFile(event){
 
@@ -3801,12 +4815,17 @@ async function handleImportFile(event){
 
     }
 
+
+    /* -----------------------------------------------------
+       ПОШУК ЗАГОЛОВКІВ
+    ----------------------------------------------------- */
+
     let headerIndex = -1;
     let headers = [];
 
     for(
       let i = 0;
-      i < Math.min(rows.length,20);
+      i < Math.min(rows.length,30);
       i++
     ){
 
@@ -3827,16 +4846,13 @@ async function handleImportFile(event){
           ["товар"]
         );
 
-      const priceCol =
-        findColumn(
-          row,
-          ["ціна"]
-        );
+      const basePriceCol =
+        findBasePriceColumn(row);
 
       if(
         articleCol !== -1 &&
         productCol !== -1 &&
-        priceCol !== -1
+        basePriceCol !== -1
       ){
 
         headerIndex = i;
@@ -3848,15 +4864,17 @@ async function handleImportFile(event){
 
     }
 
+
     if(headerIndex === -1){
 
       alert(
-        "Не знайдено потрібні колонки.\n\nПотрібні щонайменше:\nАртикул\nТовар\nЦіна"
+        "Не знайдено потрібні колонки.\n\nПотрібні:\nАртикул\nТовар\nЦіна без знижки"
       );
 
       return;
 
     }
+
 
     const articleCol =
       findColumn(
@@ -3870,22 +4888,36 @@ async function handleImportFile(event){
         ["товар"]
       );
 
-    const priceCol =
-      findColumn(
-        headers,
-        ["ціна"]
-      );
+    const basePriceCol =
+      findBasePriceColumn(headers);
 
     const quantityCol =
       findColumn(
         headers,
-        ["кількість"]
+        ["кількість","количество"]
       );
+
+
+    /* -----------------------------------------------------
+       КОНТЕКСТ НАКЛАДНОЇ
+    ----------------------------------------------------- */
+
+    let currentCategory =
+      getImportCategory();
+
+    let currentManufacturer = "";
+    let currentSystem = "";
+
 
     pendingImport = [];
 
     const seen =
       new Set();
+
+
+    /* -----------------------------------------------------
+       РОЗБІР РЯДКІВ
+    ----------------------------------------------------- */
 
     for(
       let i = headerIndex + 1;
@@ -3893,40 +4925,248 @@ async function handleImportFile(event){
       i++
     ){
 
-      const row = rows[i];
+      const row =
+        rows[i];
+
 
       const article =
         String(
           row[articleCol] ?? ""
         ).trim();
 
+
       const productName =
         String(
           row[productCol] ?? ""
         ).trim();
 
-      const price =
-        parseImportNumber(
-          row[priceCol]
-        );
 
-      if(
-        !article ||
-        !productName ||
-        !Number.isFinite(price) ||
-        price < 0
-      ){
+      /* ---------------------------------------------------
+         РЯДОК БЕЗ АРТИКУЛУ —
+         МОЖЕ БУТИ КОНТЕКСТОМ
+      --------------------------------------------------- */
+
+      if(!article){
+
+        const contextText =
+          contextFromRow(
+            row,
+            articleCol,
+            productCol,
+            quantityCol,
+            basePriceCol
+          );
+
+
+        if(
+          contextText &&
+          looksLikeContextText(
+            contextText
+          )
+        ){
+
+          currentCategory =
+            detectCategoryFromText(
+              contextText,
+              currentCategory
+            );
+
+
+          const knownManufacturers =
+            getKnownManufacturers();
+
+          const knownSystems =
+            getKnownSystems();
+
+
+          const manufacturerMatch =
+            findTextMatch(
+              contextText,
+              knownManufacturers
+            );
+
+          if(manufacturerMatch){
+
+            currentManufacturer =
+              manufacturerMatch;
+
+          }
+
+
+          const systemMatch =
+            findTextMatch(
+              contextText,
+              knownSystems
+            );
+
+          if(systemMatch){
+
+            currentSystem =
+              systemMatch;
+
+          }
+
+
+          /* Деякі системи/бренди можуть бути
+             у накладній без попереднього запису
+             в каталозі. Визначаємо очевидні. */
+
+          const contextLower =
+            normalizeText(
+              contextText
+            );
+
+
+          const explicitBrands = [
+            "ostendorf",
+            "tece",
+            "geberit",
+            "skolan",
+            "pattaroni",
+            "bonomi",
+            "tiemme",
+            "sanflex",
+            "meibes"
+          ];
+
+
+          const brand =
+            explicitBrands.find(
+              x =>
+                contextLower.includes(x)
+            );
+
+
+          if(brand){
+
+            const display =
+              brand === "tece"
+                ? "TECE"
+                : brand === "geberit"
+                  ? "Geberit"
+                  : brand === "ostendorf"
+                    ? "Ostendorf"
+                    : brand === "skolan"
+                      ? "Skolan"
+                      : brand === "pattaroni"
+                        ? "PATTARONI"
+                        : brand === "bonomi"
+                          ? "Bonomi"
+                          : brand === "tiemme"
+                            ? "Tiemme"
+                            : brand === "sanflex"
+                              ? "Sanflex"
+                              : "Meibes";
+
+            currentManufacturer =
+              display;
+
+          }
+
+
+          const explicitSystems = [
+            "htsafe",
+            "teceflex",
+            "tecefloor",
+            "flowfit"
+          ];
+
+
+          const system =
+            explicitSystems.find(
+              x =>
+                contextLower.includes(x)
+            );
+
+
+          if(system){
+
+            const display =
+              system === "htsafe"
+                ? "HTsafe"
+                : system === "teceflex"
+                  ? "TECEflex"
+                  : system === "tecefloor"
+                    ? "TECEfloor"
+                    : "FlowFit";
+
+            currentSystem =
+              display;
+
+          }
+
+        }
+
+        continue;
+
+      }
+
+
+      /* ---------------------------------------------------
+         ТОВАРНИЙ РЯДОК
+      --------------------------------------------------- */
+
+      if(!productName){
         continue;
       }
 
+
+      const price =
+        parseImportNumber(
+          row[basePriceCol]
+        );
+
+
+      if(
+        !Number.isFinite(price) ||
+        price < 0
+      ){
+
+        continue;
+
+      }
+
+
       const articleKey =
         normalizeArticle(article);
+
+
+      if(!articleKey){
+        continue;
+      }
+
+
+      /* Дублікати всередині одного файлу */
 
       if(seen.has(articleKey)){
         continue;
       }
 
       seen.add(articleKey);
+
+
+      const unit =
+        findUnitInRow(
+          row,
+          quantityCol,
+          basePriceCol
+        ) || "шт";
+
+
+      const classification =
+        classifyImportProduct(
+          productName,
+          currentManufacturer,
+          currentSystem
+        );
+
+
+      const category =
+        detectCategoryFromText(
+          productName,
+          currentCategory
+        );
+
 
       const existing =
         catalog.find(
@@ -3935,6 +5175,7 @@ async function handleImportFile(event){
             normalizeArticle(item.article) ===
             articleKey
         );
+
 
       if(existing){
 
@@ -3952,11 +5193,28 @@ async function handleImportFile(event){
             name:
               existing.name,
 
+            importedName:
+              productName,
+
             oldPrice:
               Number(existing.price),
 
             newPrice:
               Number(price),
+
+            unit:
+              normalizeUnit(
+                existing.unit || unit
+              ),
+
+            manufacturer:
+              existing.manufacturer || "",
+
+            system:
+              existing.system || "",
+
+            category:
+              existing.category || category,
 
             existingId:
               existing.id
@@ -3983,6 +5241,25 @@ async function handleImportFile(event){
             newPrice:
               Number(price),
 
+            unit:
+              normalizeUnit(
+                existing.unit || unit
+              ),
+
+            manufacturer:
+              existing.manufacturer ||
+              classification.manufacturer ||
+              "",
+
+            system:
+              existing.system ||
+              classification.system ||
+              "",
+
+            category:
+              existing.category ||
+              category,
+
             existingId:
               existing.id
 
@@ -4004,12 +5281,21 @@ async function handleImportFile(event){
 
           newPrice:Number(price),
 
-          unit:"шт",
+          unit:
+            normalizeUnit(unit) ||
+            "шт",
 
-          manufacturer:"",
-          system:"",
+          manufacturer:
+            classification.manufacturer ||
+            "",
 
-          category:getImportCategory()
+          system:
+            classification.system ||
+            "",
+
+          category:
+            category ||
+            "other"
 
         });
 
@@ -4017,15 +5303,17 @@ async function handleImportFile(event){
 
     }
 
+
     if(!pendingImport.length){
 
       alert(
-        "У файлі не знайдено нових або актуальних позицій."
+        "У файлі не знайдено товарних позицій."
       );
 
       return;
 
     }
+
 
     renderImportPreview();
 
@@ -4046,6 +5334,10 @@ async function handleImportFile(event){
 }
 
 
+/* =========================================================
+   ПЕРЕГЛЯД ІМПОРТУ
+========================================================= */
+
 function renderImportPreview(){
 
   const newItems =
@@ -4063,6 +5355,7 @@ function renderImportPreview(){
       x => x.status === "same"
     );
 
+
   document.getElementById(
     "importNewCount"
   ).textContent =
@@ -4078,10 +5371,12 @@ function renderImportPreview(){
   ).textContent =
     sameItems.length;
 
+
   const list =
     document.getElementById(
       "importList"
     );
+
 
   list.innerHTML =
     pendingImport
@@ -4107,17 +5402,13 @@ function renderImportPreview(){
 
         }
 
+
         let priceText = "";
 
         if(item.status === "changed"){
 
           priceText =
             `${money(item.oldPrice)} → ${money(item.newPrice)}`;
-
-        }else if(item.status === "new"){
-
-          priceText =
-            `Ціна: ${money(item.newPrice)}`;
 
         }else{
 
@@ -4126,6 +5417,15 @@ function renderImportPreview(){
 
         }
 
+
+        const classification = [
+          item.manufacturer || "без бренду",
+          item.system || "без системи",
+          item.category || "other"
+        ]
+          .join(" · ");
+
+
         return `
 
           <div class="importRow">
@@ -4133,7 +5433,10 @@ function renderImportPreview(){
             <div class="importRowTop">
 
               <div class="importRowName">
-                ${item.name}
+                ${escapeHtml(
+                  item.importedName ||
+                  item.name
+                )}
               </div>
 
               <div class="importStatus ${statusClass}">
@@ -4143,9 +5446,22 @@ function renderImportPreview(){
             </div>
 
             <div class="importRowMeta">
-              Артикул: ${item.article}
+
+              Артикул:
+              ${escapeHtml(item.article)}
+
               ·
+
+              ${escapeHtml(item.unit || "шт")}
+
+              ·
+
               ${priceText}
+
+              <br>
+
+              ${escapeHtml(classification)}
+
             </div>
 
           </div>
@@ -4155,6 +5471,7 @@ function renderImportPreview(){
       })
       .join("");
 
+
   document.getElementById(
     "importApply"
   ).disabled =
@@ -4163,6 +5480,10 @@ function renderImportPreview(){
 
 }
 
+
+/* =========================================================
+   ЗАКРИТТЯ ІМПОРТУ
+========================================================= */
 
 function closeImport(){
 
@@ -4175,6 +5496,10 @@ function closeImport(){
 }
 
 
+/* =========================================================
+   ЗАСТОСУВАННЯ ІМПОРТУ
+========================================================= */
+
 function applyImport(){
 
   const newItems =
@@ -4186,6 +5511,7 @@ function applyImport(){
     pendingImport.filter(
       x => x.status === "changed"
     );
+
 
   if(
     !newItems.length &&
@@ -4213,19 +5539,25 @@ function applyImport(){
 
       type:"material",
 
-      category:item.category || "other",
+      category:
+        item.category ||
+        "other",
 
       manufacturer:
-        item.manufacturer || "",
+        item.manufacturer ||
+        "",
 
       system:
-        item.system || "",
+        item.system ||
+        "",
 
       article:item.article,
 
       price:item.newPrice,
 
-      unit:item.unit || "шт"
+      unit:
+        item.unit ||
+        "шт"
 
     });
 
@@ -4256,7 +5588,27 @@ function applyImport(){
   closeImport();
 
   renderFilters();
+  renderBrandFilters();
+  renderSystemFilters();
   renderCatalog();
+
+}
+
+
+/* =========================================================
+   ID ІМПОРТУ
+========================================================= */
+
+function makeImportId(){
+
+  return (
+    "import-" +
+    Date.now() +
+    "-" +
+    Math.random()
+      .toString(36)
+      .slice(2,9)
+  );
 
 }
 
