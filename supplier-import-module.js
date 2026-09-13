@@ -337,6 +337,7 @@
           let articleCol = -1;
           let qtyCol = -1;
           let priceCol = -1;
+          let pricePriority = -1;
           let nameHeaderCol = -1;
 
           row.forEach(
@@ -377,19 +378,40 @@
                 }
               }
 
-              if(
+              const isDiscountPrice =
+                /ціна.*зниж|цена.*скид|discount.*price/
+                  .test(text);
+
+              const isRegularPrice =
                 /(^|\s)ціна($|\s)|(^|\s)цена($|\s)|price/
                   .test(text) &&
                 !/без зниж|без скид/
-                  .test(text)
+                  .test(text);
+
+              if(
+                isDiscountPrice ||
+                isRegularPrice
               ){
 
-                score += 4;
+                const priority =
+                  isDiscountPrice
+                    ? 2
+                    : 1;
+
+                score +=
+                  isDiscountPrice
+                    ? 5
+                    : 4;
 
                 if(
-                  priceCol < 0
+                  priority >
+                  pricePriority
                 ){
-                  priceCol = col;
+                  pricePriority =
+                    priority;
+
+                  priceCol =
+                    col;
                 }
               }
 
@@ -410,10 +432,10 @@
           );
 
           if(
-            articleCol >= 0 &&
             qtyCol >= 0 &&
             priceCol >= 0 &&
-            score >= 12
+            nameHeaderCol >= 0 &&
+            score >= 11
           ){
 
             if(
@@ -453,7 +475,11 @@
         0,
         header.nameHeaderCol >= 0
           ? header.nameHeaderCol
-          : header.articleCol + 1
+          : (
+              header.articleCol >= 0
+                ? header.articleCol + 1
+                : 0
+            )
       );
 
     const endName =
@@ -522,15 +548,29 @@
     let bestUnitScore =
       0;
 
+    const maxCols =
+      Math.max(
+        ...sample.map(
+          row => row.length
+        ),
+        header.priceCol + 1,
+        header.qtyCol + 1
+      );
+
     for(
-      let col =
-        header.qtyCol + 1;
-
-      col <
-        header.priceCol;
-
+      let col = 0;
+      col < maxCols;
       col++
     ){
+
+      if(
+        col === nameCol ||
+        col === header.articleCol ||
+        col === header.qtyCol ||
+        col === header.priceCol
+      ){
+        continue;
+      }
 
       let score = 0;
 
@@ -1036,6 +1076,47 @@
     return parts.join(" ");
   }
 
+  function extractArticleFromName(
+    name
+  ){
+
+    const text =
+      cleanText(name);
+
+    if(!text){
+      return "";
+    }
+
+    const match =
+      text.match(
+        /(?:^|\s)([A-ZА-ЯІЇЄҐ0-9][A-ZА-ЯІЇЄҐ0-9._-]{3,})$/i
+      );
+
+    if(!match){
+      return "";
+    }
+
+    const candidate =
+      cleanText(
+        match[1]
+      );
+
+    if(
+      !/\d/.test(candidate)
+    ){
+      return "";
+    }
+
+    if(
+      /^\d+(?:[.,]\d+)?$/
+        .test(candidate)
+    ){
+      return "";
+    }
+
+    return candidate;
+  }
+
   function parseSheetRows(
     rows,
     header
@@ -1091,19 +1172,23 @@
 
       emptyStreak = 0;
 
-      const article =
-        cleanText(
-          row[
-            columns.articleCol
-          ]
-        );
-
       const name =
         cleanText(
           row[
             columns.nameCol
           ]
         );
+
+      const article =
+        columns.articleCol >= 0
+          ? cleanText(
+              row[
+                columns.articleCol
+              ]
+            )
+          : extractArticleFromName(
+              name
+            );
 
       const qty =
         parseNumber(
