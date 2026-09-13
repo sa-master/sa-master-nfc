@@ -671,6 +671,11 @@
       ],
 
       [
+        /\bwurth\b|\bwürth\b/,
+        "WURTH"
+      ],
+
+      [
         /geberit/,
         "Geberit"
       ],
@@ -838,6 +843,13 @@
       return "fittings";
     }
 
+    if(
+      /комплектуюч|комплектующ|кріплен|креплен|хомут|дюбел|шуруп|ізоляц|изоляц|рукавиц|перчатк|manometr|манометр|k[\s-]*flex|sanflex|walraven|wurth|würth/
+        .test(source)
+    ){
+      return "other";
+    }
+
     return "";
   }
 
@@ -891,6 +903,20 @@
 
       context.category =
         "fittings";
+
+      context.brand = "";
+      context.system = "";
+
+      return true;
+    }
+
+    if(
+      /комплектуюч|комплектующ|кріплен|креплен|ізоляц|изоляц/
+        .test(source)
+    ){
+
+      context.category =
+        "other";
 
       context.brand = "";
       context.system = "";
@@ -1154,13 +1180,27 @@
       const detectedCategory =
         detectCategory(
           name,
-          brand,
-          system
+          detectedBrand ||
+          "",
+          detectedSystem ||
+          ""
         );
 
       if(detectedCategory){
         category =
           detectedCategory;
+      }
+
+      if(
+        detectedCategory === "other"
+      ){
+        if(!detectedBrand){
+          brand = "";
+        }
+
+        if(!detectedSystem){
+          system = "";
+        }
       }
 
       const key =
@@ -1185,6 +1225,7 @@
 
         if(
           !detectedBrand &&
+          detectedCategory !== "other" &&
           typeof saved.manufacturer ===
           "string" &&
           saved.manufacturer
@@ -1195,6 +1236,7 @@
 
         if(
           !detectedSystem &&
+          detectedCategory !== "other" &&
           typeof saved.system ===
           "string" &&
           saved.system
