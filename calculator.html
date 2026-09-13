@@ -10,7 +10,7 @@
 <style>
 :root{
   --bg:#f2f2f7;
-  --bg2:#fff;
+  --bg2:#ffffff;
   --card:rgba(255,255,255,.78);
   --card-solid:#fff;
   --text:#111;
@@ -87,7 +87,7 @@ button{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
+  gap:12px;
   margin-bottom:14px;
 }
 
@@ -112,34 +112,26 @@ button{
 .header-actions{
   display:flex;
   align-items:center;
-  gap:6px;
+  gap:7px;
   flex:0 0 auto;
 }
 
-.header-btn{
-  min-width:40px;
-  height:40px;
-  padding:0 10px;
-  border-radius:20px;
-  background:var(--card);
-  border:1px solid var(--line);
-  box-shadow:var(--shadow);
-  font-size:12px;
-  font-weight:750;
-}
-
-.theme-btn{
+.theme-btn,
+.settings-btn{
   width:40px;
   height:40px;
   flex:0 0 40px;
-  padding:0;
   border-radius:50%;
   background:var(--card);
   border:1px solid var(--line);
   box-shadow:var(--shadow);
-  font-size:18px;
+  font-size:17px;
   display:grid;
   place-items:center;
+}
+
+.settings-btn{
+  font-size:18px;
 }
 
 /* =========================
@@ -228,7 +220,7 @@ button{
 .estimate-row{
   min-height:48px;
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto auto auto;
+  grid-template-columns:minmax(0,1fr) auto auto;
   align-items:center;
   gap:7px;
   padding:6px 7px 6px 10px;
@@ -693,48 +685,8 @@ textarea.input{
   color:var(--red);
 }
 
-.logo-preview{
-  display:none;
-  align-items:center;
-  gap:10px;
-  margin:0 0 11px;
-  padding:10px;
-  border:1px solid var(--line);
-  border-radius:13px;
-  background:rgba(120,120,128,.06);
-}
-
-.logo-preview.show{
-  display:flex;
-}
-
-.logo-preview img{
-  width:52px;
-  height:52px;
-  object-fit:contain;
-  border-radius:10px;
-  background:#fff;
-  border:1px solid rgba(0,0,0,.08);
-}
-
-.logo-preview-text{
-  min-width:0;
-  flex:1;
-}
-
-.logo-preview-title{
-  font-size:12px;
-  font-weight:750;
-}
-
-.logo-preview-sub{
-  margin-top:3px;
-  color:var(--muted);
-  font-size:10px;
-}
-
 /* =========================
-   PRICE
+   PRICE EDIT
 ========================= */
 
 .price-current{
@@ -743,6 +695,36 @@ textarea.input{
   border-radius:12px;
   background:var(--blue-soft);
   font-size:13px;
+}
+
+/* =========================
+   PROFILE
+========================= */
+
+.profile-logo-preview{
+  width:72px;
+  height:72px;
+  border-radius:16px;
+  border:1px solid var(--line);
+  background:rgba(120,120,128,.07);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  margin-bottom:9px;
+}
+
+.profile-logo-preview img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+.profile-logo-empty{
+  color:var(--muted);
+  font-size:11px;
+  text-align:center;
+  padding:6px;
 }
 
 /* =========================
@@ -774,8 +756,205 @@ textarea.input{
 }
 
 /* =========================
-   SHORT SCREENS
+   PRINT
 ========================= */
+
+.print-only{
+  display:none;
+}
+
+@media print{
+
+  @page{
+    size:A4;
+    margin:16mm;
+  }
+
+  html,
+  body{
+    background:#fff!important;
+    color:#111!important;
+    min-height:auto;
+  }
+
+  body{
+    padding:0!important;
+    font-family:Arial,Helvetica,sans-serif!important;
+  }
+
+  .app{
+    max-width:none!important;
+    width:100%!important;
+    margin:0!important;
+  }
+
+  .header,
+  .main-card{
+    display:none!important;
+  }
+
+  .print-only{
+    display:block!important;
+  }
+
+  .print-document{
+    width:100%;
+    color:#111;
+  }
+
+  .print-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
+    padding-bottom:12px;
+    border-bottom:2px solid #111;
+    margin-bottom:18px;
+  }
+
+  .print-profile{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    min-width:0;
+  }
+
+  .print-profile-logo{
+    width:58px;
+    height:58px;
+    object-fit:contain;
+    flex:0 0 58px;
+  }
+
+  .print-profile-text{
+    min-width:0;
+  }
+
+  .print-brand{
+    font-size:21px;
+    line-height:1.1;
+    font-weight:800;
+  }
+
+  .print-name{
+    margin-top:4px;
+    font-size:14px;
+    font-weight:600;
+  }
+
+  .print-phone{
+    margin-top:3px;
+    font-size:13px;
+  }
+
+  .print-details{
+    margin-top:4px;
+    font-size:11px;
+    line-height:1.35;
+    white-space:pre-line;
+  }
+
+  .print-title{
+    text-align:right;
+    font-size:18px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+
+  .print-date{
+    margin-top:5px;
+    color:#666;
+    font-size:11px;
+    text-align:right;
+  }
+
+  .print-section{
+    margin-bottom:18px;
+  }
+
+  .print-section-title{
+    margin-bottom:7px;
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+  }
+
+  .print-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:11px;
+  }
+
+  .print-table th{
+    padding:7px 6px;
+    text-align:left;
+    border-bottom:1px solid #999;
+    font-weight:700;
+  }
+
+  .print-table td{
+    padding:7px 6px;
+    border-bottom:1px solid #ddd;
+    vertical-align:top;
+  }
+
+  .print-table .col-num{
+    width:28px;
+    text-align:center;
+  }
+
+  .print-table .col-qty{
+    width:55px;
+    text-align:center;
+  }
+
+  .print-table .col-price{
+    width:85px;
+    text-align:right;
+  }
+
+  .print-table .col-total{
+    width:95px;
+    text-align:right;
+  }
+
+  .print-total{
+    margin-top:12px;
+    display:flex;
+    justify-content:flex-end;
+  }
+
+  .print-total-box{
+    min-width:230px;
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    padding-top:10px;
+    border-top:2px solid #111;
+    font-size:15px;
+    font-weight:800;
+  }
+
+  .print-footer{
+    margin-top:35px;
+    padding-top:10px;
+    border-top:1px solid #ccc;
+    color:#666;
+    font-size:9px;
+    line-height:1.4;
+  }
+
+  .print-empty{
+    padding:20px 0;
+    color:#666;
+    font-size:12px;
+  }
+
+  .print-page-break{
+    page-break-before:always;
+  }
+}
 
 @media(max-height:700px){
   .work-list{
@@ -809,259 +988,6 @@ textarea.input{
     grid-row:2;
     justify-self:end;
   }
-
-  .header-btn{
-    font-size:11px;
-    padding:0 8px;
-  }
-}
-
-/* =========================================================
-   PRINT / PDF
-========================================================= */
-
-.print-only{
-  display:none;
-}
-
-@media print{
-
-  @page{
-    size:A4;
-    margin:14mm;
-  }
-
-  html,
-  body{
-    background:#fff!important;
-    color:#111!important;
-  }
-
-  body{
-    padding:0!important;
-    font-family:Arial,Helvetica,sans-serif!important;
-  }
-
-  .app{
-    max-width:none!important;
-    width:100%!important;
-    margin:0!important;
-  }
-
-  .header{
-    margin:0 0 18px!important;
-    display:block!important;
-  }
-
-  .header-actions,
-  .main-card{
-    display:none!important;
-  }
-
-  .brand-title{
-    font-size:24px!important;
-    color:#111!important;
-  }
-
-  .brand-sub{
-    margin-top:4px!important;
-    color:#555!important;
-  }
-
-  .print-only{
-    display:block!important;
-  }
-
-  .print-document{
-    display:block!important;
-    width:100%;
-  }
-
-  .print-top{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:20px;
-    margin-bottom:24px;
-    padding-bottom:14px;
-    border-bottom:1px solid #ccc;
-  }
-
-  .print-master{
-    min-width:0;
-    flex:1;
-  }
-
-  .print-logo{
-    width:70px;
-    height:70px;
-    object-fit:contain;
-    display:block;
-    margin-bottom:8px;
-  }
-
-  .print-logo.hidden{
-    display:none;
-  }
-
-  .print-brand{
-    font-size:22px;
-    line-height:1.15;
-    font-weight:700;
-    color:#111;
-  }
-
-  .print-name{
-    margin-top:4px;
-    font-size:14px;
-    color:#333;
-  }
-
-  .print-phone{
-    margin-top:3px;
-    font-size:14px;
-    color:#333;
-  }
-
-  .print-details{
-    margin-top:7px;
-    font-size:11px;
-    line-height:1.45;
-    color:#555;
-    white-space:normal;
-  }
-
-  .print-meta{
-    flex:0 0 auto;
-    text-align:right;
-    font-size:11px;
-    line-height:1.5;
-    color:#555;
-  }
-
-  .print-title{
-    margin:0 0 5px;
-    font-size:24px;
-    line-height:1.1;
-    font-weight:700;
-    color:#111;
-  }
-
-  .print-estimate-id{
-    font-size:11px;
-    color:#555;
-  }
-
-  .print-date{
-    font-size:11px;
-    color:#555;
-  }
-
-  .print-section{
-    margin-top:18px;
-  }
-
-  .print-section-title{
-    margin-bottom:7px;
-    font-size:11px;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.4px;
-    color:#666;
-  }
-
-  .print-table{
-    width:100%;
-    border-collapse:collapse;
-    table-layout:fixed;
-  }
-
-  .print-table th,
-  .print-table td{
-    padding:7px 5px;
-    border-bottom:1px solid #ddd;
-    font-size:11px;
-    vertical-align:top;
-  }
-
-  .print-table th{
-    font-weight:700;
-    color:#333;
-    text-align:left;
-  }
-
-  .print-table .col-num{
-    width:30px;
-    text-align:center;
-  }
-
-  .print-table .col-unit{
-    width:55px;
-  }
-
-  .print-table .col-qty{
-    width:55px;
-    text-align:center;
-  }
-
-  .print-table .col-price{
-    width:90px;
-    text-align:right;
-  }
-
-  .print-table .col-total{
-    width:100px;
-    text-align:right;
-  }
-
-  .print-table td.col-qty{
-    text-align:center;
-  }
-
-  .print-table td.col-price,
-  .print-table td.col-total{
-    text-align:right;
-    white-space:nowrap;
-  }
-
-  .print-total{
-    display:flex!important;
-    justify-content:flex-end;
-    margin-top:14px;
-  }
-
-  .print-total-box{
-    min-width:230px;
-    padding:10px 0 0;
-    border-top:2px solid #111;
-    display:flex;
-    justify-content:space-between;
-    gap:25px;
-    font-size:15px;
-    font-weight:700;
-  }
-
-  .print-footer{
-    margin-top:30px;
-    padding-top:10px;
-    border-top:1px solid #ddd;
-    font-size:10px;
-    line-height:1.45;
-    color:#777;
-  }
-
-  .modal,
-  .toast{
-    display:none!important;
-  }
-}
-
-/* =========================================================
-   SCREEN HIDDEN PRINT DOCUMENT
-========================================================= */
-
-.print-document{
-  display:none;
 }
 </style>
 </head>
@@ -1073,17 +999,25 @@ textarea.input{
   <header class="header">
 
     <div class="brand">
-      <div id="brandTitle" class="brand-title">SA-MASTER.PRO</div>
-      <div id="brandSub" class="brand-sub">Калькулятор вартості робіт</div>
+      <div id="brandTitle" class="brand-title">
+        SA-MASTER.PRO
+      </div>
+
+      <div id="brandSub" class="brand-sub">
+        Калькулятор вартості робіт
+      </div>
     </div>
 
     <div class="header-actions">
 
       <button
-        class="header-btn"
+        id="settingsButton"
+        class="settings-btn"
         type="button"
         onclick="openSettings()"
-      >Майстер</button>
+        aria-label="Майстер"
+        title="Майстер"
+      >⚙︎</button>
 
       <button
         id="themeButton"
@@ -1151,10 +1085,10 @@ textarea.input{
     <div class="actions">
 
       <button
-        class="action-btn primary"
+        class="action-btn"
         type="button"
-        onclick="printEstimate()"
-      >PDF кошторис</button>
+        onclick="openNewWorkModal()"
+      >＋ Нова позиція</button>
 
       <button
         class="action-btn"
@@ -1170,123 +1104,20 @@ textarea.input{
       onclick="openCatalog()"
     >＋ Додати роботу</button>
 
+    <button
+      class="catalog-open"
+      type="button"
+      onclick="printEstimate()"
+      style="margin-top:8px"
+    >PDF кошторис</button>
+
   </main>
-
-  <!-- =====================================================
-       PRINT DOCUMENT
-  ====================================================== -->
-
-  <section id="printDocument" class="print-document print-only">
-
-    <div class="print-top">
-
-      <div class="print-master">
-
-        <img
-          id="printLogo"
-          class="print-logo hidden"
-          alt=""
-        >
-
-        <div
-          id="printBrand"
-          class="print-brand"
-        ></div>
-
-        <div
-          id="printName"
-          class="print-name"
-        ></div>
-
-        <div
-          id="printPhone"
-          class="print-phone"
-        ></div>
-
-        <div
-          id="printDetails"
-          class="print-details"
-        ></div>
-
-      </div>
-
-      <div class="print-meta">
-
-        <div class="print-title">
-          Кошторис
-        </div>
-
-        <div>
-          №
-          <span id="printEstimateId"></span>
-        </div>
-
-        <div>
-          Дата:
-          <span id="printDate"></span>
-        </div>
-
-      </div>
-
-    </div>
-
-    <div class="print-section">
-
-      <div class="print-section-title">
-        Вартість робіт
-      </div>
-
-      <table class="print-table">
-
-        <thead>
-
-          <tr>
-            <th class="col-num">№</th>
-            <th>Робота</th>
-            <th class="col-unit">Од.</th>
-            <th class="col-qty">К-сть</th>
-            <th class="col-price">Ціна</th>
-            <th class="col-total">Сума</th>
-          </tr>
-
-        </thead>
-
-        <tbody id="printItems"></tbody>
-
-      </table>
-
-    </div>
-
-    <div class="print-total">
-
-      <div class="print-total-box">
-
-        <span>
-          Разом
-        </span>
-
-        <span id="printTotal">
-          0 ₴
-        </span>
-
-      </div>
-
-    </div>
-
-    <div class="print-footer">
-
-      Кошторис сформовано за допомогою
-      «Калькулятор сантехніка».
-
-    </div>
-
-  </section>
-
 </div>
 
-<!-- =========================================================
+
+<!-- =========================
      CATALOG MODAL
-========================================================= -->
+========================= -->
 
 <div
   id="catalogModal"
@@ -1363,9 +1194,10 @@ textarea.input{
 
 </div>
 
-<!-- =========================================================
+
+<!-- =========================
      NEW / EDIT WORK MODAL
-========================================================= -->
+========================= -->
 
 <div
   id="workModal"
@@ -1470,9 +1302,10 @@ textarea.input{
 
 </div>
 
-<!-- =========================================================
+
+<!-- =========================
      PRICE MODAL
-========================================================= -->
+========================= -->
 
 <div
   id="priceModal"
@@ -1548,9 +1381,10 @@ textarea.input{
 
 </div>
 
-<!-- =========================================================
-     MASTER SETTINGS MODAL
-========================================================= -->
+
+<!-- =========================
+     MASTER / PROFILE MODAL
+========================= -->
 
 <div
   id="settingsModal"
@@ -1579,6 +1413,27 @@ textarea.input{
 
       <div class="field">
 
+        <label>
+          Логотип
+        </label>
+
+        <div
+          id="profileLogoPreview"
+          class="profile-logo-preview"
+        ></div>
+
+        <input
+          id="profileLogoInput"
+          class="input"
+          type="file"
+          accept="image/*"
+          onchange="handleLogoUpload(event)"
+        >
+
+      </div>
+
+      <div class="field">
+
         <label for="profileBrand">
           Назва / бренд
         </label>
@@ -1602,7 +1457,7 @@ textarea.input{
           id="profileName"
           class="input"
           type="text"
-          placeholder="Ваше ім'я"
+          placeholder="Ім'я та прізвище"
         >
 
       </div>
@@ -1617,7 +1472,7 @@ textarea.input{
           id="profilePhone"
           class="input"
           type="tel"
-          placeholder="097..."
+          placeholder="0979111871"
         >
 
       </div>
@@ -1631,48 +1486,8 @@ textarea.input{
         <textarea
           id="profileDetails"
           class="input"
-          placeholder="Місто, сайт, реквізити або інша інформація"
+          placeholder="Адреса, сайт, реквізити або інша інформація"
         ></textarea>
-
-      </div>
-
-      <div class="field">
-
-        <label for="profileLogoInput">
-          Логотип
-        </label>
-
-        <input
-          id="profileLogoInput"
-          class="input"
-          type="file"
-          accept="image/*"
-          onchange="handleLogoUpload(event)"
-        >
-
-      </div>
-
-      <div
-        id="logoPreview"
-        class="logo-preview"
-      >
-
-        <img
-          id="logoPreviewImage"
-          alt=""
-        >
-
-        <div class="logo-preview-text">
-
-          <div class="logo-preview-title">
-            Логотип майстра
-          </div>
-
-          <div class="logo-preview-sub">
-            Буде використаний у PDF кошторису
-          </div>
-
-        </div>
 
       </div>
 
@@ -1698,95 +1513,402 @@ textarea.input{
 
 </div>
 
+
+<!-- =========================
+     PRINT DOCUMENT
+========================= -->
+
+<div id="printDocument" class="print-only">
+
+  <div class="print-document">
+
+    <div class="print-head">
+
+      <div class="print-profile">
+
+        <img
+          id="printLogo"
+          class="print-profile-logo"
+          style="display:none"
+          alt=""
+        >
+
+        <div class="print-profile-text">
+
+          <div
+            id="printBrand"
+            class="print-brand"
+          ></div>
+
+          <div
+            id="printName"
+            class="print-name"
+          ></div>
+
+          <div
+            id="printPhone"
+            class="print-phone"
+          ></div>
+
+          <div
+            id="printDetails"
+            class="print-details"
+          ></div>
+
+        </div>
+
+      </div>
+
+      <div>
+
+        <div class="print-title">
+          КОШТОРИС
+        </div>
+
+        <div
+          id="printDate"
+          class="print-date"
+        ></div>
+
+      </div>
+
+    </div>
+
+    <div class="print-section">
+
+      <div class="print-section-title">
+        Перелік робіт
+      </div>
+
+      <div id="printTableWrap"></div>
+
+      <div class="print-total">
+
+        <div class="print-total-box">
+
+          <span>
+            Разом:
+          </span>
+
+          <span id="printTotal">
+            0 ₴
+          </span>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="print-footer">
+
+      Кошторис сформовано за даними, введеними майстром.
+      Вартість позицій може бути змінена безпосередньо
+      у поточному кошторисі.
+
+    </div>
+
+  </div>
+
+</div>
+
+
 <div id="toast" class="toast"></div>
 
+
 <script>
+
 /* =========================================================
    DEFAULT DATABASE
 ========================================================= */
 
 const defaultDB = {
 
-  rough:[
-    {id:"r1",name:"Монтаж радіатора",unit:"шт",price:2500},
-    {id:"r2",name:"Монтаж запірно-регулюючого вузла",unit:"компл",price:7000},
-    {id:"r3",name:"Монтаж гребінки",unit:"шт",price:5000},
-    {id:"r4",name:"Оздоблення технічної зони",unit:"компл",price:5000},
-    {id:"r5",name:"Врізка в каналізаційний стояк",unit:"компл",price:4000},
-    {id:"r6",name:"Монтаж вбудованого змішувача",unit:"шт",price:3000},
-    {id:"r7",name:"Монтаж інсталяції",unit:"шт",price:4000},
-    {id:"r8",name:"Монтаж душового трапа",unit:"шт",price:4000},
-    {id:"r9",name:"Монтаж вбудованого сифона",unit:"шт",price:2000},
-    {id:"r10",name:"Монтаж вуличного крана",unit:"шт",price:3000},
-    {id:"r11",name:"Монтаж виводу ВК",unit:"шт",price:1500},
-    {id:"r12",name:"Укладання труб в ізоляції",unit:"компл",price:10000},
-    {id:"r13",name:"Виготовлення штроб",unit:"компл",price:10000},
-    {id:"r14",name:"Зароблення штроб",unit:"компл",price:8000},
-    {id:"r15",name:"Заміна каналізаційного стояка",unit:"шт",price:5000},
-    {id:"r16",name:"Знешумлення каналізаційного стояка",unit:"шт",price:4000},
-    {id:"r17",name:"Монтаж конвектора",unit:"шт",price:5000},
-    {id:"r18",name:"Монтаж дизайнерського радіатора",unit:"шт",price:5000},
-    {id:"r19",name:"Монтаж душової системи",unit:"шт",price:4000},
-    {id:"r20",name:"Монтаж рушникосушки",unit:"шт",price:3000}
+  rough: [
+
+    {
+      id:"r1",
+      name:"Монтаж радіатора",
+      unit:"шт",
+      price:2500
+    },
+
+    {
+      id:"r2",
+      name:"Монтаж запірно-регулюючого вузла",
+      unit:"компл",
+      price:7000
+    },
+
+    {
+      id:"r3",
+      name:"Монтаж гребінки",
+      unit:"шт",
+      price:5000
+    },
+
+    {
+      id:"r4",
+      name:"Оздоблення технічної зони",
+      unit:"компл",
+      price:5000
+    },
+
+    {
+      id:"r5",
+      name:"Врізка в каналізаційний стояк",
+      unit:"компл",
+      price:4000
+    },
+
+    {
+      id:"r6",
+      name:"Монтаж вбудованого змішувача",
+      unit:"шт",
+      price:3000
+    },
+
+    {
+      id:"r7",
+      name:"Монтаж інсталяції",
+      unit:"шт",
+      price:4000
+    },
+
+    {
+      id:"r8",
+      name:"Монтаж душового трапа",
+      unit:"шт",
+      price:4000
+    },
+
+    {
+      id:"r9",
+      name:"Монтаж вбудованого сифона",
+      unit:"шт",
+      price:2000
+    },
+
+    {
+      id:"r10",
+      name:"Монтаж вуличного крана",
+      unit:"шт",
+      price:3000
+    },
+
+    {
+      id:"r11",
+      name:"Монтаж виводу ВК",
+      unit:"шт",
+      price:1500
+    },
+
+    {
+      id:"r12",
+      name:"Укладання труб в ізоляції",
+      unit:"компл",
+      price:10000
+    },
+
+    {
+      id:"r13",
+      name:"Виготовлення штроб",
+      unit:"компл",
+      price:10000
+    },
+
+    {
+      id:"r14",
+      name:"Зароблення штроб",
+      unit:"компл",
+      price:8000
+    },
+
+    {
+      id:"r15",
+      name:"Заміна каналізаційного стояка",
+      unit:"шт",
+      price:5000
+    },
+
+    {
+      id:"r16",
+      name:"Знешумлення каналізаційного стояка",
+      unit:"шт",
+      price:4000
+    },
+
+    {
+      id:"r17",
+      name:"Монтаж конвектора",
+      unit:"шт",
+      price:5000
+    },
+
+    {
+      id:"r18",
+      name:"Монтаж дизайнерського радіатора",
+      unit:"шт",
+      price:5000
+    },
+
+    {
+      id:"r19",
+      name:"Монтаж душової системи",
+      unit:"шт",
+      price:4000
+    },
+
+    {
+      id:"r20",
+      name:"Монтаж рушникосушки",
+      unit:"шт",
+      price:3000
+    }
+
   ],
 
-  finish:[
-    {id:"f1",name:"Монтаж та обв’язка бойлера",unit:"компл",price:7000},
-    {id:"f2",name:"Монтаж та обв’язка водоочистки",unit:"компл",price:10000},
-    {id:"f3",name:"Підключення ванни",unit:"шт",price:3500},
-    {id:"f4",name:"Монтаж душової системи",unit:"шт",price:3500},
-    {id:"f5",name:"Підключення умивальника",unit:"шт",price:3500},
-    {id:"f6",name:"Монтаж гігієнічного душа",unit:"шт",price:2000},
-    {id:"f7",name:"Монтаж унітазу",unit:"шт",price:4000},
-    {id:"f8",name:"Монтаж рушникосушки",unit:"шт",price:3000},
-    {id:"f9",name:"Монтаж аксесуарів",unit:"шт",price:700},
-    {id:"f10",name:"Монтаж пралки/сушки",unit:"компл",price:6000}
+  finish: [
+
+    {
+      id:"f1",
+      name:"Монтаж та обв’язка бойлера",
+      unit:"компл",
+      price:7000
+    },
+
+    {
+      id:"f2",
+      name:"Монтаж та обв’язка водоочистки",
+      unit:"компл",
+      price:10000
+    },
+
+    {
+      id:"f3",
+      name:"Підключення ванни",
+      unit:"шт",
+      price:3500
+    },
+
+    {
+      id:"f4",
+      name:"Монтаж душової системи",
+      unit:"шт",
+      price:3500
+    },
+
+    {
+      id:"f5",
+      name:"Підключення умивальника",
+      unit:"шт",
+      price:3500
+    },
+
+    {
+      id:"f6",
+      name:"Монтаж гігієнічного душа",
+      unit:"шт",
+      price:2000
+    },
+
+    {
+      id:"f7",
+      name:"Монтаж унітазу",
+      unit:"шт",
+      price:4000
+    },
+
+    {
+      id:"f8",
+      name:"Монтаж рушникосушки",
+      unit:"шт",
+      price:3000
+    },
+
+    {
+      id:"f9",
+      name:"Монтаж аксесуарів",
+      unit:"шт",
+      price:700
+    },
+
+    {
+      id:"f10",
+      name:"Монтаж пралки/сушки",
+      unit:"компл",
+      price:6000
+    }
+
   ]
+
 };
+
 
 /* =========================================================
    PROFILE
 ========================================================= */
 
 const defaultProfile = {
+
   brand:"SA-MASTER.PRO",
+
   name:"Сергій Мельник",
+
   phone:"0979111871",
+
   details:"",
+
   logo:""
+
 };
 
 let profile = loadProfile();
+
 
 function loadProfile(){
 
   try{
 
     const raw =
-      localStorage.getItem("samaster_profile");
+      localStorage.getItem(
+        "samaster_profile"
+      );
 
     if(!raw){
-      return {...defaultProfile};
+
+      const copy =
+        structuredClone(defaultProfile);
+
+      localStorage.setItem(
+        "samaster_profile",
+        JSON.stringify(copy)
+      );
+
+      return copy;
     }
 
     const parsed =
       JSON.parse(raw);
 
     if(!parsed || typeof parsed !== "object"){
-      return {...defaultProfile};
+
+      return structuredClone(defaultProfile);
     }
 
     return {
-      ...defaultProfile,
+      ...structuredClone(defaultProfile),
       ...parsed
     };
 
   }catch{
 
-    return {...defaultProfile};
+    return structuredClone(defaultProfile);
 
   }
+
 }
+
 
 function saveProfile(){
 
@@ -1794,21 +1916,36 @@ function saveProfile(){
     "samaster_profile",
     JSON.stringify(profile)
   );
+
 }
+
 
 function renderProfile(){
 
-  const brand =
-    String(profile.brand || "").trim();
-
   $("brandTitle").textContent =
-    brand || "Калькулятор сантехніка";
+    profile.brand ||
+    "Калькулятор сантехніка";
 
   $("brandSub").textContent =
-    brand
+    profile.brand
       ? "Калькулятор вартості робіт"
       : "Калькулятор сантехніка";
+
 }
+
+
+/* =========================================================
+   PROFILE SETTINGS
+========================================================= */
+
+function openSettings(){
+
+  renderSettings();
+
+  $("settingsModal").classList.add("show");
+
+}
+
 
 function renderSettings(){
 
@@ -1824,28 +1961,10 @@ function renderSettings(){
   $("profileDetails").value =
     profile.details || "";
 
-  if(profile.logo){
+  renderLogoPreview();
 
-    $("logoPreviewImage").src =
-      profile.logo;
-
-    $("logoPreview").classList.add("show");
-
-  }else{
-
-    $("logoPreviewImage").removeAttribute("src");
-
-    $("logoPreview").classList.remove("show");
-
-  }
 }
 
-function openSettings(){
-
-  renderSettings();
-
-  $("settingsModal").classList.add("show");
-}
 
 function saveSettings(){
 
@@ -1868,7 +1987,9 @@ function saveSettings(){
   closeModal("settingsModal");
 
   showToast("Профіль збережено");
+
 }
+
 
 function handleLogoUpload(event){
 
@@ -1880,9 +2001,9 @@ function handleLogoUpload(event){
 
   if(!file.type.startsWith("image/")){
 
-    showToast("Оберіть файл зображення");
-    return;
+    showToast("Оберіть зображення");
 
+    return;
   }
 
   const reader =
@@ -1891,30 +2012,60 @@ function handleLogoUpload(event){
   reader.onload = ()=>{
 
     profile.logo =
-      String(reader.result || "");
+      reader.result;
 
-    $("logoPreviewImage").src =
-      profile.logo;
-
-    $("logoPreview").classList.add("show");
+    renderLogoPreview();
 
   };
 
   reader.readAsDataURL(file);
+
 }
+
+
+function renderLogoPreview(){
+
+  const box =
+    $("profileLogoPreview");
+
+  if(profile.logo){
+
+    box.innerHTML = `
+      <img
+        src="${esc(profile.logo)}"
+        alt=""
+      >
+    `;
+
+  }else{
+
+    box.innerHTML = `
+      <div class="profile-logo-empty">
+        Логотип не додано
+      </div>
+    `;
+
+  }
+
+}
+
 
 /* =========================================================
    DATABASE
 ========================================================= */
 
-let db = loadDB();
+let db =
+  loadDB();
+
 
 function loadDB(){
 
   try{
 
     const raw =
-      localStorage.getItem("samaster_db");
+      localStorage.getItem(
+        "samaster_db"
+      );
 
     if(!raw){
 
@@ -1949,7 +2100,9 @@ function loadDB(){
     return structuredClone(defaultDB);
 
   }
+
 }
+
 
 function saveDB(){
 
@@ -1957,7 +2110,9 @@ function saveDB(){
     "samaster_db",
     JSON.stringify(db)
   );
+
 }
+
 
 /* =========================================================
    STATE
@@ -1981,6 +2136,7 @@ let editingWorkCategory =
 let editingPriceLineId =
   null;
 
+
 /* =========================================================
    HELPERS
 ========================================================= */
@@ -1991,23 +2147,32 @@ function $(id){
 
 }
 
+
 function esc(value){
 
   return String(value ?? "")
+
     .replace(/&/g,"&amp;")
+
     .replace(/</g,"&lt;")
+
     .replace(/>/g,"&gt;")
+
     .replace(/"/g,"&quot;")
+
     .replace(/'/g,"&#039;");
 
 }
 
+
 function money(value){
 
   return Number(value || 0)
-    .toLocaleString("uk-UA") + " ₴";
+    .toLocaleString("uk-UA") +
+    " ₴";
 
 }
+
 
 function uid(){
 
@@ -2015,6 +2180,7 @@ function uid(){
     Math.random().toString(36).slice(2,7);
 
 }
+
 
 function showToast(message){
 
@@ -2026,14 +2192,19 @@ function showToast(message){
 
   el.classList.add("show");
 
-  clearTimeout(showToast.timer);
+  clearTimeout(
+    showToast.timer
+  );
 
   showToast.timer =
     setTimeout(()=>{
+
       el.classList.remove("show");
+
     },1800);
 
 }
+
 
 /* =========================================================
    ESTIMATE
@@ -2044,7 +2215,9 @@ function loadEstimate(){
   try{
 
     const raw =
-      localStorage.getItem("samaster_estimate");
+      localStorage.getItem(
+        "samaster_estimate"
+      );
 
     if(!raw) return [];
 
@@ -2060,7 +2233,9 @@ function loadEstimate(){
     return [];
 
   }
+
 }
+
 
 function saveEstimate(){
 
@@ -2068,8 +2243,6 @@ function saveEstimate(){
     "samaster_estimate",
     JSON.stringify(estimate)
   );
-
-  savePassportEstimate();
 
   window.dispatchEvent(
     new CustomEvent(
@@ -2082,9 +2255,12 @@ function saveEstimate(){
 
 }
 
+
 function findWork(workId){
 
-  for(const cat of ["rough","finish"]){
+  for(
+    const cat of ["rough","finish"]
+  ){
 
     const item =
       db[cat].find(
@@ -2103,136 +2279,26 @@ function findWork(workId){
   }
 
   return null;
+
 }
+
 
 function getEstimateTotal(){
 
   return estimate.reduce(
-    (sum,item)=>
+
+    (sum,item) =>
+
       sum +
       Number(item.price || 0) *
       Number(item.qty || 0),
+
     0
+
   );
 
 }
 
-/* =========================================================
-   PASSPORT
-========================================================= */
-
-function savePassportEstimate(){
-
-  const estimateId =
-    localStorage.getItem(
-      "samaster_estimate_id"
-    ) ||
-    (
-      "SM-" +
-      Date.now()
-        .toString(36)
-        .toUpperCase()
-    );
-
-  localStorage.setItem(
-    "samaster_estimate_id",
-    estimateId
-  );
-
-  const createdAt =
-    localStorage.getItem(
-      "samaster_estimate_created"
-    ) ||
-    new Date().toISOString();
-
-  localStorage.setItem(
-    "samaster_estimate_created",
-    createdAt
-  );
-
-  const passport = {
-
-    type:"sa-master-estimate",
-
-    version:2,
-
-    estimateId,
-
-    createdAt,
-
-    updatedAt:
-      new Date().toISOString(),
-
-    status:"draft",
-
-    currency:"UAH",
-
-    master:{
-      brand:profile.brand,
-      name:profile.name,
-      phone:profile.phone,
-      details:profile.details
-    },
-
-    categories:{
-      rough:
-        estimate.filter(
-          x=>x.cat==="rough"
-        ).length,
-
-      finish:
-        estimate.filter(
-          x=>x.cat==="finish"
-        ).length
-    },
-
-    total:
-      getEstimateTotal(),
-
-    itemCount:
-      estimate.reduce(
-        (sum,x)=>
-          sum +
-          Number(x.qty || 0),
-        0
-      ),
-
-    items:
-      estimate.map(item=>({
-
-        id:item.lineId,
-
-        workId:item.workId,
-
-        name:item.name,
-
-        category:item.cat,
-
-        unit:item.unit,
-
-        quantity:
-          Number(item.qty || 0),
-
-        basePrice:
-          Number(item.basePrice || 0),
-
-        price:
-          Number(item.price || 0),
-
-        total:
-          Number(item.price || 0) *
-          Number(item.qty || 0)
-
-      }))
-
-  };
-
-  localStorage.setItem(
-    "samaster_passport_estimate",
-    JSON.stringify(passport)
-  );
-
-}
 
 /* =========================================================
    MAIN CATEGORY
@@ -2243,21 +2309,20 @@ function setMainCategory(category){
   mainCategory =
     category;
 
-  $("roughTab")
-    .classList.toggle(
-      "active",
-      category === "rough"
-    );
+  $("roughTab").classList.toggle(
+    "active",
+    category === "rough"
+  );
 
-  $("finishTab")
-    .classList.toggle(
-      "active",
-      category === "finish"
-    );
+  $("finishTab").classList.toggle(
+    "active",
+    category === "finish"
+  );
 
   renderEstimate();
 
 }
+
 
 /* =========================================================
    RENDER ESTIMATE
@@ -2285,7 +2350,8 @@ function renderEstimate(){
   }else{
 
     list.innerHTML =
-      items.map(item=>{
+
+      items.map(item => {
 
         const total =
           Number(item.price || 0) *
@@ -2363,6 +2429,7 @@ function renderEstimate(){
 
 }
 
+
 /* =========================================================
    ADD WORK
 ========================================================= */
@@ -2421,11 +2488,13 @@ function addWork(workId){
 
 }
 
+
 function changeQty(lineId,delta){
 
   const item =
     estimate.find(
-      x => x.lineId === lineId
+      x =>
+        x.lineId === lineId
     );
 
   if(!item) return;
@@ -2452,6 +2521,7 @@ function changeQty(lineId,delta){
 
 }
 
+
 function removeEstimateLine(lineId){
 
   estimate =
@@ -2468,19 +2538,25 @@ function removeEstimateLine(lineId){
 
 }
 
+
 /* =========================================================
    CLEAR
 ========================================================= */
 
 function clearEstimate(){
 
-  if(!estimate.length) return;
+  if(!estimate.length)
+    return;
 
   if(
     !confirm(
       "Очистити весь кошторис?"
     )
-  ) return;
+  ){
+
+    return;
+
+  }
 
   estimate = [];
 
@@ -2494,6 +2570,7 @@ function clearEstimate(){
 
 }
 
+
 /* =========================================================
    CATALOG
 ========================================================= */
@@ -2503,7 +2580,8 @@ function openCatalog(){
   $("catalogModal")
     .classList.add("show");
 
-  $("workSearch").value = "";
+  $("workSearch").value =
+    "";
 
   catalogCategory =
     mainCategory;
@@ -2513,10 +2591,13 @@ function openCatalog(){
   renderAddWorkList();
 
   setTimeout(()=>{
+
     $("workSearch").focus();
+
   },120);
 
 }
+
 
 function setCatalogCategory(category){
 
@@ -2528,6 +2609,7 @@ function setCatalogCategory(category){
   renderAddWorkList();
 
 }
+
 
 function updateCatalogTabs(){
 
@@ -2545,6 +2627,7 @@ function updateCatalogTabs(){
 
 }
 
+
 function renderAddWorkList(){
 
   const list =
@@ -2560,18 +2643,23 @@ function renderAddWorkList(){
     db[catalogCategory] || [];
 
   const filtered =
-    source.filter(item=>{
+    source.filter(item => {
 
-      if(!query) return true;
+      if(!query)
+        return true;
 
       return (
+
         item.name
           .toLowerCase()
-          .includes(query) ||
+          .includes(query)
+
+        ||
 
         item.unit
           .toLowerCase()
           .includes(query)
+
       );
 
     });
@@ -2598,6 +2686,7 @@ function renderAddWorkList(){
 
 }
 
+
 function renderAddWorkItem(item){
 
   const existing =
@@ -2607,6 +2696,7 @@ function renderAddWorkItem(item){
     );
 
   const controls =
+
     existing
 
       ? `
@@ -2667,6 +2757,7 @@ function renderAddWorkItem(item){
 
 }
 
+
 /* =========================================================
    NEW WORK
 ========================================================= */
@@ -2682,23 +2773,29 @@ function openNewWorkModal(){
   $("workModalTitle").textContent =
     "Нова позиція";
 
-  $("workName").value = "";
+  $("workName").value =
+    "";
 
-  $("workUnit").value = "";
+  $("workUnit").value =
+    "";
 
-  $("workPrice").value = "";
+  $("workPrice").value =
+    "";
 
-  $("deleteWorkButton")
-    .style.display = "none";
+  $("deleteWorkButton").style.display =
+    "none";
 
   $("workModal")
     .classList.add("show");
 
   setTimeout(()=>{
+
     $("workName").focus();
+
   },100);
 
 }
+
 
 function openEditWorkModal(workId){
 
@@ -2725,14 +2822,14 @@ function openEditWorkModal(workId){
   $("workPrice").value =
     item.price;
 
-  $("deleteWorkButton")
-    .style.display =
+  $("deleteWorkButton").style.display =
     "block";
 
   $("workModal")
     .classList.add("show");
 
 }
+
 
 function saveWork(){
 
@@ -2758,6 +2855,7 @@ function saveWork(){
     );
 
     return;
+
   }
 
   if(!unit){
@@ -2767,6 +2865,7 @@ function saveWork(){
     );
 
     return;
+
   }
 
   if(
@@ -2779,6 +2878,7 @@ function saveWork(){
     );
 
     return;
+
   }
 
   if(editingWorkId){
@@ -2843,13 +2943,17 @@ function saveWork(){
       "-" +
       uid();
 
-    db[editingWorkCategory]
-      .push({
-        id,
-        name,
-        unit,
-        price
-      });
+    db[editingWorkCategory].push({
+
+      id,
+
+      name,
+
+      unit,
+
+      price
+
+    });
 
     saveDB();
 
@@ -2867,6 +2971,7 @@ function saveWork(){
 
 }
 
+
 function deleteCurrentWork(){
 
   if(!editingWorkId)
@@ -2877,6 +2982,7 @@ function deleteCurrentWork(){
   );
 
 }
+
 
 function deleteWork(workId){
 
@@ -2925,6 +3031,7 @@ function deleteWork(workId){
 
 }
 
+
 /* =========================================================
    PRICE
 ========================================================= */
@@ -2943,10 +3050,18 @@ function openPriceModal(lineId){
     lineId;
 
   $("priceCurrent").innerHTML = `
-    <strong>${esc(item.name)}</strong><br>
+
+    <strong>
+      ${esc(item.name)}
+    </strong>
+
+    <br>
+
     <span style="color:var(--muted)">
-      Базова ціна: ${money(item.basePrice)}
+      Базова ціна:
+      ${money(item.basePrice)}
     </span>
+
   `;
 
   $("priceInput").value =
@@ -2957,15 +3072,14 @@ function openPriceModal(lineId){
 
   setTimeout(()=>{
 
-    $("priceInput")
-      .focus();
+    $("priceInput").focus();
 
-    $("priceInput")
-      .select();
+    $("priceInput").select();
 
   },100);
 
 }
+
 
 function savePrice(){
 
@@ -3016,6 +3130,7 @@ function savePrice(){
 
 }
 
+
 function resetPriceToBase(){
 
   if(!editingPriceLineId)
@@ -3048,34 +3163,10 @@ function resetPriceToBase(){
 
 }
 
+
 /* =========================================================
-   PRINT / PDF
+   PDF / PRINT
 ========================================================= */
-
-function getEstimateId(){
-
-  let id =
-    localStorage.getItem(
-      "samaster_estimate_id"
-    );
-
-  if(!id){
-
-    id =
-      "SM-" +
-      Date.now()
-        .toString(36)
-        .toUpperCase();
-
-    localStorage.setItem(
-      "samaster_estimate_id",
-      id
-    );
-
-  }
-
-  return id;
-}
 
 function formatDate(date){
 
@@ -3090,134 +3181,166 @@ function formatDate(date){
 
 }
 
-function renderPrintDocument(){
 
-  const currentProfile =
-    loadProfile();
+function preparePrintDocument(){
 
-  /*
-    ВАЖЛИВО:
-    Беремо профіль саме з localStorage.
-    Тому PDF не використовує старий
-    статичний текст із HTML.
-  */
+  const logo =
+    $("printLogo");
 
-  $("printBrand").textContent =
-    currentProfile.brand ||
-    "Калькулятор сантехніка";
+  if(profile.logo){
 
-  $("printName").textContent =
-    currentProfile.name || "";
+    logo.src =
+      profile.logo;
 
-  $("printPhone").textContent =
-    currentProfile.phone || "";
-
-  $("printDetails").innerHTML =
-    esc(
-      currentProfile.details || ""
-    ).replace(/\n/g,"<br>");
-
-  if(currentProfile.logo){
-
-    $("printLogo").src =
-      currentProfile.logo;
-
-    $("printLogo")
-      .classList.remove("hidden");
+    logo.style.display =
+      "block";
 
   }else{
 
-    $("printLogo")
-      .removeAttribute("src");
+    logo.removeAttribute(
+      "src"
+    );
 
-    $("printLogo")
-      .classList.add("hidden");
+    logo.style.display =
+      "none";
 
   }
 
-  $("printEstimateId").textContent =
-    getEstimateId();
+  $("printBrand").textContent =
+    profile.brand || "";
+
+  $("printName").textContent =
+    profile.name || "";
+
+  $("printPhone").textContent =
+    profile.phone || "";
+
+  $("printDetails").textContent =
+    profile.details || "";
 
   $("printDate").textContent =
     formatDate(new Date());
 
-  const tbody =
-    $("printItems");
+  const wrap =
+    $("printTableWrap");
 
   if(!estimate.length){
 
-    tbody.innerHTML = `
-      <tr>
-        <td
-          colspan="6"
-          style="text-align:center;color:#777"
-        >
-          Роботи не додані
-        </td>
-      </tr>
+    wrap.innerHTML = `
+      <div class="print-empty">
+        У кошторисі немає доданих робіт.
+      </div>
     `;
 
   }else{
 
-    tbody.innerHTML =
-      estimate.map((item,index)=>{
+    const rows =
+      estimate.map(
+        (item,index)=>{
 
-        const qty =
-          Number(item.qty || 0);
+          const qty =
+            Number(
+              item.qty || 0
+            );
 
-        const price =
-          Number(item.price || 0);
+          const price =
+            Number(
+              item.price || 0
+            );
 
-        const total =
-          price * qty;
+          const total =
+            price * qty;
 
-        return `
+          return `
+
+            <tr>
+
+              <td class="col-num">
+                ${index + 1}
+              </td>
+
+              <td>
+                ${esc(item.name)}
+              </td>
+
+              <td class="col-qty">
+                ${qty}
+                ${esc(item.unit)}
+              </td>
+
+              <td class="col-price">
+                ${money(price)}
+              </td>
+
+              <td class="col-total">
+                ${money(total)}
+              </td>
+
+            </tr>
+
+          `;
+
+        }
+      ).join("");
+
+    wrap.innerHTML = `
+
+      <table class="print-table">
+
+        <thead>
 
           <tr>
 
-            <td class="col-num">
-              ${index + 1}
-            </td>
+            <th class="col-num">
+              №
+            </th>
 
-            <td>
-              ${esc(item.name)}
-            </td>
+            <th>
+              Робота
+            </th>
 
-            <td class="col-unit">
-              ${esc(item.unit)}
-            </td>
+            <th class="col-qty">
+              К-сть
+            </th>
 
-            <td class="col-qty">
-              ${qty}
-            </td>
+            <th class="col-price">
+              Ціна
+            </th>
 
-            <td class="col-price">
-              ${money(price)}
-            </td>
-
-            <td class="col-total">
-              ${money(total)}
-            </td>
+            <th class="col-total">
+              Сума
+            </th>
 
           </tr>
 
-        `;
+        </thead>
 
-      }).join("");
+        <tbody>
+
+          ${rows}
+
+        </tbody>
+
+      </table>
+
+    `;
 
   }
 
   $("printTotal").textContent =
-    money(getEstimateTotal());
+    money(
+      getEstimateTotal()
+    );
 
 }
+
 
 function printEstimate(){
 
   if(!estimate.length){
 
     showToast(
-      "Додайте хоча б одну роботу"
+      "Спочатку додайте роботи"
     );
 
     return;
@@ -3225,28 +3348,13 @@ function printEstimate(){
   }
 
   /*
-    Спочатку синхронізуємо профіль.
+    Профіль беремо з поточного
+    стану програми.
+    Саме ці дані потраплять
+    у друкований документ.
   */
 
-  saveProfile();
-
-  /*
-    Оновлюємо паспорт.
-  */
-
-  savePassportEstimate();
-
-  /*
-    І тільки після цього формуємо
-    друкований документ.
-  */
-
-  renderPrintDocument();
-
-  /*
-    Два animation frame дають браузеру
-    час оновити DOM перед друком.
-  */
+  preparePrintDocument();
 
   requestAnimationFrame(()=>{
 
@@ -3260,6 +3368,7 @@ function printEstimate(){
 
 }
 
+
 /* =========================================================
    JSON EXPORT
 ========================================================= */
@@ -3268,9 +3377,25 @@ function exportJSON(){
 
   const data = {
 
-    type:"sa-master-estimate",
+    type:
+      "sa-master-estimate",
 
-    version:2,
+    version:
+      1,
+
+    profile:{
+      brand:
+        profile.brand,
+
+      name:
+        profile.name,
+
+      phone:
+        profile.phone,
+
+      details:
+        profile.details
+    },
 
     estimateId:
       localStorage.getItem(
@@ -3285,41 +3410,50 @@ function exportJSON(){
     exportedAt:
       new Date().toISOString(),
 
-    master:{
-      brand:profile.brand,
-      name:profile.name,
-      phone:profile.phone,
-      details:profile.details
-    },
-
     total:
       getEstimateTotal(),
 
     items:
+
       estimate.map(item=>({
 
-        id:item.lineId,
+        id:
+          item.lineId,
 
-        workId:item.workId,
+        workId:
+          item.workId,
 
-        name:item.name,
+        name:
+          item.name,
 
-        category:item.cat,
+        category:
+          item.cat,
 
-        unit:item.unit,
+        unit:
+          item.unit,
 
         quantity:
-          Number(item.qty || 0),
+          Number(
+            item.qty || 0
+          ),
 
         basePrice:
-          Number(item.basePrice || 0),
+          Number(
+            item.basePrice || 0
+          ),
 
         price:
-          Number(item.price || 0),
+          Number(
+            item.price || 0
+          ),
 
         total:
-          Number(item.price || 0) *
-          Number(item.qty || 0)
+          Number(
+            item.price || 0
+          ) *
+          Number(
+            item.qty || 0
+          )
 
       }))
 
@@ -3341,10 +3475,14 @@ function exportJSON(){
     );
 
   const url =
-    URL.createObjectURL(blob);
+    URL.createObjectURL(
+      blob
+    );
 
   const a =
-    document.createElement("a");
+    document.createElement(
+      "a"
+    );
 
   a.href =
     url;
@@ -3352,19 +3490,24 @@ function exportJSON(){
   a.download =
     "sa-master-estimate.json";
 
-  document.body.appendChild(a);
+  document.body.appendChild(
+    a
+  );
 
   a.click();
 
   a.remove();
 
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(
+    url
+  );
 
   showToast(
     "JSON експортовано"
   );
 
 }
+
 
 /* =========================================================
    MODALS
@@ -3373,10 +3516,12 @@ function exportJSON(){
 function closeModal(id){
 
   $(id)
-    .classList
-    .remove("show");
+    .classList.remove(
+      "show"
+    );
 
 }
+
 
 function modalBackgroundClick(
   event,
@@ -3394,26 +3539,35 @@ function modalBackgroundClick(
 
 }
 
+
 document.addEventListener(
   "keydown",
   event => {
 
     if(
-      event.key !== "Escape"
-    ) return;
+      event.key !==
+      "Escape"
+    ){
+
+      return;
+
+    }
 
     document
       .querySelectorAll(
         ".modal.show"
       )
       .forEach(modal=>{
+
         modal.classList.remove(
           "show"
         );
+
       });
 
   }
 );
+
 
 /* =========================================================
    THEME
@@ -3421,8 +3575,7 @@ document.addEventListener(
 
 function applyTheme(theme){
 
-  document.documentElement
-    .dataset.theme =
+  document.documentElement.dataset.theme =
     theme;
 
   localStorage.setItem(
@@ -3430,13 +3583,13 @@ function applyTheme(theme){
     theme
   );
 
-  $("themeButton")
-    .textContent =
-      theme === "dark"
-        ? "☀"
-        : "☾";
+  $("themeButton").textContent =
+    theme === "dark"
+      ? "☀"
+      : "☾";
 
 }
+
 
 function initTheme(){
 
@@ -3453,11 +3606,11 @@ function initTheme(){
 
 }
 
+
 function toggleTheme(){
 
   const current =
-    document.documentElement
-      .dataset.theme ||
+    document.documentElement.dataset.theme ||
     "light";
 
   applyTheme(
@@ -3468,6 +3621,7 @@ function toggleTheme(){
 
 }
 
+
 /* =========================================================
    INIT
 ========================================================= */
@@ -3475,6 +3629,8 @@ function toggleTheme(){
 initTheme();
 
 renderProfile();
+
+renderSettings();
 
 renderEstimate();
 
