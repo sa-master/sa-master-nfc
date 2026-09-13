@@ -195,6 +195,37 @@ button{
   gap:8px;
 }
 
+.estimateMaterialChoice{
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  padding:0 13px 9px;
+}
+
+.estimateMaterialChoice select{
+  width:100%;
+  min-width:0;
+  height:34px;
+  border:0;
+  outline:0;
+  border-radius:10px;
+  background:var(--soft);
+  padding:0 9px;
+  color:var(--text);
+  font-size:12px;
+  font-weight:650;
+}
+
+.estimateMaterialChoice select:focus{
+  background:#fff;
+  box-shadow:inset 0 0 0 1.5px var(--blue);
+}
+
+.estimateMaterialChoice select:disabled{
+  opacity:.55;
+}
+
 .count{
   color:var(--muted);
   font-size:11px;
@@ -1161,6 +1192,22 @@ button{
 
   </div>
 
+  <div class="estimateMaterialChoice">
+
+    <select
+      id="estimateBrand"
+      onchange="setEstimateBrand(this.value)"
+      aria-label="Бренд матеріалів"
+    ></select>
+
+    <select
+      id="estimateSystem"
+      onchange="setEstimateSystem(this.value)"
+      aria-label="Система матеріалів"
+    ></select>
+
+  </div>
+
   <div class="list" id="list"></div>
 
 </main>
@@ -2041,6 +2088,22 @@ let catalogSystemFilter = "all";
 let catalogManageMode = false;
 let editingCatalogId = null;
 
+
+/* =========================================================
+   СИСТЕМА МАТЕРІАЛІВ ПОТОЧНОГО КОШТОРИСУ
+========================================================= */
+
+let estimateMaterialBrand =
+  localStorage.getItem(
+    "plumber_estimateMaterialBrand"
+  ) || "";
+
+let estimateMaterialSystem =
+  localStorage.getItem(
+    "plumber_estimateMaterialSystem"
+  ) || "";
+
+
 /* Дані поточного імпорту */
 let pendingImport = [];
 
@@ -2096,6 +2159,317 @@ function escapeHtml(value){
     .replace(/>/g,"&gt;")
     .replace(/"/g,"&quot;")
     .replace(/'/g,"&#039;");
+
+}
+
+
+/* =========================================================
+   БРЕНД / СИСТЕМА КОШТОРИСУ
+========================================================= */
+
+function getEstimateMaterialBrands(){
+
+  const values = new Map();
+
+  catalog
+    .filter(
+      item =>
+        item.type === "material"
+    )
+    .forEach(item => {
+
+      const value =
+        String(
+          item.manufacturer || ""
+        ).trim();
+
+      if(value){
+
+        values.set(
+          normalizeText(value),
+          value
+        );
+
+      }
+
+    });
+
+  return Array
+    .from(values.values())
+    .sort(
+      (a,b) =>
+        a.localeCompare(
+          b,
+          "uk"
+        )
+    );
+
+}
+
+
+function getEstimateMaterialSystems(){
+
+  const values = new Map();
+
+  catalog
+    .filter(item => {
+
+      if(item.type !== "material"){
+        return false;
+      }
+
+      if(!estimateMaterialBrand){
+        return true;
+      }
+
+      return (
+        normalizeText(
+          item.manufacturer
+        ) ===
+        normalizeText(
+          estimateMaterialBrand
+        )
+      );
+
+    })
+    .forEach(item => {
+
+      const value =
+        String(
+          item.system || ""
+        ).trim();
+
+      if(value){
+
+        values.set(
+          normalizeText(value),
+          value
+        );
+
+      }
+
+    });
+
+  return Array
+    .from(values.values())
+    .sort(
+      (a,b) =>
+        a.localeCompare(
+          b,
+          "uk"
+        )
+    );
+
+}
+
+
+function renderEstimateMaterialSelectors(){
+
+  const brandSelect =
+    document.getElementById(
+      "estimateBrand"
+    );
+
+  const systemSelect =
+    document.getElementById(
+      "estimateSystem"
+    );
+
+  if(
+    !brandSelect ||
+    !systemSelect
+  ){
+    return;
+  }
+
+
+  const brands =
+    getEstimateMaterialBrands();
+
+
+  if(
+    estimateMaterialBrand &&
+    !brands.some(
+      brand =>
+        normalizeText(brand) ===
+        normalizeText(
+          estimateMaterialBrand
+        )
+    )
+  ){
+
+    estimateMaterialBrand = "";
+    estimateMaterialSystem = "";
+
+    localStorage.removeItem(
+      "plumber_estimateMaterialBrand"
+    );
+
+    localStorage.removeItem(
+      "plumber_estimateMaterialSystem"
+    );
+
+  }
+
+
+  brandSelect.innerHTML = `
+
+    <option value="">
+      Бренд матеріалів
+    </option>
+
+    ${
+      brands
+        .map(
+          brand => `
+
+            <option
+              value="${escapeHtml(brand)}"
+              ${
+                normalizeText(
+                  brand
+                ) ===
+                normalizeText(
+                  estimateMaterialBrand
+                )
+                  ? "selected"
+                  : ""
+              }
+            >
+              ${escapeHtml(brand)}
+            </option>
+
+          `
+        )
+        .join("")
+    }
+
+  `;
+
+
+  const systems =
+    getEstimateMaterialSystems();
+
+
+  if(
+    estimateMaterialSystem &&
+    !systems.some(
+      system =>
+        normalizeText(system) ===
+        normalizeText(
+          estimateMaterialSystem
+        )
+    )
+  ){
+
+    estimateMaterialSystem = "";
+
+    localStorage.removeItem(
+      "plumber_estimateMaterialSystem"
+    );
+
+  }
+
+
+  systemSelect.innerHTML = `
+
+    <option value="">
+      Система
+    </option>
+
+    ${
+      systems
+        .map(
+          system => `
+
+            <option
+              value="${escapeHtml(system)}"
+              ${
+                normalizeText(
+                  system
+                ) ===
+                normalizeText(
+                  estimateMaterialSystem
+                )
+                  ? "selected"
+                  : ""
+              }
+            >
+              ${escapeHtml(system)}
+            </option>
+
+          `
+        )
+        .join("")
+    }
+
+  `;
+
+
+  systemSelect.disabled =
+    !systems.length;
+
+}
+
+
+function setEstimateBrand(brand){
+
+  estimateMaterialBrand =
+    String(
+      brand || ""
+    ).trim();
+
+  estimateMaterialSystem = "";
+
+
+  if(estimateMaterialBrand){
+
+    localStorage.setItem(
+      "plumber_estimateMaterialBrand",
+      estimateMaterialBrand
+    );
+
+  }else{
+
+    localStorage.removeItem(
+      "plumber_estimateMaterialBrand"
+    );
+
+  }
+
+
+  localStorage.removeItem(
+    "plumber_estimateMaterialSystem"
+  );
+
+
+  renderEstimateMaterialSelectors();
+
+}
+
+
+function setEstimateSystem(system){
+
+  estimateMaterialSystem =
+    String(
+      system || ""
+    ).trim();
+
+
+  if(estimateMaterialSystem){
+
+    localStorage.setItem(
+      "plumber_estimateMaterialSystem",
+      estimateMaterialSystem
+    );
+
+  }else{
+
+    localStorage.removeItem(
+      "plumber_estimateMaterialSystem"
+    );
+
+  }
 
 }
 
@@ -3070,10 +3444,6 @@ function renderCatalog(){
   }
 
 
-  /* -------------------------------------------------------
-     РОБОТИ
-  ------------------------------------------------------- */
-
   if(catalogMode === "work"){
 
     let groups = {};
@@ -3110,14 +3480,7 @@ function renderCatalog(){
         )
         .join("");
 
-  }
-
-
-  /* -------------------------------------------------------
-     МАТЕРІАЛИ
-  ------------------------------------------------------- */
-
-  else{
+  }else{
 
     const categories = [
       ["water","Водопостачання"],
@@ -3421,9 +3784,39 @@ function addItem(id){
       item => item.id === id
     );
 
+
   if(existing){
 
     existing.qty++;
+
+
+    if(
+      existing.type === "material"
+    ){
+
+      if(
+        !existing.manufacturer &&
+        estimateMaterialBrand
+      ){
+
+        existing.manufacturer =
+          estimateMaterialBrand;
+
+      }
+
+
+      if(
+        !existing.system &&
+        estimateMaterialSystem
+      ){
+
+        existing.system =
+          estimateMaterialSystem;
+
+      }
+
+    }
+
 
   }else{
 
@@ -3449,22 +3842,55 @@ function addItem(id){
 
     };
 
+
     if(product.type === "material"){
 
       estimateItem.manufacturer =
-        product.manufacturer || "";
+        product.manufacturer ||
+        estimateMaterialBrand ||
+        "";
 
-      estimateItem.system =
-        product.system || "";
+
+      if(product.system){
+
+        estimateItem.system =
+          product.system;
+
+      }else if(
+        !product.manufacturer ||
+        (
+          estimateMaterialBrand &&
+          normalizeText(
+            product.manufacturer
+          ) ===
+          normalizeText(
+            estimateMaterialBrand
+          )
+        )
+      ){
+
+        estimateItem.system =
+          estimateMaterialSystem || "";
+
+      }else{
+
+        estimateItem.system = "";
+
+      }
+
 
       estimateItem.article =
         product.article || "";
 
     }
 
-    estimate.push(estimateItem);
+
+    estimate.push(
+      estimateItem
+    );
 
   }
+
 
   save();
 
@@ -4016,6 +4442,8 @@ function saveCatalogItem(){
 
   closeCatalogEditor();
 
+  renderEstimateMaterialSelectors();
+
   renderFilters();
   renderBrandFilters();
   renderSystemFilters();
@@ -4054,6 +4482,8 @@ function deleteCatalogItem(id){
     );
 
   saveCatalog();
+
+  renderEstimateMaterialSelectors();
 
   renderFilters();
   renderBrandFilters();
@@ -4454,8 +4884,6 @@ function classifyImportProduct(
     ).trim();
 
 
-  /* Спочатку шукаємо систему в повній назві */
-
   const knownSystems =
     getKnownSystems();
 
@@ -4469,8 +4897,6 @@ function classifyImportProduct(
     system = systemFromName;
   }
 
-
-  /* Потім бренд у повній назві */
 
   const knownManufacturers =
     getKnownManufacturers();
@@ -4610,9 +5036,6 @@ function contextFromRow(
   }
 
 
-  /* Якщо колонка Товар порожня,
-     шукаємо текстовий осередок */
-
   for(const value of values){
 
     if(
@@ -4663,9 +5086,6 @@ function findUnitInRow(
     return "";
   }
 
-  /* У твоїй накладній одиниця
-     стоїть одразу після кількості */
-
   const afterQuantity =
     row[quantityCol + 1];
 
@@ -4679,9 +5099,6 @@ function findUnitInRow(
 
   }
 
-
-  /* Резервний пошук між кількістю
-     та ціною без знижки */
 
   if(
     basePriceCol > quantityCol
@@ -4816,10 +5233,6 @@ async function handleImportFile(event){
     }
 
 
-    /* -----------------------------------------------------
-       ПОШУК ЗАГОЛОВКІВ
-    ----------------------------------------------------- */
-
     let headerIndex = -1;
     let headers = [];
 
@@ -4898,10 +5311,6 @@ async function handleImportFile(event){
       );
 
 
-    /* -----------------------------------------------------
-       КОНТЕКСТ НАКЛАДНОЇ
-    ----------------------------------------------------- */
-
     let currentCategory =
       getImportCategory();
 
@@ -4914,10 +5323,6 @@ async function handleImportFile(event){
     const seen =
       new Set();
 
-
-    /* -----------------------------------------------------
-       РОЗБІР РЯДКІВ
-    ----------------------------------------------------- */
 
     for(
       let i = headerIndex + 1;
@@ -4940,11 +5345,6 @@ async function handleImportFile(event){
           row[productCol] ?? ""
         ).trim();
 
-
-      /* ---------------------------------------------------
-         РЯДОК БЕЗ АРТИКУЛУ —
-         МОЖЕ БУТИ КОНТЕКСТОМ
-      --------------------------------------------------- */
 
       if(!article){
 
@@ -5006,10 +5406,6 @@ async function handleImportFile(event){
 
           }
 
-
-          /* Деякі системи/бренди можуть бути
-             у накладній без попереднього запису
-             в каталозі. Визначаємо очевидні. */
 
           const contextLower =
             normalizeText(
@@ -5102,10 +5498,6 @@ async function handleImportFile(event){
       }
 
 
-      /* ---------------------------------------------------
-         ТОВАРНИЙ РЯДОК
-      --------------------------------------------------- */
-
       if(!productName){
         continue;
       }
@@ -5135,8 +5527,6 @@ async function handleImportFile(event){
         continue;
       }
 
-
-      /* Дублікати всередині одного файлу */
 
       if(seen.has(articleKey)){
         continue;
@@ -5525,8 +5915,6 @@ function applyImport(){
   }
 
 
-  /* ---------- НОВІ ---------- */
-
   newItems.forEach(item => {
 
     catalog.push({
@@ -5564,8 +5952,6 @@ function applyImport(){
   });
 
 
-  /* ---------- ЗМІНА ЦІНИ ---------- */
-
   changedItems.forEach(item => {
 
     const catalogItem =
@@ -5586,6 +5972,8 @@ function applyImport(){
   saveCatalog();
 
   closeImport();
+
+  renderEstimateMaterialSelectors();
 
   renderFilters();
   renderBrandFilters();
@@ -5706,6 +6094,7 @@ document.getElementById("date")
    START
 ========================================================= */
 
+renderEstimateMaterialSelectors();
 renderEstimate();
 
 </script>
