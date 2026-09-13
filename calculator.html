@@ -6,6 +6,9 @@
 
 <title>Калькулятор сантехніка</title>
 
+<!-- XLS / XLSX -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
 <style>
 :root{
   --bg:#f4f6fa;
@@ -438,6 +441,21 @@ button{
   color:#fff;
 }
 
+.catalogImportButton{
+  height:32px;
+  padding:0 9px;
+  border-radius:9px;
+  background:#e9ebef;
+  color:var(--blue);
+  font-size:12px;
+  font-weight:700;
+  display:none;
+}
+
+.catalogImportButton.show{
+  display:block;
+}
+
 .close{
   width:32px;
   height:32px;
@@ -634,6 +652,162 @@ button{
   color:var(--muted);
   padding:35px 20px;
   font-size:14px;
+}
+
+/* ================= IMPORT ================= */
+
+.importSheet{
+  position:fixed;
+  inset:0;
+  z-index:50;
+  display:none;
+  align-items:flex-end;
+  background:rgba(0,0,0,.28);
+  backdrop-filter:blur(5px);
+}
+
+.importSheet.open{
+  display:flex;
+}
+
+.importPanel{
+  width:100%;
+  max-width:560px;
+  max-height:86dvh;
+  margin:auto;
+  background:#f6f7fa;
+  border-radius:22px;
+  padding:
+    10px
+    14px
+    calc(18px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.importHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex:0 0 auto;
+  padding:2px 0 10px;
+}
+
+.importHead strong{
+  font-size:18px;
+}
+
+.importSummary{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  flex:0 0 auto;
+  margin-bottom:8px;
+}
+
+.importStat{
+  background:#fff;
+  border-radius:11px;
+  padding:8px 5px;
+  text-align:center;
+}
+
+.importStat b{
+  display:block;
+  font-size:18px;
+}
+
+.importStat span{
+  display:block;
+  margin-top:1px;
+  color:var(--muted);
+  font-size:10px;
+}
+
+.importList{
+  min-height:0;
+  flex:1;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding:2px 0 8px;
+}
+
+.importRow{
+  background:#fff;
+  border-radius:12px;
+  padding:9px 10px;
+  margin:5px 0;
+}
+
+.importRowTop{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.importRowName{
+  min-width:0;
+  font-size:13px;
+  font-weight:650;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+
+.importStatus{
+  flex:0 0 auto;
+  font-size:10px;
+  font-weight:750;
+  color:var(--muted);
+}
+
+.importStatus.new{
+  color:#16843a;
+}
+
+.importStatus.changed{
+  color:var(--blue);
+}
+
+.importStatus.same{
+  color:var(--muted);
+}
+
+.importRowMeta{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.35;
+}
+
+.importButtons{
+  flex:0 0 auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  padding-top:7px;
+}
+
+.importCancel,
+.importApply{
+  height:42px;
+  border-radius:13px;
+  font-size:14px;
+  font-weight:700;
+}
+
+.importCancel{
+  background:#e9ebef;
+  color:#555;
+}
+
+.importApply{
+  background:var(--blue);
+  color:#fff;
+}
+
+.importApply:disabled{
+  opacity:.45;
 }
 
 /* ================= EDIT CATALOG SHEET ================= */
@@ -1035,6 +1209,14 @@ button{
         </button>
 
         <button
+          class="catalogImportButton"
+          id="catalogImportButton"
+          onclick="openImport()"
+        >
+          ⇩ Імпорт
+        </button>
+
+        <button
           class="close"
           onclick="closeCatalog()"
         >
@@ -1068,6 +1250,90 @@ button{
   </div>
 
 </div>
+
+
+<!-- IMPORT -->
+<div
+  class="importSheet"
+  id="importSheet"
+  onclick="if(event.target===this)closeImport()"
+>
+
+  <div class="importPanel">
+
+    <div class="importHead">
+
+      <strong>
+        Імпорт каталогу
+      </strong>
+
+      <button
+        class="close"
+        onclick="closeImport()"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="importSummary">
+
+      <div class="importStat">
+        <b id="importNewCount">0</b>
+        <span>нових</span>
+      </div>
+
+      <div class="importStat">
+        <b id="importChangedCount">0</b>
+        <span>зміна ціни</span>
+      </div>
+
+      <div class="importStat">
+        <b id="importSameCount">0</b>
+        <span>без змін</span>
+      </div>
+
+    </div>
+
+
+    <div
+      class="importList"
+      id="importList"
+    ></div>
+
+
+    <div class="importButtons">
+
+      <button
+        class="importCancel"
+        onclick="closeImport()"
+      >
+        Скасувати
+      </button>
+
+      <button
+        class="importApply"
+        id="importApply"
+        onclick="applyImport()"
+      >
+        Оновити каталог
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- HIDDEN FILE INPUT -->
+<input
+  type="file"
+  id="importFile"
+  accept=".xls,.xlsx"
+  style="display:none"
+>
 
 
 <!-- CATALOG EDITOR -->
@@ -1294,8 +1560,6 @@ button{
 
 const defaultCatalog = [
 
-  /* ---------- ЧОРНОВІ ---------- */
-
   {
     id:"w-rough-radiator",
     name:"Радіатор",
@@ -1476,9 +1740,6 @@ const defaultCatalog = [
     unit:"шт"
   },
 
-
-  /* ---------- ЧИСТОВІ ---------- */
-
   {
     id:"w-finish-radiator",
     name:"Радіатор",
@@ -1589,9 +1850,6 @@ const defaultCatalog = [
     unit:"компл."
   },
 
-
-  /* ---------- МАТЕРІАЛИ ---------- */
-
   {
     id:"m-water-pipe",
     name:"Труба водопостачання",
@@ -1695,7 +1953,6 @@ let catalog =
     localStorage.getItem("plumber_catalog") || "null"
   );
 
-
 if(!Array.isArray(catalog)){
 
   catalog =
@@ -1712,7 +1969,7 @@ if(!Array.isArray(catalog)){
 
 
 /* =========================================================
-   МІГРАЦІЯ СТАРОГО КАТАЛОГУ
+   МІГРАЦІЯ
 ========================================================= */
 
 catalog =
@@ -1738,7 +1995,6 @@ catalog =
 
   });
 
-
 localStorage.setItem(
   "plumber_catalog",
   JSON.stringify(catalog)
@@ -1755,12 +2011,12 @@ let estimate =
   );
 
 let catalogMode = "work";
-
 let catalogFilter = "all";
-
 let catalogManageMode = false;
-
 let editingCatalogId = null;
+
+/* Дані поточного імпорту */
+let pendingImport = [];
 
 
 /* =========================================================
@@ -1775,7 +2031,6 @@ function money(value){
 
 }
 
-
 function save(){
 
   localStorage.setItem(
@@ -1784,7 +2039,6 @@ function save(){
   );
 
 }
-
 
 function saveCatalog(){
 
@@ -1807,7 +2061,6 @@ function renderEstimate(){
 
   const clearButton =
     document.getElementById("clearEstimate");
-
 
   if(!estimate.length){
 
@@ -1841,43 +2094,31 @@ function renderEstimate(){
         x => x.type === "material"
       );
 
-
     if(rough.length){
-
       html += section(
         "ЧОРНОВИЙ МОНТАЖ",
         rough
       );
-
     }
 
-
     if(finish.length){
-
       html += section(
         "ЧИСТОВИЙ МОНТАЖ",
         finish
       );
-
     }
 
-
     if(materials.length){
-
       html += section(
         "МАТЕРІАЛИ",
         materials
       );
-
     }
 
-
     list.innerHTML = html;
-
     clearButton.style.display = "block";
 
   }
-
 
   const total =
     estimate.reduce(
@@ -1886,10 +2127,8 @@ function renderEstimate(){
       0
     );
 
-
   document.getElementById("grand")
     .textContent = money(total);
-
 
   document.getElementById("count")
     .textContent =
@@ -1908,22 +2147,18 @@ function clearEstimate(){
     return;
   }
 
-
   const confirmed =
     confirm(
       "Очистити весь кошторис?"
     );
 
-
   if(!confirmed){
     return;
   }
 
-
   estimate = [];
 
   save();
-
   renderEstimate();
 
 }
@@ -1952,7 +2187,6 @@ function renderRow(item){
 
   const index =
     estimate.indexOf(item);
-
 
   return `
     <div class="row">
@@ -1988,7 +2222,6 @@ function renderRow(item){
 
           </div>
 
-
           <button
             class="price"
             onclick="editPrice(${index})"
@@ -1999,7 +2232,6 @@ function renderRow(item){
         </div>
 
       </div>
-
 
       <div class="right">
 
@@ -2023,7 +2255,7 @@ function renderRow(item){
 
 
 /* =========================================================
-   КІЛЬКІСТЬ У КОШТОРИСІ
+   КІЛЬКІСТЬ
 ========================================================= */
 
 function changeQty(index,delta){
@@ -2035,7 +2267,6 @@ function changeQty(index,delta){
     );
 
   save();
-
   renderEstimate();
 
 }
@@ -2049,18 +2280,15 @@ function editEstimateQty(index){
       estimate[index].qty
     );
 
-
   if(value === null){
     return;
   }
-
 
   const qty =
     Number(
       String(value)
         .replace(",",".")
     );
-
 
   if(
     !Number.isFinite(qty) ||
@@ -2069,10 +2297,8 @@ function editEstimateQty(index){
     return;
   }
 
-
   const newQty =
     Math.floor(qty);
-
 
   if(newQty <= 0){
 
@@ -2084,9 +2310,7 @@ function editEstimateQty(index){
 
   }
 
-
   save();
-
   renderEstimate();
 
 }
@@ -2101,14 +2325,13 @@ function removeItem(index){
   estimate.splice(index,1);
 
   save();
-
   renderEstimate();
 
 }
 
 
 /* =========================================================
-   РЕДАГУВАННЯ ЦІНИ
+   ЦІНА
 ========================================================= */
 
 function editPrice(index){
@@ -2119,11 +2342,9 @@ function editPrice(index){
       estimate[index].price
     );
 
-
   if(value === null){
     return;
   }
-
 
   const price =
     Number(
@@ -2131,17 +2352,14 @@ function editPrice(index){
         .replace(",",".")
     );
 
-
   if(
     Number.isFinite(price) &&
     price >= 0
   ){
 
-    estimate[index].price =
-      price;
+    estimate[index].price = price;
 
     save();
-
     renderEstimate();
 
   }
@@ -2156,11 +2374,8 @@ function editPrice(index){
 function openCatalog(type){
 
   catalogMode = type;
-
   catalogFilter = "all";
-
   catalogManageMode = false;
-
 
   document.getElementById(
     "panelTitle"
@@ -2169,21 +2384,18 @@ function openCatalog(type){
       ? "Додати роботу"
       : "Додати матеріал";
 
-
   document.getElementById(
     "search"
   ).value = "";
-
 
   document
     .getElementById("sheet")
     .classList.add("open");
 
+  updateImportButton();
 
   renderFilters();
-
   renderCatalog();
-
 
   setTimeout(
     () =>
@@ -2204,6 +2416,8 @@ function closeCatalog(){
 
   catalogManageMode = false;
 
+  updateImportButton();
+
 }
 
 
@@ -2212,12 +2426,10 @@ function toggleCatalogManage(){
   catalogManageMode =
     !catalogManageMode;
 
-
   const button =
     document.getElementById(
       "catalogEditButton"
     );
-
 
   if(catalogManageMode){
 
@@ -2231,8 +2443,36 @@ function toggleCatalogManage(){
 
   }
 
-
+  updateImportButton();
   renderCatalog();
+
+}
+
+
+/* =========================================================
+   КНОПКА ІМПОРТУ
+========================================================= */
+
+function updateImportButton(){
+
+  const button =
+    document.getElementById(
+      "catalogImportButton"
+    );
+
+  if(
+    catalogManageMode &&
+    document.getElementById("sheet")
+      .classList.contains("open")
+  ){
+
+    button.classList.add("show");
+
+  }else{
+
+    button.classList.remove("show");
+
+  }
 
 }
 
@@ -2245,7 +2485,6 @@ function renderFilters(){
 
   const box =
     document.getElementById("filters");
-
 
   if(catalogMode === "work"){
 
@@ -2357,7 +2596,6 @@ function setFilter(filter){
   catalogFilter = filter;
 
   renderFilters();
-
   renderCatalog();
 
 }
@@ -2376,14 +2614,12 @@ function renderCatalog(){
       .trim()
       .toLowerCase();
 
-
   let items =
     catalog.filter(item => {
 
       if(item.type !== catalogMode){
         return false;
       }
-
 
       if(
         query &&
@@ -2417,11 +2653,9 @@ function renderCatalog(){
         return false;
       }
 
-
       if(catalogFilter === "all"){
         return true;
       }
-
 
       return (
         item.stage === catalogFilter ||
@@ -2430,16 +2664,13 @@ function renderCatalog(){
 
     });
 
-
   const box =
     document.getElementById("catalog");
-
 
   box.classList.toggle(
     "manageMode",
     catalogManageMode
   );
-
 
   if(!items.length){
 
@@ -2466,14 +2697,11 @@ function renderCatalog(){
 
   }
 
-
   let groups = {};
-
 
   items.forEach(item => {
 
     let group;
-
 
     if(item.type === "work"){
 
@@ -2502,16 +2730,13 @@ function renderCatalog(){
 
     }
 
-
     if(!groups[group]){
       groups[group] = [];
     }
 
-
     groups[group].push(item);
 
   });
-
 
   box.innerHTML =
     Object.entries(groups)
@@ -2558,29 +2783,33 @@ function renderCatalog(){
                       </div>
 
                       <div class="catalogMeta">
+
                         ${
                           item.price
                             ? money(item.price)
                             : "ціна не задана"
                         }
+
                         ·
                         ${item.unit}
+
                         ${
                           item.type === "material" &&
                           item.manufacturer
                             ? ` · ${item.manufacturer}`
                             : ""
                         }
+
                         ${
                           item.type === "material" &&
                           item.system
                             ? ` · ${item.system}`
                             : ""
                         }
+
                       </div>
 
                     </div>
-
 
                     ${
                       catalogManageMode
@@ -2661,7 +2890,6 @@ function renderCatalog(){
       )
       .join("");
 
-
   if(catalogManageMode){
 
     box.innerHTML += `
@@ -2679,7 +2907,7 @@ function renderCatalog(){
 
 
 /* =========================================================
-   ДОДАВАННЯ В КОШТОРИС
+   ДОДАВАННЯ
 ========================================================= */
 
 function addItem(id){
@@ -2689,17 +2917,14 @@ function addItem(id){
       item => item.id === id
     );
 
-
   if(!product){
     return;
   }
-
 
   const existing =
     estimate.find(
       item => item.id === id
     );
-
 
   if(existing){
 
@@ -2729,7 +2954,6 @@ function addItem(id){
 
     };
 
-
     if(product.type === "material"){
 
       estimateItem.manufacturer =
@@ -2743,16 +2967,13 @@ function addItem(id){
 
     }
 
-
     estimate.push(estimateItem);
 
   }
 
-
   save();
 
   renderEstimate();
-
   renderCatalog();
 
 }
@@ -2769,7 +2990,6 @@ function catalogChangeQty(id,delta){
       item => item.id === id
     );
 
-
   if(index === -1){
 
     if(delta > 0){
@@ -2780,9 +3000,7 @@ function catalogChangeQty(id,delta){
 
   }
 
-
   estimate[index].qty += delta;
-
 
   if(estimate[index].qty <= 0){
 
@@ -2790,11 +3008,9 @@ function catalogChangeQty(id,delta){
 
   }
 
-
   save();
 
   renderEstimate();
-
   renderCatalog();
 
 }
@@ -2807,11 +3023,9 @@ function editCatalogQty(id){
       x => x.id === id
     );
 
-
   if(!item){
     return;
   }
-
 
   const value =
     prompt(
@@ -2819,18 +3033,15 @@ function editCatalogQty(id){
       item.qty
     );
 
-
   if(value === null){
     return;
   }
-
 
   const qty =
     Number(
       String(value)
         .replace(",",".")
     );
-
 
   if(
     !Number.isFinite(qty) ||
@@ -2839,10 +3050,8 @@ function editCatalogQty(id){
     return;
   }
 
-
   const newQty =
     Math.floor(qty);
-
 
   if(newQty <= 0){
 
@@ -2857,11 +3066,9 @@ function editCatalogQty(id){
 
   }
 
-
   save();
 
   renderEstimate();
-
   renderCatalog();
 
 }
@@ -2875,14 +3082,12 @@ function openCatalogEditor(id=null){
 
   editingCatalogId = id;
 
-
   const item =
     id
       ? catalog.find(
           x => x.id === id
         )
       : null;
-
 
   document.getElementById(
     "editorTitle"
@@ -2891,14 +3096,12 @@ function openCatalogEditor(id=null){
       ? "Редагувати позицію"
       : "Нова позиція";
 
-
   document.getElementById(
     "editorName"
   ).value =
     item
       ? item.name
       : "";
-
 
   document.getElementById(
     "editorEstimateName"
@@ -2910,14 +3113,12 @@ function openCatalogEditor(id=null){
         )
       : "";
 
-
   document.getElementById(
     "editorPrice"
   ).value =
     item
       ? item.price
       : 0;
-
 
   document.getElementById(
     "editorUnit"
@@ -2926,14 +3127,12 @@ function openCatalogEditor(id=null){
       ? item.unit
       : "шт";
 
-
   document.getElementById(
     "editorType"
   ).value =
     item
       ? item.type
       : catalogMode;
-
 
   document.getElementById(
     "editorManufacturer"
@@ -2945,7 +3144,6 @@ function openCatalogEditor(id=null){
         )
       : "";
 
-
   document.getElementById(
     "editorSystem"
   ).value =
@@ -2956,7 +3154,6 @@ function openCatalogEditor(id=null){
         )
       : "";
 
-
   document.getElementById(
     "editorArticle"
   ).value =
@@ -2966,7 +3163,6 @@ function openCatalogEditor(id=null){
           ""
         )
       : "";
-
 
   if(item){
 
@@ -2997,11 +3193,8 @@ function openCatalogEditor(id=null){
 
   }
 
-
   updateEditorGroup();
-
   updateMaterialFields();
-
 
   document
     .getElementById("editorSheet")
@@ -3028,7 +3221,6 @@ function updateEditorGroup(){
       "editorType"
     ).value;
 
-
   const select =
     document.getElementById(
       "editorGroup"
@@ -3039,11 +3231,9 @@ function updateEditorGroup(){
       "editorGroupLabel"
     );
 
-
   if(type === "work"){
 
     label.textContent = "Етап";
-
 
     select.innerHTML = `
 
@@ -3060,7 +3250,6 @@ function updateEditorGroup(){
   }else{
 
     label.textContent = "Категорія";
-
 
     select.innerHTML = `
 
@@ -3094,7 +3283,6 @@ function updateMaterialFields(){
       "editorType"
     ).value;
 
-
   document.getElementById(
     "materialFields"
   ).style.display =
@@ -3126,13 +3314,11 @@ function saveCatalogItem(){
       .value
       .trim();
 
-
   const estimateName =
     document
       .getElementById("editorEstimateName")
       .value
       .trim();
-
 
   const price =
     Number(
@@ -3141,25 +3327,21 @@ function saveCatalogItem(){
         .value
     );
 
-
   const unit =
     document
       .getElementById("editorUnit")
       .value
       .trim();
 
-
   const type =
     document
       .getElementById("editorType")
       .value;
 
-
   const group =
     document
       .getElementById("editorGroup")
       .value;
-
 
   const manufacturer =
     document
@@ -3167,20 +3349,17 @@ function saveCatalogItem(){
       .value
       .trim();
 
-
   const system =
     document
       .getElementById("editorSystem")
       .value
       .trim();
 
-
   const article =
     document
       .getElementById("editorArticle")
       .value
       .trim();
-
 
   if(!name){
 
@@ -3190,7 +3369,6 @@ function saveCatalogItem(){
 
   }
 
-
   if(!estimateName){
 
     alert("Вкажіть повну назву для кошторису.");
@@ -3198,7 +3376,6 @@ function saveCatalogItem(){
     return;
 
   }
-
 
   if(
     !Number.isFinite(price) ||
@@ -3211,7 +3388,6 @@ function saveCatalogItem(){
 
   }
 
-
   if(!unit){
 
     alert("Вкажіть одиницю.");
@@ -3219,7 +3395,6 @@ function saveCatalogItem(){
     return;
 
   }
-
 
   if(
     type === "material" &&
@@ -3231,7 +3406,6 @@ function saveCatalogItem(){
     return;
 
   }
-
 
   if(type === "material"){
 
@@ -3246,7 +3420,6 @@ function saveCatalogItem(){
           item.id !== editingCatalogId
       );
 
-
     if(duplicate){
 
       alert(
@@ -3259,7 +3432,6 @@ function saveCatalogItem(){
 
   }
 
-
   if(editingCatalogId){
 
     const item =
@@ -3267,30 +3439,21 @@ function saveCatalogItem(){
         x => x.id === editingCatalogId
       );
 
-
     if(!item){
       return;
     }
 
-
     item.name = name;
-
-    item.estimateName =
-      estimateName;
-
+    item.estimateName = estimateName;
     item.price = price;
-
     item.unit = unit;
-
     item.type = type;
-
 
     if(type === "work"){
 
       item.stage = group;
 
       delete item.category;
-
       delete item.manufacturer;
       delete item.system;
       delete item.article;
@@ -3322,24 +3485,16 @@ function saveCatalogItem(){
         .toString(36)
         .slice(2,8);
 
-
     const item = {
 
       id:id,
-
       name:name,
-
-      estimateName:
-        estimateName,
-
+      estimateName:estimateName,
       type:type,
-
       price:price,
-
       unit:unit
 
     };
-
 
     if(type === "work"){
 
@@ -3360,25 +3515,22 @@ function saveCatalogItem(){
 
     }
 
-
     catalog.push(item);
 
   }
-
 
   saveCatalog();
 
   closeCatalogEditor();
 
   renderFilters();
-
   renderCatalog();
 
 }
 
 
 /* =========================================================
-   ВИДАЛЕННЯ ПОЗИЦІЇ З КАТАЛОГУ
+   ВИДАЛЕННЯ
 ========================================================= */
 
 function deleteCatalogItem(id){
@@ -3388,31 +3540,722 @@ function deleteCatalogItem(id){
       x => x.id === id
     );
 
-
   if(!item){
     return;
   }
-
 
   const confirmed =
     confirm(
       `Видалити з каталогу «${item.name}»?`
     );
 
-
   if(!confirmed){
     return;
   }
-
 
   catalog =
     catalog.filter(
       x => x.id !== id
     );
 
+  saveCatalog();
+  renderCatalog();
+
+}
+
+
+/* =========================================================
+   ІМПОРТ XLS / XLSX
+========================================================= */
+
+function openImport(){
+
+  if(
+    !window.XLSX
+  ){
+
+    alert(
+      "Модуль імпорту XLS/XLSX не завантажився."
+    );
+
+    return;
+
+  }
+
+  document
+    .getElementById("importFile")
+    .click();
+
+}
+
+
+document
+  .getElementById("importFile")
+  .addEventListener(
+    "change",
+    handleImportFile
+  );
+
+
+function normalizeHeader(value){
+
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g," ");
+
+}
+
+
+function findColumn(headers,words){
+
+  return headers.findIndex(
+    header => {
+
+      const normalized =
+        normalizeHeader(header);
+
+      return words.some(
+        word =>
+          normalized.includes(
+            normalizeHeader(word)
+          )
+      );
+
+    }
+  );
+
+}
+
+
+function parseImportNumber(value){
+
+  if(
+    typeof value === "number" &&
+    Number.isFinite(value)
+  ){
+    return value;
+  }
+
+  let text =
+    String(value || "")
+      .trim()
+      .replace(/\s/g,"")
+      .replace(/[₴$€]/g,"");
+
+  if(!text){
+    return NaN;
+  }
+
+  if(
+    text.includes(",") &&
+    text.includes(".")
+  ){
+
+    const comma =
+      text.lastIndexOf(",");
+
+    const dot =
+      text.lastIndexOf(".");
+
+    if(comma > dot){
+
+      text =
+        text
+          .replace(/\./g,"")
+          .replace(",", ".");
+
+    }else{
+
+      text =
+        text
+          .replace(/,/g,"");
+
+    }
+
+  }else if(text.includes(",")){
+
+    text =
+      text.replace(",", ".");
+
+  }
+
+  return Number(text);
+
+}
+
+
+function normalizeArticle(value){
+
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+
+}
+
+
+function getImportCategory(){
+
+  if(
+    catalogMode === "material" &&
+    ["water","sewer","fittings","other"]
+      .includes(catalogFilter)
+  ){
+
+    return catalogFilter;
+
+  }
+
+  return "other";
+
+}
+
+
+function makeImportId(){
+
+  return (
+    "import-" +
+    Date.now() +
+    "-" +
+    Math.random()
+      .toString(36)
+      .slice(2,9)
+  );
+
+}
+
+
+async function handleImportFile(event){
+
+  const file =
+    event.target.files &&
+    event.target.files[0];
+
+  event.target.value = "";
+
+  if(!file){
+    return;
+  }
+
+  const name =
+    file.name.toLowerCase();
+
+  if(
+    !name.endsWith(".xls") &&
+    !name.endsWith(".xlsx")
+  ){
+
+    alert(
+      "Потрібен файл XLS або XLSX."
+    );
+
+    return;
+
+  }
+
+  try{
+
+    const data =
+      await file.arrayBuffer();
+
+    const workbook =
+      XLSX.read(
+        data,
+        {
+          type:"array"
+        }
+      );
+
+    const firstSheet =
+      workbook.Sheets[
+        workbook.SheetNames[0]
+      ];
+
+    if(!firstSheet){
+
+      alert(
+        "У файлі не знайдено аркуш."
+      );
+
+      return;
+
+    }
+
+    const rows =
+      XLSX.utils.sheet_to_json(
+        firstSheet,
+        {
+          header:1,
+          defval:"",
+          raw:true
+        }
+      );
+
+    if(!rows.length){
+
+      alert(
+        "Файл порожній."
+      );
+
+      return;
+
+    }
+
+    let headerIndex = -1;
+    let headers = [];
+
+    for(
+      let i = 0;
+      i < Math.min(rows.length,20);
+      i++
+    ){
+
+      const row =
+        rows[i].map(
+          normalizeHeader
+        );
+
+      const articleCol =
+        findColumn(
+          row,
+          ["артикул"]
+        );
+
+      const productCol =
+        findColumn(
+          row,
+          ["товар"]
+        );
+
+      const priceCol =
+        findColumn(
+          row,
+          ["ціна"]
+        );
+
+      if(
+        articleCol !== -1 &&
+        productCol !== -1 &&
+        priceCol !== -1
+      ){
+
+        headerIndex = i;
+        headers = row;
+
+        break;
+
+      }
+
+    }
+
+    if(headerIndex === -1){
+
+      alert(
+        "Не знайдено потрібні колонки.\n\nПотрібні щонайменше:\nАртикул\nТовар\nЦіна"
+      );
+
+      return;
+
+    }
+
+    const articleCol =
+      findColumn(
+        headers,
+        ["артикул"]
+      );
+
+    const productCol =
+      findColumn(
+        headers,
+        ["товар"]
+      );
+
+    const priceCol =
+      findColumn(
+        headers,
+        ["ціна"]
+      );
+
+    const quantityCol =
+      findColumn(
+        headers,
+        ["кількість"]
+      );
+
+    pendingImport = [];
+
+    const seen =
+      new Set();
+
+    for(
+      let i = headerIndex + 1;
+      i < rows.length;
+      i++
+    ){
+
+      const row = rows[i];
+
+      const article =
+        String(
+          row[articleCol] ?? ""
+        ).trim();
+
+      const productName =
+        String(
+          row[productCol] ?? ""
+        ).trim();
+
+      const price =
+        parseImportNumber(
+          row[priceCol]
+        );
+
+      if(
+        !article ||
+        !productName ||
+        !Number.isFinite(price) ||
+        price < 0
+      ){
+        continue;
+      }
+
+      const articleKey =
+        normalizeArticle(article);
+
+      if(seen.has(articleKey)){
+        continue;
+      }
+
+      seen.add(articleKey);
+
+      const existing =
+        catalog.find(
+          item =>
+            item.type === "material" &&
+            normalizeArticle(item.article) ===
+            articleKey
+        );
+
+      if(existing){
+
+        if(
+          Number(existing.price) ===
+          Number(price)
+        ){
+
+          pendingImport.push({
+
+            status:"same",
+
+            article:article,
+
+            name:
+              existing.name,
+
+            oldPrice:
+              Number(existing.price),
+
+            newPrice:
+              Number(price),
+
+            existingId:
+              existing.id
+
+          });
+
+        }else{
+
+          pendingImport.push({
+
+            status:"changed",
+
+            article:article,
+
+            name:
+              existing.name,
+
+            importedName:
+              productName,
+
+            oldPrice:
+              Number(existing.price),
+
+            newPrice:
+              Number(price),
+
+            existingId:
+              existing.id
+
+          });
+
+        }
+
+      }else{
+
+        pendingImport.push({
+
+          status:"new",
+
+          article:article,
+
+          name:productName,
+
+          oldPrice:0,
+
+          newPrice:Number(price),
+
+          unit:"шт",
+
+          manufacturer:"",
+          system:"",
+
+          category:getImportCategory()
+
+        });
+
+      }
+
+    }
+
+    if(!pendingImport.length){
+
+      alert(
+        "У файлі не знайдено нових або актуальних позицій."
+      );
+
+      return;
+
+    }
+
+    renderImportPreview();
+
+    document
+      .getElementById("importSheet")
+      .classList.add("open");
+
+  }catch(error){
+
+    console.error(error);
+
+    alert(
+      "Не вдалося прочитати файл XLS/XLSX."
+    );
+
+  }
+
+}
+
+
+function renderImportPreview(){
+
+  const newItems =
+    pendingImport.filter(
+      x => x.status === "new"
+    );
+
+  const changedItems =
+    pendingImport.filter(
+      x => x.status === "changed"
+    );
+
+  const sameItems =
+    pendingImport.filter(
+      x => x.status === "same"
+    );
+
+  document.getElementById(
+    "importNewCount"
+  ).textContent =
+    newItems.length;
+
+  document.getElementById(
+    "importChangedCount"
+  ).textContent =
+    changedItems.length;
+
+  document.getElementById(
+    "importSameCount"
+  ).textContent =
+    sameItems.length;
+
+  const list =
+    document.getElementById(
+      "importList"
+    );
+
+  list.innerHTML =
+    pendingImport
+      .map(item => {
+
+        let statusText = "";
+        let statusClass = "";
+
+        if(item.status === "new"){
+
+          statusText = "НОВА";
+          statusClass = "new";
+
+        }else if(item.status === "changed"){
+
+          statusText = "ЗМІНА ЦІНИ";
+          statusClass = "changed";
+
+        }else{
+
+          statusText = "БЕЗ ЗМІН";
+          statusClass = "same";
+
+        }
+
+        let priceText = "";
+
+        if(item.status === "changed"){
+
+          priceText =
+            `${money(item.oldPrice)} → ${money(item.newPrice)}`;
+
+        }else if(item.status === "new"){
+
+          priceText =
+            `Ціна: ${money(item.newPrice)}`;
+
+        }else{
+
+          priceText =
+            `Ціна: ${money(item.newPrice)}`;
+
+        }
+
+        return `
+
+          <div class="importRow">
+
+            <div class="importRowTop">
+
+              <div class="importRowName">
+                ${item.name}
+              </div>
+
+              <div class="importStatus ${statusClass}">
+                ${statusText}
+              </div>
+
+            </div>
+
+            <div class="importRowMeta">
+              Артикул: ${item.article}
+              ·
+              ${priceText}
+            </div>
+
+          </div>
+
+        `;
+
+      })
+      .join("");
+
+  document.getElementById(
+    "importApply"
+  ).disabled =
+    !newItems.length &&
+    !changedItems.length;
+
+}
+
+
+function closeImport(){
+
+  document
+    .getElementById("importSheet")
+    .classList.remove("open");
+
+  pendingImport = [];
+
+}
+
+
+function applyImport(){
+
+  const newItems =
+    pendingImport.filter(
+      x => x.status === "new"
+    );
+
+  const changedItems =
+    pendingImport.filter(
+      x => x.status === "changed"
+    );
+
+  if(
+    !newItems.length &&
+    !changedItems.length
+  ){
+
+    closeImport();
+
+    return;
+
+  }
+
+
+  /* ---------- НОВІ ---------- */
+
+  newItems.forEach(item => {
+
+    catalog.push({
+
+      id:makeImportId(),
+
+      name:item.name,
+
+      estimateName:item.name,
+
+      type:"material",
+
+      category:item.category || "other",
+
+      manufacturer:
+        item.manufacturer || "",
+
+      system:
+        item.system || "",
+
+      article:item.article,
+
+      price:item.newPrice,
+
+      unit:item.unit || "шт"
+
+    });
+
+  });
+
+
+  /* ---------- ЗМІНА ЦІНИ ---------- */
+
+  changedItems.forEach(item => {
+
+    const catalogItem =
+      catalog.find(
+        x => x.id === item.existingId
+      );
+
+    if(catalogItem){
+
+      catalogItem.price =
+        item.newPrice;
+
+    }
+
+  });
+
 
   saveCatalog();
 
+  closeImport();
+
+  renderFilters();
   renderCatalog();
 
 }
@@ -3477,12 +4320,10 @@ function saveMaster(){
   const input =
     document.getElementById(id);
 
-
   input.value =
     localStorage.getItem(
       "plumber_" + id
     ) || "";
-
 
   input.addEventListener(
     "input",
