@@ -252,12 +252,81 @@
       return value;
     }
 
-    const text =
+    let text =
       cleanText(value)
-        .replace(/\s/g,"")
+        .replace(/[\s\u00A0']/g,"")
         .replace(/грн\.?/gi,"")
-        .replace(/,/g,".")
-        .replace(/[^0-9.\-]/g,"");
+        .replace(/[^0-9,.-]/g,"");
+
+    if(
+      !text ||
+      text === "-" ||
+      text === "." ||
+      text === ","
+    ){
+      return null;
+    }
+
+    const lastComma =
+      text.lastIndexOf(",");
+
+    const lastDot =
+      text.lastIndexOf(".");
+
+    if(
+      lastComma >= 0 &&
+      lastDot >= 0
+    ){
+
+      const decimalSeparator =
+        lastComma > lastDot
+          ? ","
+          : ".";
+
+      const thousandsSeparator =
+        decimalSeparator === ","
+          ? "."
+          : ",";
+
+      text =
+        text
+          .split(thousandsSeparator)
+          .join("")
+          .replace(
+            decimalSeparator,
+            "."
+          );
+
+    }else if(lastComma >= 0){
+
+      const parts =
+        text.split(",");
+
+      if(
+        parts.length > 2 ||
+        (
+          parts.length === 2 &&
+          parts[1].length === 3 &&
+          parts[0].replace("-","").length <= 3
+        )
+      ){
+        text = parts.join("");
+      }else{
+        text = text.replace(",", ".");
+      }
+
+    }else if(lastDot >= 0){
+
+      const parts =
+        text.split(".");
+
+      if(
+        parts.length > 2 &&
+        parts[parts.length - 1].length === 3
+      ){
+        text = parts.join("");
+      }
+    }
 
     if(
       !text ||
@@ -718,6 +787,26 @@
       ],
 
       [
+        /\batlas\b/,
+        "Atlas"
+      ],
+
+      [
+        /\beurocarb\b/,
+        "Eurocarb"
+      ],
+
+      [
+        /\bpurolite\b/,
+        "Purolite"
+      ],
+
+      [
+        /\bciech\b/,
+        "Ciech"
+      ],
+
+      [
         /\bvalsir\b/,
         "Valsir"
       ],
@@ -887,7 +976,7 @@
     }
 
     if(
-      /flowfit|teceflex|tece flex|водопостач|водоснаб|водопров|труба.*вода|фітинг.*вода|фитинг.*вода/
+      /flowfit|teceflex|tece flex|водопостач|водоснаб|водопров|труба.*вода|фітинг.*вода|фитинг.*вода|фільтр|фильтр|пом['’]?якш|умягч|водоочист|очищенн.*вод|аніоніт|анионит|purolite|вугілля|уголь|сіль таблет|соль таблет|atlas premier|eurocarb|ciech/
         .test(source)
     ){
       return "water";
