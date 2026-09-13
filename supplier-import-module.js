@@ -489,56 +489,63 @@
       );
 
     let nameCol =
-      startName;
+      header.nameHeaderCol >= 0
+        ? header.nameHeaderCol
+        : startName;
 
-    let bestNameScore =
-      -1;
-
-    for(
-      let col = startName;
-      col <= endName;
-      col++
+    if(
+      header.nameHeaderCol < 0
     ){
 
-      let count = 0;
-      let chars = 0;
+      let bestNameScore =
+        -1;
 
-      sample.forEach(
-        row => {
-
-          const value =
-            cleanText(
-              row[col]
-            );
-
-          if(
-            value &&
-            !isUnit(value) &&
-            parseNumber(value) === null &&
-            value.length >= 4
-          ){
-
-            count++;
-            chars +=
-              value.length;
-          }
-        }
-      );
-
-      const score =
-        count * 100 +
-        chars;
-
-      if(
-        score >
-        bestNameScore
+      for(
+        let col = startName;
+        col <= endName;
+        col++
       ){
 
-        bestNameScore =
-          score;
+        let count = 0;
+        let chars = 0;
 
-        nameCol =
-          col;
+        sample.forEach(
+          row => {
+
+            const value =
+              cleanText(
+                row[col]
+              );
+
+            if(
+              value &&
+              !isUnit(value) &&
+              parseNumber(value) === null &&
+              value.length >= 4
+            ){
+
+              count++;
+              chars +=
+                value.length;
+            }
+          }
+        );
+
+        const score =
+          count * 100 +
+          chars;
+
+        if(
+          score >
+          bestNameScore
+        ){
+
+          bestNameScore =
+            score;
+
+          nameCol =
+            col;
+        }
       }
     }
 
@@ -703,6 +710,11 @@
       [
         /\boventrop\b/,
         "Oventrop"
+      ],
+
+      [
+        /\bresideo\b/,
+        "Resideo"
       ],
 
       [
