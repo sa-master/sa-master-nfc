@@ -784,6 +784,11 @@
       [
         /ht[\s-]*safe|нт[\s-]*safe/,
         "HTsafe"
+      ],
+
+      [
+        /sanflex[\s-]*stabil/,
+        "Sanflex Stabil"
       ]
 
     ];
@@ -918,8 +923,20 @@
       context.category =
         "other";
 
-      context.brand = "";
-      context.system = "";
+      const headingBrand =
+        detectBrand(clean);
+
+      const headingSystem =
+        detectSystem(
+          clean,
+          headingBrand
+        );
+
+      context.brand =
+        headingBrand || "";
+
+      context.system =
+        headingSystem || "";
 
       return true;
     }
@@ -1195,7 +1212,19 @@
         detectedCategory === "other"
       ){
         if(!detectedBrand){
-          brand = "";
+
+          const sourceName =
+            ntext(name);
+
+          const keepWalravenContext =
+            context.brand === "Walraven" &&
+            /\bbis\b|\b2s\b|\bwup\b|хомут|дюбел|шуруп|гвинт|винт|кріплен|креплен/
+              .test(sourceName);
+
+          brand =
+            keepWalravenContext
+              ? "Walraven"
+              : "";
         }
 
         if(!detectedSystem){
