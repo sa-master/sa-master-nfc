@@ -646,6 +646,7 @@ button{
   align-items:flex-end;
   background:rgba(0,0,0,.28);
   backdrop-filter:blur(5px);
+  overflow-y:auto;
 }
 
 .editorSheet.open{
@@ -1124,6 +1125,51 @@ button{
       </div>
 
 
+      <!-- MATERIAL DATA -->
+
+      <div id="materialFields" style="display:none">
+
+        <div class="editorFields">
+
+          <label>
+            Виробник
+          </label>
+
+          <input
+            id="editorManufacturer"
+            placeholder="Наприклад: Geberit"
+          >
+
+
+          <label>
+            Система / тип
+          </label>
+
+          <input
+            id="editorSystem"
+            placeholder="Наприклад: FlowFit"
+          >
+
+
+          <label>
+            Артикул
+          </label>
+
+          <input
+            id="editorArticle"
+            placeholder="Артикул виробника"
+            autocomplete="off"
+          >
+
+          <div class="editorHint">
+            Для матеріалів артикул використовується як основний ідентифікатор позиції.
+          </div>
+
+        </div>
+
+      </div>
+
+
       <label>
         Ціна
       </label>
@@ -1552,6 +1598,9 @@ const defaultCatalog = [
     estimateName:"Труба водопостачання",
     type:"material",
     category:"water",
+    manufacturer:"",
+    system:"",
+    article:"",
     price:0,
     unit:"м"
   },
@@ -1562,6 +1611,9 @@ const defaultCatalog = [
     estimateName:"Фітинги водопостачання",
     type:"material",
     category:"water",
+    manufacturer:"",
+    system:"",
+    article:"",
     price:0,
     unit:"компл."
   },
@@ -1572,6 +1624,9 @@ const defaultCatalog = [
     estimateName:"Труба каналізації",
     type:"material",
     category:"sewer",
+    manufacturer:"",
+    system:"",
+    article:"",
     price:0,
     unit:"м"
   },
@@ -1582,6 +1637,9 @@ const defaultCatalog = [
     estimateName:"Фітинги каналізації",
     type:"material",
     category:"sewer",
+    manufacturer:"",
+    system:"",
+    article:"",
     price:0,
     unit:"компл."
   },
@@ -1592,6 +1650,9 @@ const defaultCatalog = [
     estimateName:"Крани",
     type:"material",
     category:"fittings",
+    manufacturer:"",
+    system:"",
+    article:"",
     price:0,
     unit:"шт"
   },
@@ -1602,6 +1663,9 @@ const defaultCatalog = [
     estimateName:"Редуктор",
     type:"material",
     category:"fittings",
+    manufacturer:"",
+    system:"",
+    article:"",
     price:0,
     unit:"шт"
   },
@@ -1612,6 +1676,9 @@ const defaultCatalog = [
     estimateName:"Інші матеріали",
     type:"material",
     category:"other",
+    manufacturer:"",
+    system:"",
+    article:"",
     price:0,
     unit:"шт"
   }
@@ -1642,6 +1709,40 @@ if(!Array.isArray(catalog)){
   );
 
 }
+
+
+/* =========================================================
+   МІГРАЦІЯ СТАРОГО КАТАЛОГУ
+========================================================= */
+
+catalog =
+  catalog.map(item => {
+
+    if(item.type === "material"){
+
+      if(typeof item.manufacturer !== "string"){
+        item.manufacturer = "";
+      }
+
+      if(typeof item.system !== "string"){
+        item.system = "";
+      }
+
+      if(typeof item.article !== "string"){
+        item.article = "";
+      }
+
+    }
+
+    return item;
+
+  });
+
+
+localStorage.setItem(
+  "plumber_catalog",
+  JSON.stringify(catalog)
+);
 
 
 /* =========================================================
@@ -2292,7 +2393,25 @@ function renderCatalog(){
             .includes(query) ||
           item.estimateName
             .toLowerCase()
-            .includes(query)
+            .includes(query) ||
+          (
+            item.article &&
+            item.article
+              .toLowerCase()
+              .includes(query)
+          ) ||
+          (
+            item.manufacturer &&
+            item.manufacturer
+              .toLowerCase()
+              .includes(query)
+          ) ||
+          (
+            item.system &&
+            item.system
+              .toLowerCase()
+              .includes(query)
+          )
         )
       ){
         return false;
@@ -2446,6 +2565,18 @@ function renderCatalog(){
                         }
                         ·
                         ${item.unit}
+                        ${
+                          item.type === "material" &&
+                          item.manufacturer
+                            ? ` · ${item.manufacturer}`
+                            : ""
+                        }
+                        ${
+                          item.type === "material" &&
+                          item.system
+                            ? ` · ${item.system}`
+                            : ""
+                        }
                       </div>
 
                     </div>
@@ -2576,7 +2707,7 @@ function addItem(id){
 
   }else{
 
-    estimate.push({
+    const estimateItem = {
 
       id:product.id,
 
@@ -2596,7 +2727,24 @@ function addItem(id){
 
       qty:1
 
-    });
+    };
+
+
+    if(product.type === "material"){
+
+      estimateItem.manufacturer =
+        product.manufacturer || "";
+
+      estimateItem.system =
+        product.system || "";
+
+      estimateItem.article =
+        product.article || "";
+
+    }
+
+
+    estimate.push(estimateItem);
 
   }
 
@@ -2787,6 +2935,39 @@ function openCatalogEditor(id=null){
       : catalogMode;
 
 
+  document.getElementById(
+    "editorManufacturer"
+  ).value =
+    item
+      ? (
+          item.manufacturer ||
+          ""
+        )
+      : "";
+
+
+  document.getElementById(
+    "editorSystem"
+  ).value =
+    item
+      ? (
+          item.system ||
+          ""
+        )
+      : "";
+
+
+  document.getElementById(
+    "editorArticle"
+  ).value =
+    item
+      ? (
+          item.article ||
+          ""
+        )
+      : "";
+
+
   if(item){
 
     if(item.type === "work"){
@@ -2818,6 +2999,8 @@ function openCatalogEditor(id=null){
 
 
   updateEditorGroup();
+
+  updateMaterialFields();
 
 
   document
@@ -2904,11 +3087,34 @@ function updateEditorGroup(){
 }
 
 
+function updateMaterialFields(){
+
+  const type =
+    document.getElementById(
+      "editorType"
+    ).value;
+
+
+  document.getElementById(
+    "materialFields"
+  ).style.display =
+    type === "material"
+      ? "block"
+      : "none";
+
+}
+
+
 document
   .getElementById("editorType")
   .addEventListener(
     "change",
-    updateEditorGroup
+    () => {
+
+      updateEditorGroup();
+      updateMaterialFields();
+
+    }
   );
 
 
@@ -2955,6 +3161,27 @@ function saveCatalogItem(){
       .value;
 
 
+  const manufacturer =
+    document
+      .getElementById("editorManufacturer")
+      .value
+      .trim();
+
+
+  const system =
+    document
+      .getElementById("editorSystem")
+      .value
+      .trim();
+
+
+  const article =
+    document
+      .getElementById("editorArticle")
+      .value
+      .trim();
+
+
   if(!name){
 
     alert("Вкажіть коротку назву.");
@@ -2994,6 +3221,45 @@ function saveCatalogItem(){
   }
 
 
+  if(
+    type === "material" &&
+    !article
+  ){
+
+    alert("Вкажіть артикул матеріалу.");
+
+    return;
+
+  }
+
+
+  if(type === "material"){
+
+    const duplicate =
+      catalog.find(
+        item =>
+          item.type === "material" &&
+          String(item.article || "")
+            .trim()
+            .toLowerCase() ===
+          article.toLowerCase() &&
+          item.id !== editingCatalogId
+      );
+
+
+    if(duplicate){
+
+      alert(
+        `Матеріал з артикулом «${article}» вже є в каталозі:\n\n${duplicate.name}`
+      );
+
+      return;
+
+    }
+
+  }
+
+
   if(editingCatalogId){
 
     const item =
@@ -3025,11 +3291,24 @@ function saveCatalogItem(){
 
       delete item.category;
 
+      delete item.manufacturer;
+      delete item.system;
+      delete item.article;
+
     }else{
 
       item.category = group;
 
       delete item.stage;
+
+      item.manufacturer =
+        manufacturer;
+
+      item.system =
+        system;
+
+      item.article =
+        article;
 
     }
 
@@ -3069,6 +3348,15 @@ function saveCatalogItem(){
     }else{
 
       item.category = group;
+
+      item.manufacturer =
+        manufacturer;
+
+      item.system =
+        system;
+
+      item.article =
+        article;
 
     }
 
