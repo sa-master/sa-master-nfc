@@ -1892,10 +1892,6 @@ function setFilter(filter){
   renderCatalog();
 }
 
-/* =========================
-   BRAND CLASSIFIER
-========================= */
-
 function getMaterialItemsForClassification(){
 
   return catalog.filter(item => {
@@ -2035,10 +2031,6 @@ function setBrandFilter(brand){
   renderCatalog();
 }
 
-/* =========================
-   SYSTEM CLASSIFIER
-========================= */
-
 function getSystems(){
 
   const values =
@@ -2173,10 +2165,6 @@ function setSystemFilter(system){
   renderSystemFilters();
   renderCatalog();
 }
-
-/* =========================
-   RENDER CATALOG
-========================= */
 
 function renderCatalog(){
 
@@ -2607,10 +2595,6 @@ function catalogChangeQty(id,delta){
   renderCatalog();
 }
 
-/* =========================
-   MANAGE CATALOG
-========================= */
-
 function toggleCatalogManage(){
 
   catalogManageMode =
@@ -2855,33 +2839,33 @@ function openCatalogEditor(id = null){
       : "";
 
   document.getElementById(
-  "editorArticle"
-).value =
-  item
-    ? (
-        item.article ||
-        ""
-      )
-    : "";
+    "editorArticle"
+  ).value =
+    item
+      ? (
+          item.article ||
+          ""
+        )
+      : "";
 
-const lockMaterialIdentity =
-  !!(
-    item &&
-    item.type === "material"
-  );
+  const lockMaterialIdentity =
+    !!(
+      item &&
+      item.type === "material"
+    );
 
-document.getElementById(
-  "editorName"
-).readOnly =
-  lockMaterialIdentity;
+  document.getElementById(
+    "editorName"
+  ).readOnly =
+    lockMaterialIdentity;
 
-document.getElementById(
-  "editorArticle"
-).readOnly =
-  lockMaterialIdentity;
+  document.getElementById(
+    "editorArticle"
+  ).readOnly =
+    lockMaterialIdentity;
 
-updateEditorGroup();
-updateMaterialFields();
+  updateEditorGroup();
+  updateMaterialFields();
 
   if(item){
 
@@ -3031,17 +3015,20 @@ function saveCatalogItem(){
       return;
     }
 
-    if(item.type !== "material"){
+    const wasMaterial =
+      item.type === "material";
 
-  item.name =
-    name;
-}
+    if(!wasMaterial){
 
-item.estimateName =
-  estimateName;
+      item.name =
+        name;
+    }
 
-item.price =
-  price;
+    item.estimateName =
+      estimateName;
+
+    item.price =
+      price;
 
     item.unit =
       unit;
@@ -3070,12 +3057,13 @@ item.price =
         manufacturer;
 
       item.system =
-  system;
+        system;
 
-/*
-  Артикул існуючого матеріалу
-  не змінюємо.
-*/
+      if(!wasMaterial){
+
+        item.article =
+          article;
+      }
     }
 
   }else{
@@ -3169,10 +3157,6 @@ function deleteCatalogItem(id){
   renderCatalog();
 }
 
-/* =========================
-   MASTER
-========================= */
-
 function openMaster(){
 
   document.getElementById(
@@ -3223,10 +3207,6 @@ function saveMaster(){
 
   closeMaster();
 }
-
-/* =========================
-   CLIENT
-========================= */
 
 [
   "clientName",
