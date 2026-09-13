@@ -21,7 +21,6 @@
 
   let pendingSupplierImport = [];
   let importShowAll = false;
-
   let importCurrency = "UAH";
 
   let importEurRate =
@@ -77,25 +76,15 @@
     .importEmpty{text-align:center;color:var(--muted);padding:30px 15px;font-size:13px}
   `;
 
-  document.head.appendChild(
-    style
-  );
+  document.head.appendChild(style);
 
   const fileInput =
-    document.createElement(
-      "input"
-    );
+    document.createElement("input");
 
   fileInput.type = "file";
-
-  fileInput.accept =
-    ".xls,.xlsx,.xlsm";
-
-  fileInput.style.display =
-    "none";
-
-  fileInput.id =
-    "supplierImportFile";
+  fileInput.accept = ".xls,.xlsx,.xlsm";
+  fileInput.style.display = "none";
+  fileInput.id = "supplierImportFile";
 
   document.body.appendChild(
     fileInput
@@ -231,9 +220,7 @@
   window.openCatalog =
     function(type){
 
-      originalOpenCatalog(
-        type
-      );
+      originalOpenCatalog(type);
 
       importButton.style.display =
         type === "material"
@@ -284,11 +271,34 @@
     const number =
       Number(text);
 
-    return Number.isFinite(
-      number
-    )
+    return Number.isFinite(number)
       ? number
       : null;
+  }
+
+  function formatImportPrice(value){
+
+    const number =
+      Number(value);
+
+    if(
+      !Number.isFinite(number)
+    ){
+      return "";
+    }
+
+    const formatted =
+      number.toLocaleString(
+        "uk-UA",
+        {
+          minimumFractionDigits:2,
+          maximumFractionDigits:2
+        }
+      );
+
+    return importCurrency === "EUR"
+      ? formatted + " EUR"
+      : formatted + " грн";
   }
 
   function isUnit(value){
@@ -313,8 +323,7 @@
         .test(text)
     );
   }
-
-  function findHeaderRow(rows){
+     function findHeaderRow(rows){
 
     let best = null;
 
@@ -634,6 +643,7 @@
       );
 
     const rules = [
+
       [
         /go[\s-]*plast/,
         "GO-PLAST"
@@ -948,8 +958,7 @@
 
     return false;
   }
-
-  function getRowText(
+     function getRowText(
     row,
     from = 0,
     to = null
@@ -1581,8 +1590,7 @@
         ? value
         : 0;
   }
-
-  function renderSupplierImport(){
+     function renderSupplierImport(){
 
     const body =
       document.getElementById(
@@ -1833,7 +1841,7 @@
                       : ""
                   }
 
-                  ${money(item.price)}
+                  ${formatImportPrice(item.price)}
 
                 </div>
 
@@ -1867,6 +1875,7 @@
           }
         ).join("")
       }
+
       ${
         !importShowAll &&
         !unknown.length &&
@@ -1875,6 +1884,7 @@
             <div class="importEmpty">
               Показано перші 20 позицій.
               <br><br>
+
               <button
                 type="button"
                 class="importSoftButton"
@@ -1882,6 +1892,7 @@
               >
                 Показати всі
               </button>
+
             </div>
           `
           : ""
@@ -1924,20 +1935,21 @@
       bulkButton.onclick =
         applyBulkCategory;
     }
-     const showAllButton =
-  document.getElementById(
-    "supplierShowAll"
-  );
 
-if(showAllButton){
+    const showAllButton =
+      document.getElementById(
+        "supplierShowAll"
+      );
 
-  showAllButton.onclick =
-    () => {
+    if(showAllButton){
 
-      importShowAll = true;
-      renderSupplierImport();
-    };
-}
+      showAllButton.onclick =
+        () => {
+
+          importShowAll = true;
+          renderSupplierImport();
+        };
+    }
 
     const toggleButton =
       document.getElementById(
@@ -2083,36 +2095,7 @@ if(showAllButton){
       importEurRate
     );
   }
-
-  function getCompatibilityPriceUAH(
-    imported,
-    basePriceEUR
-  ){
-
-    if(
-      importCurrency === "UAH"
-    ){
-      return Number(
-        imported.price
-      ) || 0;
-    }
-
-    if(
-      Number.isFinite(
-        importEurRate
-      ) &&
-      importEurRate > 0
-    ){
-      return (
-        basePriceEUR *
-        importEurRate
-      );
-    }
-
-    return 0;
-  }
-
-  function applySupplierImport(){
+     function applySupplierImport(){
 
     if(
       !pendingSupplierImport.length
@@ -2201,12 +2184,6 @@ if(showAllButton){
               imported
             );
 
-          const compatibilityPrice =
-            getCompatibilityPriceUAH(
-              imported,
-              basePriceEUR
-            );
-
           const existing =
             findExistingCatalogItem(
               imported
@@ -2227,8 +2204,7 @@ if(showAllButton){
             existing.basePriceEUR =
               basePriceEUR;
 
-            existing.price =
-              compatibilityPrice;
+            delete existing.price;
 
             existing.unit =
               imported.unit || "шт";
@@ -2243,7 +2219,9 @@ if(showAllButton){
               imported.system || "";
 
             existing.article =
-              imported.article || "";
+              imported.article ||
+              existing.article ||
+              "";
 
             updated++;
 
@@ -2277,9 +2255,6 @@ if(showAllButton){
 
               basePriceEUR:
                 basePriceEUR,
-
-              price:
-                compatibilityPrice,
 
               unit:
                 imported.unit || "шт"
