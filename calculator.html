@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 
 <title>Калькулятор сантехніка</title>
 
@@ -26,6 +26,7 @@ html,body{
   width:100%;
   height:100%;
   overflow:hidden;
+  touch-action:manipulation;
 }
 
 body{
@@ -44,6 +45,7 @@ button{
   border:0;
   background:none;
   color:inherit;
+  touch-action:manipulation;
 }
 
 .app{
@@ -81,9 +83,32 @@ button{
   margin-top:1px;
 }
 
+.headerRight{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+
 .date{
   color:var(--muted);
   font-size:12px;
+}
+
+.masterButton{
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff;
+  color:var(--blue);
+  box-shadow:0 3px 12px rgba(30,40,60,.06);
+}
+
+.masterButton svg{
+  width:19px;
+  height:19px;
 }
 
 /* ================= CLIENT ================= */
@@ -540,6 +565,15 @@ button{
   margin:5px 0;
 
   box-shadow:0 2px 10px rgba(30,40,60,.045);
+
+  transition:none;
+}
+
+.catalogItem.added{
+  background:#eaf3ff;
+  box-shadow:
+    inset 0 0 0 1px rgba(0,122,255,.16),
+    0 2px 10px rgba(0,122,255,.07);
 }
 
 .catalogName{
@@ -554,6 +588,67 @@ button{
   color:var(--muted);
 
   font-size:11px;
+}
+
+.catalogControls{
+  flex:0 0 auto;
+
+  display:flex;
+  align-items:center;
+  gap:4px;
+
+  padding-left:8px;
+}
+
+.catalogQtyButton{
+  width:29px;
+  height:29px;
+
+  border-radius:8px;
+
+  background:#e7ebf1;
+
+  color:#555;
+
+  font-size:18px;
+}
+
+.catalogQty{
+  min-width:27px;
+
+  height:29px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  border-radius:8px;
+
+  color:var(--blue);
+
+  font-size:12px;
+  font-weight:750;
+
+  padding:0 3px;
+}
+
+.catalogQtyInput{
+  width:42px;
+  height:29px;
+
+  border:0;
+  outline:0;
+
+  border-radius:8px;
+
+  background:#fff;
+
+  text-align:center;
+
+  color:var(--blue);
+
+  font-size:12px;
+  font-weight:750;
 }
 
 .addIcon{
@@ -575,6 +670,96 @@ button{
   padding:35px 20px;
 
   font-size:14px;
+}
+
+/* ================= MASTER ================= */
+
+.masterSheet{
+  position:fixed;
+
+  inset:0;
+
+  z-index:30;
+
+  display:none;
+  align-items:flex-end;
+
+  background:rgba(0,0,0,.28);
+
+  backdrop-filter:blur(5px);
+}
+
+.masterSheet.open{
+  display:flex;
+}
+
+.masterPanel{
+  width:100%;
+  max-width:560px;
+
+  margin:auto;
+
+  background:#f6f7fa;
+
+  border-radius:22px 22px 0 0;
+
+  padding:
+    10px
+    14px
+    calc(18px + env(safe-area-inset-bottom));
+}
+
+.masterHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+
+  padding:2px 0 12px;
+}
+
+.masterHead strong{
+  font-size:18px;
+}
+
+.masterFields{
+  display:grid;
+  gap:8px;
+}
+
+.masterFields input{
+  width:100%;
+  height:40px;
+
+  border:0;
+  outline:0;
+
+  border-radius:11px;
+
+  background:#e9ebef;
+
+  padding:0 11px;
+
+  font-size:14px;
+}
+
+.masterFields input:focus{
+  background:#fff;
+  box-shadow:inset 0 0 0 1.5px var(--blue);
+}
+
+.masterSave{
+  width:100%;
+  height:42px;
+
+  margin-top:10px;
+
+  border-radius:13px;
+
+  background:var(--blue);
+  color:#fff;
+
+  font-size:14px;
+  font-weight:700;
 }
 
 /* ================= SMALL HEIGHT ================= */
@@ -631,7 +816,39 @@ button{
       </div>
     </div>
 
-    <div class="date" id="date"></div>
+    <div class="headerRight">
+
+      <div class="date" id="date"></div>
+
+      <button
+        class="masterButton"
+        onclick="openMaster()"
+        aria-label="Дані майстра"
+      >
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="9" cy="7" r="3" stroke="currentColor" stroke-width="1.8"/>
+          <path
+            d="M3.8 19c.7-3.2 2.4-5 5.2-5s4.5 1.8 5.2 5"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+          <path
+            d="M15 5.5l1.2 1.2m1.7-1.7l1.2 1.2m-2.3 1.9l1.2 1.2"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+          <path
+            d="M16.2 9.2l3.2-3.2"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+
+    </div>
 
   </header>
 
@@ -781,6 +998,57 @@ button{
       class="catalog"
       id="catalog"
     ></div>
+
+  </div>
+
+</div>
+
+
+<!-- MASTER -->
+<div
+  class="masterSheet"
+  id="masterSheet"
+  onclick="if(event.target===this)closeMaster()"
+>
+
+  <div class="masterPanel">
+
+    <div class="masterHead">
+
+      <strong>
+        Дані майстра
+      </strong>
+
+      <button
+        class="close"
+        onclick="closeMaster()"
+      >
+        ×
+      </button>
+
+    </div>
+
+    <div class="masterFields">
+
+      <input
+        id="masterName"
+        placeholder="Ім’я / назва"
+      >
+
+      <input
+        id="masterPhone"
+        placeholder="Телефон"
+        inputmode="tel"
+      >
+
+    </div>
+
+    <button
+      class="masterSave"
+      onclick="saveMaster()"
+    >
+      Зберегти
+    </button>
 
   </div>
 
@@ -1731,38 +1999,93 @@ function renderCatalog(){
 
           ${items
             .map(
-              item => `
+              item => {
 
-                <button
-                  class="catalogItem"
-                  onclick="addItem('${item.id}')"
-                >
+                const existing =
+                  estimate.find(
+                    x => x.id === item.id
+                  );
 
-                  <div>
+                const qty =
+                  existing
+                    ? existing.qty
+                    : 0;
 
-                    <div class="catalogName">
-                      ${item.name}
+                return `
+
+                  <div
+                    class="catalogItem ${
+                      qty > 0 ? "added" : ""
+                    }"
+                  >
+
+                    <div
+                      onclick="addItem('${item.id}')"
+                      style="flex:1;min-width:0"
+                    >
+
+                      <div class="catalogName">
+                        ${item.name}
+                      </div>
+
+                      <div class="catalogMeta">
+                        ${
+                          item.price
+                            ? money(item.price)
+                            : "ціна не задана"
+                        }
+                        ·
+                        ${item.unit}
+                      </div>
+
                     </div>
 
-                    <div class="catalogMeta">
-                      ${
-                        item.price
-                          ? money(item.price)
-                          : "ціна не задана"
-                      }
-                      ·
-                      ${item.unit}
-                    </div>
+                    ${
+                      qty > 0
+
+                      ? `
+
+                        <div class="catalogControls">
+
+                          <button
+                            class="catalogQtyButton"
+                            onclick="catalogChangeQty('${item.id}',-1)"
+                          >
+                            −
+                          </button>
+
+                          <button
+                            class="catalogQty"
+                            onclick="editCatalogQty('${item.id}')"
+                          >
+                            ×${qty}
+                          </button>
+
+                          <button
+                            class="catalogQtyButton"
+                            onclick="catalogChangeQty('${item.id}',1)"
+                          >
+                            +
+                          </button>
+
+                        </div>
+
+                      `
+
+                      : `
+
+                        <span class="addIcon">
+                          ＋
+                        </span>
+
+                      `
+                    }
 
                   </div>
 
-                  <span class="addIcon">
-                    ＋
-                  </span>
+                `;
 
-                </button>
-
-              `
+              }
             )
             .join("")}
 
@@ -1790,11 +2113,6 @@ function addItem(id){
   }
 
 
-  /*
-    ОДНА ПОЗИЦІЯ НЕ ДУБЛЮЄТЬСЯ.
-    Повторне натискання = +1 кількість.
-  */
-
   const existing =
     estimate.find(
       item => item.id === id
@@ -1818,6 +2136,162 @@ function addItem(id){
   save();
 
   renderEstimate();
+
+  renderCatalog();
+
+}
+
+
+/* =========================================================
+   КІЛЬКІСТЬ У КАТАЛОЗІ
+========================================================= */
+
+function catalogChangeQty(id,delta){
+
+  const index =
+    estimate.findIndex(
+      item => item.id === id
+    );
+
+
+  if(index === -1){
+
+    if(delta > 0){
+      addItem(id);
+    }
+
+    return;
+
+  }
+
+
+  estimate[index].qty += delta;
+
+
+  if(estimate[index].qty <= 0){
+
+    estimate.splice(index,1);
+
+  }
+
+
+  save();
+
+  renderEstimate();
+
+  renderCatalog();
+
+}
+
+
+function editCatalogQty(id){
+
+  const item =
+    estimate.find(
+      x => x.id === id
+    );
+
+
+  if(!item){
+    return;
+  }
+
+
+  const value =
+    prompt(
+      "Кількість:",
+      item.qty
+    );
+
+
+  if(value === null){
+    return;
+  }
+
+
+  const qty =
+    Number(
+      String(value)
+        .replace(",",".")
+    );
+
+
+  if(
+    !Number.isFinite(qty) ||
+    qty < 0
+  ){
+    return;
+  }
+
+
+  const newQty =
+    Math.floor(qty);
+
+
+  if(newQty <= 0){
+
+    const index =
+      estimate.indexOf(item);
+
+    estimate.splice(index,1);
+
+  }else{
+
+    item.qty = newQty;
+
+  }
+
+
+  save();
+
+  renderEstimate();
+
+  renderCatalog();
+
+}
+
+
+/* =========================================================
+   ДАНІ МАЙСТРА
+========================================================= */
+
+function openMaster(){
+
+  document.getElementById("masterName").value =
+    localStorage.getItem("plumber_masterName") || "";
+
+  document.getElementById("masterPhone").value =
+    localStorage.getItem("plumber_masterPhone") || "";
+
+  document
+    .getElementById("masterSheet")
+    .classList.add("open");
+
+}
+
+
+function closeMaster(){
+
+  document
+    .getElementById("masterSheet")
+    .classList.remove("open");
+
+}
+
+
+function saveMaster(){
+
+  localStorage.setItem(
+    "plumber_masterName",
+    document.getElementById("masterName").value
+  );
+
+  localStorage.setItem(
+    "plumber_masterPhone",
+    document.getElementById("masterPhone").value
+  );
+
+  closeMaster();
 
 }
 
