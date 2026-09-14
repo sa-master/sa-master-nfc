@@ -287,12 +287,6 @@ button{
   font-size:10px;
 }
 
-.priceEditIcon{
-  margin-left:3px;
-  opacity:.5;
-  font-size:9px;
-}
-
 .right{
   display:flex;
   flex-direction:column;
@@ -1513,9 +1507,109 @@ if(
   eurRate = 0;
 }
 
+function getSupplierOffers(
+  item
+){
+
+  return Array.isArray(
+    item && item.supplierOffers
+  )
+    ? item.supplierOffers
+    : [];
+}
+
+function getSnapshotPriceUAH(
+  snapshot
+){
+
+  if(
+    !snapshot ||
+    !Number.isFinite(
+      Number(snapshot.priceEUR)
+    ) ||
+    !Number.isFinite(
+      eurRate
+    ) ||
+    eurRate <= 0
+  ){
+    return null;
+  }
+
+  return (
+    Number(snapshot.priceEUR) *
+    eurRate
+  );
+}
+
+function getCompleteSupplierOffers(
+  item
+){
+
+  return getSupplierOffers(
+    item
+  ).filter(
+    offer =>
+      offer &&
+      offer.retail &&
+      Number.isFinite(
+        Number(
+          offer.retail.priceEUR
+        )
+      )
+  );
+}
+
+function getDefaultSupplierOffer(
+  item
+){
+
+  const offers =
+    getCompleteSupplierOffers(
+      item
+    );
+
+  if(
+    offers.length === 1
+  ){
+    return offers[0];
+  }
+
+  return null;
+}
+
 function getMaterialCatalogPrice(
   item
 ){
+
+  const offer =
+    getDefaultSupplierOffer(
+      item
+    );
+
+  if(offer){
+
+    const retailPrice =
+      getSnapshotPriceUAH(
+        offer.retail
+      );
+
+    return Number.isFinite(
+      retailPrice
+    )
+      ? retailPrice
+      : 0;
+  }
+
+  const supplierOffers =
+    getSupplierOffers(
+      item
+    );
+
+  if(
+    supplierOffers.length
+  ){
+    return 0;
+  }
 
   const basePriceEUR =
     Number(
@@ -1539,6 +1633,90 @@ function getMaterialCatalogPrice(
     basePriceEUR *
     eurRate
   );
+}
+
+function chooseSupplierOffer(
+  item
+){
+
+  const offers =
+    getCompleteSupplierOffers(
+      item
+    );
+
+  if(
+    !offers.length
+  ){
+    return null;
+  }
+
+  if(
+    offers.length === 1
+  ){
+    return offers[0];
+  }
+
+  const lines =
+    offers.map(
+      (offer,index) => {
+
+        const retailPrice =
+          getSnapshotPriceUAH(
+            offer.retail
+          );
+
+        const purchasePrice =
+          getSnapshotPriceUAH(
+            offer.master
+          );
+
+        return (
+          `${index + 1}. ${offer.supplierName || "Постачальник"}` +
+          ` — роздріб ${
+            Number.isFinite(retailPrice)
+              ? money(retailPrice)
+              : "не задано"
+          }` +
+          `, майстра ${
+            Number.isFinite(purchasePrice)
+              ? money(purchasePrice)
+              : "не задано"
+          }`
+        );
+      }
+    );
+
+  const value =
+    prompt(
+      "Оберіть постачальника:\n\n" +
+      lines.join("\n") +
+      "\n\nВведіть номер:",
+      "1"
+    );
+
+  if(
+    value === null
+  ){
+    return null;
+  }
+
+  const index =
+    Number(value) - 1;
+
+  if(
+    !Number.isInteger(index) ||
+    index < 0 ||
+    index >= offers.length
+  ){
+
+    alert(
+      "Оберіть коректний номер постачальника."
+    );
+
+    return null;
+  }
+
+  return offers[index];
 }
 
 function updateEurRateButton(){
@@ -1891,7 +2069,6 @@ function renderRow(
             ${money(item.price)}
             /
             ${escapeHtml(item.unit)}
-            <span class="priceEditIcon">✎</span>
           </button>
 
         </div>
@@ -2871,11 +3048,19 @@ function renderCatalogItem(
         <div class="catalogMeta">
 
           ${
-            catalogPrice
+            item.type === "material" &&
+            getCompleteSupplierOffers(item).length > 1
+              ? "кілька постачальників"
+              : catalogPrice
               ? money(
                   catalogPrice
                 )
-              : "ціна не задана"
+              : (
+                  item.type === "material" &&
+                  getSupplierOffers(item).length
+                    ? "роздрібна ціна не задана"
+                    : "ціна не задана"
+                )
           }
 
           ·
@@ -3011,6 +3196,66 @@ function addItem(
 
   }else{
 
+    let materialPrice = 0;
+    let selectedOffer = null;
+
+    if(
+      product.type ===
+      "material"
+    ){
+
+      const supplierOffers =
+        getSupplierOffers(
+          product
+        );
+
+      if(
+        supplierOffers.length
+      ){
+
+        selectedOffer =
+          chooseSupplierOffer(
+            product
+          );
+
+        if(
+          !selectedOffer
+        ){
+
+          alert(
+            "Для цієї позиції немає доступної роздрібної ціни постачальника."
+          );
+
+          return;
+        }
+
+        materialPrice =
+          getSnapshotPriceUAH(
+            selectedOffer.retail
+          );
+
+        if(
+          !Number.isFinite(
+            materialPrice
+          )
+        ){
+
+          alert(
+            "Не вдалося визначити роздрібну ціну матеріалу."
+          );
+
+          return;
+        }
+
+      }else{
+
+        materialPrice =
+          getMaterialCatalogPrice(
+            product
+          );
+      }
+    }
+
     const estimateItem = {
 
       id:
@@ -3032,9 +3277,7 @@ function addItem(
       price:
         product.type ===
           "material"
-          ? getMaterialCatalogPrice(
-              product
-            )
+          ? materialPrice
           : (
               Number(
                 product.price
@@ -3063,6 +3306,57 @@ function addItem(
       estimateItem.article =
         product.article ||
         "";
+
+      estimateItem.retailPrice =
+        materialPrice;
+
+      estimateItem.priceSnapshotAt =
+        new Date().toISOString();
+
+      estimateItem.eurRate =
+        eurRate;
+
+      if(selectedOffer){
+
+        estimateItem.supplierId =
+          selectedOffer.supplierId ||
+          "";
+
+        estimateItem.supplierName =
+          selectedOffer.supplierName ||
+          "";
+
+        estimateItem.supplierImportedAt =
+          selectedOffer.updatedAt ||
+          selectedOffer.retail?.importedAt ||
+          selectedOffer.master?.importedAt ||
+          "";
+
+        const purchasePrice =
+          getSnapshotPriceUAH(
+            selectedOffer.master
+          );
+
+        estimateItem.purchasePrice =
+          Number.isFinite(
+            purchasePrice
+          )
+            ? purchasePrice
+            : null;
+      }else{
+
+        estimateItem.supplierId =
+          "";
+
+        estimateItem.supplierName =
+          "";
+
+        estimateItem.supplierImportedAt =
+          "";
+
+        estimateItem.purchasePrice =
+          null;
+      }
     }
 
     estimate.push(
