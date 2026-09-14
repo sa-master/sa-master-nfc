@@ -2728,6 +2728,11 @@ function getActiveTopup(){
   ) || null;
 }
 
+function getSingleTopup(){
+
+  return procurementTopups[0] || null;
+}
+
 function toggleViewMode(){
 
   if(
@@ -3695,7 +3700,7 @@ function confirmProcurement(){
 function openCatalogForTopup(){
 
   const topup =
-    getActiveTopup();
+    getSingleTopup();
 
   if(!topup){
     return;
@@ -3721,7 +3726,7 @@ function addItemToTopup(
 ){
 
   const topup =
-    getActiveTopup();
+    getSingleTopup();
 
   const product =
     catalog.find(
@@ -3736,6 +3741,10 @@ function addItemToTopup(
     !product
   ){
     return;
+  }
+
+  if(!Array.isArray(topup.items)){
+    topup.items = [];
   }
 
   if(
@@ -3888,7 +3897,7 @@ function topupCatalogChangeQty(
 ){
 
   const topup =
-    getActiveTopup();
+    getSingleTopup();
 
   if(
     !topup ||
@@ -4900,16 +4909,23 @@ function closeCatalog(){
   );
 
   if(
-    catalogTarget === "topup" &&
-    getActiveTopup()
+    catalogTarget === "topup"
   ){
-    renderProcurement();
+    const topup =
+      getSingleTopup();
 
-    document.getElementById(
-      "procurementSheet"
-    ).classList.add(
-      "open"
-    );
+    if(topup){
+      activeTopupId =
+        topup.id;
+
+      renderProcurement();
+
+      document.getElementById(
+        "procurementSheet"
+      ).classList.add(
+        "open"
+      );
+    }
   }
 }
 
