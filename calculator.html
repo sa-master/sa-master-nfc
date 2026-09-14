@@ -531,6 +531,181 @@ button{
   transform:scale(.98);
 }
 
+.procurementAction{
+  grid-column:1/-1;
+}
+
+.consumablesPrice{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  margin-top:7px;
+  padding:0 9px;
+  border-radius:9px;
+  background:#e9ebef;
+  color:var(--blue);
+  font-size:11px;
+  font-weight:700;
+}
+
+.clientMode .consumablesPrice{
+  background:transparent;
+  padding:0;
+  pointer-events:none;
+}
+
+.procurementSheet{
+  position:fixed;
+  inset:0;
+  z-index:45;
+  display:none;
+  align-items:flex-end;
+  background:rgba(0,0,0,.34);
+  backdrop-filter:blur(6px);
+}
+
+.procurementSheet.open{
+  display:flex;
+}
+
+.procurementPanel{
+  width:100%;
+  max-width:560px;
+  max-height:88dvh;
+  margin:auto;
+  background:#f6f7fa;
+  border-radius:22px;
+  display:flex;
+  flex-direction:column;
+  padding:13px 12px calc(14px + env(safe-area-inset-bottom));
+}
+
+.procurementHead{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+
+.procurementHead strong{
+  font-size:18px;
+}
+
+.procurementStatus{
+  flex:0 0 auto;
+  margin-bottom:8px;
+  padding:8px 10px;
+  border-radius:11px;
+  background:#fff0ef;
+  color:var(--red);
+  font-size:12px;
+  font-weight:700;
+}
+
+.procurementStatus.reviewed{
+  background:#edf8ef;
+  color:#248a3d;
+}
+
+.procurementList{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+
+.procurementList::-webkit-scrollbar{
+  display:none;
+}
+
+.procurementRow{
+  background:#fff;
+  border-radius:14px;
+  padding:10px 11px;
+  margin:6px 0;
+  box-shadow:0 2px 10px rgba(30,40,60,.04);
+}
+
+.procurementRowTop{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.procurementName{
+  min-width:0;
+  font-size:13px;
+  line-height:1.25;
+  font-weight:700;
+  overflow-wrap:anywhere;
+}
+
+.procurementNeed{
+  flex:0 0 auto;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:650;
+}
+
+.procurementControls{
+  margin-top:8px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.procurementControls span{
+  color:var(--muted);
+  font-size:11px;
+  font-weight:650;
+}
+
+.procurementQty{
+  height:31px;
+  display:flex;
+  align-items:center;
+  border-radius:10px;
+  background:#e9ebef;
+  overflow:hidden;
+}
+
+.procurementQty button{
+  width:31px;
+  height:31px;
+  color:var(--blue);
+  font-size:18px;
+}
+
+.procurementQty b{
+  min-width:36px;
+  text-align:center;
+  color:var(--blue);
+  font-size:12px;
+}
+
+.procurementConfirm{
+  flex:0 0 auto;
+  width:100%;
+  height:44px;
+  margin-top:10px;
+  border-radius:13px;
+  background:var(--blue);
+  color:#fff;
+  font-size:14px;
+  font-weight:750;
+}
+
+.procurementEmpty{
+  text-align:center;
+  color:var(--muted);
+  padding:35px 20px;
+  font-size:14px;
+}
+
 .sheet{
   position:fixed;
   inset:0;
@@ -1216,6 +1391,13 @@ button{
   ＋ Матеріал
 </button>
 
+<button
+  class="action procurementAction"
+  onclick="openProcurement()"
+>
+  Комплектація
+</button>
+
 </div>
 
 </div>
@@ -1469,6 +1651,51 @@ button{
   onclick="saveCatalogItem()"
 >
   Зберегти
+</button>
+
+</div>
+
+</div>
+
+<!-- PROCUREMENT -->
+
+<div
+  class="procurementSheet"
+  id="procurementSheet"
+  onclick="if(event.target===this)closeProcurement()"
+>
+
+<div class="procurementPanel">
+
+<div class="procurementHead">
+  <strong>Комплектація</strong>
+
+  <button
+    class="close"
+    onclick="closeProcurement()"
+  >
+    ×
+  </button>
+</div>
+
+<div
+  class="procurementStatus"
+  id="procurementStatus"
+>
+  Потрібна перевірка
+</div>
+
+<div
+  class="procurementList"
+  id="procurementList"
+></div>
+
+<button
+  class="procurementConfirm"
+  id="procurementConfirm"
+  onclick="confirmProcurement()"
+>
+  Комплектацію перевірено
 </button>
 
 </div>
@@ -1779,12 +2006,57 @@ localStorage.setItem(
   JSON.stringify(catalog)
 );
 
+const ESTIMATE_KEY =
+  "plumber_estimate";
+
+function createConsumablesItem(){
+
+  return {
+    id:"special-consumables-transport",
+    name:"Витратні матеріали / транспортні витрати",
+    type:"consumables",
+    price:0,
+    unit:"",
+    qty:1
+  };
+}
+
 let estimate =
   JSON.parse(
     localStorage.getItem(
-      "plumber_estimate"
+      ESTIMATE_KEY
     ) || "[]"
   );
+
+if(!Array.isArray(estimate)){
+  estimate = [];
+}
+
+if(
+  !estimate.some(
+    item =>
+      item &&
+      item.type ===
+        "consumables"
+  )
+){
+  estimate.push(
+    createConsumablesItem()
+  );
+
+  localStorage.setItem(
+    ESTIMATE_KEY,
+    JSON.stringify(estimate)
+  );
+}
+
+const PROCUREMENT_REVIEWED_KEY =
+  "plumber_procurementReviewed";
+
+let procurementReviewed =
+  localStorage.getItem(
+    PROCUREMENT_REVIEWED_KEY
+  ) === "1";
 
 const MATERIAL_DISCOUNT_KEY =
   "plumber_materialDiscount";
@@ -2214,7 +2486,7 @@ function money(
 function save(){
 
   localStorage.setItem(
-    "plumber_estimate",
+    ESTIMATE_KEY,
     JSON.stringify(
       estimate
     )
@@ -2246,8 +2518,22 @@ function toggleViewMode(){
     "client"
   ){
 
-    viewMode =
-      "supplier";
+    if(
+      !procurementReviewed
+    ){
+
+      alert(
+        "Спочатку перевірте комплектацію та натисніть «Комплектацію перевірено»."
+      );
+
+      viewMode =
+        "master";
+
+    }else{
+
+      viewMode =
+        "supplier";
+    }
 
   }else{
 
@@ -2498,6 +2784,285 @@ function getSupplierViewArticle(
   );
 }
 
+function getProcurementQty(
+  item
+){
+
+  const savedQty =
+    Number(
+      item &&
+      item.procurementQty
+    );
+
+  if(
+    Number.isFinite(savedQty) &&
+    savedQty >= 0
+  ){
+    return savedQty;
+  }
+
+  const estimateQty =
+    Number(
+      item &&
+      item.qty
+    );
+
+  return Number.isFinite(
+    estimateQty
+  ) && estimateQty > 0
+    ? estimateQty
+    : 0;
+}
+
+function invalidateProcurement(){
+
+  if(
+    !procurementReviewed
+  ){
+    return;
+  }
+
+  procurementReviewed =
+    false;
+
+  localStorage.setItem(
+    PROCUREMENT_REVIEWED_KEY,
+    "0"
+  );
+}
+
+function openProcurement(){
+
+  if(
+    viewMode !==
+      "master"
+  ){
+    return;
+  }
+
+  renderProcurement();
+
+  document.getElementById(
+    "procurementSheet"
+  ).classList.add(
+    "open"
+  );
+}
+
+function closeProcurement(){
+
+  document.getElementById(
+    "procurementSheet"
+  ).classList.remove(
+    "open"
+  );
+}
+
+function renderProcurement(){
+
+  const list =
+    document.getElementById(
+      "procurementList"
+    );
+
+  const status =
+    document.getElementById(
+      "procurementStatus"
+    );
+
+  const confirmButton =
+    document.getElementById(
+      "procurementConfirm"
+    );
+
+  const materials =
+    estimate.filter(
+      item =>
+        item.type ===
+          "material"
+    );
+
+  status.textContent =
+    procurementReviewed
+      ? "Комплектацію перевірено"
+      : "Потрібна перевірка";
+
+  status.classList.toggle(
+    "reviewed",
+    procurementReviewed
+  );
+
+  confirmButton.style.display =
+    materials.length
+      ? "block"
+      : "none";
+
+  if(
+    !materials.length
+  ){
+
+    list.innerHTML = `
+      <div class="procurementEmpty">
+        У кошторисі немає матеріалів для комплектації.
+      </div>
+    `;
+
+    return;
+  }
+
+  list.innerHTML =
+    materials.map(
+      item => {
+
+        const index =
+          estimate.indexOf(
+            item
+          );
+
+        const estimateQty =
+          Math.max(
+            0,
+            Number(item.qty) || 0
+          );
+
+        const procurementQty =
+          Math.min(
+            estimateQty,
+            getProcurementQty(item)
+          );
+
+        return `
+          <div class="procurementRow">
+
+            <div class="procurementRowTop">
+              <div class="procurementName">
+                ${escapeHtml(item.name)}
+              </div>
+
+              <div class="procurementNeed">
+                Кошторис: ${estimateQty} ${escapeHtml(item.unit)}
+              </div>
+            </div>
+
+            <div class="procurementControls">
+              <span>До закупівлі</span>
+
+              <div class="procurementQty">
+                <button
+                  onclick="changeProcurementQty(${index},-1)"
+                >
+                  −
+                </button>
+
+                <b>
+                  ${procurementQty}
+                </b>
+
+                <button
+                  onclick="changeProcurementQty(${index},1)"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+          </div>
+        `;
+      }
+    ).join("");
+}
+
+function changeProcurementQty(
+  index,
+  delta
+){
+
+  const item =
+    estimate[index];
+
+  if(
+    !item ||
+    item.type !==
+      "material"
+  ){
+    return;
+  }
+
+  const maxQty =
+    Math.max(
+      0,
+      Number(item.qty) || 0
+    );
+
+  const currentQty =
+    Math.min(
+      maxQty,
+      getProcurementQty(item)
+    );
+
+  item.procurementQty =
+    Math.max(
+      0,
+      Math.min(
+        maxQty,
+        currentQty + delta
+      )
+    );
+
+  invalidateProcurement();
+  save();
+  renderProcurement();
+  renderEstimate();
+}
+
+function confirmProcurement(){
+
+  const materials =
+    estimate.filter(
+      item =>
+        item.type ===
+          "material"
+    );
+
+  if(
+    !materials.length
+  ){
+    return;
+  }
+
+  materials.forEach(
+    item => {
+
+      const maxQty =
+        Math.max(
+          0,
+          Number(item.qty) || 0
+        );
+
+      item.procurementQty =
+        Math.max(
+          0,
+          Math.min(
+            maxQty,
+            getProcurementQty(item)
+          )
+        );
+    }
+  );
+
+  procurementReviewed =
+    true;
+
+  localStorage.setItem(
+    PROCUREMENT_REVIEWED_KEY,
+    "1"
+  );
+
+  save();
+  renderProcurement();
+  renderEstimate();
+}
+
 /* =========================
    ESTIMATE
 ========================= */
@@ -2548,7 +3113,19 @@ function getSupplierViewArticle(
     const materials =
       estimate.filter(
         item =>
-          item.type === "material"
+          item.type === "material" &&
+          (
+            viewMode !==
+              "supplier" ||
+            getProcurementQty(item) > 0
+          )
+      );
+
+    const consumables =
+      estimate.filter(
+        item =>
+          item.type ===
+            "consumables"
       );
 
     if(
@@ -2575,13 +3152,21 @@ function getSupplierViewArticle(
       );
     }
 
+    const visibleMaterials =
+      viewMode ===
+        "supplier"
+        ? materials
+        : materials.concat(
+            consumables
+          );
+
     if(
-      materials.length
+      visibleMaterials.length
     ){
 
       html += section(
         "МАТЕРІАЛИ",
-        materials
+        visibleMaterials
       );
     }
 
@@ -2654,13 +3239,60 @@ function getSupplierViewArticle(
     materialsRetailTotal -
     materialsDiscountTotal;
 
+  const consumablesItems =
+    estimate.filter(
+      item =>
+        item.type ===
+          "consumables"
+    );
+
+  const consumablesTotal =
+    consumablesItems.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        (
+          Number(item.price) || 0
+        ),
+      0
+    );
+
+  const supplierMaterialsTotal =
+    materialItems.reduce(
+      (
+        sum,
+        item
+      ) => {
+
+        const factor =
+          showClientDiscount
+            ? 1
+            : (
+                1 -
+                materialDiscountPercent /
+                100
+              );
+
+        return sum +
+          (
+            Number(item.price) || 0
+          ) *
+          factor *
+          getProcurementQty(item);
+      },
+      0
+    );
+
   const total =
     viewMode ===
       "supplier"
-      ? materialsClientTotal
+      ? supplierMaterialsTotal
       : (
           workTotal +
-          materialsClientTotal
+          materialsClientTotal +
+          consumablesTotal
         );
 
   document.getElementById(
@@ -2855,7 +3487,13 @@ function getSupplierViewArticle(
     "clientRetailTotal"
   ).textContent =
     money(
-      materialsRetailTotal
+      materialsRetailTotal +
+      (
+        viewMode ===
+          "supplier"
+          ? 0
+          : consumablesTotal
+      )
     );
 
   document.getElementById(
@@ -2879,7 +3517,14 @@ function getSupplierViewArticle(
   document.getElementById(
     "clientMaterialsRow"
   ).style.display =
-    materialItems.length > 0
+    (
+      materialItems.length > 0 ||
+      (
+        viewMode !==
+          "supplier" &&
+        consumablesItems.length > 0
+      )
+    )
       ? "flex"
       : "none";
 
@@ -2887,7 +3532,13 @@ function getSupplierViewArticle(
     "clientMaterialsTotal"
   ).textContent =
     money(
-      materialsClientTotal
+      viewMode ===
+        "supplier"
+        ? supplierMaterialsTotal
+        : (
+            materialsClientTotal +
+            consumablesTotal
+          )
     );
 
   const clearEstimateButton =
@@ -2907,7 +3558,10 @@ function getSupplierViewArticle(
   const visibleItemCount =
     viewMode ===
       "supplier"
-      ? materialItems.length
+      ? materialItems.filter(
+          item =>
+            getProcurementQty(item) > 0
+        ).length
       : estimate.length;
 
   document.getElementById(
@@ -2950,6 +3604,38 @@ function renderRow(
       item
     );
 
+  if(
+    item.type ===
+      "consumables"
+  ){
+
+    return `
+      <div class="row">
+
+        <div>
+          <div class="name">
+            ${escapeHtml(item.name)}
+          </div>
+
+          <button
+            class="consumablesPrice"
+            onclick="editPrice(${index})"
+          >
+            ≈ ${money(Number(item.price) || 0)}
+            <span class="priceEditIcon">✎</span>
+          </button>
+        </div>
+
+        <div class="right">
+          <div class="lineTotal">
+            ≈ ${money(Number(item.price) || 0)}
+          </div>
+        </div>
+
+      </div>
+    `;
+  }
+
   const isMaterial =
     item.type ===
     "material";
@@ -2981,13 +3667,18 @@ function renderRow(
     ) *
     clientFactor;
 
+  const displayQty =
+    viewMode ===
+      "supplier" &&
+    isMaterial
+      ? getProcurementQty(item)
+      : (
+          Number(item.qty) || 0
+        );
+
   const displayLineTotal =
     displayPrice *
-    (
-      Number(
-        item.qty
-      ) || 0
-    );
+    displayQty;
 
   const displayName =
     viewMode ===
@@ -3047,7 +3738,7 @@ function renderRow(
             <b>
               ${
                 externalView
-                  ? `×${item.qty}`
+                  ? `×${displayQty}`
                   : item.qty
               }
             </b>
@@ -3098,12 +3789,50 @@ function changeQty(
   delta
 ){
 
-  estimate[index].qty =
+  const item =
+    estimate[index];
+
+  if(!item){
+    return;
+  }
+
+  const oldQty =
+    Number(item.qty) || 0;
+
+  const oldProcurementQty =
+    item.type ===
+      "material"
+      ? getProcurementQty(item)
+      : 0;
+
+  item.qty =
     Math.max(
       1,
-      estimate[index].qty +
+      item.qty +
       delta
     );
+
+  if(
+    item.type ===
+      "material"
+  ){
+
+    if(
+      oldProcurementQty ===
+        oldQty
+    ){
+      item.procurementQty =
+        item.qty;
+    }else{
+      item.procurementQty =
+        Math.min(
+          item.qty,
+          oldProcurementQty
+        );
+    }
+
+    invalidateProcurement();
+  }
 
   save();
   renderEstimate();
@@ -3113,10 +3842,29 @@ function removeItem(
   index
 ){
 
+  const item =
+    estimate[index];
+
+  if(
+    !item ||
+    item.type ===
+      "consumables"
+  ){
+    return;
+  }
+
+  const wasMaterial =
+    item.type ===
+      "material";
+
   estimate.splice(
     index,
     1
   );
+
+  if(wasMaterial){
+    invalidateProcurement();
+  }
 
   save();
   renderEstimate();
@@ -3128,7 +3876,10 @@ function editPrice(
 
   const value =
     prompt(
-      "Ціна за одиницю, грн:",
+      estimate[index].type ===
+        "consumables"
+        ? "Умовна вартість, грн:"
+        : "Ціна за одиницю, грн:",
       estimate[index].price
     );
 
@@ -3178,7 +3929,17 @@ function clearEstimate(){
     return;
   }
 
-  estimate = [];
+  estimate = [
+    createConsumablesItem()
+  ];
+
+  procurementReviewed =
+    false;
+
+  localStorage.setItem(
+    PROCUREMENT_REVIEWED_KEY,
+    "0"
+  );
 
   materialDiscountPercent =
     0;
@@ -4222,7 +4983,31 @@ function addItem(
     existing
   ){
 
+    const oldQty =
+      Number(existing.qty) || 0;
+
+    const oldProcurementQty =
+      getProcurementQty(
+        existing
+      );
+
     existing.qty++;
+
+    if(
+      existing.type ===
+        "material"
+    ){
+
+      if(
+        oldProcurementQty ===
+          oldQty
+      ){
+        existing.procurementQty =
+          existing.qty;
+      }
+
+      invalidateProcurement();
+    }
 
   }else{
 
@@ -4322,6 +5107,14 @@ function addItem(
 
     if(
       product.type ===
+        "material"
+    ){
+      estimateItem.procurementQty =
+        1;
+    }
+
+    if(
+      product.type ===
       "material"
     ){
 
@@ -4397,6 +5190,13 @@ function addItem(
     estimate.push(
       estimateItem
     );
+
+    if(
+      estimateItem.type ===
+        "material"
+    ){
+      invalidateProcurement();
+    }
   }
 
   save();
