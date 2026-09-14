@@ -188,6 +188,17 @@ button{
   font-weight:650;
 }
 
+.viewToggle{
+  height:28px;
+  padding:0 9px;
+  border-radius:9px;
+  background:#fff;
+  color:var(--blue);
+  box-shadow:0 2px 9px rgba(30,40,60,.05);
+  font-size:11px;
+  font-weight:700;
+}
+
 .list{
   flex:1 1 auto;
   min-height:0;
@@ -403,6 +414,101 @@ button{
 
 .masterSummaryRow.discount strong{
   color:var(--red);
+}
+
+.clientDiscountOption{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:28px;
+  margin-top:5px;
+  padding-top:6px;
+  border-top:1px solid var(--line);
+  color:var(--muted);
+  font-size:11px;
+}
+
+.clientDiscountOption input{
+  width:18px;
+  height:18px;
+  accent-color:var(--blue);
+}
+
+.clientSummary{
+  display:none;
+  background:#fff;
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  padding:8px 13px;
+  margin-bottom:7px;
+}
+
+.clientSummary.show{
+  display:block;
+}
+
+.clientSummaryRow{
+  min-height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.clientSummaryRow strong{
+  color:var(--text);
+  font-size:13px;
+}
+
+.clientSummaryRow.discount strong{
+  color:var(--red);
+}
+
+.clientMode .masterButton{
+  display:none;
+}
+
+.clientMode .clearEstimate{
+  display:none !important;
+}
+
+.clientMode .actions{
+  display:none;
+}
+
+.clientMode .row{
+  min-height:58px;
+}
+
+.clientMode .qty{
+  background:transparent;
+  height:auto;
+}
+
+.clientMode .qty button{
+  display:none;
+}
+
+.clientMode .qty b{
+  min-width:0;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:650;
+}
+
+.clientMode .price{
+  background:transparent;
+  padding:0;
+  min-height:auto;
+  pointer-events:none;
+}
+
+.clientMode .priceEditIcon,
+.clientMode .delete{
+  display:none;
 }
 
 .actions{
@@ -924,6 +1030,14 @@ button{
 </span>
 
 <button
+  class="viewToggle"
+  id="viewToggle"
+  onclick="toggleViewMode()"
+>
+  Клієнт
+</button>
+
+<button
   class="clearEstimate"
   id="clearEstimate"
   onclick="clearEstimate()"
@@ -1013,6 +1127,56 @@ button{
   <div class="masterSummaryRow earnings">
     <span>Заробіток</span>
     <strong id="materialsEarningsTotal">—</strong>
+  </div>
+
+  <label class="clientDiscountOption">
+    <span>Показувати знижку клієнту</span>
+    <input
+      type="checkbox"
+      id="showClientDiscount"
+      onchange="setShowClientDiscount(this.checked)"
+    >
+  </label>
+</div>
+
+<div
+  class="clientSummary"
+  id="clientSummary"
+>
+  <div
+    class="clientSummaryRow"
+    id="clientWorkRow"
+    style="display:none"
+  >
+    <span>Роботи</span>
+    <strong id="clientWorkTotal">0 грн</strong>
+  </div>
+
+  <div
+    class="clientSummaryRow"
+    id="clientRetailRow"
+    style="display:none"
+  >
+    <span>Матеріали до знижки</span>
+    <strong id="clientRetailTotal">0 грн</strong>
+  </div>
+
+  <div
+    class="clientSummaryRow discount"
+    id="clientDiscountRow"
+    style="display:none"
+  >
+    <span id="clientDiscountLabel">Знижка</span>
+    <strong id="clientDiscountTotal">0 грн</strong>
+  </div>
+
+  <div
+    class="clientSummaryRow"
+    id="clientMaterialsRow"
+    style="display:none"
+  >
+    <span>Матеріали</span>
+    <strong id="clientMaterialsTotal">0 грн</strong>
   </div>
 </div>
 
@@ -1634,6 +1798,17 @@ if(
   materialDiscountPercent = 0;
 }
 
+const SHOW_CLIENT_DISCOUNT_KEY =
+  "plumber_showClientDiscount";
+
+let showClientDiscount =
+  localStorage.getItem(
+    SHOW_CLIENT_DISCOUNT_KEY
+  ) === "1";
+
+let viewMode =
+  "master";
+
 let catalogMode =
   "work";
 
@@ -2048,6 +2223,56 @@ function saveCatalog(){
   );
 }
 
+function toggleViewMode(){
+
+  viewMode =
+    viewMode ===
+      "master"
+      ? "client"
+      : "master";
+
+  document.body.classList.toggle(
+    "clientMode",
+    viewMode ===
+      "client"
+  );
+
+  const button =
+    document.getElementById(
+      "viewToggle"
+    );
+
+  if(
+    button
+  ){
+
+    button.textContent =
+      viewMode ===
+        "client"
+        ? "Майстер"
+        : "Клієнт";
+  }
+
+  renderEstimate();
+}
+
+function setShowClientDiscount(
+  value
+){
+
+  showClientDiscount =
+    !!value;
+
+  localStorage.setItem(
+    SHOW_CLIENT_DISCOUNT_KEY,
+    showClientDiscount
+      ? "1"
+      : "0"
+  );
+
+  renderEstimate();
+}
+
 function setMaterialDiscount(
   percent
 ){
@@ -2400,6 +2625,8 @@ function renderMaterialDiscountButtons(){
 
   masterSummary.classList.toggle(
     "show",
+    viewMode ===
+      "master" &&
     materialItems.length > 0
   );
 
@@ -2465,6 +2692,120 @@ function renderMaterialDiscountButtons(){
 
   renderMaterialDiscountButtons();
 
+  const showClientDiscountInput =
+    document.getElementById(
+      "showClientDiscount"
+    );
+
+  if(
+    showClientDiscountInput
+  ){
+
+    showClientDiscountInput.checked =
+      showClientDiscount;
+  }
+
+  const clientSummary =
+    document.getElementById(
+      "clientSummary"
+    );
+
+  clientSummary.classList.toggle(
+    "show",
+    viewMode ===
+      "client" &&
+    estimate.length > 0
+  );
+
+  const clientWorkRow =
+    document.getElementById(
+      "clientWorkRow"
+    );
+
+  clientWorkRow.style.display =
+    workTotal > 0
+      ? "flex"
+      : "none";
+
+  document.getElementById(
+    "clientWorkTotal"
+  ).textContent =
+    money(
+      workTotal
+    );
+
+  const showDiscountDetails =
+    showClientDiscount &&
+    materialDiscountPercent > 0 &&
+    materialItems.length > 0;
+
+  document.getElementById(
+    "clientRetailRow"
+  ).style.display =
+    showDiscountDetails
+      ? "flex"
+      : "none";
+
+  document.getElementById(
+    "clientDiscountRow"
+  ).style.display =
+    showDiscountDetails
+      ? "flex"
+      : "none";
+
+  document.getElementById(
+    "clientRetailTotal"
+  ).textContent =
+    money(
+      materialsRetailTotal
+    );
+
+  document.getElementById(
+    "clientDiscountLabel"
+  ).textContent =
+    `Знижка −${materialDiscountPercent.toLocaleString(
+      "uk-UA",
+      {
+        maximumFractionDigits:2
+      }
+    )}%`;
+
+  document.getElementById(
+    "clientDiscountTotal"
+  ).textContent =
+    "−" +
+    money(
+      materialsDiscountTotal
+    );
+
+  document.getElementById(
+    "clientMaterialsRow"
+  ).style.display =
+    materialItems.length > 0
+      ? "flex"
+      : "none";
+
+  document.getElementById(
+    "clientMaterialsTotal"
+  ).textContent =
+    money(
+      materialsClientTotal
+    );
+
+  const clearEstimateButton =
+    document.getElementById(
+      "clearEstimate"
+    );
+
+  if(
+    viewMode ===
+      "client"
+  ){
+
+    clearEstimateButton.style.display =
+      "none";
+  }
+
   document.getElementById(
     "count"
   ).textContent =
@@ -2505,6 +2846,40 @@ function renderRow(
       item
     );
 
+  const isMaterial =
+    item.type ===
+    "material";
+
+  const clientFactor =
+    (
+      viewMode ===
+        "client" &&
+      isMaterial &&
+      !showClientDiscount
+    )
+      ? (
+          1 -
+          materialDiscountPercent /
+          100
+        )
+      : 1;
+
+  const displayPrice =
+    (
+      Number(
+        item.price
+      ) || 0
+    ) *
+    clientFactor;
+
+  const displayLineTotal =
+    displayPrice *
+    (
+      Number(
+        item.qty
+      ) || 0
+    );
+
   return `
     <div class="row">
 
@@ -2525,7 +2900,12 @@ function renderRow(
             </button>
 
             <b>
-              ${item.qty}
+              ${
+                viewMode ===
+                  "client"
+                  ? `×${item.qty}`
+                  : item.qty
+              }
             </b>
 
             <button
@@ -2540,9 +2920,10 @@ function renderRow(
             class="price"
             onclick="editPrice(${index})"
           >
-            ${money(item.price)}
+            ${money(displayPrice)}
             /
             ${escapeHtml(item.unit)}
+            <span class="priceEditIcon">✎</span>
           </button>
 
         </div>
@@ -2552,12 +2933,7 @@ function renderRow(
       <div class="right">
 
         <div class="lineTotal">
-          ${
-            money(
-              item.price *
-              item.qty
-            )
-          }
+          ${money(displayLineTotal)}
         </div>
 
         <button
