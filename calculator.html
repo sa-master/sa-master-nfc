@@ -749,13 +749,33 @@ button{
   letter-spacing:.04em;
 }
 
-.topupCard{
-  width:100%;
+.topupCardWrap{
+  display:flex;
+  align-items:center;
+  gap:7px;
   margin:6px 0;
+}
+
+.topupCard{
+  flex:1 1 auto;
+  min-width:0;
+  margin:0;
   padding:10px 11px;
   border-radius:14px;
   background:#fff;
   text-align:left;
+  box-shadow:0 2px 10px rgba(30,40,60,.04);
+}
+
+.topupDelete{
+  flex:0 0 42px;
+  width:42px;
+  height:42px;
+  border-radius:13px;
+  background:#fff;
+  color:var(--red);
+  font-size:20px;
+  line-height:1;
   box-shadow:0 2px 10px rgba(30,40,60,.04);
 }
 
@@ -3238,25 +3258,35 @@ function renderProcurement(){
     html += procurementTopups
       .map(
         topup => `
-          <button
-            class="topupCard"
-            onclick="openTopup('${escapeHtml(topup.id)}')"
-          >
-            <div class="topupCardTop">
-              <strong>
-                Добір №${Number(topup.number) || 1}
-              </strong>
+          <div class="topupCardWrap">
+            <button
+              class="topupCard"
+              onclick="openTopup('${escapeHtml(topup.id)}')"
+            >
+              <div class="topupCardTop">
+                <strong>
+                  Добір №${Number(topup.number) || 1}
+                </strong>
 
-              <span class="topupBadge ${topup.reviewed ? "reviewed" : ""}">
-                ${topup.reviewed ? "Перевірено" : "Не перевірено"}
-              </span>
-            </div>
+                <span class="topupBadge ${topup.reviewed ? "reviewed" : ""}">
+                  ${topup.reviewed ? "Перевірено" : "Не перевірено"}
+                </span>
+              </div>
 
-            <div class="topupCardMeta">
-              ${escapeHtml(formatTopupDate(topup.createdAt))}
-              · ${Array.isArray(topup.items) ? topup.items.length : 0} позицій
-            </div>
-          </button>
+              <div class="topupCardMeta">
+                ${escapeHtml(formatTopupDate(topup.createdAt))}
+                · ${Array.isArray(topup.items) ? topup.items.length : 0} позицій
+              </div>
+            </button>
+
+            <button
+              class="topupDelete"
+              onclick="deleteTopup('${escapeHtml(topup.id)}')"
+              aria-label="Видалити Добір №${Number(topup.number) || 1}"
+            >
+              ×
+            </button>
+          </div>
         `
       )
       .join("");
@@ -3317,6 +3347,50 @@ function createTopup(){
   activeTopupId =
     topup.id;
 
+  renderProcurement();
+}
+
+function deleteTopup(
+  id
+){
+
+  const topup =
+    procurementTopups.find(
+      item =>
+        item.id === id
+    );
+
+  if(!topup){
+    return;
+  }
+
+  const number =
+    Number(topup.number) || 1;
+
+  const message =
+    topup.reviewed
+      ? `Добір №${number} уже перевірено. Видалити його разом з усіма позиціями?`
+      : `Видалити Добір №${number} разом з усіма позиціями?`;
+
+  if(!confirm(message)){
+    return;
+  }
+
+  procurementTopups =
+    procurementTopups.filter(
+      item =>
+        item.id !== id
+    );
+
+  if(activeTopupId === id){
+    activeTopupId = null;
+  }
+
+  if(supplierTopupId === id){
+    supplierTopupId = null;
+  }
+
+  saveProcurementTopups();
   renderProcurement();
 }
 
@@ -3826,7 +3900,7 @@ function addItemToTopup(
     false;
 
   saveProcurementTopups();
-  renderCatalog();
+  closeCatalog();
 }
 
 function topupCatalogChangeQty(
@@ -5878,9 +5952,13 @@ function renderCatalogItem(
 
           : `
 
-            <span class="addIcon">
+            <button
+              class="addIcon"
+              onclick="${catalogTarget === "topup" ? `addItemToTopup(decodeURIComponent('${encodedId}'))` : `addItem(decodeURIComponent('${encodedId}'))`}"
+              aria-label="Додати"
+            >
               ＋
-            </span>
+            </button>
 
           `
       }
