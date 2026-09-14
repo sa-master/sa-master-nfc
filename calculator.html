@@ -289,6 +289,27 @@ button{
   font-size:12px;
 }
 
+.qty input{
+  width:44px;
+  height:28px;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:inherit;
+  text-align:center;
+  font:inherit;
+  font-size:12px;
+  font-weight:700;
+  padding:0 2px;
+  -moz-appearance:textfield;
+}
+
+.qty input::-webkit-outer-spin-button,
+.qty input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+
 .price{
   min-height:28px;
   border-radius:9px;
@@ -1420,6 +1441,34 @@ button{
   text-align:center;
   color:var(--blue);
   font-size:11px;
+}
+
+.purchaseQty input{
+  width:44px;
+  height:30px;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--blue);
+  text-align:center;
+  font-size:12px;
+  font-weight:700;
+  padding:0 2px;
+  -moz-appearance:textfield;
+}
+
+.purchaseQty input::-webkit-outer-spin-button,
+.purchaseQty input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+
+.purchaseQtyUnit{
+  padding-right:5px;
+  color:var(--blue);
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
 }
 
 .purchaseBought{
@@ -5084,13 +5133,21 @@ function renderRow(
               −
             </button>
 
-            <b>
-              ${
-                externalView
-                  ? `×${displayQty}`
-                  : item.qty
-              }
-            </b>
+            ${
+              externalView
+                ? `<b>×${displayQty}</b>`
+                : `
+                  <input
+                    type="text"
+                    inputmode="decimal"
+                    value="${Number(item.qty) || 1}"
+                    aria-label="Кількість"
+                    onfocus="this.select()"
+                    onkeydown="if(event.key==='Enter'){this.blur()}"
+                    onchange="setEstimateQty(${index},this.value)"
+                  >
+                `
+            }
 
             <button
               onclick="changeQty(${index},1)"
@@ -5156,8 +5213,8 @@ function changeQty(
 
   item.qty =
     Math.max(
-      1,
-      item.qty +
+      0.01,
+      oldQty +
       delta
     );
 
@@ -5176,6 +5233,61 @@ function changeQty(
       item.procurementQty =
         Math.min(
           item.qty,
+          oldProcurementQty
+        );
+    }
+
+    invalidateProcurement();
+  }
+
+  save();
+  renderEstimate();
+}
+
+function setEstimateQty(
+  index,
+  rawValue
+){
+
+  const item =
+    estimate[index];
+
+  if(!item){
+    return;
+  }
+
+  const value =
+    Number(
+      String(rawValue)
+        .replace(",",".")
+    );
+
+  if(
+    !Number.isFinite(value) ||
+    value <= 0
+  ){
+    renderEstimate();
+    return;
+  }
+
+  const oldQty =
+    Number(item.qty) || 0;
+
+  const oldProcurementQty =
+    item.type === "material"
+      ? getProcurementQty(item)
+      : 0;
+
+  item.qty = value;
+
+  if(item.type === "material"){
+
+    if(oldProcurementQty === oldQty){
+      item.procurementQty = value;
+    }else{
+      item.procurementQty =
+        Math.min(
+          value,
           oldProcurementQty
         );
     }
@@ -7933,12 +8045,48 @@ function changePurchaseQty(
 
   item.qty =
     Math.max(
-      1,
+      0.01,
       (Number(item.qty) || 1) +
       delta
     );
 
   savePurchaseWorkflow();
+  renderPurchasing();
+}
+
+function setPurchaseQty(
+  encodedUid,
+  rawValue
+){
+
+  const uid =
+    decodeURIComponent(
+      encodedUid
+    );
+
+  const item =
+    purchaseWorkflow.items.find(
+      item => item.uid === uid
+    );
+
+  if(!item){
+    return;
+  }
+
+  const value =
+    Number(
+      String(rawValue)
+        .replace(",",".")
+    );
+
+  if(
+    Number.isFinite(value) &&
+    value > 0
+  ){
+    item.qty = value;
+    savePurchaseWorkflow();
+  }
+
   renderPurchasing();
 }
 
@@ -8575,7 +8723,16 @@ function renderPurchasing(){
                 <div class="purchaseItemActions">
                   <div class="purchaseQty">
                     <button onclick="changePurchaseQty('${uid}',-1)">−</button>
-                    <b>${Math.max(1,Number(item.qty) || 1)} ${escapeHtml(item.unit)}</b>
+                    <input
+                      type="text"
+                      inputmode="decimal"
+                      value="${Math.max(0.01,Number(item.qty) || 1)}"
+                      aria-label="Кількість"
+                      onfocus="this.select()"
+                      onkeydown="if(event.key==='Enter'){this.blur()}"
+                      onchange="setPurchaseQty('${uid}',this.value)"
+                    >
+                    <span class="purchaseQtyUnit">${escapeHtml(item.unit)}</span>
                     <button onclick="changePurchaseQty('${uid}',1)">＋</button>
                   </div>
 
@@ -8919,13 +9076,21 @@ function renderRow(
               −
             </button>
 
-            <b>
-              ${
-                externalView
-                  ? `×${displayQty}`
-                  : item.qty
-              }
-            </b>
+            ${
+              externalView
+                ? `<b>×${displayQty}</b>`
+                : `
+                  <input
+                    type="text"
+                    inputmode="decimal"
+                    value="${Number(item.qty) || 1}"
+                    aria-label="Кількість"
+                    onfocus="this.select()"
+                    onkeydown="if(event.key==='Enter'){this.blur()}"
+                    onchange="setEstimateQty(${index},this.value)"
+                  >
+                `
+            }
 
             <button
               onclick="changeQty(${index},1)"
