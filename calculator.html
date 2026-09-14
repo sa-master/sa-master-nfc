@@ -365,6 +365,46 @@ button{
   color:var(--blue);
 }
 
+.masterSummaryDiscount{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding-bottom:6px;
+  margin-bottom:4px;
+  border-bottom:1px solid var(--line);
+}
+
+.masterSummaryDiscount span{
+  color:var(--muted);
+  font-size:11px;
+}
+
+.discountOptions{
+  display:flex;
+  gap:4px;
+}
+
+.discountButton{
+  min-width:34px;
+  height:26px;
+  padding:0 7px;
+  border-radius:8px;
+  background:var(--soft);
+  color:#555;
+  font-size:10px;
+  font-weight:700;
+}
+
+.discountButton.active{
+  background:var(--blue);
+  color:#fff;
+}
+
+.masterSummaryRow.discount strong{
+  color:var(--red);
+}
+
 .actions{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -908,9 +948,61 @@ button{
   class="masterSummary"
   id="masterSummary"
 >
+  <div class="masterSummaryDiscount">
+    <span>Знижка на матеріали</span>
+
+    <div class="discountOptions">
+      <button
+        class="discountButton"
+        id="discount0"
+        onclick="setMaterialDiscount(0)"
+      >
+        0%
+      </button>
+
+      <button
+        class="discountButton"
+        id="discount5"
+        onclick="setMaterialDiscount(5)"
+      >
+        −5%
+      </button>
+
+      <button
+        class="discountButton"
+        id="discount10"
+        onclick="setMaterialDiscount(10)"
+      >
+        −10%
+      </button>
+
+      <button
+        class="discountButton"
+        id="discountCustom"
+        onclick="editCustomMaterialDiscount()"
+      >
+        Своя
+      </button>
+    </div>
+  </div>
+
+  <div class="masterSummaryRow">
+    <span>Роздріб</span>
+    <strong id="materialsRetailTotal">0 грн</strong>
+  </div>
+
+  <div
+    class="masterSummaryRow discount"
+    id="materialsDiscountRow"
+    style="display:none"
+  >
+    <span id="materialsDiscountLabel">Знижка</span>
+    <strong id="materialsDiscountTotal">0 грн</strong>
+  </div>
+
   <div class="masterSummaryRow">
     <span>Матеріали</span>
-    <strong id="materialsRetailTotal">0 грн</strong>
+    <strong id="materialsClientTotal">0 грн</strong>
   </div>
 
   <div class="masterSummaryRow">
@@ -1522,6 +1614,26 @@ let estimate =
     ) || "[]"
   );
 
+const MATERIAL_DISCOUNT_KEY =
+  "plumber_materialDiscount";
+
+let materialDiscountPercent =
+  Number(
+    localStorage.getItem(
+      MATERIAL_DISCOUNT_KEY
+    ) || 0
+  );
+
+if(
+  !Number.isFinite(
+    materialDiscountPercent
+  ) ||
+  materialDiscountPercent < 0 ||
+  materialDiscountPercent > 100
+){
+  materialDiscountPercent = 0;
+}
+
 let catalogMode =
   "work";
 
@@ -1936,6 +2048,148 @@ function saveCatalog(){
   );
 }
 
+function setMaterialDiscount(
+  percent
+){
+
+  const value =
+    Number(
+      percent
+    );
+
+  if(
+    !Number.isFinite(
+      value
+    ) ||
+    value < 0 ||
+    value > 100
+  ){
+    return;
+  }
+
+  materialDiscountPercent =
+    value;
+
+  localStorage.setItem(
+    MATERIAL_DISCOUNT_KEY,
+    String(
+      materialDiscountPercent
+    )
+  );
+
+  renderEstimate();
+}
+
+function editCustomMaterialDiscount(){
+
+  const value =
+    prompt(
+      "Знижка на матеріали, %:",
+      String(
+        materialDiscountPercent
+      )
+    );
+
+  if(
+    value === null
+  ){
+    return;
+  }
+
+  const percent =
+    Number(
+      String(
+        value
+      )
+        .replace(
+          ",",
+          "."
+        )
+    );
+
+  if(
+    !Number.isFinite(
+      percent
+    ) ||
+    percent < 0 ||
+    percent > 100
+  ){
+
+    alert(
+      "Вкажіть знижку від 0 до 100%."
+    );
+
+    return;
+  }
+
+  setMaterialDiscount(
+    percent
+  );
+}
+
+function renderMaterialDiscountButtons(){
+
+  [
+    0,
+    5,
+    10
+  ].forEach(
+    value => {
+
+      const button =
+        document.getElementById(
+          "discount" +
+          value
+        );
+
+      if(
+        button
+      ){
+
+        button.classList.toggle(
+          "active",
+          materialDiscountPercent ===
+            value
+        );
+      }
+    }
+  );
+
+  const customButton =
+    document.getElementById(
+      "discountCustom"
+    );
+
+  if(
+    customButton
+  ){
+
+    const isPreset =
+      [
+        0,
+        5,
+        10
+      ].includes(
+        materialDiscountPercent
+      );
+
+    customButton.classList.toggle(
+      "active",
+      !isPreset
+    );
+
+    customButton.textContent =
+      isPreset
+        ? "Своя"
+        : `−${materialDiscountPercent.toLocaleString(
+            "uk-UA",
+            {
+              maximumFractionDigits:2
+            }
+          )}%`;
+  }
+}
+
 /* =========================
    ESTIMATE
 ========================= */
@@ -2026,22 +2280,31 @@ function saveCatalog(){
       "block";
   }
 
-  const total =
-    estimate.reduce(
-      (
-        sum,
-        item
-      ) =>
-        sum +
-        item.price *
-        item.qty,
-      0
-    );
-
-  document.getElementById(
-    "grand"
-  ).textContent =
-    money(total);
+  const workTotal =
+    estimate
+      .filter(
+        item =>
+          item.type ===
+          "work"
+      )
+      .reduce(
+        (
+          sum,
+          item
+        ) =>
+          sum +
+          (
+            Number(
+              item.price
+            ) || 0
+          ) *
+          (
+            Number(
+              item.qty
+            ) || 0
+          ),
+        0
+      );
 
   const materialItems =
     estimate.filter(
@@ -2068,6 +2331,26 @@ function saveCatalog(){
           ) || 0
         ),
       0
+    );
+
+  const materialsDiscountTotal =
+    materialsRetailTotal *
+    materialDiscountPercent /
+    100;
+
+  const materialsClientTotal =
+    materialsRetailTotal -
+    materialsDiscountTotal;
+
+  const total =
+    workTotal +
+    materialsClientTotal;
+
+  document.getElementById(
+    "grand"
+  ).textContent =
+    money(
+      total
     );
 
   const hasCompletePurchaseData =
@@ -2106,7 +2389,7 @@ function saveCatalog(){
 
   const materialsEarningsTotal =
     hasCompletePurchaseData
-      ? materialsRetailTotal -
+      ? materialsClientTotal -
         materialsPurchaseTotal
       : null;
 
@@ -2127,6 +2410,41 @@ function saveCatalog(){
       materialsRetailTotal
     );
 
+  const discountRow =
+    document.getElementById(
+      "materialsDiscountRow"
+    );
+
+  discountRow.style.display =
+    materialDiscountPercent > 0
+      ? "flex"
+      : "none";
+
+  document.getElementById(
+    "materialsDiscountLabel"
+  ).textContent =
+    `Знижка −${materialDiscountPercent.toLocaleString(
+      "uk-UA",
+      {
+        maximumFractionDigits:2
+      }
+    )}%`;
+
+  document.getElementById(
+    "materialsDiscountTotal"
+  ).textContent =
+    "−" +
+    money(
+      materialsDiscountTotal
+    );
+
+  document.getElementById(
+    "materialsClientTotal"
+  ).textContent =
+    money(
+      materialsClientTotal
+    );
+
   document.getElementById(
     "materialsPurchaseTotal"
   ).textContent =
@@ -2144,6 +2462,8 @@ function saveCatalog(){
           materialsEarningsTotal
         )
       : "—";
+
+  renderMaterialDiscountButtons();
 
   document.getElementById(
     "count"
@@ -2339,6 +2659,14 @@ function clearEstimate(){
   }
 
   estimate = [];
+
+  materialDiscountPercent =
+    0;
+
+  localStorage.setItem(
+    MATERIAL_DISCOUNT_KEY,
+    "0"
+  );
 
   save();
   renderEstimate();
