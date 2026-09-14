@@ -2225,16 +2225,32 @@ function saveCatalog(){
 
 function toggleViewMode(){
 
-  viewMode =
+  if(
     viewMode ===
-      "master"
-      ? "client"
-      : "master";
+    "master"
+  ){
+
+    viewMode =
+      "client";
+
+  }else if(
+    viewMode ===
+    "client"
+  ){
+
+    viewMode =
+      "supplier";
+
+  }else{
+
+    viewMode =
+      "master";
+  }
 
   document.body.classList.toggle(
     "clientMode",
-    viewMode ===
-      "client"
+    viewMode !==
+      "master"
   );
 
   const button =
@@ -2248,9 +2264,14 @@ function toggleViewMode(){
 
     button.textContent =
       viewMode ===
-        "client"
-        ? "Майстер"
-        : "Клієнт";
+        "master"
+        ? "Клієнт"
+        : (
+            viewMode ===
+              "client"
+              ? "Постачальник"
+              : "Майстер"
+          );
   }
 
   renderEstimate();
@@ -2415,6 +2436,60 @@ function renderMaterialDiscountButtons(){
   }
 }
 
+function getEstimateCatalogProduct(
+  item
+){
+
+  return catalog.find(
+    product =>
+      product.id ===
+      item.id
+  ) || null;
+}
+
+function getSupplierViewName(
+  item
+){
+
+  if(
+    item.fullName
+  ){
+    return item.fullName;
+  }
+
+  const product =
+    getEstimateCatalogProduct(
+      item
+    );
+
+  return (
+    product?.name ||
+    item.name ||
+    ""
+  );
+}
+
+function getSupplierViewArticle(
+  item
+){
+
+  if(
+    item.article
+  ){
+    return item.article;
+  }
+
+  const product =
+    getEstimateCatalogProduct(
+      item
+    );
+
+  return (
+    product?.article ||
+    ""
+  );
+}
+
 /* =========================
    ESTIMATE
 ========================= */
@@ -2469,6 +2544,8 @@ function renderMaterialDiscountButtons(){
       );
 
     if(
+      viewMode !==
+        "supplier" &&
       rough.length
     ){
 
@@ -2479,6 +2556,8 @@ function renderMaterialDiscountButtons(){
     }
 
     if(
+      viewMode !==
+        "supplier" &&
       finish.length
     ){
 
@@ -2568,8 +2647,13 @@ function renderMaterialDiscountButtons(){
     materialsDiscountTotal;
 
   const total =
-    workTotal +
-    materialsClientTotal;
+    viewMode ===
+      "supplier"
+      ? materialsClientTotal
+      : (
+          workTotal +
+          materialsClientTotal
+        );
 
   document.getElementById(
     "grand"
@@ -2712,8 +2796,12 @@ function renderMaterialDiscountButtons(){
 
   clientSummary.classList.toggle(
     "show",
-    viewMode ===
-      "client" &&
+    (
+      viewMode ===
+        "client" ||
+      viewMode ===
+        "supplier"
+    ) &&
     estimate.length > 0
   );
 
@@ -2723,6 +2811,8 @@ function renderMaterialDiscountButtons(){
     );
 
   clientWorkRow.style.display =
+    viewMode !==
+      "supplier" &&
     workTotal > 0
       ? "flex"
       : "none";
@@ -2798,18 +2888,24 @@ function renderMaterialDiscountButtons(){
     );
 
   if(
-    viewMode ===
-      "client"
+    viewMode !==
+      "master"
   ){
 
     clearEstimateButton.style.display =
       "none";
   }
 
+  const visibleItemCount =
+    viewMode ===
+      "supplier"
+      ? materialItems.length
+      : estimate.length;
+
   document.getElementById(
     "count"
   ).textContent =
-    estimate.length +
+    visibleItemCount +
     " позицій";
 }
 
@@ -2850,10 +2946,15 @@ function renderRow(
     item.type ===
     "material";
 
+  const externalView =
+    viewMode ===
+      "client" ||
+    viewMode ===
+      "supplier";
+
   const clientFactor =
     (
-      viewMode ===
-        "client" &&
+      externalView &&
       isMaterial &&
       !showClientDiscount
     )
@@ -2880,14 +2981,50 @@ function renderRow(
       ) || 0
     );
 
+  const displayName =
+    viewMode ===
+      "supplier" &&
+    isMaterial
+      ? getSupplierViewName(
+          item
+        )
+      : item.name;
+
+  const supplierArticle =
+    viewMode ===
+      "supplier" &&
+    isMaterial
+      ? getSupplierViewArticle(
+          item
+        )
+      : "";
+
   return `
     <div class="row">
 
       <div>
 
         <div class="name">
-          ${escapeHtml(item.name)}
+          ${escapeHtml(displayName)}
         </div>
+
+        ${
+          supplierArticle
+            ? `
+              <div
+                style="
+                  margin-top:4px;
+                  color:var(--muted);
+                  font-size:11px;
+                  font-weight:650;
+                "
+              >
+                Артикул:
+                ${escapeHtml(supplierArticle)}
+              </div>
+            `
+            : ""
+        }
 
         <div class="controls">
 
@@ -2901,8 +3038,7 @@ function renderRow(
 
             <b>
               ${
-                viewMode ===
-                  "client"
+                externalView
                   ? `×${item.qty}`
                   : item.qty
               }
@@ -4163,6 +4299,11 @@ function addItem(
 
       estimateItem.article =
         product.article ||
+        "";
+
+      estimateItem.fullName =
+        product.name ||
+        product.estimateName ||
         "";
 
       estimateItem.retailPrice =
