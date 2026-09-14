@@ -333,6 +333,38 @@ button{
   font-size:17px;
 }
 
+.masterSummary{
+  display:none;
+  background:#fff;
+  border-radius:14px;
+  box-shadow:var(--shadow);
+  padding:8px 13px;
+  margin-bottom:7px;
+}
+
+.masterSummary.show{
+  display:block;
+}
+
+.masterSummaryRow{
+  min-height:23px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  font-size:11px;
+  color:var(--muted);
+}
+
+.masterSummaryRow strong{
+  color:var(--text);
+  font-size:12px;
+}
+
+.masterSummaryRow.earnings strong{
+  color:var(--blue);
+}
+
 .actions{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -871,6 +903,26 @@ button{
 </main>
 
 <div class="bottom">
+
+<div
+  class="masterSummary"
+  id="masterSummary"
+>
+  <div class="masterSummaryRow">
+    <span>Матеріали</span>
+    <strong id="materialsRetailTotal">0 грн</strong>
+  </div>
+
+  <div class="masterSummaryRow">
+    <span>Закупівля</span>
+    <strong id="materialsPurchaseTotal">—</strong>
+  </div>
+
+  <div class="masterSummaryRow earnings">
+    <span>Заробіток</span>
+    <strong id="materialsEarningsTotal">—</strong>
+  </div>
+</div>
 
 <div class="totalBar">
 
@@ -1990,6 +2042,108 @@ function saveCatalog(){
     "grand"
   ).textContent =
     money(total);
+
+  const materialItems =
+    estimate.filter(
+      item =>
+        item.type ===
+        "material"
+    );
+
+  const materialsRetailTotal =
+    materialItems.reduce(
+      (
+        sum,
+        item
+      ) =>
+        sum +
+        (
+          Number(
+            item.price
+          ) || 0
+        ) *
+        (
+          Number(
+            item.qty
+          ) || 0
+        ),
+      0
+    );
+
+  const hasCompletePurchaseData =
+    materialItems.length > 0 &&
+    materialItems.every(
+      item =>
+        Number.isFinite(
+          Number(
+            item.purchasePrice
+          )
+        ) &&
+        Number(
+          item.purchasePrice
+        ) >= 0
+    );
+
+  const materialsPurchaseTotal =
+    hasCompletePurchaseData
+      ? materialItems.reduce(
+          (
+            sum,
+            item
+          ) =>
+            sum +
+            Number(
+              item.purchasePrice
+            ) *
+            (
+              Number(
+                item.qty
+              ) || 0
+            ),
+          0
+        )
+      : null;
+
+  const materialsEarningsTotal =
+    hasCompletePurchaseData
+      ? materialsRetailTotal -
+        materialsPurchaseTotal
+      : null;
+
+  const masterSummary =
+    document.getElementById(
+      "masterSummary"
+    );
+
+  masterSummary.classList.toggle(
+    "show",
+    materialItems.length > 0
+  );
+
+  document.getElementById(
+    "materialsRetailTotal"
+  ).textContent =
+    money(
+      materialsRetailTotal
+    );
+
+  document.getElementById(
+    "materialsPurchaseTotal"
+  ).textContent =
+    hasCompletePurchaseData
+      ? money(
+          materialsPurchaseTotal
+        )
+      : "—";
+
+  document.getElementById(
+    "materialsEarningsTotal"
+  ).textContent =
+    hasCompletePurchaseData
+      ? money(
+          materialsEarningsTotal
+        )
+      : "—";
 
   document.getElementById(
     "count"
