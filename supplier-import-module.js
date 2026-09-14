@@ -902,6 +902,11 @@
       ],
 
       [
+        /\bwaterstop\b|\bajax\b/,
+        "Ajax"
+      ],
+
+      [
         /\bcaleffi\b/,
         "Caleffi"
       ],
