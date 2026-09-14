@@ -706,6 +706,88 @@ button{
   font-size:14px;
 }
 
+.procurementHeadLeft{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.procurementBack{
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  color:var(--blue);
+  font-size:24px;
+  line-height:1;
+}
+
+.procurementSecondary,
+.procurementSupplier{
+  flex:0 0 auto;
+  width:100%;
+  height:42px;
+  margin-top:8px;
+  border-radius:13px;
+  background:#e9ebef;
+  color:var(--blue);
+  font-size:13px;
+  font-weight:750;
+}
+
+.procurementSupplier{
+  background:#edf8ef;
+  color:#248a3d;
+}
+
+.topupDivider{
+  margin:14px 2px 7px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:750;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+
+.topupCard{
+  width:100%;
+  margin:6px 0;
+  padding:10px 11px;
+  border-radius:14px;
+  background:#fff;
+  text-align:left;
+  box-shadow:0 2px 10px rgba(30,40,60,.04);
+}
+
+.topupCardTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.topupCard strong{
+  font-size:13px;
+}
+
+.topupCardMeta{
+  margin-top:4px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:650;
+}
+
+.topupBadge{
+  flex:0 0 auto;
+  font-size:10px;
+  font-weight:750;
+  color:var(--red);
+}
+
+.topupBadge.reviewed{
+  color:#248a3d;
+}
+
 .sheet{
   position:fixed;
   inset:0;
@@ -1640,6 +1722,19 @@ button{
 
 </div>
 
+<div class="editorField full">
+
+<label>
+  Постачальник
+</label>
+
+<input
+  id="editorSupplier"
+  placeholder="Необов’язково"
+>
+
+</div>
+
 </div>
 
 </div>
@@ -1668,7 +1763,19 @@ button{
 <div class="procurementPanel">
 
 <div class="procurementHead">
-  <strong>Комплектація</strong>
+  <div class="procurementHeadLeft">
+    <button
+      class="procurementBack"
+      id="procurementBack"
+      onclick="backToProcurement()"
+      style="display:none"
+      aria-label="Назад"
+    >
+      ‹
+    </button>
+
+    <strong id="procurementTitle">Комплектація</strong>
+  </div>
 
   <button
     class="close"
@@ -1689,6 +1796,23 @@ button{
   class="procurementList"
   id="procurementList"
 ></div>
+
+<button
+  class="procurementSecondary"
+  id="procurementSecondary"
+  onclick="procurementSecondaryAction()"
+>
+  ＋ Добір
+</button>
+
+<button
+  class="procurementSupplier"
+  id="procurementSupplier"
+  onclick="openActiveTopupSupplier()"
+  style="display:none"
+>
+  Постачальник
+</button>
 
 <button
   class="procurementConfirm"
@@ -2057,6 +2181,32 @@ let procurementReviewed =
   localStorage.getItem(
     PROCUREMENT_REVIEWED_KEY
   ) === "1";
+
+const PROCUREMENT_TOPUPS_KEY =
+  "plumber_procurementTopups";
+
+let procurementTopups = [];
+
+try{
+  const savedTopups =
+    JSON.parse(
+      localStorage.getItem(
+        PROCUREMENT_TOPUPS_KEY
+      ) || "[]"
+    );
+
+  procurementTopups =
+    Array.isArray(savedTopups)
+      ? savedTopups
+      : [];
+}catch(error){
+  procurementTopups = [];
+}
+
+let activeTopupId = null;
+let supplierTopupId = null;
+let catalogTarget = "estimate";
+let pendingTopupAutoAdd = false;
 
 const MATERIAL_DISCOUNT_KEY =
   "plumber_materialDiscount";
@@ -2503,6 +2653,34 @@ function saveCatalog(){
   );
 }
 
+function saveProcurementTopups(){
+
+  localStorage.setItem(
+    PROCUREMENT_TOPUPS_KEY,
+    JSON.stringify(
+      procurementTopups
+    )
+  );
+}
+
+function getActiveTopup(){
+
+  return procurementTopups.find(
+    topup =>
+      topup.id ===
+      activeTopupId
+  ) || null;
+}
+
+function getSupplierTopup(){
+
+  return procurementTopups.find(
+    topup =>
+      topup.id ===
+      supplierTopupId
+  ) || null;
+}
+
 function toggleViewMode(){
 
   if(
@@ -2531,11 +2709,17 @@ function toggleViewMode(){
 
     }else{
 
+      supplierTopupId =
+        null;
+
       viewMode =
         "supplier";
     }
 
   }else{
+
+    supplierTopupId =
+      null;
 
     viewMode =
       "master";
@@ -2840,6 +3024,9 @@ function openProcurement(){
     return;
   }
 
+  activeTopupId =
+    null;
+
   renderProcurement();
 
   document.getElementById(
@@ -2856,9 +3043,40 @@ function closeProcurement(){
   ).classList.remove(
     "open"
   );
+
+  activeTopupId =
+    null;
+}
+
+function formatTopupDate(
+  value
+){
+
+  const date =
+    new Date(value);
+
+  if(
+    Number.isNaN(
+      date.getTime()
+    )
+  ){
+    return "";
+  }
+
+  return date.toLocaleDateString(
+    "uk-UA"
+  );
 }
 
 function renderProcurement(){
+
+  const activeTopup =
+    getActiveTopup();
+
+  if(activeTopup){
+    renderTopup(activeTopup);
+    return;
+  }
 
   const list =
     document.getElementById(
@@ -2874,6 +3092,41 @@ function renderProcurement(){
     document.getElementById(
       "procurementConfirm"
     );
+
+  const secondaryButton =
+    document.getElementById(
+      "procurementSecondary"
+    );
+
+  const supplierButton =
+    document.getElementById(
+      "procurementSupplier"
+    );
+
+  document.getElementById(
+    "procurementTitle"
+  ).textContent =
+    "Комплектація";
+
+  document.getElementById(
+    "procurementBack"
+  ).style.display =
+    "none";
+
+  secondaryButton.textContent =
+    "＋ Добір";
+
+  secondaryButton.style.display =
+    "block";
+
+  supplierButton.style.display =
+    "none";
+
+  confirmButton.textContent =
+    "Комплектацію перевірено";
+
+  confirmButton.onclick =
+    confirmProcurement;
 
   const materials =
     estimate.filter(
@@ -2897,21 +3150,21 @@ function renderProcurement(){
       ? "block"
       : "none";
 
+  let html = "";
+
   if(
     !materials.length
   ){
 
-    list.innerHTML = `
+    html = `
       <div class="procurementEmpty">
         У кошторисі немає матеріалів для комплектації.
       </div>
     `;
 
-    return;
-  }
+  }else{
 
-  list.innerHTML =
-    materials.map(
+    html = materials.map(
       item => {
 
         const index =
@@ -2970,6 +3223,268 @@ function renderProcurement(){
         `;
       }
     ).join("");
+  }
+
+  if(
+    procurementTopups.length
+  ){
+
+    html += `
+      <div class="topupDivider">
+        Добори
+      </div>
+    `;
+
+    html += procurementTopups
+      .map(
+        topup => `
+          <button
+            class="topupCard"
+            onclick="openTopup('${escapeHtml(topup.id)}')"
+          >
+            <div class="topupCardTop">
+              <strong>
+                Добір №${Number(topup.number) || 1}
+              </strong>
+
+              <span class="topupBadge ${topup.reviewed ? "reviewed" : ""}">
+                ${topup.reviewed ? "Перевірено" : "Не перевірено"}
+              </span>
+            </div>
+
+            <div class="topupCardMeta">
+              ${escapeHtml(formatTopupDate(topup.createdAt))}
+              · ${Array.isArray(topup.items) ? topup.items.length : 0} позицій
+            </div>
+          </button>
+        `
+      )
+      .join("");
+  }
+
+  list.innerHTML =
+    html;
+}
+
+function procurementSecondaryAction(){
+
+  if(
+    getActiveTopup()
+  ){
+    openCatalogForTopup();
+    return;
+  }
+
+  createTopup();
+}
+
+function createTopup(){
+
+  const nextNumber =
+    procurementTopups.reduce(
+      (
+        max,
+        topup
+      ) =>
+        Math.max(
+          max,
+          Number(topup.number) || 0
+        ),
+      0
+    ) + 1;
+
+  const topup = {
+    id:
+      "topup-" +
+      Date.now() +
+      "-" +
+      Math.random()
+        .toString(36)
+        .slice(2,8),
+    number:nextNumber,
+    createdAt:
+      new Date().toISOString(),
+    reviewed:false,
+    items:[]
+  };
+
+  procurementTopups.push(
+    topup
+  );
+
+  saveProcurementTopups();
+
+  activeTopupId =
+    topup.id;
+
+  renderProcurement();
+}
+
+function openTopup(
+  id
+){
+
+  if(
+    !procurementTopups.some(
+      topup =>
+        topup.id === id
+    )
+  ){
+    return;
+  }
+
+  activeTopupId =
+    id;
+
+  renderProcurement();
+}
+
+function backToProcurement(){
+
+  activeTopupId =
+    null;
+
+  renderProcurement();
+}
+
+function renderTopup(
+  topup
+){
+
+  const list =
+    document.getElementById(
+      "procurementList"
+    );
+
+  const status =
+    document.getElementById(
+      "procurementStatus"
+    );
+
+  const confirmButton =
+    document.getElementById(
+      "procurementConfirm"
+    );
+
+  const secondaryButton =
+    document.getElementById(
+      "procurementSecondary"
+    );
+
+  const supplierButton =
+    document.getElementById(
+      "procurementSupplier"
+    );
+
+  document.getElementById(
+    "procurementTitle"
+  ).textContent =
+    `Добір №${Number(topup.number) || 1}`;
+
+  document.getElementById(
+    "procurementBack"
+  ).style.display =
+    "block";
+
+  status.textContent =
+    topup.reviewed
+      ? "Добір перевірено"
+      : "Потрібна перевірка";
+
+  status.classList.toggle(
+    "reviewed",
+    !!topup.reviewed
+  );
+
+  secondaryButton.textContent =
+    "＋ Матеріал";
+
+  secondaryButton.style.display =
+    "block";
+
+  confirmButton.textContent =
+    "Добір перевірено";
+
+  confirmButton.onclick =
+    confirmActiveTopup;
+
+  confirmButton.style.display =
+    Array.isArray(topup.items) &&
+    topup.items.length
+      ? "block"
+      : "none";
+
+  supplierButton.style.display =
+    topup.reviewed &&
+    Array.isArray(topup.items) &&
+    topup.items.some(
+      item =>
+        Number(item.qty) > 0
+    )
+      ? "block"
+      : "none";
+
+  const items =
+    Array.isArray(topup.items)
+      ? topup.items
+      : [];
+
+  if(
+    !items.length
+  ){
+
+    list.innerHTML = `
+      <div class="procurementEmpty">
+        У цьому доборі ще немає матеріалів.
+      </div>
+    `;
+
+    return;
+  }
+
+  list.innerHTML =
+    items.map(
+      (
+        item,
+        index
+      ) => `
+        <div class="procurementRow">
+
+          <div class="procurementRowTop">
+            <div class="procurementName">
+              ${escapeHtml(item.name)}
+            </div>
+
+            <div class="procurementNeed">
+              ${escapeHtml(item.unit)}
+            </div>
+          </div>
+
+          <div class="procurementControls">
+            <span>Кількість</span>
+
+            <div class="procurementQty">
+              <button
+                onclick="changeTopupQty(${index},-1)"
+              >
+                −
+              </button>
+
+              <b>
+                ${Math.max(0,Number(item.qty) || 0)}
+              </b>
+
+              <button
+                onclick="changeTopupQty(${index},1)"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+        </div>
+      `
+    ).join("");
 }
 
 function changeProcurementQty(
@@ -3013,6 +3528,48 @@ function changeProcurementQty(
   save();
   renderProcurement();
   renderEstimate();
+}
+
+function changeTopupQty(
+  index,
+  delta
+){
+
+  const topup =
+    getActiveTopup();
+
+  if(
+    !topup ||
+    !Array.isArray(topup.items) ||
+    !topup.items[index]
+  ){
+    return;
+  }
+
+  const item =
+    topup.items[index];
+
+  item.qty =
+    Math.max(
+      0,
+      (Number(item.qty) || 0) +
+      delta
+    );
+
+  if(
+    item.qty <= 0
+  ){
+    topup.items.splice(
+      index,
+      1
+    );
+  }
+
+  topup.reviewed =
+    false;
+
+  saveProcurementTopups();
+  renderProcurement();
 }
 
 function confirmProcurement(){
@@ -3063,6 +3620,298 @@ function confirmProcurement(){
   renderEstimate();
 }
 
+function confirmActiveTopup(){
+
+  const topup =
+    getActiveTopup();
+
+  if(
+    !topup ||
+    !Array.isArray(topup.items) ||
+    !topup.items.length
+  ){
+    return;
+  }
+
+  topup.reviewed =
+    true;
+
+  saveProcurementTopups();
+  renderProcurement();
+}
+
+function openCatalogForTopup(){
+
+  const topup =
+    getActiveTopup();
+
+  if(!topup){
+    return;
+  }
+
+  catalogTarget =
+    "topup";
+
+  openCatalog(
+    "material",
+    "topup"
+  );
+}
+
+function addItemToTopup(
+  id
+){
+
+  const topup =
+    getActiveTopup();
+
+  const product =
+    catalog.find(
+      item =>
+        item.id === id &&
+        item.type ===
+          "material"
+    );
+
+  if(
+    !topup ||
+    !product
+  ){
+    return;
+  }
+
+  if(
+    !Number.isFinite(eurRate) ||
+    eurRate <= 0
+  ){
+    alert(
+      "Спочатку вкажіть курс EUR."
+    );
+    return;
+  }
+
+  const existing =
+    topup.items.find(
+      item =>
+        item.id === id
+    );
+
+  if(existing){
+
+    existing.qty =
+      (Number(existing.qty) || 0) + 1;
+
+  }else{
+
+    let materialPrice = 0;
+    let selectedOffer = null;
+
+    const supplierOffers =
+      getSupplierOffers(
+        product
+      );
+
+    if(
+      supplierOffers.length
+    ){
+
+      selectedOffer =
+        chooseSupplierOffer(
+          product
+        );
+
+      if(
+        !selectedOffer
+      ){
+        alert(
+          "Для цієї позиції немає доступної роздрібної ціни постачальника."
+        );
+        return;
+      }
+
+      materialPrice =
+        getSnapshotPriceUAH(
+          selectedOffer.retail
+        );
+
+      if(
+        !Number.isFinite(materialPrice)
+      ){
+        alert(
+          "Не вдалося визначити роздрібну ціну матеріалу."
+        );
+        return;
+      }
+
+    }else{
+
+      materialPrice =
+        getMaterialCatalogPrice(
+          product
+        );
+    }
+
+    const topupItem = {
+      id:product.id,
+      type:"material",
+      name:
+        product.estimateName ||
+        product.name,
+      fullName:
+        product.name ||
+        product.estimateName ||
+        "",
+      article:
+        product.article ||
+        "",
+      category:
+        product.category ||
+        "other",
+      unit:
+        product.unit ||
+        "",
+      qty:1,
+      price:materialPrice,
+      retailPrice:materialPrice,
+      priceSnapshotAt:
+        new Date().toISOString(),
+      eurRate:eurRate,
+      supplierId:"",
+      supplierName:
+        product.supplierName ||
+        "",
+      supplierImportedAt:"",
+      purchasePrice:null
+    };
+
+    if(selectedOffer){
+
+      topupItem.supplierId =
+        selectedOffer.supplierId ||
+        "";
+
+      topupItem.supplierName =
+        selectedOffer.supplierName ||
+        topupItem.supplierName;
+
+      topupItem.supplierImportedAt =
+        selectedOffer.updatedAt ||
+        selectedOffer.retail?.importedAt ||
+        selectedOffer.master?.importedAt ||
+        "";
+
+      const purchasePrice =
+        getSnapshotPriceUAH(
+          selectedOffer.master
+        );
+
+      topupItem.purchasePrice =
+        Number.isFinite(purchasePrice)
+          ? purchasePrice
+          : null;
+    }
+
+    topup.items.push(
+      topupItem
+    );
+  }
+
+  topup.reviewed =
+    false;
+
+  saveProcurementTopups();
+  renderCatalog();
+}
+
+function topupCatalogChangeQty(
+  id,
+  delta
+){
+
+  const topup =
+    getActiveTopup();
+
+  if(
+    !topup ||
+    !Array.isArray(topup.items)
+  ){
+    return;
+  }
+
+  const index =
+    topup.items.findIndex(
+      item =>
+        item.id === id
+    );
+
+  if(index === -1){
+
+    if(delta > 0){
+      addItemToTopup(id);
+    }
+
+    return;
+  }
+
+  topup.items[index].qty +=
+    delta;
+
+  if(
+    topup.items[index].qty <= 0
+  ){
+    topup.items.splice(
+      index,
+      1
+    );
+  }
+
+  topup.reviewed =
+    false;
+
+  saveProcurementTopups();
+  renderCatalog();
+}
+
+function openActiveTopupSupplier(){
+
+  const topup =
+    getActiveTopup();
+
+  if(
+    !topup ||
+    !topup.reviewed
+  ){
+    alert(
+      "Спочатку перевірте добір та натисніть «Добір перевірено»."
+    );
+    return;
+  }
+
+  supplierTopupId =
+    topup.id;
+
+  closeProcurement();
+
+  viewMode =
+    "supplier";
+
+  document.body.classList.add(
+    "clientMode"
+  );
+
+  const button =
+    document.getElementById(
+      "viewToggle"
+    );
+
+  if(button){
+    button.textContent =
+      `Постачальник · Добір №${Number(topup.number) || 1}`;
+  }
+
+  renderEstimate();
+}
+
 /* =========================
    ESTIMATE
 ========================= */
@@ -3078,8 +3927,14 @@ function confirmProcurement(){
       "clearEstimate"
     );
 
+  const supplierTopup =
+    viewMode === "supplier"
+      ? getSupplierTopup()
+      : null;
+
   if(
-    !estimate.length
+    !estimate.length &&
+    !supplierTopup
   ){
 
     list.innerHTML = `
@@ -3111,15 +3966,24 @@ function confirmProcurement(){
       );
 
     const materials =
-      estimate.filter(
-        item =>
-          item.type === "material" &&
-          (
-            viewMode !==
-              "supplier" ||
-            getProcurementQty(item) > 0
+      supplierTopup
+        ? (
+            Array.isArray(supplierTopup.items)
+              ? supplierTopup.items.filter(
+                  item =>
+                    Number(item.qty) > 0
+                )
+              : []
           )
-      );
+        : estimate.filter(
+            item =>
+              item.type === "material" &&
+              (
+                viewMode !==
+                  "supplier" ||
+                getProcurementQty(item) > 0
+              )
+          );
 
     const consumables =
       estimate.filter(
@@ -3204,11 +4068,17 @@ function confirmProcurement(){
       );
 
   const materialItems =
-    estimate.filter(
-      item =>
-        item.type ===
-        "material"
-    );
+    supplierTopup
+      ? (
+          Array.isArray(supplierTopup.items)
+            ? supplierTopup.items
+            : []
+        )
+      : estimate.filter(
+          item =>
+            item.type ===
+            "material"
+        );
 
   const materialsRetailTotal =
     materialItems.reduce(
@@ -3280,7 +4150,11 @@ function confirmProcurement(){
             Number(item.price) || 0
           ) *
           factor *
-          getProcurementQty(item);
+          (
+            supplierTopup
+              ? (Number(item.qty) || 0)
+              : getProcurementQty(item)
+          );
       },
       0
     );
@@ -3560,7 +4434,11 @@ function confirmProcurement(){
       "supplier"
       ? materialItems.filter(
           item =>
-            getProcurementQty(item) > 0
+            (
+              supplierTopup
+                ? Number(item.qty)
+                : getProcurementQty(item)
+            ) > 0
         ).length
       : estimate.length;
 
@@ -3671,7 +4549,11 @@ function renderRow(
     viewMode ===
       "supplier" &&
     isMaterial
-      ? getProcurementQty(item)
+      ? (
+          supplierTopupId
+            ? (Number(item.qty) || 0)
+            : getProcurementQty(item)
+        )
       : (
           Number(item.qty) || 0
         );
@@ -3958,11 +4840,15 @@ function clearEstimate(){
 ========================= */
 
 function openCatalog(
-  type
+  type,
+  target = "estimate"
 ){
 
   catalogMode =
     type;
+
+  catalogTarget =
+    target;
 
   catalogFilter =
     "all";
@@ -4673,7 +5559,18 @@ function renderCatalog(){
                 : ""
             }
           `
-          : ""
+          : (
+              catalogTarget === "topup"
+                ? `
+                  <button
+                    class="catalogAdd"
+                    onclick="openCatalogEditor()"
+                  >
+                    ＋ Нова позиція
+                  </button>
+                `
+                : ""
+            )
       }
 
     `;
@@ -4716,6 +5613,20 @@ function renderCatalog(){
       }
 
     `;
+
+  }else if(
+    catalogTarget ===
+      "topup"
+  ){
+
+    box.innerHTML += `
+      <button
+        class="catalogAdd"
+        onclick="openCatalogEditor()"
+      >
+        ＋ Нова позиція
+      </button>
+    `;
   }
 }
 
@@ -4735,12 +5646,28 @@ function renderCatalogItem(
           ) || 0
         );
 
+  const activeTopup =
+    catalogTarget ===
+      "topup"
+      ? getActiveTopup()
+      : null;
+
   const existing =
-    estimate.find(
-      estimateItem =>
-        estimateItem.id ===
-        item.id
-    );
+    activeTopup
+      ? (
+          Array.isArray(activeTopup.items)
+            ? activeTopup.items.find(
+                topupItem =>
+                  topupItem.id ===
+                  item.id
+              )
+            : null
+        )
+      : estimate.find(
+          estimateItem =>
+            estimateItem.id ===
+            item.id
+        );
 
   const qty =
     existing
@@ -4787,7 +5714,12 @@ function renderCatalogItem(
   const cardAction =
     catalogManageMode
       ? ""
-      : `onclick="addItem(decodeURIComponent('${encodedId}'))"`;
+      : (
+          catalogTarget ===
+            "topup"
+            ? `onclick="addItemToTopup(decodeURIComponent('${encodedId}'))"`
+            : `onclick="addItem(decodeURIComponent('${encodedId}'))"`
+        );
 
   return `
 
@@ -4905,7 +5837,7 @@ function renderCatalogItem(
 
               <button
                 class="catalogQtyButton"
-                onclick="catalogChangeQty(decodeURIComponent('${encodedId}'),-1)"
+                onclick="${catalogTarget === "topup" ? "topupCatalogChangeQty" : "catalogChangeQty"}(decodeURIComponent('${encodedId}'),-1)"
               >
                 −
               </button>
@@ -4916,7 +5848,7 @@ function renderCatalogItem(
 
               <button
                 class="catalogQtyButton"
-                onclick="catalogChangeQty(decodeURIComponent('${encodedId}'),1)"
+                onclick="${catalogTarget === "topup" ? "topupCatalogChangeQty" : "catalogChangeQty"}(decodeURIComponent('${encodedId}'),1)"
               >
                 +
               </button>
@@ -5507,7 +6439,12 @@ function openCatalogEditor(
                 ) || 0
               )
         )
-      : 0;
+      : (
+          catalogMode ===
+            "material"
+            ? ""
+            : 0
+        );
 
   document.getElementById(
     "editorUnit"
@@ -5545,6 +6482,23 @@ function openCatalogEditor(
           ""
         )
       : "";
+
+  document.getElementById(
+    "editorSupplier"
+  ).value =
+    item
+      ? (
+          item.supplierName ||
+          ""
+        )
+      : "";
+
+  pendingTopupAutoAdd =
+    !item &&
+    catalogTarget ===
+      "topup" &&
+    catalogMode ===
+      "material";
 
   const lockMaterialIdentity =
     !!(
@@ -5613,7 +6567,9 @@ function openCatalogEditor(
   );
 }
 
-function closeCatalogEditor(){
+function closeCatalogEditor(
+  preservePending = false
+){
 
   document.getElementById(
     "editorSheet"
@@ -5623,6 +6579,11 @@ function closeCatalogEditor(){
 
   editingCatalogId =
     null;
+
+  if(!preservePending){
+    pendingTopupAutoAdd =
+      false;
+  }
 }
 
 function saveCatalogItem(){
@@ -5637,11 +6598,14 @@ function saveCatalogItem(){
       "editorEstimateName"
     ).value.trim();
 
+  const priceRaw =
+    document.getElementById(
+      "editorPrice"
+    ).value.trim();
+
   const price =
     Number(
-      document.getElementById(
-        "editorPrice"
-      ).value
+      priceRaw
     );
 
   const unit =
@@ -5674,7 +6638,13 @@ function saveCatalogItem(){
       "editorArticle"
     ).value.trim();
 
+  const supplierName =
+    document.getElementById(
+      "editorSupplier"
+    ).value.trim();
+
   if(
+    type === "work" &&
     !name
   ){
 
@@ -5697,6 +6667,10 @@ function saveCatalogItem(){
   }
 
   if(
+    (
+      type === "material" &&
+      !priceRaw
+    ) ||
     !Number.isFinite(
       price
     ) ||
@@ -5722,6 +6696,22 @@ function saveCatalogItem(){
 
     return;
   }
+
+  if(
+    type === "material" &&
+    !group
+  ){
+
+    alert(
+      "Вкажіть категорію."
+    );
+
+    return;
+  }
+
+  const materialFullName =
+    name ||
+    estimateName;
 
   if(
     editingCatalogId
@@ -5783,6 +6773,13 @@ function saveCatalogItem(){
 
       delete item.price;
 
+      if(
+        !wasMaterial
+      ){
+        item.name =
+          materialFullName;
+      }
+
       item.category =
         group;
 
@@ -5793,6 +6790,9 @@ function saveCatalogItem(){
 
       item.system =
         system;
+
+      item.supplierName =
+        supplierName;
 
       if(
         !wasMaterial
@@ -5816,7 +6816,9 @@ function saveCatalogItem(){
           .slice(2,8),
 
       name:
-        name,
+        type === "material"
+          ? materialFullName
+          : name,
 
       estimateName:
         estimateName,
@@ -5854,16 +6856,33 @@ function saveCatalogItem(){
 
       item.article =
         article;
+
+      item.supplierName =
+        supplierName;
     }
 
     catalog.push(
       item
     );
+
+    if(
+      pendingTopupAutoAdd &&
+      type === "material"
+    ){
+      addItemToTopup(
+        item.id
+      );
+    }
   }
 
   saveCatalog();
 
-  closeCatalogEditor();
+  closeCatalogEditor(
+    true
+  );
+
+  pendingTopupAutoAdd =
+    false;
 
   renderFilters();
   renderBrandFilters();
