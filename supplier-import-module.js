@@ -882,6 +882,11 @@
       ],
 
       [
+        /\bm[üu]pro\b/,
+        "MUPRO"
+      ],
+
+      [
         /k[\s-]*flex/,
         "K-FLEX"
       ],
