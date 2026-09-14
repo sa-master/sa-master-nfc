@@ -808,6 +808,35 @@ button{
   color:#248a3d;
 }
 
+.topupChecklistRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.topupCheck{
+  flex:0 0 30px;
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  border:1.5px solid #c7cbd3;
+  background:#fff;
+  color:#fff;
+  font-size:18px;
+  font-weight:800;
+  line-height:1;
+}
+
+.topupCheck.checked{
+  border-color:#248a3d;
+  background:#248a3d;
+}
+
+.topupPurchased .procurementName{
+  color:var(--muted);
+  text-decoration:line-through;
+}
+
 .sheet{
   position:fixed;
   inset:0;
@@ -1826,15 +1855,6 @@ button{
 </button>
 
 <button
-  class="procurementSupplier"
-  id="procurementSupplier"
-  onclick="openActiveTopupSupplier()"
-  style="display:none"
->
-  Постачальник
-</button>
-
-<button
   class="procurementConfirm"
   id="procurementConfirm"
   onclick="confirmProcurement()"
@@ -2216,15 +2236,31 @@ try{
     );
 
   procurementTopups =
-    Array.isArray(savedTopups)
-      ? savedTopups
+    Array.isArray(savedTopups) &&
+    savedTopups.length
+      ? [savedTopups[0]]
       : [];
+
+  if(
+    procurementTopups[0] &&
+    Array.isArray(
+      procurementTopups[0].items
+    )
+  ){
+    procurementTopups[0].items =
+      procurementTopups[0].items.map(
+        item => ({
+          ...item,
+          purchased:
+            !!item.purchased
+        })
+      );
+  }
 }catch(error){
   procurementTopups = [];
 }
 
 let activeTopupId = null;
-let supplierTopupId = null;
 let catalogTarget = "estimate";
 let pendingTopupAutoAdd = false;
 
@@ -2692,15 +2728,6 @@ function getActiveTopup(){
   ) || null;
 }
 
-function getSupplierTopup(){
-
-  return procurementTopups.find(
-    topup =>
-      topup.id ===
-      supplierTopupId
-  ) || null;
-}
-
 function toggleViewMode(){
 
   if(
@@ -2729,17 +2756,11 @@ function toggleViewMode(){
 
     }else{
 
-      supplierTopupId =
-        null;
-
       viewMode =
         "supplier";
     }
 
   }else{
-
-    supplierTopupId =
-      null;
 
     viewMode =
       "master";
@@ -3118,11 +3139,6 @@ function renderProcurement(){
       "procurementSecondary"
     );
 
-  const supplierButton =
-    document.getElementById(
-      "procurementSupplier"
-    );
-
   document.getElementById(
     "procurementTitle"
   ).textContent =
@@ -3134,13 +3150,12 @@ function renderProcurement(){
     "none";
 
   secondaryButton.textContent =
-    "＋ Добір";
+    procurementTopups[0]
+      ? "Добір"
+      : "＋ Добір";
 
   secondaryButton.style.display =
     "block";
-
-  supplierButton.style.display =
-    "none";
 
   confirmButton.textContent =
     "Комплектацію перевірено";
@@ -3245,58 +3260,56 @@ function renderProcurement(){
     ).join("");
   }
 
-  if(
-    procurementTopups.length
-  ){
+  const topup =
+    procurementTopups[0] || null;
+
+  if(topup){
+
+    const items =
+      Array.isArray(topup.items)
+        ? topup.items
+        : [];
+
+    const purchasedCount =
+      items.filter(
+        item =>
+          !!item.purchased
+      ).length;
 
     html += `
       <div class="topupDivider">
-        Добори
+        Добір
+      </div>
+
+      <div class="topupCardWrap">
+        <button
+          class="topupCard"
+          onclick="openTopup('${escapeHtml(topup.id)}')"
+        >
+          <div class="topupCardTop">
+            <strong>Добір</strong>
+
+            <span class="topupBadge ${items.length && purchasedCount === items.length ? "reviewed" : ""}">
+              ${items.length ? `${purchasedCount}/${items.length} куплено` : "Порожній"}
+            </span>
+          </div>
+
+          <div class="topupCardMeta">
+            ${escapeHtml(formatTopupDate(topup.createdAt))}
+            · ${items.length} позицій
+          </div>
+        </button>
       </div>
     `;
-
-    html += procurementTopups
-      .map(
-        topup => `
-          <div class="topupCardWrap">
-            <button
-              class="topupCard"
-              onclick="openTopup('${escapeHtml(topup.id)}')"
-            >
-              <div class="topupCardTop">
-                <strong>
-                  Добір №${Number(topup.number) || 1}
-                </strong>
-
-                <span class="topupBadge ${topup.reviewed ? "reviewed" : ""}">
-                  ${topup.reviewed ? "Перевірено" : "Не перевірено"}
-                </span>
-              </div>
-
-              <div class="topupCardMeta">
-                ${escapeHtml(formatTopupDate(topup.createdAt))}
-                · ${Array.isArray(topup.items) ? topup.items.length : 0} позицій
-              </div>
-            </button>
-
-            <button
-              class="topupDelete"
-              onclick="deleteTopup('${escapeHtml(topup.id)}')"
-              aria-label="Видалити Добір №${Number(topup.number) || 1}"
-            >
-              ×
-            </button>
-          </div>
-        `
-      )
-      .join("");
   }
-
   list.innerHTML =
     html;
 }
 
 function procurementSecondaryAction(){
+
+  const existingTopup =
+    procurementTopups[0] || null;
 
   if(
     getActiveTopup()
@@ -3305,23 +3318,36 @@ function procurementSecondaryAction(){
     return;
   }
 
+  if(existingTopup){
+    openTopup(
+      existingTopup.id
+    );
+    return;
+  }
+
   createTopup();
 }
 
 function createTopup(){
 
-  const nextNumber =
-    procurementTopups.reduce(
-      (
-        max,
-        topup
-      ) =>
-        Math.max(
-          max,
-          Number(topup.number) || 0
-        ),
-      0
-    ) + 1;
+  if(
+    procurementTopups[0]
+  ){
+    activeTopupId =
+      procurementTopups[0].id;
+
+    renderProcurement();
+    return;
+  }
+
+  if(
+    !procurementReviewed
+  ){
+    alert(
+      "Спочатку перевірте комплектацію та натисніть «Комплектацію перевірено»."
+    );
+    return;
+  }
 
   const topup = {
     id:
@@ -3331,66 +3357,20 @@ function createTopup(){
       Math.random()
         .toString(36)
         .slice(2,8),
-    number:nextNumber,
     createdAt:
       new Date().toISOString(),
-    reviewed:false,
     items:[]
   };
 
-  procurementTopups.push(
+  procurementTopups = [
     topup
-  );
+  ];
 
   saveProcurementTopups();
 
   activeTopupId =
     topup.id;
 
-  renderProcurement();
-}
-
-function deleteTopup(
-  id
-){
-
-  const topup =
-    procurementTopups.find(
-      item =>
-        item.id === id
-    );
-
-  if(!topup){
-    return;
-  }
-
-  const number =
-    Number(topup.number) || 1;
-
-  const message =
-    topup.reviewed
-      ? `Добір №${number} уже перевірено. Видалити його разом з усіма позиціями?`
-      : `Видалити Добір №${number} разом з усіма позиціями?`;
-
-  if(!confirm(message)){
-    return;
-  }
-
-  procurementTopups =
-    procurementTopups.filter(
-      item =>
-        item.id !== id
-    );
-
-  if(activeTopupId === id){
-    activeTopupId = null;
-  }
-
-  if(supplierTopupId === id){
-    supplierTopupId = null;
-  }
-
-  saveProcurementTopups();
   renderProcurement();
 }
 
@@ -3445,29 +3425,37 @@ function renderTopup(
       "procurementSecondary"
     );
 
-  const supplierButton =
-    document.getElementById(
-      "procurementSupplier"
-    );
-
   document.getElementById(
     "procurementTitle"
   ).textContent =
-    `Добір №${Number(topup.number) || 1}`;
+    "Добір";
 
   document.getElementById(
     "procurementBack"
   ).style.display =
     "block";
 
+  const items =
+    Array.isArray(topup.items)
+      ? topup.items
+      : [];
+
+  const purchasedCount =
+    items.filter(
+      item =>
+        !!item.purchased
+    ).length;
+
   status.textContent =
-    topup.reviewed
-      ? "Добір перевірено"
-      : "Потрібна перевірка";
+    items.length
+      ? `Куплено ${purchasedCount} з ${items.length}`
+      : "Додайте матеріали для добору";
 
   status.classList.toggle(
     "reviewed",
-    !!topup.reviewed
+    items.length > 0 &&
+    purchasedCount ===
+      items.length
   );
 
   secondaryButton.textContent =
@@ -3476,32 +3464,8 @@ function renderTopup(
   secondaryButton.style.display =
     "block";
 
-  confirmButton.textContent =
-    "Добір перевірено";
-
-  confirmButton.onclick =
-    confirmActiveTopup;
-
   confirmButton.style.display =
-    Array.isArray(topup.items) &&
-    topup.items.length
-      ? "block"
-      : "none";
-
-  supplierButton.style.display =
-    topup.reviewed &&
-    Array.isArray(topup.items) &&
-    topup.items.some(
-      item =>
-        Number(item.qty) > 0
-    )
-      ? "block"
-      : "none";
-
-  const items =
-    Array.isArray(topup.items)
-      ? topup.items
-      : [];
+    "none";
 
   if(
     !items.length
@@ -3509,7 +3473,7 @@ function renderTopup(
 
     list.innerHTML = `
       <div class="procurementEmpty">
-        У цьому доборі ще немає матеріалів.
+        У доборі ще немає матеріалів.
       </div>
     `;
 
@@ -3522,16 +3486,28 @@ function renderTopup(
         item,
         index
       ) => `
-        <div class="procurementRow">
+        <div class="procurementRow ${item.purchased ? "topupPurchased" : ""}">
 
-          <div class="procurementRowTop">
-            <div class="procurementName">
-              ${escapeHtml(item.name)}
+          <div class="topupChecklistRow">
+
+            <button
+              class="topupCheck ${item.purchased ? "checked" : ""}"
+              onclick="toggleTopupPurchased(${index})"
+              aria-label="${item.purchased ? "Позначити як не куплено" : "Позначити як куплено"}"
+            >
+              ${item.purchased ? "✓" : ""}
+            </button>
+
+            <div class="procurementRowTop" style="flex:1;min-width:0">
+              <div class="procurementName">
+                ${escapeHtml(item.name)}
+              </div>
+
+              <div class="procurementNeed">
+                ${item.purchased ? "Куплено" : "Треба купити"} · ${escapeHtml(item.unit)}
+              </div>
             </div>
 
-            <div class="procurementNeed">
-              ${escapeHtml(item.unit)}
-            </div>
           </div>
 
           <div class="procurementControls">
@@ -3559,6 +3535,28 @@ function renderTopup(
         </div>
       `
     ).join("");
+}
+
+function toggleTopupPurchased(
+  index
+){
+
+  const topup =
+    getActiveTopup();
+
+  if(
+    !topup ||
+    !Array.isArray(topup.items) ||
+    !topup.items[index]
+  ){
+    return;
+  }
+
+  topup.items[index].purchased =
+    !topup.items[index].purchased;
+
+  saveProcurementTopups();
+  renderProcurement();
 }
 
 function changeProcurementQty(
@@ -3639,7 +3637,7 @@ function changeTopupQty(
     );
   }
 
-  topup.reviewed =
+  item.purchased =
     false;
 
   saveProcurementTopups();
@@ -3692,26 +3690,6 @@ function confirmProcurement(){
   save();
   renderProcurement();
   renderEstimate();
-}
-
-function confirmActiveTopup(){
-
-  const topup =
-    getActiveTopup();
-
-  if(
-    !topup ||
-    !Array.isArray(topup.items) ||
-    !topup.items.length
-  ){
-    return;
-  }
-
-  topup.reviewed =
-    true;
-
-  saveProcurementTopups();
-  renderProcurement();
 }
 
 function openCatalogForTopup(){
@@ -3780,6 +3758,9 @@ function addItemToTopup(
 
     existing.qty =
       (Number(existing.qty) || 0) + 1;
+
+    existing.purchased =
+      false;
 
   }else{
 
@@ -3851,6 +3832,7 @@ function addItemToTopup(
         product.unit ||
         "",
       qty:1,
+      purchased:false,
       price:materialPrice,
       retailPrice:materialPrice,
       priceSnapshotAt:
@@ -3896,9 +3878,6 @@ function addItemToTopup(
     );
   }
 
-  topup.reviewed =
-    false;
-
   saveProcurementTopups();
   closeCatalog();
 }
@@ -3936,6 +3915,9 @@ function topupCatalogChangeQty(
   topup.items[index].qty +=
     delta;
 
+  topup.items[index].purchased =
+    false;
+
   if(
     topup.items[index].qty <= 0
   ){
@@ -3945,51 +3927,8 @@ function topupCatalogChangeQty(
     );
   }
 
-  topup.reviewed =
-    false;
-
   saveProcurementTopups();
   renderCatalog();
-}
-
-function openActiveTopupSupplier(){
-
-  const topup =
-    getActiveTopup();
-
-  if(
-    !topup ||
-    !topup.reviewed
-  ){
-    alert(
-      "Спочатку перевірте добір та натисніть «Добір перевірено»."
-    );
-    return;
-  }
-
-  supplierTopupId =
-    topup.id;
-
-  closeProcurement();
-
-  viewMode =
-    "supplier";
-
-  document.body.classList.add(
-    "clientMode"
-  );
-
-  const button =
-    document.getElementById(
-      "viewToggle"
-    );
-
-  if(button){
-    button.textContent =
-      `Постачальник · Добір №${Number(topup.number) || 1}`;
-  }
-
-  renderEstimate();
 }
 
 /* =========================
@@ -4007,14 +3946,8 @@ function openActiveTopupSupplier(){
       "clearEstimate"
     );
 
-  const supplierTopup =
-    viewMode === "supplier"
-      ? getSupplierTopup()
-      : null;
-
   if(
-    !estimate.length &&
-    !supplierTopup
+    !estimate.length
   ){
 
     list.innerHTML = `
@@ -4046,24 +3979,15 @@ function openActiveTopupSupplier(){
       );
 
     const materials =
-      supplierTopup
-        ? (
-            Array.isArray(supplierTopup.items)
-              ? supplierTopup.items.filter(
-                  item =>
-                    Number(item.qty) > 0
-                )
-              : []
+      estimate.filter(
+        item =>
+          item.type === "material" &&
+          (
+            viewMode !==
+              "supplier" ||
+            getProcurementQty(item) > 0
           )
-        : estimate.filter(
-            item =>
-              item.type === "material" &&
-              (
-                viewMode !==
-                  "supplier" ||
-                getProcurementQty(item) > 0
-              )
-          );
+      );
 
     const consumables =
       estimate.filter(
@@ -4148,17 +4072,11 @@ function openActiveTopupSupplier(){
       );
 
   const materialItems =
-    supplierTopup
-      ? (
-          Array.isArray(supplierTopup.items)
-            ? supplierTopup.items
-            : []
-        )
-      : estimate.filter(
-          item =>
-            item.type ===
-            "material"
-        );
+    estimate.filter(
+      item =>
+        item.type ===
+          "material"
+    );
 
   const materialsRetailTotal =
     materialItems.reduce(
@@ -4230,11 +4148,7 @@ function openActiveTopupSupplier(){
             Number(item.price) || 0
           ) *
           factor *
-          (
-            supplierTopup
-              ? (Number(item.qty) || 0)
-              : getProcurementQty(item)
-          );
+          getProcurementQty(item);
       },
       0
     );
@@ -4514,11 +4428,7 @@ function openActiveTopupSupplier(){
       "supplier"
       ? materialItems.filter(
           item =>
-            (
-              supplierTopup
-                ? Number(item.qty)
-                : getProcurementQty(item)
-            ) > 0
+            getProcurementQty(item) > 0
         ).length
       : estimate.length;
 
@@ -4629,11 +4539,7 @@ function renderRow(
     viewMode ===
       "supplier" &&
     isMaterial
-      ? (
-          supplierTopupId
-            ? (Number(item.qty) || 0)
-            : getProcurementQty(item)
-        )
+      ? getProcurementQty(item)
       : (
           Number(item.qty) || 0
         );
@@ -4902,6 +4808,10 @@ function clearEstimate(){
     PROCUREMENT_REVIEWED_KEY,
     "0"
   );
+
+  procurementTopups = [];
+  activeTopupId = null;
+  saveProcurementTopups();
 
   materialDiscountPercent =
     0;
