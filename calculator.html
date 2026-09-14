@@ -681,6 +681,14 @@ button{
   overflow-wrap:anywhere;
 }
 
+.catalogFullName{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:10px;
+  font-weight:500;
+  line-height:1.25;
+}
+
 .catalogMeta{
   color:var(--muted);
   font-size:10px;
@@ -4036,8 +4044,36 @@ function renderCatalogItem(
       >
 
         <div class="catalogName">
-          ${escapeHtml(item.name)}
+          ${
+            escapeHtml(
+              item.type ===
+                "material"
+                ? (
+                    item.estimateName ||
+                    item.name
+                  )
+                : item.name
+            )
+          }
         </div>
+
+        ${
+          item.type ===
+            "material" &&
+          item.estimateName &&
+          normalizeText(
+            item.estimateName
+          ) !==
+          normalizeText(
+            item.name
+          )
+            ? `
+              <div class="catalogFullName">
+                ${escapeHtml(item.name)}
+              </div>
+            `
+            : ""
+        }
 
         <div class="catalogMeta">
 
