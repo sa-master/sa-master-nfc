@@ -1,5 +1,5 @@
 /* =========================
-   SUPPLIER XLS/XLSX IMPORT v7
+   SUPPLIER XLS/XLSX IMPORT v7.5
    Safe add-on: catalog only
 ========================= */
 
@@ -897,6 +897,16 @@
       ],
 
       [
+        /\bbwt\b|\bmultiblock[\s-]*inline\b/,
+        "BWT"
+      ],
+
+      [
+        /\bcaleffi\b/,
+        "Caleffi"
+      ],
+
+      [
         /\bresideo\b/,
         "Resideo"
       ],
@@ -1084,14 +1094,14 @@
       );
 
     if(
-      /каналіз|канализ|sewer|htsafe|ht safe|відвід.*канал|отвод.*канал|канализац/
+      /каналіз|канализ|sewer|htsafe|ht safe|\bhtda\b|хрестовин|крестовин|сифон|відвід.*канал|отвод.*канал|канализац/
         .test(source)
     ){
       return "sewer";
     }
 
     if(
-      /flowfit|teceflex|tece flex|водопостач|водоснаб|водопров|труба.*вода|фітинг.*вода|фитинг.*вода|фільтр|фильтр|пом['’]?якш|умягч|водоочист|очищенн.*вод|аніоніт|анионит|purolite|вугілля|уголь|сіль таблет|соль таблет|atlas premier|eurocarb|ciech/
+      /flowfit|teceflex|tece flex|\bbwt\b|multiblock[\s-]*inline|водопостач|водоснаб|водопров|труба.*вода|фітинг.*вода|фитинг.*вода|фільтр|фильтр|пом['’]?якш|умягч|водоочист|очищенн.*вод|аніоніт|анионит|purolite|вугілля|уголь|сіль таблет|соль таблет|atlas premier|eurocarb|ciech/
         .test(source)
     ){
       return "water";
@@ -1335,24 +1345,75 @@
 
   function extractManufacturerArticleFromName(
     name,
-    brand = ""
+    directBrand = ""
   ){
 
     const text =
       cleanText(name);
 
-    if(!text || !brand){
+    // Артикул виробника з назви беремо лише тоді,
+    // коли бренд визначений безпосередньо з самої позиції,
+    // а не успадкований від попереднього блоку рахунку.
+    if(!text || !directBrand){
       return "";
     }
 
-    const match =
+    const candidates = [];
+
+    const leading =
       text.match(
-        /^([0-9]{5,10})(?:\s+|$)/
+        /^([A-ZА-ЯІЇЄҐ0-9][A-ZА-ЯІЇЄҐ0-9._-]{4,15})(?:\s+|$)/i
       );
 
-    return match
-      ? cleanText(match[1])
-      : "";
+    if(leading){
+      candidates.push(
+        cleanText(leading[1])
+      );
+    }
+
+    const trailing =
+      text.match(
+        /(?:^|\s)([A-ZА-ЯІЇЄҐ0-9][A-ZА-ЯІЇЄҐ0-9._-]{4,15})$/i
+      );
+
+    if(trailing){
+      const value =
+        cleanText(trailing[1]);
+
+      if(
+        !candidates.some(
+          item => ntext(item) === ntext(value)
+        )
+      ){
+        candidates.push(value);
+      }
+    }
+
+    for(const candidate of candidates){
+
+      if(!/\d/.test(candidate)){
+        continue;
+      }
+
+      // Чисто цифрові артикули: 5–10 цифр.
+      // Це відсікає типові розміри/кути на кшталт 20, 90, 1000.
+      if(/^\d+$/.test(candidate)){
+        if(/^\d{5,10}$/.test(candidate)){
+          return candidate;
+        }
+        continue;
+      }
+
+      // Літерно-цифрові коди виробника, напр. VS0506008.
+      if(
+        /^[A-ZА-ЯІЇЄҐ0-9._-]{5,16}$/i.test(candidate) &&
+        /[A-ZА-ЯІЇЄҐ]/i.test(candidate)
+      ){
+        return candidate;
+      }
+    }
+
+    return "";
   }
 
   function parseSheetRows(
@@ -1521,15 +1582,24 @@
           brand
         );
 
-      if(detectedBrand){
-        brand =
-          detectedBrand;
+      // Якщо сама товарна позиція явно вказує інший бренд,
+      // не переносимо на неї категорію/систему попередньої групи.
+      if(
+        detectedBrand &&
+        context.brand &&
+        detectedBrand !== context.brand
+      ){
+        brand = detectedBrand;
+        system = "";
+        category = "";
+      }else if(detectedBrand){
+        brand = detectedBrand;
       }
 
       const manufacturerArticle =
         extractManufacturerArticleFromName(
           name,
-          detectedBrand || brand
+          detectedBrand
         );
 
       if(manufacturerArticle){
@@ -1552,6 +1622,22 @@
         );
 
       if(detectedCategory){
+
+        // Пряма категорія товару сильніша за контекст групи.
+        // Якщо вона змінилася, старий бренд/система не повинні
+        // "перетікати" з попереднього блоку рахунку.
+        if(
+          context.category &&
+          detectedCategory !== context.category
+        ){
+          if(!detectedBrand){
+            brand = "";
+          }
+          if(!detectedSystem){
+            system = "";
+          }
+        }
+
         category =
           detectedCategory;
       }
