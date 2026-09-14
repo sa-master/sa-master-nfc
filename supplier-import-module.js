@@ -81,6 +81,20 @@
     .importCancel{background:#e9ebef;color:#555}
     .importApply{background:var(--blue);color:#fff}
     .importEmpty{text-align:center;color:var(--muted);padding:30px 15px;font-size:13px}
+    .supplierDiagButton{height:32px;padding:0 9px;border-radius:9px;background:#e9ebef;color:var(--blue);font-size:12px;font-weight:700;display:none}
+    .supplierDiagSheet{position:fixed;inset:0;z-index:65;display:none;align-items:flex-end;background:rgba(0,0,0,.32);backdrop-filter:blur(6px)}
+    .supplierDiagSheet.open{display:flex}
+    .supplierDiagPanel{width:100%;max-width:560px;height:min(82dvh,700px);margin:auto;background:#f6f7fa;border-radius:22px;display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)}
+    .supplierDiagHead{display:flex;align-items:center;justify-content:space-between;padding:11px 14px 8px;flex:0 0 auto}
+    .supplierDiagHead strong{font-size:18px}
+    .supplierDiagBody{min-height:0;flex:1;overflow-y:auto;padding:0 12px 14px;-webkit-overflow-scrolling:touch}
+    .supplierDiagSearch{width:100%;height:40px;border:0;border-radius:11px;background:#fff;padding:0 11px;font-size:13px;outline:0;margin-bottom:8px}
+    .supplierDiagItem{background:#fff;border-radius:13px;padding:10px;margin:6px 0;box-shadow:0 2px 10px rgba(30,40,60,.04)}
+    .supplierDiagName{font-size:13px;font-weight:750;line-height:1.3}
+    .supplierDiagMeta{margin-top:3px;color:var(--muted);font-size:10px}
+    .supplierDiagOffer{margin-top:8px;background:#eef0f4;border-radius:10px;padding:8px}
+    .supplierDiagOffer strong{display:block;font-size:12px;margin-bottom:4px}
+    .supplierDiagLine{font-size:11px;line-height:1.45;color:#444}
   `;
 
   document.head.appendChild(style);
@@ -127,6 +141,26 @@
     document.getElementById(
       "catalogEditButton"
     )
+  );
+
+  const supplierDiagButton =
+    document.createElement("button");
+
+  supplierDiagButton.className =
+    "supplierDiagButton";
+
+  supplierDiagButton.id =
+    "supplierDiagButton";
+
+  supplierDiagButton.textContent =
+    "₴ Ціни";
+
+  supplierDiagButton.type =
+    "button";
+
+  panelHeadRight.insertBefore(
+    supplierDiagButton,
+    importButton
   );
 
   const importSheet =
@@ -188,6 +222,56 @@
     importSheet
   );
 
+  const supplierDiagSheet =
+    document.createElement("div");
+
+  supplierDiagSheet.className =
+    "supplierDiagSheet";
+
+  supplierDiagSheet.id =
+    "supplierDiagSheet";
+
+  supplierDiagSheet.innerHTML = `
+    <div class="supplierDiagPanel">
+      <div class="supplierDiagHead">
+        <strong>Постачальники / ціни</strong>
+        <button class="close" id="supplierDiagClose">×</button>
+      </div>
+      <div class="supplierDiagBody">
+        <input class="supplierDiagSearch" id="supplierDiagSearch" type="search" placeholder="Пошук назви або артикула…">
+        <div id="supplierDiagList"></div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(
+    supplierDiagSheet
+  );
+
+  supplierDiagButton.onclick =
+    openSupplierDiag;
+
+  document.getElementById(
+    "supplierDiagClose"
+  ).onclick =
+    closeSupplierDiag;
+
+  supplierDiagSheet.addEventListener(
+    "click",
+    event => {
+      if(event.target === supplierDiagSheet){
+        closeSupplierDiag();
+      }
+    }
+  );
+
+  document.getElementById(
+    "supplierDiagSearch"
+  ).addEventListener(
+    "input",
+    renderSupplierDiag
+  );
+
   document.getElementById(
     "supplierImportClose"
   ).onclick =
@@ -230,6 +314,11 @@
       originalOpenCatalog(type);
 
       importButton.style.display =
+        type === "material"
+          ? "block"
+          : "none";
+
+      supplierDiagButton.style.display =
         type === "material"
           ? "block"
           : "none";
@@ -2756,6 +2845,101 @@
     if(pricePair.master) return pricePair.master.priceEUR;
     if(pricePair.retail) return pricePair.retail.priceEUR;
     return convertImportedPriceToEUR(imported.price);
+  }
+
+  function escapeDiagHtml(value){
+    return String(value ?? "")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  function formatDiagMoneyFromSnapshot(snapshot){
+    if(!snapshot || !Number.isFinite(Number(snapshot.priceEUR))){
+      return "—";
+    }
+    const rate = Number(snapshot.eurRate) > 0
+      ? Number(snapshot.eurRate)
+      : Number(localStorage.getItem(EUR_RATE_KEY) || 0);
+    if(Number.isFinite(rate) && rate > 0){
+      return (Number(snapshot.priceEUR) * rate).toLocaleString("uk-UA",{
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+      }) + " грн";
+    }
+    return Number(snapshot.priceEUR).toLocaleString("uk-UA",{
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }) + " EUR";
+  }
+
+  function formatDiagDate(value){
+    if(!value) return "—";
+    const date = new Date(value);
+    if(Number.isNaN(date.getTime())) return escapeDiagHtml(value);
+    return date.toLocaleString("uk-UA",{
+      day:"2-digit",month:"2-digit",year:"numeric",
+      hour:"2-digit",minute:"2-digit"
+    });
+  }
+
+  function openSupplierDiag(){
+    const search = document.getElementById("supplierDiagSearch");
+    if(search) search.value = "";
+    renderSupplierDiag();
+    supplierDiagSheet.classList.add("open");
+  }
+
+  function closeSupplierDiag(){
+    supplierDiagSheet.classList.remove("open");
+  }
+
+  function renderSupplierDiag(){
+    const list = document.getElementById("supplierDiagList");
+    if(!list) return;
+    const query = ntext(document.getElementById("supplierDiagSearch")?.value || "");
+    const items = catalog
+      .filter(item => item.type === "material" && Array.isArray(item.supplierOffers) && item.supplierOffers.length)
+      .filter(item => {
+        if(!query) return true;
+        const haystack = ntext([
+          item.name,item.estimateName,item.article,item.manufacturer,item.system,
+          ...item.supplierOffers.flatMap(offer => [offer?.supplierName,offer?.supplierArticle])
+        ].join(" "));
+        return haystack.includes(query);
+      })
+      .slice(0,80);
+
+    if(!items.length){
+      list.innerHTML = '<div class="importEmpty">Нічого не знайдено.</div>';
+      return;
+    }
+
+    list.innerHTML = items.map(item => {
+      const offers = item.supplierOffers.map(offer => {
+        const retail = formatDiagMoneyFromSnapshot(offer?.retail);
+        const master = formatDiagMoneyFromSnapshot(offer?.master);
+        const date = formatDiagDate(offer?.updatedAt || offer?.master?.importedAt || offer?.retail?.importedAt);
+        return `
+          <div class="supplierDiagOffer">
+            <strong>${escapeDiagHtml(offer?.supplierName || "Без назви")}</strong>
+            <div class="supplierDiagLine">Роздрібна: <b>${escapeDiagHtml(retail)}</b></div>
+            <div class="supplierDiagLine">Майстра: <b>${escapeDiagHtml(master)}</b></div>
+            <div class="supplierDiagLine">Код постачальника: ${escapeDiagHtml(offer?.supplierArticle || "—")}</div>
+            <div class="supplierDiagLine">Імпорт: ${escapeDiagHtml(date)}</div>
+          </div>
+        `;
+      }).join("");
+      return `
+        <div class="supplierDiagItem">
+          <div class="supplierDiagName">${escapeDiagHtml(item.name || item.estimateName || "Без назви")}</div>
+          <div class="supplierDiagMeta">Артикул: ${escapeDiagHtml(item.article || "—")} · ${escapeDiagHtml(item.manufacturer || "")}</div>
+          ${offers}
+        </div>
+      `;
+    }).join("");
   }
 
   function applySupplierImport(){
