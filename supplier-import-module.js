@@ -19,16 +19,30 @@
   const EUR_RATE_KEY =
     "plumber_eurRate";
 
+  // Курс каталогу коригує лише майстер у самому каталозі.
+  // Зовнішні курси та автоматичний перерахунок свідомо не використовуються.
+
+  const USD_RATE_KEY =
+    "plumber_usdRate";
+
   const SUPPLIER_NAMES_KEY =
     "plumber_supplierNames";
 
   let pendingSupplierImport = [];
   let importShowAll = false;
-  let importCurrency = "UAH";
+  // Порожнє значення означає: валюту не вдалося безпечно визначити.
+  // Імпорт у такому випадку блокується, доки майстер не зробить вибір.
+  let importCurrency = "";
   let importSupplierName = "";
   let importSupplierFullName = "";
   let importPriceMode = "";
   let importHasDualPrices = false;
+  let importHasCustomerDiscountOnly = false;
+  let importHasRetailPriceOnly = false;
+  let importHasMasterPriceOnly = false;
+  let importCustomerDiscountPercent = null;
+  let parsedImportSheets = [];
+  let selectedImportSheet = "";
 
   let importEurRate =
     Number(
@@ -42,6 +56,13 @@
     importEurRate < 0
   ){
     importEurRate = 0;
+  }
+
+  let importUsdRate =
+    Number(localStorage.getItem(USD_RATE_KEY) || 0);
+
+  if(!Number.isFinite(importUsdRate) || importUsdRate < 0){
+    importUsdRate = 0;
   }
 
   const style =
@@ -63,8 +84,10 @@
     .importBrands{margin-top:8px;color:var(--muted);font-size:11px;line-height:1.35}
     .importCurrencyBox,.importSupplierBox{background:#fff;border-radius:12px;padding:9px;margin-bottom:8px}
     .importCurrencyTitle,.importSupplierTitle{font-size:12px;font-weight:750;margin-bottom:7px}
+    .importCurrencyWarning{margin:-1px 0 7px;color:#b45309;font-size:11px;font-weight:750;line-height:1.35}
     .importCurrencyFields,.importSupplierFields{display:grid;grid-template-columns:1fr 1fr;gap:7px}
     .importCurrencyFields select,.importCurrencyFields input,.importSupplierFields select,.importSupplierFields input{width:100%;height:36px;border:0;border-radius:9px;background:#eef0f4;padding:0 9px;font-size:12px;outline:0}
+    .importCurrencyFields .wide{grid-column:1/-1}
     .importCurrencyHint,.importSupplierHint{margin-top:6px;color:var(--muted);font-size:10px;line-height:1.35}
     .importToolbar{display:flex;gap:7px;margin:8px 0;flex-wrap:wrap}
     .importSoftButton{height:34px;padding:0 10px;border-radius:10px;background:#e9ebef;color:var(--blue);font-size:12px;font-weight:700}
@@ -333,6 +356,10 @@
       .trim();
   }
 
+  function activeImportItems(){
+    return pendingSupplierImport.filter(item => item.include !== false);
+  }
+
   function ntext(value){
 
     return cleanText(value)
@@ -461,9 +488,10 @@
         }
       );
 
-    return importCurrency === "EUR"
-      ? formatted + " EUR"
-      : formatted + " грн";
+    if(importCurrency === "EUR") return formatted + " EUR";
+    if(importCurrency === "UAH") return formatted + " грн";
+    if(importCurrency === "USD") return formatted + " USD";
+    return formatted + " (валюта не визначена)";
   }
 
   function isUnit(value){
@@ -506,6 +534,7 @@
           let genericPriceCol = -1;
           let explicitRetailPriceCol = -1;
           let explicitMasterPriceCol = -1;
+          let customerDiscountPriceCol = -1;
 
           row.forEach(
             (cell,col) => {
@@ -549,16 +578,26 @@
                 /ціна.*без\s*зниж|цена.*без\s*скид|retail.*price|list.*price/
                   .test(text);
 
+              // Важливо: «ціна зі знижкою» НЕ є ціною майстра.
+              // Це може бути індивідуальна знижка клієнтові, яку в каталозі
+              // не зберігаємо. Ціною майстра вважаємо лише явну закупівельну/
+              // оптову/дилерську колонку.
               const isExplicitMasterPrice =
-                /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price/
-                  .test(text) &&
-                !isExplicitRetailPrice;
+                /ціна.*майстра|ціна.*закуп|закупівельн|закупочн|оптов|wholesale|dealer.*price/
+                  .test(text);
 
-              const isGenericPrice =
-                /(^|\s)ціна($|\s)|(^|\s)цена($|\s)|^price$/
+              const isCustomerDiscountPrice =
+                /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price|акційн.*ціна|акционн.*цена/
                   .test(text) &&
                 !isExplicitRetailPrice &&
                 !isExplicitMasterPrice;
+
+              const isGenericPrice =
+                /(^|\s)ціна(?:$|\s|[,:(])|(^|\s)цена(?:$|\s|[,:(])|^price(?:$|\s|[,:(])/
+                  .test(text) &&
+                !isExplicitRetailPrice &&
+                !isExplicitMasterPrice &&
+                !isCustomerDiscountPrice;
 
               if(
                 isExplicitRetailPrice &&
@@ -574,6 +613,14 @@
               ){
                 explicitMasterPriceCol = col;
                 score += 5;
+              }
+
+              if(
+                isCustomerDiscountPrice &&
+                customerDiscountPriceCol < 0
+              ){
+                customerDiscountPriceCol = col;
+                score += 2;
               }
 
               if(
@@ -604,28 +651,28 @@
           let discountPriceCol = -1;
           let priceCol = -1;
 
-          if(
+          if(explicitRetailPriceCol >= 0){
+            regularPriceCol = explicitRetailPriceCol;
+          }
+
+          if(explicitMasterPriceCol >= 0){
+            discountPriceCol = explicitMasterPriceCol;
+          }
+
+          if(explicitRetailPriceCol >= 0 && explicitMasterPriceCol >= 0){
+            discountPriceCol = explicitMasterPriceCol;
+            priceCol = explicitRetailPriceCol;
+          }else if(
             explicitRetailPriceCol >= 0 &&
             genericPriceCol >= 0
           ){
-            regularPriceCol =
-              explicitRetailPriceCol;
-
-            discountPriceCol =
-              genericPriceCol;
-
-            priceCol =
-              genericPriceCol;
+            priceCol = explicitRetailPriceCol;
 
           }else if(
             explicitMasterPriceCol >= 0 &&
             genericPriceCol >= 0
           ){
-            regularPriceCol =
-              genericPriceCol;
-
-            discountPriceCol =
-              explicitMasterPriceCol;
+            regularPriceCol = genericPriceCol;
 
             priceCol =
               explicitMasterPriceCol;
@@ -647,14 +694,15 @@
           ){
             priceCol =
               genericPriceCol;
+          }else if(
+            customerDiscountPriceCol >= 0
+          ){
+            // Товар з єдиною клієнтською ціною все одно можна додати в
+            // каталог, але її подальшу долю вирішує майстер у вікні імпорту.
+            priceCol = customerDiscountPriceCol;
           }
 
-          if(
-            qtyCol >= 0 &&
-            priceCol >= 0 &&
-            nameHeaderCol >= 0 &&
-            score >= 11
-          ){
+          if(priceCol >= 0 && nameHeaderCol >= 0 && score >= 7){
 
             if(
               !best ||
@@ -669,6 +717,7 @@
                 priceCol,
                 regularPriceCol,
                 discountPriceCol,
+                customerDiscountPriceCol,
                 nameHeaderCol
               };
             }
@@ -705,7 +754,7 @@
     const endName =
       Math.max(
         startName,
-        header.qtyCol - 1
+        (header.qtyCol >= 0 ? header.qtyCol : header.priceCol) - 1
       );
 
     let nameCol =
@@ -835,6 +884,9 @@
 
       discountPriceCol:
         header.discountPriceCol ?? -1,
+
+      customerDiscountPriceCol:
+        header.customerDiscountPriceCol ?? -1,
 
       nameCol,
 
@@ -1598,11 +1650,9 @@
         );
 
       const qty =
-        parseNumber(
-          row[
-            columns.qtyCol
-          ]
-        );
+        columns.qtyCol >= 0
+          ? parseNumber(row[columns.qtyCol])
+          : null;
 
       const price =
         parseNumber(
@@ -1621,6 +1671,13 @@
           ? parseNumber(row[columns.discountPriceCol])
           : null;
 
+      // Зчитуємо лише для попереднього перегляду. Ця ціна не потрапляє
+      // ані в каталог, ані в ціну майстра.
+      const customerDiscountPrice =
+        columns.customerDiscountPriceCol >= 0
+          ? parseNumber(row[columns.customerDiscountPriceCol])
+          : null;
+
       const unit =
         columns.unitCol >= 0
           ? cleanText(
@@ -1632,8 +1689,6 @@
 
       const hasProductShape =
         name &&
-        qty !== null &&
-        qty > 0 &&
         price !== null &&
         price >= 0;
 
@@ -1832,6 +1887,8 @@
 
         masterPrice,
 
+        customerDiscountPrice,
+
         unit:
           unit || "шт",
 
@@ -1851,15 +1908,10 @@
     return result;
   }
 
-  function chooseBestSheet(
-    workbook
-  ){
+  function getImportableSheets(workbook){
+    const result = [];
 
-    let best = null;
-
-    workbook.SheetNames
-      .forEach(
-        sheetName => {
+    workbook.SheetNames.forEach(sheetName => {
 
           const sheet =
             workbook.Sheets[
@@ -1899,25 +1951,107 @@
               Number.isFinite(item.masterPrice)
             );
 
-          if(
-            !best ||
-            items.length >
-            best.items.length
-          ){
+          const hasCustomerDiscountOnly =
+            items.some(item =>
+              Number.isFinite(item.customerDiscountPrice) &&
+              !Number.isFinite(item.retailPrice) &&
+              !Number.isFinite(item.masterPrice)
+            );
 
-            best = {
-              sheetName,
-              rows,
-              header,
-              items,
-              supplierFullName,
-              hasDualPrices
-            };
-          }
+          const hasRetailPriceOnly =
+            items.some(item =>
+              Number.isFinite(item.retailPrice) &&
+              !Number.isFinite(item.masterPrice)
+            );
+
+          const hasMasterPriceOnly =
+            items.some(item =>
+              Number.isFinite(item.masterPrice) &&
+              !Number.isFinite(item.retailPrice)
+            );
+
+          result.push({
+            sheetName,
+            rows,
+            header,
+            items,
+            supplierFullName,
+            hasDualPrices,
+            hasCustomerDiscountOnly,
+            hasRetailPriceOnly,
+            hasMasterPriceOnly
+          });
         }
       );
 
-    return best;
+    return result.sort((a,b) => b.items.length - a.items.length);
+  }
+
+  function chooseBestSheet(workbook){
+    return getImportableSheets(workbook)[0] || null;
+  }
+
+  function detectInvoiceCurrency(rows,header){
+    const source = rows
+      .slice(0,Math.min(rows.length,header.rowIndex + 3))
+      .flat()
+      .map(ntext)
+      .join(" ");
+    const found = new Set();
+    if(/(?:\beur\b|€)/.test(source)) found.add("EUR");
+    if(/(?:\buah\b|грн|₴)/.test(source)) found.add("UAH");
+    if(/(?:\busd\b|\$)/.test(source)) found.add("USD");
+    return found.size === 1 ? Array.from(found)[0] : "";
+  }
+
+  function prepareSupplierImport(parsed){
+    pendingSupplierImport = parsed.items.map(item => ({...item,include:true}));
+    importSupplierFullName = cleanText(parsed.supplierFullName || "");
+
+    const supplierNames = loadSupplierNames();
+    importSupplierName = importSupplierFullName && supplierNames[supplierKey(importSupplierFullName)]
+      ? supplierNames[supplierKey(importSupplierFullName)]
+      : "";
+
+    importHasDualPrices = !!parsed.hasDualPrices;
+    importHasCustomerDiscountOnly = !!parsed.hasCustomerDiscountOnly;
+    importHasRetailPriceOnly = !!parsed.hasRetailPriceOnly;
+    importHasMasterPriceOnly = !!parsed.hasMasterPriceOnly;
+    importPriceMode = importHasDualPrices ? "auto" : importHasRetailPriceOnly ? "retail" : importHasMasterPriceOnly ? "master" : "";
+    importCustomerDiscountPercent = null;
+    const detectedCurrency = detectInvoiceCurrency(parsed.rows,parsed.header);
+    importCurrency = detectedCurrency;
+    importShowAll = false;
+    importEurRate = Number(localStorage.getItem(EUR_RATE_KEY) || importEurRate || 0);
+    if(!Number.isFinite(importEurRate) || importEurRate < 0) importEurRate = 0;
+    importUsdRate = Number(localStorage.getItem(USD_RATE_KEY) || importUsdRate || 0);
+    if(!Number.isFinite(importUsdRate) || importUsdRate < 0) importUsdRate = 0;
+
+    const applyButton = document.getElementById("supplierImportApply");
+    applyButton.textContent = "Імпортувати";
+    applyButton.onclick = applySupplierImport;
+    renderSupplierImport();
+    importSheet.classList.add("open");
+  }
+
+  function openImportSheetChoice(){
+    const body = document.getElementById("supplierImportBody");
+    const applyButton = document.getElementById("supplierImportApply");
+    body.innerHTML = `
+      <div class="importSummary">
+        <div class="importSummaryTitle">Оберіть аркуш з товарами</div>
+        <select id="supplierImportSheetChoice" style="width:100%;height:40px;border:0;border-radius:10px;background:#eef0f4;padding:0 9px;font-size:13px">
+          ${parsedImportSheets.map(sheet => `<option value="${escapeHtml(sheet.sheetName)}" ${sheet.sheetName === selectedImportSheet ? "selected" : ""}>${escapeHtml(sheet.sheetName)} — ${sheet.items.length} поз.</option>`).join("")}
+        </select>
+      </div>
+    `;
+    applyButton.textContent = "Продовжити";
+    applyButton.onclick = () => {
+      const select = document.getElementById("supplierImportSheetChoice");
+      const sheet = parsedImportSheets.find(item => item.sheetName === (select && select.value));
+      if(sheet) prepareSupplierImport(sheet);
+    };
+    importSheet.classList.add("open");
   }
 
   async function handleSupplierFile(
@@ -1960,10 +2094,8 @@
           }
         );
 
-      const parsed =
-        chooseBestSheet(
-          workbook
-        );
+      const sheets = getImportableSheets(workbook);
+      const parsed = sheets[0] || null;
 
       if(
         !parsed ||
@@ -1977,42 +2109,14 @@
         return;
       }
 
-      pendingSupplierImport =
-        parsed.items;
-
-      importSupplierFullName =
-        cleanText(parsed.supplierFullName || "");
-
-      const supplierNames = loadSupplierNames();
-      importSupplierName =
-        importSupplierFullName && supplierNames[supplierKey(importSupplierFullName)]
-          ? supplierNames[supplierKey(importSupplierFullName)]
-          : "";
-
-      importHasDualPrices = !!parsed.hasDualPrices;
-      importPriceMode = importHasDualPrices ? "auto" : "";
-
-      importShowAll = false;
-
-      importEurRate =
-        Number(
-          localStorage.getItem(
-            EUR_RATE_KEY
-          ) || importEurRate || 0
-        );
-
-      if(
-        !Number.isFinite(importEurRate) ||
-        importEurRate < 0
-      ){
-        importEurRate = 0;
+      if(sheets.length > 1){
+        parsedImportSheets = sheets;
+        selectedImportSheet = sheets[0].sheetName;
+        openImportSheetChoice();
+        return;
       }
 
-      renderSupplierImport();
-
-      importSheet.classList.add(
-        "open"
-      );
+      prepareSupplierImport(parsed);
 
     }catch(error){
 
@@ -2039,6 +2143,12 @@
     importSupplierFullName = "";
     importPriceMode = "";
     importHasDualPrices = false;
+    importHasCustomerDiscountOnly = false;
+    importHasRetailPriceOnly = false;
+    importHasMasterPriceOnly = false;
+    importCustomerDiscountPercent = null;
+    parsedImportSheets = [];
+    selectedImportSheet = "";
   }
 
   function categoryOptions(
@@ -2081,7 +2191,7 @@
       unknown:0
     };
 
-    pendingSupplierImport
+    activeImportItems()
       .forEach(
         item => {
 
@@ -2112,7 +2222,7 @@
 
     return Array.from(
       new Set(
-        pendingSupplierImport
+        activeImportItems()
           .map(
             item =>
               cleanText(
@@ -2157,6 +2267,13 @@
     renderSupplierImport();
   }
 
+  function toggleImportItem(index){
+    const item = pendingSupplierImport[index];
+    if(!item) return;
+    item.include = item.include === false;
+    renderSupplierImport();
+  }
+
   function applyBulkCategory(){
 
     const select =
@@ -2175,7 +2292,7 @@
       return;
     }
 
-    pendingSupplierImport
+    activeImportItems()
       .forEach(
         item => {
 
@@ -2213,15 +2330,15 @@
     if(currencySelect){
 
       importCurrency =
-        currencySelect.value === "EUR"
-          ? "EUR"
-          : "UAH";
+        ["UAH","EUR","USD"].includes(currencySelect.value)
+          ? currencySelect.value
+          : "";
     }
 
     if(rateInput){
 
       rateInput.disabled =
-        importCurrency === "EUR";
+        importCurrency === "EUR" || !importCurrency;
     }
   }
 
@@ -2249,6 +2366,13 @@
         : 0;
   }
 
+  function updateImportUsdRate(){
+    const input = document.getElementById("supplierImportUsdRate");
+    if(!input) return;
+    const value = Number(String(input.value).replace(",","."));
+    importUsdRate = Number.isFinite(value) && value >= 0 ? value : 0;
+  }
+
   function updateImportSupplier(){
     const nameInput = document.getElementById("supplierImportName");
     const fullInput = document.getElementById("supplierImportFullName");
@@ -2259,6 +2383,43 @@
   function updateImportPriceMode(){
     const select = document.getElementById("supplierImportPriceMode");
     if(select) importPriceMode = select.value;
+  }
+
+  function getImportPreview(item){
+    const existing = findExistingCatalogItem(item);
+    if(!existing) return {kind:"new",label:"Новий товар",existing:null,unitWarning:false};
+
+    const unitWarning = !!(
+      existing.unit && item.unit && ntext(existing.unit) !== ntext(item.unit)
+    );
+    const pair = getImportedPricePair(item,"preview");
+    const offer = Array.isArray(existing.supplierOffers)
+      ? existing.supplierOffers.find(value => supplierKey(value && value.supplierName) === supplierKey(importSupplierName))
+      : null;
+    const sameRetail = !pair.retail || (
+      offer && Number(offer.retail && offer.retail.priceEUR) === Number(pair.retail.priceEUR)
+    );
+    const sameMaster = !pair.master || (
+      offer && Number(offer.master && offer.master.priceEUR) === Number(pair.master.priceEUR)
+    );
+    const sameFields =
+      ntext(existing.name) === ntext(item.name) &&
+      ntext(existing.unit) === ntext(item.unit) &&
+      ntext(existing.category) === ntext(item.category) &&
+      ntext(existing.manufacturer) === ntext(item.manufacturer) &&
+      ntext(existing.system) === ntext(item.system);
+
+    return sameRetail && sameMaster && sameFields
+      ? {kind:"same",label:"Без змін",existing,unitWarning}
+      : {kind:"update",label:"Буде оновлено",existing,unitWarning};
+  }
+
+  function getImportPreviewStats(){
+    return activeImportItems().reduce((stats,item) => {
+      const kind = getImportPreview(item).kind;
+      stats[kind]++;
+      return stats;
+    },{new:0,update:0,same:0});
   }
 
   function renderSupplierImport(){
@@ -2287,8 +2448,11 @@
     const brands =
       getImportBrands();
 
+    const activeItems = activeImportItems();
+    const allItems = pendingSupplierImport;
+
     const unknown =
-      pendingSupplierImport
+      activeItems
         .filter(
           item =>
             !item.category
@@ -2296,13 +2460,8 @@
 
     const visibleItems =
       importShowAll
-        ? pendingSupplierImport
-        : (
-            unknown.length
-              ? unknown
-              : pendingSupplierImport
-                .slice(0,20)
-          );
+        ? allItems
+        : allItems.slice(0,20);
 
     const visibleIndexes =
       visibleItems.map(
@@ -2312,26 +2471,38 @@
       );
 
     const knownSuppliers = getKnownSupplierNames();
+    const previewStats = getImportPreviewStats();
+    const discountValue = Number.isFinite(Number(importCustomerDiscountPercent))
+      ? String(importCustomerDiscountPercent)
+      : "";
 
     body.innerHTML = `
 
       <div class="importSupplierBox">
-        <div class="importSupplierTitle">Постачальник і тип ціни</div>
+        <div class="importSupplierTitle">${importHasCustomerDiscountOnly ? "Постачальник і знижка" : "Постачальник і тип ціни"}</div>
         <div class="importSupplierFields">
           <input id="supplierImportName" list="supplierImportKnownNames" value="${escapeHtml(importSupplierName)}" placeholder="Коротка назва постачальника">
-          <select id="supplierImportPriceMode" ${importHasDualPrices ? "disabled" : ""}>
+          ${importHasCustomerDiscountOnly
+            ? `<input id="supplierImportCustomerDiscount" inputmode="decimal" value="${escapeHtml(discountValue)}" placeholder="Знижка, %">`
+            : `<select id="supplierImportPriceMode" ${importHasDualPrices || importHasRetailPriceOnly || importHasMasterPriceOnly ? "disabled" : ""}>
             ${importHasDualPrices
               ? `<option value="auto" selected>Роздрібна + ціна майстра</option>`
+              : importHasRetailPriceOnly
+                ? `<option value="retail" selected>Роздрібна ціна</option>`
+                : importHasMasterPriceOnly
+                  ? `<option value="master" selected>Ціна майстра</option>`
               : `<option value="" ${!importPriceMode ? "selected" : ""}>Оберіть тип ціни</option>
                  <option value="retail" ${importPriceMode === "retail" ? "selected" : ""}>Роздрібна ціна</option>
                  <option value="master" ${importPriceMode === "master" ? "selected" : ""}>Ціна майстра</option>`}
-          </select>
+          </select>`}
           <input class="wide" id="supplierImportFullName" value="${escapeHtml(importSupplierFullName)}" placeholder="Повна назва з рахунку — необов’язково">
         </div>
         <datalist id="supplierImportKnownNames">
           ${knownSuppliers.map(name => `<option value="${escapeHtml(name)}"></option>`).join("")}
         </datalist>
-        <div class="importSupplierHint">Один товар залишається однією позицією каталогу. Пропозиція постачальника зберігається всередині неї.</div>
+        <div class="importSupplierHint">${importHasCustomerDiscountOnly
+          ? "Ціна у файлі вказана зі знижкою. Вкажіть знижку."
+          : "Один товар залишається однією позицією каталогу. Пропозиція постачальника зберігається всередині неї."}</div>
       </div>
 
       <div class="importCurrencyBox">
@@ -2340,11 +2511,19 @@
           Валюта рахунку
         </div>
 
+        ${!importCurrency
+          ? `<div class="importCurrencyWarning">Не вдалося визначити валюту рахунку. Оберіть її перед імпортом.</div>`
+          : ""}
+
         <div class="importCurrencyFields">
 
           <select
             id="supplierImportCurrency"
           >
+            <option value="" ${!importCurrency ? "selected" : ""}>
+              Оберіть валюту
+            </option>
+
             <option
               value="UAH"
               ${
@@ -2366,9 +2545,17 @@
             >
               EUR
             </option>
+
+            <option value="USD" ${importCurrency === "USD" ? "selected" : ""}>
+              USD
+            </option>
           </select>
 
-          <input
+          ${!importCurrency
+            ? `<input disabled placeholder="Спершу оберіть валюту">`
+            : importCurrency === "USD"
+            ? `<input id="supplierImportUsdRate" inputmode="decimal" value="${importUsdRate > 0 ? escapeHtml(String(importUsdRate)) : ""}" placeholder="Курс USD, грн">`
+            : `<input
             id="supplierImportEurRate"
             inputmode="decimal"
             value="${
@@ -2384,12 +2571,22 @@
                 ? "disabled"
                 : ""
             }
-          >
+          >`}
+
+          ${importCurrency === "USD"
+            ? `<input class="wide" id="supplierImportEurRate" inputmode="decimal" value="${importEurRate > 0 ? escapeHtml(String(importEurRate)) : ""}" placeholder="Курс EUR, грн">`
+            : ""}
 
         </div>
 
         <div class="importCurrencyHint">
-          Для рахунку в UAH ціна буде переведена в EUR за вказаним курсом.
+          ${!importCurrency
+            ? "Система не підставляє UAH автоматично."
+            : importCurrency === "UAH"
+              ? "Для рахунку в UAH ціна буде переведена в EUR за вказаним курсом."
+              : importCurrency === "USD"
+                ? "Ціна в USD буде переведена в EUR за вказаними курсами."
+              : "Ціни збережуться як EUR без перерахунку."}
         </div>
 
       </div>
@@ -2397,7 +2594,7 @@
       <div class="importSummary">
 
         <div class="importSummaryTitle">
-          Знайдено ${pendingSupplierImport.length} позицій
+          До імпорту: ${activeItems.length} з ${pendingSupplierImport.length} поз.
         </div>
 
         <div class="importStats">
@@ -2418,6 +2615,10 @@
             Інше: ${stats.other}
           </div>
 
+        </div>
+
+        <div class="importBrands">
+          Нові: ${previewStats.new} · Оновлення: ${previewStats.update} · Без змін: ${previewStats.same}
         </div>
 
         ${
@@ -2510,6 +2711,11 @@
                 index
               ];
 
+            const preview = getImportPreview(item);
+            const restoredRetail = importHasCustomerDiscountOnly
+              ? calculatedRetailPrice(item.customerDiscountPrice)
+              : null;
+
             return `
               <div class="importItem">
 
@@ -2542,11 +2748,30 @@
 
                   ${Number.isFinite(item.retailPrice) && Number.isFinite(item.masterPrice)
                     ? `Роздріб: ${formatImportPrice(item.retailPrice)} · Майстер: ${formatImportPrice(item.masterPrice)}`
-                    : formatImportPrice(item.price)}
+                    : Number.isFinite(item.customerDiscountPrice) && !Number.isFinite(item.retailPrice) && !Number.isFinite(item.masterPrice)
+                      ? restoredRetail
+                        ? `${formatImportPrice(item.customerDiscountPrice)} → Роздріб: ${formatImportPrice(restoredRetail)}`
+                        : `Ціна зі знижкою: ${formatImportPrice(item.customerDiscountPrice)}`
+                      : formatImportPrice(item.price)}
+
+                  ${Number.isFinite(item.customerDiscountPrice) && (Number.isFinite(item.retailPrice) || Number.isFinite(item.masterPrice))
+                    ? ` · Ціна зі знижкою: ${formatImportPrice(item.customerDiscountPrice)} (не зберігається)`
+                    : ""}
+
+                  · <b>${preview.label}</b>
+                  ${preview.unitWarning ? " · <b>Увага: інша одиниця</b>" : ""}
 
                 </div>
 
                 <div class="importItemFields">
+
+                  <button
+                    type="button"
+                    class="importSoftButton wide"
+                    onclick="window.SupplierImportToggle(${index})"
+                  >
+                    ${item.include === false ? "Повернути до імпорту" : "Не імпортувати"}
+                  </button>
 
                   <select
                     onchange="window.SupplierImportUpdate(${index},'category',this.value)"
@@ -2580,7 +2805,7 @@
       ${
         !importShowAll &&
         !unknown.length &&
-        pendingSupplierImport.length > 20
+        allItems.length > 20
           ? `
             <div class="importEmpty">
               Показано перші 20 позицій.
@@ -2624,6 +2849,16 @@
 
       rateInput.oninput =
         updateImportRate;
+    }
+
+    const usdRateInput = document.getElementById("supplierImportUsdRate");
+    if(usdRateInput){
+      usdRateInput.oninput = updateImportUsdRate;
+    }
+
+    const discountInput = document.getElementById("supplierImportCustomerDiscount");
+    if(discountInput){
+      discountInput.onchange = updateCustomerDiscountPercent;
     }
 
     const bulkButton =
@@ -2673,6 +2908,9 @@
   window.SupplierImportUpdate =
     updatePendingItem;
 
+  window.SupplierImportToggle =
+    toggleImportItem;
+
   function findExistingCatalogItem(
     imported
   ){
@@ -2684,17 +2922,25 @@
 
     if(article){
 
-      const byArticle =
-        catalog.find(
-          item =>
-            item.type === "material" &&
-            ntext(
-              item.article
-            ) === article
-        );
+      const byArticle = catalog.filter(
+        item =>
+          item.type === "material" &&
+          ntext(item.article) === article
+      );
 
-      if(byArticle){
-        return byArticle;
+      const brand = ntext(imported.manufacturer);
+      const byBrandAndArticle = brand
+        ? byArticle.find(item => ntext(item.manufacturer) === brand)
+        : null;
+
+      if(byBrandAndArticle){
+        return byBrandAndArticle;
+      }
+
+      // Старі картки могли не мати бренду. Безпечний fallback можливий
+      // лише коли артикул у каталозі унікальний.
+      if(byArticle.length === 1){
+        return byArticle[0];
       }
     }
 
@@ -2795,6 +3041,10 @@
     if(!Number.isFinite(number) || number < 0) return null;
     if(importCurrency === "EUR") return number;
     if(!Number.isFinite(importEurRate) || importEurRate <= 0) return null;
+    if(importCurrency === "USD"){
+      if(!Number.isFinite(importUsdRate) || importUsdRate <= 0) return null;
+      return number * importUsdRate / importEurRate;
+    }
     return number / importEurRate;
   }
 
@@ -2805,7 +3055,10 @@
       priceEUR,
       sourcePrice:Number(sourcePrice),
       sourceCurrency:importCurrency,
-      eurRate:importCurrency === "UAH" ? importEurRate : null,
+      // Для USD зберігаємо обидва курси: це дозволяє надалі показати
+      // еквівалент у гривні саме за курсом імпорту, а не поточним курсом.
+      eurRate:["UAH","USD"].includes(importCurrency) ? importEurRate : null,
+      usdRate:importCurrency === "USD" ? importUsdRate : null,
       importedAt
     };
   }
@@ -2813,15 +3066,41 @@
   function getImportedPricePair(imported,importedAt){
     let retail = null;
     let master = null;
-    if(importHasDualPrices){
+
+    if(importHasCustomerDiscountOnly){
+      const percent = Number(importCustomerDiscountPercent);
+      const sourcePrice = Number(imported.customerDiscountPrice);
+      if(Number.isFinite(percent) && percent > 0 && percent < 100 && Number.isFinite(sourcePrice)){
+        retail = makePriceSnapshot(sourcePrice / (1 - percent / 100),importedAt);
+      }
+    }else if(importHasDualPrices){
       if(Number.isFinite(imported.retailPrice)) retail = makePriceSnapshot(imported.retailPrice,importedAt);
       if(Number.isFinite(imported.masterPrice)) master = makePriceSnapshot(imported.masterPrice,importedAt);
+    }else if(importHasRetailPriceOnly){
+      retail = makePriceSnapshot(imported.retailPrice,importedAt);
+    }else if(importHasMasterPriceOnly){
+      master = makePriceSnapshot(imported.masterPrice,importedAt);
     }else if(importPriceMode === "retail"){
       retail = makePriceSnapshot(imported.price,importedAt);
     }else if(importPriceMode === "master"){
       master = makePriceSnapshot(imported.price,importedAt);
     }
     return {retail,master};
+  }
+
+  function updateCustomerDiscountPercent(){
+    const input = document.getElementById("supplierImportCustomerDiscount");
+    if(!input) return;
+    const value = Number(String(input.value).replace(",","."));
+    importCustomerDiscountPercent = Number.isFinite(value) ? value : null;
+    renderSupplierImport();
+  }
+
+  function calculatedRetailPrice(value){
+    const percent = Number(importCustomerDiscountPercent);
+    const price = Number(value);
+    if(!Number.isFinite(percent) || percent <= 0 || percent >= 100 || !Number.isFinite(price)) return null;
+    return price / (1 - percent / 100);
   }
 
   function upsertSupplierOffer(item,pricePair,importedAt,supplierArticle = ""){
@@ -2841,10 +3120,16 @@
     offer.updatedAt = importedAt;
   }
 
-  function getCompatibilityBasePriceEUR(imported,pricePair){
-    if(pricePair.master) return pricePair.master.priceEUR;
+  function getCatalogRetailPriceEUR(existing,pricePair){
     if(pricePair.retail) return pricePair.retail.priceEUR;
-    return convertImportedPriceToEUR(imported.price);
+    const previous = Number(existing && (existing.retailPriceEUR ?? existing.basePriceEUR));
+    return Number.isFinite(previous) && previous >= 0 ? previous : 0;
+  }
+
+  function getCatalogPurchasePriceEUR(existing,pricePair){
+    if(pricePair.master) return pricePair.master.priceEUR;
+    const previous = Number(existing && existing.purchasePriceEUR);
+    return Number.isFinite(previous) && previous >= 0 ? previous : 0;
   }
 
   function escapeDiagHtml(value){
@@ -2960,13 +3245,34 @@
       return;
     }
 
-    if(!importHasDualPrices && !["retail","master"].includes(importPriceMode)){
+    if(!importHasDualPrices && !importHasCustomerDiscountOnly && !["retail","master"].includes(importPriceMode)){
       alert("Оберіть тип ціни: роздрібна або ціна майстра.");
       return;
     }
 
+    if(importHasCustomerDiscountOnly && !(
+      Number.isFinite(Number(importCustomerDiscountPercent)) &&
+      Number(importCustomerDiscountPercent) > 0 &&
+      Number(importCustomerDiscountPercent) < 100
+    )){
+      alert("Вкажіть знижку понад 0 і менше 100%.");
+      return;
+    }
+
+    if(!["UAH","EUR","USD"].includes(importCurrency)){
+      alert("Оберіть валюту рахунку. Вона не підставляється автоматично, якщо файл не дав однозначної відповіді.");
+      return;
+    }
+
+    const importItems = activeImportItems();
+
+    if(!importItems.length){
+      alert("Позначте хоча б одну позицію для імпорту.");
+      return;
+    }
+
     const unresolved =
-      pendingSupplierImport
+      importItems
         .filter(
           item =>
             !item.category
@@ -2982,7 +3288,7 @@
     }
 
     if(
-      importCurrency === "UAH" &&
+      ["UAH","USD"].includes(importCurrency) &&
       (
         !Number.isFinite(
           importEurRate
@@ -2998,6 +3304,14 @@
       return;
     }
 
+    if(
+      importCurrency === "USD" &&
+      (!Number.isFinite(importUsdRate) || importUsdRate <= 0)
+    ){
+      alert("Вкажіть коректний курс USD.");
+      return;
+    }
+
     const rules =
       loadImportRules();
 
@@ -3005,10 +3319,26 @@
 
     let created = 0;
     let updated = 0;
+    let unchanged = 0;
+
+    const unitConflicts = importItems
+      .map(item => ({item,preview:getImportPreview(item)}))
+      .filter(value => value.preview.unitWarning);
+
+    if(unitConflicts.length){
+      alert(
+        "Імпорт зупинено: для частини знайдених товарів відрізняється одиниця виміру.\n\n" +
+        unitConflicts.slice(0,8).map(value =>
+          value.item.name + ": у каталозі «" + value.preview.existing.unit + "», у файлі «" + value.item.unit + "»"
+        ).join("\n") +
+        (unitConflicts.length > 8 ? "\n…" : "")
+      );
+      return;
+    }
 
     for(
       const imported
-      of pendingSupplierImport
+      of importItems
     ){
 
       const pricePair = getImportedPricePair(imported,importedAt);
@@ -3023,7 +3353,7 @@
       }
     }
 
-    pendingSupplierImport
+    importItems
       .forEach(
         imported => {
 
@@ -3033,14 +3363,23 @@
           );
 
           const pricePair = getImportedPricePair(imported,importedAt);
-          const basePriceEUR = getCompatibilityBasePriceEUR(imported,pricePair);
 
           const existing =
             findExistingCatalogItem(
               imported
             );
 
+          const preview = getImportPreview(imported);
+
+          if(existing && preview.kind === "same"){
+            unchanged++;
+            return;
+          }
+
           if(existing){
+
+            const retailPriceEUR = getCatalogRetailPriceEUR(existing,pricePair);
+            const purchasePriceEUR = getCatalogPurchasePriceEUR(existing,pricePair);
 
             existing.name =
               imported.name;
@@ -3052,8 +3391,11 @@
                 imported.name;
             }
 
-            existing.basePriceEUR =
-              basePriceEUR;
+            // Роздрібна ціна — єдина ціна, що може стати ціною для клієнта.
+            // Ціна майстра лишається окремою закупівельною підказкою.
+            existing.retailPriceEUR = retailPriceEUR;
+            existing.purchasePriceEUR = purchasePriceEUR;
+            existing.basePriceEUR = retailPriceEUR;
 
             delete existing.price;
 
@@ -3079,6 +3421,9 @@
             updated++;
 
           }else{
+
+            const retailPriceEUR = getCatalogRetailPriceEUR(null,pricePair);
+            const purchasePriceEUR = getCatalogPurchasePriceEUR(null,pricePair);
 
             catalog.push({
 
@@ -3106,8 +3451,13 @@
               article:
                 imported.article || "",
 
+              retailPriceEUR,
+
+              purchasePriceEUR,
+
+              // Тимчасово лишається для сумісності зі старим інтерфейсом.
               basePriceEUR:
-                basePriceEUR,
+                retailPriceEUR,
 
               unit:
                 imported.unit || "шт",
@@ -3134,9 +3484,7 @@
       saveSupplierNames(supplierNames);
     }
 
-    if(
-      importCurrency === "UAH"
-    ){
+    if(["UAH","USD"].includes(importCurrency)){
 
       localStorage.setItem(
         EUR_RATE_KEY,
@@ -3167,6 +3515,10 @@
       }
     }
 
+    if(importCurrency === "USD"){
+      localStorage.setItem(USD_RATE_KEY,String(importUsdRate));
+    }
+
     saveCatalog();
 
     const supplierNameForAlert = importSupplierName;
@@ -3179,7 +3531,7 @@
     renderCatalog();
 
     alert(
-      `Імпорт завершено.\nПостачальник: ${supplierNameForAlert}\nДодано: ${created}\nОновлено: ${updated}`
+      `Імпорт завершено.\nПостачальник: ${supplierNameForAlert}\nДодано: ${created}\nОновлено: ${updated}\nБез змін: ${unchanged}`
     );
   }
 
