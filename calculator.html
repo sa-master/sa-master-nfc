@@ -253,6 +253,7 @@ button{
   align-items:center;
   gap:7px;
   margin-top:6px;
+  flex-wrap:wrap;
 }
 
 .qty{
@@ -291,6 +292,21 @@ button{
   margin-left:3px;
   opacity:.5;
   font-size:9px;
+}
+
+.priceCurrency{
+  min-height:28px;
+  border-radius:9px;
+  background:var(--soft);
+  color:var(--blue);
+  padding:0 7px;
+  font-size:10px;
+  font-weight:750;
+  white-space:nowrap;
+}
+
+.priceCurrency:active{
+  background:#dfe6f4;
 }
 
 .right{
@@ -551,7 +567,8 @@ button{
   font-size:18px;
   flex:0 0 auto;
 }
-  .catalogManage{
+
+.catalogManage{
   display:flex;
   gap:5px;
 }
@@ -1216,6 +1233,22 @@ button{
 
 </div>
 
+<!-- CURRENCY PICKER -->
+
+<div
+  class="sheet"
+  id="currencySheet"
+  onclick="if(event.target===this)closeCurrencyPicker()"
+>
+  <div class="panel" style="height:auto;max-height:70dvh">
+    <div class="panelHead">
+      <strong>Курс для позиції</strong>
+      <button class="close" onclick="closeCurrencyPicker()">×</button>
+    </div>
+    <div id="currencyList" style="padding:0 12px 14px;overflow-y:auto"></div>
+  </div>
+</div>
+
 <script>
   const defaultCatalog = [
 
@@ -1513,32 +1546,108 @@ if(
   eurRate = 0;
 }
 
-function getMaterialCatalogPrice(
-  item
-){
+/* =========================
+   РОЗРАХУНОК ЦІНИ МАТЕРІАЛУ
+   Пріоритет курсу:
+   1) курс, збережений у позиції кошторису (snapshot)
+   2) курс, зафіксований у пропозиції постачальника
+   3) глобальний курс каталогу
+========================= */
 
-  const basePriceEUR =
-    Number(
-      item.basePriceEUR
-    );
+function getEurRateForSupplier(item, supplierName){
+  const offers = Array.isArray(item && item.supplierOffers) ? item.supplierOffers : [];
+  const key = String(supplierName || "").trim().toLowerCase();
 
-  if(
-    !Number.isFinite(
-      basePriceEUR
-    ) ||
-    basePriceEUR < 0 ||
-    !Number.isFinite(
-      eurRate
-    ) ||
-    eurRate <= 0
-  ){
-    return 0;
+  const offer = key
+    ? offers.find(o => String(o && o.supplierName || "").trim().toLowerCase() === key)
+    : null;
+
+  const snap = offer && (offer.retail || offer.master);
+  const rate = Number(snap && snap.eurRate);
+
+  if(Number.isFinite(rate) && rate > 0) return rate;
+
+  return null;
+}
+
+function getMaterialCatalogPrice(item, supplierName){
+  const basePriceEUR = Number(item && item.basePriceEUR);
+  if(!Number.isFinite(basePriceEUR) || basePriceEUR < 0) return 0;
+
+  const snapshotRate = Number(item && item._snapshotEurRate);
+  if(Number.isFinite(snapshotRate) && snapshotRate > 0){
+    return basePriceEUR * snapshotRate;
   }
 
-  return (
-    basePriceEUR *
-    eurRate
-  );
+  if(supplierName){
+    const supplierRate = getEurRateForSupplier(item, supplierName);
+    if(Number.isFinite(supplierRate) && supplierRate > 0){
+      return basePriceEUR * supplierRate;
+    }
+  }
+
+  if(!Number.isFinite(eurRate) || eurRate <= 0) return 0;
+  return basePriceEUR * eurRate;
+}
+
+function getSupplierRatesForItem(item){
+  const offers = Array.isArray(item && item.supplierOffers) ? item.supplierOffers : [];
+  const result = [];
+
+  offers.forEach(offer => {
+    const snap = offer && (offer.retail || offer.master);
+    const rate = Number(snap && snap.eurRate);
+    if(Number.isFinite(rate) && rate > 0){
+      result.push({
+        supplierName: String(offer.supplierName || "").trim(),
+        supplierFullName: String(offer.supplierFullName || "").trim(),
+        eurRate: rate
+      });
+    }
+  });
+
+  if(Number.isFinite(eurRate) && eurRate > 0){
+    result.push({
+      supplierName: "",
+      supplierFullName: "Глобальний курс каталогу",
+      eurRate: eurRate,
+      isGlobal: true
+    });
+  }
+
+  return result;
+}
+
+/* Ціна позиції кошторису з урахуванням снапшоту курсу та обраного постачальника */
+function getEstimateItemPrice(item){
+  if(item.type !== "material"){
+    return Number(item.price) || 0;
+  }
+
+  const product = catalog.find(p => p.id === item.id);
+  const basePriceEUR = Number(product && product.basePriceEUR);
+
+  if(!Number.isFinite(basePriceEUR) || basePriceEUR < 0){
+    return Number(item.price) || 0;
+  }
+
+  const snapshotRate = Number(item.eurRate);
+  if(Number.isFinite(snapshotRate) && snapshotRate > 0){
+    return basePriceEUR * snapshotRate;
+  }
+
+  if(item.supplierName){
+    const supplierRate = getEurRateForSupplier(product, item.supplierName);
+    if(Number.isFinite(supplierRate) && supplierRate > 0){
+      return basePriceEUR * supplierRate;
+    }
+  }
+
+  if(Number.isFinite(eurRate) && eurRate > 0){
+    return basePriceEUR * eurRate;
+  }
+
+  return Number(item.price) || 0;
 }
 
 function updateEurRateButton(){
@@ -1627,6 +1736,7 @@ function editEurRate(){
 
   updateEurRateButton();
   renderCatalog();
+  renderEstimate();
 }
 
 function normalizeText(
@@ -1673,17 +1783,22 @@ function escapeHtml(
     );
 }
 
-function money(
-  value
-){
+/* Точна ціна з копійками (для позицій).
+   Показує ".00" лише тоді, коли копійки реально є. */
+function money(value){
+  const n = Number(value) || 0;
+  const hasCents = Math.abs(n - Math.round(n)) > 0.005;
 
-  return new Intl.NumberFormat(
-    "uk-UA"
-  )
-    .format(
-      Math.round(value)
-    ) +
-    " грн";
+  return new Intl.NumberFormat("uk-UA",{
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0
+  }).format(n) + " грн";
+}
+
+/* Округлена сума без копійок (для підсумку). */
+function moneyRounded(value){
+  const n = Number(value) || 0;
+  return new Intl.NumberFormat("uk-UA").format(Math.round(n)) + " грн";
 }
 
 function save(){
@@ -1709,7 +1824,8 @@ function saveCatalog(){
 /* =========================
    ESTIMATE
 ========================= */
-  function renderEstimate(){
+
+function renderEstimate(){
 
   const list =
     document.getElementById(
@@ -1720,6 +1836,13 @@ function saveCatalog(){
     document.getElementById(
       "clearEstimate"
     );
+
+  // Перед рендером синхронізуємо ціни матеріалів із їхнім курсом.
+  estimate.forEach(item => {
+    if(item.type === "material"){
+      item.price = getEstimateItemPrice(item);
+    }
+  });
 
   if(
     !estimate.length
@@ -1811,7 +1934,7 @@ function saveCatalog(){
   document.getElementById(
     "grand"
   ).textContent =
-    money(total);
+    moneyRounded(total);
 
   document.getElementById(
     "count"
@@ -1852,6 +1975,11 @@ function renderRow(
     estimate.indexOf(
       item
     );
+
+  const rateLabel =
+    Number(item.eurRate) > 0
+      ? Number(item.eurRate).toFixed(2)
+      : "—";
 
   return `
     <div class="row">
@@ -1894,7 +2022,37 @@ function renderRow(
             <span class="priceEditIcon">✎</span>
           </button>
 
+          ${
+            item.type === "material"
+              ? `
+                <button
+                  class="priceCurrency"
+                  onclick="openCurrencyPicker(${index})"
+                  title="Змінити курс / постачальника"
+                >
+                  € ${rateLabel}
+                </button>
+              `
+              : ""
+          }
+
         </div>
+
+        ${
+          item.type === "material" && item.supplierName
+            ? `
+              <div class="catalogMeta" style="margin-top:3px">
+                Постачальник:
+                ${escapeHtml(item.supplierName)}
+                ${
+                  Number(item.eurRate) > 0
+                    ? ` · курс ${Number(item.eurRate).toFixed(2)}`
+                    : ""
+                }
+              </div>
+            `
+            : ""
+        }
 
       </div>
 
@@ -2011,6 +2169,113 @@ function clearEstimate(){
 
   save();
   renderEstimate();
+}
+
+/* =========================
+   CURRENCY PICKER
+========================= */
+
+let currencyPickerIndex = null;
+let currencyPickerRates = [];
+
+function openCurrencyPicker(index){
+  const item = estimate[index];
+  if(!item || item.type !== "material") return;
+
+  const product = catalog.find(p => p.id === item.id);
+  if(!product){
+    alert("Товар не знайдено в каталозі.");
+    return;
+  }
+
+  currencyPickerIndex = index;
+
+  const rates = getSupplierRatesForItem(product);
+  currencyPickerRates = rates;
+
+  const list = document.getElementById("currencyList");
+
+  if(!rates.length){
+    list.innerHTML = `
+      <div class="noResults">
+        Немає жодного курсу.<br><br>
+        Імпортуйте рахунок постачальника або вкажіть глобальний курс EUR.
+      </div>
+    `;
+    document.getElementById("currencySheet").classList.add("open");
+    return;
+  }
+
+  const currentSupplier = String(item.supplierName || "").trim().toLowerCase();
+  const currentRate = Number(item.eurRate);
+
+  list.innerHTML = rates.map((rate, i) => {
+    const isActive =
+      (rate.isGlobal &&
+        !currentSupplier &&
+        Number.isFinite(currentRate) &&
+        currentRate === rate.eurRate) ||
+      (!rate.isGlobal &&
+        String(rate.supplierName).trim().toLowerCase() === currentSupplier &&
+        Number.isFinite(currentRate) &&
+        currentRate === rate.eurRate);
+
+    const label = rate.isGlobal
+      ? "🌐 Глобальний курс каталогу"
+      : `👤 ${rate.supplierName || "Без назви"}`;
+
+    const sub =
+      rate.supplierFullName && rate.supplierFullName !== rate.supplierName
+        ? `<div class="catalogMeta">${escapeHtml(rate.supplierFullName)}</div>`
+        : "";
+
+    const itemPrice = (Number(product.basePriceEUR) || 0) * rate.eurRate;
+
+    return `
+      <button
+        class="catalogItem"
+        style="width:100%;text-align:left;display:block;${
+          isActive
+            ? "box-shadow:inset 0 0 0 1.5px rgba(0,122,255,.35)"
+            : ""
+        }"
+        onclick="applyCurrencyChoice(${i})"
+      >
+        <div class="catalogName">${escapeHtml(label)}</div>
+        ${sub}
+        <div class="catalogMeta">
+          Курс: <b>${rate.eurRate.toFixed(2)} грн/€</b>
+          · Ціна позиції: <b>${money(itemPrice)}</b>
+        </div>
+      </button>
+    `;
+  }).join("");
+
+  document.getElementById("currencySheet").classList.add("open");
+}
+
+function applyCurrencyChoice(rateIndex){
+  const item = estimate[currencyPickerIndex];
+  if(!item) return;
+
+  const rate = currencyPickerRates[rateIndex];
+  if(!rate) return;
+
+  item.supplierName = rate.supplierName || "";
+  item.supplierFullName = rate.supplierFullName || "";
+  item.eurRate = rate.eurRate;
+
+  item.price = getEstimateItemPrice(item);
+
+  save();
+  renderEstimate();
+  closeCurrencyPicker();
+}
+
+function closeCurrencyPicker(){
+  document.getElementById("currencySheet").classList.remove("open");
+  currencyPickerIndex = null;
+  currencyPickerRates = [];
 }
 
 /* =========================
@@ -2405,7 +2670,8 @@ function setBrandFilter(
   renderSystemFilters();
   renderCatalog();
 }
-  function getSystems(){
+
+function getSystems(){
 
   const values =
     new Map();
@@ -2987,11 +3253,18 @@ function addItem(
         eurRate
       ) ||
       eurRate <= 0
+    ) &&
+    !(
+      Array.isArray(product.supplierOffers) &&
+      product.supplierOffers.some(offer => {
+        const snap = offer && (offer.retail || offer.master);
+        return Number(snap && snap.eurRate) > 0;
+      })
     )
   ){
 
     alert(
-      "Спочатку вкажіть курс EUR."
+      "Спочатку вкажіть курс EUR або імпортуйте рахунок постачальника."
     );
 
     return;
@@ -3032,9 +3305,7 @@ function addItem(
       price:
         product.type ===
           "material"
-          ? getMaterialCatalogPrice(
-              product
-            )
+          ? 0
           : (
               Number(
                 product.price
@@ -3052,6 +3323,34 @@ function addItem(
       "material"
     ){
 
+      const supplierRates =
+        getSupplierRatesForItem(
+          product
+        );
+
+      const firstSupplier =
+        supplierRates.find(
+          r => !r.isGlobal
+        ) ||
+        supplierRates[0] ||
+        null;
+
+      if(
+        firstSupplier
+      ){
+
+        estimateItem.supplierName =
+          firstSupplier.supplierName ||
+          "";
+
+        estimateItem.supplierFullName =
+          firstSupplier.supplierFullName ||
+          "";
+
+        estimateItem.eurRate =
+          firstSupplier.eurRate;
+      }
+
       estimateItem.manufacturer =
         product.manufacturer ||
         "";
@@ -3063,6 +3362,11 @@ function addItem(
       estimateItem.article =
         product.article ||
         "";
+
+      estimateItem.price =
+        getEstimateItemPrice(
+          estimateItem
+        );
     }
 
     estimate.push(
@@ -3215,7 +3519,8 @@ function clearMaterialCatalog(){
     "Каталог матеріалів очищено."
   );
 }
-  function updateEditorGroup(){
+
+function updateEditorGroup(){
 
   const type =
     document.getElementById(
@@ -3741,7 +4046,8 @@ function saveCatalogItem(){
   renderSystemFilters();
   renderCatalog();
 }
-  function deleteCatalogItem(
+
+function deleteCatalogItem(
   id
 ){
 
