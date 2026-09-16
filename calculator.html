@@ -1548,10 +1548,6 @@ if(
 
 /* =========================
    РОЗРАХУНОК ЦІНИ МАТЕРІАЛУ
-   Пріоритет курсу:
-   1) курс, збережений у позиції кошторису (snapshot)
-   2) курс, зафіксований у пропозиції постачальника
-   3) глобальний курс каталогу
 ========================= */
 
 function getEurRateForSupplier(item, supplierName){
@@ -1618,7 +1614,6 @@ function getSupplierRatesForItem(item){
   return result;
 }
 
-/* Ціна позиції кошторису з урахуванням снапшоту курсу та обраного постачальника */
 function getEstimateItemPrice(item){
   if(item.type !== "material"){
     return Number(item.price) || 0;
@@ -1783,8 +1778,7 @@ function escapeHtml(
     );
 }
 
-/* Точна ціна з копійками (для позицій).
-   Показує ".00" лише тоді, коли копійки реально є. */
+/* Точна ціна з копійками (для позицій) */
 function money(value){
   const n = Number(value) || 0;
   const hasCents = Math.abs(n - Math.round(n)) > 0.005;
@@ -1795,7 +1789,7 @@ function money(value){
   }).format(n) + " грн";
 }
 
-/* Округлена сума без копійок (для підсумку). */
+/* Округлена сума без копійок (для підсумку) */
 function moneyRounded(value){
   const n = Number(value) || 0;
   return new Intl.NumberFormat("uk-UA").format(Math.round(n)) + " грн";
@@ -1837,7 +1831,6 @@ function renderEstimate(){
       "clearEstimate"
     );
 
-  // Перед рендером синхронізуємо ціни матеріалів із їхнім курсом.
   estimate.forEach(item => {
     if(item.type === "material"){
       item.price = getEstimateItemPrice(item);
@@ -2355,6 +2348,19 @@ function renderFilters(){
     document.getElementById(
       "filters"
     );
+
+  // Якщо в каталозі для цього типу взагалі немає позицій — ховаємо фільтри
+  const hasAnyItems =
+    Array.isArray(catalog) &&
+    catalog.some(item => item.type === catalogMode);
+
+  if(!hasAnyItems){
+    box.style.display = "none";
+    box.innerHTML = "";
+    return;
+  }
+
+  box.style.display = "flex";
 
   if(
     catalogMode ===
@@ -2965,6 +2971,10 @@ function renderCatalog(){
     catalogManageMode
   );
 
+  const hasAnyMaterials =
+    catalogMode === "material" &&
+    catalog.some(item => item.type === "material");
+
   if(
     !items.length
   ){
@@ -2986,8 +2996,7 @@ function renderCatalog(){
             </button>
 
             ${
-              catalogMode ===
-              "material"
+              hasAnyMaterials
                 ? `
                   <button
                     class="catalogClear"
@@ -3028,8 +3037,7 @@ function renderCatalog(){
       </button>
 
       ${
-        catalogMode ===
-        "material"
+        hasAnyMaterials
           ? `
             <button
               class="catalogClear"
