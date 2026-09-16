@@ -1,5 +1,5 @@
 /* =========================
-   SUPPLIER XLS/XLSX IMPORT v8.8
+   SUPPLIER XLS/XLSX IMPORT v8.8 (final)
    - "Ціна зі знижкою" = ціна майстра (оптова)
    - Курс EUR зберігається per-supplier у снапшотах цін
    - Виправлено: isGeneric у classifyPriceHeader
@@ -101,6 +101,7 @@
   document.body.appendChild(fileInput);
 
   const panelHeadRight = document.querySelector(".panelHeadRight");
+  const catalogEditButton = document.getElementById("catalogEditButton");
 
   const importButton = document.createElement("button");
   importButton.className = "importButton";
@@ -108,14 +109,24 @@
   importButton.textContent = "⇩ Імпорт";
   importButton.type = "button";
   importButton.onclick = () => fileInput.click();
-  panelHeadRight.insertBefore(importButton, document.getElementById("catalogEditButton"));
+
+  if(panelHeadRight && catalogEditButton){
+    panelHeadRight.insertBefore(importButton, catalogEditButton);
+  }else if(panelHeadRight){
+    panelHeadRight.appendChild(importButton);
+  }
 
   const supplierDiagButton = document.createElement("button");
   supplierDiagButton.className = "supplierDiagButton";
   supplierDiagButton.id = "supplierDiagButton";
   supplierDiagButton.textContent = "₴ Ціни";
   supplierDiagButton.type = "button";
-  panelHeadRight.insertBefore(supplierDiagButton, importButton);
+
+  if(panelHeadRight && catalogEditButton){
+    panelHeadRight.insertBefore(supplierDiagButton, importButton);
+  }else if(panelHeadRight){
+    panelHeadRight.appendChild(supplierDiagButton);
+  }
 
   const importSheet = document.createElement("div");
   importSheet.className = "importSheet";
@@ -170,10 +181,14 @@
   fileInput.addEventListener("change", handleSupplierFile);
 
   const originalOpenCatalog = window.openCatalog;
+
   window.openCatalog = function(type){
-    originalOpenCatalog(type);
-    importButton.style.display = type === "material" ? "block" : "none";
-    supplierDiagButton.style.display = type === "material" ? "block" : "none";
+    if(typeof originalOpenCatalog === "function"){
+      originalOpenCatalog(type);
+    }
+    const show = type === "material" ? "block" : "none";
+    importButton.style.display = show;
+    supplierDiagButton.style.display = show;
   };
 
   /* ============ utils ============ */
@@ -265,8 +280,6 @@
     const isDiscountAsMaster =
       /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price|акційн.*ціна|акционн.*цена/.test(t);
 
-    // Просте "ціна" / "цена" / "price" — тільки якщо це окреме слово
-    // (з можливими розділовими знаками після нього).
     const isPlainPriceWord =
       /^(ціна|цена|price)(\s*[.,:()].*)?$/i.test(t);
 
@@ -334,7 +347,6 @@
     let discountPriceCol = -1;
     let priceCol = -1;
 
-    // 1) Явні retail + master
     if(info.retailCol >= 0 && info.masterCol >= 0){
       regularPriceCol = info.retailCol;
       discountPriceCol = info.masterCol;
@@ -342,14 +354,12 @@
       return { regularPriceCol, discountPriceCol, priceCol };
     }
 
-    // 2) Явний retail + generic
     if(info.retailCol >= 0 && info.genericCol >= 0){
       regularPriceCol = info.retailCol;
       priceCol = info.retailCol;
       return { regularPriceCol, discountPriceCol, priceCol };
     }
 
-    // 3) Явний master + generic — ключовий кейс для 1047сс.xls
     if(info.masterCol >= 0 && info.genericCol >= 0){
       regularPriceCol = info.genericCol;
       discountPriceCol = info.masterCol;
@@ -357,21 +367,18 @@
       return { regularPriceCol, discountPriceCol, priceCol };
     }
 
-    // 4) Тільки explicit retail
     if(info.retailCol >= 0){
       regularPriceCol = info.retailCol;
       priceCol = info.retailCol;
       return { regularPriceCol, discountPriceCol, priceCol };
     }
 
-    // 5) Тільки master
     if(info.masterCol >= 0){
       discountPriceCol = info.masterCol;
       priceCol = info.masterCol;
       return { regularPriceCol, discountPriceCol, priceCol };
     }
 
-    // 6) Тільки generic — як роздріб
     if(info.genericCol >= 0){
       regularPriceCol = info.genericCol;
       priceCol = info.genericCol;
@@ -382,7 +389,6 @@
   }
 
   function findHeaderRow(rows){
-
     let best = null;
 
     rows.slice(0,60).forEach((row,rowIndex) => {
@@ -438,7 +444,6 @@
   }
 
   function detectDataColumns(rows,header){
-
     const sample = rows.slice(header.rowIndex + 1, header.rowIndex + 45);
 
     const startName = Math.max(
@@ -578,7 +583,7 @@
     return "n:" + ntext(name);
   }
 
-  /* ============ brand/system/category ============ */
+  /* ============ brand / system / category ============ */
 
   function detectBrand(text,article = ""){
     const source = ntext(text + " " + article);
@@ -1492,11 +1497,6 @@
     offer.updatedAt = importedAt;
   }
 
-  /* ============ КРИТИЧНЕ ВИПРАВЛЕННЯ v8.8 ============ */
-  /*
-    Якщо у файлі є ТІЛЬКИ колонка master (без retail),
-    retailPriceEUR не повинен ставати 0 — використовуємо master.
-  */
   function getCatalogRetailPriceEUR(existing,pricePair){
     if(pricePair.retail) return pricePair.retail.priceEUR;
     if(pricePair.master) return pricePair.master.priceEUR;
@@ -1586,7 +1586,7 @@
         const rateText = rateSnap && Number(rateSnap.eurRate) > 0
           ? ` · курс ${Number(rateSnap.eurRate).toFixed(2)}`
           : "";
-        const ка date = formatDiagDate(offer?.updatedAt || offer?.master?.importedAt || offer?.retail?.importedAt);
+        const date = formatDiagDate(offer?.updatedAt || offer?.master?.importedAt || offer?.retail?.importedAt);
         return `
           <div class="supplierDiagOffer">
             <strong>${escapeDiagHtml(offer?.supplierName || "Без назви")}</strong>
@@ -1640,7 +1640,7 @@
 
     const unresolved = importItems.filter(item => !item.category);
     if(unresolved.length){
-      alert(`Залишилось ${unresolved.length} невизначених позицій. Спочатку призначте їмтегорію.`);
+      alert(`Залишилось ${unresolved.length} невизначених позицій. Спочатку призначте їм категорію.`);
       return;
     }
 
@@ -1734,7 +1734,7 @@
         updated++;
       }else{
         const retailPriceEUR = getCatalogRetailPriceEUR(null,pricePair);
-        const purchasePriceEUR = getCatalogPurchasePriceEUR(null,наpricePair);
+        const purchasePriceEUR = getCatalogPurchasePriceEUR(null,pricePair);
 
         catalog.push({
           id: makeImportedId(),
@@ -1765,10 +1765,6 @@
       supplierNames[supplierKey(importSupplierFullName)] = importSupplierName;
       saveSupplierNames(supplierNames);
     }
-
-    // Глобальний курс каталогу (plumber_eurRate) НЕ змінюємо.
-    // Курс зберігається лише в снапшотах конкретних позицій
-    // цього постачальника (offer.retail.eurRate / offer.master.eurRate).
 
     saveCatalog();
 
