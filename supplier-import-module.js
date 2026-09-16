@@ -1,7 +1,8 @@
 /* =========================
-   SUPPLIER XLS/XLSX IMPORT v8.6
-   "Ціна зі знижкою" = ціна майстра
-   Курс EUR зберігається per-supplier
+   SUPPLIER XLS/XLSX IMPORT v8.7
+   - "Ціна зі знижкою" = ціна майстра (оптова)
+   - Курс EUR зберігається per-supplier у снапшотах цін
+   - Явне зіставлення колонок цін (без крихких else-if)
 ========================= */
 
 (function initSupplierImport(){
@@ -248,116 +249,204 @@
     return text.length > 0 && text.length < 40 && /[0-9a-zа-яіїєґ]/i.test(text);
   }
 
-  /* ============ header detection ============ */
+  /* ============ header detection v2 ============ */
+
+  /*
+    Нова логіка:
+    1. Класифікуємо КОЖНУ клітинку заголовка окремо.
+    2. Запам'ятовуємо індекси для кожного типу (retail, master, generic, qty, article, name).
+    3. У кінці ПРИЗНАЧАЄМО колонки явно, без крихких else-if.
+       Це гарантує, що "Ціна" + "Ціна зі знижкою" завжди стануть
+       парою (роздріб + майстер/оптова).
+  */
+
+  function classifyPriceHeader(text){
+    const t = ntext(text);
+
+    const isExplicitRetail =
+      /ціна.*без\s*зниж|цена.*без\s*скид|retail.*price|list.*price|роздрібн.*ціна|розничн.*цена/.test(t);
+
+    const isExplicitMaster =
+      /ціна.*майстра|ціна.*закуп|закупівельн|закупочн|оптов|wholesale|dealer.*price|моя\s*ціна/.test(t);
+
+    // "Ціна зі знижкою" — це фактично ваша оптова (майстер) ціна.
+    const isDiscountAsMaster =
+      /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price|акційн.*ціна|акционн.*цена/.test(t);
+
+    const isGeneric =
+      /(^|\s)ціна(?:$|\s|[,:(])|(^|\s)цена(?:$|\s|[,:(])|^price(?:$|\s|[,:(])|сума/.test(t) === false &&
+      /(^|\s)ціна(?:$|\s|[,:(])|(^|\s)цена(?:$|\s|[,:(])|^price(?:$|\s|[,:(])/.test(t);
+
+    if(isExplicitRetail) return "retail";
+    if(isExplicitMaster) return "master";
+    if(isDiscountAsMaster) return "master"; // ключове: вважаємо master-ом
+    if(isGeneric) return "generic";
+    return null;
+  }
+
+  function classifyHeaderRow(row){
+    const info = {
+      articleCol: -1,
+      qtyCol: -1,
+      nameHeaderCol: -1,
+      retailCol: -1,
+      masterCol: -1,
+      genericCol: -1,
+      score: 0,
+      priceHits: 0
+    };
+
+    row.forEach((cell,col) => {
+      const text = ntext(cell);
+      if(!text) return;
+
+      if(/артикул|код товар|код$|sku/.test(text)){
+        if(info.articleCol < 0) info.articleCol = col;
+        info.score += 4;
+      }
+
+      if(/кількість|количество|к-сть|qty/.test(text)){
+        if(info.qtyCol < 0) info.qtyCol = col;
+        info.score += 4;
+      }
+
+      if(/товар|найменув|наименов|назва|именование|product/.test(text)){
+        if(info.nameHeaderCol < 0) info.nameHeaderCol = col;
+        info.score += 3;
+      }
+
+      const priceKind = classifyPriceHeader(cell);
+      if(priceKind === "retail" && info.retailCol < 0){
+        info.retailCol = col;
+        info.score += 5;
+        info.priceHits++;
+      }else if(priceKind === "master" && info.masterCol < 0){
+        info.masterCol = col;
+        info.score += 5;
+        info.priceHits++;
+      }else if(priceKind === "generic" && info.genericCol < 0){
+        info.genericCol = col;
+        info.score += 4;
+        info.priceHits++;
+      }
+    });
+
+    return info;
+  }
+
+  function resolvePriceColumns(info){
+    // Явно вирішуємо, які колонки стануть regularPriceCol (роздріб),
+    // discountPriceCol (майстер/оптова) і priceCol (основна для парсингу).
+    let regularPriceCol = -1;
+    let discountPriceCol = -1;
+    let priceCol = -1;
+
+    // 1) Явні retail + master
+    if(info.retailCol >= 0 && info.masterCol >= 0){
+      regularPriceCol = info.retailCol;
+      discountPriceCol = info.masterCol;
+      priceCol = info.retailCol;
+      return { regularPriceCol, discountPriceCol, priceCol };
+    }
+
+    // 2) Явний retail + generic (generic = роздріб)
+    if(info.retailCol >= 0 && info.genericCol >= 0){
+      regularPriceCol = info.retailCol;
+      priceCol = info.retailCol;
+      return { regularPriceCol, discountPriceCol, priceCol };
+    }
+
+    // 3) Явний master + generic (generic = роздріб, master = оптова)
+    //    ЦЕ КЛЮЧОВИЙ КЕЙС для 1047сс.xls:
+    //    "Ціна" = generic → retail; "Ціна зі знижкою" = master → оптова
+    if(info.masterCol >= 0 && info.genericCol >= 0){
+      regularPriceCol = info.genericCol;
+      discountPriceCol = info.masterCol;
+      priceCol = info.masterCol;
+      return { regularPriceCol, discountPriceCol, priceCol };
+    }
+
+    // 4) Тільки explicit retail
+    if(info.retailCol >= 0){
+      regularPriceCol = info.retailCol;
+      priceCol = info.retailCol;
+      return { regularPriceCol, discountPriceCol, priceCol };
+    }
+
+    // 5) Тільки master
+    if(info.masterCol >= 0){
+      discountPriceCol = info.masterCol;
+      priceCol = info.masterCol;
+      return { regularPriceCol, discountPriceCol, priceCol };
+    }
+
+    // 6) Тільки generic — трактуємо як роздріб
+    if(info.genericCol >= 0){
+      regularPriceCol = info.genericCol;
+      priceCol = info.genericCol;
+      return { regularPriceCol, discountPriceCol, priceCol };
+    }
+
+    return { regularPriceCol, discountPriceCol, priceCol };
+  }
 
   function findHeaderRow(rows){
+
     let best = null;
 
     rows.slice(0,60).forEach((row,rowIndex) => {
-      let score = 0;
-      let articleCol = -1;
-      let qtyCol = -1;
-      let nameHeaderCol = -1;
-      let genericPriceCol = -1;
-      let explicitRetailPriceCol = -1;
-      let explicitMasterPriceCol = -1;
+      const info = classifyHeaderRow(row);
+      const resolved = resolvePriceColumns(info);
 
-      row.forEach((cell,col) => {
-        const text = ntext(cell);
-        if(!text) return;
+      if(
+        resolved.priceCol >= 0 &&
+        info.nameHeaderCol >= 0 &&
+        info.score >= 7
+      ){
+        const candidate = {
+          rowIndex,
+          score: info.score,
+          articleCol: info.articleCol,
+          qtyCol: info.qtyCol,
+          nameHeaderCol: info.nameHeaderCol,
+          priceCol: resolved.priceCol,
+          regularPriceCol: resolved.regularPriceCol,
+          discountPriceCol: resolved.discountPriceCol,
+          // діагностика
+          _diag: {
+            retailCol: info.retailCol,
+            masterCol: info.masterCol,
+            genericCol: info.genericCol
+          }
+        };
 
-        if(/артикул|код товар|код$|sku/.test(text)){
-          score += 4;
-          if(articleCol < 0) articleCol = col;
-        }
-
-        if(/кількість|количество|к-сть|qty/.test(text)){
-          score += 4;
-          if(qtyCol < 0) qtyCol = col;
-        }
-
-        const isExplicitRetailPrice =
-          /ціна.*без\s*зниж|цена.*без\s*скид|retail.*price|list.*price/.test(text);
-
-        const isExplicitMasterPrice =
-          /ціна.*майстра|ціна.*закуп|закупівельн|закупочн|оптов|wholesale|dealer.*price/.test(text);
-
-        // "Ціна зі знижкою" у рахунках = ваша оптова (майстер) ціна.
-        const isCustomerDiscountPrice =
-          /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price|акційн.*ціна|акционн.*цена/
-            .test(text) &&
-          !isExplicitRetailPrice &&
-          !isExplicitMasterPrice;
-
-        const isGenericPrice =
-          /(^|\s)ціна(?:$|\s|[,:(])|(^|\s)цена(?:$|\s|[,:(])|^price(?:$|\s|[,:(])/.test(text) &&
-          !isExplicitRetailPrice &&
-          !isExplicitMasterPrice &&
-          !isCustomerDiscountPrice;
-
-        if(isExplicitRetailPrice && explicitRetailPriceCol < 0){
-          explicitRetailPriceCol = col;
-          score += 5;
-        }
-
-        if(isExplicitMasterPrice && explicitMasterPriceCol < 0){
-          explicitMasterPriceCol = col;
-          score += 5;
-        }
-
-        if(isCustomerDiscountPrice && explicitMasterPriceCol < 0){
-          explicitMasterPriceCol = col;
-          score += 5;
-        }
-
-        if(isGenericPrice && genericPriceCol < 0){
-          genericPriceCol = col;
-          score += 4;
-        }
-
-        if(/товар|найменув|наименов|назва|именование|product/.test(text)){
-          score += 3;
-          if(nameHeaderCol < 0) nameHeaderCol = col;
-        }
-      });
-
-      let regularPriceCol = -1;
-      let discountPriceCol = -1;
-      let priceCol = -1;
-
-      if(explicitRetailPriceCol >= 0) regularPriceCol = explicitRetailPriceCol;
-      if(explicitMasterPriceCol >= 0) discountPriceCol = explicitMasterPriceCol;
-
-      if(explicitRetailPriceCol >= 0 && explicitMasterPriceCol >= 0){
-        discountPriceCol = explicitMasterPriceCol;
-        priceCol = explicitRetailPriceCol;
-      }else if(explicitRetailPriceCol >= 0 && genericPriceCol >= 0){
-        priceCol = explicitRetailPriceCol;
-      }else if(explicitMasterPriceCol >= 0 && genericPriceCol >= 0){
-        regularPriceCol = genericPriceCol;
-        priceCol = explicitMasterPriceCol;
-      }else if(explicitRetailPriceCol >= 0){
-        priceCol = explicitRetailPriceCol;
-      }else if(explicitMasterPriceCol >= 0){
-        priceCol = explicitMasterPriceCol;
-      }else if(genericPriceCol >= 0){
-        priceCol = genericPriceCol;
-      }
-
-      if(priceCol >= 0 && nameHeaderCol >= 0 && score >= 7){
-        if(!best || score > best.score){
-          best = {
-            rowIndex, score, articleCol, qtyCol, priceCol,
-            regularPriceCol, discountPriceCol, nameHeaderCol
-          };
+        if(!best || candidate.score > best.score){
+          best = candidate;
         }
       }
     });
+
+    if(best){
+      // Друкуємо діагностику в консоль для зручності налагодження
+      console.log(
+        "[supplier-import] Header row %d → колонки: name=%d, article=%d, qty=%d, price=%d, retail=%d, master=%d",
+        best.rowIndex,
+        best.nameHeaderCol,
+        best.articleCol,
+        best.qtyCol,
+        best.priceCol,
+        best.regularPriceCol,
+        best.discountPriceCol
+      );
+    }else{
+      console.warn("[supplier-import] Header row не знайдено");
+    }
 
     return best;
   }
 
   function detectDataColumns(rows,header){
+
     const sample = rows.slice(header.rowIndex + 1, header.rowIndex + 45);
 
     const startName = Math.max(
@@ -395,11 +484,21 @@
     const maxCols = Math.max(
       ...sample.map(row => row.length),
       header.priceCol + 1,
-      header.qtyCol + 1
+      header.qtyCol + 1,
+      header.regularPriceCol + 1,
+      header.discountPriceCol + 1
     );
 
     for(let col = 0; col < maxCols; col++){
-      if(col === nameCol || col === header.articleCol || col === header.qtyCol || col === header.priceCol) continue;
+      if(
+        col === nameCol ||
+        col === header.articleCol ||
+        col === header.qtyCol ||
+        col === header.priceCol ||
+        col === header.regularPriceCol ||
+        col === header.discountPriceCol
+      ) continue;
+
       let score = 0;
       sample.forEach(row => { if(isUnit(row[col])) score++; });
       if(score > bestUnitScore){
@@ -790,6 +889,15 @@
         Number.isFinite(item.masterPrice) && !Number.isFinite(item.retailPrice)
       );
 
+      console.log(
+        "[supplier-import] Аркуш «%s»: позицій=%d, dual=%s, retailOnly=%s, masterOnly=%s",
+        sheetName,
+        items.length,
+        hasDualPrices,
+        hasRetailPriceOnly,
+        hasMasterPriceOnly
+      );
+
       result.push({
         sheetName, rows, header, items, supplierFullName,
         hasDualPrices, hasRetailPriceOnly, hasMasterPriceOnly
@@ -989,9 +1097,6 @@
         : "";
     }
 
-    // Поле курсу EUR більше не блокується — курс можна вказати
-    // навіть для рахунку в EUR, щоб зафіксувати гривневий еквівалент
-    // лише для цього постачальника.
     if(rateInput){
       rateInput.disabled = !importCurrency;
     }
@@ -1326,9 +1431,6 @@
     const priceEUR = convertImportedPriceToEUR(sourcePrice);
     if(!Number.isFinite(priceEUR) || priceEUR < 0) return null;
 
-    // Курс зберігається в снапшоті завжди, коли він відомий.
-    // Для EUR це "курс, зафіксований для цього постачальника",
-    // а не глобальний курс каталогу.
     return {
       priceEUR,
       sourcePrice: Number(sourcePrice),
@@ -1408,10 +1510,7 @@
   }
 
   function formatDiagMoneyFromSnapshot(snapshot){
-    if(!snapshot || !Number.isFinite(Number(snapshot.priceEUR))){
-      return "—";
-    }
-    // Пріоритет: курс снапшоту (per-supplier), потім глобальний.
+    if(!snapshot || !Number.isFinite(Number(snapshot.priceEUR))) return "—";
     const rate = Number(snapshot.eurRate) > 0
       ? Number(snapshot.eurRate)
       : Number(localStorage.getItem(EUR_RATE_KEY) || 0);
@@ -1536,7 +1635,6 @@
       return;
     }
 
-    // Для не-EUR курс обов'язковий (потрібен для переведення в EUR).
     if(
       importCurrency !== "EUR" &&
       (!Number.isFinite(importEurRate) || importEurRate <= 0)
@@ -1545,7 +1643,6 @@
       return;
     }
 
-    // Для EUR курс НЕ обов'язковий, але якщо вказаний — має бути > 0.
     if(
       importCurrency === "EUR" &&
       importEurRate !== 0 &&
@@ -1660,12 +1757,9 @@
       saveSupplierNames(supplierNames);
     }
 
-    // УВАГА: глобальний курс каталогу (plumber_eurRate) НЕ чіпаємо.
-    // Для EUR курс зберігається лише в снапшотах конкретних позицій
+    // Глобальний курс каталогу (plumber_eurRate) НЕ змінюємо.
+    // Курс зберігається лише в снапшотах конкретних позицій
     // цього постачальника (offer.retail.eurRate / offer.master.eurRate).
-    // Для UAH/USD так само — курс фіксується в снапшоті.
-    // Якщо ви колись захочете оновити глобальний курс — це робиться
-    // окремою кнопкою в каталозі, а не через імпорт рахунку.
 
     saveCatalog();
 
