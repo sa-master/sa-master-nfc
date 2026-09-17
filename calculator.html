@@ -707,15 +707,15 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .backButton{
-  width:2.5rem;
-  height:2.5rem;
-  border-radius:.875rem;
+  width:2rem;
+  height:2rem;
+  border-radius:.625rem;
   background:var(--gb);
   backdrop-filter:blur(1rem);
   -webkit-backdrop-filter:blur(1rem);
   border:1px solid var(--gbr);
   color:var(--p);
-  font-size:1.375rem;
+  font-size:1.125rem;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -1015,25 +1015,44 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
     <div class="panelBody">
       <div class="formGroup">
-        <label class="formLabel">Коротка назва (необов'язково)</label>
-        <input class="formInput" id="npTitle" placeholder="Напр. Печерськ" autocomplete="off">
-        <div class="formHint">Якщо не вказати — використаємо адресу або ім'я замовника</div>
+        <label class="formLabel">Назва об'єкта *</label>
+        <input
+          class="formInput"
+          id="npTitle"
+          placeholder="ЖК Файна Таун, кв. 45"
+          autocomplete="off"
+        >
       </div>
 
       <div class="formGroup">
-        <label class="formLabel">Ім'я замовника *</label>
-        <input class="formInput" id="npClientName" placeholder="Іван Петренко" autocomplete="off">
+        <label class="formLabel">Адреса (необов'язково)</label>
+        <input
+          class="formInput"
+          id="npAddress"
+          placeholder="Київ, вул. Салютна, 2"
+          autocomplete="off"
+        >
       </div>
 
       <div class="formGroup">
-        <label class="formLabel">Телефон замовника *</label>
-        <input class="formInput" id="npClientPhone" placeholder="+380 67 123 45 67" inputmode="tel" autocomplete="off">
+        <label class="formLabel">Ім'я замовника (необов'язково)</label>
+        <input
+          class="formInput"
+          id="npClientName"
+          placeholder="Іван Петренко або @ivan_p"
+          autocomplete="off"
+        >
       </div>
 
-      <div class="formGroup">
-        <label class="formLabel">Адреса / позначення об'єкта</label>
-        <textarea class="formTextarea" id="npAddress" placeholder="ЖК Comfort Town, літ. Б, кв. 45 або Котельня, Вінниця" autocomplete="off"></textarea>
-        <div class="formHint">Деталі об'єкта (тип, площа, санвузли) заповнимо пізніше</div>
+      <div class="formGroup" style="margin-bottom:0">
+        <label class="formLabel">Телефон (необов'язково)</label>
+        <input
+          class="formInput"
+          id="npClientPhone"
+          placeholder="+380 67 123 45 67"
+          inputmode="tel"
+          autocomplete="off"
+        >
       </div>
     </div>
 
@@ -1329,10 +1348,6 @@ function renderHero(){
 
   hero.style.display = "";
 
-  const initials = (profile.firstName || profile.lastName)
-    ? ((profile.firstName || "")[0] || "").toUpperCase() + ((profile.lastName || "")[0] || "").toUpperCase()
-    : "";
-
   hero.innerHTML = `
     <div class="heroRow">
       <div class="heroLogo">
@@ -1480,8 +1495,8 @@ function renderProjectCard(p){
 
 function projectTitlePlain(p){
   if(p.title && String(p.title).trim()) return p.title.trim();
-  if(p.client?.address && String(p.client.address).trim()) return p.client.address.trim();
   if(p.client?.name && String(p.client.name).trim()) return p.client.name.trim();
+  if(p.client?.address && String(p.client.address).trim()) return p.client.address.trim();
   return "Без назви";
 }
 
@@ -1554,7 +1569,6 @@ function renderProject(p){
 ========================================================= */
 
 function openProfile(){
-  // Заповнюємо поля поточними значеннями
   document.getElementById("pfFirstName").value = profile.firstName || "";
   document.getElementById("pfLastName").value = profile.lastName || "";
   document.getElementById("pfCompany").value = profile.company || "";
@@ -1644,7 +1658,6 @@ function saveProfile(){
   saveProfileData();
   closeProfile();
   renderHero();
-  toast("Профіль збережено");
 }
 
 /* =========================================================
@@ -1728,11 +1741,11 @@ function openProject(id){
 
 function openNewProject(){
   document.getElementById("npTitle").value = "";
+  document.getElementById("npAddress").value = "";
   document.getElementById("npClientName").value = "";
   document.getElementById("npClientPhone").value = "";
-  document.getElementById("npAddress").value = "";
   document.getElementById("newProjectSheet").classList.add("open");
-  setTimeout(() => document.getElementById("npClientName").focus(), 200);
+  setTimeout(() => document.getElementById("npTitle").focus(), 200);
 }
 
 function closeNewProject(){
@@ -1741,12 +1754,14 @@ function closeNewProject(){
 
 function createProject(){
   const title = document.getElementById("npTitle").value.trim();
+  const address = document.getElementById("npAddress").value.trim();
   const name = document.getElementById("npClientName").value.trim();
   const phone = document.getElementById("npClientPhone").value.trim();
-  const address = document.getElementById("npAddress").value.trim();
 
-  if(!name){ toast("Вкажіть ім'я замовника"); return; }
-  if(!phone){ toast("Вкажіть телефон замовника"); return; }
+  if(!title){
+    toast("Вкажіть назву об'єкта");
+    return;
+  }
 
   const now = new Date().toISOString();
   const wasFirst = projects.length === 0;
@@ -1789,7 +1804,6 @@ function createProject(){
 
   toast("Об'єкт створено");
 
-  // Якщо це перший об'єкт і профіль ще не заповнений — показати профіль
   const profileEmpty = !profile.firstName && !profile.lastName && !profile.company;
   if(wasFirst && profileEmpty){
     setTimeout(() => {
@@ -1802,7 +1816,6 @@ function createProject(){
    INIT
 ========================================================= */
 
-// Обробники чипів — принцип оплати людини в команді
 document.getElementById("apChips").addEventListener("click", e => {
   const chip = e.target.closest(".chip");
   if(!chip) return;
@@ -1811,7 +1824,6 @@ document.getElementById("apChips").addEventListener("click", e => {
   updateAddPersonValueUI();
 });
 
-// Чипи принципу оплати в профілі
 document.getElementById("pfChips").addEventListener("click", e => {
   const chip = e.target.closest(".chip");
   if(!chip) return;
@@ -1820,7 +1832,6 @@ document.getElementById("pfChips").addEventListener("click", e => {
   updateProfileValueUI();
 });
 
-// Клік по фону модалок
 document.getElementById("newProjectSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeNewProject();
 });
