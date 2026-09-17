@@ -603,11 +603,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   box-shadow:none;
 }
 
-.btnDanger{
-  background:rgba(255,59,48,.1);
-  color:var(--red);
-}
-
 /* ==== FORM ==== */
 
 .formGroup{margin-bottom:.875rem}
@@ -877,6 +872,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   display:flex;
   flex-direction:column;
   padding:.25rem 0;
+  padding-bottom:calc(9rem + var(--sab));
   overflow-y:auto;
   scrollbar-width:none;
   gap:.625rem;
@@ -1003,29 +999,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--tm);
   font-weight:600;
 }
-
-.addRow{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:.5rem;
-  margin-bottom:.75rem;
-}
-
-.addButton{
-  height:2.75rem;
-  border-radius:.875rem;
-  background:rgba(0,122,255,.1);
-  color:var(--p);
-  font-size:.875rem;
-  font-weight:700;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:.375rem;
-  transition:transform .12s;
-}
-
-.addButton:active{transform:scale(.98)}
 
 .emptyEstimate{
   text-align:center;
@@ -1214,28 +1187,70 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--t);
 }
 
-/* ==== ESTIMATE TOTAL ==== */
+/* ==== FLOATING PANEL ==== */
 
-.estimateTotal{
+.floatingPanel{
+  position:fixed;
+  left:50%;
+  bottom:calc(.75rem + var(--sab));
+  transform:translateX(-50%);
+  width:min(30rem,calc(100% - 1rem));
+  z-index:20;
+  background:var(--gb);
+  backdrop-filter:blur(1.75rem) saturate(220%);
+  -webkit-backdrop-filter:blur(1.75rem) saturate(220%);
+  border:1px solid var(--gbr);
+  border-radius:1.5rem;
+  box-shadow:0 .5rem 2rem rgba(0,0,0,.12);
+  padding:.625rem .75rem .75rem;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+}
+
+.floatingTotal{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding-top:.625rem;
-  margin-top:.375rem;
-  border-top:1px solid rgba(120,130,140,.15);
-  font-size:.9375rem;
+  padding:0 .25rem .375rem;
+  border-bottom:1px solid rgba(120,130,140,.15);
 }
 
-.estimateTotalLabel{
+.floatingTotalLabel{
   color:var(--ts);
   font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  font-size:.6875rem;
 }
 
-.estimateTotalValue{
-  font-size:1.125rem;
+.floatingTotalValue{
+  font-size:1.0625rem;
   font-weight:800;
   color:var(--t);
 }
+
+.floatingButtons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.5rem;
+}
+
+.addButton{
+  height:2.75rem;
+  border-radius:.875rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.875rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.375rem;
+  transition:transform .12s;
+}
+
+.addButton:active{transform:scale(.98)}
 
 /* ==== CATALOG MODAL ==== */
 
@@ -1266,8 +1281,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .catalogList::-webkit-scrollbar{display:none}
-
-/* ==== COMPACT CATALOG ITEM ==== */
 
 .catalogItem{
   display:flex;
@@ -1358,8 +1371,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .catalogItem.selected .counterValue{color:#fff}
-
-/* ==== CATALOG EDIT MODE ==== */
 
 .catalogManageRow{
   flex:0 0 auto;
@@ -1784,6 +1795,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 @media (max-width:26rem){
   .heroTitle{font-size:1.125rem}
   .heroSub{font-size:.6875rem}
+  .projectView{padding-bottom:calc(8.5rem + var(--sab))}
 }
 </style>
 </head>
@@ -2809,6 +2821,32 @@ function renderProject(p){
 
       ${renderEstimateBlock(p)}
     </div>
+
+    ${renderFloatingPanel(p)}
+  `;
+}
+
+function renderFloatingPanel(p){
+  const total = getEstimateTotal(p);
+
+  return `
+    <div class="floatingPanel">
+      <div class="floatingTotal">
+        <span class="floatingTotalLabel">Разом</span>
+        <span class="floatingTotalValue">${money(total)}</span>
+      </div>
+
+      <div class="floatingButtons">
+        <button class="addButton" onclick="openCatalogFor('work')">
+          <span style="font-size:1.125rem;line-height:1">＋</span>
+          <span>Робота</span>
+        </button>
+        <button class="addButton" onclick="openCatalogFor('material')">
+          <span style="font-size:1.125rem;line-height:1">＋</span>
+          <span>Матеріал</span>
+        </button>
+      </div>
+    </div>
   `;
 }
 
@@ -2833,7 +2871,6 @@ function buildDetailsBadges(p){
 function renderEstimateBlock(p){
   const positions = Array.isArray(p.positions) ? p.positions : [];
   const count = positions.length;
-  const total = getEstimateTotal(p);
 
   const workPositions = positions.filter(x => x.type === "work");
   const materialPositions = positions.filter(x => x.type === "material");
@@ -2845,30 +2882,14 @@ function renderEstimateBlock(p){
         <span class="estimateCount">${count ? count + " поз." : "порожній"}</span>
       </div>
 
-      <div class="addRow">
-        <button class="addButton" onclick="openCatalogFor('work')">
-          <span style="font-size:1.125rem;line-height:1">＋</span>
-          <span>Робота</span>
-        </button>
-        <button class="addButton" onclick="openCatalogFor('material')">
-          <span style="font-size:1.125rem;line-height:1">＋</span>
-          <span>Матеріал</span>
-        </button>
-      </div>
-
       ${count === 0 ? `
         <div class="emptyEstimate">
           Ще немає позицій.<br>
-          Додайте роботи та матеріали
+          Скористайтесь кнопками внизу
         </div>
       ` : `
         ${renderEstimateSection("РОБОТИ", workPositions, p.id)}
         ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id)}
-
-        <div class="estimateTotal">
-          <span class="estimateTotalLabel">Разом:</span>
-          <span class="estimateTotalValue">${money(total)}</span>
-        </div>
       `}
     </div>
   `;
