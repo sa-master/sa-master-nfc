@@ -1108,6 +1108,64 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-weight:600;
 }
 
+/* ==== ESTIMATE SECTIONS ==== */
+
+.estimateSection{
+  margin-bottom:.875rem;
+}
+
+.estimateSection:last-child{
+  margin-bottom:0;
+}
+
+.estimateSectionHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 .25rem .5rem;
+  border-bottom:1px solid rgba(120,130,140,.18);
+  margin-bottom:.625rem;
+}
+
+.estimateSectionTitle{
+  font-size:.8125rem;
+  font-weight:800;
+  color:var(--t);
+  text-transform:uppercase;
+  letter-spacing:.6px;
+}
+
+.estimateSectionCount{
+  font-size:.75rem;
+  font-weight:700;
+  color:var(--p);
+  background:rgba(0,122,255,.1);
+  border-radius:.5rem;
+  padding:.1875rem .5rem;
+}
+
+.estimateSectionTotal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:.5rem .25rem 0;
+  margin-top:.375rem;
+  font-size:.8125rem;
+  color:var(--ts);
+}
+
+.estimateSectionTotalLabel{
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  font-size:.6875rem;
+}
+
+.estimateSectionTotalValue{
+  font-weight:750;
+  color:var(--t);
+}
+
 /* ==== ESTIMATE TOTAL ==== */
 
 .estimateTotal{
@@ -2289,7 +2347,7 @@ let customCategory = "other";
 let pricesPending = [];
 
 let pendingImportFile = null;
-let pendingImportData = null;   // результат парсингу
+let pendingImportData = null;
 
 const FEATURE_SUGGESTIONS = [
   "Прихований монтаж",
@@ -2680,6 +2738,9 @@ function renderEstimateBlock(p){
   const count = positions.length;
   const total = getEstimateTotal(p);
 
+  const workPositions = positions.filter(x => x.type === "work");
+  const materialPositions = positions.filter(x => x.type === "material");
+
   return `
     <div class="estimateBlock">
       <div class="estimateHead">
@@ -2703,14 +2764,41 @@ function renderEstimateBlock(p){
           Ще немає позицій.<br>
           Додайте роботи та матеріали
         </div>
-      ` : positions.map((pos) => renderPosition(p.id, pos)).join("")}
+      ` : `
+        ${renderEstimateSection("РОБОТИ", workPositions, p.id)}
+        ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id)}
 
-      ${count > 0 ? `
         <div class="estimateTotal">
           <span class="estimateTotalLabel">Разом:</span>
           <span class="estimateTotalValue">${money(total)}</span>
         </div>
-      ` : ""}
+      `}
+    </div>
+  `;
+}
+
+function renderEstimateSection(label, items, projectId){
+  if(!items.length) return "";
+
+  const sectionTotal = items.reduce((sum, pos) => {
+    const price = Number(pos.price) || 0;
+    const qty = Number(pos.qty) || 0;
+    return sum + price * qty;
+  }, 0);
+
+  return `
+    <div class="estimateSection">
+      <div class="estimateSectionHead">
+        <span class="estimateSectionTitle">${label}</span>
+        <span class="estimateSectionCount">${items.length}</span>
+      </div>
+
+      ${items.map((pos) => renderPosition(projectId, pos)).join("")}
+
+      <div class="estimateSectionTotal">
+        <span class="estimateSectionTotalLabel">${label}:</span>
+        <span class="estimateSectionTotalValue">${money(sectionTotal)}</span>
+      </div>
     </div>
   `;
 }
@@ -3781,23 +3869,18 @@ function openImportSheet(parsed, file){
     items.filter(i => Number.isFinite(i.retailPrice) || Number.isFinite(i.masterPrice) || Number.isFinite(i.price)).length
   );
 
-  // Постачальник
   document.getElementById("impSupplierName").value = "";
   document.getElementById("impSupplierFullName").value = parsed.supplierFullName || "";
 
-  // Підказки постачальників
   const known = collectKnownSupplierNames();
   document.getElementById("impSupplierList").innerHTML = known
     .map(n => `<option value="${escapeHtml(n)}"></option>`)
     .join("");
 
-  // Валюта
   document.getElementById("impCurrency").value = parsed.currency || "";
 
-  // Курс
   updateImportRateField();
 
-  // Прев'ю
   renderImportPreview(items);
 
   document.getElementById("importSheet").classList.add("open");
@@ -3904,7 +3987,6 @@ function confirmImport(){
     return;
   }
 
-  // Поки що — тільки перевірка і тост
   console.log("[import] Дані для імпорту:", {
     supplierName,
     supplierFullName,
