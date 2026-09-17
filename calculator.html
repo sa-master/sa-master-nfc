@@ -1,4 +1,4986 @@
-/* ==== Дії над об'єктом ==== */
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content">
+
+<title>sa-master.pro — Кошторис. Звітність. Аудит.</title>
+<meta name="theme-color" content="#E3F0FA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+  --p:#007AFF;
+  --t:#1C1C1E;
+  --ts:#3A3A3C;
+  --tm:#8E8E93;
+  --bg:#E3F0FA;
+  --bgs:#F2F6FB;
+  --bge:#EAF1FA;
+  --gb:rgba(255,255,255,.55);
+  --gbr:rgba(255,255,255,.7);
+  --gs:0 .5rem 2rem rgba(0,0,0,.08);
+  --card:#FFFFFF;
+  --red:#FF3B30;
+  --green:#34C759;
+  --orange:#FF9500;
+  --xls:#1D6F42;
+  --dot-gray:#C7C7CC;
+  --dot-dark:#1C1C1E;
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --p:#0A84FF;
+    --t:#F2F2F7;
+    --ts:#C7C7CC;
+    --tm:#8E8E93;
+    --bg:#1C1C1E;
+    --bgs:#2C2C2E;
+    --bge:#1C1C1E;
+    --gb:rgba(44,44,46,.6);
+    --gbr:rgba(255,255,255,.12);
+    --gs:0 .5rem 2rem rgba(0,0,0,.4);
+    --card:#2C2C2E;
+    --xls:#5FB37C;
+    --dot-dark:#F2F2F7;
+  }
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
+
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;
+  color:var(--t);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+  transition:background .3s,color .3s;
+  touch-action:manipulation;
+}
+
+button,input,textarea,select{font:inherit;color:inherit}
+button{border:0;background:none;cursor:pointer;touch-action:manipulation}
+
+.bg{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  overflow:hidden;
+  background:linear-gradient(180deg,var(--bgs) 0%,var(--bg) 25%,var(--bge) 75%,var(--bg) 100%);
+}
+
+.bg::before{
+  content:"";
+  position:absolute;
+  inset:-30%;
+  background:
+    radial-gradient(ellipse 60% 50% at 25% 20%,rgba(0,122,255,.15) 0%,transparent 60%),
+    radial-gradient(ellipse 55% 45% at 75% 75%,rgba(88,86,214,.12) 0%,transparent 55%);
+  animation:aur 20s ease-in-out infinite alternate;
+}
+
+@keyframes aur{
+  0%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(3%,-2%) scale(1.05)}
+  100%{transform:translate(-2%,1.5%) scale(1.02)}
+}
+
+.app{
+  position:relative;
+  z-index:1;
+  width:min(30rem,calc(100% - 1rem));
+  height:100dvh;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  padding:calc(.75rem + var(--sat)) 0 calc(.75rem + var(--sab));
+  overflow:hidden;
+}
+
+.hero{
+  flex:0 0 auto;
+  position:relative;
+  padding:.875rem 1rem;
+  border-radius:1.5rem;
+  background:var(--gb);
+  backdrop-filter:blur(1.75rem) saturate(220%);
+  -webkit-backdrop-filter:blur(1.75rem) saturate(220%);
+  border:1px solid var(--gbr);
+  box-shadow:var(--gs);
+  margin-bottom:.75rem;
+}
+
+.heroRow{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  min-width:0;
+}
+
+.heroLogo{
+  flex:0 0 auto;
+  width:3rem;
+  height:3rem;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:rgba(0,122,255,.1);
+}
+
+.heroLogo img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+}
+
+.heroLogoFallback{
+  font-family:'Russo One',sans-serif;
+  font-size:1.375rem;
+  color:var(--p);
+  letter-spacing:-1px;
+}
+
+.heroDivider{
+  width:1px;
+  height:2.25rem;
+  background:rgba(60,60,67,.15);
+  flex-shrink:0;
+}
+
+@media (prefers-color-scheme: dark){
+  .heroDivider{background:rgba(255,255,255,.15)}
+}
+
+.heroText{
+  flex:1 1 auto;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.heroTitle{
+  font-family:'Russo One',sans-serif;
+  font-size:1.25rem;
+  font-weight:400;
+  letter-spacing:.3px;
+  color:var(--t);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  line-height:1;
+}
+
+.heroTitle .pro{
+  color:var(--tm);
+  font-size:.875rem;
+  font-weight:400;
+  margin-left:2px;
+}
+
+.heroSub{
+  font-size:.75rem;
+  color:var(--ts);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  letter-spacing:.1px;
+}
+
+.heroAction{
+  flex:0 0 auto;
+  width:2rem;
+  height:2rem;
+  border-radius:.625rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform .12s;
+}
+
+.heroAction:active{transform:scale(.92)}
+
+.heroAction svg{
+  width:1.125rem;
+  height:1.125rem;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.main{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.emptyState{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:1.5rem 1.25rem;
+  text-align:center;
+  overflow-y:auto;
+  gap:1rem;
+}
+
+.emptyIntro{
+  background:var(--gb);
+  backdrop-filter:blur(1.5rem) saturate(200%);
+  -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
+  border:1px solid var(--gbr);
+  border-radius:1.5rem;
+  box-shadow:var(--gs);
+  padding:1.375rem 1.25rem;
+  max-width:22rem;
+  width:100%;
+  text-align:left;
+}
+
+.emptyIntro h2{
+  font-size:1rem;
+  font-weight:700;
+  color:var(--t);
+  margin-bottom:.75rem;
+  text-align:center;
+}
+
+.emptyIntro ol{
+  padding-left:1.25rem;
+  color:var(--ts);
+  font-size:.875rem;
+  line-height:1.7;
+}
+
+.emptyIntro li{margin-bottom:.375rem}
+.emptyIntro li:last-child{margin-bottom:0}
+
+.primaryButton{
+  height:3.125rem;
+  min-width:15rem;
+  padding:0 1.375rem;
+  border-radius:1.125rem;
+  background:linear-gradient(135deg,#007AFF,#0A84FF);
+  color:#fff;
+  font-size:.9375rem;
+  font-weight:700;
+  box-shadow:0 .5rem 1.5rem rgba(0,122,255,.28);
+  transition:transform .15s;
+}
+
+.primaryButton:active{transform:scale(.97)}
+
+.listWrap{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.listHeader{
+  flex:0 0 auto;
+  padding:.25rem .375rem .625rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.listHeader strong{
+  font-size:.9375rem;
+  font-weight:700;
+  color:var(--t);
+}
+
+.addSmallButton{
+  height:2rem;
+  padding:0 .75rem;
+  border-radius:.75rem;
+  background:linear-gradient(135deg,#007AFF,#0A84FF);
+  color:#fff;
+  font-size:.75rem;
+  font-weight:700;
+  box-shadow:0 .25rem .625rem rgba(0,122,255,.24);
+}
+
+.list{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding:0 .125rem .75rem;
+}
+
+.list::-webkit-scrollbar{display:none}
+
+.projectCard{
+  position:relative;
+  background:var(--gb);
+  backdrop-filter:blur(1.5rem) saturate(200%);
+  -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
+  border:1px solid var(--gbr);
+  border-radius:1.25rem;
+  box-shadow:var(--gs);
+  padding:.8125rem .9375rem;
+  margin-bottom:.5rem;
+  display:flex;
+  gap:.6875rem;
+  align-items:flex-start;
+}
+
+.projectDot{
+  flex:0 0 auto;
+  width:.5625rem;
+  height:.5625rem;
+  border-radius:50%;
+  background:var(--dot-gray);
+  margin-top:.375rem;
+  box-shadow:0 0 0 3px rgba(199,199,204,.25);
+}
+
+.projectDot.status-estimate{background:var(--dot-gray);box-shadow:0 0 0 3px rgba(199,199,204,.25)}
+.projectDot.status-work{background:var(--green);box-shadow:0 0 0 3px rgba(52,199,89,.25)}
+.projectDot.status-done{background:var(--dot-dark);box-shadow:0 0 0 3px rgba(28,28,30,.18)}
+
+.projectBody{flex:1 1 auto;min-width:0}
+
+.projectTitleRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:.5rem;
+}
+
+.projectTitle{
+  font-size:.9375rem;
+  font-weight:750;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+  color:var(--t);
+  flex:1 1 auto;
+  min-width:0;
+  cursor:pointer;
+}
+
+.projectRight{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:.25rem;
+}
+
+.projectUrgent{font-size:.875rem;line-height:1}
+
+.projectMenuButton{
+  width:1.625rem;
+  height:1.625rem;
+  border-radius:.5rem;
+  background:rgba(120,130,140,.1);
+  color:var(--tm);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.0625rem;
+  font-weight:700;
+  line-height:0;
+  padding-bottom:.25rem;
+}
+
+.projectMenuButton:active{background:rgba(120,130,140,.2)}
+
+.projectClient{
+  margin-top:.1875rem;
+  color:var(--ts);
+  font-size:.8125rem;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+  cursor:pointer;
+}
+
+.projectAddress{
+  margin-top:.0625rem;
+  color:var(--tm);
+  font-size:.75rem;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+  cursor:pointer;
+}
+
+.projectDivider{
+  height:1px;
+  background:rgba(120,130,140,.15);
+  margin:.5rem 0 .375rem;
+}
+
+.projectMeta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+  font-size:.75rem;
+  color:var(--ts);
+  cursor:pointer;
+}
+
+.projectStage{font-weight:650}
+.projectAmount{font-weight:750;color:var(--t);white-space:nowrap}
+.projectDetails{margin-top:.25rem;color:var(--tm);font-size:.6875rem;line-height:1.3;overflow-wrap:anywhere}
+
+.sheet{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:none;
+  align-items:flex-end;
+  background:rgba(0,0,0,.35);
+  backdrop-filter:blur(1rem);
+  -webkit-backdrop-filter:blur(1rem);
+}
+
+.sheet.open{display:flex}
+
+.panel{
+  width:100%;
+  max-width:30rem;
+  max-height:90dvh;
+  margin:0 auto;
+  background:var(--bg);
+  border-radius:1.75rem 1.75rem 0 0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding-bottom:var(--sab);
+  animation:slideUp .28s cubic-bezier(.22,.61,.36,1);
+  border-top:1px solid var(--gbr);
+}
+
+.panel.tall{height:90dvh}
+
+@keyframes slideUp{
+  from{transform:translateY(2rem);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+
+.panelHead{
+  flex:0 0 auto;
+  padding:1rem 1.125rem .5rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+}
+
+.panelHead strong{
+  font-size:1.125rem;
+  font-weight:750;
+  color:var(--t);
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.panelHeadActions{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:.375rem;
+}
+
+.catalogEditButton{
+  height:2rem;
+  padding:0 .75rem;
+  border-radius:.625rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.75rem;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.catalogEditButton.active{
+  background:var(--p);
+  color:#fff;
+}
+
+.close{
+  width:2.25rem;
+  height:2.25rem;
+  border-radius:50%;
+  font-size:1.5rem;
+  color:var(--tm);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  background:rgba(120,130,140,.12);
+}
+
+.panelBody{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  padding:0 1rem 1rem;
+  scrollbar-width:none;
+}
+
+.panelBody::-webkit-scrollbar{display:none}
+
+.panelFooter{
+  flex:0 0 auto;
+  padding:.625rem 1rem calc(.75rem + var(--sab));
+  display:flex;
+  gap:.5rem;
+  border-top:1px solid var(--gbr);
+  background:var(--bg);
+}
+
+.panelFooter button{
+  flex:1;
+  height:3rem;
+  border-radius:1rem;
+  font-size:.9375rem;
+  font-weight:700;
+  transition:transform .12s;
+}
+
+.panelFooter button:active{transform:scale(.98)}
+
+.btnGhost{
+  background:rgba(120,130,140,.12);
+  color:var(--ts);
+}
+
+.btnPrimary{
+  background:linear-gradient(135deg,#007AFF,#0A84FF);
+  color:#fff;
+  box-shadow:0 .375rem 1rem rgba(0,122,255,.22);
+}
+
+.btnPrimary:disabled{
+  background:rgba(120,130,140,.2);
+  color:var(--tm);
+  box-shadow:none;
+}
+
+.formGroup{margin-bottom:.875rem}
+
+.formLabel{
+  display:block;
+  color:var(--tm);
+  font-size:.75rem;
+  margin:0 .25rem .375rem;
+  font-weight:600;
+  letter-spacing:.2px;
+}
+
+.formInput,
+.formTextarea{
+  width:100%;
+  border:1px solid var(--gbr);
+  outline:0;
+  border-radius:.875rem;
+  background:var(--gb);
+  backdrop-filter:blur(1rem);
+  -webkit-backdrop-filter:blur(1rem);
+  padding:0 .875rem;
+  font-size:.9375rem;
+  color:var(--t);
+  transition:box-shadow .15s;
+}
+
+.formInput{height:3rem}
+
+.formTextarea{
+  padding:.75rem .875rem;
+  min-height:3.75rem;
+  resize:vertical;
+  line-height:1.4;
+  font-family:inherit;
+}
+
+.formInput:focus,
+.formTextarea:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
+
+.formSelect{
+  width:100%;
+  height:3rem;
+  border:1px solid var(--gbr);
+  outline:0;
+  border-radius:.875rem;
+  background:var(--gb);
+  backdrop-filter:blur(1rem);
+  -webkit-backdrop-filter:blur(1rem);
+  padding:0 .875rem;
+  font-size:.9375rem;
+  color:var(--t);
+  -webkit-appearance:none;
+  appearance:none;
+}
+
+.formSelect:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
+
+.formRow{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.5rem;
+}
+
+.formHint{
+  margin:.25rem .25rem 0;
+  color:var(--tm);
+  font-size:.6875rem;
+  line-height:1.4;
+}
+
+.formHint.auto{
+  color:var(--green);
+  font-weight:600;
+}
+
+.detailsToggle{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:.875rem 1rem;
+  border-radius:.875rem;
+  background:var(--gb);
+  border:1px solid var(--gbr);
+  margin-bottom:.875rem;
+  cursor:pointer;
+  user-select:none;
+}
+
+.detailsToggle:active{background:rgba(0,122,255,.05)}
+
+.detailsToggleText{
+  font-size:.875rem;
+  font-weight:650;
+  color:var(--t);
+}
+
+.detailsToggleIcon{
+  color:var(--p);
+  font-size:1.125rem;
+  transition:transform .2s;
+  line-height:1;
+}
+
+.detailsToggle.open .detailsToggleIcon{transform:rotate(90deg)}
+
+.detailsBlock{display:none;margin-bottom:.875rem}
+.detailsBlock.open{display:block}
+
+.featureTags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.375rem;
+  margin-bottom:.5rem;
+  min-height:1.75rem;
+}
+
+.featureTag{
+  display:inline-flex;
+  align-items:center;
+  gap:.375rem;
+  padding:.375rem .625rem;
+  border-radius:.625rem;
+  background:rgba(0,122,255,.12);
+  color:var(--p);
+  font-size:.8125rem;
+  font-weight:650;
+}
+
+.featureTagRemove{
+  width:1rem;
+  height:1rem;
+  border-radius:50%;
+  background:rgba(0,122,255,.2);
+  color:var(--p);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.875rem;
+  line-height:1;
+  cursor:pointer;
+}
+
+.featureInputRow{
+  display:flex;
+  gap:.375rem;
+}
+
+.featureInputRow .formInput{flex:1 1 auto}
+
+.featureAddButton{
+  flex:0 0 auto;
+  width:3rem;
+  height:3rem;
+  border-radius:.875rem;
+  background:rgba(0,122,255,.12);
+  color:var(--p);
+  font-size:1.375rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:0;
+}
+
+.featureAddButton:active{transform:scale(.95)}
+
+.featureSuggestions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.375rem;
+  margin-top:.5rem;
+}
+
+.featureSuggest{
+  padding:.375rem .625rem;
+  border-radius:.625rem;
+  background:var(--gb);
+  border:1px dashed var(--gbr);
+  color:var(--ts);
+  font-size:.75rem;
+  font-weight:600;
+  cursor:pointer;
+}
+
+.featureSuggest:active{background:rgba(0,122,255,.08)}
+
+.checkRow{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  padding:.75rem .875rem;
+  border-radius:.875rem;
+  background:var(--gb);
+  border:1px solid var(--gbr);
+  cursor:pointer;
+}
+
+.checkBox{
+  flex:0 0 auto;
+  width:1.25rem;
+  height:1.25rem;
+  border-radius:.375rem;
+  border:1.5px solid var(--tm);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .15s;
+}
+
+.checkRow.on .checkBox{
+  background:var(--p);
+  border-color:var(--p);
+}
+
+.checkBox svg{
+  width:.75rem;
+  height:.75rem;
+  stroke:#fff;
+  stroke-width:2.5;
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:0;
+  transition:opacity .15s;
+}
+
+.checkRow.on .checkBox svg{opacity:1}
+
+.checkLabel{flex:1 1 auto;font-size:.875rem;color:var(--t)}
+
+.chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.375rem;
+  margin-bottom:.625rem;
+}
+
+.chips:last-child{margin-bottom:0}
+
+.chips.tight{margin-bottom:.4375rem}
+
+.chip{
+  padding:.5rem .75rem;
+  border-radius:.75rem;
+  background:var(--gb);
+  border:1px solid var(--gbr);
+  color:var(--ts);
+  font-size:.8125rem;
+  font-weight:600;
+  transition:all .15s;
+  white-space:nowrap;
+}
+
+.chip.small{
+  padding:.375rem .625rem;
+  border-radius:.625rem;
+  font-size:.75rem;
+}
+
+.chip.active{
+  background:var(--p);
+  color:#fff;
+  border-color:var(--p);
+  box-shadow:0 .25rem .75rem rgba(0,122,255,.25);
+}
+
+.projectView{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  padding:.25rem 0;
+  padding-bottom:calc(9rem + var(--sab));
+  overflow-y:auto;
+  scrollbar-width:none;
+  gap:.625rem;
+}
+
+.projectView::-webkit-scrollbar{display:none}
+
+.backRow{
+  display:flex;
+  align-items:center;
+  padding:0 .25rem;
+}
+
+.backButton{
+  width:2rem;
+  height:2rem;
+  border-radius:.625rem;
+  background:var(--gb);
+  backdrop-filter:blur(1rem);
+  -webkit-backdrop-filter:blur(1rem);
+  border:1px solid var(--gbr);
+  color:var(--p);
+  font-size:1.125rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:var(--gs);
+  flex:0 0 auto;
+}
+
+.projectHeaderCard{
+  background:var(--gb);
+  backdrop-filter:blur(1.5rem) saturate(200%);
+  -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
+  border:1px solid var(--gbr);
+  border-radius:1.25rem;
+  box-shadow:var(--gs);
+  padding:1rem 1.125rem;
+}
+
+.projectHeaderTitleRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:.625rem;
+}
+
+.projectHeaderTitle{
+  font-size:1.0625rem;
+  font-weight:800;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+  color:var(--t);
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.projectHeaderRight{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:.375rem;
+}
+
+.projectHeaderMeta{
+  margin-top:.5rem;
+  color:var(--ts);
+  font-size:.8125rem;
+  line-height:1.55;
+  overflow-wrap:anywhere;
+}
+
+.projectHeaderMeta b{color:var(--t);font-weight:700}
+
+.detailsRow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.375rem;
+  margin-top:.625rem;
+}
+
+.detailBadge{
+  padding:.3125rem .5625rem;
+  border-radius:.5rem;
+  background:rgba(0,122,255,.08);
+  color:var(--p);
+  font-size:.6875rem;
+  font-weight:650;
+  white-space:nowrap;
+}
+
+.detailBadge.gray{
+  background:rgba(120,130,140,.12);
+  color:var(--ts);
+}
+
+.estimateBlock{
+  background:var(--gb);
+  backdrop-filter:blur(1.5rem) saturate(200%);
+  -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
+  border:1px solid var(--gbr);
+  border-radius:1.25rem;
+  box-shadow:var(--gs);
+  padding:.875rem 1rem 1rem;
+}
+
+.estimateHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:.75rem;
+}
+
+.estimateHead strong{
+  font-size:.9375rem;
+  font-weight:750;
+  color:var(--t);
+}
+
+.estimateHead .estimateCount{
+  font-size:.75rem;
+  color:var(--tm);
+  font-weight:600;
+}
+
+.emptyEstimate{
+  text-align:center;
+  color:var(--tm);
+  font-size:.8125rem;
+  line-height:1.5;
+  padding:1.25rem .5rem;
+}
+
+.position{
+  background:rgba(255,255,255,.4);
+  border:1px solid var(--gbr);
+  border-radius:.75rem;
+  padding:.5rem .75rem;
+  margin-bottom:.375rem;
+}
+
+@media (prefers-color-scheme: dark){
+  .position{background:rgba(255,255,255,.04)}
+}
+
+.positionRow1{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+}
+
+.positionName{
+  font-size:.8125rem;
+  font-weight:650;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+  color:var(--t);
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.qtyControl{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:0;
+  background:rgba(120,130,140,.1);
+  border-radius:.5rem;
+  overflow:hidden;
+}
+
+.qtyBtn{
+  width:1.625rem;
+  height:1.625rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--p);
+  font-size:1rem;
+  font-weight:600;
+  line-height:0;
+}
+
+.qtyBtn:active{background:rgba(0,122,255,.1)}
+
+.qtyValue{
+  min-width:1.5rem;
+  text-align:center;
+  font-size:.75rem;
+  font-weight:750;
+  color:var(--t);
+  padding:0 .1875rem;
+}
+
+.positionRow2{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+  margin-top:.25rem;
+}
+
+.positionPrice{
+  font-size:.6875rem;
+  color:var(--ts);
+  font-weight:600;
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  text-align:left;
+}
+
+.positionPrice.set{color:var(--ts)}
+.positionPrice.notSet{color:var(--orange)}
+
+.positionRight{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+}
+
+.positionTotal{
+  font-size:.8125rem;
+  font-weight:750;
+  color:var(--t);
+  white-space:nowrap;
+}
+
+.positionTotal.notSet{
+  color:var(--tm);
+  font-size:.6875rem;
+  font-weight:600;
+}
+
+.positionDelete{
+  flex:0 0 auto;
+  width:1.5rem;
+  height:1.5rem;
+  border-radius:50%;
+  background:rgba(255,59,48,.1);
+  color:var(--red);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.875rem;
+  line-height:1;
+}
+
+.estimateSection{
+  margin-bottom:.75rem;
+}
+
+.estimateSection:last-child{
+  margin-bottom:0;
+}
+
+.estimateSectionHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 .25rem .375rem;
+  border-bottom:1px solid rgba(120,130,140,.18);
+  margin-bottom:.5rem;
+}
+
+.estimateSectionTitle{
+  font-size:.8125rem;
+  font-weight:800;
+  color:var(--t);
+  text-transform:uppercase;
+  letter-spacing:.6px;
+}
+
+.estimateSectionCount{
+  font-size:.6875rem;
+  font-weight:700;
+  color:var(--p);
+  background:rgba(0,122,255,.1);
+  border-radius:.5rem;
+  padding:.125rem .4375rem;
+}
+
+.estimateSectionTotal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:.375rem .25rem 0;
+  margin-top:.25rem;
+  font-size:.75rem;
+  color:var(--ts);
+}
+
+.estimateSectionTotalLabel{
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  font-size:.6875rem;
+}
+
+.estimateSectionTotalValue{
+  font-weight:750;
+  color:var(--t);
+}
+
+/* ==== DISCOUNT ==== */
+
+.discountBlock{
+  margin-top:.875rem;
+  padding-top:.75rem;
+  border-top:1px solid rgba(120,130,140,.18);
+}
+
+.discountLabel{
+  font-size:.75rem;
+  font-weight:750;
+  color:var(--ts);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:.5rem;
+  padding:0 .25rem;
+}
+
+.discountTotal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:.5rem .25rem 0;
+  font-size:.875rem;
+  color:var(--ts);
+}
+
+.discountTotalLabel{
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  font-size:.75rem;
+}
+
+.discountTotalValue{
+  font-size:1.125rem;
+  font-weight:800;
+  color:var(--t);
+}
+
+.discountDiff{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:.25rem .25rem 0;
+  font-size:.75rem;
+  color:var(--green);
+  font-weight:650;
+}
+
+.floatingPanel{
+  position:fixed;
+  left:50%;
+  bottom:calc(.75rem + var(--sab));
+  transform:translateX(-50%);
+  width:min(30rem,calc(100% - 1rem));
+  z-index:20;
+  background:var(--gb);
+  backdrop-filter:blur(1.75rem) saturate(220%);
+  -webkit-backdrop-filter:blur(1.75rem) saturate(220%);
+  border:1px solid var(--gbr);
+  border-radius:1.5rem;
+  box-shadow:0 .5rem 2rem rgba(0,0,0,.12);
+  padding:.625rem .75rem .75rem;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+}
+
+.floatingTotal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 .25rem .375rem;
+  border-bottom:1px solid rgba(120,130,140,.15);
+}
+
+.floatingTotalLabel{
+  color:var(--ts);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  font-size:.6875rem;
+}
+
+.floatingTotalValue{
+  font-size:1.0625rem;
+  font-weight:800;
+  color:var(--t);
+}
+
+.floatingButtons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.5rem;
+}
+
+.addButton{
+  height:2.75rem;
+  border-radius:.875rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.875rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.375rem;
+  transition:transform .12s;
+}
+
+.addButton:active{transform:scale(.98)}
+
+.catalogSearch{
+  flex:0 0 auto;
+  width:100%;
+  height:2.625rem;
+  border:1px solid var(--gbr);
+  outline:0;
+  border-radius:.875rem;
+  background:var(--gb);
+  backdrop-filter:blur(1rem);
+  -webkit-backdrop-filter:blur(1rem);
+  padding:0 .875rem;
+  font-size:.9375rem;
+  color:var(--t);
+  margin-bottom:.5rem;
+}
+
+.catalogSearch:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
+
+.catalogList{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  scrollbar-width:none;
+  padding-bottom:.5rem;
+}
+
+.catalogList::-webkit-scrollbar{display:none}
+
+.catalogItem{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  padding:.5rem .75rem;
+  border-radius:.75rem;
+  background:var(--gb);
+  border:1px solid var(--gbr);
+  margin-bottom:.3125rem;
+  transition:transform .12s, background .15s;
+}
+
+.catalogItem.selected{
+  background:rgba(0,122,255,.08);
+  border-color:rgba(0,122,255,.25);
+}
+
+.catalogItemBody{
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.catalogItemName{
+  font-size:.8125rem;
+  font-weight:650;
+  line-height:1.25;
+  overflow-wrap:anywhere;
+  color:var(--t);
+}
+
+.catalogItem.selected .catalogItemName{
+  color:var(--p);
+  font-weight:700;
+}
+
+.catalogItemMeta{
+  font-size:.6875rem;
+  color:var(--tm);
+  margin-top:.125rem;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+
+.catalogItemMeta.notSet{
+  color:var(--orange);
+}
+
+.catalogCounter{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  background:rgba(120,130,140,.12);
+  border-radius:.5rem;
+  overflow:hidden;
+  height:1.75rem;
+}
+
+.catalogItem.selected .catalogCounter{
+  background:var(--p);
+}
+
+.counterBtn{
+  width:1.75rem;
+  height:1.75rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--p);
+  font-size:1rem;
+  font-weight:600;
+  line-height:0;
+}
+
+.catalogItem.selected .counterBtn{color:#fff}
+
+.counterBtn:active{background:rgba(0,0,0,.06)}
+
+.counterBtn.hidden{visibility:hidden;pointer-events:none}
+
+.counterValue{
+  min-width:1.25rem;
+  text-align:center;
+  font-size:.75rem;
+  font-weight:750;
+  color:var(--p);
+  padding:0 .125rem;
+}
+
+.catalogItem.selected .counterValue{color:#fff}
+
+.catalogManageRow{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:.375rem;
+}
+
+.manageBtn{
+  width:1.75rem;
+  height:1.75rem;
+  border-radius:.5rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.875rem;
+  line-height:0;
+}
+
+.manageBtn.edit{
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+}
+
+.manageBtn.delete{
+  background:rgba(255,59,48,.1);
+  color:var(--red);
+  font-size:1rem;
+}
+
+.catalogEmpty{
+  text-align:center;
+  color:var(--tm);
+  font-size:.8125rem;
+  line-height:1.5;
+  padding:2rem 1rem;
+}
+
+.addCustomButton{
+  width:100%;
+  height:2.625rem;
+  border-radius:.875rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.8125rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.375rem;
+  margin-top:.25rem;
+  flex:0 0 auto;
+}
+
+.addCustomButton:active{transform:scale(.98)}
+
+.importExcelButton{
+  width:100%;
+  height:2.625rem;
+  border-radius:.875rem;
+  background:rgba(29,111,66,.1);
+  color:var(--xls);
+  font-size:.8125rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.4375rem;
+  margin-top:.25rem;
+  margin-bottom:.4375rem;
+  flex:0 0 auto;
+  transition:transform .12s;
+}
+
+.importExcelButton:active{
+  transform:scale(.98);
+}
+
+.importExcelButton svg{
+  width:1.25rem;
+  height:1.25rem;
+  flex:0 0 auto;
+}
+
+.pricesList{
+  display:flex;
+  flex-direction:column;
+  gap:.75rem;
+}
+
+.priceRow{
+  display:flex;
+  flex-direction:column;
+  gap:.375rem;
+}
+
+.priceRowName{
+  font-size:.875rem;
+  font-weight:650;
+  color:var(--t);
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+
+.priceRowHint{
+  font-size:.6875rem;
+  color:var(--tm);
+  font-weight:500;
+}
+
+.importPreviewList{
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  margin-top:.5rem;
+}
+
+.importPreviewItem{
+  background:rgba(255,255,255,.4);
+  border:1px solid var(--gbr);
+  border-radius:.75rem;
+  padding:.625rem .75rem;
+}
+
+@media (prefers-color-scheme: dark){
+  .importPreviewItem{background:rgba(255,255,255,.04)}
+}
+
+.importPreviewName{
+  font-size:.8125rem;
+  font-weight:650;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+  color:var(--t);
+}
+
+.importPreviewMeta{
+  margin-top:.25rem;
+  font-size:.6875rem;
+  color:var(--tm);
+  line-height:1.4;
+}
+
+.importPreviewMeta b{color:var(--ts);font-weight:650}
+
+.importPreviewMore{
+  text-align:center;
+  color:var(--tm);
+  font-size:.75rem;
+  padding:.5rem 0;
+}
+
+.importSummaryBox{
+  background:rgba(0,122,255,.06);
+  border:1px solid rgba(0,122,255,.15);
+  border-radius:.875rem;
+  padding:.75rem .875rem;
+  margin-bottom:.875rem;
+}
+
+.importSummaryRow{
+  display:flex;
+  justify-content:space-between;
+  gap:.5rem;
+  font-size:.8125rem;
+  color:var(--ts);
+  padding:.25rem 0;
+}
+
+.importSummaryRow b{
+  color:var(--t);
+  font-weight:700;
+}
+
+.actionSheetRow{
+  display:flex;
+  align-items:center;
+  gap:.875rem;
+  padding:.875rem 1rem;
+  background:var(--gb);
+  backdrop-filter:blur(1.5rem) saturate(200%);
+  -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
+  border:1px solid var(--gbr);
+  border-radius:1rem;
+  box-shadow:var(--gs);
+  margin-bottom:.5rem;
+  cursor:pointer;
+  transition:transform .12s;
+}
+
+.actionSheetRow:active{transform:scale(.985)}
+
+.actionSheetIcon{
+  flex:0 0 auto;
+  width:2.25rem;
+  height:2.25rem;
+  border-radius:.75rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.125rem;
+}
+
+.actionSheetIcon.danger{background:rgba(255,59,48,.1);color:var(--red)}
+.actionSheetIcon.warn{background:rgba(255,149,0,.12);color:#FF9500}
+
+.actionSheetText{
+  flex:1 1 auto;
+  min-width:0;
+  font-size:.9375rem;
+  font-weight:650;
+  color:var(--t);
+}
+
+.actionSheetText.danger{color:var(--red)}
+
+.fullscreen{
+  position:fixed;
+  inset:0;
+  z-index:150;
+  background:var(--bg);
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.fullscreen.open{display:flex}
+
+.fsBody{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  scrollbar-width:none;
+  padding:calc(1rem + var(--sat)) 1rem calc(1rem + var(--sab));
+  width:min(30rem,100%);
+  margin:0 auto;
+}
+
+.fsBody::-webkit-scrollbar{display:none}
+
+.fsHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:1.25rem;
+}
+
+.fsHead strong{
+  font-size:1.25rem;
+  font-weight:800;
+  color:var(--t);
+}
+
+.fsHead .close{background:rgba(120,130,140,.12)}
+
+.fsSection{margin-bottom:1.5rem}
+
+.fsSectionTitle{
+  font-size:.75rem;
+  font-weight:700;
+  color:var(--tm);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:.625rem;
+  padding:0 .25rem;
+}
+
+.fsCard{
+  background:var(--gb);
+  backdrop-filter:blur(1.5rem) saturate(200%);
+  -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
+  border:1px solid var(--gbr);
+  border-radius:1.25rem;
+  box-shadow:var(--gs);
+  padding:1rem 1.125rem;
+}
+
+.fsCard + .fsCard{margin-top:.5rem}
+
+.personRow{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+}
+
+.personAvatar{
+  flex:0 0 auto;
+  width:2.5rem;
+  height:2.5rem;
+  border-radius:50%;
+  background:rgba(0,122,255,.12);
+  color:var(--p);
+  font-size:1rem;
+  font-weight:750;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-transform:uppercase;
+}
+
+.personBody{flex:1 1 auto;min-width:0}
+
+.personName{
+  font-size:.9375rem;
+  font-weight:700;
+  color:var(--t);
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+
+.personMeta{
+  margin-top:.125rem;
+  color:var(--tm);
+  font-size:.75rem;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+
+.personDelete{
+  flex:0 0 auto;
+  width:2rem;
+  height:2rem;
+  border-radius:50%;
+  background:rgba(255,59,48,.1);
+  color:var(--red);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.125rem;
+  line-height:1;
+}
+
+.emptyTeam{
+  text-align:center;
+  color:var(--tm);
+  font-size:.8125rem;
+  line-height:1.5;
+  padding:1.5rem .875rem;
+}
+
+.addPersonButton{
+  width:100%;
+  height:2.875rem;
+  margin-top:.625rem;
+  border-radius:.875rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.875rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.375rem;
+}
+
+.addPersonButton:active{transform:scale(.98)}
+
+.fsFooter{
+  flex:0 0 auto;
+  padding:.75rem 1rem calc(1rem + var(--sab));
+  border-top:1px solid var(--gbr);
+  background:var(--bg);
+  width:100%;
+}
+
+.fsFooterInner{
+  width:min(30rem,100%);
+  margin:0 auto;
+}
+
+.fsFooter button{
+  width:100%;
+  height:3rem;
+  border-radius:1rem;
+  background:linear-gradient(135deg,#007AFF,#0A84FF);
+  color:#fff;
+  font-size:.9375rem;
+  font-weight:700;
+  box-shadow:0 .375rem 1rem rgba(0,122,255,.22);
+}
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:calc(1.5rem + var(--sab));
+  transform:translateX(-50%) translateY(1.25rem);
+  background:var(--t);
+  color:var(--bg);
+  padding:.625rem 1.125rem;
+  border-radius:.75rem;
+  font-size:.8125rem;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s, transform .2s;
+  z-index:200;
+  max-width:90%;
+  text-align:center;
+  box-shadow:0 .5rem 1.5rem rgba(0,0,0,.2);
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+.hidden{display:none !important}
+
+@media (max-width:26rem){
+  .heroTitle{font-size:1.125rem}
+  .heroSub{font-size:.6875rem}
+  .projectView{padding-bottom:calc(8.5rem + var(--sab))}
+}
+</style>
+</head>
+
+<body>
+
+<div class="bg"></div>
+
+<div class="app" id="app">
+
+  <section class="hero" id="hero"></section>
+
+  <main class="main" id="main"></main>
+
+</div>
+
+<!-- SHEET: NEW/EDIT PROJECT -->
+
+<div class="sheet" id="projectSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong id="projectSheetTitle">Новий об'єкт</strong>
+      <button class="close" onclick="closeProjectSheet()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="formGroup">
+        <label class="formLabel">Назва об'єкта *</label>
+        <input class="formInput" id="npTitle" placeholder="ЖК Файна Таун, кв. 45" autocomplete="off">
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Ім'я замовника</label>
+        <input class="formInput" id="npClientName" placeholder="Іван Петренко або @ivan_p" autocomplete="off">
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Телефон</label>
+        <input class="formInput" id="npClientPhone" placeholder="+380 67 123 45 67" inputmode="tel" autocomplete="off">
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Адреса</label>
+        <input class="formInput" id="npAddress" placeholder="Київ, вул. Салютна, 2" autocomplete="off">
+      </div>
+
+      <div class="detailsToggle" id="detailsToggle" onclick="toggleDetails()">
+        <span class="detailsToggleText">Деталі об'єкта</span>
+        <span class="detailsToggleIcon">›</span>
+      </div>
+
+      <div class="detailsBlock" id="detailsBlock">
+        <div class="formGroup">
+          <label class="formLabel">Тип об'єкта</label>
+          <div class="chips" id="npTypeChips">
+            <button type="button" class="chip" data-value="">—</button>
+            <button type="button" class="chip" data-value="Квартира">Квартира</button>
+            <button type="button" class="chip" data-value="Будинок">Будинок</button>
+            <button type="button" class="chip" data-value="Офіс">Офіс</button>
+            <button type="button" class="chip" data-value="Котельня">Котельня</button>
+            <button type="button" class="chip" data-value="Комерційне">Комерційне</button>
+          </div>
+        </div>
+
+        <div class="formGroup">
+          <label class="formLabel">Тип робіт</label>
+          <div class="chips" id="npWorkChips">
+            <button type="button" class="chip" data-value="">—</button>
+            <button type="button" class="chip" data-value="Чорновий монтаж">Чорновий</button>
+            <button type="button" class="chip" data-value="Чистовий монтаж">Чистовий</button>
+            <button type="button" class="chip" data-value="Монтаж котельні">Котельня</button>
+            <button type="button" class="chip" data-value="Повний цикл">Повний цикл</button>
+          </div>
+        </div>
+
+        <div class="formRow">
+          <div class="formGroup">
+            <label class="formLabel">Площа, м²</label>
+            <input class="formInput" id="npArea" inputmode="decimal" placeholder="65" autocomplete="off">
+          </div>
+          <div class="formGroup">
+            <label class="formLabel">Санвузлів</label>
+            <input class="formInput" id="npBathrooms" inputmode="numeric" placeholder="1" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Особливості</label>
+          <div class="featureTags" id="npFeatureTags"></div>
+          <div class="featureInputRow">
+            <input class="formInput" id="npFeatureInput" placeholder="Своя особливість" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();addFeatureFromInput()}">
+            <button type="button" class="featureAddButton" onclick="addFeatureFromInput()">＋</button>
+          </div>
+          <div class="featureSuggestions" id="npFeatureSuggestions"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeProjectSheet()">Скасувати</button>
+      <button class="btnPrimary" id="projectSheetSaveBtn" onclick="saveProjectSheet()">Створити</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: CATALOG -->
+
+<div class="sheet" id="catalogSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong id="catalogTitle">Вибір</strong>
+      <div class="panelHeadActions">
+        <button class="catalogEditButton" id="catalogEditButton" onclick="toggleCatalogManage()">✎ Каталог</button>
+        <button class="close" onclick="closeCatalog()">×</button>
+      </div>
+    </div>
+
+    <div class="panelBody" style="display:flex;flex-direction:column;padding-bottom:0">
+      <input
+        class="catalogSearch"
+        id="catalogSearch"
+        placeholder="Пошук позиції…"
+        autocomplete="off"
+        oninput="renderCatalogList()"
+      >
+
+      <div class="chips tight" id="catalogChips" style="display:none"></div>
+      <div class="chips tight" id="catalogBrandChips" style="display:none"></div>
+      <div class="chips tight" id="catalogSystemChips" style="display:none"></div>
+
+      <div class="catalogList" id="catalogList"></div>
+
+      <button class="importExcelButton" id="importExcelButton" onclick="openImportFile()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 3 14 8 19 8"/>
+          <text x="12" y="17.5" font-size="5.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="-apple-system,sans-serif">XLS</text>
+        </svg>
+        <span>Імпорт з Excel</span>
+      </button>
+
+      <button class="addCustomButton" onclick="openCustomPosition()">
+        <span style="font-size:1.125rem;line-height:1">＋</span>
+        <span id="addCustomLabel">Додати свою</span>
+      </button>
+    </div>
+
+    <div class="panelFooter" id="catalogFooter">
+      <button class="btnGhost" onclick="closeCatalog()">Скасувати</button>
+      <button class="btnPrimary" id="catalogAddBtn" disabled onclick="applyCatalogSelection()">Оберіть позиції</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: EDIT CATALOG ITEM -->
+
+<div class="sheet" id="catalogEditSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong>Редагувати позицію</strong>
+      <button class="close" onclick="closeCatalogItemEditor()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="formGroup">
+        <label class="formLabel">Назва *</label>
+        <input class="formInput" id="ceName" placeholder="Назва" autocomplete="off">
+      </div>
+
+      <div class="formRow">
+        <div class="formGroup">
+          <label class="formLabel">Ціна, ₴</label>
+          <input class="formInput" id="cePrice" inputmode="decimal" placeholder="0" autocomplete="off">
+        </div>
+        <div class="formGroup">
+          <label class="formLabel">Одиниця</label>
+          <input class="formInput" id="ceUnit" placeholder="шт" autocomplete="off">
+        </div>
+      </div>
+
+      <div id="ceWorkFields" class="hidden">
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Етап</label>
+          <div class="chips" id="ceStageChips">
+            <button type="button" class="chip" data-value="rough">Чорновий монтаж</button>
+            <button type="button" class="chip" data-value="finish">Чистовий монтаж</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="ceMaterialFields" class="hidden">
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Категорія</label>
+          <div class="chips" id="ceCategoryChips">
+            <button type="button" class="chip" data-value="other">Інше</button>
+            <button type="button" class="chip" data-value="water">Водопостачання</button>
+            <button type="button" class="chip" data-value="sewer">Каналізація</button>
+            <button type="button" class="chip" data-value="fittings">Арматура</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeCatalogItemEditor()">Скасувати</button>
+      <button class="btnPrimary" onclick="saveCatalogItemEditor()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: CUSTOM POSITION -->
+
+<div class="sheet" id="customSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong id="customTitle">Нова позиція</strong>
+      <button class="close" onclick="closeCustom()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="formGroup">
+        <label class="formLabel">Назва *</label>
+        <input class="formInput" id="csName" placeholder="Назва роботи або матеріалу" autocomplete="off">
+      </div>
+
+      <div class="formRow">
+        <div class="formGroup">
+          <label class="formLabel">Ціна, ₴</label>
+          <input class="formInput" id="csPrice" inputmode="decimal" placeholder="0" autocomplete="off">
+        </div>
+        <div class="formGroup">
+          <label class="formLabel">Одиниця</label>
+          <input class="formInput" id="csUnit" placeholder="шт" autocomplete="off">
+        </div>
+      </div>
+
+      <div id="csWorkFields" class="hidden">
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Етап</label>
+          <div class="chips" id="csStageChips">
+            <button type="button" class="chip active" data-value="rough">Чорновий монтаж</button>
+            <button type="button" class="chip" data-value="finish">Чистовий монтаж</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="csMaterialFields" class="hidden">
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Категорія</label>
+          <div class="chips" id="csCategoryChips">
+            <button type="button" class="chip active" data-value="other">Інше</button>
+            <button type="button" class="chip" data-value="water">Водопостачання</button>
+            <button type="button" class="chip" data-value="sewer">Каналізація</button>
+            <button type="button" class="chip" data-value="fittings">Арматура</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeCustom()">Скасувати</button>
+      <button class="btnPrimary" onclick="saveCustom()">Додати</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: MULTI PRICE INPUT -->
+
+<div class="sheet" id="pricesSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong>Введіть ціни</strong>
+      <button class="close" onclick="closePricesSheet()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="formHint" style="margin-bottom:.875rem">
+        Ці позиції додані без ціни. Введіть свої, щоб порахувати кошторис.
+      </div>
+      <div class="pricesList" id="pricesList"></div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="skipPrices()">Пропустити</button>
+      <button class="btnPrimary" onclick="savePrices()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: IMPORT PREVIEW -->
+
+<div class="sheet" id="importSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong>Перевірка імпорту</strong>
+      <button class="close" onclick="closeImportSheet()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="formGroup">
+        <label class="formLabel">Постачальник *</label>
+        <input
+          class="formInput"
+          id="impSupplierName"
+          list="impSupplierList"
+          placeholder="Назва постачальника"
+          autocomplete="off"
+        >
+        <datalist id="impSupplierList"></datalist>
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Повна назва з файлу</label>
+        <input class="formInput" id="impSupplierFullName" placeholder="Необов'язково" autocomplete="off">
+      </div>
+
+      <div class="formRow">
+        <div class="formGroup">
+          <label class="formLabel">Валюта *</label>
+          <select class="formSelect" id="impCurrency">
+            <option value="">Оберіть</option>
+            <option value="UAH">UAH</option>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+        <div class="formGroup">
+          <label class="formLabel" id="impRateLabel">Курс, ₴/€</label>
+          <input class="formInput" id="impRate" inputmode="decimal" placeholder="0" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="formHint" id="impRateHint" style="margin-bottom:.875rem">
+        Вкажіть валюту та курс цієї накладної.
+      </div>
+
+      <div class="importSummaryBox">
+        <div class="importSummaryRow">
+          <span>Файл</span>
+          <b id="impFileName">—</b>
+        </div>
+        <div class="importSummaryRow">
+          <span>Знайдено товарів</span>
+          <b id="impItemsCount">0</b>
+        </div>
+        <div class="importSummaryRow">
+          <span>З них з цінами</span>
+          <b id="impItemsWithPrice">0</b>
+        </div>
+      </div>
+
+      <div style="font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin:.5rem .25rem .25rem">
+        Попередній перегляд
+      </div>
+
+      <div class="importPreviewList" id="impPreviewList"></div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeImportSheet()">Скасувати</button>
+      <button class="btnPrimary" onclick="confirmImport()">Імпортувати</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: ACTIONS -->
+
+<div class="sheet" id="actionsSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong id="actionsTitle">Об'єкт</strong>
+      <button class="close" onclick="closeActionsSheet()">×</button>
+    </div>
+
+    <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="actionSheetRow" onclick="actionEdit()">
+        <div class="actionSheetIcon">✎</div>
+        <div class="actionSheetText">Редагувати</div>
+      </div>
+
+      <div class="actionSheetRow" onclick="actionToggleUrgent()">
+        <div class="actionSheetIcon warn">🔥</div>
+        <div class="actionSheetText" id="actionUrgentText">Позначити терміновим</div>
+      </div>
+
+      <div class="actionSheetRow" onclick="actionToggleArchive()">
+        <div class="actionSheetIcon" id="actionArchiveIcon">📦</div>
+        <div class="actionSheetText" id="actionArchiveText">Архівувати</div>
+      </div>
+
+      <div class="actionSheetRow" onclick="actionDelete()">
+        <div class="actionSheetIcon danger">🗑</div>
+        <div class="actionSheetText danger">Видалити</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: ADD PERSON -->
+
+<div class="sheet" id="addPersonSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong>Додати в команду</strong>
+      <button class="close" onclick="closeAddPerson()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="formGroup">
+        <label class="formLabel">Ім'я *</label>
+        <input class="formInput" id="apName" placeholder="Толік" autocomplete="off">
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Телефон (опційно)</label>
+        <input class="formInput" id="apPhone" placeholder="+380 67 123 45 67" inputmode="tel" autocomplete="off">
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Принцип оплати</label>
+        <div class="chips" id="apChips">
+          <button type="button" class="chip active" data-type="percent_of_income">% від доходу</button>
+          <button type="button" class="chip" data-type="per_day">За день</button>
+          <button type="button" class="chip" data-type="per_month">За місяць</button>
+          <button type="button" class="chip" data-type="fixed_per_object">Фіксована</button>
+        </div>
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel" id="apValueLabel">Сума</label>
+        <input class="formInput" id="apValue" inputmode="decimal" placeholder="0">
+        <div class="formHint" id="apValueHint">% від доходу об'єкта</div>
+      </div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeAddPerson()">Скасувати</button>
+      <button class="btnPrimary" onclick="savePerson()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- FULLSCREEN: PROFILE -->
+
+<div class="fullscreen" id="profileScreen">
+  <div class="fsBody">
+
+    <div class="fsHead">
+      <strong>Профіль</strong>
+      <button class="close" onclick="closeProfile()">×</button>
+    </div>
+
+    <div class="fsSection">
+      <div class="fsSectionTitle">Мої дані</div>
+      <div class="fsCard">
+        <div class="formGroup">
+          <label class="formLabel">Ім'я</label>
+          <input class="formInput" id="pfFirstName" placeholder="Сергій" autocomplete="off">
+        </div>
+
+        <div class="formGroup">
+          <label class="formLabel">Прізвище</label>
+          <input class="formInput" id="pfLastName" placeholder="Мельник" autocomplete="off">
+        </div>
+
+        <div class="formGroup">
+          <label class="formLabel">Компанія</label>
+          <input class="formInput" id="pfCompany" placeholder="SA-MASTER.PRO" autocomplete="off">
+        </div>
+
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Телефон</label>
+          <input class="formInput" id="pfPhone" placeholder="+380 97 911 18 71" inputmode="tel" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="fsSection">
+      <div class="fsSectionTitle">Оплата праці</div>
+      <div class="fsCard">
+        <div class="checkRow" id="pfOwnerRow" onclick="toggleOwner()">
+          <div class="checkBox">
+            <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="checkLabel">Я власник — мені залишається залишок</div>
+        </div>
+
+        <div id="pfPayBlock" style="margin-top:.75rem">
+          <div class="formGroup">
+            <label class="formLabel">Принцип оплати</label>
+            <div class="chips" id="pfChips">
+              <button type="button" class="chip active" data-type="percent_of_income">% від доходу</button>
+              <button type="button" class="chip" data-type="per_day">За день</button>
+              <button type="button" class="chip" data-type="per_month">За місяць</button>
+              <button type="button" class="chip" data-type="fixed_per_object">Фіксована</button>
+            </div>
+          </div>
+
+          <div class="formGroup" style="margin-bottom:0">
+            <label class="formLabel" id="pfValueLabel">Сума</label>
+            <input class="formInput" id="pfValue" inputmode="decimal" placeholder="0">
+            <div class="formHint" id="pfValueHint">% від доходу об'єкта</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fsSection">
+      <div class="fsSectionTitle">Команда</div>
+      <div id="teamList"></div>
+
+      <button class="addPersonButton" onclick="openAddPerson()">
+        <span style="font-size:1.25rem;line-height:1">＋</span>
+        <span>Додати людину</span>
+      </button>
+    </div>
+
+  </div>
+
+  <div class="fsFooter">
+    <div class="fsFooterInner">
+      <button onclick="saveProfile()">Готово</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<input
+  type="file"
+  id="importFileInput"
+  accept=".xls,.xlsx,.xlsm"
+  style="display:none"
+>
+
+<script>
+
+const PROJECTS_KEY = "sa_projects";
+const PROFILE_KEY = "sa_profile";
+const TEAM_KEY = "sa_team";
+const CATALOG_KEY = "sa_catalog";
+const EUR_RATE_KEY = "sa_eurRate";
+const USD_RATE_KEY = "sa_usdRate";
+const SUPPLIER_NAMES_KEY = "sa_supplierNames";
+
+/* Дефолтні роботи — тепер із етапами */
+const DEFAULT_WORKS = [
+  { name: "Розведення каналізації", unit: "компл.", stage: "rough" },
+  { name: "Розведення водопостачання", unit: "компл.", stage: "rough" },
+  { name: "Розведення опалення", unit: "компл.", stage: "rough" },
+  { name: "Монтаж колектора", unit: "шт", stage: "rough" },
+  { name: "Монтаж фільтра води", unit: "шт", stage: "rough" },
+  { name: "Монтаж бойлера", unit: "шт", stage: "rough" },
+  { name: "Монтаж інсталяції", unit: "шт", stage: "rough" },
+  { name: "Монтаж вбудованої частини змішувача", unit: "шт", stage: "rough" },
+  { name: "Монтаж трапа", unit: "шт", stage: "rough" },
+  { name: "Опресування системи", unit: "шт", stage: "rough" },
+  { name: "Пусконалагодження", unit: "шт", stage: "rough" },
+  { name: "Монтаж унітазу", unit: "шт", stage: "finish" },
+  { name: "Монтаж умивальника", unit: "шт", stage: "finish" },
+  { name: "Монтаж ванни", unit: "шт", stage: "finish" },
+  { name: "Монтаж душу", unit: "шт", stage: "finish" },
+  { name: "Монтаж змішувача", unit: "шт", stage: "finish" },
+  { name: "Монтаж рушникосушки", unit: "шт", stage: "finish" },
+  { name: "Монтаж радіатора", unit: "шт", stage: "finish" },
+  { name: "Монтаж пральної машини", unit: "шт", stage: "finish" }
+];
+
+let projects = [];
+let profile = {
+  firstName: "",
+  lastName: "",
+  company: "",
+  phone: "",
+  isOwner: true,
+  payType: "per_day",
+  payValue: 0,
+  lastObjectType: "",
+  lastWorkType: ""
+};
+let team = [];
+let catalog = [];
+
+let importEurRate = Number(localStorage.getItem(EUR_RATE_KEY) || 0);
+let importUsdRate = Number(localStorage.getItem(USD_RATE_KEY) || 0);
+
+try{
+  const raw = localStorage.getItem(PROJECTS_KEY);
+  const parsed = raw ? JSON.parse(raw) : [];
+  if(Array.isArray(parsed)) projects = parsed;
+}catch(e){ projects = []; }
+
+try{
+  const raw = localStorage.getItem(PROFILE_KEY);
+  const parsed = raw ? JSON.parse(raw) : null;
+  if(parsed && typeof parsed === "object") profile = { ...profile, ...parsed };
+}catch(e){}
+
+try{
+  const raw = localStorage.getItem(TEAM_KEY);
+  const parsed = raw ? JSON.parse(raw) : [];
+  if(Array.isArray(parsed)) team = parsed;
+}catch(e){ team = []; }
+
+try{
+  const raw = localStorage.getItem(CATALOG_KEY);
+  const parsed = raw ? JSON.parse(raw) : null;
+  if(Array.isArray(parsed) && parsed.length){
+    catalog = parsed;
+  }else{
+    const oldRaw = localStorage.getItem("plumber_catalog");
+    const oldParsed = oldRaw ? JSON.parse(oldRaw) : null;
+    if(Array.isArray(oldParsed) && oldParsed.length){
+      catalog = oldParsed.map(item => ({
+        id: item.id || uid("cat"),
+        type: item.type || "material",
+        name: item.name || "",
+        unit: item.unit || "шт",
+        price: Number(item.price) || 0,
+        category: item.category || "other",
+        stage: item.stage || "",
+        manufacturer: item.manufacturer || "",
+        system: item.system || "",
+        article: item.article || "",
+        basePriceEUR: Number(item.basePriceEUR) || 0,
+        supplierOffers: Array.isArray(item.supplierOffers) ? item.supplierOffers : []
+      }));
+    }else{
+      catalog = DEFAULT_WORKS.map(w => ({
+        id: uid("cat"),
+        type: "work",
+        name: w.name,
+        unit: w.unit,
+        price: 0,
+        category: "",
+        stage: w.stage,
+        manufacturer: "",
+        system: "",
+        article: "",
+        basePriceEUR: 0,
+        supplierOffers: []
+      }));
+    }
+    saveCatalog();
+  }
+}catch(e){
+  catalog = DEFAULT_WORKS.map(w => ({
+    id: uid("cat"),
+    type: "work",
+    name: w.name,
+    unit: w.unit,
+    price: 0,
+    category: "",
+    stage: w.stage,
+    manufacturer: "",
+    system: "",
+    article: "",
+    basePriceEUR: 0,
+    supplierOffers: []
+  }));
+}
+
+/* ==== Міграція етапів для старих робіт (без stage) ==== */
+
+let catalogMigrated = false;
+
+catalog.forEach(item => {
+  if(item.type !== "work") return;
+  if(item.stage) return;
+
+  // Визначаємо етап за назвою
+  const name = String(item.name || "").toLowerCase();
+
+  if(
+    /унітаз|умивальник|ванн|душ|змішувач|рушникосушк|радіатор|пральн|бойлер|чистов/i.test(name) &&
+    !/розведення|монтаж колектора|монтаж фільтра|монтаж інсталяц|монтах вбудуван|монтаж вбудуван|монтаж трапа|опресування|пусконалагодження/i.test(name)
+  ){
+    if(/бойлер|фільтр/i.test(name)){
+      item.stage = "rough";
+    }else{
+      item.stage = "finish";
+    }
+  }else{
+    item.stage = "rough";
+  }
+
+  catalogMigrated = true;
+});
+
+if(catalogMigrated){
+  saveCatalog();
+}
+
+function saveProjects(){
+  try{ localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects)); }catch(e){}
+}
+
+function saveProfileData(){
+  try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }catch(e){}
+}
+
+function saveTeamData(){
+  try{ localStorage.setItem(TEAM_KEY, JSON.stringify(team)); }catch(e){}
+}
+
+function saveCatalog(){
+  try{ localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog)); }catch(e){}
+}
+
+function saveSupplierNames(value){
+  try{ localStorage.setItem(SUPPLIER_NAMES_KEY, JSON.stringify(value)); }catch(e){}
+}
+
+function loadSupplierNames(){
+  try{
+    const value = JSON.parse(localStorage.getItem(SUPPLIER_NAMES_KEY) || "{}");
+    return value && typeof value === "object" ? value : {};
+  }catch(e){ return {}; }
+}
+
+let currentProjectId = null;
+let editingProjectId = null;
+let actionsProjectId = null;
+let editingPayType = "percent_of_income";
+let profilePayType = "percent_of_income";
+let ownerMode = true;
+
+let editingType = "";
+let editingWork = "";
+let editingFeatures = [];
+
+let catalogMode = "work";
+let catalogFilter = "all";
+let catalogBrandFilter = "all";
+let catalogSystemFilter = "all";
+let catalogSearch = "";
+let catalogSelection = {};
+let catalogManageMode = false;
+let editingCatalogItemId = null;
+let editingCatalogCategory = "other";
+let editingCatalogStage = "rough";
+
+let customType = "work";
+let customCategory = "other";
+let customStage = "rough";
+
+let pricesPending = [];
+
+let pendingImportFile = null;
+let pendingImportData = null;
+
+let autoDetectedCurrency = "";
+let autoDetectedRate = null;
+
+const FEATURE_SUGGESTIONS = [
+  "Прихований монтаж",
+  "Тепла підлога",
+  "Рециркуляція ГВП",
+  "Повна заміна опалення",
+  "Часткова заміна опалення",
+  "Розводка по підлозі"
+];
+
+function uid(prefix){
+  return (prefix || "id") + "-" + Date.now() + "-" + Math.random().toString(36).slice(2,7);
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), 2200);
+}
+
+function money(value){
+  const n = Number(value) || 0;
+  return new Intl.NumberFormat("uk-UA").format(Math.round(n)) + " ₴";
+}
+
+function moneyWithCents(value){
+  const n = Number(value) || 0;
+  const hasCents = Math.abs(n - Math.round(n)) > 0.005;
+  return new Intl.NumberFormat("uk-UA",{
+    minimumFractionDigits: hasCents ? 2 : 0,
+    maximumFractionDigits: hasCents ? 2 : 0
+  }).format(n) + " ₴";
+}
+
+function normalizeText(value){
+  return String(value || "").trim().toLowerCase().replace(/\s+/g," ");
+}
+
+function payTypeLabel(t){
+  switch(t){
+    case "percent_of_income": return "% від доходу";
+    case "per_day": return "за день";
+    case "per_month": return "за місяць";
+    case "fixed_per_object": return "за об'єкт";
+    default: return "";
+  }
+}
+
+function payValueUnit(t){
+  switch(t){
+    case "percent_of_income": return "%";
+    case "per_day": return "₴/день";
+    case "per_month": return "₴/міс";
+    case "fixed_per_object": return "₴";
+    default: return "";
+  }
+}
+
+function payValueHint(t){
+  switch(t){
+    case "percent_of_income": return "% від доходу об'єкта";
+    case "per_day": return "фіксована ставка за робочий день";
+    case "per_month": return "фіксована ставка за місяць";
+    case "fixed_per_object": return "фіксована сума за об'єкт";
+    default: return "";
+  }
+}
+
+function personInitial(name){
+  const n = String(name || "").trim();
+  return n ? n[0] : "?";
+}
+
+/* ==== Розрахунки кошторису ==== */
+
+function getEstimateSubtotal(project){
+  if(!project || !Array.isArray(project.positions)) return 0;
+  return project.positions.reduce((sum, p) => {
+    const price = Number(p.price) || 0;
+    const qty = Number(p.qty) || 0;
+    return sum + price * qty;
+  }, 0);
+}
+
+function getEstimateDiscountPercent(project){
+  const d = Number(project && project.discount);
+  return Number.isFinite(d) && d > 0 && d < 100 ? d : 0;
+}
+
+function getEstimateDiscountAmount(project){
+  const subtotal = getEstimateSubtotal(project);
+  const percent = getEstimateDiscountPercent(project);
+  return subtotal * percent / 100;
+}
+
+function getEstimateTotal(project){
+  return getEstimateSubtotal(project) - getEstimateDiscountAmount(project);
+}
+
+function getProjectPositionCount(project){
+  return (project && Array.isArray(project.positions)) ? project.positions.length : 0;
+}
+
+function render(){
+  renderHero();
+
+  if(currentProjectId){
+    const project = projects.find(p => p.id === currentProjectId);
+    if(!project){
+      currentProjectId = null;
+      renderHome();
+      return;
+    }
+    renderProject(project);
+  }else{
+    renderHome();
+  }
+}
+
+function renderHero(){
+  const hero = document.getElementById("hero");
+
+  if(currentProjectId){
+    hero.innerHTML = "";
+    hero.style.display = "none";
+    return;
+  }
+
+  hero.style.display = "";
+
+  hero.innerHTML = `
+    <div class="heroRow">
+      <div class="heroLogo">
+        <img src="logo.png" alt="SA-MASTER.PRO" onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\\'heroLogoFallback\\'>S</span>'">
+      </div>
+      <div class="heroDivider"></div>
+      <div class="heroText">
+        <div class="heroTitle">SA-MASTER<span class="pro">.pro</span></div>
+        <div class="heroSub">Кошторис. Звітність. Аудит.</div>
+      </div>
+      <button class="heroAction" onclick="openProfile()" aria-label="Профіль">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3"/>
+        </svg>
+      </button>
+    </div>
+  `;
+}
+
+function renderHome(){
+  const main = document.getElementById("main");
+
+  if(!projects.length){
+    main.innerHTML = renderEmptyState();
+    return;
+  }
+
+  main.innerHTML = renderProjectList();
+}
+
+function renderEmptyState(){
+  return `
+    <div class="emptyState">
+      <div class="emptyIntro">
+        <h2>З чого почати</h2>
+        <ol>
+          <li>Створіть перший об'єкт</li>
+          <li>Внесіть дані про себе та команду</li>
+          <li>Складіть кошторис</li>
+          <li>Відправте замовнику</li>
+          <li>Ведіть роботу до завершення</li>
+        </ol>
+      </div>
+
+      <button class="primaryButton" onclick="openNewProject()">
+        + Створити перший об'єкт
+      </button>
+    </div>
+  `;
+}
+
+function renderProjectList(){
+  const active = projects.filter(p => (p.status || "active") === "active");
+  const archived = projects.filter(p => (p.status || "active") === "archived");
+
+  const activeSorted = active.slice().sort(sortProjects);
+  const archivedSorted = archived.slice().sort(sortProjects);
+
+  let html = `
+    <div class="listWrap">
+      <div class="listHeader">
+        <strong>Об'єкти (${active.length})</strong>
+        <button class="addSmallButton" onclick="openNewProject()">+ Об'єкт</button>
+      </div>
+      <div class="list">
+  `;
+
+  if(activeSorted.length){
+    html += activeSorted.map(renderProjectCard).join("");
+  }else{
+    html += `
+      <div class="emptyTeam" style="padding:2rem 1rem">
+        Активних об'єктів немає.<br>
+        Створіть новий об'єкт, щоб почати роботу.
+      </div>
+    `;
+  }
+
+  if(archivedSorted.length){
+    html += `
+      <div style="margin-top:.75rem;margin-bottom:.5rem;padding:0 .5rem">
+        <div style="font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px">
+          Архів (${archivedSorted.length})
+        </div>
+      </div>
+    `;
+    html += archivedSorted.map(renderProjectCard).join("");
+  }
+
+  html += `</div></div>`;
+  return html;
+}
+
+function sortProjects(a,b){
+  if(a.urgent && !b.urgent) return -1;
+  if(!a.urgent && b.urgent) return 1;
+  return String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
+}
+
+function renderProjectCard(p){
+  const dotClass = projectStageClass(p);
+  const title = projectTitle(p);
+  const client = escapeHtml(p.client?.name || "");
+  const phone = escapeHtml(p.client?.phone || "");
+  const address = escapeHtml(p.client?.address || "");
+  const urgentMark = p.urgent ? `<span class="projectUrgent">🔥</span>` : "";
+  const stageLabel = projectStageLabel(p);
+
+  const total = getEstimateTotal(p);
+  const count = getProjectPositionCount(p);
+  const amountText = count ? money(total) : "";
+
+  const details = buildDetailsLine(p);
+
+  return `
+    <div class="projectCard">
+      <span class="projectDot ${dotClass}"></span>
+      <div class="projectBody">
+        <div class="projectTitleRow">
+          <div class="projectTitle" onclick="openProject('${escapeHtml(p.id)}')">${title}</div>
+          <div class="projectRight">
+            ${urgentMark}
+            <button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>
+          </div>
+        </div>
+        ${client ? `<div class="projectClient" onclick="openProject('${escapeHtml(p.id)}')">${client}${phone ? " · " + phone : ""}</div>` : ""}
+        ${address ? `<div class="projectAddress" onclick="openProject('${escapeHtml(p.id)}')">${address}</div>` : ""}
+        <div class="projectDivider"></div>
+        <div class="projectMeta" onclick="openProject('${escapeHtml(p.id)}')">
+          <span class="projectStage">${escapeHtml(stageLabel)}${count ? " · " + count + " поз." : ""}</span>
+          ${amountText ? `<span class="projectAmount">${amountText}</span>` : ""}
+        </div>
+        ${details ? `<div class="projectDetails">${escapeHtml(details)}</div>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function buildDetailsLine(p){
+  const parts = [];
+  const d = p.details || {};
+
+  if(d.objectType) parts.push(d.objectType);
+  if(d.area) parts.push(d.area + " м²");
+  if(d.bathrooms && Number(d.bathrooms) > 0) parts.push(d.bathrooms + " санвуз.");
+
+  if(Array.isArray(d.features) && d.features.length){
+    d.features.slice(0,3).forEach(f => parts.push(f));
+  }
+
+  return parts.join(" · ");
+}
+
+function projectTitlePlain(p){
+  if(p.title && String(p.title).trim()) return p.title.trim();
+  if(p.client?.name && String(p.client.name).trim()) return p.client.name.trim();
+  if(p.client?.address && String(p.client.address).trim()) return p.client.address.trim();
+  return "Без назви";
+}
+
+function projectTitle(p){
+  return escapeHtml(projectTitlePlain(p));
+}
+
+function projectStageClass(p){
+  if((p.status || "active") === "archived") return "status-done";
+  const s = p.stage || "estimate";
+  if(s === "work" || s === "complete") return "status-work";
+  if(s === "done" || s === "closed") return "status-done";
+  return "status-estimate";
+}
+
+function projectStageLabel(p){
+  const s = p.stage || "estimate";
+  switch(s){
+    case "estimate": return "Прорахунок";
+    case "work":     return "В роботі";
+    case "done":     return "Завершено";
+    case "closed":   return "Закрито";
+    default:         return "Прорахунок";
+  }
+}
+
+function renderProject(p){
+  const main = document.getElementById("main");
+
+  const title = projectTitle(p);
+  const client = escapeHtml(p.client?.name || "");
+  const phone = escapeHtml(p.client?.phone || "");
+  const address = escapeHtml(p.client?.address || "");
+  const stageLabel = projectStageLabel(p);
+  const detailsBadges = buildDetailsBadges(p);
+
+  main.innerHTML = `
+    <div class="projectView">
+      <div class="backRow">
+        <button class="backButton" onclick="backToList()" aria-label="Назад">←</button>
+      </div>
+
+      <div class="projectHeaderCard">
+        <div class="projectHeaderTitleRow">
+          <div class="projectHeaderTitle">${title}</div>
+          <div class="projectHeaderRight">
+            ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
+            <button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>
+          </div>
+        </div>
+
+        <div class="projectHeaderMeta">
+          ${client ? `<b>${client}</b>${phone ? " · " + phone : ""}<br>` : ""}
+          ${address ? `${address}<br>` : ""}
+          <span style="color:var(--tm);font-size:.75rem">${escapeHtml(stageLabel)}</span>
+        </div>
+
+        ${detailsBadges ? `<div class="detailsRow">${detailsBadges}</div>` : ""}
+      </div>
+
+      ${renderEstimateBlock(p)}
+    </div>
+
+    ${renderFloatingPanel(p)}
+  `;
+}
+
+function renderFloatingPanel(p){
+  const total = getEstimateTotal(p);
+
+  return `
+    <div class="floatingPanel">
+      <div class="floatingTotal">
+        <span class="floatingTotalLabel">Разом</span>
+        <span class="floatingTotalValue">${money(total)}</span>
+      </div>
+
+      <div class="floatingButtons">
+        <button class="addButton" onclick="openCatalogFor('work')">
+          <span style="font-size:1.125rem;line-height:1">＋</span>
+          <span>Робота</span>
+        </button>
+        <button class="addButton" onclick="openCatalogFor('material')">
+          <span style="font-size:1.125rem;line-height:1">＋</span>
+          <span>Матеріал</span>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function buildDetailsBadges(p){
+  const d = p.details || {};
+  const badges = [];
+
+  if(d.workType) badges.push(`<span class="detailBadge">${escapeHtml(d.workType)}</span>`);
+  if(d.objectType) badges.push(`<span class="detailBadge gray">${escapeHtml(d.objectType)}</span>`);
+  if(d.area) badges.push(`<span class="detailBadge gray">${escapeHtml(String(d.area))} м²</span>`);
+  if(d.bathrooms && Number(d.bathrooms) > 0) badges.push(`<span class="detailBadge gray">${escapeHtml(String(d.bathrooms))} санвуз.</span>`);
+
+  if(Array.isArray(d.features)){
+    d.features.forEach(f => {
+      badges.push(`<span class="detailBadge">${escapeHtml(f)}</span>`);
+    });
+  }
+
+  return badges.join("");
+}
+
+function renderEstimateBlock(p){
+  const positions = Array.isArray(p.positions) ? p.positions : [];
+  const count = positions.length;
+
+  const workPositions = positions.filter(x => x.type === "work");
+  const materialPositions = positions.filter(x => x.type === "material");
+
+  const subtotal = getEstimateSubtotal(p);
+  const discountPercent = getEstimateDiscountPercent(p);
+  const discountAmount = getEstimateDiscountAmount(p);
+  const total = getEstimateTotal(p);
+
+  const discountChips = [0,5,10,15,20];
+
+  let discountHtml = `
+    <div class="discountBlock">
+      <div class="discountLabel">Знижка</div>
+      <div class="chips tight">
+        ${discountChips.map(value => `
+          <button
+            type="button"
+            class="chip small ${discountPercent === value ? 'active' : ''}"
+            onclick="setDiscountPercent(${value})"
+          >${value}%</button>
+        `).join("")}
+        <button
+          type="button"
+          class="chip small ${discountPercent && !discountChips.includes(discountPercent) ? 'active' : ''}"
+          onclick="promptCustomDiscount()"
+        >інша</button>
+      </div>
+      <div class="discountTotal">
+        <span class="discountTotalLabel">До сплати</span>
+        <span class="discountTotalValue">${money(total)}</span>
+      </div>
+      ${discountPercent > 0 ? `
+        <div class="discountDiff">
+          <span>Економія клієнту</span>
+          <span>−${money(discountAmount)}</span>
+        </div>
+      ` : ""}
+    </div>
+  `;
+
+  return `
+    <div class="estimateBlock">
+      <div class="estimateHead">
+        <strong>Кошторис</strong>
+        <span class="estimateCount">${count ? count + " поз." : "порожній"}</span>
+      </div>
+
+      ${count === 0 ? `
+        <div class="emptyEstimate">
+          Ще немає позицій.<br>
+          Скористайтесь кнопками внизу
+        </div>
+      ` : `
+        ${renderEstimateSection("РОБОТИ", workPositions, p.id)}
+        ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id)}
+        ${discountHtml}
+      `}
+    </div>
+  `;
+}
+
+function renderEstimateSection(label, items, projectId){
+  if(!items.length) return "";
+
+  const sectionTotal = items.reduce((sum, pos) => {
+    const price = Number(pos.price) || 0;
+    const qty = Number(pos.qty) || 0;
+    return sum + price * qty;
+  }, 0);
+
+  return `
+    <div class="estimateSection">
+      <div class="estimateSectionHead">
+        <span class="estimateSectionTitle">${label}</span>
+        <span class="estimateSectionCount">${items.length}</span>
+      </div>
+
+      ${items.map((pos) => renderPosition(projectId, pos)).join("")}
+
+      <div class="estimateSectionTotal">
+        <span class="estimateSectionTotalLabel">${label}:</span>
+        <span class="estimateSectionTotalValue">${money(sectionTotal)}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderPosition(projectId, pos){
+  const qty = Number(pos.qty) || 1;
+  const price = Number(pos.price) || 0;
+  const unit = pos.unit || "шт";
+  const total = price * qty;
+  const priceSet = price > 0;
+
+  const priceText = priceSet
+    ? money(price) + " / " + escapeHtml(unit)
+    : "ціна не задана";
+
+  return `
+    <div class="position">
+      <div class="positionRow1">
+        <div class="positionName">${escapeHtml(pos.name)}</div>
+
+        <div class="qtyControl">
+          <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
+          <span class="qtyValue">${qty}</span>
+          <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',1)">＋</button>
+        </div>
+      </div>
+
+      <div class="positionRow2">
+        <button class="positionPrice ${priceSet ? 'set' : 'notSet'}" onclick="openSinglePriceEditor('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')">
+          ${priceText}
+        </button>
+
+        <div class="positionRight">
+          <div class="positionTotal ${priceSet ? '' : 'notSet'}">
+            ${priceSet ? money(total) : "—"}
+          </div>
+
+          <button class="positionDelete" onclick="deletePosition('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')" aria-label="Видалити">×</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ==== Знижка ==== */
+
+function setDiscountPercent(value){
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  const num = Number(value) || 0;
+
+  project.discount = (num > 0 && num < 100) ? num : 0;
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
+}
+
+function promptCustomDiscount(){
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  const current = getEstimateDiscountPercent(project);
+
+  const value = prompt("Відсоток знижки (0–99):", current > 0 ? String(current) : "");
+
+  if(value === null) return;
+
+  const num = Number(String(value).replace(",","."));
+
+  if(!Number.isFinite(num) || num < 0 || num >= 100){
+    toast("Некоректна знижка");
+    return;
+  }
+
+  project.discount = num > 0 ? num : 0;
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
+}
+
+function openNewProject(){
+  editingProjectId = null;
+  document.getElementById("projectSheetTitle").textContent = "Новий об'єкт";
+  document.getElementById("projectSheetSaveBtn").textContent = "Створити";
+
+  document.getElementById("npTitle").value = "";
+  document.getElementById("npAddress").value = "";
+  document.getElementById("npClientName").value = "";
+  document.getElementById("npClientPhone").value = "";
+  document.getElementById("npArea").value = "";
+  document.getElementById("npBathrooms").value = "";
+  document.getElementById("npFeatureInput").value = "";
+
+  editingType = profile.lastObjectType || "";
+  editingWork = profile.lastWorkType || "";
+  editingFeatures = [];
+
+  document.getElementById("detailsBlock").classList.remove("open");
+  document.getElementById("detailsToggle").classList.remove("open");
+
+  updateProjectChips();
+  renderFeatureTags();
+  renderFeatureSuggestions();
+
+  document.getElementById("projectSheet").classList.add("open");
+  setTimeout(() => document.getElementById("npTitle").focus(), 200);
+}
+
+function openEditProject(id){
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+
+  editingProjectId = id;
+  document.getElementById("projectSheetTitle").textContent = "Редагувати об'єкт";
+  document.getElementById("projectSheetSaveBtn").textContent = "Зберегти";
+
+  document.getElementById("npTitle").value = p.title || "";
+  document.getElementById("npAddress").value = p.client?.address || "";
+  document.getElementById("npClientName").value = p.client?.name || "";
+  document.getElementById("npClientPhone").value = p.client?.phone || "";
+
+  const d = p.details || {};
+  document.getElementById("npArea").value = d.area || "";
+  document.getElementById("npBathrooms").value = d.bathrooms || "";
+  document.getElementById("npFeatureInput").value = "";
+
+  editingType = d.objectType || "";
+  editingWork = d.workType || "";
+  editingFeatures = Array.isArray(d.features) ? d.features.slice() : [];
+
+  document.getElementById("detailsBlock").classList.add("open");
+  document.getElementById("detailsToggle").classList.add("open");
+
+  updateProjectChips();
+  renderFeatureTags();
+  renderFeatureSuggestions();
+
+  document.getElementById("projectSheet").classList.add("open");
+  setTimeout(() => document.getElementById("npTitle").focus(), 200);
+}
+
+function closeProjectSheet(){
+  document.getElementById("projectSheet").classList.remove("open");
+  editingProjectId = null;
+}
+
+function toggleDetails(){
+  document.getElementById("detailsBlock").classList.toggle("open");
+  document.getElementById("detailsToggle").classList.toggle("open");
+}
+
+function updateProjectChips(){
+  document.querySelectorAll("#npTypeChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingType);
+  });
+  document.querySelectorAll("#npWorkChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingWork);
+  });
+}
+
+function renderFeatureTags(){
+  const box = document.getElementById("npFeatureTags");
+  if(!editingFeatures.length){ box.innerHTML = ""; return; }
+  box.innerHTML = editingFeatures.map((f, i) => `
+    <span class="featureTag">
+      ${escapeHtml(f)}
+      <span class="featureTagRemove" onclick="removeFeature(${i})">×</span>
+    </span>
+  `).join("");
+}
+
+function renderFeatureSuggestions(){
+  const box = document.getElementById("npFeatureSuggestions");
+  const available = FEATURE_SUGGESTIONS.filter(s =>
+    !editingFeatures.some(f => f.toLowerCase() === s.toLowerCase())
+  );
+  if(!available.length){ box.innerHTML = ""; return; }
+  box.innerHTML = available.map(s => `
+    <span class="featureSuggest" onclick="addFeature('${escapeHtml(s)}')">+ ${escapeHtml(s)}</span>
+  `).join("");
+}
+
+function addFeature(text){
+  const t = String(text || "").trim();
+  if(!t) return;
+  if(editingFeatures.some(f => f.toLowerCase() === t.toLowerCase())) return;
+  editingFeatures.push(t);
+  renderFeatureTags();
+  renderFeatureSuggestions();
+}
+
+function removeFeature(index){
+  editingFeatures.splice(index, 1);
+  renderFeatureTags();
+  renderFeatureSuggestions();
+}
+
+function addFeatureFromInput(){
+  const input = document.getElementById("npFeatureInput");
+  const value = input.value.trim();
+  if(!value) return;
+  addFeature(value);
+  input.value = "";
+}
+
+function saveProjectSheet(){
+  const title = document.getElementById("npTitle").value.trim();
+  const address = document.getElementById("npAddress").value.trim();
+  const name = document.getElementById("npClientName").value.trim();
+  const phone = document.getElementById("npClientPhone").value.trim();
+  const areaRaw = document.getElementById("npArea").value.trim();
+  const bathroomsRaw = document.getElementById("npBathrooms").value.trim();
+
+  if(!title){
+    toast("Вкажіть назву об'єкта");
+    return;
+  }
+
+  const area = areaRaw ? Number(areaRaw.replace(",",".")) : null;
+  const bathrooms = bathroomsRaw ? Number(bathroomsRaw) : null;
+
+  const details = {
+    objectType: editingType,
+    workType: editingWork,
+    area: Number.isFinite(area) ? area : null,
+    bathrooms: Number.isFinite(bathrooms) ? bathrooms : null,
+    features: editingFeatures.slice(),
+    system: ""
+  };
+
+  const now = new Date().toISOString();
+
+  profile.lastObjectType = editingType;
+  profile.lastWorkType = editingWork;
+  saveProfileData();
+
+  if(editingProjectId){
+    const p = projects.find(x => x.id === editingProjectId);
+    if(!p) return;
+
+    p.title = title;
+    p.client = { name, phone, address };
+    p.details = details;
+    p.updatedAt = now;
+
+    saveProjects();
+    closeProjectSheet();
+    render();
+    toast("Збережено");
+  }else{
+    const wasFirst = projects.length === 0;
+
+    const project = {
+      id: uid("proj"),
+      title,
+      client: { name, phone, address },
+
+      status: "active",
+      stage: "estimate",
+      urgent: false,
+
+      positions: [],
+      stages: [],
+      discount: 0,
+      payments: [],
+      expenses: [],
+      salaries: [],
+
+      details,
+
+      createdAt: now,
+      updatedAt: now
+    };
+
+    projects.push(project);
+    saveProjects();
+
+    closeProjectSheet();
+    currentProjectId = project.id;
+    render();
+
+    toast("Об'єкт створено");
+
+    const profileEmpty = !profile.firstName && !profile.lastName && !profile.company;
+    if(wasFirst && profileEmpty){
+      setTimeout(() => openProfile(), 400);
+    }
+  }
+}
+
+function openCatalogFor(type){
+  if(!currentProjectId) return;
+  catalogMode = type;
+  catalogFilter = "all";
+  catalogBrandFilter = "all";
+  catalogSystemFilter = "all";
+  catalogSearch = "";
+  catalogSelection = {};
+  catalogManageMode = false;
+
+  document.getElementById("catalogSearch").value = "";
+  document.getElementById("catalogTitle").textContent = (type === "work") ? "Вибір роботи" : "Вибір матеріалу";
+  document.getElementById("addCustomLabel").textContent = (type === "work") ? "Додати свою роботу" : "Додати свій матеріал";
+
+  const importBtn = document.getElementById("importExcelButton");
+  importBtn.style.display = (type === "material") ? "flex" : "none";
+
+  const editBtn = document.getElementById("catalogEditButton");
+  editBtn.classList.remove("active");
+  editBtn.textContent = "✎ Каталог";
+
+  updateCatalogFooter();
+
+  renderCatalogChips();
+  renderCatalogBrandChips();
+  renderCatalogSystemChips();
+  renderCatalogList();
+  updateCatalogAddButton();
+
+  document.getElementById("catalogSheet").classList.add("open");
+  setTimeout(() => document.getElementById("catalogSearch").focus(), 200);
+}
+
+function closeCatalog(){
+  document.getElementById("catalogSheet").classList.remove("open");
+  catalogSelection = {};
+  catalogManageMode = false;
+  editingCatalogItemId = null;
+}
+
+function toggleCatalogManage(){
+  catalogManageMode = !catalogManageMode;
+
+  const editBtn = document.getElementById("catalogEditButton");
+  if(catalogManageMode){
+    editBtn.classList.add("active");
+    editBtn.textContent = "✓ Готово";
+    document.getElementById("catalogTitle").textContent = (catalogMode === "work") ? "Каталог робіт" : "Каталог матеріалів";
+  }else{
+    editBtn.classList.remove("active");
+    editBtn.textContent = "✎ Каталог";
+    document.getElementById("catalogTitle").textContent = (catalogMode === "work") ? "Вибір роботи" : "Вибір матеріалу";
+  }
+
+  updateCatalogFooter();
+  renderCatalogChips();
+  renderCatalogBrandChips();
+  renderCatalogSystemChips();
+  renderCatalogList();
+}
+
+function updateCatalogFooter(){
+  const footer = document.getElementById("catalogFooter");
+  const importBtn = document.getElementById("importExcelButton");
+  const customBtn = document.querySelector(".addCustomButton");
+
+  if(catalogManageMode){
+    footer.style.display = "none";
+    importBtn.style.display = "none";
+    if(customBtn) customBtn.style.display = "flex";
+  }else{
+    footer.style.display = "flex";
+    importBtn.style.display = (catalogMode === "material") ? "flex" : "none";
+    if(customBtn) customBtn.style.display = "flex";
+  }
+}
+
+function renderCatalogChips(){
+  const box = document.getElementById("catalogChips");
+
+  if(catalogManageMode){
+    box.style.display = "none";
+    box.innerHTML = "";
+    return;
+  }
+
+  // ==== РОБОТИ ====
+  if(catalogMode === "work"){
+    const hasAnyWorks = catalog.some(item => item.type === "work");
+
+    if(!hasAnyWorks){
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+
+    const stages = new Set();
+    catalog.forEach(item => {
+      if(item.type !== "work") return;
+      const stage = String(item.stage || "").trim();
+      if(stage) stages.add(stage);
+    });
+
+    if(!stages.size){
+      box.style.display = "none";
+      box.innerHTML = "";
+      catalogFilter = "all";
+      return;
+    }
+
+    if(catalogFilter !== "all" && !stages.has(catalogFilter)){
+      catalogFilter = "all";
+    }
+
+    box.style.display = "flex";
+
+    const stageLabels = {
+      "rough": "Чорнові",
+      "finish": "Чистові"
+    };
+
+    let html = `<button class="chip small ${catalogFilter === "all" ? 'active' : ''}" onclick="setCatalogFilter('all')">Усі</button>`;
+
+    ["rough","finish"].forEach(stage => {
+      if(!stages.has(stage)) return;
+      html += `<button class="chip small ${catalogFilter === stage ? 'active' : ''}" onclick="setCatalogFilter('${stage}')">${stageLabels[stage]}</button>`;
+    });
+
+    box.innerHTML = html;
+    return;
+  }
+
+  // ==== МАТЕРІАЛИ ====
+  const hasAnyMaterials = catalog.some(item => item.type === "material");
+
+  if(!hasAnyMaterials){
+    box.style.display = "none";
+    box.innerHTML = "";
+    catalogFilter = "all";
+    return;
+  }
+
+  box.style.display = "flex";
+
+  const availableCategories = new Set(["all"]);
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    const cat = String(item.category || "").trim();
+    if(cat) availableCategories.add(cat);
+  });
+
+  if(catalogFilter !== "all" && !availableCategories.has(catalogFilter)){
+    catalogFilter = "all";
+  }
+
+  const values = [
+    ["all","Усі"],
+    ["fittings","Арматура"],
+    ["water","Водопостачання"],
+    ["sewer","Каналізація"],
+    ["other","Інше"]
+  ];
+
+  box.innerHTML = values
+    .filter(([v]) => availableCategories.has(v))
+    .map(([v,l]) => `
+      <button
+        type="button"
+        class="chip small ${catalogFilter === v ? 'active' : ''}"
+        onclick="setCatalogFilter('${v}')"
+      >${l}</button>
+    `).join("");
+}
+
+function setCatalogFilter(v){
+  catalogFilter = v;
+  catalogBrandFilter = "all";
+  catalogSystemFilter = "all";
+  renderCatalogChips();
+  renderCatalogBrandChips();
+  renderCatalogSystemChips();
+  renderCatalogList();
+}
+
+function renderCatalogBrandChips(){
+  const box = document.getElementById("catalogBrandChips");
+
+  if(catalogManageMode || catalogMode !== "material"){
+    box.style.display = "none";
+    box.innerHTML = "";
+    return;
+  }
+
+  const brands = collectBrands();
+
+  if(!brands.length){
+    box.style.display = "none";
+    box.innerHTML = "";
+    catalogBrandFilter = "all";
+    return;
+  }
+
+  if(
+    catalogBrandFilter !== "all" &&
+    !brands.some(b => normalizeText(b) === normalizeText(catalogBrandFilter))
+  ){
+    catalogBrandFilter = "all";
+  }
+
+  box.style.display = "flex";
+
+  let html = `<button class="chip small ${catalogBrandFilter === "all" ? 'active' : ''}" onclick="setCatalogBrandFilter('all')">Усі бренди</button>`;
+
+  html += brands.map(brand => {
+    const enc = encodeURIComponent(brand);
+    return `<button class="chip small ${normalizeText(catalogBrandFilter) === normalizeText(brand) ? 'active' : ''}" onclick="setCatalogBrandFilter(decodeURIComponent('${enc}'))">${escapeHtml(brand)}</button>`;
+  }).join("");
+
+  box.innerHTML = html;
+}
+
+function setCatalogBrandFilter(brand){
+  catalogBrandFilter = brand;
+  catalogSystemFilter = "all";
+  renderCatalogBrandChips();
+  renderCatalogSystemChips();
+  renderCatalogList();
+}
+
+function renderCatalogSystemChips(){
+  const box = document.getElementById("catalogSystemChips");
+
+  if(catalogManageMode || catalogMode !== "material"){
+    box.style.display = "none";
+    box.innerHTML = "";
+    return;
+  }
+
+  const systems = collectSystems();
+
+  if(!systems.length){
+    box.style.display = "none";
+    box.innerHTML = "";
+    catalogSystemFilter = "all";
+    return;
+  }
+
+  if(
+    catalogSystemFilter !== "all" &&
+    !systems.some(s => normalizeText(s) === normalizeText(catalogSystemFilter))
+  ){
+    catalogSystemFilter = "all";
+  }
+
+  box.style.display = "flex";
+
+  let html = `<button class="chip small ${catalogSystemFilter === "all" ? 'active' : ''}" onclick="setCatalogSystemFilter('all')">Усі системи</button>`;
+
+  html += systems.map(system => {
+    const enc = encodeURIComponent(system);
+    return `<button class="chip small ${normalizeText(catalogSystemFilter) === normalizeText(system) ? 'active' : ''}" onclick="setCatalogSystemFilter(decodeURIComponent('${enc}'))">${escapeHtml(system)}</button>`;
+  }).join("");
+
+  box.innerHTML = html;
+}
+
+function setCatalogSystemFilter(system){
+  catalogSystemFilter = system;
+  renderCatalogSystemChips();
+  renderCatalogList();
+}
+
+function collectBrands(){
+  const set = new Set();
+
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    if(catalogFilter !== "all" && item.category !== catalogFilter) return;
+
+    const value = String(item.manufacturer || "").trim();
+    if(value) set.add(value);
+  });
+
+  return Array.from(set).sort((a,b) => a.localeCompare(b, "uk"));
+}
+
+function collectSystems(){
+  const set = new Set();
+
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    if(catalogFilter !== "all" && item.category !== catalogFilter) return;
+
+    if(catalogBrandFilter !== "all" &&
+       normalizeText(item.manufacturer) !== normalizeText(catalogBrandFilter)) return;
+
+    const value = String(item.system || "").trim();
+    if(value) set.add(value);
+  });
+
+  return Array.from(set).sort((a,b) => a.localeCompare(b, "uk"));
+}
+
+function getCatalogItems(){
+  const q = normalizeText(catalogSearch);
+
+  return catalog.filter(item => {
+    if(item.type !== catalogMode) return false;
+
+    if(catalogMode === "work" && catalogFilter !== "all"){
+      if(String(item.stage || "").trim() !== catalogFilter) return false;
+    }
+
+    if(catalogMode === "material" && catalogFilter !== "all"){
+      if(item.category !== catalogFilter) return false;
+    }
+
+    if(catalogMode === "material" && catalogBrandFilter !== "all"){
+      if(normalizeText(item.manufacturer) !== normalizeText(catalogBrandFilter)) return false;
+    }
+
+    if(catalogMode === "material" && catalogSystemFilter !== "all"){
+      if(normalizeText(item.system) !== normalizeText(catalogSystemFilter)) return false;
+    }
+
+    if(q){
+      const hay = normalizeText(item.name + " " + (item.article || "") + " " + (item.manufacturer || ""));
+      if(!hay.includes(q)) return false;
+    }
+
+    return true;
+  }).sort((a,b) => a.name.localeCompare(b.name, "uk"));
+}
+
+function renderCatalogList(){
+  catalogSearch = document.getElementById("catalogSearch").value || "";
+  const list = document.getElementById("catalogList");
+  const items = getCatalogItems();
+
+  if(!items.length){
+    list.innerHTML = `
+      <div class="catalogEmpty">
+        Нічого не знайдено.<br>
+        ${catalogManageMode ? "Додайте позицію кнопкою нижче." : "Можете додати свою позицію нижче."}
+      </div>
+    `;
+    return;
+  }
+
+  if(catalogManageMode){
+    list.innerHTML = items.map(item => `
+      <div class="catalogItem">
+        <div class="catalogItemBody">
+          <div class="catalogItemName">${escapeHtml(item.name)}</div>
+          <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">
+            ${item.price > 0 ? moneyWithCents(item.price) : "ціна не задана"} · ${escapeHtml(item.unit || "шт")}
+          </div>
+        </div>
+
+        <div class="catalogManageRow">
+          <button class="manageBtn edit" onclick="openCatalogItemEditor('${escapeHtml(item.id)}')" aria-label="Редагувати">✎</button>
+          <button class="manageBtn delete" onclick="deleteCatalogItem('${escapeHtml(item.id)}')" aria-label="Видалити">×</button>
+        </div>
+      </div>
+    `).join("");
+    return;
+  }
+
+  list.innerHTML = items.map(item => {
+    const qty = Number(catalogSelection[item.id]) || 0;
+    const selected = qty > 0;
+
+    const priceText = item.price > 0
+      ? moneyWithCents(item.price) + " / " + escapeHtml(item.unit)
+      : "ціна не задана · " + escapeHtml(item.unit);
+
+    return `
+      <div class="catalogItem ${selected ? 'selected' : ''}">
+        <div class="catalogItemBody" onclick="catalogCounterIncrement('${escapeHtml(item.id)}')">
+          <div class="catalogItemName">${escapeHtml(item.name)}</div>
+          <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">${priceText}</div>
+        </div>
+
+        <div class="catalogCounter">
+          <button class="counterBtn ${selected ? '' : 'hidden'}" onclick="catalogCounterDecrement('${escapeHtml(item.id)}')">−</button>
+          ${selected ? `<span class="counterValue">${qty}</span>` : ""}
+          <button class="counterBtn" onclick="catalogCounterIncrement('${escapeHtml(item.id)}')">＋</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function catalogCounterIncrement(catalogId){
+  const item = catalog.find(c => c.id === catalogId);
+  if(!item) return;
+
+  const current = Number(catalogSelection[catalogId]) || 0;
+  catalogSelection[catalogId] = current + 1;
+
+  renderCatalogList();
+  updateCatalogAddButton();
+}
+
+function catalogCounterDecrement(catalogId){
+  const current = Number(catalogSelection[catalogId]) || 0;
+  if(current <= 1){
+    delete catalogSelection[catalogId];
+  }else{
+    catalogSelection[catalogId] = current - 1;
+  }
+
+  renderCatalogList();
+  updateCatalogAddButton();
+}
+
+function updateCatalogAddButton(){
+  const btn = document.getElementById("catalogAddBtn");
+  const ids = Object.keys(catalogSelection);
+
+  if(!ids.length){
+    btn.disabled = true;
+    btn.textContent = "Оберіть позиції";
+    return;
+  }
+
+  const positionsCount = ids.length;
+  const unitsCount = ids.reduce((sum, id) => sum + (Number(catalogSelection[id]) || 0), 0);
+
+  btn.disabled = false;
+
+  if(positionsCount === 1 && unitsCount === 1){
+    btn.textContent = "Додати";
+  }else{
+    btn.textContent = `Додати ${positionsCount} поз. · ${unitsCount} шт`;
+  }
+}
+
+function applyCatalogSelection(){
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  const ids = Object.keys(catalogSelection);
+  if(!ids.length) return;
+
+  if(!Array.isArray(project.positions)) project.positions = [];
+
+  const needPrice = [];
+
+  ids.forEach(catalogId => {
+    const item = catalog.find(c => c.id === catalogId);
+    if(!item) return;
+
+    const qtyToAdd = Number(catalogSelection[catalogId]) || 0;
+    if(qtyToAdd <= 0) return;
+
+    const existing = project.positions.find(pos => pos.catalogId === item.id);
+
+    if(existing){
+      existing.qty = (Number(existing.qty) || 0) + qtyToAdd;
+      if(!existing.price || existing.price <= 0){
+        needPrice.push(existing);
+      }
+    }else{
+      const newPos = {
+        id: uid("pos"),
+        catalogId: item.id,
+        type: item.type,
+        name: item.name,
+        unit: item.unit || "шт",
+        price: Number(item.price) || 0,
+        qty: qtyToAdd
+      };
+      project.positions.push(newPos);
+      if(!newPos.price || newPos.price <= 0){
+        needPrice.push(newPos);
+      }
+    }
+  });
+
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+
+  closeCatalog();
+  render();
+
+  if(needPrice.length){
+    openPricesSheet(needPrice);
+  }else{
+    toast("Додано");
+  }
+}
+
+function openCatalogItemEditor(id){
+  const item = catalog.find(c => c.id === id);
+  if(!item) return;
+
+  editingCatalogItemId = id;
+
+  document.getElementById("ceName").value = item.name || "";
+  document.getElementById("cePrice").value = item.price > 0 ? item.price : "";
+  document.getElementById("ceUnit").value = item.unit || "шт";
+
+  const isMaterial = item.type === "material";
+  const isWork = item.type === "work";
+
+  document.getElementById("ceWorkFields").classList.toggle("hidden", !isWork);
+  document.getElementById("ceMaterialFields").classList.toggle("hidden", !isMaterial);
+
+  editingCatalogCategory = isMaterial ? (item.category || "other") : "other";
+  editingCatalogStage = isWork ? (item.stage || "rough") : "rough";
+
+  document.querySelectorAll("#ceCategoryChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingCatalogCategory);
+  });
+
+  document.querySelectorAll("#ceStageChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingCatalogStage);
+  });
+
+  document.getElementById("catalogEditSheet").classList.add("open");
+  setTimeout(() => document.getElementById("ceName").focus(), 200);
+}
+
+function closeCatalogItemEditor(){
+  document.getElementById("catalogEditSheet").classList.remove("open");
+  editingCatalogItemId = null;
+}
+
+function saveCatalogItemEditor(){
+  if(!editingCatalogItemId) return;
+  const item = catalog.find(c => c.id === editingCatalogItemId);
+  if(!item) return;
+
+  const name = document.getElementById("ceName").value.trim();
+  const price = Number(String(document.getElementById("cePrice").value).replace(",",".")) || 0;
+  const unit = document.getElementById("ceUnit").value.trim() || "шт";
+
+  if(!name){
+    toast("Вкажіть назву");
+    return;
+  }
+
+  item.name = name;
+  item.price = price;
+  item.unit = unit;
+
+  if(item.type === "material"){
+    item.category = editingCatalogCategory || "other";
+    item.stage = "";
+  }else{
+    item.stage = editingCatalogStage || "rough";
+    item.category = "";
+  }
+
+  saveCatalog();
+  closeCatalogItemEditor();
+  renderCatalogChips();
+  renderCatalogList();
+  toast("Збережено");
+}
+
+function deleteCatalogItem(id){
+  const item = catalog.find(c => c.id === id);
+  if(!item) return;
+
+  if(!confirm(`Видалити «${item.name}» з каталогу?\n\nЦе не видалить позицію з існуючих кошторисів.`)) return;
+
+  catalog = catalog.filter(c => c.id !== id);
+  saveCatalog();
+  renderCatalogChips();
+  renderCatalogBrandChips();
+  renderCatalogSystemChips();
+  renderCatalogList();
+  toast("Видалено з каталогу");
+}
+
+function openCustomPosition(){
+  customType = catalogMode;
+  customCategory = "other";
+  customStage = "rough";
+
+  document.getElementById("customTitle").textContent =
+    customType === "work" ? "Нова робота" : "Новий матеріал";
+
+  document.getElementById("csName").value = "";
+  document.getElementById("csPrice").value = "";
+  document.getElementById("csUnit").value = "";
+
+  document.getElementById("csWorkFields").classList.toggle("hidden", customType !== "work");
+  document.getElementById("csMaterialFields").classList.toggle("hidden", customType !== "material");
+
+  document.querySelectorAll("#csCategoryChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === "other");
+  });
+
+  document.querySelectorAll("#csStageChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === customStage);
+  });
+
+  document.getElementById("customSheet").classList.add("open");
+  setTimeout(() => document.getElementById("csName").focus(), 200);
+}
+
+function closeCustom(){
+  document.getElementById("customSheet").classList.remove("open");
+}
+
+function saveCustom(){
+  const name = document.getElementById("csName").value.trim();
+  const price = Number(String(document.getElementById("csPrice").value).replace(",",".")) || 0;
+  const unit = document.getElementById("csUnit").value.trim() || "шт";
+
+  if(!name){
+    toast("Вкажіть назву");
+    return;
+  }
+
+  const newItem = {
+    id: uid("cat"),
+    type: customType,
+    name,
+    unit,
+    price,
+    category: customType === "material" ? customCategory : "",
+    stage: customType === "work" ? customStage : "",
+    manufacturer: "",
+    system: "",
+    article: "",
+    basePriceEUR: 0,
+    supplierOffers: []
+  };
+
+  catalog.push(newItem);
+  saveCatalog();
+
+  closeCustom();
+
+  if(catalogManageMode){
+    renderCatalogChips();
+    renderCatalogList();
+    toast("Додано в каталог");
+    return;
+  }
+
+  const project = projects.find(p => p.id === currentProjectId);
+  if(project){
+    if(!Array.isArray(project.positions)) project.positions = [];
+    project.positions.push({
+      id: uid("pos"),
+      catalogId: newItem.id,
+      type: newItem.type,
+      name: newItem.name,
+      unit: newItem.unit,
+      price: newItem.price,
+      qty: 1
+    });
+    project.updatedAt = new Date().toISOString();
+    saveProjects();
+    render();
+    toast("Додано");
+  }
+}
+
+function openPricesSheet(positions){
+  pricesPending = positions.slice();
+
+  const list = document.getElementById("pricesList");
+
+  list.innerHTML = pricesPending.map((pos, i) => `
+    <div class="priceRow">
+      <div class="priceRowName">${escapeHtml(pos.name)}</div>
+      <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${pos.qty || 1}</div>
+      <input
+        class="formInput"
+        id="priceRowInput_${i}"
+        inputmode="decimal"
+        placeholder="0"
+        autocomplete="off"
+      >
+    </div>
+  `).join("");
+
+  document.getElementById("pricesSheet").classList.add("open");
+  setTimeout(() => {
+    const first = document.getElementById("priceRowInput_0");
+    if(first) first.focus();
+  }, 200);
+}
+
+function closePricesSheet(){
+  document.getElementById("pricesSheet").classList.remove("open");
+  pricesPending = [];
+}
+
+function skipPrices(){
+  closePricesSheet();
+  toast("Додано без цін");
+}
+
+function savePrices(){
+  if(!pricesPending.length){
+    closePricesSheet();
+    return;
+  }
+
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  pricesPending.forEach((pos, i) => {
+    const input = document.getElementById("priceRowInput_" + i);
+    if(!input) return;
+
+    const value = Number(String(input.value).replace(",",".")) || 0;
+    if(value > 0){
+      pos.price = value;
+
+      if(pos.catalogId){
+        const cat = catalog.find(c => c.id === pos.catalogId);
+        if(cat && (!cat.price || cat.price <= 0)){
+          cat.price = value;
+        }
+      }
+    }
+  });
+
+  saveCatalog();
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+
+  closePricesSheet();
+  render();
+  toast("Ціни збережено");
+}
+
+function changePositionQty(projectId, positionId, delta){
+  const project = projects.find(p => p.id === projectId);
+  if(!project) return;
+  const pos = project.positions.find(p => p.id === positionId);
+  if(!pos) return;
+
+  pos.qty = Math.max(1, (Number(pos.qty) || 1) + delta);
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
+}
+
+function deletePosition(projectId, positionId){
+  const project = projects.find(p => p.id === projectId);
+  if(!project) return;
+  const pos = project.positions.find(p => p.id === positionId);
+  if(!pos) return;
+  if(!confirm(`Видалити «${pos.name}» з кошторису?`)) return;
+
+  project.positions = project.positions.filter(p => p.id !== positionId);
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
+  toast("Видалено");
+}
+
+function openSinglePriceEditor(projectId, positionId){
+  const project = projects.find(p => p.id === projectId);
+  if(!project) return;
+  const pos = project.positions.find(p => p.id === positionId);
+  if(!pos) return;
+
+  pricesPending = [pos];
+
+  const list = document.getElementById("pricesList");
+  list.innerHTML = `
+    <div class="priceRow">
+      <div class="priceRowName">${escapeHtml(pos.name)}</div>
+      <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${pos.qty || 1}</div>
+      <input
+        class="formInput"
+        id="priceRowInput_0"
+        inputmode="decimal"
+        placeholder="0"
+        value="${pos.price > 0 ? pos.price : ""}"
+        autocomplete="off"
+      >
+    </div>
+  `;
+
+  document.getElementById("pricesSheet").classList.add("open");
+  setTimeout(() => {
+    const first = document.getElementById("priceRowInput_0");
+    if(first){ first.focus(); first.select && first.select(); }
+  }, 200);
+}
+
+/* ==== IMPORT ==== */
+
+function openImportFile(){
+  const input = document.getElementById("importFileInput");
+  input.value = "";
+  input.click();
+}
+
+document.getElementById("importFileInput").addEventListener("change", async function(e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+
+  if(!file) return;
+
+  const name = String(file.name || "").toLowerCase();
+  const ok = name.endsWith(".xls") || name.endsWith(".xlsx") || name.endsWith(".xlsm");
+
+  if(!ok){
+    toast("Підтримуються файли .xls, .xlsx, .xlsm");
+    return;
+  }
+
+  if(typeof XLSX === "undefined"){
+    toast("Модуль XLS/XLSX не завантажився");
+    return;
+  }
+
+  try{
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
+    const parsed = parseWorkbook(workbook);
+
+    if(!parsed || !parsed.items.length){
+      toast("Не вдалося знайти товари у файлі");
+      return;
+    }
+
+    pendingImportFile = file;
+    pendingImportData = parsed;
+
+    autoDetectedCurrency = parsed.currency || "";
+    autoDetectedRate = parsed.detectedRate || null;
+
+    openImportSheet(parsed, file);
+
+  }catch(err){
+    console.error("Import error:", err);
+    toast("Не вдалося прочитати файл");
+  }
+});
+
+function parseWorkbook(workbook){
+  let best = null;
+
+  for(const sheetName of workbook.SheetNames){
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      raw: false,
+      defval: "",
+      blankrows: true
+    });
+
+    const header = findHeaderRow(rows);
+    if(!header) continue;
+
+    const items = parseSheetRows(rows, header);
+    if(!items.length) continue;
+
+    const currency = detectInvoiceCurrency(rows, header);
+    const detectedRate = detectInvoiceRate(rows, header);
+    const supplierFullName = detectSupplierFullName(rows, header);
+
+    if(!best || items.length > best.items.length){
+      best = { sheetName, items, currency, detectedRate, supplierFullName, header };
+    }
+  }
+
+  return best;
+}
+
+function cleanText(v){
+  return String(v ?? "")
+    .replace(/\u00a0/g," ")
+    .replace(/[\r\n]+/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+function ntext(v){
+  return cleanText(v).toLowerCase();
+}
+
+function parseNumber(value){
+  if(typeof value === "number" && Number.isFinite(value)) return value;
+
+  let text = cleanText(value)
+    .replace(/[\s\u00A0']/g,"")
+    .replace(/грн\.?/gi,"")
+    .replace(/[^0-9,.-]/g,"");
+
+  if(!text || text === "-" || text === "." || text === ",") return null;
+
+  const lastComma = text.lastIndexOf(",");
+  const lastDot = text.lastIndexOf(".");
+
+  if(lastComma >= 0 && lastDot >= 0){
+    const decimalSeparator = lastComma > lastDot ? "," : ".";
+    const thousandsSeparator = decimalSeparator === "," ? "." : ",";
+    text = text.split(thousandsSeparator).join("").replace(decimalSeparator,".");
+  }else if(lastComma >= 0){
+    const parts = text.split(",");
+    if(parts.length > 2 || (parts.length === 2 && parts[1].length === 3 && parts[0].replace("-","").length <= 3)){
+      text = parts.join("");
+    }else{
+      text = text.replace(",", ".");
+    }
+  }else if(lastDot >= 0){
+    const parts = text.split(".");
+    if(parts.length > 2 && parts[parts.length - 1].length === 3){
+      text = parts.join("");
+    }
+  }
+
+  if(!text || text === "-" || text === "." || text === "-.") return null;
+  const num = Number(text);
+  return Number.isFinite(num) ? num : null;
+}
+
+function isUnit(value){
+  const t = ntext(value).replace(/\./g,"");
+  return /^(шт|м|м2|м²|м3|м³|компл|упак|уп|кг|л|погм|пог м|pcs|pc)$/.test(t);
+}
+
+function classifyPriceHeader(text){
+  const t = ntext(text);
+  if(!t) return null;
+
+  const isRetail = /ціна.*без\s*зниж|цена.*без\s*скид|retail.*price|list.*price|роздрібн.*ціна|розничн.*цена/.test(t);
+  const isMaster = /ціна.*майстра|ціна.*закуп|закупівельн|закупочн|оптов|wholesale|dealer.*price|моя\s*ціна/.test(t);
+  const isDiscountAsMaster = /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price|акційн.*ціна|акционн.*цена/.test(t);
+  const isPlain = /^(ціна|цена|price)(\s*[.,:()].*)?$/i.test(t);
+  const isGeneric = isPlain && !isRetail && !isMaster && !isDiscountAsMaster;
+
+  if(isRetail) return "retail";
+  if(isMaster) return "master";
+  if(isDiscountAsMaster) return "master";
+  if(isGeneric) return "generic";
+  return null;
+}
+
+function findHeaderRow(rows){
+  let best = null;
+
+  rows.slice(0, 60).forEach((row, rowIndex) => {
+    let articleCol = -1, qtyCol = -1, nameCol = -1;
+    let retailCol = -1, masterCol = -1, genericCol = -1;
+    let score = 0;
+
+    row.forEach((cell, col) => {
+      const text = ntext(cell);
+      if(!text) return;
+
+      if(/артикул|код товар|код$|sku/.test(text)){
+        if(articleCol < 0) articleCol = col;
+        score += 4;
+      }
+
+      if(/кількість|количество|к-сть|qty/.test(text)){
+        if(qtyCol < 0) qtyCol = col;
+        score += 4;
+      }
+
+      if(/товар|найменув|наименов|назва|именование|product/.test(text)){
+        if(nameCol < 0) nameCol = col;
+        score += 3;
+      }
+
+      const kind = classifyPriceHeader(cell);
+      if(kind === "retail" && retailCol < 0){ retailCol = col; score += 5; }
+      else if(kind === "master" && masterCol < 0){ masterCol = col; score += 5; }
+      else if(kind === "generic" && genericCol < 0){ genericCol = col; score += 4; }
+    });
+
+    let regularPriceCol = -1, discountPriceCol = -1, priceCol = -1;
+
+    if(retailCol >= 0 && masterCol >= 0){
+      regularPriceCol = retailCol;
+      discountPriceCol = masterCol;
+      priceCol = retailCol;
+    }else if(retailCol >= 0 && genericCol >= 0){
+      regularPriceCol = retailCol;
+      priceCol = retailCol;
+    }else if(masterCol >= 0 && genericCol >= 0){
+      regularPriceCol = genericCol;
+      discountPriceCol = masterCol;
+      priceCol = masterCol;
+    }else if(retailCol >= 0){
+      regularPriceCol = retailCol;
+      priceCol = retailCol;
+    }else if(masterCol >= 0){
+      discountPriceCol = masterCol;
+      priceCol = masterCol;
+    }else if(genericCol >= 0){
+      regularPriceCol = genericCol;
+      priceCol = genericCol;
+    }
+
+    if(priceCol >= 0 && nameCol >= 0 && score >= 7){
+      if(!best || score > best.score){
+        best = { rowIndex, score, articleCol, qtyCol, nameCol, priceCol, regularPriceCol, discountPriceCol };
+      }
+    }
+  });
+
+  return best;
+}
+
+function detectDataColumns(rows, header){
+  const sample = rows.slice(header.rowIndex + 1, header.rowIndex + 45);
+
+  const startName = Math.max(0,
+    header.nameCol >= 0 ? header.nameCol :
+    (header.articleCol >= 0 ? header.articleCol + 1 : 0)
+  );
+
+  const endName = Math.max(startName,
+    (header.qtyCol >= 0 ? header.qtyCol : header.priceCol) - 1
+  );
+
+  let nameCol = startName;
+  let bestNameScore = -1;
+
+  for(let col = startName; col <= endName; col++){
+    let count = 0, chars = 0;
+    sample.forEach(row => {
+      const v = cleanText(row[col]);
+      if(v && !isUnit(v) && parseNumber(v) === null && v.length >= 4){
+        count++;
+        chars += v.length;
+      }
+    });
+    const score = count * 100 + chars;
+    if(score > bestNameScore){
+      bestNameScore = score;
+      nameCol = col;
+    }
+  }
+
+  let unitCol = -1;
+  let bestUnitScore = 0;
+  const maxCols = Math.max(
+    ...sample.map(r => r.length),
+    header.priceCol + 1,
+    header.qtyCol + 1
+  );
+
+  for(let col = 0; col < maxCols; col++){
+    if(
+      col === nameCol ||
+      col === header.articleCol ||
+      col === header.qtyCol ||
+      col === header.priceCol ||
+      col === header.regularPriceCol ||
+      col === header.discountPriceCol
+    ) continue;
+
+    let score = 0;
+    sample.forEach(row => { if(isUnit(row[col])) score++; });
+    if(score > bestUnitScore){
+      bestUnitScore = score;
+      unitCol = col;
+    }
+  }
+
+  return {
+    articleCol: header.articleCol,
+    qtyCol: header.qtyCol,
+    priceCol: header.priceCol,
+    regularPriceCol: header.regularPriceCol ?? -1,
+    discountPriceCol: header.discountPriceCol ?? -1,
+    nameCol,
+    unitCol
+  };
+}
+
+function parseSheetRows(rows, header){
+  const columns = detectDataColumns(rows, header);
+  const result = [];
+
+  for(let r = header.rowIndex + 1; r < rows.length; r++){
+    const row = rows[r] || [];
+    const name = cleanText(row[columns.nameCol]);
+    const article = columns.articleCol >= 0 ? cleanText(row[columns.articleCol]) : "";
+    const qty = columns.qtyCol >= 0 ? parseNumber(row[columns.qtyCol]) : null;
+    const price = parseNumber(row[columns.priceCol]);
+    const retailPrice = columns.regularPriceCol >= 0 ? parseNumber(row[columns.regularPriceCol]) : null;
+    const masterPrice = columns.discountPriceCol >= 0 ? parseNumber(row[columns.discountPriceCol]) : null;
+    const unit = columns.unitCol >= 0 ? cleanText(row[columns.unitCol]) : "";
+
+    if(!name || price === null || price < 0) continue;
+
+    result.push({
+      name,
+      article,
+      qty,
+      price,
+      retailPrice,
+      masterPrice,
+      unit: unit || "шт"
+    });
+  }
+
+  return result;
+}
+
+function detectInvoiceCurrency(rows, header){
+  const source = rows
+    .slice(0, Math.min(rows.length, header.rowIndex + 5))
+    .flat()
+    .map(ntext)
+    .join(" ");
+
+  const found = new Set();
+  if(/(?:\beur\b|€)/.test(source)) found.add("EUR");
+  if(/(?:\buah\b|грн|₴)/.test(source)) found.add("UAH");
+  if(/(?:\busd\b|\$)/.test(source)) found.add("USD");
+
+  return found.size === 1 ? Array.from(found)[0] : "";
+}
+
+function detectInvoiceRate(rows, header){
+  const limit = Math.min(rows.length, header.rowIndex + 5);
+
+  for(let r = 0; r < limit; r++){
+    const row = rows[r] || [];
+
+    for(let c = 0; c < row.length; c++){
+      const raw = cleanText(row[c]);
+      const text = ntext(raw);
+
+      if(!text) continue;
+
+      const hasKurs = /курс|rate/.test(text);
+      if(!hasKurs) continue;
+
+      for(let next = c + 1; next < row.length; next++){
+        const candidate = parseNumber(row[next]);
+        if(Number.isFinite(candidate) && candidate > 1 && candidate < 1000){
+          return candidate;
+        }
+      }
+
+      const afterColon = cleanText(raw.replace(/^(курс|rate)\s*:?\s*/i,""));
+      const num = parseNumber(afterColon);
+      if(Number.isFinite(num) && num > 1 && num < 1000){
+        return num;
+      }
+    }
+  }
+
+  return null;
+}
+
+function detectSupplierFullName(rows, header){
+  const limit = Math.min(rows.length, Math.max(header.rowIndex, 1));
+
+  for(let r = 0; r < limit; r++){
+    const row = rows[r] || [];
+    for(let c = 0; c < row.length; c++){
+      const raw = cleanText(row[c]);
+      const text = ntext(raw);
+
+      if(!text || !/^(постачальник|поставщик|продавець|продавец)(\s|:|$)/.test(text)) continue;
+
+      const afterColon = cleanText(raw.replace(/^(постачальник|поставщик|продавець|продавец)\s*:?\s*/i,""));
+      if(afterColon) return afterColon;
+
+      for(let next = c + 1; next < row.length; next++){
+        const candidate = cleanText(row[next]);
+        if(candidate) return candidate;
+      }
+    }
+  }
+
+  return "";
+}
+
+function openImportSheet(parsed, file){
+  const items = parsed.items || [];
+
+  document.getElementById("impFileName").textContent = file.name;
+  document.getElementById("impItemsCount").textContent = String(items.length);
+  document.getElementById("impItemsWithPrice").textContent = String(
+    items.filter(i => Number.isFinite(i.retailPrice) || Number.isFinite(i.masterPrice) || Number.isFinite(i.price)).length
+  );
+
+  document.getElementById("impSupplierName").value = "";
+  document.getElementById("impSupplierFullName").value = parsed.supplierFullName || "";
+
+  const known = collectKnownSupplierNames();
+  document.getElementById("impSupplierList").innerHTML = known
+    .map(n => `<option value="${escapeHtml(n)}"></option>`)
+    .join("");
+
+  let currency = parsed.currency || autoDetectedCurrency || "";
+
+  if(!currency && parsed.detectedRate && parsed.detectedRate > 10){
+    currency = "EUR";
+  }
+
+  document.getElementById("impCurrency").value = currency;
+
+  let rate = parsed.detectedRate;
+
+  if(!rate){
+    if(currency === "USD" && importUsdRate > 0) rate = importUsdRate;
+    else if(importEurRate > 0) rate = importEurRate;
+  }
+
+  document.getElementById("impRate").value = rate ? String(rate) : "";
+
+  updateImportRateField();
+
+  renderImportPreview(items);
+
+  document.getElementById("importSheet").classList.add("open");
+}
+
+function collectKnownSupplierNames(){
+  const set = new Set();
+
+  const names = loadSupplierNames();
+
+  Object.keys(names).forEach(key => {
+    if(key.startsWith("short:")) return;
+    const value = cleanText(names[key]);
+    if(value) set.add(value);
+  });
+
+  Object.keys(names).forEach(key => {
+    if(!key.startsWith("short:")) return;
+    const value = names[key];
+    const name = typeof value === "string" ? cleanText(value) : cleanText(value && value.name);
+    if(name) set.add(name);
+  });
+
+  catalog.forEach(item => {
+    if(!Array.isArray(item.supplierOffers)) return;
+    item.supplierOffers.forEach(o => {
+      const n = cleanText(o && o.supplierName);
+      if(n) set.add(n);
+    });
+  });
+
+  return Array.from(set).sort((a,b) => a.localeCompare(b,"uk"));
+}
+
+function renderImportPreview(items){
+  const box = document.getElementById("impPreviewList");
+  const limit = 5;
+  const visible = items.slice(0, limit);
+
+  let html = visible.map(it => {
+    const parts = [];
+    if(it.article) parts.push(`Арт: ${escapeHtml(it.article)}`);
+    if(it.qty) parts.push(`К-сть: ${escapeHtml(String(it.qty))}`);
+    if(it.unit) parts.push(`Од: ${escapeHtml(it.unit)}`);
+
+    const prices = [];
+    if(Number.isFinite(it.retailPrice)) prices.push(`Роздріб: <b>${it.retailPrice}</b>`);
+    if(Number.isFinite(it.masterPrice)) prices.push(`Оптова: <b>${it.masterPrice}</b>`);
+    if(!prices.length && Number.isFinite(it.price)) prices.push(`Ціна: <b>${it.price}</b>`);
+
+    return `
+      <div class="importPreviewItem">
+        <div class="importPreviewName">${escapeHtml(it.name)}</div>
+        <div class="importPreviewMeta">
+          ${parts.join(" · ")}
+          ${parts.length && prices.length ? " · " : ""}
+          ${prices.join(" · ")}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  if(items.length > limit){
+    html += `<div class="importPreviewMore">…ще ${items.length - limit} товарів</div>`;
+  }
+
+  box.innerHTML = html;
+}
+
+function updateImportRateField(){
+  const currency = document.getElementById("impCurrency").value;
+  const label = document.getElementById("impRateLabel");
+  const input = document.getElementById("impRate");
+  const hint = document.getElementById("impRateHint");
+
+  if(currency === "EUR"){
+    label.textContent = "Курс, ₴/€";
+    if(!input.value && importEurRate > 0) input.value = String(importEurRate);
+  }else if(currency === "USD"){
+    label.textContent = "Курс, ₴/$";
+    if(!input.value && importUsdRate > 0) input.value = String(importUsdRate);
+  }else if(currency === "UAH"){
+    label.textContent = "Курс, ₴/€";
+    if(!input.value && importEurRate > 0) input.value = String(importEurRate);
+  }else{
+    label.textContent = "Курс";
+  }
+
+  let hintText = "Вкажіть валюту та курс цієї накладної.";
+
+  if(autoDetectedRate && document.getElementById("impRate").value === String(autoDetectedRate)){
+    hintText = "Курс визначено з файлу.";
+    hint.className = "formHint auto";
+  }else if(autoDetectedCurrency && currency === autoDetectedCurrency && !autoDetectedRate){
+    hintText = "Валюту визначено з файлу. Вкажіть курс цієї накладної.";
+    hint.className = "formHint auto";
+  }else{
+    hint.className = "formHint";
+  }
+
+  hint.textContent = hintText;
+}
+
+function closeImportSheet(){
+  document.getElementById("importSheet").classList.remove("open");
+  pendingImportFile = null;
+  pendingImportData = null;
+  autoDetectedCurrency = "";
+  autoDetectedRate = null;
+}
+
+function detectBrand(text, article){
+  const source = ntext(text + " " + (article || ""));
+
+  const rules = [
+    [/go[\s-]*plast/,"GO-PLAST"],
+    [/\bviega\b/,"Viega"],
+    [/\bm[üu]pro\b/,"MUPRO"],
+    [/k[\s-]*flex/,"K-FLEX"],
+    [/\boventrop\b/,"Oventrop"],
+    [/\bbwt\b|\bmultiblock[\s-]*inline\b/,"BWT"],
+    [/\bwaterstop\b|\bajax\b/,"Ajax"],
+    [/\bcaleffi\b/,"Caleffi"],
+    [/\bresideo\b/,"Resideo"],
+    [/\batlas\b/,"Atlas"],
+    [/\beurocarb\b/,"Eurocarb"],
+    [/\bpurolite\b/,"Purolite"],
+    [/\bciech\b/,"Ciech"],
+    [/\bvalsir\b/,"Valsir"],
+    [/\bwurth\b|\bwürth\b/,"WURTH"],
+    [/geberit/,"Geberit"],
+    [/ostendorf|htsafe|нтsafe|нт safe|ht safe/,"Ostendorf"],
+    [/\btece\b|teceflex|tecefloor/,"TECE"],
+    [/pattaroni/,"PATTARONI"],
+    [/bonomi/,"Bonomi"],
+    [/tiemme/,"Tiemme"],
+    [/walraven|\bbis\b/,"Walraven"],
+    [/sanflex/,"Sanflex"],
+    [/meibes/,"Meibes"],
+    [/simplex/,"Simplex"]
+  ];
+
+  for(const [pattern,label] of rules){
+    if(pattern.test(source)) return label;
+  }
+
+  return "";
+}
+
+function detectSystem(text){
+  const source = ntext(text);
+
+  const rules = [
+    [/flow[\s-]*fit/,"FlowFit"],
+    [/tece[\s-]*flex/,"TECEflex"],
+    [/tece[\s-]*floor/,"TECEfloor"],
+    [/ht[\s-]*safe|нт[\s-]*safe/,"HTsafe"],
+    [/sanflex[\s-]*stabil/,"Sanflex Stabil"]
+  ];
+
+  for(const [pattern,label] of rules){
+    if(pattern.test(source)) return label;
+  }
+
+  return "";
+}
+
+function detectCategory(text, brand, system){
+  const source = ntext(text + " " + (brand || "") + " " + (system || ""));
+
+  if(/каналіз|канализ|sewer|htsafe|ht safe|хрестовин|крестовин|сифон|відвід.*канал|отвод.*канал|канализац/.test(source)){
+    return "sewer";
+  }
+
+  if(/flowfit|teceflex|tece flex|\bbwt\b|водопостач|водоснаб|водопров|труба.*вода|фітинг.*вода|фитинг.*вода|фільтр|фильтр|умягч|водоочист|аніоніт|анионит|purolite|вугілля|уголь|сіль таблет|соль таблет|atlas premier|eurocarb|ciech/.test(source)){
+    return "water";
+  }
+
+  if(/запірн|запорн|кран|вентил|клапан|редуктор тиску|редуктор давления|колектор|коллектор|pattaroni|bonomi|tiemme|simplex/.test(source)){
+    return "fittings";
+  }
+
+  return "other";
+}
+
+function findExistingCatalogItem(imported, supplierName){
+  const article = ntext(imported.article);
+  const brand = ntext(imported.manufacturer);
+
+  if(article){
+    const byArticle = catalog.filter(item =>
+      item.type === "material" && ntext(item.article) === article
+    );
+
+    const byBrandAndArticle = brand
+      ? byArticle.find(item => ntext(item.manufacturer) === brand)
+      : null;
+
+    if(byBrandAndArticle) return byBrandAndArticle;
+    if(byArticle.length === 1) return byArticle[0];
+  }
+
+  const supplierArticle = ntext(imported.article);
+  if(supplierArticle && supplierName){
+    const supplier = ntext(supplierName);
+    const bySupplierArticle = catalog.find(item =>
+      item.type === "material" &&
+      Array.isArray(item.supplierOffers) &&
+      item.supplierOffers.some(offer =>
+        ntext(offer && offer.supplierName) === supplier &&
+        ntext(offer && offer.supplierArticle) === supplierArticle
+      )
+    );
+    if(bySupplierArticle) return bySupplierArticle;
+  }
+
+  const name = ntext(imported.name);
+  if(name){
+    return catalog.find(item =>
+      item.type === "material" && ntext(item.name) === name
+    ) || null;
+  }
+
+  return null;
+}
+
+function makePriceSnapshot(sourcePrice, importedAt){
+  const number = Number(sourcePrice);
+  if(!Number.isFinite(number) || number < 0) return null;
+
+  let priceEUR;
+
+  if(importCurrency === "EUR"){
+    priceEUR = number;
+  }else if(importCurrency === "USD"){
+    if(!Number.isFinite(importUsdRate) || importUsdRate <= 0) return null;
+    if(!Number.isFinite(importEurRate) || importEurRate <= 0) return null;
+    priceEUR = number * importUsdRate / importEurRate;
+  }else if(importCurrency === "UAH"){
+    if(!Number.isFinite(importEurRate) || importEurRate <= 0) return null;
+    priceEUR = number / importEurRate;
+  }else{
+    return null;
+  }
+
+  return {
+    priceEUR,
+    sourcePrice: number,
+    sourceCurrency: importCurrency,
+    eurRate: importEurRate > 0 ? importEurRate : null,
+    usdRate: importCurrency === "USD" ? importUsdRate : null,
+    importedAt
+  };
+}
+
+function upsertSupplierOffer(item, pricePair, importedAt, supplierArticle){
+  if(!Array.isArray(item.supplierOffers)) item.supplierOffers = [];
+
+  const key = ntext(importSupplierName);
+  let offer = item.supplierOffers.find(o => ntext(o && o.supplierName) === key);
+
+  if(!offer){
+    offer = {
+      supplierName: importSupplierName,
+      supplierFullName: importSupplierFullName || "",
+      retail: null,
+      master: null
+    };
+    item.supplierOffers.push(offer);
+  }
+
+  offer.supplierName = importSupplierName;
+  if(importSupplierFullName) offer.supplierFullName = importSupplierFullName;
+  if(supplierArticle) offer.supplierArticle = cleanText(supplierArticle);
+  if(pricePair.retail) offer.retail = pricePair.retail;
+  if(pricePair.master) offer.master = pricePair.master;
+  offer.updatedAt = importedAt;
+}
+
+let importSupplierName = "";
+let importSupplierFullName = "";
+let importCurrency = "";
+
+function confirmImport(){
+  importSupplierName = document.getElementById("impSupplierName").value.trim();
+  importSupplierFullName = document.getElementById("impSupplierFullName").value.trim();
+  importCurrency = document.getElementById("impCurrency").value;
+
+  const rateRaw = document.getElementById("impRate").value.trim();
+
+  if(!importSupplierName){
+    toast("Вкажіть назву постачальника");
+    return;
+  }
+
+  if(!importCurrency){
+    toast("Оберіть валюту");
+    return;
+  }
+
+  const rate = Number(String(rateRaw).replace(",",".")) || 0;
+
+  if(importCurrency !== "EUR" && rate <= 0){
+    toast("Вкажіть коректний курс");
+    return;
+  }
+
+  if(importCurrency === "USD"){
+    importUsdRate = rate;
+    localStorage.setItem(USD_RATE_KEY, String(rate));
+
+    if(!Number.isFinite(importEurRate) || importEurRate <= 0){
+      toast("Спочатку вкажіть курс EUR");
+      return;
+    }
+  }else if(importCurrency === "UAH"){
+    importEurRate = rate;
+    localStorage.setItem(EUR_RATE_KEY, String(rate));
+  }
+
+  const items = pendingImportData?.items || [];
+  const importedAt = new Date().toISOString();
+
+  let created = 0;
+  let updated = 0;
+
+  items.forEach(imported => {
+    const brand = detectBrand(imported.name, imported.article);
+    const system = detectSystem(imported.name);
+    const category = detectCategory(imported.name, brand, system);
+
+    const retailPrice = Number.isFinite(imported.retailPrice)
+      ? imported.retailPrice
+      : imported.price;
+
+    const masterPrice = Number.isFinite(imported.masterPrice)
+      ? imported.masterPrice
+      : null;
+
+    const pricePair = {
+      retail: makePriceSnapshot(retailPrice, importedAt),
+      master: masterPrice !== null ? makePriceSnapshot(masterPrice, importedAt) : null
+    };
+
+    const existing = findExistingCatalogItem({
+      article: imported.article,
+      name: imported.name,
+      manufacturer: brand
+    }, importSupplierName);
+
+    if(existing){
+      existing.supplierOffers = Array.isArray(existing.supplierOffers) ? existing.supplierOffers : [];
+      upsertSupplierOffer(existing, pricePair, importedAt, imported.article);
+
+      if(!existing.article && imported.article) existing.article = imported.article;
+      if(!existing.manufacturer && brand) existing.manufacturer = brand;
+      if(!existing.system && system) existing.system = system;
+
+      updated++;
+    }else{
+      const newItem = {
+        id: uid("cat"),
+        type: "material",
+        name: imported.name,
+        unit: imported.unit || "шт",
+        price: 0,
+        category,
+        stage: "",
+        manufacturer: brand,
+        system,
+        article: imported.article || "",
+        basePriceEUR: 0,
+        supplierOffers: []
+      };
+
+      upsertSupplierOffer(newItem, pricePair, importedAt, imported.article);
+      catalog.push(newItem);
+      created++;
+    }
+  });
+
+  saveCatalog();
+
+  const names = loadSupplierNames();
+  const shortKey = ntext(importSupplierName);
+
+  if(shortKey){
+    names["short:" + shortKey] = {
+      name: importSupplierName,
+      currency: importCurrency,
+      rate: rate
+    };
+
+    if(importSupplierFullName){
+      names[ntext(importSupplierFullName)] = importSupplierName;
+    }
+  }
+
+  saveSupplierNames(names);
+
+  closeImportSheet();
+
+  toast(`Імпортовано: ${created} нових, ${updated} оновлено`);
+
+  if(catalogManageMode){
+    renderCatalogChips();
+    renderCatalogBrandChips();
+    renderCatalogSystemChips();
+    renderCatalogList();
+  }
+}
 
 function openActions(id){
   const p = projects.find(x => x.id === id);
@@ -82,12 +5064,6 @@ function actionDelete(){
   render();
   toast("Видалено");
 }
-
-document.getElementById("actionsSheet").addEventListener("click", e => {
-  if(e.target === e.currentTarget) closeActionsSheet();
-});
-
-/* ==== Профіль ==== */
 
 function openProfile(){
   document.getElementById("pfFirstName").value = profile.firstName || "";
@@ -177,16 +5153,6 @@ function saveProfile(){
   renderHero();
 }
 
-document.getElementById("pfChips").addEventListener("click", e => {
-  const chip = e.target.closest(".chip");
-  if(!chip) return;
-  profilePayType = chip.dataset.type;
-  updateProfileChips();
-  updateProfileValueUI();
-});
-
-/* ==== Команда ==== */
-
 function openAddPerson(){
   document.getElementById("apName").value = "";
   document.getElementById("apPhone").value = "";
@@ -248,6 +5214,69 @@ function deletePerson(id){
   renderTeamList();
 }
 
+function backToList(){
+  currentProjectId = null;
+  render();
+}
+
+function openProject(id){
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+  if((p.status || "active") === "archived") return;
+  currentProjectId = id;
+  render();
+}
+
+document.getElementById("npTypeChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingType = chip.dataset.value;
+  updateProjectChips();
+});
+
+document.getElementById("npWorkChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingWork = chip.dataset.value;
+  updateProjectChips();
+});
+
+document.getElementById("csCategoryChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  customCategory = chip.dataset.value;
+  document.querySelectorAll("#csCategoryChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === customCategory);
+  });
+});
+
+document.getElementById("csStageChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  customStage = chip.dataset.value;
+  document.querySelectorAll("#csStageChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === customStage);
+  });
+});
+
+document.getElementById("ceCategoryChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingCatalogCategory = chip.dataset.value;
+  document.querySelectorAll("#ceCategoryChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingCatalogCategory);
+  });
+});
+
+document.getElementById("ceStageChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingCatalogStage = chip.dataset.value;
+  document.querySelectorAll("#ceStageChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingCatalogStage);
+  });
+});
+
 document.getElementById("apChips").addEventListener("click", e => {
   const chip = e.target.closest(".chip");
   if(!chip) return;
@@ -256,11 +5285,71 @@ document.getElementById("apChips").addEventListener("click", e => {
   updateAddPersonValueUI();
 });
 
+document.getElementById("pfChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  profilePayType = chip.dataset.type;
+  updateProfileChips();
+  updateProfileValueUI();
+});
+
+document.getElementById("impCurrency").addEventListener("change", updateImportRateField);
+
+document.getElementById("impSupplierName").addEventListener("input", function(){
+  const name = this.value.trim();
+  if(!name) return;
+
+  const names = loadSupplierNames();
+  const key = "short:" + ntext(name);
+  const saved = names[key];
+
+  if(!saved || typeof saved !== "object") return;
+
+  const currencySelect = document.getElementById("impCurrency");
+  const rateInput = document.getElementById("impRate");
+
+  if(!currencySelect.value && saved.currency){
+    currencySelect.value = saved.currency;
+  }
+
+  if(!rateInput.value && saved.rate){
+    rateInput.value = String(saved.rate);
+  }
+
+  updateImportRateField();
+});
+
+document.getElementById("projectSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeProjectSheet();
+});
+
+document.getElementById("catalogSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeCatalog();
+});
+
+document.getElementById("catalogEditSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeCatalogItemEditor();
+});
+
+document.getElementById("customSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeCustom();
+});
+
+document.getElementById("pricesSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closePricesSheet();
+});
+
+document.getElementById("importSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeImportSheet();
+});
+
 document.getElementById("addPersonSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeAddPerson();
 });
 
-/* ==== Ініціалізація ==== */
+document.getElementById("actionsSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeActionsSheet();
+});
 
 render();
 
@@ -268,3 +5357,4 @@ render();
 
 </body>
 </html>
+sa-master-nfc/calculator.html at main · sa-master/sa-master-nfc
