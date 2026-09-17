@@ -4,20 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 
-<title>Калькулятор сантехніка</title>
-
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<title>sa-master.pro — Кошторис. Звітність. Аудит.</title>
 
 <style>
 :root{
   --bg:#f4f6fa;
-  --card:rgba(255,255,255,.9);
+  --card:#fff;
   --soft:#eef1f5;
   --line:#e2e5ea;
   --text:#15171a;
   --muted:#7b8088;
   --blue:#007aff;
   --red:#ff3b30;
+  --green:#34c759;
+  --gray-dot:#c8cbd0;
+  --dark-dot:#1c1c1e;
   --shadow:0 8px 25px rgba(30,40,60,.08);
 }
 
@@ -38,13 +39,14 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 
-button,input,select{font:inherit}
+button,input,select,textarea{font:inherit}
 
 button{
   border:0;
   background:none;
   color:inherit;
   touch-action:manipulation;
+  cursor:pointer;
 }
 
 .app{
@@ -56,136 +58,176 @@ button{
   flex-direction:column;
 }
 
+/* ===== HEADER ===== */
+
 .header{
   flex:0 0 auto;
-  padding:calc(9px + env(safe-area-inset-top)) 14px 7px;
+  padding:calc(9px + env(safe-area-inset-top)) 14px 9px;
   display:flex;
   align-items:center;
   justify-content:space-between;
+  background:var(--bg);
 }
 
 .logo{
   font-size:19px;
-  font-weight:750;
+  font-weight:800;
   letter-spacing:-.4px;
+  color:var(--text);
+}
+
+.logo span{
+  color:var(--blue);
 }
 
 .subtitle{
   color:var(--muted);
   font-size:11px;
   margin-top:1px;
+  letter-spacing:.2px;
 }
 
-.headerRight{
-  display:flex;
-  align-items:center;
-  gap:9px;
-}
-
-.date{
-  color:var(--muted);
-  font-size:12px;
-}
-
-.masterButton{
-  width:32px;
-  height:32px;
+.backButton{
+  width:34px;
+  height:34px;
   border-radius:10px;
   display:flex;
   align-items:center;
   justify-content:center;
   background:#fff;
   color:var(--blue);
+  font-size:22px;
   box-shadow:0 3px 12px rgba(30,40,60,.06);
 }
 
-.masterButton svg{
-  width:19px;
-  height:19px;
-}
+/* ===== MAIN ===== */
 
-.clientWrap{
-  flex:0 0 auto;
-  padding:0 12px 8px;
-}
-
-.clientTitle{
-  padding:0 3px 5px;
-  font-size:13px;
-  font-weight:750;
-}
-
-.client{
-  background:var(--card);
-  border:1px solid rgba(255,255,255,.9);
-  border-radius:17px;
-  padding:9px;
-  box-shadow:var(--shadow);
-}
-
-.fields{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:7px;
-}
-
-.field.full{
-  grid-column:1/-1;
-}
-
-.field input{
-  width:100%;
-  height:36px;
-  border:0;
-  outline:0;
-  border-radius:10px;
-  background:var(--soft);
-  padding:0 10px;
-  font-size:13px;
-  color:var(--text);
-}
-
-.field input:focus{
-  background:#fff;
-  box-shadow:inset 0 0 0 1.5px var(--blue);
-}
-
-.estimate{
+.main{
   flex:1 1 auto;
   min-height:0;
   display:flex;
   flex-direction:column;
-  padding:0 12px;
+  overflow:hidden;
 }
 
-.estimateHead{
+/* ===== EMPTY STATE ===== */
+
+.emptyState{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:30px 24px;
+  text-align:center;
+  overflow-y:auto;
+}
+
+.emptyLogo{
+  font-size:34px;
+  font-weight:850;
+  letter-spacing:-1px;
+  margin-bottom:6px;
+}
+
+.emptyLogo span{
+  color:var(--blue);
+}
+
+.emptySubtitle{
+  color:var(--muted);
+  font-size:13px;
+  letter-spacing:.3px;
+  margin-bottom:38px;
+}
+
+.emptySteps{
+  text-align:left;
+  max-width:340px;
+  width:100%;
+  background:#fff;
+  border-radius:18px;
+  padding:20px 22px;
+  box-shadow:var(--shadow);
+  margin-bottom:22px;
+}
+
+.emptySteps ol{
+  margin:0;
+  padding-left:20px;
+  color:#333;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.emptySteps li{
+  margin-bottom:4px;
+}
+
+.emptySteps li:last-child{
+  margin-bottom:0;
+}
+
+.primaryButton{
+  height:50px;
+  min-width:220px;
+  padding:0 22px;
+  border-radius:15px;
+  background:var(--blue);
+  color:#fff;
+  font-size:15px;
+  font-weight:750;
+  box-shadow:0 6px 18px rgba(0,122,255,.25);
+  transition:transform .12s;
+}
+
+.primaryButton:active{
+  transform:scale(.97);
+}
+
+/* ===== LIST ===== */
+
+.listWrap{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.listHeader{
   flex:0 0 auto;
-  padding:3px 3px 6px;
+  padding:4px 18px 8px;
   display:flex;
   align-items:center;
   justify-content:space-between;
 }
 
-.estimateHead strong{
+.listHeader strong{
   font-size:14px;
 }
 
-.estimateHeadRight{
+.listHeaderRight{
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:10px;
 }
 
-.count{
-  color:var(--muted);
-  font-size:11px;
-}
-
-.clearEstimate{
-  display:none;
-  color:var(--red);
-  font-size:11px;
+.archLink{
+  color:var(--blue);
+  font-size:12px;
   font-weight:650;
+}
+
+.addSmallButton{
+  height:32px;
+  padding:0 12px;
+  border-radius:10px;
+  background:var(--blue);
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  box-shadow:0 3px 10px rgba(0,122,255,.2);
 }
 
 .list{
@@ -194,186 +236,116 @@ button{
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
-  padding-bottom:8px;
+  padding:0 12px 20px;
 }
 
 .list::-webkit-scrollbar{
   display:none;
 }
 
-.empty{
-  padding:45px 20px;
-  text-align:center;
-  color:var(--muted);
-  font-size:13px;
-  line-height:1.45;
-}
+/* ===== PROJECT CARD ===== */
 
-.section{
-  margin-bottom:9px;
-}
-
-.sectionTitle{
-  position:sticky;
-  top:0;
-  z-index:2;
-  background:rgba(244,246,250,.94);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  color:var(--muted);
-  font-size:10px;
-  font-weight:750;
-  letter-spacing:.5px;
-  padding:6px 4px 5px;
-}
-
-.row{
-  min-height:66px;
-  background:var(--card);
-  border:1px solid rgba(255,255,255,.9);
+.projectCard{
+  background:#fff;
   border-radius:15px;
+  padding:13px 14px;
+  margin-bottom:8px;
   box-shadow:0 3px 13px rgba(30,40,60,.05);
-  padding:9px 9px 8px 11px;
-  margin-bottom:6px;
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:8px;
-  align-items:center;
-}
-
-.name{
-  font-size:13px;
-  line-height:1.25;
-  font-weight:650;
-  overflow-wrap:anywhere;
-}
-
-.controls{
   display:flex;
-  align-items:center;
-  gap:7px;
+  gap:11px;
+  align-items:flex-start;
+  transition:transform .1s;
+}
+
+.projectCard:active{
+  transform:scale(.99);
+}
+
+.projectDot{
+  flex:0 0 auto;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:var(--gray-dot);
   margin-top:6px;
-  flex-wrap:wrap;
 }
 
-.qty{
+.projectDot.status-estimate{ background:var(--gray-dot) }
+.projectDot.status-work{ background:var(--green) }
+.projectDot.status-done{ background:var(--dark-dot) }
+
+.projectBody{
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.projectTitle{
+  font-size:15px;
+  font-weight:750;
+  line-height:1.25;
+  overflow-wrap:anywhere;
   display:flex;
-  align-items:center;
-  height:28px;
-  border-radius:9px;
-  background:var(--soft);
-  overflow:hidden;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
 }
 
-.qty button{
-  width:29px;
-  height:28px;
-  color:var(--blue);
-  font-size:18px;
+.projectUrgent{
+  flex:0 0 auto;
+  font-size:14px;
   line-height:1;
 }
 
-.qty b{
-  min-width:24px;
-  text-align:center;
+.projectClient{
+  margin-top:3px;
+  color:var(--muted);
   font-size:12px;
+  line-height:1.3;
+  overflow-wrap:anywhere;
 }
 
-.price{
-  min-height:28px;
-  border-radius:9px;
-  background:var(--soft);
-  color:#555;
-  padding:0 8px;
-  font-size:10px;
+.projectAddress{
+  margin-top:1px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.3;
+  overflow-wrap:anywhere;
 }
 
-.priceEditIcon{
-  margin-left:3px;
-  opacity:.5;
-  font-size:9px;
+.projectDivider{
+  height:1px;
+  background:var(--line);
+  margin:9px 0 8px;
 }
 
-.priceCurrency{
-  min-height:28px;
-  border-radius:9px;
-  background:var(--soft);
-  color:var(--blue);
-  padding:0 7px;
-  font-size:10px;
-  font-weight:750;
-  white-space:nowrap;
-}
-
-.priceCurrency:active{
-  background:#dfe6f4;
-}
-
-.right{
-  display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  justify-content:space-between;
-  align-self:stretch;
-  min-width:82px;
-}
-
-.lineTotal{
-  font-size:13px;
-  font-weight:750;
-  white-space:nowrap;
-}
-
-.delete{
-  width:27px;
-  height:27px;
-  border-radius:50%;
-  background:#fff0ef;
-  color:var(--red);
-  font-size:18px;
-}
-
-.bottom{
-  flex:0 0 auto;
-  padding:7px 12px calc(8px + env(safe-area-inset-bottom));
-}
-
-.totalBar{
-  height:44px;
-  background:#fff;
-  border-radius:14px;
-  box-shadow:var(--shadow);
+.projectMeta{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 13px;
-  margin-bottom:7px;
-  font-size:13px;
-}
-
-.totalBar strong{
-  font-size:17px;
-}
-
-.actions{
-  display:grid;
-  grid-template-columns:1fr 1fr;
   gap:8px;
+  font-size:12px;
+  color:#444;
 }
 
-.action{
-  height:45px;
-  border-radius:14px;
-  background:var(--blue);
-  color:#fff;
-  font-size:14px;
+.projectStage{
+  font-weight:650;
+}
+
+.projectAmount{
   font-weight:750;
-  box-shadow:0 5px 14px rgba(0,122,255,.18);
+  color:var(--text);
+  white-space:nowrap;
 }
 
-.action:active{
-  transform:scale(.98);
+.projectDetails{
+  margin-top:5px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.35;
+  overflow-wrap:anywhere;
 }
+
+/* ===== SHEET (MОДАЛКА) ===== */
 
 .sheet{
   position:fixed;
@@ -393,19 +365,25 @@ button{
 .panel{
   width:100%;
   max-width:560px;
-  height:min(82dvh,720px);
+  max-height:88dvh;
   margin:auto;
   background:#f6f7fa;
-  border-radius:22px;
+  border-radius:22px 22px 0 0;
   display:flex;
   flex-direction:column;
   overflow:hidden;
   padding-bottom:env(safe-area-inset-bottom);
+  animation:slideUp .22s ease-out;
+}
+
+@keyframes slideUp{
+  from{ transform:translateY(30px); opacity:0 }
+  to{ transform:translateY(0); opacity:1 }
 }
 
 .panelHead{
   flex:0 0 auto;
-  padding:11px 14px 7px;
+  padding:13px 16px 8px;
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -415,371 +393,202 @@ button{
   font-size:18px;
 }
 
-.panelHeadRight{
-  display:flex;
-  align-items:center;
-  gap:4px;
-}
-
-.catalogEditButton{
-  height:32px;
-  padding:0 9px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:var(--blue);
-  font-size:12px;
-  font-weight:700;
-}
-
-.catalogEditButton.active{
-  background:var(--blue);
-  color:#fff;
-}
-
 .close{
-  width:32px;
-  height:32px;
-  font-size:28px;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  font-size:26px;
   color:#777;
-}
-
-.search{
-  flex:0 0 auto;
-  width:calc(100% - 24px);
-  margin:0 12px 8px;
-  height:40px;
-  border:0;
-  outline:0;
-  border-radius:12px;
-  background:#e9ebef;
-  padding:0 12px;
-  font-size:14px;
-}
-
-.filters,
-.subFilters{
-  flex:0 0 auto;
-  display:flex;
-  gap:6px;
-  overflow-x:auto;
-  scrollbar-width:none;
-  padding:0 12px 8px;
-}
-
-.filters::-webkit-scrollbar,
-.subFilters::-webkit-scrollbar{
-  display:none;
-}
-
-.filter,
-.subFilter{
-  flex:0 0 auto;
-  height:30px;
-  padding:0 10px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:#555;
-  font-size:11px;
-  font-weight:650;
-}
-
-.filter.active,
-.subFilter.active{
-  background:var(--blue);
-  color:#fff;
-}
-
-.catalog{
-  flex:1 1 auto;
-  min-height:0;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  scrollbar-width:none;
-  padding:0 12px 15px;
-}
-
-.catalog::-webkit-scrollbar{
-  display:none;
-}
-
-.catalogItem{
-  min-height:59px;
-  background:#fff;
-  border-radius:14px;
-  padding:9px 9px 9px 11px;
-  margin:6px 0;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  box-shadow:0 2px 10px rgba(30,40,60,.04);
-}
-
-.catalogItem.added{
-  box-shadow:inset 0 0 0 1.5px rgba(0,122,255,.25);
-}
-
-.catalogName{
-  font-size:13px;
-  line-height:1.25;
-  font-weight:700;
-  overflow-wrap:anywhere;
-}
-
-.catalogMeta{
-  color:var(--muted);
-  font-size:10px;
-  line-height:1.35;
-  margin-top:3px;
-}
-
-.catalogControls{
-  display:flex;
-  align-items:center;
-  gap:5px;
-}
-
-.catalogQtyButton{
-  width:29px;
-  height:29px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:var(--blue);
-  font-size:18px;
-}
-
-.catalogQty{
-  min-width:27px;
-  text-align:center;
-  color:var(--blue);
-  font-size:12px;
-  font-weight:750;
-}
-
-.addIcon{
-  width:30px;
-  height:30px;
-  border-radius:9px;
-  background:#e9ebef;
-  color:var(--blue);
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:18px;
-  flex:0 0 auto;
+  line-height:1;
 }
 
-.catalogManage{
-  display:flex;
-  gap:5px;
-}
-
-.manageEdit,
-.manageDelete{
-  width:31px;
-  height:31px;
-  border-radius:9px;
-  font-size:15px;
-}
-
-.manageEdit{
-  background:#e9ebef;
-  color:var(--blue);
-}
-
-.manageDelete{
-  background:#fff0ef;
-  color:var(--red);
-}
-
-.catalog.manageMode .catalogControls,
-.catalog.manageMode .addIcon{
-  display:none;
-}
-
-.catalogAdd{
-  width:100%;
-  height:42px;
-  margin:7px 0 12px;
-  border-radius:13px;
-  background:#fff;
-  color:var(--blue);
-  box-shadow:0 2px 10px rgba(30,40,60,.045);
-  font-size:14px;
-  font-weight:700;
-}
-
-.catalogClear{
-  width:100%;
-  height:42px;
-  margin:0 0 12px;
-  border-radius:13px;
-  background:#fff;
-  color:var(--red);
-  box-shadow:0 2px 10px rgba(30,40,60,.045);
-  font-size:14px;
-  font-weight:700;
-}
-
-.noResults{
-  text-align:center;
-  color:var(--muted);
-  padding:35px 20px;
-  font-size:14px;
-}
-
-.editorSheet{
-  position:fixed;
-  inset:0;
-  z-index:40;
-  display:none;
-  align-items:flex-end;
-  background:rgba(0,0,0,.34);
-  backdrop-filter:blur(6px);
-}
-
-.editorSheet.open{
-  display:flex;
-}
-
-.editorPanel{
-  width:100%;
-  max-width:560px;
-  max-height:88dvh;
-  margin:auto;
-  background:#f6f7fa;
-  border-radius:22px;
+.panelBody{
+  flex:1 1 auto;
+  min-height:0;
   overflow-y:auto;
-  padding:13px 12px calc(14px + env(safe-area-inset-bottom));
+  padding:0 14px 14px;
 }
 
-.editorHead{
+.panelFooter{
+  flex:0 0 auto;
+  padding:10px 14px calc(12px + env(safe-area-inset-bottom));
   display:flex;
-  align-items:center;
-  justify-content:space-between;
-  margin-bottom:10px;
+  gap:8px;
+  border-top:1px solid var(--line);
+  background:#f6f7fa;
 }
 
-.editorHead strong{
-  font-size:18px;
+.panelFooter button{
+  flex:1;
+  height:46px;
+  border-radius:13px;
+  font-size:14px;
+  font-weight:750;
 }
 
-.editorFields{
+.btnGhost{
+  background:#e9ebef;
+  color:#555;
+}
+
+.btnPrimary{
+  background:var(--blue);
+  color:#fff;
+}
+
+/* ===== FORM ===== */
+
+.formGroup{
+  margin-bottom:12px;
+}
+
+.formLabel{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  margin:0 4px 5px;
+  font-weight:600;
+  letter-spacing:.2px;
+}
+
+.formInput,
+.formTextarea{
+  width:100%;
+  border:0;
+  outline:0;
+  border-radius:12px;
+  background:#fff;
+  padding:0 12px;
+  font-size:14px;
+  color:var(--text);
+  box-shadow:0 1px 4px rgba(30,40,60,.04);
+}
+
+.formInput{
+  height:44px;
+}
+
+.formTextarea{
+  padding:11px 12px;
+  min-height:60px;
+  resize:vertical;
+  line-height:1.35;
+}
+
+.formInput:focus,
+.formTextarea:focus{
+  box-shadow:inset 0 0 0 1.5px var(--blue);
+}
+
+.formRow{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:8px;
 }
 
-.editorField{
-  min-width:0;
-}
-
-.editorField.full{
-  grid-column:1/-1;
-}
-
-.editorField label{
-  display:block;
+.formHint{
+  margin:4px 4px 0;
   color:var(--muted);
-  font-size:10px;
-  margin:0 3px 4px;
+  font-size:10.5px;
+  line-height:1.35;
 }
 
-.editorField input,
-.editorField select{
-  width:100%;
-  height:40px;
-  border:0;
-  outline:0;
-  border-radius:11px;
+/* ===== EMPTY PROJECT ===== */
+
+.emptyProject{
+  flex:1 1 auto;
+  display:flex;
+  flex-direction:column;
+  padding:20px 16px;
+  overflow-y:auto;
+}
+
+.projectHeaderCard{
   background:#fff;
-  padding:0 10px;
-  font-size:13px;
+  border-radius:16px;
+  padding:15px 16px;
+  box-shadow:var(--shadow);
+  margin-bottom:14px;
 }
 
-.editorSave{
-  width:100%;
-  height:44px;
-  margin-top:11px;
-  border-radius:13px;
-  background:var(--blue);
-  color:#fff;
-  font-size:14px;
-  font-weight:750;
-}
-
-.masterSheet{
-  position:fixed;
-  inset:0;
-  z-index:50;
-  display:none;
-  align-items:flex-end;
-  background:rgba(0,0,0,.34);
-  backdrop-filter:blur(6px);
-}
-
-.masterSheet.open{
+.projectHeaderTitle{
+  font-size:17px;
+  font-weight:800;
+  line-height:1.25;
+  overflow-wrap:anywhere;
   display:flex;
-}
-
-.masterPanel{
-  width:100%;
-  max-width:560px;
-  margin:auto;
-  background:#f6f7fa;
-  border-radius:22px;
-  padding:13px 12px calc(14px + env(safe-area-inset-bottom));
-}
-
-.masterHead{
-  display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
-  margin-bottom:10px;
+  gap:10px;
 }
 
-.masterHead strong{
-  font-size:18px;
+.projectHeaderMeta{
+  margin-top:7px;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+  overflow-wrap:anywhere;
 }
 
-.masterFields{
-  display:grid;
-  gap:8px;
+.projectHeaderMeta b{
+  color:#333;
+  font-weight:650;
 }
 
-.masterFields input{
-  width:100%;
-  height:42px;
-  border:0;
-  outline:0;
-  border-radius:11px;
+.placeholderBlock{
   background:#fff;
-  padding:0 11px;
+  border-radius:16px;
+  padding:26px 22px;
+  box-shadow:var(--shadow);
+  text-align:center;
+  color:var(--muted);
   font-size:13px;
+  line-height:1.5;
 }
 
-.masterSave{
-  width:100%;
-  height:44px;
-  margin-top:10px;
-  border-radius:13px;
-  background:var(--blue);
-  color:#fff;
-  font-size:14px;
-  font-weight:750;
+.placeholderBlock strong{
+  display:block;
+  color:var(--text);
+  font-size:15px;
+  margin-bottom:6px;
 }
+
+/* ===== TOAST ===== */
+
+.toast{
+  position:fixed;
+  left:50%;
+  bottom:calc(24px + env(safe-area-inset-bottom));
+  transform:translateX(-50%) translateY(20px);
+  background:#1c1c1e;
+  color:#fff;
+  padding:10px 18px;
+  border-radius:12px;
+  font-size:13px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s, transform .2s;
+  z-index:100;
+  max-width:90%;
+  text-align:center;
+}
+
+.toast.show{
+  opacity:1;
+  transform:translateX(-50%) translateY(0);
+}
+
+/* ===== UTIL ===== */
+
+.hidden{ display:none !important }
 
 @media(max-width:390px){
-  .logo{
-    font-size:17px;
-  }
-
-  .row{
-    min-height:63px;
-  }
-
-  .name{
-    font-size:12px;
-  }
+  .logo{ font-size:17px }
+  .emptyLogo{ font-size:30px }
+  .projectTitle{ font-size:14px }
 }
 </style>
 </head>
@@ -788,3428 +597,480 @@ button{
 
 <div class="app">
 
-<header class="header">
-
-<div>
-  <div class="logo">
-    Калькулятор сантехніка
-  </div>
-
-  <div class="subtitle">
-    кошторис
-  </div>
-</div>
-
-<div class="headerRight">
-
-<div
-  class="date"
-  id="date"
-></div>
-
-<button
-  class="masterButton"
-  onclick="openMaster()"
-  aria-label="Дані майстра"
->
-  ⚙
-</button>
-
-</div>
-
-</header>
-
-<div class="clientWrap">
-
-<div class="clientTitle">
-  Замовник
-</div>
-
-<div class="client">
-
-<div class="fields">
-
-<div class="field">
-<input
-  id="clientName"
-  placeholder="Ім’я та прізвище"
->
-</div>
-
-<div class="field">
-<input
-  id="clientPhone"
-  placeholder="Телефон"
-  inputmode="tel"
->
-</div>
-
-<div class="field full">
-<input
-  id="clientAddress"
-  placeholder="Адреса об’єкта"
->
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<main class="estimate">
-
-<div class="estimateHead">
-
-<strong>
-  Кошторис
-</strong>
-
-<div class="estimateHeadRight">
-
-<span
-  class="count"
-  id="count"
->
-  0 позицій
-</span>
-
-<button
-  class="clearEstimate"
-  id="clearEstimate"
-  onclick="clearEstimate()"
->
-  Очистити
-</button>
-
-</div>
-
-</div>
-
-<div
-  class="list"
-  id="list"
-></div>
-
-</main>
-
-<div class="bottom">
-
-<div class="totalBar">
-
-<span>
-  Разом
-</span>
-
-<strong id="grand">
-  0 грн
-</strong>
-
-</div>
-
-<div class="actions">
-
-<button
-  class="action"
-  onclick="openCatalog('work')"
->
-  ＋ Робота
-</button>
-
-<button
-  class="action"
-  onclick="openCatalog('material')"
->
-  ＋ Матеріал
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- CATALOG -->
-
-<div
-  class="sheet"
-  id="sheet"
-  onclick="if(event.target===this)closeCatalog()"
->
-
-<div class="panel">
-
-<div class="panelHead">
-
-<strong id="panelTitle">
-  Додати
-</strong>
-
-<div class="panelHeadRight">
-
-<button
-  class="catalogEditButton"
-  id="supplierImportButton"
-  style="display:none"
-  type="button"
->
-  ⇩ Імпорт
-</button>
-
-<button
-  class="catalogEditButton"
-  id="eurRateButton"
-  onclick="editEurRate()"
-  style="display:none"
->
-  € Курс
-</button>
-
-<button
-  class="catalogEditButton"
-  id="catalogEditButton"
-  onclick="toggleCatalogManage()"
->
-  ✎ Каталог
-</button>
-
-<button
-  class="close"
-  onclick="closeCatalog()"
->
-  ×
-</button>
-
-</div>
-
-</div>
-
-<input
-  id="search"
-  class="search"
-  placeholder="Пошук позиції…"
-  oninput="renderCatalog()"
->
-
-<div
-  class="filters"
-  id="filters"
-></div>
-
-<div
-  class="subFilters"
-  id="brandFilters"
-  style="display:none"
-></div>
-
-<div
-  class="subFilters"
-  id="systemFilters"
-  style="display:none"
-></div>
-
-<div
-  class="catalog"
-  id="catalog"
-></div>
-
-</div>
-
-</div>
-
-<!-- EDITOR -->
-
-<div
-  class="editorSheet"
-  id="editorSheet"
-  onclick="if(event.target===this)closeCatalogEditor()"
->
-
-<div class="editorPanel">
-
-<div class="editorHead">
-
-<strong id="editorTitle">
-  Нова позиція
-</strong>
-
-<button
-  class="close"
-  onclick="closeCatalogEditor()"
->
-  ×
-</button>
-
-</div>
-
-<div class="editorFields">
-
-<div class="editorField full">
-
-<label>
-  Повна назва
-</label>
-
-<input
-  id="editorName"
-  placeholder="Повна назва"
->
-
-</div>
-
-<div class="editorField full">
-
-<label>
-  Назва для кошторису
-</label>
-
-<input
-  id="editorEstimateName"
-  placeholder="Назва для кошторису"
->
-
-</div>
-
-<div class="editorField">
-
-<label id="editorPriceLabel">
-  Ціна
-</label>
-
-<input
-  id="editorPrice"
-  type="number"
-  inputmode="decimal"
-  min="0"
->
-
-</div>
-
-<div class="editorField">
-
-<label>
-  Одиниця
-</label>
-
-<input
-  id="editorUnit"
-  placeholder="шт"
->
-
-</div>
-
-<div class="editorField">
-
-<label>
-  Тип
-</label>
-
-<select id="editorType">
-
-<option value="work">
-  Робота
-</option>
-
-<option value="material">
-  Матеріал
-</option>
-
-</select>
-
-</div>
-
-<div class="editorField">
-
-<label id="editorGroupLabel">
-  Етап
-</label>
-
-<select id="editorGroup"></select>
-
-</div>
-
-<div
-  id="materialFields"
-  class="editorField full"
->
-
-<div class="editorFields">
-
-<div class="editorField">
-
-<label>
-  Бренд
-</label>
-
-<input
-  id="editorManufacturer"
-  placeholder="TECE"
->
-
-</div>
-
-<div class="editorField">
-
-<label>
-  Система
-</label>
-
-<input
-  id="editorSystem"
-  placeholder="TECEflex"
->
-
-</div>
-
-<div class="editorField full">
-
-<label>
-  Артикул
-</label>
-
-<input
-  id="editorArticle"
-  placeholder="Артикул"
->
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<button
-  class="editorSave"
-  onclick="saveCatalogItem()"
->
-  Зберегти
-</button>
-
-</div>
-
-</div>
-
-<!-- MASTER -->
-
-<div
-  class="masterSheet"
-  id="masterSheet"
-  onclick="if(event.target===this)closeMaster()"
->
-
-<div class="masterPanel">
-
-<div class="masterHead">
-
-<strong>
-  Дані майстра
-</strong>
-
-<button
-  class="close"
-  onclick="closeMaster()"
->
-  ×
-</button>
-
-</div>
-
-<div class="masterFields">
-
-<input
-  id="masterName"
-  placeholder="Ім’я"
->
-
-<input
-  id="masterPhone"
-  placeholder="Телефон"
-  inputmode="tel"
->
-
-</div>
-
-<button
-  class="masterSave"
-  onclick="saveMaster()"
->
-  Зберегти
-</button>
-
-</div>
-
-</div>
-
-<!-- CURRENCY PICKER -->
-
-<div
-  class="sheet"
-  id="currencySheet"
-  onclick="if(event.target===this)closeCurrencyPicker()"
->
-  <div class="panel" style="height:auto;max-height:70dvh">
-    <div class="panelHead">
-      <strong>Курс для позиції</strong>
-      <button class="close" onclick="closeCurrencyPicker()">×</button>
+  <header class="header" id="appHeader">
+    <div>
+      <div class="logo">sa-master<span>.pro</span></div>
+      <div class="subtitle" id="headerSubtitle">Кошторис. Звітність. Аудит.</div>
     </div>
-    <div id="currencyList" style="padding:0 12px 14px;overflow-y:auto"></div>
+    <div id="headerRight"></div>
+  </header>
+
+  <main class="main" id="main"></main>
+
+</div>
+
+<!-- SHEET: NEW PROJECT -->
+
+<div class="sheet" id="newProjectSheet">
+  <div class="panel">
+
+    <div class="panelHead">
+      <strong>Новий об'єкт</strong>
+      <button class="close" onclick="closeNewProject()">×</button>
+    </div>
+
+    <div class="panelBody">
+
+      <div class="formGroup">
+        <label class="formLabel">Коротка назва (необов'язково)</label>
+        <input
+          class="formInput"
+          id="npTitle"
+          placeholder="Напр. Печерськ"
+          autocomplete="off"
+        >
+        <div class="formHint">Якщо не вказати — використаємо адресу або ім'я замовника</div>
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Ім'я замовника *</label>
+        <input
+          class="formInput"
+          id="npClientName"
+          placeholder="Іван Петренко"
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Телефон замовника *</label>
+        <input
+          class="formInput"
+          id="npClientPhone"
+          placeholder="+380 67 123 45 67"
+          inputmode="tel"
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Адреса / позначення об'єкта</label>
+        <textarea
+          class="formTextarea"
+          id="npAddress"
+          placeholder="ЖК Comfort Town, літ. Б, кв. 45 або Котельня, Вінниця"
+          autocomplete="off"
+        ></textarea>
+        <div class="formHint">Деталі об'єкта (тип, площа, санвузли) заповнимо пізніше</div>
+      </div>
+
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeNewProject()">Скасувати</button>
+      <button class="btnPrimary" onclick="createProject()">Створити</button>
+    </div>
+
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-  const defaultCatalog = [
 
-{
-  id:"w-rough-node",
-  name:"Монтаж запірно-регулюючого вузла",
-  estimateName:"Монтаж запірно-регулюючого вузла",
-  type:"work",
-  stage:"rough",
-  price:7000,
-  unit:"шт"
-},
+/* =========================================================
+   STORAGE
+========================================================= */
 
-{
-  id:"w-rough-tech",
-  name:"Оздоблення технічної зони",
-  estimateName:"Оздоблення технічної зони",
-  type:"work",
-  stage:"rough",
-  price:10000,
-  unit:"шт"
-},
+const PROJECTS_KEY = "sa_projects";
 
-{
-  id:"w-rough-riser",
-  name:"Заміна каналізаційного стояка",
-  estimateName:"Заміна каналізаційного стояка",
-  type:"work",
-  stage:"rough",
-  price:5000,
-  unit:"шт"
-},
+let projects = [];
 
-{
-  id:"w-finish-boiler",
-  name:"Бойлер",
-  estimateName:"Монтаж бойлера",
-  type:"work",
-  stage:"finish",
-  price:7000,
-  unit:"шт"
-},
-
-{
-  id:"w-finish-water",
-  name:"Водоочистка",
-  estimateName:"Монтаж водоочистки",
-  type:"work",
-  stage:"finish",
-  price:10000,
-  unit:"шт"
-},
-
-{
-  id:"w-finish-bath",
-  name:"Ванна",
-  estimateName:"Монтаж ванни",
-  type:"work",
-  stage:"finish",
-  price:3500,
-  unit:"шт"
-},
-
-{
-  id:"w-finish-shower",
-  name:"Душ",
-  estimateName:"Монтаж душу",
-  type:"work",
-  stage:"finish",
-  price:3000,
-  unit:"шт"
-},
-
-{
-  id:"w-finish-sink",
-  name:"Умивальник",
-  estimateName:"Монтаж умивальника",
-  type:"work",
-  stage:"finish",
-  price:3500,
-  unit:"шт"
-},
-
-{
-  id:"w-finish-toilet",
-  name:"Унітаз",
-  estimateName:"Монтаж унітазу",
-  type:"work",
-  stage:"finish",
-  price:3500,
-  unit:"шт"
-},
-
-{
-  id:"m-water-pipe",
-  name:"Труба водопостачання",
-  estimateName:"Труба водопостачання",
-  type:"material",
-  category:"water",
-  manufacturer:"",
-  system:"",
-  article:"",
-  basePriceEUR:0,
-  unit:"м"
-},
-
-{
-  id:"m-water-fittings",
-  name:"Фітинги водопостачання",
-  estimateName:"Фітинги водопостачання",
-  type:"material",
-  category:"water",
-  manufacturer:"",
-  system:"",
-  article:"",
-  basePriceEUR:0,
-  unit:"компл."
-},
-
-{
-  id:"m-sewer-pipe",
-  name:"Труба каналізації",
-  estimateName:"Труба каналізації",
-  type:"material",
-  category:"sewer",
-  manufacturer:"",
-  system:"",
-  article:"",
-  basePriceEUR:0,
-  unit:"м"
-},
-
-{
-  id:"m-sewer-fittings",
-  name:"Фітинги каналізації",
-  estimateName:"Фітинги каналізації",
-  type:"material",
-  category:"sewer",
-  manufacturer:"",
-  system:"",
-  article:"",
-  basePriceEUR:0,
-  unit:"компл."
-},
-
-{
-  id:"m-valve",
-  name:"Крани",
-  estimateName:"Крани",
-  type:"material",
-  category:"fittings",
-  manufacturer:"",
-  system:"",
-  article:"",
-  basePriceEUR:0,
-  unit:"шт"
-},
-
-{
-  id:"m-other",
-  name:"Інше",
-  estimateName:"Інші матеріали",
-  type:"material",
-  category:"other",
-  manufacturer:"",
-  system:"",
-  article:"",
-  basePriceEUR:0,
-  unit:"шт"
+try{
+  const raw = localStorage.getItem(PROJECTS_KEY);
+  const parsed = raw ? JSON.parse(raw) : [];
+  if(Array.isArray(parsed)) projects = parsed;
+}catch(e){
+  console.warn("Не вдалося прочитати projects:", e);
+  projects = [];
 }
 
-];
-
-let catalog = JSON.parse(
-  localStorage.getItem(
-    "plumber_catalog"
-  ) || "null"
-);
-
-if(!Array.isArray(catalog)){
-
-  catalog = JSON.parse(
-    JSON.stringify(
-      defaultCatalog
-    )
-  );
-
-  localStorage.setItem(
-    "plumber_catalog",
-    JSON.stringify(catalog)
-  );
+function saveProjects(){
+  try{
+    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+  }catch(e){
+    console.warn("Не вдалося зберегти projects:", e);
+  }
 }
 
-catalog =
-  catalog.map(item => {
+/* Ідентифікатор активної сесії — який об'єкт зараз відкритий */
+let currentProjectId = null;
 
-    if(
-      item.type ===
-      "material"
-    ){
+/* =========================================================
+   UTILS
+========================================================= */
 
-      if(
-        typeof item.manufacturer !==
-        "string"
-      ){
-        item.manufacturer = "";
-      }
-
-      if(
-        typeof item.system !==
-        "string"
-      ){
-        item.system = "";
-      }
-
-      if(
-        typeof item.article !==
-        "string"
-      ){
-        item.article = "";
-      }
-
-      if(
-        typeof item.category !==
-        "string"
-      ){
-        item.category = "other";
-      }
-
-      const basePriceEUR =
-        Number(
-          item.basePriceEUR
-        );
-
-      item.basePriceEUR =
-        Number.isFinite(
-          basePriceEUR
-        ) &&
-        basePriceEUR >= 0
-          ? basePriceEUR
-          : 0;
-
-      delete item.price;
-    }
-
-    return item;
-  });
-
-localStorage.setItem(
-  "plumber_catalog",
-  JSON.stringify(catalog)
-);
-
-let estimate =
-  JSON.parse(
-    localStorage.getItem(
-      "plumber_estimate"
-    ) || "[]"
-  );
-
-let catalogMode =
-  "work";
-
-let catalogFilter =
-  "all";
-
-let catalogBrandFilter =
-  "all";
-
-let catalogSystemFilter =
-  "all";
-
-let catalogManageMode =
-  false;
-
-let editingCatalogId =
-  null;
-
-const EUR_RATE_KEY =
-  "plumber_eurRate";
-
-let eurRate =
-  Number(
-    localStorage.getItem(
-      EUR_RATE_KEY
-    ) || 0
-  );
-
-if(
-  !Number.isFinite(
-    eurRate
-  ) ||
-  eurRate < 0
-){
-  eurRate = 0;
+function uid(prefix){
+  return (prefix || "id") + "-" + Date.now() + "-" + Math.random().toString(36).slice(2,7);
 }
 
-/* =========================
-   РОЗРАХУНОК ЦІНИ МАТЕРІАЛУ
-========================= */
-
-function getEurRateForSupplier(item, supplierName){
-  const offers = Array.isArray(item && item.supplierOffers) ? item.supplierOffers : [];
-  const key = String(supplierName || "").trim().toLowerCase();
-
-  const offer = key
-    ? offers.find(o => String(o && o.supplierName || "").trim().toLowerCase() === key)
-    : null;
-
-  const snap = offer && (offer.retail || offer.master);
-  const rate = Number(snap && snap.eurRate);
-
-  if(Number.isFinite(rate) && rate > 0) return rate;
-
-  return null;
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 }
 
-function getMaterialCatalogPrice(item, supplierName){
-  const basePriceEUR = Number(item && item.basePriceEUR);
-  if(!Number.isFinite(basePriceEUR) || basePriceEUR < 0) return 0;
-
-  const snapshotRate = Number(item && item._snapshotEurRate);
-  if(Number.isFinite(snapshotRate) && snapshotRate > 0){
-    return basePriceEUR * snapshotRate;
-  }
-
-  if(supplierName){
-    const supplierRate = getEurRateForSupplier(item, supplierName);
-    if(Number.isFinite(supplierRate) && supplierRate > 0){
-      return basePriceEUR * supplierRate;
-    }
-  }
-
-  if(!Number.isFinite(eurRate) || eurRate <= 0) return 0;
-  return basePriceEUR * eurRate;
+function toast(msg){
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), 2200);
 }
 
-function getSupplierRatesForItem(item){
-  const offers = Array.isArray(item && item.supplierOffers) ? item.supplierOffers : [];
-  const result = [];
-
-  offers.forEach(offer => {
-    const snap = offer && (offer.retail || offer.master);
-    const rate = Number(snap && snap.eurRate);
-    if(Number.isFinite(rate) && rate > 0){
-      result.push({
-        supplierName: String(offer.supplierName || "").trim(),
-        supplierFullName: String(offer.supplierFullName || "").trim(),
-        eurRate: rate
-      });
-    }
-  });
-
-  if(Number.isFinite(eurRate) && eurRate > 0){
-    result.push({
-      supplierName: "",
-      supplierFullName: "Глобальний курс каталогу",
-      eurRate: eurRate,
-      isGlobal: true
-    });
-  }
-
-  return result;
-}
-
-function getEstimateItemPrice(item){
-  if(item.type !== "material"){
-    return Number(item.price) || 0;
-  }
-
-  const product = catalog.find(p => p.id === item.id);
-  const basePriceEUR = Number(product && product.basePriceEUR);
-
-  if(!Number.isFinite(basePriceEUR) || basePriceEUR < 0){
-    return Number(item.price) || 0;
-  }
-
-  const snapshotRate = Number(item.eurRate);
-  if(Number.isFinite(snapshotRate) && snapshotRate > 0){
-    return basePriceEUR * snapshotRate;
-  }
-
-  if(item.supplierName){
-    const supplierRate = getEurRateForSupplier(product, item.supplierName);
-    if(Number.isFinite(supplierRate) && supplierRate > 0){
-      return basePriceEUR * supplierRate;
-    }
-  }
-
-  if(Number.isFinite(eurRate) && eurRate > 0){
-    return basePriceEUR * eurRate;
-  }
-
-  return Number(item.price) || 0;
-}
-
-function updateEurRateButton(){
-
-  const button =
-    document.getElementById(
-      "eurRateButton"
-    );
-
-  if(!button){
-    return;
-  }
-
-  if(
-    catalogMode !==
-    "material"
-  ){
-
-    button.style.display =
-      "none";
-
-    return;
-  }
-
-  button.style.display =
-    "block";
-
-  button.textContent =
-    eurRate > 0
-      ? `€ ${eurRate.toLocaleString(
-          "uk-UA",
-          {
-            minimumFractionDigits:2,
-            maximumFractionDigits:2
-          }
-        )}`
-      : "€ Курс";
-}
-
-function editEurRate(){
-
-  const value =
-    prompt(
-      "Поточний курс EUR, грн:",
-      eurRate > 0
-        ? String(eurRate)
-        : ""
-    );
-
-  if(
-    value === null
-  ){
-    return;
-  }
-
-  const rate =
-    Number(
-      String(value)
-        .replace(
-          ",",
-          "."
-        )
-    );
-
-  if(
-    !Number.isFinite(
-      rate
-    ) ||
-    rate <= 0
-  ){
-
-    alert(
-      "Вкажіть коректний курс EUR."
-    );
-
-    return;
-  }
-
-  eurRate =
-    rate;
-
-  localStorage.setItem(
-    EUR_RATE_KEY,
-    String(eurRate)
-  );
-
-  updateEurRateButton();
-  renderCatalog();
-  renderEstimate();
-}
-
-function normalizeText(
-  value
-){
-
-  return String(
-    value || ""
-  )
-    .trim()
-    .toLowerCase()
-    .replace(
-      /\s+/g,
-      " "
-    );
-}
-
-function escapeHtml(
-  value
-){
-
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-}
-
-/* Точна ціна з копійками */
 function money(value){
   const n = Number(value) || 0;
-  const hasCents = Math.abs(n - Math.round(n)) > 0.005;
-
-  return new Intl.NumberFormat("uk-UA",{
-    minimumFractionDigits: hasCents ? 2 : 0,
-    maximumFractionDigits: hasCents ? 2 : 0
-  }).format(n) + " грн";
+  return new Intl.NumberFormat("uk-UA").format(Math.round(n)) + " ₴";
 }
 
-/* Округлена сума без копійок */
-function moneyRounded(value){
-  const n = Number(value) || 0;
-  return new Intl.NumberFormat("uk-UA").format(Math.round(n)) + " грн";
-}
-
-function save(){
-
-  localStorage.setItem(
-    "plumber_estimate",
-    JSON.stringify(
-      estimate
-    )
-  );
-}
-
-function saveCatalog(){
-
-  localStorage.setItem(
-    "plumber_catalog",
-    JSON.stringify(
-      catalog
-    )
-  );
-}
-
-/* =========================
-   ESTIMATE
-========================= */
-
-function renderEstimate(){
-
-  const list =
-    document.getElementById(
-      "list"
-    );
-
-  const clearButton =
-    document.getElementById(
-      "clearEstimate"
-    );
-
-  estimate.forEach(item => {
-    if(item.type === "material"){
-      item.price = getEstimateItemPrice(item);
-    }
-  });
-
-  if(
-    !estimate.length
-  ){
-
-    list.innerHTML = `
-      <div class="empty">
-        Кошторис порожній.<br>
-        Додайте роботу або матеріал.
-      </div>
-    `;
-
-    clearButton.style.display =
-      "none";
-
-  }else{
-
-    let html = "";
-
-    const rough =
-      estimate.filter(
-        item =>
-          item.type === "work" &&
-          item.stage === "rough"
-      );
-
-    const finish =
-      estimate.filter(
-        item =>
-          item.type === "work" &&
-          item.stage === "finish"
-      );
-
-    const materials =
-      estimate.filter(
-        item =>
-          item.type === "material"
-      );
-
-    if(
-      rough.length
-    ){
-
-      html += section(
-        "ЧОРНОВИЙ МОНТАЖ",
-        rough
-      );
-    }
-
-    if(
-      finish.length
-    ){
-
-      html += section(
-        "ЧИСТОВИЙ МОНТАЖ",
-        finish
-      );
-    }
-
-    if(
-      materials.length
-    ){
-
-      html += section(
-        "МАТЕРІАЛИ",
-        materials
-      );
-    }
-
-    list.innerHTML =
-      html;
-
-    clearButton.style.display =
-      "block";
-  }
-
-  const total =
-    estimate.reduce(
-      (
-        sum,
-        item
-      ) =>
-        sum +
-        item.price *
-        item.qty,
-      0
-    );
-
-  document.getElementById(
-    "grand"
-  ).textContent =
-    moneyRounded(total);
-
-  document.getElementById(
-    "count"
-  ).textContent =
-    estimate.length +
-    " позицій";
-}
-
-function section(
-  title,
-  items
-){
-
-  return `
-    <div class="section">
-
-      <div class="sectionTitle">
-        ${title}
-      </div>
-
-      ${
-        items
-          .map(
-            renderRow
-          )
-          .join("")
-      }
-
-    </div>
-  `;
-}
-
-function renderRow(
-  item
-){
-
-  const index =
-    estimate.indexOf(
-      item
-    );
-
-  const rateLabel =
-    Number(item.eurRate) > 0
-      ? Number(item.eurRate).toFixed(2)
-      : "—";
-
-  return `
-    <div class="row">
-
-      <div>
-
-        <div class="name">
-          ${escapeHtml(item.name)}
-        </div>
-
-        <div class="controls">
-
-          <div class="qty">
-
-            <button
-              onclick="changeQty(${index},-1)"
-            >
-              −
-            </button>
-
-            <b>
-              ${item.qty}
-            </b>
-
-            <button
-              onclick="changeQty(${index},1)"
-            >
-              +
-            </button>
-
-          </div>
-
-          <button
-            class="price"
-            onclick="editPrice(${index})"
-          >
-            ${money(item.price)}
-            /
-            ${escapeHtml(item.unit)}
-            <span class="priceEditIcon">✎</span>
-          </button>
-
-          ${
-            item.type === "material"
-              ? `
-                <button
-                  class="priceCurrency"
-                  onclick="openCurrencyPicker(${index})"
-                  title="Змінити курс / постачальника"
-                >
-                  € ${rateLabel}
-                </button>
-              `
-              : ""
-          }
-
-        </div>
-
-        ${
-          item.type === "material" && item.supplierName
-            ? `
-              <div class="catalogMeta" style="margin-top:3px">
-                Постачальник:
-                ${escapeHtml(item.supplierName)}
-                ${
-                  Number(item.eurRate) > 0
-                    ? ` · курс ${Number(item.eurRate).toFixed(2)}`
-                    : ""
-                }
-              </div>
-            `
-            : ""
-        }
-
-      </div>
-
-      <div class="right">
-
-        <div class="lineTotal">
-          ${
-            money(
-              item.price *
-              item.qty
-            )
-          }
-        </div>
-
-        <button
-          class="delete"
-          onclick="removeItem(${index})"
-        >
-          ×
-        </button>
-
-      </div>
-
-    </div>
-  `;
-}
-
-function changeQty(
-  index,
-  delta
-){
-
-  estimate[index].qty =
-    Math.max(
-      1,
-      estimate[index].qty +
-      delta
-    );
-
-  save();
-  renderEstimate();
-}
-
-function removeItem(
-  index
-){
-
-  estimate.splice(
-    index,
-    1
-  );
-
-  save();
-  renderEstimate();
-}
-
-function editPrice(
-  index
-){
-
-  const value =
-    prompt(
-      "Ціна за одиницю, грн:",
-      estimate[index].price
-    );
-
-  if(
-    value === null
-  ){
-    return;
-  }
-
-  const price =
-    Number(
-      String(value)
-        .replace(
-          ",",
-          "."
-        )
-    );
-
-  if(
-    Number.isFinite(
-      price
-    ) &&
-    price >= 0
-  ){
-
-    estimate[index].price =
-      price;
-
-    save();
-    renderEstimate();
-  }
-}
-
-function clearEstimate(){
-
-  if(
-    !estimate.length
-  ){
-    return;
-  }
-
-  if(
-    !confirm(
-      "Очистити весь кошторис?"
-    )
-  ){
-    return;
-  }
-
-  estimate = [];
-
-  save();
-  renderEstimate();
-}
-
-/* =========================
-   CURRENCY PICKER
-========================= */
-
-let currencyPickerIndex = null;
-let currencyPickerRates = [];
-
-function openCurrencyPicker(index){
-  const item = estimate[index];
-  if(!item || item.type !== "material") return;
-
-  const product = catalog.find(p => p.id === item.id);
-  if(!product){
-    alert("Товар не знайдено в каталозі.");
-    return;
-  }
-
-  currencyPickerIndex = index;
-
-  const rates = getSupplierRatesForItem(product);
-  currencyPickerRates = rates;
-
-  const list = document.getElementById("currencyList");
-
-  if(!rates.length){
-    list.innerHTML = `
-      <div class="noResults">
-        Немає жодного курсу.<br><br>
-        Імпортуйте рахунок постачальника або вкажіть глобальний курс EUR.
-      </div>
-    `;
-    document.getElementById("currencySheet").classList.add("open");
-    return;
-  }
-
-  const currentSupplier = String(item.supplierName || "").trim().toLowerCase();
-  const currentRate = Number(item.eurRate);
-
-  list.innerHTML = rates.map((rate, i) => {
-    const isActive =
-      (rate.isGlobal &&
-        !currentSupplier &&
-        Number.isFinite(currentRate) &&
-        currentRate === rate.eurRate) ||
-      (!rate.isGlobal &&
-        String(rate.supplierName).trim().toLowerCase() === currentSupplier &&
-        Number.isFinite(currentRate) &&
-        currentRate === rate.eurRate);
-
-    const label = rate.isGlobal
-      ? "🌐 Глобальний курс каталогу"
-      : `👤 ${rate.supplierName || "Без назви"}`;
-
-    const sub =
-      rate.supplierFullName && rate.supplierFullName !== rate.supplierName
-        ? `<div class="catalogMeta">${escapeHtml(rate.supplierFullName)}</div>`
-        : "";
-
-    const itemPrice = (Number(product.basePriceEUR) || 0) * rate.eurRate;
-
-    return `
-      <button
-        class="catalogItem"
-        style="width:100%;text-align:left;display:block;${
-          isActive
-            ? "box-shadow:inset 0 0 0 1.5px rgba(0,122,255,.35)"
-            : ""
-        }"
-        onclick="applyCurrencyChoice(${i})"
-      >
-        <div class="catalogName">${escapeHtml(label)}</div>
-        ${sub}
-        <div class="catalogMeta">
-          Курс: <b>${rate.eurRate.toFixed(2)} грн/€</b>
-          · Ціна позиції: <b>${money(itemPrice)}</b>
-        </div>
-      </button>
-    `;
-  }).join("");
-
-  document.getElementById("currencySheet").classList.add("open");
-}
-
-function applyCurrencyChoice(rateIndex){
-  const item = estimate[currencyPickerIndex];
-  if(!item) return;
-
-  const rate = currencyPickerRates[rateIndex];
-  if(!rate) return;
-
-  item.supplierName = rate.supplierName || "";
-  item.supplierFullName = rate.supplierFullName || "";
-  item.eurRate = rate.eurRate;
-
-  item.price = getEstimateItemPrice(item);
-
-  save();
-  renderEstimate();
-  closeCurrencyPicker();
-}
-
-function closeCurrencyPicker(){
-  document.getElementById("currencySheet").classList.remove("open");
-  currencyPickerIndex = null;
-  currencyPickerRates = [];
-}
-
-/* =========================
-   CATALOG
-========================= */
-
-function openCatalog(
-  type
-){
-
-  catalogMode =
-    type;
-
-  catalogFilter =
-    "all";
-
-  catalogBrandFilter =
-    "all";
-
-  catalogSystemFilter =
-    "all";
-
-  catalogManageMode =
-    false;
-
-  const editButton =
-    document.getElementById(
-      "catalogEditButton"
-    );
-
-  editButton
-    .classList
-    .remove(
-      "active"
-    );
-
-  editButton.textContent =
-    "✎ Каталог";
-
-  document.getElementById(
-    "panelTitle"
-  ).textContent =
-    type === "work"
-      ? "Додати роботу"
-      : "Додати матеріал";
-
-  document.getElementById(
-    "search"
-  ).value =
-    "";
-
-  document.getElementById(
-    "sheet"
-  ).classList.add(
-    "open"
-  );
-
-  // Показати/сховати кнопки імпорту та курсу
-  const importBtn = document.getElementById("supplierImportButton");
-  if(importBtn){
-    importBtn.style.display = type === "material" ? "block" : "none";
-  }
-
-  updateEurRateButton();
-  renderFilters();
-  renderBrandFilters();
-  renderSystemFilters();
-  renderCatalog();
-}
-
-function closeCatalog(){
-
-  document.getElementById(
-    "sheet"
-  ).classList.remove(
-    "open"
-  );
-}
-
-function renderFilters(){
-
-  const box =
-    document.getElementById(
-      "filters"
-    );
-
-  const hasAnyItems =
-    Array.isArray(catalog) &&
-    catalog.some(item => item.type === catalogMode);
-
-  if(!hasAnyItems){
-    box.style.display = "none";
-    box.innerHTML = "";
-    return;
-  }
-
-  box.style.display = "flex";
-
-  if(
-    catalogMode ===
-    "work"
-  ){
-
-    box.innerHTML = `
-
-      <button
-        class="filter ${
-          catalogFilter === "all"
-            ? "active"
-            : ""
-        }"
-        onclick="setFilter('all')"
-      >
-        Усі
-      </button>
-
-      <button
-        class="filter ${
-          catalogFilter === "rough"
-            ? "active"
-            : ""
-        }"
-        onclick="setFilter('rough')"
-      >
-        Чорнові
-      </button>
-
-      <button
-        class="filter ${
-          catalogFilter === "finish"
-            ? "active"
-            : ""
-        }"
-        onclick="setFilter('finish')"
-      >
-        Чистові
-      </button>
-
-    `;
-
-  }else{
-
-    box.innerHTML = `
-
-      <button
-        class="filter ${
-          catalogFilter === "all"
-            ? "active"
-            : ""
-        }"
-        onclick="setFilter('all')"
-      >
-        Усі
-      </button>
-
-      <button
-        class="filter ${
-          catalogFilter === "fittings"
-            ? "active"
-            : ""
-        }"
-        onclick="setFilter('fittings')"
-      >
-        Арматура
-      </button>
-
-      <button
-        class="filter ${
-          catalogFilter === "water"
-            ? "active"
-            : ""
-        }"
-        onclick="setFilter('water')"
-      >
-        Водопостачання
-      </button>
-
-      <button
-        class="filter ${
-          catalogFilter === "sewer"
-            ? "active"
-            : ""
-        }"
-        onclick="setFilter('sewer')"
-      >
-        Каналізація
-      </button>
-
-      <button
-        class="filter ${
-          catalogFilter === "other"
-            ? "active"
-            : ""
-        }"
-        onclick="setFilter('other')"
-      >
-        Інше
-      </button>
-
-    `;
-  }
-}
-
-function setFilter(
-  filter
-){
-
-  catalogFilter =
-    filter;
-
-  catalogBrandFilter =
-    "all";
-
-  catalogSystemFilter =
-    "all";
-
-  renderFilters();
-  renderBrandFilters();
-  renderSystemFilters();
-  renderCatalog();
-}
-
-function getMaterialItemsForClassification(){
-
-  return catalog.filter(
-    item => {
-
-      if(
-        item.type !==
-        "material"
-      ){
-        return false;
-      }
-
-      if(
-        catalogFilter !== "all" &&
-        item.category !==
-        catalogFilter
-      ){
-        return false;
-      }
-
-      return true;
-    }
-  );
-}
-
-function getBrands(){
-
-  const values =
-    new Map();
-
-  getMaterialItemsForClassification()
-    .forEach(
-      item => {
-
-        const value =
-          String(
-            item.manufacturer ||
-            ""
-          ).trim();
-
-        if(
-          value
-        ){
-
-          values.set(
-            normalizeText(
-              value
-            ),
-            value
-          );
-        }
-      }
-    );
-
-  return Array.from(
-    values.values()
-  ).sort(
-    (
-      a,
-      b
-    ) =>
-      a.localeCompare(
-        b,
-        "uk"
-      )
-  );
-}
-
-function renderBrandFilters(){
-
-  const box =
-    document.getElementById(
-      "brandFilters"
-    );
-
-  if(
-    catalogMode !==
-    "material"
-  ){
-
-    box.style.display =
-      "none";
-
-    box.innerHTML =
-      "";
-
-    return;
-  }
-
-  const brands =
-    getBrands();
-
-  if(
-    !brands.length
-  ){
-
-    box.style.display =
-      "none";
-
-    box.innerHTML =
-      "";
-
-    catalogBrandFilter =
-      "all";
-
-    return;
-  }
-
-  if(
-    catalogBrandFilter !==
-      "all" &&
-    !brands.some(
-      brand =>
-        normalizeText(
-          brand
-        ) ===
-        normalizeText(
-          catalogBrandFilter
-        )
-    )
-  ){
-
-    catalogBrandFilter =
-      "all";
-  }
-
-  box.style.display =
-    "flex";
-
-  box.innerHTML = `
-
-    <button
-      class="subFilter ${
-        catalogBrandFilter ===
-        "all"
-          ? "active"
-          : ""
-      }"
-      onclick="setBrandFilter('all')"
-    >
-      Усі бренди
-    </button>
-
-    ${
-      brands.map(
-        brand => {
-
-          const encoded =
-            encodeURIComponent(
-              brand
-            );
-
-          return `
-            <button
-              class="subFilter ${
-                normalizeText(
-                  catalogBrandFilter
-                ) ===
-                normalizeText(
-                  brand
-                )
-                  ? "active"
-                  : ""
-              }"
-              onclick="setBrandFilter(decodeURIComponent('${encoded}'))"
-            >
-              ${escapeHtml(brand)}
-            </button>
-          `;
-        }
-      ).join("")
-    }
-
-  `;
-}
-
-function setBrandFilter(
-  brand
-){
-
-  catalogBrandFilter =
-    brand;
-
-  catalogSystemFilter =
-    "all";
-
-  renderBrandFilters();
-  renderSystemFilters();
-  renderCatalog();
-}
-
-function getSystems(){
-
-  const values =
-    new Map();
-
-  getMaterialItemsForClassification()
-    .filter(
-      item => {
-
-        if(
-          catalogBrandFilter ===
-          "all"
-        ){
-          return true;
-        }
-
-        return (
-          normalizeText(
-            item.manufacturer
-          ) ===
-          normalizeText(
-            catalogBrandFilter
-          )
-        );
-      }
-    )
-    .forEach(
-      item => {
-
-        const value =
-          String(
-            item.system ||
-            ""
-          ).trim();
-
-        if(
-          value
-        ){
-
-          values.set(
-            normalizeText(
-              value
-            ),
-            value
-          );
-        }
-      }
-    );
-
-  return Array.from(
-    values.values()
-  ).sort(
-    (
-      a,
-      b
-    ) =>
-      a.localeCompare(
-        b,
-        "uk"
-      )
-  );
-}
-
-function renderSystemFilters(){
-
-  const box =
-    document.getElementById(
-      "systemFilters"
-    );
-
-  if(
-    catalogMode !==
-    "material"
-  ){
-
-    box.style.display =
-      "none";
-
-    box.innerHTML =
-      "";
-
-    return;
-  }
-
-  const systems =
-    getSystems();
-
-  if(
-    !systems.length
-  ){
-
-    box.style.display =
-      "none";
-
-    box.innerHTML =
-      "";
-
-    catalogSystemFilter =
-      "all";
-
-    return;
-  }
-
-  if(
-    catalogSystemFilter !==
-      "all" &&
-    !systems.some(
-      system =>
-        normalizeText(
-          system
-        ) ===
-        normalizeText(
-          catalogSystemFilter
-        )
-    )
-  ){
-
-    catalogSystemFilter =
-      "all";
-  }
-
-  box.style.display =
-    "flex";
-
-  box.innerHTML = `
-
-    <button
-      class="subFilter ${
-        catalogSystemFilter ===
-        "all"
-          ? "active"
-          : ""
-      }"
-      onclick="setSystemFilter('all')"
-    >
-      Усі системи
-    </button>
-
-    ${
-      systems.map(
-        system => {
-
-          const encoded =
-            encodeURIComponent(
-              system
-            );
-
-          return `
-            <button
-              class="subFilter ${
-                normalizeText(
-                  catalogSystemFilter
-                ) ===
-                normalizeText(
-                  system
-                )
-                  ? "active"
-                  : ""
-              }"
-              onclick="setSystemFilter(decodeURIComponent('${encoded}'))"
-            >
-              ${escapeHtml(system)}
-            </button>
-          `;
-        }
-      ).join("")
-    }
-
-  `;
-}
-
-function setSystemFilter(
-  system
-){
-
-  catalogSystemFilter =
-    system;
-
-  renderSystemFilters();
-  renderCatalog();
-}
-
-function renderCatalog(){
-
-  const query =
-    normalizeText(
-      document.getElementById(
-        "search"
-      ).value
-    );
-
-  const items =
-    catalog.filter(
-      item => {
-
-        if(
-          item.type !==
-          catalogMode
-        ){
-          return false;
-        }
-
-        if(
-          query
-        ){
-
-          const searchable = [
-            item.name,
-            item.estimateName,
-            item.article,
-            item.manufacturer,
-            item.system
-          ]
-          .map(
-            normalizeText
-          )
-          .join(" ");
-
-          if(
-            !searchable.includes(
-              query
-            )
-          ){
-            return false;
-          }
-        }
-
-        if(
-          catalogFilter !==
-          "all"
-        ){
-
-          if(
-            item.stage !==
-              catalogFilter &&
-            item.category !==
-              catalogFilter
-          ){
-            return false;
-          }
-        }
-
-        if(
-          catalogMode ===
-            "material" &&
-          catalogBrandFilter !==
-            "all"
-        ){
-
-          if(
-            normalizeText(
-              item.manufacturer
-            ) !==
-            normalizeText(
-              catalogBrandFilter
-            )
-          ){
-            return false;
-          }
-        }
-
-        if(
-          catalogMode ===
-            "material" &&
-          catalogSystemFilter !==
-            "all"
-        ){
-
-          if(
-            normalizeText(
-              item.system
-            ) !==
-            normalizeText(
-              catalogSystemFilter
-            )
-          ){
-            return false;
-          }
-        }
-
-        return true;
-      }
-    );
-
-  const box =
-    document.getElementById(
-      "catalog"
-    );
-
-  box.classList.toggle(
-    "manageMode",
-    catalogManageMode
-  );
-
-  const hasAnyMaterials =
-    catalogMode === "material" &&
-    catalog.some(item => item.type === "material");
-
-  if(
-    !items.length
-  ){
-
-    box.innerHTML = `
-
-      <div class="noResults">
-        Нічого не знайдено
-      </div>
-
-      ${
-        catalogManageMode
-          ? `
-            <button
-              class="catalogAdd"
-              onclick="openCatalogEditor()"
-            >
-              ＋ Додати позицію
-            </button>
-
-            ${
-              hasAnyMaterials
-                ? `
-                  <button
-                    class="catalogClear"
-                    onclick="clearMaterialCatalog()"
-                  >
-                    Очистити матеріали
-                  </button>
-                `
-                : ""
-            }
-          `
-          : ""
-      }
-
-    `;
-
-    return;
-  }
-
-  box.innerHTML =
-    items
-      .map(
-        renderCatalogItem
-      )
-      .join("");
-
-  if(
-    catalogManageMode
-  ){
-
-    box.innerHTML += `
-
-      <button
-        class="catalogAdd"
-        onclick="openCatalogEditor()"
-      >
-        ＋ Додати позицію
-      </button>
-
-      ${
-        hasAnyMaterials
-          ? `
-            <button
-              class="catalogClear"
-              onclick="clearMaterialCatalog()"
-            >
-              Очистити матеріали
-            </button>
-          `
-          : ""
-      }
-
-    `;
-  }
-}
-
-function renderCatalogItem(
-  item
-){
-
-  const catalogPrice =
-    item.type ===
-      "material"
-      ? getMaterialCatalogPrice(
-          item
-        )
-      : (
-          Number(
-            item.price
-          ) || 0
-        );
-
-  const existing =
-    estimate.find(
-      estimateItem =>
-        estimateItem.id ===
-        item.id
-    );
-
-  const qty =
-    existing
-      ? existing.qty
-      : 0;
-
-  const meta = [];
-
-  if(
-    item.type ===
-    "material"
-  ){
-
-    if(
-      item.manufacturer
-    ){
-      meta.push(
-        item.manufacturer
-      );
-    }
-
-    if(
-      item.system
-    ){
-      meta.push(
-        item.system
-      );
-    }
-
-    if(
-      item.article
-    ){
-      meta.push(
-        item.article
-      );
-    }
-  }
-
-  const encodedId =
-    encodeURIComponent(
-      item.id
-    );
-
-  const cardAction =
-    catalogManageMode
-      ? ""
-      : `onclick="addItem(decodeURIComponent('${encodedId}'))"`;
-
-  return `
-
-    <div
-      class="catalogItem ${
-        qty > 0
-          ? "added"
-          : ""
-      }"
-    >
-
-      <div
-        style="flex:1;min-width:0"
-        ${cardAction}
-      >
-
-        <div class="catalogName">
-          ${escapeHtml(item.name)}
-        </div>
-
-        <div class="catalogMeta">
-
-          ${
-            catalogPrice
-              ? money(
-                  catalogPrice
-                )
-              : "ціна не задана"
-          }
-
-          ·
-          ${escapeHtml(item.unit)}
-
-          ${
-            meta.length
-              ? " · " +
-                escapeHtml(
-                  meta.join(
-                    " · "
-                  )
-                )
-              : ""
-          }
-
-        </div>
-
-      </div>
-
-      ${
-        catalogManageMode
-
-          ? `
-
-            <div class="catalogManage">
-
-              <button
-                class="manageEdit"
-                onclick="openCatalogEditor(decodeURIComponent('${encodedId}'))"
-              >
-                ✎
-              </button>
-
-              <button
-                class="manageDelete"
-                onclick="deleteCatalogItem(decodeURIComponent('${encodedId}'))"
-              >
-                ×
-              </button>
-
-            </div>
-
-          `
-
-          : qty > 0
-
-          ? `
-
-            <div class="catalogControls">
-
-              <button
-                class="catalogQtyButton"
-                onclick="catalogChangeQty(decodeURIComponent('${encodedId}'),-1)"
-              >
-                −
-              </button>
-
-              <div class="catalogQty">
-                ×${qty}
-              </div>
-
-              <button
-                class="catalogQtyButton"
-                onclick="catalogChangeQty(decodeURIComponent('${encodedId}'),1)"
-              >
-                +
-              </button>
-
-            </div>
-
-          `
-
-          : `
-
-            <span class="addIcon">
-              ＋
-            </span>
-
-          `
-      }
-
-    </div>
-
-  `;
-}
-
-function addItem(
-  id
-){
-
-  const product =
-    catalog.find(
-      item =>
-        item.id === id
-    );
-
-  if(
-    !product
-  ){
-    return;
-  }
-
-  if(
-    product.type ===
-      "material" &&
-    (
-      !Number.isFinite(
-        eurRate
-      ) ||
-      eurRate <= 0
-    ) &&
-    !(
-      Array.isArray(product.supplierOffers) &&
-      product.supplierOffers.some(offer => {
-        const snap = offer && (offer.retail || offer.master);
-        return Number(snap && snap.eurRate) > 0;
-      })
-    )
-  ){
-
-    alert(
-      "Спочатку вкажіть курс EUR або імпортуйте рахунок постачальника."
-    );
-
-    return;
-  }
-
-  const existing =
-    estimate.find(
-      item =>
-        item.id === id
-    );
-
-  if(
-    existing
-  ){
-
-    existing.qty++;
-
-  }else{
-
-    const estimateItem = {
-
-      id:
-        product.id,
-
-      name:
-        product.estimateName ||
-        product.name,
-
-      type:
-        product.type,
-
-      stage:
-        product.stage,
-
-      category:
-        product.category,
-
-      price:
-        product.type ===
-          "material"
-          ? 0
-          : (
-              Number(
-                product.price
-              ) || 0
-            ),
-
-      unit:
-        product.unit,
-
-      qty:1
-    };
-
-    if(
-      product.type ===
-      "material"
-    ){
-
-      const supplierRates =
-        getSupplierRatesForItem(
-          product
-        );
-
-      const firstSupplier =
-        supplierRates.find(
-          r => !r.isGlobal
-        ) ||
-        supplierRates[0] ||
-        null;
-
-      if(
-        firstSupplier
-      ){
-
-        estimateItem.supplierName =
-          firstSupplier.supplierName ||
-          "";
-
-        estimateItem.supplierFullName =
-          firstSupplier.supplierFullName ||
-          "";
-
-        estimateItem.eurRate =
-          firstSupplier.eurRate;
-      }
-
-      estimateItem.manufacturer =
-        product.manufacturer ||
-        "";
-
-      estimateItem.system =
-        product.system ||
-        "";
-
-      estimateItem.article =
-        product.article ||
-        "";
-
-      estimateItem.price =
-        getEstimateItemPrice(
-          estimateItem
-        );
-    }
-
-    estimate.push(
-      estimateItem
-    );
-  }
-
-  save();
-
-  renderEstimate();
-  renderCatalog();
-}
-
-function catalogChangeQty(
-  id,
-  delta
-){
-
-  const index =
-    estimate.findIndex(
-      item =>
-        item.id === id
-    );
-
-  if(
-    index === -1
-  ){
-
-    if(
-      delta > 0
-    ){
-      addItem(
-        id
-      );
-    }
-
-    return;
-  }
-
-  estimate[index].qty +=
-    delta;
-
-  if(
-    estimate[index].qty <=
-    0
-  ){
-
-    estimate.splice(
-      index,
-      1
-    );
-  }
-
-  save();
-
-  renderEstimate();
-  renderCatalog();
-}
-
-/* =========================
-   MANAGE CATALOG
-========================= */
-
-function toggleCatalogManage(){
-
-  catalogManageMode =
-    !catalogManageMode;
-
-  const button =
-    document.getElementById(
-      "catalogEditButton"
-    );
-
-  if(
-    catalogManageMode
-  ){
-
-    button.classList.add(
-      "active"
-    );
-
-    button.textContent =
-      "✓ Готово";
-
-  }else{
-
-    button.classList.remove(
-      "active"
-    );
-
-    button.textContent =
-      "✎ Каталог";
-  }
-
-  renderCatalog();
-}
-
-function clearMaterialCatalog(){
-
-  const materialCount =
-    catalog.filter(
-      item =>
-        item.type ===
-        "material"
-    ).length;
-
-  if(
-    !materialCount
-  ){
-
-    alert(
-      "Каталог матеріалів уже порожній."
-    );
-
-    return;
-  }
-
-  if(
-    !confirm(
-      `Видалити всі матеріали з каталогу?\n\nБуде видалено: ${materialCount} позицій.\n\nКошторис, роботи, курс EUR і правила імпорту залишаться без змін.`
-    )
-  ){
-    return;
-  }
-
-  catalog =
-    catalog.filter(
-      item =>
-        item.type !==
-        "material"
-    );
-
-  catalogBrandFilter =
-    "all";
-
-  catalogSystemFilter =
-    "all";
-
-  catalogFilter =
-    "all";
-
-  saveCatalog();
-
-  renderFilters();
-  renderBrandFilters();
-  renderSystemFilters();
-  renderCatalog();
-
-  alert(
-    "Каталог матеріалів очищено."
-  );
-}
-
-function updateEditorGroup(){
-
-  const type =
-    document.getElementById(
-      "editorType"
-    ).value;
-
-  const select =
-    document.getElementById(
-      "editorGroup"
-    );
-
-  const label =
-    document.getElementById(
-      "editorGroupLabel"
-    );
-
-  if(
-    type === "work"
-  ){
-
-    label.textContent =
-      "Етап";
-
-    select.innerHTML = `
-
-      <option value="rough">
-        Чорновий монтаж
-      </option>
-
-      <option value="finish">
-        Чистовий монтаж
-      </option>
-
-    `;
-
-  }else{
-
-    label.textContent =
-      "Категорія";
-
-    select.innerHTML = `
-
-      <option value="water">
-        Водопостачання
-      </option>
-
-      <option value="sewer">
-        Каналізація
-      </option>
-
-      <option value="fittings">
-        Арматура
-      </option>
-
-      <option value="other">
-        Інше
-      </option>
-
-    `;
-  }
-}
-
-function updateMaterialFields(){
-
-  const type =
-    document.getElementById(
-      "editorType"
-    ).value;
-
-  document.getElementById(
-    "materialFields"
-  ).style.display =
-    type === "material"
-      ? "block"
-      : "none";
-
-  document.getElementById(
-    "editorPriceLabel"
-  ).textContent =
-    type === "material"
-      ? "Базова ціна, EUR"
-      : "Ціна";
-}
-
-document.getElementById(
-  "editorType"
-).addEventListener(
-  "change",
-  () => {
-
-    updateEditorGroup();
-    updateMaterialFields();
-  }
-);
-
-function openCatalogEditor(
-  id = null
-){
-
-  editingCatalogId =
-    id;
-
-  const item =
-    id
-      ? catalog.find(
-          x =>
-            x.id === id
-        )
-      : null;
-
-  document.getElementById(
-    "editorTitle"
-  ).textContent =
-    item
-      ? "Редагувати позицію"
-      : "Нова позиція";
-
-  document.getElementById(
-    "editorName"
-  ).value =
-    item
-      ? item.name
-      : "";
-
-  document.getElementById(
-    "editorEstimateName"
-  ).value =
-    item
-      ? (
-          item.estimateName ||
-          item.name
-        )
-      : "";
-
-  const editorType =
-    item
-      ? item.type
-      : catalogMode;
-
-  document.getElementById(
-    "editorType"
-  ).value =
-    editorType;
-
-  document.getElementById(
-    "editorPrice"
-  ).value =
-    item
-      ? (
-          item.type ===
-          "material"
-            ? (
-                Number(
-                  item.basePriceEUR
-                ) || 0
-              )
-            : (
-                Number(
-                  item.price
-                ) || 0
-              )
-        )
-      : 0;
-
-  document.getElementById(
-    "editorUnit"
-  ).value =
-    item
-      ? item.unit
-      : "шт";
-
-  document.getElementById(
-    "editorManufacturer"
-  ).value =
-    item
-      ? (
-          item.manufacturer ||
-          ""
-        )
-      : "";
-
-  document.getElementById(
-    "editorSystem"
-  ).value =
-    item
-      ? (
-          item.system ||
-          ""
-        )
-      : "";
-
-  document.getElementById(
-    "editorArticle"
-  ).value =
-    item
-      ? (
-          item.article ||
-          ""
-        )
-      : "";
-
-  const lockMaterialIdentity =
-    !!(
-      item &&
-      item.type ===
-      "material"
-    );
-
-  document.getElementById(
-    "editorName"
-  ).readOnly =
-    lockMaterialIdentity;
-
-  document.getElementById(
-    "editorArticle"
-  ).readOnly =
-    lockMaterialIdentity;
-
-  updateEditorGroup();
-  updateMaterialFields();
-
-  if(
-    item
-  ){
-
-    document.getElementById(
-      "editorGroup"
-    ).value =
-      item.type ===
-        "work"
-        ? (
-            item.stage ||
-            "rough"
-          )
-        : (
-            item.category ||
-            "other"
-          );
-
-  }else{
-
-    if(
-      catalogMode ===
-        "material" &&
-      [
-        "water",
-        "sewer",
-        "fittings",
-        "other"
-      ].includes(
-        catalogFilter
-      )
-    ){
-
-      document.getElementById(
-        "editorGroup"
-      ).value =
-        catalogFilter;
-    }
-  }
-
-  document.getElementById(
-    "editorSheet"
-  ).classList.add(
-    "open"
-  );
-}
-
-function closeCatalogEditor(){
-
-  document.getElementById(
-    "editorSheet"
-  ).classList.remove(
-    "open"
-  );
-
-  editingCatalogId =
-    null;
-}
-
-function saveCatalogItem(){
-
-  const name =
-    document.getElementById(
-      "editorName"
-    ).value.trim();
-
-  const estimateName =
-    document.getElementById(
-      "editorEstimateName"
-    ).value.trim();
-
-  const price =
-    Number(
-      document.getElementById(
-        "editorPrice"
-      ).value
-    );
-
-  const unit =
-    document.getElementById(
-      "editorUnit"
-    ).value.trim();
-
-  const type =
-    document.getElementById(
-      "editorType"
-    ).value;
-
-  const group =
-    document.getElementById(
-      "editorGroup"
-    ).value;
-
-  const manufacturer =
-    document.getElementById(
-      "editorManufacturer"
-    ).value.trim();
-
-  const system =
-    document.getElementById(
-      "editorSystem"
-    ).value.trim();
-
-  const article =
-    document.getElementById(
-      "editorArticle"
-    ).value.trim();
-
-  if(
-    !name
-  ){
-
-    alert(
-      "Вкажіть назву."
-    );
-
-    return;
-  }
-
-  if(
-    !estimateName
-  ){
-
-    alert(
-      "Вкажіть назву для кошторису."
-    );
-
-    return;
-  }
-
-  if(
-    !Number.isFinite(
-      price
-    ) ||
-    price < 0
-  ){
-
-    alert(
-      type === "material"
-        ? "Вкажіть коректну базову ціну в EUR."
-        : "Вкажіть коректну ціну."
-    );
-
-    return;
-  }
-
-  if(
-    !unit
-  ){
-
-    alert(
-      "Вкажіть одиницю."
-    );
-
-    return;
-  }
-
-  if(
-    editingCatalogId
-  ){
-
-    const item =
-      catalog.find(
-        x =>
-          x.id ===
-          editingCatalogId
-      );
-
-    if(
-      !item
-    ){
+/* =========================================================
+   RENDER — ROUTER
+========================================================= */
+
+function render(){
+  renderHeader();
+
+  if(currentProjectId){
+    const project = projects.find(p => p.id === currentProjectId);
+    if(!project){
+      currentProjectId = null;
+      renderHome();
       return;
     }
-
-    const wasMaterial =
-      item.type ===
-      "material";
-
-    if(
-      !wasMaterial
-    ){
-
-      item.name =
-        name;
-    }
-
-    item.estimateName =
-      estimateName;
-
-    item.unit =
-      unit;
-
-    item.type =
-      type;
-
-    if(
-      type === "work"
-    ){
-
-      item.price =
-        price;
-
-      item.stage =
-        group;
-
-      delete item.category;
-      delete item.manufacturer;
-      delete item.system;
-      delete item.article;
-
-    }else{
-
-      item.basePriceEUR =
-        price;
-
-      delete item.price;
-
-      item.category =
-        group;
-
-      delete item.stage;
-
-      item.manufacturer =
-        manufacturer;
-
-      item.system =
-        system;
-
-      if(
-        !wasMaterial
-      ){
-
-        item.article =
-          article;
-      }
-    }
-
+    renderProject(project);
   }else{
-
-    const item = {
-
-      id:
-        "custom-" +
-        Date.now() +
-        "-" +
-        Math.random()
-          .toString(36)
-          .slice(2,8),
-
-      name:
-        name,
-
-      estimateName:
-        estimateName,
-
-      unit:
-        unit,
-
-      type:
-        type
-    };
-
-    if(
-      type === "work"
-    ){
-
-      item.price =
-        price;
-
-      item.stage =
-        group;
-
-    }else{
-
-      item.basePriceEUR =
-        price;
-
-      item.category =
-        group;
-
-      item.manufacturer =
-        manufacturer;
-
-      item.system =
-        system;
-
-      item.article =
-        article;
-    }
-
-    catalog.push(
-      item
-    );
+    renderHome();
   }
-
-  saveCatalog();
-
-  closeCatalogEditor();
-
-  renderFilters();
-  renderBrandFilters();
-  renderSystemFilters();
-  renderCatalog();
 }
 
-function deleteCatalogItem(
-  id
-){
+function renderHeader(){
+  const right = document.getElementById("headerRight");
+  const subtitle = document.getElementById("headerSubtitle");
 
-  const item =
-    catalog.find(
-      x =>
-        x.id === id
-    );
+  if(currentProjectId){
+    subtitle.textContent = "Об'єкт";
+    right.innerHTML = `
+      <button class="backButton" onclick="backToList()" aria-label="Назад">←</button>
+    `;
+  }else{
+    subtitle.textContent = "Кошторис. Звітність. Аудит.";
+    right.innerHTML = "";
+  }
+}
 
-  if(
-    !item
-  ){
+/* =========================================================
+   RENDER — HOME
+========================================================= */
+
+function renderHome(){
+  const main = document.getElementById("main");
+
+  if(!projects.length){
+    main.innerHTML = renderEmptyState();
     return;
   }
 
-  if(
-    !confirm(
-      `Видалити «${item.name}»?`
-    )
-  ){
+  main.innerHTML = renderProjectList();
+}
+
+function renderEmptyState(){
+  return `
+    <div class="emptyState">
+
+      <div class="emptyLogo">sa-master<span>.pro</span></div>
+      <div class="emptySubtitle">Кошторис. Звітність. Аудит.</div>
+
+      <div class="emptySteps">
+        <ol>
+          <li>Створіть перший об'єкт</li>
+          <li>Внесіть дані про себе та команду</li>
+          <li>Складіть кошторис</li>
+          <li>Відправте замовнику</li>
+          <li>Ведіть роботу до завершення</li>
+        </ol>
+      </div>
+
+      <button class="primaryButton" onclick="openNewProject()">
+        + Створити перший об'єкт
+      </button>
+
+    </div>
+  `;
+}
+
+function renderProjectList(){
+  const sorted = projects.slice().sort(sortProjects);
+
+  return `
+    <div class="listWrap">
+
+      <div class="listHeader">
+        <strong>Об'єкти (${projects.length})</strong>
+        <div class="listHeaderRight">
+          <button class="addSmallButton" onclick="openNewProject()">+ Об'єкт</button>
+        </div>
+      </div>
+
+      <div class="list">
+        ${sorted.map(renderProjectCard).join("")}
+      </div>
+
+    </div>
+  `;
+}
+
+function sortProjects(a,b){
+  // Термінові — вгору
+  if(a.urgent && !b.urgent) return -1;
+  if(!a.urgent && b.urgent) return 1;
+  // Далі — за датою оновлення
+  return String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
+}
+
+function renderProjectCard(p){
+  const dotClass = projectStageClass(p);
+  const title = projectTitle(p);
+  const client = escapeHtml(p.client?.name || "");
+  const phone = escapeHtml(p.client?.phone || "");
+  const address = escapeHtml(p.client?.address || "");
+
+  const urgentMark = p.urgent ? `<span class="projectUrgent" title="Терміново">🔥</span>` : "";
+
+  // Мета-рядок (етап + сума) — поки що заглушка
+  const stageLabel = projectStageLabel(p);
+  const amount = p._total != null ? money(p._total) : "";
+
+  // Деталі — поки що порожні
+  const details = p._detailsLine || "";
+
+  return `
+    <div class="projectCard" onclick="openProject('${escapeHtml(p.id)}')">
+
+      <span class="projectDot ${dotClass}"></span>
+
+      <div class="projectBody">
+
+        <div class="projectTitle">
+          <span>${title}</span>
+          ${urgentMark}
+        </div>
+
+        ${client ? `
+          <div class="projectClient">
+            ${client}${phone ? " · " + phone : ""}
+          </div>
+        ` : ""}
+
+        ${address ? `
+          <div class="projectAddress">${address}</div>
+        ` : ""}
+
+        <div class="projectDivider"></div>
+
+        <div class="projectMeta">
+          <span class="projectStage">${escapeHtml(stageLabel)}</span>
+          ${amount ? `<span class="projectAmount">${amount}</span>` : ""}
+        </div>
+
+        ${details ? `<div class="projectDetails">${escapeHtml(details)}</div>` : ""}
+
+      </div>
+
+    </div>
+  `;
+}
+
+function projectTitle(p){
+  if(p.title && String(p.title).trim()){
+    return escapeHtml(p.title.trim());
+  }
+  if(p.client?.address && String(p.client.address).trim()){
+    return escapeHtml(p.client.address.trim());
+  }
+  if(p.client?.name && String(p.client.name).trim()){
+    return escapeHtml(p.client.name.trim());
+  }
+  return "Без назви";
+}
+
+function projectStageClass(p){
+  const s = p.stage || "estimate";
+  if(s === "work" || s === "complete") return "status-work";
+  if(s === "done" || s === "closed") return "status-done";
+  return "status-estimate";
+}
+
+function projectStageLabel(p){
+  const s = p.stage || "estimate";
+  switch(s){
+    case "estimate": return "Прорахунок";
+    case "work":     return "В роботі";
+    case "done":     return "Завершено";
+    case "closed":   return "Закрито";
+    default:         return "Прорахунок";
+  }
+}
+
+/* =========================================================
+   RENDER — PROJECT
+========================================================= */
+
+function renderProject(p){
+  const main = document.getElementById("main");
+
+  const title = projectTitle(p);
+  const client = escapeHtml(p.client?.name || "");
+  const phone = escapeHtml(p.client?.phone || "");
+  const address = escapeHtml(p.client?.address || "");
+  const stageLabel = projectStageLabel(p);
+
+  main.innerHTML = `
+    <div class="emptyProject">
+
+      <div class="projectHeaderCard">
+
+        <div class="projectHeaderTitle">
+          <span>${title}</span>
+          ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
+        </div>
+
+        <div class="projectHeaderMeta">
+          ${client ? `<b>${client}</b>${phone ? " · " + phone : ""}<br>` : ""}
+          ${address ? `${address}<br>` : ""}
+          <span style="color:var(--muted)">${escapeHtml(stageLabel)}</span>
+        </div>
+
+      </div>
+
+      <div class="placeholderBlock">
+        <strong>Об'єкт створено</strong>
+        Тут буде кошторис, статуси та фінанси.<br>
+        Наступний крок — додати позиції.
+      </div>
+
+    </div>
+  `;
+}
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+function backToList(){
+  currentProjectId = null;
+  render();
+}
+
+function openProject(id){
+  currentProjectId = id;
+  render();
+}
+
+function openNewProject(){
+  document.getElementById("npTitle").value = "";
+  document.getElementById("npClientName").value = "";
+  document.getElementById("npClientPhone").value = "";
+  document.getElementById("npAddress").value = "";
+  document.getElementById("newProjectSheet").classList.add("open");
+  setTimeout(() => document.getElementById("npClientName").focus(), 200);
+}
+
+function closeNewProject(){
+  document.getElementById("newProjectSheet").classList.remove("open");
+}
+
+function createProject(){
+  const title = document.getElementById("npTitle").value.trim();
+  const name = document.getElementById("npClientName").value.trim();
+  const phone = document.getElementById("npClientPhone").value.trim();
+  const address = document.getElementById("npAddress").value.trim();
+
+  if(!name){
+    toast("Вкажіть ім'я замовника");
     return;
   }
 
-  catalog =
-    catalog.filter(
-      x =>
-        x.id !== id
-    );
-
-  saveCatalog();
-
-  renderBrandFilters();
-  renderSystemFilters();
-  renderCatalog();
-}
-
-/* =========================
-   MASTER
-========================= */
-
-function openMaster(){
-
-  document.getElementById(
-    "masterName"
-  ).value =
-    localStorage.getItem(
-      "plumber_masterName"
-    ) || "";
-
-  document.getElementById(
-    "masterPhone"
-  ).value =
-    localStorage.getItem(
-      "plumber_masterPhone"
-    ) || "";
-
-  document.getElementById(
-    "masterSheet"
-  ).classList.add(
-    "open"
-  );
-}
-
-function closeMaster(){
-
-  document.getElementById(
-    "masterSheet"
-  ).classList.remove(
-    "open"
-  );
-}
-
-function saveMaster(){
-
-  localStorage.setItem(
-    "plumber_masterName",
-    document.getElementById(
-      "masterName"
-    ).value
-  );
-
-  localStorage.setItem(
-    "plumber_masterPhone",
-    document.getElementById(
-      "masterPhone"
-    ).value
-  );
-
-  closeMaster();
-}
-
-/* =========================
-   CLIENT
-========================= */
-
-[
-  "clientName",
-  "clientPhone",
-  "clientAddress"
-]
-.forEach(
-  id => {
-
-    const input =
-      document.getElementById(
-        id
-      );
-
-    input.value =
-      localStorage.getItem(
-        "plumber_" + id
-      ) || "";
-
-    input.addEventListener(
-      "input",
-      () => {
-
-        localStorage.setItem(
-          "plumber_" + id,
-          input.value
-        );
-      }
-    );
+  if(!phone){
+    toast("Вкажіть телефон замовника");
+    return;
   }
-);
 
-document.getElementById(
-  "date"
-).textContent =
-  new Date()
-    .toLocaleDateString(
-      "uk-UA"
-    );
+  const now = new Date().toISOString();
 
-updateEurRateButton();
-renderEstimate();
+  const project = {
+    id: uid("proj"),
+    title,
+    client: { name, phone, address },
+
+    stage: "estimate",
+    urgent: false,
+
+    // Кошик (порожній на старті)
+    positions: [],
+    discount: 0,
+    payments: [],
+    expenses: [],
+    salaries: [],
+
+    // Деталі об'єкта (порожні на старті)
+    details: {
+      objectType: "",
+      workType: "",
+      area: null,
+      bathrooms: null,
+      system: "",
+      features: []
+    },
+
+    status: {
+      pricesConfirmed: false,
+      clientApproved: false,
+      advanceReceived: false,
+      materialsPurchased: false,
+      workStarted: false,
+      workFinished: false,
+      closed: false
+    },
+
+    createdAt: now,
+    updatedAt: now
+  };
+
+  projects.push(project);
+  saveProjects();
+
+  closeNewProject();
+  currentProjectId = project.id;
+  render();
+
+  toast("Об'єкт створено");
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+
+render();
+
+/* Клік по фону модалки — закриває */
+document.getElementById("newProjectSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeNewProject();
+});
 
 </script>
-
-<script src="supplier-import-module.js"></script>
 
 </body>
 </html>
