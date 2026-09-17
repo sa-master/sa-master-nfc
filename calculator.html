@@ -489,9 +489,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   border-top:1px solid var(--gbr);
 }
 
-.panel.tall{
-  height:90dvh;
-}
+.panel.tall{height:90dvh}
 
 @keyframes slideUp{
   from{transform:translateY(2rem);opacity:0}
@@ -550,6 +548,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   border-radius:1rem;
   font-size:.9375rem;
   font-weight:700;
+  transition:transform .12s;
 }
 
 .panelFooter button:active{transform:scale(.98)}
@@ -563,6 +562,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   background:linear-gradient(135deg,#007AFF,#0A84FF);
   color:#fff;
   box-shadow:0 .375rem 1rem rgba(0,122,255,.22);
+}
+
+.btnPrimary:disabled{
+  background:rgba(120,130,140,.2);
+  color:var(--tm);
+  box-shadow:none;
 }
 
 /* ==== FORM ==== */
@@ -1065,13 +1070,8 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-weight:600;
 }
 
-.positionPrice.set{
-  color:var(--t);
-}
-
-.positionPrice.notSet{
-  color:var(--orange);
-}
+.positionPrice.set{color:var(--t)}
+.positionPrice.notSet{color:var(--orange)}
 
 .positionTotal{
   font-size:.9375rem;
@@ -1148,15 +1148,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   background:var(--gb);
   border:1px solid var(--gbr);
   margin-bottom:.375rem;
-  cursor:pointer;
-  transition:transform .12s;
+  transition:transform .12s, background .15s;
 }
 
-.catalogItem:active{transform:scale(.985)}
-
-.catalogItem.added{
+.catalogItem.selected{
   background:rgba(0,122,255,.08);
-  border-color:rgba(0,122,255,.2);
+  border-color:rgba(0,122,255,.25);
 }
 
 .catalogItemBody{
@@ -1172,6 +1169,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--t);
 }
 
+.catalogItem.selected .catalogItemName{
+  color:var(--p);
+  font-weight:700;
+}
+
 .catalogItemMeta{
   font-size:.75rem;
   color:var(--tm);
@@ -1184,17 +1186,48 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--orange);
 }
 
-.catalogItemQty{
+.catalogCounter{
   flex:0 0 auto;
-  min-width:2rem;
+  display:flex;
+  align-items:center;
+  background:rgba(120,130,140,.12);
+  border-radius:.625rem;
+  overflow:hidden;
+  height:2rem;
+}
+
+.catalogItem.selected .catalogCounter{
+  background:var(--p);
+}
+
+.counterBtn{
+  width:2rem;
+  height:2rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--p);
+  font-size:1.125rem;
+  font-weight:600;
+  line-height:0;
+}
+
+.catalogItem.selected .counterBtn{color:#fff}
+
+.counterBtn:active{background:rgba(0,0,0,.06)}
+
+.counterBtn.hidden{visibility:hidden;pointer-events:none}
+
+.counterValue{
+  min-width:1.5rem;
   text-align:center;
-  font-size:.75rem;
+  font-size:.8125rem;
   font-weight:750;
   color:var(--p);
-  background:rgba(0,122,255,.12);
-  border-radius:.5rem;
-  padding:.375rem .5rem;
+  padding:0 .125rem;
 }
+
+.catalogItem.selected .counterValue{color:#fff}
 
 .catalogEmpty{
   text-align:center;
@@ -1217,9 +1250,38 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   justify-content:center;
   gap:.375rem;
   margin-top:.25rem;
+  flex:0 0 auto;
 }
 
 .addCustomButton:active{transform:scale(.98)}
+
+/* ==== PRICES LIST (множинне введення) ==== */
+
+.pricesList{
+  display:flex;
+  flex-direction:column;
+  gap:.75rem;
+}
+
+.priceRow{
+  display:flex;
+  flex-direction:column;
+  gap:.375rem;
+}
+
+.priceRowName{
+  font-size:.875rem;
+  font-weight:650;
+  color:var(--t);
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+
+.priceRowHint{
+  font-size:.6875rem;
+  color:var(--tm);
+  font-weight:500;
+}
 
 /* ==== ACTIONS SHEET ==== */
 
@@ -1570,7 +1632,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   </div>
 </div>
 
-<!-- SHEET: CATALOG (WORKS/MATERIALS) -->
+<!-- SHEET: CATALOG -->
 
 <div class="sheet" id="catalogSheet">
   <div class="panel tall">
@@ -1579,7 +1641,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       <button class="close" onclick="closeCatalog()">×</button>
     </div>
 
-    <div class="panelBody" style="display:flex;flex-direction:column">
+    <div class="panelBody" style="display:flex;flex-direction:column;padding-bottom:0">
       <input
         class="catalogSearch"
         id="catalogSearch"
@@ -1596,6 +1658,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         <span style="font-size:1.125rem;line-height:1">＋</span>
         <span id="addCustomLabel">Додати свою</span>
       </button>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeCatalog()">Скасувати</button>
+      <button class="btnPrimary" id="catalogAddBtn" disabled onclick="applyCatalogSelection()">Оберіть позиції</button>
     </div>
   </div>
 </div>
@@ -1646,26 +1713,25 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   </div>
 </div>
 
-<!-- SHEET: PRICE INPUT -->
+<!-- SHEET: MULTI PRICE INPUT -->
 
-<div class="sheet" id="priceSheet">
-  <div class="panel">
+<div class="sheet" id="pricesSheet">
+  <div class="panel tall">
     <div class="panelHead">
-      <strong id="priceTitle">Введіть ціну</strong>
-      <button class="close" onclick="closePriceSheet()">×</button>
+      <strong>Введіть ціни</strong>
+      <button class="close" onclick="closePricesSheet()">×</button>
     </div>
 
     <div class="panelBody">
-      <div class="formHint" id="priceSubtitle" style="margin-bottom:.5rem"></div>
-      <div class="formGroup" style="margin-bottom:0">
-        <label class="formLabel">Ціна за одиницю, ₴</label>
-        <input class="formInput" id="priceInput" inputmode="decimal" placeholder="0" autocomplete="off">
+      <div class="formHint" style="margin-bottom:.875rem">
+        Ці позиції додані без ціни. Введіть свої, щоб порахувати кошторис.
       </div>
+      <div class="pricesList" id="pricesList"></div>
     </div>
 
     <div class="panelFooter">
-      <button class="btnGhost" onclick="closePriceSheet()">Скасувати</button>
-      <button class="btnPrimary" onclick="savePrice()">Зберегти</button>
+      <button class="btnGhost" onclick="skipPrices()">Пропустити</button>
+      <button class="btnPrimary" onclick="savePrices()">Зберегти</button>
     </div>
   </div>
 </div>
@@ -1887,9 +1953,7 @@ let profile = {
   lastWorkType: ""
 };
 let team = [];
-let catalog = [];   // { id, type: "work"|"material", name, unit, price, category, stage }
-
-/* ==== Завантаження ==== */
+let catalog = [];
 
 try{
   const raw = localStorage.getItem(PROJECTS_KEY);
@@ -1900,9 +1964,7 @@ try{
 try{
   const raw = localStorage.getItem(PROFILE_KEY);
   const parsed = raw ? JSON.parse(raw) : null;
-  if(parsed && typeof parsed === "object"){
-    profile = { ...profile, ...parsed };
-  }
+  if(parsed && typeof parsed === "object") profile = { ...profile, ...parsed };
 }catch(e){}
 
 try{
@@ -1911,15 +1973,12 @@ try{
   if(Array.isArray(parsed)) team = parsed;
 }catch(e){ team = []; }
 
-/* Каталог: міграція або створення з дефолту */
-
 try{
   const raw = localStorage.getItem(CATALOG_KEY);
   const parsed = raw ? JSON.parse(raw) : null;
   if(Array.isArray(parsed) && parsed.length){
     catalog = parsed;
   }else{
-    // Спробуємо мігрувати старий
     const oldRaw = localStorage.getItem("plumber_catalog");
     const oldParsed = oldRaw ? JSON.parse(oldRaw) : null;
     if(Array.isArray(oldParsed) && oldParsed.length){
@@ -1937,7 +1996,6 @@ try{
         basePriceEUR: Number(item.basePriceEUR) || 0
       }));
     }else{
-      // Дефолтний каталог
       catalog = DEFAULT_WORKS.map(w => ({
         id: uid("cat"),
         type: "work",
@@ -2001,17 +2059,15 @@ let editingType = "";
 let editingWork = "";
 let editingFeatures = [];
 
-/* Каталог */
-let catalogMode = "work";        // "work" або "material"
+let catalogMode = "work";
 let catalogFilter = "all";
 let catalogSearch = "";
+let catalogSelection = {};   // { catalogId: qty }
 
-/* Custom */
 let customType = "work";
 let customCategory = "other";
 
-/* Price input */
-let priceEditContext = null;   // { projectId, positionId } або { catalogId }
+let pricesPending = [];   // позиції, яким треба ввести ціну
 
 const FEATURE_SUGGESTIONS = [
   "Прихований монтаж",
@@ -2425,7 +2481,7 @@ function renderEstimateBlock(p){
           Ще немає позицій.<br>
           Додайте роботи та матеріали
         </div>
-      ` : positions.map((pos, idx) => renderPosition(p.id, pos, idx)).join("")}
+      ` : positions.map((pos) => renderPosition(p.id, pos)).join("")}
 
       ${count > 0 ? `
         <div class="estimateTotal">
@@ -2437,7 +2493,7 @@ function renderEstimateBlock(p){
   `;
 }
 
-function renderPosition(projectId, pos, index){
+function renderPosition(projectId, pos){
   const qty = Number(pos.qty) || 1;
   const price = Number(pos.price) || 0;
   const unit = pos.unit || "шт";
@@ -2460,7 +2516,7 @@ function renderPosition(projectId, pos, index){
           <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',1)">＋</button>
         </div>
 
-        <button class="positionPrice ${priceSet ? 'set' : 'notSet'}" onclick="openPriceEditor('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')">
+        <button class="positionPrice ${priceSet ? 'set' : 'notSet'}" onclick="openSinglePriceEditor('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')">
           ${priceText}
         </button>
 
@@ -2558,12 +2614,7 @@ function updateProjectChips(){
 
 function renderFeatureTags(){
   const box = document.getElementById("npFeatureTags");
-
-  if(!editingFeatures.length){
-    box.innerHTML = "";
-    return;
-  }
-
+  if(!editingFeatures.length){ box.innerHTML = ""; return; }
   box.innerHTML = editingFeatures.map((f, i) => `
     <span class="featureTag">
       ${escapeHtml(f)}
@@ -2574,16 +2625,10 @@ function renderFeatureTags(){
 
 function renderFeatureSuggestions(){
   const box = document.getElementById("npFeatureSuggestions");
-
   const available = FEATURE_SUGGESTIONS.filter(s =>
     !editingFeatures.some(f => f.toLowerCase() === s.toLowerCase())
   );
-
-  if(!available.length){
-    box.innerHTML = "";
-    return;
-  }
-
+  if(!available.length){ box.innerHTML = ""; return; }
   box.innerHTML = available.map(s => `
     <span class="featureSuggest" onclick="addFeature('${escapeHtml(s)}')">+ ${escapeHtml(s)}</span>
   `).join("");
@@ -2706,29 +2751,33 @@ function openCatalogFor(type){
   catalogMode = type;
   catalogFilter = "all";
   catalogSearch = "";
+  catalogSelection = {};   // скидаємо вибір
+
   document.getElementById("catalogSearch").value = "";
   document.getElementById("catalogTitle").textContent = (type === "work") ? "Вибір роботи" : "Вибір матеріалу";
   document.getElementById("addCustomLabel").textContent = (type === "work") ? "Додати свою роботу" : "Додати свій матеріал";
+
   renderCatalogChips();
   renderCatalogList();
+  updateCatalogAddButton();
+
   document.getElementById("catalogSheet").classList.add("open");
   setTimeout(() => document.getElementById("catalogSearch").focus(), 200);
 }
 
 function closeCatalog(){
   document.getElementById("catalogSheet").classList.remove("open");
+  catalogSelection = {};
 }
 
 function renderCatalogChips(){
   const box = document.getElementById("catalogChips");
 
   if(catalogMode === "work"){
-    // Для робіт фільтри не потрібні (поки що)
     box.innerHTML = "";
     return;
   }
 
-  // Для матеріалів — категорії
   const values = [
     ["all","Усі"],
     ["fittings","Арматура"],
@@ -2775,7 +2824,6 @@ function renderCatalogList(){
   catalogSearch = document.getElementById("catalogSearch").value || "";
   const list = document.getElementById("catalogList");
   const items = getCatalogItems();
-  const project = projects.find(p => p.id === currentProjectId);
 
   if(!items.length){
     list.innerHTML = `
@@ -2788,58 +2836,126 @@ function renderCatalogList(){
   }
 
   list.innerHTML = items.map(item => {
-    const existing = (project?.positions || []).find(pos => pos.catalogId === item.id);
-    const qty = existing ? existing.qty : 0;
+    const qty = Number(catalogSelection[item.id]) || 0;
+    const selected = qty > 0;
 
     const priceText = item.price > 0
       ? moneyWithCents(item.price) + " / " + escapeHtml(item.unit)
       : "ціна не задана · " + escapeHtml(item.unit);
 
     return `
-      <div class="catalogItem ${qty > 0 ? 'added' : ''}" onclick="addCatalogItemToEstimate('${escapeHtml(item.id)}')">
-        <div class="catalogItemBody">
+      <div class="catalogItem ${selected ? 'selected' : ''}">
+        <div class="catalogItemBody" onclick="catalogCounterIncrement('${escapeHtml(item.id)}')">
           <div class="catalogItemName">${escapeHtml(item.name)}</div>
           <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">${priceText}</div>
         </div>
-        ${qty > 0 ? `<div class="catalogItemQty">×${qty}</div>` : ""}
+
+        <div class="catalogCounter">
+          <button class="counterBtn ${selected ? '' : 'hidden'}" onclick="catalogCounterDecrement('${escapeHtml(item.id)}')">−</button>
+          ${selected ? `<span class="counterValue">${qty}</span>` : ""}
+          <button class="counterBtn" onclick="catalogCounterIncrement('${escapeHtml(item.id)}')">＋</button>
+        </div>
       </div>
     `;
   }).join("");
 }
 
-function addCatalogItemToEstimate(catalogId){
-  const project = projects.find(p => p.id === currentProjectId);
+function catalogCounterIncrement(catalogId){
   const item = catalog.find(c => c.id === catalogId);
-  if(!project || !item) return;
+  if(!item) return;
+
+  const current = Number(catalogSelection[catalogId]) || 0;
+  catalogSelection[catalogId] = current + 1;
+
+  renderCatalogList();
+  updateCatalogAddButton();
+}
+
+function catalogCounterDecrement(catalogId){
+  const current = Number(catalogSelection[catalogId]) || 0;
+  if(current <= 1){
+    delete catalogSelection[catalogId];
+  }else{
+    catalogSelection[catalogId] = current - 1;
+  }
+
+  renderCatalogList();
+  updateCatalogAddButton();
+}
+
+function updateCatalogAddButton(){
+  const btn = document.getElementById("catalogAddBtn");
+  const ids = Object.keys(catalogSelection);
+
+  if(!ids.length){
+    btn.disabled = true;
+    btn.textContent = "Оберіть позиції";
+    return;
+  }
+
+  const positionsCount = ids.length;
+  const unitsCount = ids.reduce((sum, id) => sum + (Number(catalogSelection[id]) || 0), 0);
+
+  btn.disabled = false;
+
+  if(positionsCount === 1 && unitsCount === 1){
+    btn.textContent = "Додати";
+  }else{
+    btn.textContent = `Додати ${positionsCount} поз. · ${unitsCount} шт`;
+  }
+}
+
+function applyCatalogSelection(){
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  const ids = Object.keys(catalogSelection);
+  if(!ids.length) return;
 
   if(!Array.isArray(project.positions)) project.positions = [];
 
-  // Перевіряємо, чи вже є позиція з таким catalogId
-  const existing = project.positions.find(pos => pos.catalogId === item.id);
+  const needPrice = [];
 
-  if(existing){
-    existing.qty = (Number(existing.qty) || 0) + 1;
-  }else{
-    project.positions.push({
-      id: uid("pos"),
-      catalogId: item.id,
-      type: item.type,
-      name: item.name,
-      unit: item.unit || "шт",
-      price: Number(item.price) || 0,
-      qty: 1
-    });
-  }
+  ids.forEach(catalogId => {
+    const item = catalog.find(c => c.id === catalogId);
+    if(!item) return;
+
+    const qtyToAdd = Number(catalogSelection[catalogId]) || 0;
+    if(qtyToAdd <= 0) return;
+
+    const existing = project.positions.find(pos => pos.catalogId === item.id);
+
+    if(existing){
+      existing.qty = (Number(existing.qty) || 0) + qtyToAdd;
+      if(!existing.price || existing.price <= 0){
+        needPrice.push(existing);
+      }
+    }else{
+      const newPos = {
+        id: uid("pos"),
+        catalogId: item.id,
+        type: item.type,
+        name: item.name,
+        unit: item.unit || "шт",
+        price: Number(item.price) || 0,
+        qty: qtyToAdd
+      };
+      project.positions.push(newPos);
+      if(!newPos.price || newPos.price <= 0){
+        needPrice.push(newPos);
+      }
+    }
+  });
 
   project.updatedAt = new Date().toISOString();
   saveProjects();
+
   closeCatalog();
   render();
 
-  // Якщо ціна не задана — одразу пропонуємо ввести
-  const pos = project.positions.find(p => p.catalogId === item.id);
-  if(pos && (!pos.price || pos.price <= 0)){
-    setTimeout(() => openPriceEditor(project.id, pos.id), 300);
+  // Якщо є позиції без ціни — відкриваємо модалку введення цін
+  if(needPrice.length){
+    openPricesSheet(needPrice);
   }else{
     toast("Додано");
   }
@@ -2902,7 +3018,101 @@ function saveCustom(){
   saveCatalog();
 
   closeCustom();
-  addCatalogItemToEstimate(newItem.id);
+
+  // Додаємо в кошторис як одну позицію з кількістю 1
+  const project = projects.find(p => p.id === currentProjectId);
+  if(project){
+    if(!Array.isArray(project.positions)) project.positions = [];
+    project.positions.push({
+      id: uid("pos"),
+      catalogId: newItem.id,
+      type: newItem.type,
+      name: newItem.name,
+      unit: newItem.unit,
+      price: newItem.price,
+      qty: 1
+    });
+    project.updatedAt = new Date().toISOString();
+    saveProjects();
+    render();
+    toast("Додано");
+  }
+}
+
+/* =========================================================
+   PRICES MODAL (multi)
+========================================================= */
+
+function openPricesSheet(positions){
+  pricesPending = positions.slice();
+
+  const list = document.getElementById("pricesList");
+
+  list.innerHTML = pricesPending.map((pos, i) => `
+    <div class="priceRow">
+      <div class="priceRowName">${escapeHtml(pos.name)}</div>
+      <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${pos.qty || 1}</div>
+      <input
+        class="formInput"
+        id="priceRowInput_${i}"
+        inputmode="decimal"
+        placeholder="0"
+        autocomplete="off"
+      >
+    </div>
+  `).join("");
+
+  document.getElementById("pricesSheet").classList.add("open");
+  setTimeout(() => {
+    const first = document.getElementById("priceRowInput_0");
+    if(first) first.focus();
+  }, 200);
+}
+
+function closePricesSheet(){
+  document.getElementById("pricesSheet").classList.remove("open");
+  pricesPending = [];
+}
+
+function skipPrices(){
+  closePricesSheet();
+  toast("Додано без цін");
+}
+
+function savePrices(){
+  if(!pricesPending.length){
+    closePricesSheet();
+    return;
+  }
+
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  pricesPending.forEach((pos, i) => {
+    const input = document.getElementById("priceRowInput_" + i);
+    if(!input) return;
+
+    const value = Number(String(input.value).replace(",",".")) || 0;
+    if(value > 0){
+      pos.price = value;
+
+      // Синхронізуємо з каталогом
+      if(pos.catalogId){
+        const cat = catalog.find(c => c.id === pos.catalogId);
+        if(cat && (!cat.price || cat.price <= 0)){
+          cat.price = value;
+        }
+      }
+    }
+  });
+
+  saveCatalog();
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+
+  closePricesSheet();
+  render();
+  toast("Ціни збережено");
 }
 
 /* =========================================================
@@ -2936,57 +3146,47 @@ function deletePosition(projectId, positionId){
 }
 
 /* =========================================================
-   PRICE EDITOR
+   SINGLE PRICE EDITOR
 ========================================================= */
 
-function openPriceEditor(projectId, positionId){
+let singlePriceContext = null;
+
+function openSinglePriceEditor(projectId, positionId){
   const project = projects.find(p => p.id === projectId);
   if(!project) return;
   const pos = project.positions.find(p => p.id === positionId);
   if(!pos) return;
 
-  priceEditContext = { projectId, positionId };
+  singlePriceContext = { projectId, positionId };
 
-  document.getElementById("priceTitle").textContent = "Ціна";
-  document.getElementById("priceSubtitle").textContent = pos.name;
-  document.getElementById("priceInput").value = pos.price > 0 ? String(pos.price) : "";
+  pricesPending = [pos];
+  document.getElementById("pricesList");
 
-  document.getElementById("priceSheet").classList.add("open");
-  setTimeout(() => document.getElementById("priceInput").focus(), 200);
+  // Використовуємо ту ж модалку
+  const list = document.getElementById("pricesList");
+  list.innerHTML = `
+    <div class="priceRow">
+      <div class="priceRowName">${escapeHtml(pos.name)}</div>
+      <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${pos.qty || 1}</div>
+      <input
+        class="formInput"
+        id="priceRowInput_0"
+        inputmode="decimal"
+        placeholder="0"
+        value="${pos.price > 0 ? pos.price : ""}"
+        autocomplete="off"
+      >
+    </div>
+  `;
+
+  document.getElementById("pricesSheet").classList.add("open");
+  setTimeout(() => {
+    const first = document.getElementById("priceRowInput_0");
+    if(first){ first.focus(); first.select && first.select(); }
+  }, 200);
 }
 
-function closePriceSheet(){
-  document.getElementById("priceSheet").classList.remove("open");
-  priceEditContext = null;
-}
-
-function savePrice(){
-  if(!priceEditContext) return;
-
-  const value = Number(String(document.getElementById("priceInput").value).replace(",",".")) || 0;
-
-  const project = projects.find(p => p.id === priceEditContext.projectId);
-  if(!project) return;
-  const pos = project.positions.find(p => p.id === priceEditContext.positionId);
-  if(!pos) return;
-
-  pos.price = value;
-
-  // Синхронізуємо з каталогом (щоб наступного разу не питало)
-  if(pos.catalogId){
-    const cat = catalog.find(c => c.id === pos.catalogId);
-    if(cat && !cat.price){
-      cat.price = value;
-      saveCatalog();
-    }
-  }
-
-  project.updatedAt = new Date().toISOString();
-  saveProjects();
-  closePriceSheet();
-  render();
-  toast("Ціну збережено");
-}
+/* savePrices вже вище — він використає pricesPending */
 
 /* =========================================================
    ACTIONS
@@ -3304,8 +3504,8 @@ document.getElementById("customSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeCustom();
 });
 
-document.getElementById("priceSheet").addEventListener("click", e => {
-  if(e.target === e.currentTarget) closePriceSheet();
+document.getElementById("pricesSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closePricesSheet();
 });
 
 document.getElementById("addPersonSheet").addEventListener("click", e => {
