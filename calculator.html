@@ -1172,6 +1172,56 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--t);
 }
 
+/* ==== DISCOUNT ==== */
+
+.discountBlock{
+  margin-top:.875rem;
+  padding-top:.75rem;
+  border-top:1px solid rgba(120,130,140,.18);
+}
+
+.discountLabel{
+  font-size:.75rem;
+  font-weight:750;
+  color:var(--ts);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:.5rem;
+  padding:0 .25rem;
+}
+
+.discountTotal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:.5rem .25rem 0;
+  font-size:.875rem;
+  color:var(--ts);
+}
+
+.discountTotalLabel{
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.4px;
+  font-size:.75rem;
+}
+
+.discountTotalValue{
+  font-size:1.125rem;
+  font-weight:800;
+  color:var(--t);
+}
+
+.discountDiff{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:.25rem .25rem 0;
+  font-size:.75rem;
+  color:var(--green);
+  font-weight:650;
+}
+
 .floatingPanel{
   position:fixed;
   left:50%;
@@ -1891,7 +1941,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         oninput="renderCatalogList()"
       >
 
-      <div class="chips tight" id="catalogChips"></div>
+      <div class="chips tight" id="catalogChips" style="display:none"></div>
       <div class="chips tight" id="catalogBrandChips" style="display:none"></div>
       <div class="chips tight" id="catalogSystemChips" style="display:none"></div>
 
@@ -1945,6 +1995,16 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         </div>
       </div>
 
+      <div id="ceWorkFields" class="hidden">
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Етап</label>
+          <div class="chips" id="ceStageChips">
+            <button type="button" class="chip" data-value="rough">Чорновий монтаж</button>
+            <button type="button" class="chip" data-value="finish">Чистовий монтаж</button>
+          </div>
+        </div>
+      </div>
+
       <div id="ceMaterialFields" class="hidden">
         <div class="formGroup" style="margin-bottom:0">
           <label class="formLabel">Категорія</label>
@@ -1988,6 +2048,16 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         <div class="formGroup">
           <label class="formLabel">Одиниця</label>
           <input class="formInput" id="csUnit" placeholder="шт" autocomplete="off">
+        </div>
+      </div>
+
+      <div id="csWorkFields" class="hidden">
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Етап</label>
+          <div class="chips" id="csStageChips">
+            <button type="button" class="chip active" data-value="rough">Чорновий монтаж</button>
+            <button type="button" class="chip" data-value="finish">Чистовий монтаж</button>
+          </div>
         </div>
       </div>
 
@@ -2290,26 +2360,27 @@ const EUR_RATE_KEY = "sa_eurRate";
 const USD_RATE_KEY = "sa_usdRate";
 const SUPPLIER_NAMES_KEY = "sa_supplierNames";
 
+/* Дефолтні роботи — тепер із етапами */
 const DEFAULT_WORKS = [
-  { name: "Розведення каналізації", unit: "компл." },
-  { name: "Розведення водопостачання", unit: "компл." },
-  { name: "Розведення опалення", unit: "компл." },
-  { name: "Монтаж колектора", unit: "шт" },
-  { name: "Монтаж фільтра води", unit: "шт" },
-  { name: "Монтаж бойлера", unit: "шт" },
-  { name: "Монтаж інсталяції", unit: "шт" },
-  { name: "Монтаж вбудованої частини змішувача", unit: "шт" },
-  { name: "Монтаж трапа", unit: "шт" },
-  { name: "Опресування системи", unit: "шт" },
-  { name: "Пусконалагодження", unit: "шт" },
-  { name: "Монтаж унітазу", unit: "шт" },
-  { name: "Монтаж умивальника", unit: "шт" },
-  { name: "Монтаж ванни", unit: "шт" },
-  { name: "Монтаж душу", unit: "шт" },
-  { name: "Монтаж змішувача", unit: "шт" },
-  { name: "Монтаж рушникосушки", unit: "шт" },
-  { name: "Монтаж радіатора", unit: "шт" },
-  { name: "Монтаж пральної машини", unit: "шт" }
+  { name: "Розведення каналізації", unit: "компл.", stage: "rough" },
+  { name: "Розведення водопостачання", unit: "компл.", stage: "rough" },
+  { name: "Розведення опалення", unit: "компл.", stage: "rough" },
+  { name: "Монтаж колектора", unit: "шт", stage: "rough" },
+  { name: "Монтаж фільтра води", unit: "шт", stage: "rough" },
+  { name: "Монтаж бойлера", unit: "шт", stage: "rough" },
+  { name: "Монтаж інсталяції", unit: "шт", stage: "rough" },
+  { name: "Монтаж вбудованої частини змішувача", unit: "шт", stage: "rough" },
+  { name: "Монтаж трапа", unit: "шт", stage: "rough" },
+  { name: "Опресування системи", unit: "шт", stage: "rough" },
+  { name: "Пусконалагодження", unit: "шт", stage: "rough" },
+  { name: "Монтаж унітазу", unit: "шт", stage: "finish" },
+  { name: "Монтаж умивальника", unit: "шт", stage: "finish" },
+  { name: "Монтаж ванни", unit: "шт", stage: "finish" },
+  { name: "Монтаж душу", unit: "шт", stage: "finish" },
+  { name: "Монтаж змішувача", unit: "шт", stage: "finish" },
+  { name: "Монтаж рушникосушки", unit: "шт", stage: "finish" },
+  { name: "Монтаж радіатора", unit: "шт", stage: "finish" },
+  { name: "Монтаж пральної машини", unit: "шт", stage: "finish" }
 ];
 
 let projects = [];
@@ -2379,7 +2450,7 @@ try{
         unit: w.unit,
         price: 0,
         category: "",
-        stage: "",
+        stage: w.stage,
         manufacturer: "",
         system: "",
         article: "",
@@ -2397,13 +2468,44 @@ try{
     unit: w.unit,
     price: 0,
     category: "",
-    stage: "",
+    stage: w.stage,
     manufacturer: "",
     system: "",
     article: "",
     basePriceEUR: 0,
     supplierOffers: []
   }));
+}
+
+/* ==== Міграція етапів для старих робіт (без stage) ==== */
+
+let catalogMigrated = false;
+
+catalog.forEach(item => {
+  if(item.type !== "work") return;
+  if(item.stage) return;
+
+  // Визначаємо етап за назвою
+  const name = String(item.name || "").toLowerCase();
+
+  if(
+    /унітаз|умивальник|ванн|душ|змішувач|рушникосушк|радіатор|пральн|бойлер|чистов/i.test(name) &&
+    !/розведення|монтаж колектора|монтаж фільтра|монтаж інсталяц|монтах вбудуван|монтаж вбудуван|монтаж трапа|опресування|пусконалагодження/i.test(name)
+  ){
+    if(/бойлер|фільтр/i.test(name)){
+      item.stage = "rough";
+    }else{
+      item.stage = "finish";
+    }
+  }else{
+    item.stage = "rough";
+  }
+
+  catalogMigrated = true;
+});
+
+if(catalogMigrated){
+  saveCatalog();
 }
 
 function saveProjects(){
@@ -2453,9 +2555,11 @@ let catalogSelection = {};
 let catalogManageMode = false;
 let editingCatalogItemId = null;
 let editingCatalogCategory = "other";
+let editingCatalogStage = "rough";
 
 let customType = "work";
 let customCategory = "other";
+let customStage = "rough";
 
 let pricesPending = [];
 
@@ -2548,13 +2652,30 @@ function personInitial(name){
   return n ? n[0] : "?";
 }
 
-function getEstimateTotal(project){
+/* ==== Розрахунки кошторису ==== */
+
+function getEstimateSubtotal(project){
   if(!project || !Array.isArray(project.positions)) return 0;
   return project.positions.reduce((sum, p) => {
     const price = Number(p.price) || 0;
     const qty = Number(p.qty) || 0;
     return sum + price * qty;
   }, 0);
+}
+
+function getEstimateDiscountPercent(project){
+  const d = Number(project && project.discount);
+  return Number.isFinite(d) && d > 0 && d < 100 ? d : 0;
+}
+
+function getEstimateDiscountAmount(project){
+  const subtotal = getEstimateSubtotal(project);
+  const percent = getEstimateDiscountPercent(project);
+  return subtotal * percent / 100;
+}
+
+function getEstimateTotal(project){
+  return getEstimateSubtotal(project) - getEstimateDiscountAmount(project);
 }
 
 function getProjectPositionCount(project){
@@ -2862,6 +2983,43 @@ function renderEstimateBlock(p){
   const workPositions = positions.filter(x => x.type === "work");
   const materialPositions = positions.filter(x => x.type === "material");
 
+  const subtotal = getEstimateSubtotal(p);
+  const discountPercent = getEstimateDiscountPercent(p);
+  const discountAmount = getEstimateDiscountAmount(p);
+  const total = getEstimateTotal(p);
+
+  const discountChips = [0,5,10,15,20];
+
+  let discountHtml = `
+    <div class="discountBlock">
+      <div class="discountLabel">Знижка</div>
+      <div class="chips tight">
+        ${discountChips.map(value => `
+          <button
+            type="button"
+            class="chip small ${discountPercent === value ? 'active' : ''}"
+            onclick="setDiscountPercent(${value})"
+          >${value}%</button>
+        `).join("")}
+        <button
+          type="button"
+          class="chip small ${discountPercent && !discountChips.includes(discountPercent) ? 'active' : ''}"
+          onclick="promptCustomDiscount()"
+        >інша</button>
+      </div>
+      <div class="discountTotal">
+        <span class="discountTotalLabel">До сплати</span>
+        <span class="discountTotalValue">${money(total)}</span>
+      </div>
+      ${discountPercent > 0 ? `
+        <div class="discountDiff">
+          <span>Економія клієнту</span>
+          <span>−${money(discountAmount)}</span>
+        </div>
+      ` : ""}
+    </div>
+  `;
+
   return `
     <div class="estimateBlock">
       <div class="estimateHead">
@@ -2877,6 +3035,7 @@ function renderEstimateBlock(p){
       ` : `
         ${renderEstimateSection("РОБОТИ", workPositions, p.id)}
         ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id)}
+        ${discountHtml}
       `}
     </div>
   `;
@@ -2946,6 +3105,43 @@ function renderPosition(projectId, pos){
       </div>
     </div>
   `;
+}
+
+/* ==== Знижка ==== */
+
+function setDiscountPercent(value){
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  const num = Number(value) || 0;
+
+  project.discount = (num > 0 && num < 100) ? num : 0;
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
+}
+
+function promptCustomDiscount(){
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  const current = getEstimateDiscountPercent(project);
+
+  const value = prompt("Відсоток знижки (0–99):", current > 0 ? String(current) : "");
+
+  if(value === null) return;
+
+  const num = Number(String(value).replace(",","."));
+
+  if(!Number.isFinite(num) || num < 0 || num >= 100){
+    toast("Некоректна знижка");
+    return;
+  }
+
+  project.discount = num > 0 ? num : 0;
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
 }
 
 function openNewProject(){
@@ -3223,22 +3419,15 @@ function updateCatalogFooter(){
   const footer = document.getElementById("catalogFooter");
   const importBtn = document.getElementById("importExcelButton");
   const customBtn = document.querySelector(".addCustomButton");
-  const chips = document.getElementById("catalogChips");
-  const brandChips = document.getElementById("catalogBrandChips");
-  const systemChips = document.getElementById("catalogSystemChips");
 
   if(catalogManageMode){
     footer.style.display = "none";
     importBtn.style.display = "none";
     if(customBtn) customBtn.style.display = "flex";
-    chips.style.display = "none";
-    brandChips.style.display = "none";
-    systemChips.style.display = "none";
   }else{
     footer.style.display = "flex";
     importBtn.style.display = (catalogMode === "material") ? "flex" : "none";
     if(customBtn) customBtn.style.display = "flex";
-    chips.style.display = "flex";
   }
 }
 
@@ -3246,13 +3435,78 @@ function renderCatalogChips(){
   const box = document.getElementById("catalogChips");
 
   if(catalogManageMode){
+    box.style.display = "none";
     box.innerHTML = "";
     return;
   }
 
+  // ==== РОБОТИ ====
   if(catalogMode === "work"){
-    box.innerHTML = "";
+    const hasAnyWorks = catalog.some(item => item.type === "work");
+
+    if(!hasAnyWorks){
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+
+    const stages = new Set();
+    catalog.forEach(item => {
+      if(item.type !== "work") return;
+      const stage = String(item.stage || "").trim();
+      if(stage) stages.add(stage);
+    });
+
+    if(!stages.size){
+      box.style.display = "none";
+      box.innerHTML = "";
+      catalogFilter = "all";
+      return;
+    }
+
+    if(catalogFilter !== "all" && !stages.has(catalogFilter)){
+      catalogFilter = "all";
+    }
+
+    box.style.display = "flex";
+
+    const stageLabels = {
+      "rough": "Чорнові",
+      "finish": "Чистові"
+    };
+
+    let html = `<button class="chip small ${catalogFilter === "all" ? 'active' : ''}" onclick="setCatalogFilter('all')">Усі</button>`;
+
+    ["rough","finish"].forEach(stage => {
+      if(!stages.has(stage)) return;
+      html += `<button class="chip small ${catalogFilter === stage ? 'active' : ''}" onclick="setCatalogFilter('${stage}')">${stageLabels[stage]}</button>`;
+    });
+
+    box.innerHTML = html;
     return;
+  }
+
+  // ==== МАТЕРІАЛИ ====
+  const hasAnyMaterials = catalog.some(item => item.type === "material");
+
+  if(!hasAnyMaterials){
+    box.style.display = "none";
+    box.innerHTML = "";
+    catalogFilter = "all";
+    return;
+  }
+
+  box.style.display = "flex";
+
+  const availableCategories = new Set(["all"]);
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    const cat = String(item.category || "").trim();
+    if(cat) availableCategories.add(cat);
+  });
+
+  if(catalogFilter !== "all" && !availableCategories.has(catalogFilter)){
+    catalogFilter = "all";
   }
 
   const values = [
@@ -3263,13 +3517,15 @@ function renderCatalogChips(){
     ["other","Інше"]
   ];
 
-  box.innerHTML = values.map(([v,l]) => `
-    <button
-      type="button"
-      class="chip small ${catalogFilter === v ? 'active' : ''}"
-      onclick="setCatalogFilter('${v}')"
-    >${l}</button>
-  `).join("");
+  box.innerHTML = values
+    .filter(([v]) => availableCategories.has(v))
+    .map(([v,l]) => `
+      <button
+        type="button"
+        class="chip small ${catalogFilter === v ? 'active' : ''}"
+        onclick="setCatalogFilter('${v}')"
+      >${l}</button>
+    `).join("");
 }
 
 function setCatalogFilter(v){
@@ -3406,6 +3662,10 @@ function getCatalogItems(){
 
   return catalog.filter(item => {
     if(item.type !== catalogMode) return false;
+
+    if(catalogMode === "work" && catalogFilter !== "all"){
+      if(String(item.stage || "").trim() !== catalogFilter) return false;
+    }
 
     if(catalogMode === "material" && catalogFilter !== "all"){
       if(item.category !== catalogFilter) return false;
@@ -3598,12 +3858,20 @@ function openCatalogItemEditor(id){
   document.getElementById("ceUnit").value = item.unit || "шт";
 
   const isMaterial = item.type === "material";
+  const isWork = item.type === "work";
+
+  document.getElementById("ceWorkFields").classList.toggle("hidden", !isWork);
   document.getElementById("ceMaterialFields").classList.toggle("hidden", !isMaterial);
 
   editingCatalogCategory = isMaterial ? (item.category || "other") : "other";
+  editingCatalogStage = isWork ? (item.stage || "rough") : "rough";
 
   document.querySelectorAll("#ceCategoryChips .chip").forEach(c => {
     c.classList.toggle("active", c.dataset.value === editingCatalogCategory);
+  });
+
+  document.querySelectorAll("#ceStageChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingCatalogStage);
   });
 
   document.getElementById("catalogEditSheet").classList.add("open");
@@ -3635,10 +3903,15 @@ function saveCatalogItemEditor(){
 
   if(item.type === "material"){
     item.category = editingCatalogCategory || "other";
+    item.stage = "";
+  }else{
+    item.stage = editingCatalogStage || "rough";
+    item.category = "";
   }
 
   saveCatalog();
   closeCatalogItemEditor();
+  renderCatalogChips();
   renderCatalogList();
   toast("Збережено");
 }
@@ -3651,6 +3924,7 @@ function deleteCatalogItem(id){
 
   catalog = catalog.filter(c => c.id !== id);
   saveCatalog();
+  renderCatalogChips();
   renderCatalogBrandChips();
   renderCatalogSystemChips();
   renderCatalogList();
@@ -3660,6 +3934,7 @@ function deleteCatalogItem(id){
 function openCustomPosition(){
   customType = catalogMode;
   customCategory = "other";
+  customStage = "rough";
 
   document.getElementById("customTitle").textContent =
     customType === "work" ? "Нова робота" : "Новий матеріал";
@@ -3668,10 +3943,15 @@ function openCustomPosition(){
   document.getElementById("csPrice").value = "";
   document.getElementById("csUnit").value = "";
 
+  document.getElementById("csWorkFields").classList.toggle("hidden", customType !== "work");
   document.getElementById("csMaterialFields").classList.toggle("hidden", customType !== "material");
 
   document.querySelectorAll("#csCategoryChips .chip").forEach(c => {
     c.classList.toggle("active", c.dataset.value === "other");
+  });
+
+  document.querySelectorAll("#csStageChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === customStage);
   });
 
   document.getElementById("customSheet").classList.add("open");
@@ -3699,7 +3979,7 @@ function saveCustom(){
     unit,
     price,
     category: customType === "material" ? customCategory : "",
-    stage: "",
+    stage: customType === "work" ? customStage : "",
     manufacturer: "",
     system: "",
     article: "",
@@ -3713,6 +3993,7 @@ function saveCustom(){
   closeCustom();
 
   if(catalogManageMode){
+    renderCatalogChips();
     renderCatalogList();
     toast("Додано в каталог");
     return;
@@ -3865,9 +4146,7 @@ function openSinglePriceEditor(projectId, positionId){
   }, 200);
 }
 
-/* =========================================================
-   IMPORT
-========================================================= */
+/* ==== IMPORT ==== */
 
 function openImportFile(){
   const input = document.getElementById("importFileInput");
@@ -4210,11 +4489,9 @@ function detectInvoiceRate(rows, header){
 
       if(!text) continue;
 
-      // Шукаємо "курс" у будь-якій формі
       const hasKurs = /курс|rate/.test(text);
       if(!hasKurs) continue;
 
-      // Варіант A: число в тому ж рядку наступною клітинкою
       for(let next = c + 1; next < row.length; next++){
         const candidate = parseNumber(row[next]);
         if(Number.isFinite(candidate) && candidate > 1 && candidate < 1000){
@@ -4222,7 +4499,6 @@ function detectInvoiceRate(rows, header){
         }
       }
 
-      // Варіант B: число вже в самій клітинці ("Курс: 52")
       const afterColon = cleanText(raw.replace(/^(курс|rate)\s*:?\s*/i,""));
       const num = parseNumber(afterColon);
       if(Number.isFinite(num) && num > 1 && num < 1000){
@@ -4275,17 +4551,14 @@ function openImportSheet(parsed, file){
     .map(n => `<option value="${escapeHtml(n)}"></option>`)
     .join("");
 
-  // Валюта: спочатку з файлу, потім евристика, потім порожньо
   let currency = parsed.currency || autoDetectedCurrency || "";
 
-  // Евристика: якщо є курс > 10 і не визначено валюту → EUR
   if(!currency && parsed.detectedRate && parsed.detectedRate > 10){
     currency = "EUR";
   }
 
   document.getElementById("impCurrency").value = currency;
 
-  // Курс: спочатку з файлу, потім з localStorage
   let rate = parsed.detectedRate;
 
   if(!rate){
@@ -4305,8 +4578,8 @@ function openImportSheet(parsed, file){
 function collectKnownSupplierNames(){
   const set = new Set();
 
-  // 1) З уже збережених назв
   const names = loadSupplierNames();
+
   Object.keys(names).forEach(key => {
     if(key.startsWith("short:")) return;
     const value = cleanText(names[key]);
@@ -4320,7 +4593,6 @@ function collectKnownSupplierNames(){
     if(name) set.add(name);
   });
 
-  // 2) З пропозицій у каталозі
   catalog.forEach(item => {
     if(!Array.isArray(item.supplierOffers)) return;
     item.supplierOffers.forEach(o => {
@@ -4409,8 +4681,6 @@ function closeImportSheet(){
   autoDetectedRate = null;
 }
 
-/* ==== Визначення бренду / системи / категорії ==== */
-
 function detectBrand(text, article){
   const source = ntext(text + " " + (article || ""));
 
@@ -4484,8 +4754,6 @@ function detectCategory(text, brand, system){
 
   return "other";
 }
-
-/* ==== Пошук існуючого товару + оновлення пропозиції ==== */
 
 function findExistingCatalogItem(imported, supplierName){
   const article = ntext(imported.article);
@@ -4685,7 +4953,6 @@ function confirmImport(){
 
   saveCatalog();
 
-  // Зберігаємо назву постачальника для підказок
   const names = loadSupplierNames();
   const shortKey = ntext(importSupplierName);
 
@@ -4708,6 +4975,9 @@ function confirmImport(){
   toast(`Імпортовано: ${created} нових, ${updated} оновлено`);
 
   if(catalogManageMode){
+    renderCatalogChips();
+    renderCatalogBrandChips();
+    renderCatalogSystemChips();
     renderCatalogList();
   }
 }
@@ -4980,12 +5250,30 @@ document.getElementById("csCategoryChips").addEventListener("click", e => {
   });
 });
 
+document.getElementById("csStageChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  customStage = chip.dataset.value;
+  document.querySelectorAll("#csStageChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === customStage);
+  });
+});
+
 document.getElementById("ceCategoryChips").addEventListener("click", e => {
   const chip = e.target.closest(".chip");
   if(!chip) return;
   editingCatalogCategory = chip.dataset.value;
   document.querySelectorAll("#ceCategoryChips .chip").forEach(c => {
     c.classList.toggle("active", c.dataset.value === editingCatalogCategory);
+  });
+});
+
+document.getElementById("ceStageChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingCatalogStage = chip.dataset.value;
+  document.querySelectorAll("#ceStageChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingCatalogStage);
   });
 });
 
@@ -5007,7 +5295,6 @@ document.getElementById("pfChips").addEventListener("click", e => {
 
 document.getElementById("impCurrency").addEventListener("change", updateImportRateField);
 
-// Підказки постачальника — підставляємо валюту і курс
 document.getElementById("impSupplierName").addEventListener("input", function(){
   const name = this.value.trim();
   if(!name) return;
@@ -5021,7 +5308,6 @@ document.getElementById("impSupplierName").addEventListener("input", function(){
   const currencySelect = document.getElementById("impCurrency");
   const rateInput = document.getElementById("impRate");
 
-  // Не перезаписуємо те, що вже визначено з файлу
   if(!currencySelect.value && saved.currency){
     currencySelect.value = saved.currency;
   }
