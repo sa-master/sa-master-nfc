@@ -13,6 +13,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
 
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
 <style>
 :root{
   --p:#007AFF;
@@ -612,6 +614,24 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .formInput:focus,
 .formTextarea:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
+
+.formSelect{
+  width:100%;
+  height:3rem;
+  border:1px solid var(--gbr);
+  outline:0;
+  border-radius:.875rem;
+  background:var(--gb);
+  backdrop-filter:blur(1rem);
+  -webkit-backdrop-filter:blur(1rem);
+  padding:0 .875rem;
+  font-size:.9375rem;
+  color:var(--t);
+  -webkit-appearance:none;
+  appearance:none;
+}
+
+.formSelect:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
 
 .formRow{
   display:grid;
@@ -1315,6 +1335,72 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-weight:500;
 }
 
+/* ==== IMPORT PREVIEW ==== */
+
+.importPreviewList{
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  margin-top:.5rem;
+}
+
+.importPreviewItem{
+  background:rgba(255,255,255,.4);
+  border:1px solid var(--gbr);
+  border-radius:.75rem;
+  padding:.625rem .75rem;
+}
+
+@media (prefers-color-scheme: dark){
+  .importPreviewItem{background:rgba(255,255,255,.04)}
+}
+
+.importPreviewName{
+  font-size:.8125rem;
+  font-weight:650;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+  color:var(--t);
+}
+
+.importPreviewMeta{
+  margin-top:.25rem;
+  font-size:.6875rem;
+  color:var(--tm);
+  line-height:1.4;
+}
+
+.importPreviewMeta b{color:var(--ts);font-weight:650}
+
+.importPreviewMore{
+  text-align:center;
+  color:var(--tm);
+  font-size:.75rem;
+  padding:.5rem 0;
+}
+
+.importSummaryBox{
+  background:rgba(0,122,255,.06);
+  border:1px solid rgba(0,122,255,.15);
+  border-radius:.875rem;
+  padding:.75rem .875rem;
+  margin-bottom:.875rem;
+}
+
+.importSummaryRow{
+  display:flex;
+  justify-content:space-between;
+  gap:.5rem;
+  font-size:.8125rem;
+  color:var(--ts);
+  padding:.25rem 0;
+}
+
+.importSummaryRow b{
+  color:var(--t);
+  font-weight:700;
+}
+
 /* ==== ACTIONS SHEET ==== */
 
 .actionSheetRow{
@@ -1777,6 +1863,82 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   </div>
 </div>
 
+<!-- SHEET: IMPORT PREVIEW -->
+
+<div class="sheet" id="importSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong>Перевірка імпорту</strong>
+      <button class="close" onclick="closeImportSheet()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="formGroup">
+        <label class="formLabel">Постачальник *</label>
+        <input
+          class="formInput"
+          id="impSupplierName"
+          list="impSupplierList"
+          placeholder="Назва постачальника"
+          autocomplete="off"
+        >
+        <datalist id="impSupplierList"></datalist>
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Повна назва з файлу</label>
+        <input class="formInput" id="impSupplierFullName" placeholder="Необов'язково" autocomplete="off">
+      </div>
+
+      <div class="formRow">
+        <div class="formGroup">
+          <label class="formLabel">Валюта *</label>
+          <select class="formSelect" id="impCurrency">
+            <option value="">Оберіть</option>
+            <option value="UAH">UAH</option>
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+        <div class="formGroup">
+          <label class="formLabel" id="impRateLabel">Курс, ₴/€</label>
+          <input class="formInput" id="impRate" inputmode="decimal" placeholder="0" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="formHint" id="impRateHint" style="margin-bottom:.875rem">
+        Курс потрібен для перерахунку цін у гривню.
+      </div>
+
+      <div class="importSummaryBox">
+        <div class="importSummaryRow">
+          <span>Файл</span>
+          <b id="impFileName">—</b>
+        </div>
+        <div class="importSummaryRow">
+          <span>Знайдено товарів</span>
+          <b id="impItemsCount">0</b>
+        </div>
+        <div class="importSummaryRow">
+          <span>З них з цінами</span>
+          <b id="impItemsWithPrice">0</b>
+        </div>
+      </div>
+
+      <div style="font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin:.5rem .25rem .25rem">
+        Попередній перегляд
+      </div>
+
+      <div class="importPreviewList" id="impPreviewList"></div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeImportSheet()">Скасувати</button>
+      <button class="btnPrimary" onclick="confirmImport()">Імпортувати</button>
+    </div>
+  </div>
+</div>
+
 <!-- SHEET: ACTIONS -->
 
 <div class="sheet" id="actionsSheet">
@@ -1957,6 +2119,9 @@ const PROJECTS_KEY = "sa_projects";
 const PROFILE_KEY = "sa_profile";
 const TEAM_KEY = "sa_team";
 const CATALOG_KEY = "sa_catalog";
+const EUR_RATE_KEY = "sa_eurRate";
+const USD_RATE_KEY = "sa_usdRate";
+const SUPPLIER_NAMES_KEY = "sa_supplierNames";
 
 /* =========================================================
    DEFAULT CATALOG
@@ -2002,6 +2167,9 @@ let profile = {
 };
 let team = [];
 let catalog = [];
+
+let importEurRate = Number(localStorage.getItem(EUR_RATE_KEY) || 0);
+let importUsdRate = Number(localStorage.getItem(USD_RATE_KEY) || 0);
 
 try{
   const raw = localStorage.getItem(PROJECTS_KEY);
@@ -2121,6 +2289,7 @@ let customCategory = "other";
 let pricesPending = [];
 
 let pendingImportFile = null;
+let pendingImportData = null;   // результат парсингу
 
 const FEATURE_SUGGESTIONS = [
   "Прихований монтаж",
@@ -2810,7 +2979,6 @@ function openCatalogFor(type){
   document.getElementById("catalogTitle").textContent = (type === "work") ? "Вибір роботи" : "Вибір матеріалу";
   document.getElementById("addCustomLabel").textContent = (type === "work") ? "Додати свою роботу" : "Додати свій матеріал";
 
-  // Кнопка імпорту — тільки в матеріалах
   const importBtn = document.getElementById("importExcelButton");
   importBtn.style.display = (type === "material") ? "flex" : "none";
 
@@ -3236,7 +3404,7 @@ function openSinglePriceEditor(projectId, positionId){
 }
 
 /* =========================================================
-   IMPORT FROM EXCEL (C4.1)
+   IMPORT (C4.2.1)
 ========================================================= */
 
 function openImportFile(){
@@ -3245,7 +3413,7 @@ function openImportFile(){
   input.click();
 }
 
-document.getElementById("importFileInput").addEventListener("change", function(e){
+document.getElementById("importFileInput").addEventListener("change", async function(e){
   const file = e.target.files && e.target.files[0];
   e.target.value = "";
 
@@ -3259,12 +3427,496 @@ document.getElementById("importFileInput").addEventListener("change", function(e
     return;
   }
 
-  pendingImportFile = file;
+  if(typeof XLSX === "undefined"){
+    toast("Модуль XLS/XLSX не завантажився");
+    return;
+  }
 
-  toast("Файл обрано: " + file.name);
-  console.log("[import] Файл обрано:", file);
-  console.log("[import] Буде оброблено в C4.2");
+  try{
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
+    const parsed = parseWorkbook(workbook);
+
+    if(!parsed || !parsed.items.length){
+      toast("Не вдалося знайти товари у файлі");
+      return;
+    }
+
+    pendingImportFile = file;
+    pendingImportData = parsed;
+
+    openImportSheet(parsed, file);
+
+  }catch(err){
+    console.error("Import error:", err);
+    toast("Не вдалося прочитати файл");
+  }
 });
+
+/* =========================================================
+   PARSING
+========================================================= */
+
+function parseWorkbook(workbook){
+  let best = null;
+
+  for(const sheetName of workbook.SheetNames){
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, {
+      header: 1,
+      raw: false,
+      defval: "",
+      blankrows: true
+    });
+
+    const header = findHeaderRow(rows);
+    if(!header) continue;
+
+    const items = parseSheetRows(rows, header);
+    if(!items.length) continue;
+
+    const currency = detectInvoiceCurrency(rows, header);
+    const supplierFullName = detectSupplierFullName(rows, header);
+
+    if(!best || items.length > best.items.length){
+      best = {
+        sheetName,
+        items,
+        currency,
+        supplierFullName,
+        header
+      };
+    }
+  }
+
+  return best;
+}
+
+function cleanText(v){
+  return String(v ?? "")
+    .replace(/\u00a0/g," ")
+    .replace(/[\r\n]+/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+function ntext(v){
+  return cleanText(v).toLowerCase();
+}
+
+function parseNumber(value){
+  if(typeof value === "number" && Number.isFinite(value)) return value;
+
+  let text = cleanText(value)
+    .replace(/[\s\u00A0']/g,"")
+    .replace(/грн\.?/gi,"")
+    .replace(/[^0-9,.-]/g,"");
+
+  if(!text || text === "-" || text === "." || text === ",") return null;
+
+  const lastComma = text.lastIndexOf(",");
+  const lastDot = text.lastIndexOf(".");
+
+  if(lastComma >= 0 && lastDot >= 0){
+    const decimalSeparator = lastComma > lastDot ? "," : ".";
+    const thousandsSeparator = decimalSeparator === "," ? "." : ",";
+    text = text.split(thousandsSeparator).join("").replace(decimalSeparator,".");
+  }else if(lastComma >= 0){
+    const parts = text.split(",");
+    if(parts.length > 2 || (parts.length === 2 && parts[1].length === 3 && parts[0].replace("-","").length <= 3)){
+      text = parts.join("");
+    }else{
+      text = text.replace(",", ".");
+    }
+  }else if(lastDot >= 0){
+    const parts = text.split(".");
+    if(parts.length > 2 && parts[parts.length - 1].length === 3){
+      text = parts.join("");
+    }
+  }
+
+  if(!text || text === "-" || text === "." || text === "-.") return null;
+  const num = Number(text);
+  return Number.isFinite(num) ? num : null;
+}
+
+function isUnit(value){
+  const t = ntext(value).replace(/\./g,"");
+  return /^(шт|м|м2|м²|м3|м³|компл|упак|уп|кг|л|погм|пог м|pcs|pc)$/.test(t);
+}
+
+function classifyPriceHeader(text){
+  const t = ntext(text);
+  if(!t) return null;
+
+  const isRetail = /ціна.*без\s*зниж|цена.*без\s*скид|retail.*price|list.*price|роздрібн.*ціна|розничн.*цена/.test(t);
+  const isMaster = /ціна.*майстра|ціна.*закуп|закупівельн|закупочн|оптов|wholesale|dealer.*price|моя\s*ціна/.test(t);
+  const isDiscountAsMaster = /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price|акційн.*ціна|акционн.*цена/.test(t);
+  const isPlain = /^(ціна|цена|price)(\s*[.,:()].*)?$/i.test(t);
+  const isGeneric = isPlain && !isRetail && !isMaster && !isDiscountAsMaster;
+
+  if(isRetail) return "retail";
+  if(isMaster) return "master";
+  if(isDiscountAsMaster) return "master";
+  if(isGeneric) return "generic";
+  return null;
+}
+
+function findHeaderRow(rows){
+  let best = null;
+
+  rows.slice(0, 60).forEach((row, rowIndex) => {
+    let articleCol = -1, qtyCol = -1, nameCol = -1;
+    let retailCol = -1, masterCol = -1, genericCol = -1;
+    let score = 0;
+
+    row.forEach((cell, col) => {
+      const text = ntext(cell);
+      if(!text) return;
+
+      if(/артикул|код товар|код$|sku/.test(text)){
+        if(articleCol < 0) articleCol = col;
+        score += 4;
+      }
+
+      if(/кількість|количество|к-сть|qty/.test(text)){
+        if(qtyCol < 0) qtyCol = col;
+        score += 4;
+      }
+
+      if(/товар|найменув|наименов|назва|именование|product/.test(text)){
+        if(nameCol < 0) nameCol = col;
+        score += 3;
+      }
+
+      const kind = classifyPriceHeader(cell);
+      if(kind === "retail" && retailCol < 0){ retailCol = col; score += 5; }
+      else if(kind === "master" && masterCol < 0){ masterCol = col; score += 5; }
+      else if(kind === "generic" && genericCol < 0){ genericCol = col; score += 4; }
+    });
+
+    let regularPriceCol = -1, discountPriceCol = -1, priceCol = -1;
+
+    if(retailCol >= 0 && masterCol >= 0){
+      regularPriceCol = retailCol;
+      discountPriceCol = masterCol;
+      priceCol = retailCol;
+    }else if(retailCol >= 0 && genericCol >= 0){
+      regularPriceCol = retailCol;
+      priceCol = retailCol;
+    }else if(masterCol >= 0 && genericCol >= 0){
+      regularPriceCol = genericCol;
+      discountPriceCol = masterCol;
+      priceCol = masterCol;
+    }else if(retailCol >= 0){
+      regularPriceCol = retailCol;
+      priceCol = retailCol;
+    }else if(masterCol >= 0){
+      discountPriceCol = masterCol;
+      priceCol = masterCol;
+    }else if(genericCol >= 0){
+      regularPriceCol = genericCol;
+      priceCol = genericCol;
+    }
+
+    if(priceCol >= 0 && nameCol >= 0 && score >= 7){
+      if(!best || score > best.score){
+        best = { rowIndex, score, articleCol, qtyCol, nameCol, priceCol, regularPriceCol, discountPriceCol };
+      }
+    }
+  });
+
+  return best;
+}
+
+function detectDataColumns(rows, header){
+  const sample = rows.slice(header.rowIndex + 1, header.rowIndex + 45);
+
+  const startName = Math.max(0,
+    header.nameCol >= 0 ? header.nameCol :
+    (header.articleCol >= 0 ? header.articleCol + 1 : 0)
+  );
+
+  const endName = Math.max(startName,
+    (header.qtyCol >= 0 ? header.qtyCol : header.priceCol) - 1
+  );
+
+  let nameCol = startName;
+  let bestNameScore = -1;
+
+  for(let col = startName; col <= endName; col++){
+    let count = 0, chars = 0;
+    sample.forEach(row => {
+      const v = cleanText(row[col]);
+      if(v && !isUnit(v) && parseNumber(v) === null && v.length >= 4){
+        count++;
+        chars += v.length;
+      }
+    });
+    const score = count * 100 + chars;
+    if(score > bestNameScore){
+      bestNameScore = score;
+      nameCol = col;
+    }
+  }
+
+  let unitCol = -1;
+  let bestUnitScore = 0;
+  const maxCols = Math.max(
+    ...sample.map(r => r.length),
+    header.priceCol + 1,
+    header.qtyCol + 1
+  );
+
+  for(let col = 0; col < maxCols; col++){
+    if(
+      col === nameCol ||
+      col === header.articleCol ||
+      col === header.qtyCol ||
+      col === header.priceCol ||
+      col === header.regularPriceCol ||
+      col === header.discountPriceCol
+    ) continue;
+
+    let score = 0;
+    sample.forEach(row => { if(isUnit(row[col])) score++; });
+    if(score > bestUnitScore){
+      bestUnitScore = score;
+      unitCol = col;
+    }
+  }
+
+  return {
+    articleCol: header.articleCol,
+    qtyCol: header.qtyCol,
+    priceCol: header.priceCol,
+    regularPriceCol: header.regularPriceCol ?? -1,
+    discountPriceCol: header.discountPriceCol ?? -1,
+    nameCol,
+    unitCol
+  };
+}
+
+function parseSheetRows(rows, header){
+  const columns = detectDataColumns(rows, header);
+  const result = [];
+
+  for(let r = header.rowIndex + 1; r < rows.length; r++){
+    const row = rows[r] || [];
+    const name = cleanText(row[columns.nameCol]);
+    const article = columns.articleCol >= 0 ? cleanText(row[columns.articleCol]) : "";
+    const qty = columns.qtyCol >= 0 ? parseNumber(row[columns.qtyCol]) : null;
+    const price = parseNumber(row[columns.priceCol]);
+    const retailPrice = columns.regularPriceCol >= 0 ? parseNumber(row[columns.regularPriceCol]) : null;
+    const masterPrice = columns.discountPriceCol >= 0 ? parseNumber(row[columns.discountPriceCol]) : null;
+    const unit = columns.unitCol >= 0 ? cleanText(row[columns.unitCol]) : "";
+
+    if(!name || price === null || price < 0){
+      continue;
+    }
+
+    result.push({
+      name,
+      article,
+      qty,
+      price,
+      retailPrice,
+      masterPrice,
+      unit: unit || "шт"
+    });
+  }
+
+  return result;
+}
+
+function detectInvoiceCurrency(rows, header){
+  const source = rows
+    .slice(0, Math.min(rows.length, header.rowIndex + 3))
+    .flat()
+    .map(ntext)
+    .join(" ");
+
+  const found = new Set();
+  if(/(?:\beur\b|€)/.test(source)) found.add("EUR");
+  if(/(?:\buah\b|грн|₴)/.test(source)) found.add("UAH");
+  if(/(?:\busd\b|\$)/.test(source)) found.add("USD");
+
+  return found.size === 1 ? Array.from(found)[0] : "";
+}
+
+function detectSupplierFullName(rows, header){
+  const limit = Math.min(rows.length, Math.max(header.rowIndex, 1));
+
+  for(let r = 0; r < limit; r++){
+    const row = rows[r] || [];
+    for(let c = 0; c < row.length; c++){
+      const raw = cleanText(row[c]);
+      const text = ntext(raw);
+
+      if(!text || !/^(постачальник|поставщик|продавець|продавец)(\s|:|$)/.test(text)) continue;
+
+      const afterColon = cleanText(raw.replace(/^(постачальник|поставщик|продавець|продавец)\s*:?\s*/i,""));
+      if(afterColon) return afterColon;
+
+      for(let next = c + 1; next < row.length; next++){
+        const candidate = cleanText(row[next]);
+        if(candidate) return candidate;
+      }
+    }
+  }
+
+  return "";
+}
+
+/* =========================================================
+   IMPORT SHEET
+========================================================= */
+
+function openImportSheet(parsed, file){
+  const items = parsed.items || [];
+
+  document.getElementById("impFileName").textContent = file.name;
+  document.getElementById("impItemsCount").textContent = String(items.length);
+  document.getElementById("impItemsWithPrice").textContent = String(
+    items.filter(i => Number.isFinite(i.retailPrice) || Number.isFinite(i.masterPrice) || Number.isFinite(i.price)).length
+  );
+
+  // Постачальник
+  document.getElementById("impSupplierName").value = "";
+  document.getElementById("impSupplierFullName").value = parsed.supplierFullName || "";
+
+  // Підказки постачальників
+  const known = collectKnownSupplierNames();
+  document.getElementById("impSupplierList").innerHTML = known
+    .map(n => `<option value="${escapeHtml(n)}"></option>`)
+    .join("");
+
+  // Валюта
+  document.getElementById("impCurrency").value = parsed.currency || "";
+
+  // Курс
+  updateImportRateField();
+
+  // Прев'ю
+  renderImportPreview(items);
+
+  document.getElementById("importSheet").classList.add("open");
+}
+
+function collectKnownSupplierNames(){
+  const set = new Set();
+  catalog.forEach(item => {
+    if(!Array.isArray(item.supplierOffers)) return;
+    item.supplierOffers.forEach(o => {
+      const n = cleanText(o && o.supplierName);
+      if(n) set.add(n);
+    });
+  });
+  return Array.from(set).sort((a,b) => a.localeCompare(b,"uk"));
+}
+
+function renderImportPreview(items){
+  const box = document.getElementById("impPreviewList");
+  const limit = 5;
+  const visible = items.slice(0, limit);
+
+  let html = visible.map(it => {
+    const parts = [];
+    if(it.article) parts.push(`Арт: ${escapeHtml(it.article)}`);
+    if(it.qty) parts.push(`К-сть: ${escapeHtml(String(it.qty))}`);
+    if(it.unit) parts.push(`Од: ${escapeHtml(it.unit)}`);
+
+    const prices = [];
+    if(Number.isFinite(it.retailPrice)) prices.push(`Роздріб: <b>${it.retailPrice}</b>`);
+    if(Number.isFinite(it.masterPrice)) prices.push(`Оптова: <b>${it.masterPrice}</b>`);
+    if(!prices.length && Number.isFinite(it.price)) prices.push(`Ціна: <b>${it.price}</b>`);
+
+    return `
+      <div class="importPreviewItem">
+        <div class="importPreviewName">${escapeHtml(it.name)}</div>
+        <div class="importPreviewMeta">
+          ${parts.join(" · ")}
+          ${parts.length && prices.length ? " · " : ""}
+          ${prices.join(" · ")}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  if(items.length > limit){
+    html += `<div class="importPreviewMore">…ще ${items.length - limit} товарів</div>`;
+  }
+
+  box.innerHTML = html;
+}
+
+function updateImportRateField(){
+  const currency = document.getElementById("impCurrency").value;
+  const label = document.getElementById("impRateLabel");
+  const input = document.getElementById("impRate");
+  const hint = document.getElementById("impRateHint");
+
+  if(currency === "EUR"){
+    label.textContent = "Курс, ₴/€";
+    input.value = importEurRate > 0 ? String(importEurRate) : "";
+    hint.textContent = "Курс збережеться для цього постачальника. Глобальний курс каталогу не зміниться.";
+  }else if(currency === "USD"){
+    label.textContent = "Курс, ₴/$";
+    input.value = importUsdRate > 0 ? String(importUsdRate) : "";
+    hint.textContent = "Ціна в USD буде переведена через курс.";
+  }else if(currency === "UAH"){
+    label.textContent = "Курс, ₴/€";
+    input.value = importEurRate > 0 ? String(importEurRate) : "";
+    hint.textContent = "Для рахунку в UAH ціна буде переведена в EUR за вказаним курсом.";
+  }else{
+    label.textContent = "Курс";
+    input.value = "";
+    hint.textContent = "Оберіть валюту рахунку.";
+  }
+}
+
+function closeImportSheet(){
+  document.getElementById("importSheet").classList.remove("open");
+  pendingImportFile = null;
+  pendingImportData = null;
+}
+
+function confirmImport(){
+  const supplierName = document.getElementById("impSupplierName").value.trim();
+  const supplierFullName = document.getElementById("impSupplierFullName").value.trim();
+  const currency = document.getElementById("impCurrency").value;
+  const rateRaw = document.getElementById("impRate").value.trim();
+
+  if(!supplierName){
+    toast("Вкажіть назву постачальника");
+    return;
+  }
+
+  if(!currency){
+    toast("Оберіть валюту");
+    return;
+  }
+
+  const rate = Number(String(rateRaw).replace(",",".")) || 0;
+
+  if(currency !== "EUR" && rate <= 0){
+    toast("Вкажіть коректний курс");
+    return;
+  }
+
+  // Поки що — тільки перевірка і тост
+  console.log("[import] Дані для імпорту:", {
+    supplierName,
+    supplierFullName,
+    currency,
+    rate,
+    items: pendingImportData?.items
+  });
+
+  toast(`Буде імпортовано ${pendingImportData.items.length} товарів (C4.2.2)`);
+
+  closeImportSheet();
+}
 
 /* =========================================================
    ACTIONS
@@ -3570,6 +4222,8 @@ document.getElementById("pfChips").addEventListener("click", e => {
   updateProfileValueUI();
 });
 
+document.getElementById("impCurrency").addEventListener("change", updateImportRateField);
+
 document.getElementById("projectSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeProjectSheet();
 });
@@ -3584,6 +4238,10 @@ document.getElementById("customSheet").addEventListener("click", e => {
 
 document.getElementById("pricesSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closePricesSheet();
+});
+
+document.getElementById("importSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeImportSheet();
 });
 
 document.getElementById("addPersonSheet").addEventListener("click", e => {
