@@ -404,22 +404,52 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   min-width:0;
 }
 
+.projectTitleRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:.5rem;
+}
+
 .projectTitle{
   font-size:.9375rem;
   font-weight:750;
   line-height:1.25;
   overflow-wrap:anywhere;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:.5rem;
   color:var(--t);
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.projectRight{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:.25rem;
 }
 
 .projectUrgent{
-  flex:0 0 auto;
   font-size:.875rem;
   line-height:1;
+}
+
+.projectMenuButton{
+  width:1.75rem;
+  height:1.75rem;
+  border-radius:.5rem;
+  background:rgba(120,130,140,.1);
+  color:var(--tm);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.125rem;
+  font-weight:700;
+  line-height:0;
+  padding-bottom:.25rem;
+}
+
+.projectMenuButton:active{
+  background:rgba(120,130,140,.2);
 }
 
 .projectClient{
@@ -601,6 +631,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .formInput:focus,
 .formTextarea:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
 
+.formRow{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.5rem;
+}
+
 .formHint{
   margin:.25rem .25rem 0;
   color:var(--tm);
@@ -666,6 +702,8 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   gap:.375rem;
   margin-bottom:.625rem;
 }
+
+.chips:last-child{margin-bottom:0}
 
 .chip{
   padding:.5rem .75rem;
@@ -733,16 +771,28 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   padding:1rem 1.125rem;
 }
 
+.projectHeaderTitleRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:.625rem;
+}
+
 .projectHeaderTitle{
   font-size:1.0625rem;
   font-weight:800;
   line-height:1.25;
   overflow-wrap:anywhere;
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:.625rem;
   color:var(--t);
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.projectHeaderRight{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:.375rem;
 }
 
 .projectHeaderMeta{
@@ -754,6 +804,28 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .projectHeaderMeta b{color:var(--t);font-weight:700}
+
+.detailsRow{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.375rem;
+  margin-top:.625rem;
+}
+
+.detailBadge{
+  padding:.3125rem .5625rem;
+  border-radius:.5rem;
+  background:rgba(0,122,255,.08);
+  color:var(--p);
+  font-size:.6875rem;
+  font-weight:650;
+  white-space:nowrap;
+}
+
+.detailBadge.gray{
+  background:rgba(120,130,140,.12);
+  color:var(--ts);
+}
 
 .placeholderBlock{
   background:var(--gb);
@@ -776,6 +848,61 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   margin-bottom:.375rem;
   font-weight:700;
 }
+
+/* ==== ACTIONS SHEET ==== */
+
+.actionSheetRow{
+  display:flex;
+  align-items:center;
+  gap:.875rem;
+  padding:.875rem 1rem;
+  background:var(--gb);
+  backdrop-filter:blur(1.5rem) saturate(200%);
+  -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
+  border:1px solid var(--gbr);
+  border-radius:1rem;
+  box-shadow:var(--gs);
+  margin-bottom:.5rem;
+  cursor:pointer;
+  transition:transform .12s;
+}
+
+.actionSheetRow:active{
+  transform:scale(.985);
+}
+
+.actionSheetIcon{
+  flex:0 0 auto;
+  width:2.25rem;
+  height:2.25rem;
+  border-radius:.75rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.125rem;
+}
+
+.actionSheetIcon.danger{
+  background:rgba(255,59,48,.1);
+  color:var(--red);
+}
+
+.actionSheetIcon.warn{
+  background:rgba(255,149,0,.12);
+  color:#FF9500;
+}
+
+.actionSheetText{
+  flex:1 1 auto;
+  min-width:0;
+  font-size:.9375rem;
+  font-weight:650;
+  color:var(--t);
+}
+
+.actionSheetText.danger{color:var(--red)}
 
 /* ==== FULLSCREEN PROFILE ==== */
 
@@ -1004,13 +1131,13 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 </div>
 
-<!-- SHEET: NEW PROJECT -->
+<!-- SHEET: NEW/EDIT PROJECT -->
 
-<div class="sheet" id="newProjectSheet">
+<div class="sheet" id="projectSheet">
   <div class="panel">
     <div class="panelHead">
-      <strong>Новий об'єкт</strong>
-      <button class="close" onclick="closeNewProject()">×</button>
+      <strong id="projectSheetTitle">Новий об'єкт</strong>
+      <button class="close" onclick="closeProjectSheet()">×</button>
     </div>
 
     <div class="panelBody">
@@ -1044,7 +1171,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         >
       </div>
 
-      <div class="formGroup" style="margin-bottom:0">
+      <div class="formGroup">
         <label class="formLabel">Телефон (необов'язково)</label>
         <input
           class="formInput"
@@ -1054,11 +1181,111 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
           autocomplete="off"
         >
       </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Тип об'єкта</label>
+        <div class="chips" id="npTypeChips">
+          <button type="button" class="chip" data-value="">—</button>
+          <button type="button" class="chip" data-value="Квартира">Квартира</button>
+          <button type="button" class="chip" data-value="Будинок">Будинок</button>
+          <button type="button" class="chip" data-value="Офіс">Офіс</button>
+          <button type="button" class="chip" data-value="Котельня">Котельня</button>
+          <button type="button" class="chip" data-value="Комерційне">Комерційне</button>
+        </div>
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Тип робіт</label>
+        <div class="chips" id="npWorkChips">
+          <button type="button" class="chip" data-value="">—</button>
+          <button type="button" class="chip" data-value="Чорновий монтаж">Чорновий</button>
+          <button type="button" class="chip" data-value="Чистовий монтаж">Чистовий</button>
+          <button type="button" class="chip" data-value="Монтаж котельні">Котельня</button>
+          <button type="button" class="chip" data-value="Повний цикл">Повний цикл</button>
+        </div>
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Система</label>
+        <div class="chips" id="npSystemChips">
+          <button type="button" class="chip" data-value="">—</button>
+          <button type="button" class="chip" data-value="Трійникова">Трійникова</button>
+          <button type="button" class="chip" data-value="Колекторна">Колекторна</button>
+          <button type="button" class="chip" data-value="Променева">Променева</button>
+        </div>
+      </div>
+
+      <div class="formRow">
+        <div class="formGroup">
+          <label class="formLabel">Площа, м²</label>
+          <input
+            class="formInput"
+            id="npArea"
+            inputmode="decimal"
+            placeholder="65"
+            autocomplete="off"
+          >
+        </div>
+        <div class="formGroup">
+          <label class="formLabel">Санвузлів</label>
+          <input
+            class="formInput"
+            id="npBathrooms"
+            inputmode="numeric"
+            placeholder="1"
+            autocomplete="off"
+          >
+        </div>
+      </div>
+
+      <div class="formGroup" style="margin-bottom:0">
+        <label class="formLabel">Особливості</label>
+        <input
+          class="formInput"
+          id="npFeatures"
+          placeholder="Прихований монтаж, тепла підлога"
+          autocomplete="off"
+        >
+        <div class="formHint">Через кому, якщо кілька</div>
+      </div>
     </div>
 
     <div class="panelFooter">
-      <button class="btnGhost" onclick="closeNewProject()">Скасувати</button>
-      <button class="btnPrimary" onclick="createProject()">Створити</button>
+      <button class="btnGhost" onclick="closeProjectSheet()">Скасувати</button>
+      <button class="btnPrimary" id="projectSheetSaveBtn" onclick="saveProjectSheet()">Створити</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: ACTIONS -->
+
+<div class="sheet" id="actionsSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong id="actionsTitle">Об'єкт</strong>
+      <button class="close" onclick="closeActionsSheet()">×</button>
+    </div>
+
+    <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="actionSheetRow" onclick="actionEdit()">
+        <div class="actionSheetIcon">✎</div>
+        <div class="actionSheetText">Редагувати</div>
+      </div>
+
+      <div class="actionSheetRow" onclick="actionToggleUrgent()">
+        <div class="actionSheetIcon warn" id="actionUrgentIcon">🔥</div>
+        <div class="actionSheetText" id="actionUrgentText">Позначити терміновим</div>
+      </div>
+
+      <div class="actionSheetRow" onclick="actionToggleArchive()">
+        <div class="actionSheetIcon" id="actionArchiveIcon">📦</div>
+        <div class="actionSheetText" id="actionArchiveText">Архівувати</div>
+      </div>
+
+      <div class="actionSheetRow" onclick="actionDelete()">
+        <div class="actionSheetIcon danger">🗑</div>
+        <div class="actionSheetText danger">Видалити</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1248,9 +1475,16 @@ function saveTeamData(){
 }
 
 let currentProjectId = null;
+let editingProjectId = null;
+let actionsProjectId = null;
 let editingPayType = "percent_of_income";
 let profilePayType = "percent_of_income";
 let ownerMode = true;
+
+/* Тимчасові вибори чипів у формі об'єкта */
+let editingType = "";
+let editingWork = "";
+let editingSystem = "";
 
 /* =========================================================
    UTILS
@@ -1433,7 +1667,7 @@ function renderProjectList(){
 
   if(archivedSorted.length){
     html += `
-      <div style="margin-top:.75rem;margin-bottom:.5rem;padding:0 .5rem;display:flex;align-items:center;justify-content:space-between">
+      <div style="margin-top:.75rem;margin-bottom:.5rem;padding:0 .5rem">
         <div style="font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px">
           Архів (${archivedSorted.length})
         </div>
@@ -1467,23 +1701,25 @@ function renderProjectCard(p){
 
   const stageLabel = projectStageLabel(p);
   const amount = p._total != null ? money(p._total) : "";
-  const details = p._detailsLine || "";
+  const details = buildDetailsLine(p);
 
   const isArchived = (p.status || "active") === "archived";
-  const clickAttr = isArchived ? "" : `onclick="openProject('${escapeHtml(p.id)}')"`;
 
   return `
-    <div class="projectCard" ${clickAttr} style="${isArchived ? "opacity:.75" : ""}">
+    <div class="projectCard">
       <span class="projectDot ${dotClass}"></span>
       <div class="projectBody">
-        <div class="projectTitle">
-          <span>${title}</span>
-          ${urgentMark}
+        <div class="projectTitleRow">
+          <div class="projectTitle" onclick="openProject('${escapeHtml(p.id)}')">${title}</div>
+          <div class="projectRight">
+            ${urgentMark}
+            <button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>
+          </div>
         </div>
-        ${client ? `<div class="projectClient">${client}${phone ? " · " + phone : ""}</div>` : ""}
-        ${address ? `<div class="projectAddress">${address}</div>` : ""}
+        ${client ? `<div class="projectClient" onclick="openProject('${escapeHtml(p.id)}')">${client}${phone ? " · " + phone : ""}</div>` : ""}
+        ${address ? `<div class="projectAddress" onclick="openProject('${escapeHtml(p.id)}')">${address}</div>` : ""}
         <div class="projectDivider"></div>
-        <div class="projectMeta">
+        <div class="projectMeta" onclick="openProject('${escapeHtml(p.id)}')">
           <span class="projectStage">${escapeHtml(stageLabel)}</span>
           ${amount ? `<span class="projectAmount">${amount}</span>` : ""}
         </div>
@@ -1491,6 +1727,22 @@ function renderProjectCard(p){
       </div>
     </div>
   `;
+}
+
+function buildDetailsLine(p){
+  const parts = [];
+  const d = p.details || {};
+
+  if(d.objectType) parts.push(d.objectType);
+  if(d.area) parts.push(d.area + " м²");
+  if(d.bathrooms && Number(d.bathrooms) > 0) parts.push(d.bathrooms + " санвуз.");
+  if(d.system) parts.push(d.system);
+
+  if(Array.isArray(d.features) && d.features.length){
+    d.features.slice(0,3).forEach(f => parts.push(f));
+  }
+
+  return parts.join(" · ");
 }
 
 function projectTitlePlain(p){
@@ -1535,6 +1787,7 @@ function renderProject(p){
   const phone = escapeHtml(p.client?.phone || "");
   const address = escapeHtml(p.client?.address || "");
   const stageLabel = projectStageLabel(p);
+  const detailsBadges = buildDetailsBadges(p);
 
   main.innerHTML = `
     <div class="projectView">
@@ -1543,9 +1796,12 @@ function renderProject(p){
       </div>
 
       <div class="projectHeaderCard">
-        <div class="projectHeaderTitle">
-          <span>${title}</span>
-          ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
+        <div class="projectHeaderTitleRow">
+          <div class="projectHeaderTitle">${title}</div>
+          <div class="projectHeaderRight">
+            ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
+            <button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>
+          </div>
         </div>
 
         <div class="projectHeaderMeta">
@@ -1553,6 +1809,8 @@ function renderProject(p){
           ${address ? `${address}<br>` : ""}
           <span style="color:var(--tm);font-size:.75rem">${escapeHtml(stageLabel)}</span>
         </div>
+
+        ${detailsBadges ? `<div class="detailsRow">${detailsBadges}</div>` : ""}
       </div>
 
       <div class="placeholderBlock">
@@ -1562,6 +1820,288 @@ function renderProject(p){
       </div>
     </div>
   `;
+}
+
+function buildDetailsBadges(p){
+  const d = p.details || {};
+  const badges = [];
+
+  if(d.workType) badges.push(`<span class="detailBadge">${escapeHtml(d.workType)}</span>`);
+  if(d.objectType) badges.push(`<span class="detailBadge gray">${escapeHtml(d.objectType)}</span>`);
+  if(d.area) badges.push(`<span class="detailBadge gray">${escapeHtml(String(d.area))} м²</span>`);
+  if(d.bathrooms && Number(d.bathrooms) > 0) badges.push(`<span class="detailBadge gray">${escapeHtml(String(d.bathrooms))} санвуз.</span>`);
+  if(d.system) badges.push(`<span class="detailBadge gray">${escapeHtml(d.system)}</span>`);
+
+  if(Array.isArray(d.features)){
+    d.features.forEach(f => {
+      badges.push(`<span class="detailBadge">${escapeHtml(f)}</span>`);
+    });
+  }
+
+  return badges.join("");
+}
+
+/* =========================================================
+   PROJECT SHEET (NEW / EDIT)
+========================================================= */
+
+function openNewProject(){
+  editingProjectId = null;
+  document.getElementById("projectSheetTitle").textContent = "Новий об'єкт";
+  document.getElementById("projectSheetSaveBtn").textContent = "Створити";
+
+  document.getElementById("npTitle").value = "";
+  document.getElementById("npAddress").value = "";
+  document.getElementById("npClientName").value = "";
+  document.getElementById("npClientPhone").value = "";
+  document.getElementById("npArea").value = "";
+  document.getElementById("npBathrooms").value = "";
+  document.getElementById("npFeatures").value = "";
+
+  editingType = "";
+  editingWork = "";
+  editingSystem = "";
+
+  updateProjectChips();
+  document.getElementById("projectSheet").classList.add("open");
+  setTimeout(() => document.getElementById("npTitle").focus(), 200);
+}
+
+function openEditProject(id){
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+
+  editingProjectId = id;
+  document.getElementById("projectSheetTitle").textContent = "Редагувати об'єкт";
+  document.getElementById("projectSheetSaveBtn").textContent = "Зберегти";
+
+  document.getElementById("npTitle").value = p.title || "";
+  document.getElementById("npAddress").value = p.client?.address || "";
+  document.getElementById("npClientName").value = p.client?.name || "";
+  document.getElementById("npClientPhone").value = p.client?.phone || "";
+
+  const d = p.details || {};
+  document.getElementById("npArea").value = d.area || "";
+  document.getElementById("npBathrooms").value = d.bathrooms || "";
+  document.getElementById("npFeatures").value = Array.isArray(d.features) ? d.features.join(", ") : "";
+
+  editingType = d.objectType || "";
+  editingWork = d.workType || "";
+  editingSystem = d.system || "";
+
+  updateProjectChips();
+  document.getElementById("projectSheet").classList.add("open");
+  setTimeout(() => document.getElementById("npTitle").focus(), 200);
+}
+
+function closeProjectSheet(){
+  document.getElementById("projectSheet").classList.remove("open");
+  editingProjectId = null;
+}
+
+function updateProjectChips(){
+  document.querySelectorAll("#npTypeChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingType);
+  });
+  document.querySelectorAll("#npWorkChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingWork);
+  });
+  document.querySelectorAll("#npSystemChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.value === editingSystem);
+  });
+}
+
+function saveProjectSheet(){
+  const title = document.getElementById("npTitle").value.trim();
+  const address = document.getElementById("npAddress").value.trim();
+  const name = document.getElementById("npClientName").value.trim();
+  const phone = document.getElementById("npClientPhone").value.trim();
+  const areaRaw = document.getElementById("npArea").value.trim();
+  const bathroomsRaw = document.getElementById("npBathrooms").value.trim();
+  const featuresRaw = document.getElementById("npFeatures").value.trim();
+
+  if(!title){
+    toast("Вкажіть назву об'єкта");
+    return;
+  }
+
+  const area = areaRaw ? Number(areaRaw.replace(",",".")) : null;
+  const bathrooms = bathroomsRaw ? Number(bathroomsRaw) : null;
+
+  const features = featuresRaw
+    ? featuresRaw.split(",").map(s => s.trim()).filter(Boolean)
+    : [];
+
+  const details = {
+    objectType: editingType,
+    workType: editingWork,
+    area: Number.isFinite(area) ? area : null,
+    bathrooms: Number.isFinite(bathrooms) ? bathrooms : null,
+    system: editingSystem,
+    features
+  };
+
+  const now = new Date().toISOString();
+
+  if(editingProjectId){
+    // Редагування
+    const p = projects.find(x => x.id === editingProjectId);
+    if(!p) return;
+
+    p.title = title;
+    p.client = { name, phone, address };
+    p.details = details;
+    p.updatedAt = now;
+
+    saveProjects();
+    closeProjectSheet();
+    render();
+    toast("Збережено");
+  }else{
+    // Створення
+    const wasFirst = projects.length === 0;
+
+    const project = {
+      id: uid("proj"),
+      title,
+      client: { name, phone, address },
+
+      status: "active",
+      stage: "estimate",
+      urgent: false,
+
+      positions: [],
+      stages: [],
+      discount: 0,
+      payments: [],
+      expenses: [],
+      salaries: [],
+
+      details,
+
+      createdAt: now,
+      updatedAt: now
+    };
+
+    projects.push(project);
+    saveProjects();
+
+    closeProjectSheet();
+    currentProjectId = project.id;
+    render();
+
+    toast("Об'єкт створено");
+
+    const profileEmpty = !profile.firstName && !profile.lastName && !profile.company;
+    if(wasFirst && profileEmpty){
+      setTimeout(() => {
+        openProfile();
+      }, 400);
+    }
+  }
+}
+
+/* =========================================================
+   ACTIONS SHEET
+========================================================= */
+
+function openActions(id){
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+
+  actionsProjectId = id;
+
+  document.getElementById("actionsTitle").textContent = projectTitlePlain(p);
+
+  const urgentIcon = document.getElementById("actionUrgentIcon");
+  const urgentText = document.getElementById("actionUrgentText");
+  if(p.urgent){
+    urgentText.textContent = "Зняти терміновість";
+  }else{
+    urgentText.textContent = "Позначити терміновим";
+  }
+
+  const isArchived = (p.status || "active") === "archived";
+  const archiveText = document.getElementById("actionArchiveText");
+  const archiveIcon = document.getElementById("actionArchiveIcon");
+  if(isArchived){
+    archiveText.textContent = "Відновити з архіву";
+    archiveIcon.textContent = "📂";
+  }else{
+    archiveText.textContent = "Архівувати";
+    archiveIcon.textContent = "📦";
+  }
+
+  document.getElementById("actionsSheet").classList.add("open");
+}
+
+function closeActionsSheet(){
+  document.getElementById("actionsSheet").classList.remove("open");
+  actionsProjectId = null;
+}
+
+function actionEdit(){
+  const id = actionsProjectId;
+  closeActionsSheet();
+  setTimeout(() => openEditProject(id), 200);
+}
+
+function actionToggleUrgent(){
+  const id = actionsProjectId;
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+
+  p.urgent = !p.urgent;
+  p.updatedAt = new Date().toISOString();
+
+  saveProjects();
+  closeActionsSheet();
+  render();
+
+  toast(p.urgent ? "Позначено терміновим" : "Знято терміновість");
+}
+
+function actionToggleArchive(){
+  const id = actionsProjectId;
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+
+  const isArchived = (p.status || "active") === "archived";
+
+  if(isArchived){
+    p.status = "active";
+    saveProjects();
+    closeActionsSheet();
+    render();
+    toast("Відновлено з архіву");
+  }else{
+    if(!confirm(`Архівувати «${p.title || "об'єкт"}»?\n\nОб'єкт буде переміщено в архів.`)) return;
+    p.status = "archived";
+    p.updatedAt = new Date().toISOString();
+    saveProjects();
+    closeActionsSheet();
+    render();
+    toast("Архівовано");
+  }
+}
+
+function actionDelete(){
+  const id = actionsProjectId;
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+
+  if(!confirm(`Видалити «${p.title || "об'єкт"}» назавжди?\n\nЦю дію не можна скасувати.`)) return;
+
+  projects = projects.filter(x => x.id !== id);
+  saveProjects();
+  closeActionsSheet();
+
+  if(currentProjectId === id){
+    currentProjectId = null;
+  }
+
+  render();
+  toast("Видалено");
 }
 
 /* =========================================================
@@ -1735,86 +2275,37 @@ function backToList(){
 }
 
 function openProject(id){
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+  if((p.status || "active") === "archived") return;
   currentProjectId = id;
   render();
-}
-
-function openNewProject(){
-  document.getElementById("npTitle").value = "";
-  document.getElementById("npAddress").value = "";
-  document.getElementById("npClientName").value = "";
-  document.getElementById("npClientPhone").value = "";
-  document.getElementById("newProjectSheet").classList.add("open");
-  setTimeout(() => document.getElementById("npTitle").focus(), 200);
-}
-
-function closeNewProject(){
-  document.getElementById("newProjectSheet").classList.remove("open");
-}
-
-function createProject(){
-  const title = document.getElementById("npTitle").value.trim();
-  const address = document.getElementById("npAddress").value.trim();
-  const name = document.getElementById("npClientName").value.trim();
-  const phone = document.getElementById("npClientPhone").value.trim();
-
-  if(!title){
-    toast("Вкажіть назву об'єкта");
-    return;
-  }
-
-  const now = new Date().toISOString();
-  const wasFirst = projects.length === 0;
-
-  const project = {
-    id: uid("proj"),
-    title,
-    client: { name, phone, address },
-
-    status: "active",
-    stage: "estimate",
-    urgent: false,
-
-    positions: [],
-    stages: [],
-    discount: 0,
-    payments: [],
-    expenses: [],
-    salaries: [],
-
-    details: {
-      objectType: "",
-      workType: "",
-      area: null,
-      bathrooms: null,
-      system: "",
-      features: []
-    },
-
-    createdAt: now,
-    updatedAt: now
-  };
-
-  projects.push(project);
-  saveProjects();
-
-  closeNewProject();
-  currentProjectId = project.id;
-  render();
-
-  toast("Об'єкт створено");
-
-  const profileEmpty = !profile.firstName && !profile.lastName && !profile.company;
-  if(wasFirst && profileEmpty){
-    setTimeout(() => {
-      openProfile();
-    }, 400);
-  }
 }
 
 /* =========================================================
    INIT
 ========================================================= */
+
+document.getElementById("npTypeChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingType = chip.dataset.value;
+  updateProjectChips();
+});
+
+document.getElementById("npWorkChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingWork = chip.dataset.value;
+  updateProjectChips();
+});
+
+document.getElementById("npSystemChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingSystem = chip.dataset.value;
+  updateProjectChips();
+});
 
 document.getElementById("apChips").addEventListener("click", e => {
   const chip = e.target.closest(".chip");
@@ -1832,12 +2323,16 @@ document.getElementById("pfChips").addEventListener("click", e => {
   updateProfileValueUI();
 });
 
-document.getElementById("newProjectSheet").addEventListener("click", e => {
-  if(e.target === e.currentTarget) closeNewProject();
+document.getElementById("projectSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeProjectSheet();
 });
 
 document.getElementById("addPersonSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeAddPerson();
+});
+
+document.getElementById("actionsSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeActionsSheet();
 });
 
 render();
