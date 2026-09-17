@@ -117,7 +117,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   overflow:hidden;
 }
 
-/* ==== HERO (лого) ==== */
+/* ==== HERO ==== */
 
 .hero{
   flex:0 0 auto;
@@ -210,6 +210,33 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   overflow:hidden;
   text-overflow:ellipsis;
   letter-spacing:.1px;
+}
+
+.heroAction{
+  flex:0 0 auto;
+  width:2rem;
+  height:2rem;
+  border-radius:.625rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:transform .12s;
+}
+
+.heroAction:active{
+  transform:scale(.92);
+}
+
+.heroAction svg{
+  width:1.125rem;
+  height:1.125rem;
+  stroke:currentColor;
+  fill:none;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
 }
 
 /* ==== MAIN ==== */
@@ -368,20 +395,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   box-shadow:0 0 0 3px rgba(199,199,204,.25);
 }
 
-.projectDot.status-estimate{
-  background:var(--dot-gray);
-  box-shadow:0 0 0 3px rgba(199,199,204,.25);
-}
-
-.projectDot.status-work{
-  background:var(--green);
-  box-shadow:0 0 0 3px rgba(52,199,89,.25);
-}
-
-.projectDot.status-done{
-  background:var(--dot-dark);
-  box-shadow:0 0 0 3px rgba(28,28,30,.18);
-}
+.projectDot.status-estimate{background:var(--dot-gray);box-shadow:0 0 0 3px rgba(199,199,204,.25)}
+.projectDot.status-work{background:var(--green);box-shadow:0 0 0 3px rgba(52,199,89,.25)}
+.projectDot.status-done{background:var(--dot-dark);box-shadow:0 0 0 3px rgba(28,28,30,.18)}
 
 .projectBody{
   flex:1 1 auto;
@@ -437,23 +453,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--ts);
 }
 
-.projectStage{
-  font-weight:650;
-}
-
-.projectAmount{
-  font-weight:750;
-  color:var(--t);
-  white-space:nowrap;
-}
-
-.projectDetails{
-  margin-top:.375rem;
-  color:var(--tm);
-  font-size:.6875rem;
-  line-height:1.35;
-  overflow-wrap:anywhere;
-}
+.projectStage{font-weight:650}
+.projectAmount{font-weight:750;color:var(--t);white-space:nowrap}
+.projectDetails{margin-top:.375rem;color:var(--tm);font-size:.6875rem;line-height:1.35;overflow-wrap:anywhere}
 
 /* ==== SHEET ==== */
 
@@ -468,9 +470,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   -webkit-backdrop-filter:blur(1rem);
 }
 
-.sheet.open{
-  display:flex;
-}
+.sheet.open{display:flex}
 
 .panel{
   width:100%;
@@ -547,9 +547,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   transition:transform .12s;
 }
 
-.panelFooter button:active{
-  transform:scale(.98);
-}
+.panelFooter button:active{transform:scale(.98)}
 
 .btnGhost{
   background:rgba(120,130,140,.12);
@@ -564,9 +562,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 /* ==== FORM ==== */
 
-.formGroup{
-  margin-bottom:.875rem;
-}
+.formGroup{margin-bottom:.875rem}
 
 .formLabel{
   display:block;
@@ -592,9 +588,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   transition:box-shadow .15s;
 }
 
-.formInput{
-  height:3rem;
-}
+.formInput{height:3rem}
 
 .formTextarea{
   padding:.75rem .875rem;
@@ -605,15 +599,91 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .formInput:focus,
-.formTextarea:focus{
-  box-shadow:inset 0 0 0 1.5px var(--p);
-}
+.formTextarea:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
 
 .formHint{
   margin:.25rem .25rem 0;
   color:var(--tm);
   font-size:.6875rem;
   line-height:1.4;
+}
+
+/* ==== CHECKBOX ==== */
+
+.checkRow{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  padding:.75rem .875rem;
+  border-radius:.875rem;
+  background:var(--gb);
+  border:1px solid var(--gbr);
+  cursor:pointer;
+}
+
+.checkBox{
+  flex:0 0 auto;
+  width:1.25rem;
+  height:1.25rem;
+  border-radius:.375rem;
+  border:1.5px solid var(--tm);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all .15s;
+}
+
+.checkRow.on .checkBox{
+  background:var(--p);
+  border-color:var(--p);
+}
+
+.checkBox svg{
+  width:.75rem;
+  height:.75rem;
+  stroke:#fff;
+  stroke-width:2.5;
+  fill:none;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:0;
+  transition:opacity .15s;
+}
+
+.checkRow.on .checkBox svg{opacity:1}
+
+.checkLabel{
+  flex:1 1 auto;
+  font-size:.875rem;
+  color:var(--t);
+}
+
+/* ==== CHIPS ==== */
+
+.chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.375rem;
+  margin-bottom:.625rem;
+}
+
+.chip{
+  padding:.5rem .75rem;
+  border-radius:.75rem;
+  background:var(--gb);
+  border:1px solid var(--gbr);
+  color:var(--ts);
+  font-size:.8125rem;
+  font-weight:600;
+  transition:all .15s;
+  white-space:nowrap;
+}
+
+.chip.active{
+  background:var(--p);
+  color:#fff;
+  border-color:var(--p);
+  box-shadow:0 .25rem .75rem rgba(0,122,255,.25);
 }
 
 /* ==== PROJECT VIEW ==== */
@@ -683,10 +753,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   overflow-wrap:anywhere;
 }
 
-.projectHeaderMeta b{
-  color:var(--t);
-  font-weight:700;
-}
+.projectHeaderMeta b{color:var(--t);font-weight:700}
 
 .placeholderBlock{
   background:var(--gb);
@@ -708,6 +775,184 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-size:.9375rem;
   margin-bottom:.375rem;
   font-weight:700;
+}
+
+/* ==== FULLSCREEN PROFILE ==== */
+
+.fullscreen{
+  position:fixed;
+  inset:0;
+  z-index:150;
+  background:var(--bg);
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.fullscreen.open{display:flex}
+
+.fsBody{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  scrollbar-width:none;
+  padding:calc(1rem + var(--sat)) 1rem calc(1rem + var(--sab));
+  width:min(30rem,100%);
+  margin:0 auto;
+}
+
+.fsBody::-webkit-scrollbar{display:none}
+
+.fsHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:1.25rem;
+}
+
+.fsHead strong{
+  font-size:1.25rem;
+  font-weight:800;
+  color:var(--t);
+}
+
+.fsHead .close{
+  background:rgba(120,130,140,.12);
+}
+
+.fsSection{
+  margin-bottom:1.5rem;
+}
+
+.fsSectionTitle{
+  font-size:.75rem;
+  font-weight:700;
+  color:var(--tm);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  margin-bottom:.625rem;
+  padding:0 .25rem;
+}
+
+.fsCard{
+  background:var(--gb);
+  backdrop-filter:blur(1.5rem) saturate(200%);
+  -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
+  border:1px solid var(--gbr);
+  border-radius:1.25rem;
+  box-shadow:var(--gs);
+  padding:1rem 1.125rem;
+}
+
+.fsCard + .fsCard{
+  margin-top:.5rem;
+}
+
+.personRow{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+}
+
+.personAvatar{
+  flex:0 0 auto;
+  width:2.5rem;
+  height:2.5rem;
+  border-radius:50%;
+  background:rgba(0,122,255,.12);
+  color:var(--p);
+  font-size:1rem;
+  font-weight:750;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-transform:uppercase;
+}
+
+.personBody{
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.personName{
+  font-size:.9375rem;
+  font-weight:700;
+  color:var(--t);
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+
+.personMeta{
+  margin-top:.125rem;
+  color:var(--tm);
+  font-size:.75rem;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+
+.personDelete{
+  flex:0 0 auto;
+  width:2rem;
+  height:2rem;
+  border-radius:50%;
+  background:rgba(255,59,48,.1);
+  color:var(--red);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.125rem;
+  line-height:1;
+}
+
+.emptyTeam{
+  text-align:center;
+  color:var(--tm);
+  font-size:.8125rem;
+  line-height:1.5;
+  padding:1.5rem .875rem;
+}
+
+.addPersonButton{
+  width:100%;
+  height:2.875rem;
+  margin-top:.625rem;
+  border-radius:.875rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.875rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.375rem;
+}
+
+.addPersonButton:active{
+  transform:scale(.98);
+}
+
+.fsFooter{
+  flex:0 0 auto;
+  padding:.75rem 1rem calc(1rem + var(--sab));
+  border-top:1px solid var(--gbr);
+  background:var(--bg);
+  width:100%;
+}
+
+.fsFooterInner{
+  width:min(30rem,100%);
+  margin:0 auto;
+}
+
+.fsFooter button{
+  width:100%;
+  height:3rem;
+  border-radius:1rem;
+  background:linear-gradient(135deg,#007AFF,#0A84FF);
+  color:#fff;
+  font-size:.9375rem;
+  font-weight:700;
+  box-shadow:0 .375rem 1rem rgba(0,122,255,.22);
 }
 
 /* ==== TOAST ==== */
@@ -740,8 +985,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .hidden{display:none !important}
 
-/* ==== MEDIA ==== */
-
 @media (max-width:26rem){
   .heroTitle{font-size:1.125rem}
   .heroSub{font-size:.6875rem}
@@ -765,64 +1008,167 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 <div class="sheet" id="newProjectSheet">
   <div class="panel">
-
     <div class="panelHead">
       <strong>Новий об'єкт</strong>
       <button class="close" onclick="closeNewProject()">×</button>
     </div>
 
     <div class="panelBody">
-
       <div class="formGroup">
         <label class="formLabel">Коротка назва (необов'язково)</label>
-        <input
-          class="formInput"
-          id="npTitle"
-          placeholder="Напр. Печерськ"
-          autocomplete="off"
-        >
+        <input class="formInput" id="npTitle" placeholder="Напр. Печерськ" autocomplete="off">
         <div class="formHint">Якщо не вказати — використаємо адресу або ім'я замовника</div>
       </div>
 
       <div class="formGroup">
         <label class="formLabel">Ім'я замовника *</label>
-        <input
-          class="formInput"
-          id="npClientName"
-          placeholder="Іван Петренко"
-          autocomplete="off"
-        >
+        <input class="formInput" id="npClientName" placeholder="Іван Петренко" autocomplete="off">
       </div>
 
       <div class="formGroup">
         <label class="formLabel">Телефон замовника *</label>
-        <input
-          class="formInput"
-          id="npClientPhone"
-          placeholder="+380 67 123 45 67"
-          inputmode="tel"
-          autocomplete="off"
-        >
+        <input class="formInput" id="npClientPhone" placeholder="+380 67 123 45 67" inputmode="tel" autocomplete="off">
       </div>
 
       <div class="formGroup">
         <label class="formLabel">Адреса / позначення об'єкта</label>
-        <textarea
-          class="formTextarea"
-          id="npAddress"
-          placeholder="ЖК Comfort Town, літ. Б, кв. 45 або Котельня, Вінниця"
-          autocomplete="off"
-        ></textarea>
+        <textarea class="formTextarea" id="npAddress" placeholder="ЖК Comfort Town, літ. Б, кв. 45 або Котельня, Вінниця" autocomplete="off"></textarea>
         <div class="formHint">Деталі об'єкта (тип, площа, санвузли) заповнимо пізніше</div>
       </div>
-
     </div>
 
     <div class="panelFooter">
       <button class="btnGhost" onclick="closeNewProject()">Скасувати</button>
       <button class="btnPrimary" onclick="createProject()">Створити</button>
     </div>
+  </div>
+</div>
 
+<!-- SHEET: ADD PERSON -->
+
+<div class="sheet" id="addPersonSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong>Додати в команду</strong>
+      <button class="close" onclick="closeAddPerson()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="formGroup">
+        <label class="formLabel">Ім'я *</label>
+        <input class="formInput" id="apName" placeholder="Толік" autocomplete="off">
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Телефон (опційно)</label>
+        <input class="formInput" id="apPhone" placeholder="+380 67 123 45 67" inputmode="tel" autocomplete="off">
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel">Принцип оплати</label>
+        <div class="chips" id="apChips">
+          <button type="button" class="chip active" data-type="percent_of_income">% від доходу</button>
+          <button type="button" class="chip" data-type="per_day">За день</button>
+          <button type="button" class="chip" data-type="per_month">За місяць</button>
+          <button type="button" class="chip" data-type="fixed_per_object">Фіксована</button>
+        </div>
+      </div>
+
+      <div class="formGroup">
+        <label class="formLabel" id="apValueLabel">Сума</label>
+        <input class="formInput" id="apValue" inputmode="decimal" placeholder="0">
+        <div class="formHint" id="apValueHint">% від доходу об'єкта</div>
+      </div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeAddPerson()">Скасувати</button>
+      <button class="btnPrimary" onclick="savePerson()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<!-- FULLSCREEN: PROFILE -->
+
+<div class="fullscreen" id="profileScreen">
+  <div class="fsBody">
+
+    <div class="fsHead">
+      <strong>Профіль</strong>
+      <button class="close" onclick="closeProfile()">×</button>
+    </div>
+
+    <div class="fsSection">
+      <div class="fsSectionTitle">Мої дані</div>
+      <div class="fsCard">
+        <div class="formGroup">
+          <label class="formLabel">Ім'я</label>
+          <input class="formInput" id="pfFirstName" placeholder="Сергій" autocomplete="off">
+        </div>
+
+        <div class="formGroup">
+          <label class="formLabel">Прізвище</label>
+          <input class="formInput" id="pfLastName" placeholder="Мельник" autocomplete="off">
+        </div>
+
+        <div class="formGroup">
+          <label class="formLabel">Компанія</label>
+          <input class="formInput" id="pfCompany" placeholder="SA-MASTER.PRO" autocomplete="off">
+        </div>
+
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Телефон</label>
+          <input class="formInput" id="pfPhone" placeholder="+380 97 911 18 71" inputmode="tel" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="fsSection">
+      <div class="fsSectionTitle">Оплата праці</div>
+      <div class="fsCard">
+        <div class="checkRow" id="pfOwnerRow" onclick="toggleOwner()">
+          <div class="checkBox">
+            <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+          </div>
+          <div class="checkLabel">Я власник — мені залишається залишок</div>
+        </div>
+
+        <div id="pfPayBlock" style="margin-top:.75rem">
+          <div class="formGroup">
+            <label class="formLabel">Принцип оплати</label>
+            <div class="chips" id="pfChips">
+              <button type="button" class="chip active" data-type="percent_of_income">% від доходу</button>
+              <button type="button" class="chip" data-type="per_day">За день</button>
+              <button type="button" class="chip" data-type="per_month">За місяць</button>
+              <button type="button" class="chip" data-type="fixed_per_object">Фіксована</button>
+            </div>
+          </div>
+
+          <div class="formGroup" style="margin-bottom:0">
+            <label class="formLabel" id="pfValueLabel">Сума</label>
+            <input class="formInput" id="pfValue" inputmode="decimal" placeholder="0">
+            <div class="formHint" id="pfValueHint">% від доходу об'єкта</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fsSection">
+      <div class="fsSectionTitle">Команда</div>
+      <div id="teamList"></div>
+
+      <button class="addPersonButton" onclick="openAddPerson()">
+        <span style="font-size:1.25rem;line-height:1">＋</span>
+        <span>Додати людину</span>
+      </button>
+    </div>
+
+  </div>
+
+  <div class="fsFooter">
+    <div class="fsFooterInner">
+      <button onclick="saveProfile()">Готово</button>
+    </div>
   </div>
 </div>
 
@@ -835,27 +1181,57 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 ========================================================= */
 
 const PROJECTS_KEY = "sa_projects";
+const PROFILE_KEY = "sa_profile";
+const TEAM_KEY = "sa_team";
 
 let projects = [];
+let profile = {
+  firstName: "",
+  lastName: "",
+  company: "",
+  phone: "",
+  isOwner: true,
+  payType: "per_day",
+  payValue: 0
+};
+let team = [];
 
 try{
   const raw = localStorage.getItem(PROJECTS_KEY);
   const parsed = raw ? JSON.parse(raw) : [];
   if(Array.isArray(parsed)) projects = parsed;
-}catch(e){
-  console.warn("Не вдалося прочитати projects:", e);
-  projects = [];
-}
+}catch(e){ projects = []; }
+
+try{
+  const raw = localStorage.getItem(PROFILE_KEY);
+  const parsed = raw ? JSON.parse(raw) : null;
+  if(parsed && typeof parsed === "object"){
+    profile = { ...profile, ...parsed };
+  }
+}catch(e){}
+
+try{
+  const raw = localStorage.getItem(TEAM_KEY);
+  const parsed = raw ? JSON.parse(raw) : [];
+  if(Array.isArray(parsed)) team = parsed;
+}catch(e){ team = []; }
 
 function saveProjects(){
-  try{
-    localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
-  }catch(e){
-    console.warn("Не вдалося зберегти projects:", e);
-  }
+  try{ localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects)); }catch(e){}
+}
+
+function saveProfileData(){
+  try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }catch(e){}
+}
+
+function saveTeamData(){
+  try{ localStorage.setItem(TEAM_KEY, JSON.stringify(team)); }catch(e){}
 }
 
 let currentProjectId = null;
+let editingPayType = "percent_of_income";
+let profilePayType = "percent_of_income";
+let ownerMode = true;
 
 /* =========================================================
    UTILS
@@ -887,6 +1263,41 @@ function money(value){
   return new Intl.NumberFormat("uk-UA").format(Math.round(n)) + " ₴";
 }
 
+function payTypeLabel(t){
+  switch(t){
+    case "percent_of_income": return "% від доходу";
+    case "per_day": return "за день";
+    case "per_month": return "за місяць";
+    case "fixed_per_object": return "за об'єкт";
+    default: return "";
+  }
+}
+
+function payValueUnit(t){
+  switch(t){
+    case "percent_of_income": return "%";
+    case "per_day": return "₴/день";
+    case "per_month": return "₴/міс";
+    case "fixed_per_object": return "₴";
+    default: return "";
+  }
+}
+
+function payValueHint(t){
+  switch(t){
+    case "percent_of_income": return "% від доходу об'єкта";
+    case "per_day": return "фіксована ставка за робочий день";
+    case "per_month": return "фіксована ставка за місяць";
+    case "fixed_per_object": return "фіксована сума за об'єкт";
+    default: return "";
+  }
+}
+
+function personInitial(name){
+  const n = String(name || "").trim();
+  return n ? n[0] : "?";
+}
+
 /* =========================================================
    RENDER — ROUTER
 ========================================================= */
@@ -910,7 +1321,6 @@ function render(){
 function renderHero(){
   const hero = document.getElementById("hero");
 
-  // Коли відкритий об'єкт — hero ховаємо повністю
   if(currentProjectId){
     hero.innerHTML = "";
     hero.style.display = "none";
@@ -918,6 +1328,10 @@ function renderHero(){
   }
 
   hero.style.display = "";
+
+  const initials = (profile.firstName || profile.lastName)
+    ? ((profile.firstName || "")[0] || "").toUpperCase() + ((profile.lastName || "")[0] || "").toUpperCase()
+    : "";
 
   hero.innerHTML = `
     <div class="heroRow">
@@ -929,6 +1343,12 @@ function renderHero(){
         <div class="heroTitle">SA-MASTER<span class="pro">.pro</span></div>
         <div class="heroSub">Кошторис. Звітність. Аудит.</div>
       </div>
+      <button class="heroAction" onclick="openProfile()" aria-label="Профіль">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4"/>
+          <path d="M5.3 18.3C6.8 16.5 9.2 15 12 15s5.2 1.5 6.7 3.3"/>
+        </svg>
+      </button>
     </div>
   `;
 }
@@ -951,7 +1371,6 @@ function renderHome(){
 function renderEmptyState(){
   return `
     <div class="emptyState">
-
       <div class="emptyIntro">
         <h2>З чого почати</h2>
         <ol>
@@ -966,28 +1385,54 @@ function renderEmptyState(){
       <button class="primaryButton" onclick="openNewProject()">
         + Створити перший об'єкт
       </button>
-
     </div>
   `;
 }
 
 function renderProjectList(){
-  const sorted = projects.slice().sort(sortProjects);
+  const active = projects.filter(p => (p.status || "active") === "active");
+  const archived = projects.filter(p => (p.status || "active") === "archived");
 
-  return `
+  const activeSorted = active.slice().sort(sortProjects);
+  const archivedSorted = archived.slice().sort(sortProjects);
+
+  let html = `
     <div class="listWrap">
-
       <div class="listHeader">
-        <strong>Об'єкти (${projects.length})</strong>
+        <strong>Об'єкти (${active.length})</strong>
         <button class="addSmallButton" onclick="openNewProject()">+ Об'єкт</button>
       </div>
-
       <div class="list">
-        ${sorted.map(renderProjectCard).join("")}
-      </div>
+  `;
 
+  if(activeSorted.length){
+    html += activeSorted.map(renderProjectCard).join("");
+  }else{
+    html += `
+      <div class="emptyTeam" style="padding:2rem 1rem">
+        Активних об'єктів немає.<br>
+        Створіть новий об'єкт, щоб почати роботу.
+      </div>
+    `;
+  }
+
+  if(archivedSorted.length){
+    html += `
+      <div style="margin-top:.75rem;margin-bottom:.5rem;padding:0 .5rem;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px">
+          Архів (${archivedSorted.length})
+        </div>
+      </div>
+    `;
+    html += archivedSorted.map(renderProjectCard).join("");
+  }
+
+  html += `
+      </div>
     </div>
   `;
+
+  return html;
 }
 
 function sortProjects(a,b){
@@ -1009,53 +1454,34 @@ function renderProjectCard(p){
   const amount = p._total != null ? money(p._total) : "";
   const details = p._detailsLine || "";
 
+  const isArchived = (p.status || "active") === "archived";
+  const clickAttr = isArchived ? "" : `onclick="openProject('${escapeHtml(p.id)}')"`;
+
   return `
-    <div class="projectCard" onclick="openProject('${escapeHtml(p.id)}')">
-
+    <div class="projectCard" ${clickAttr} style="${isArchived ? "opacity:.75" : ""}">
       <span class="projectDot ${dotClass}"></span>
-
       <div class="projectBody">
-
         <div class="projectTitle">
           <span>${title}</span>
           ${urgentMark}
         </div>
-
-        ${client ? `
-          <div class="projectClient">
-            ${client}${phone ? " · " + phone : ""}
-          </div>
-        ` : ""}
-
-        ${address ? `
-          <div class="projectAddress">${address}</div>
-        ` : ""}
-
+        ${client ? `<div class="projectClient">${client}${phone ? " · " + phone : ""}</div>` : ""}
+        ${address ? `<div class="projectAddress">${address}</div>` : ""}
         <div class="projectDivider"></div>
-
         <div class="projectMeta">
           <span class="projectStage">${escapeHtml(stageLabel)}</span>
           ${amount ? `<span class="projectAmount">${amount}</span>` : ""}
         </div>
-
         ${details ? `<div class="projectDetails">${escapeHtml(details)}</div>` : ""}
-
       </div>
-
     </div>
   `;
 }
 
 function projectTitlePlain(p){
-  if(p.title && String(p.title).trim()){
-    return p.title.trim();
-  }
-  if(p.client?.address && String(p.client.address).trim()){
-    return p.client.address.trim();
-  }
-  if(p.client?.name && String(p.client.name).trim()){
-    return p.client.name.trim();
-  }
+  if(p.title && String(p.title).trim()) return p.title.trim();
+  if(p.client?.address && String(p.client.address).trim()) return p.client.address.trim();
+  if(p.client?.name && String(p.client.name).trim()) return p.client.name.trim();
   return "Без назви";
 }
 
@@ -1064,6 +1490,7 @@ function projectTitle(p){
 }
 
 function projectStageClass(p){
+  if((p.status || "active") === "archived") return "status-done";
   const s = p.stage || "estimate";
   if(s === "work" || s === "complete") return "status-work";
   if(s === "done" || s === "closed") return "status-done";
@@ -1096,13 +1523,11 @@ function renderProject(p){
 
   main.innerHTML = `
     <div class="projectView">
-
       <div class="backRow">
         <button class="backButton" onclick="backToList()" aria-label="Назад до об'єктів">←</button>
       </div>
 
       <div class="projectHeaderCard">
-
         <div class="projectHeaderTitle">
           <span>${title}</span>
           ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
@@ -1113,7 +1538,6 @@ function renderProject(p){
           ${address ? `${address}<br>` : ""}
           <span style="color:var(--tm);font-size:.75rem">${escapeHtml(stageLabel)}</span>
         </div>
-
       </div>
 
       <div class="placeholderBlock">
@@ -1121,9 +1545,171 @@ function renderProject(p){
         Тут буде кошторис, статуси та фінанси.<br>
         Наступний крок — додати позиції.
       </div>
-
     </div>
   `;
+}
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+function openProfile(){
+  // Заповнюємо поля поточними значеннями
+  document.getElementById("pfFirstName").value = profile.firstName || "";
+  document.getElementById("pfLastName").value = profile.lastName || "";
+  document.getElementById("pfCompany").value = profile.company || "";
+  document.getElementById("pfPhone").value = profile.phone || "";
+  document.getElementById("pfValue").value = profile.payValue || 0;
+
+  ownerMode = profile.isOwner !== false;
+  profilePayType = profile.payType || "percent_of_income";
+
+  updateOwnerUI();
+  updateProfileChips();
+  updateProfileValueUI();
+  renderTeamList();
+
+  document.getElementById("profileScreen").classList.add("open");
+}
+
+function closeProfile(){
+  document.getElementById("profileScreen").classList.remove("open");
+}
+
+function toggleOwner(){
+  ownerMode = !ownerMode;
+  updateOwnerUI();
+}
+
+function updateOwnerUI(){
+  const row = document.getElementById("pfOwnerRow");
+  const block = document.getElementById("pfPayBlock");
+  row.classList.toggle("on", ownerMode);
+  block.style.display = ownerMode ? "none" : "block";
+}
+
+function updateProfileChips(){
+  document.querySelectorAll("#pfChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.type === profilePayType);
+  });
+}
+
+function updateProfileValueUI(){
+  const label = document.getElementById("pfValueLabel");
+  const hint = document.getElementById("pfValueHint");
+  label.textContent = "Сума (" + payValueUnit(profilePayType) + ")";
+  hint.textContent = payValueHint(profilePayType);
+}
+
+function renderTeamList(){
+  const box = document.getElementById("teamList");
+
+  if(!team.length){
+    box.innerHTML = `
+      <div class="fsCard">
+        <div class="emptyTeam">
+          Команда порожня.<br>
+          Якщо працюєте самі — нічого додавати не треба.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  box.innerHTML = team.map(p => `
+    <div class="fsCard">
+      <div class="personRow">
+        <div class="personAvatar">${escapeHtml(personInitial(p.name))}</div>
+        <div class="personBody">
+          <div class="personName">${escapeHtml(p.name)}</div>
+          <div class="personMeta">
+            ${Number(p.payValue) || 0}${payValueUnit(p.payType)} · ${payTypeLabel(p.payType)}
+          </div>
+        </div>
+        <button class="personDelete" onclick="deletePerson('${escapeHtml(p.id)}')" aria-label="Видалити">×</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function saveProfile(){
+  profile.firstName = document.getElementById("pfFirstName").value.trim();
+  profile.lastName = document.getElementById("pfLastName").value.trim();
+  profile.company = document.getElementById("pfCompany").value.trim();
+  profile.phone = document.getElementById("pfPhone").value.trim();
+  profile.isOwner = ownerMode;
+  profile.payType = profilePayType;
+  profile.payValue = Number(String(document.getElementById("pfValue").value).replace(",",".")) || 0;
+
+  saveProfileData();
+  closeProfile();
+  renderHero();
+  toast("Профіль збережено");
+}
+
+/* =========================================================
+   TEAM
+========================================================= */
+
+function openAddPerson(){
+  document.getElementById("apName").value = "";
+  document.getElementById("apPhone").value = "";
+  document.getElementById("apValue").value = "0";
+  editingPayType = "percent_of_income";
+  updateAddPersonChips();
+  updateAddPersonValueUI();
+  document.getElementById("addPersonSheet").classList.add("open");
+  setTimeout(() => document.getElementById("apName").focus(), 200);
+}
+
+function closeAddPerson(){
+  document.getElementById("addPersonSheet").classList.remove("open");
+}
+
+function updateAddPersonChips(){
+  document.querySelectorAll("#apChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.type === editingPayType);
+  });
+}
+
+function updateAddPersonValueUI(){
+  const label = document.getElementById("apValueLabel");
+  const hint = document.getElementById("apValueHint");
+  label.textContent = "Сума (" + payValueUnit(editingPayType) + ")";
+  hint.textContent = payValueHint(editingPayType);
+}
+
+function savePerson(){
+  const name = document.getElementById("apName").value.trim();
+  const phone = document.getElementById("apPhone").value.trim();
+  const value = Number(String(document.getElementById("apValue").value).replace(",",".")) || 0;
+
+  if(!name){
+    toast("Вкажіть ім'я");
+    return;
+  }
+
+  team.push({
+    id: uid("p"),
+    name,
+    phone,
+    payType: editingPayType,
+    payValue: value
+  });
+
+  saveTeamData();
+  closeAddPerson();
+  renderTeamList();
+  toast("Додано в команду");
+}
+
+function deletePerson(id){
+  const person = team.find(p => p.id === id);
+  if(!person) return;
+  if(!confirm(`Видалити «${person.name}» з команди?`)) return;
+  team = team.filter(p => p.id !== id);
+  saveTeamData();
+  renderTeamList();
 }
 
 /* =========================================================
@@ -1159,27 +1745,23 @@ function createProject(){
   const phone = document.getElementById("npClientPhone").value.trim();
   const address = document.getElementById("npAddress").value.trim();
 
-  if(!name){
-    toast("Вкажіть ім'я замовника");
-    return;
-  }
-
-  if(!phone){
-    toast("Вкажіть телефон замовника");
-    return;
-  }
+  if(!name){ toast("Вкажіть ім'я замовника"); return; }
+  if(!phone){ toast("Вкажіть телефон замовника"); return; }
 
   const now = new Date().toISOString();
+  const wasFirst = projects.length === 0;
 
   const project = {
     id: uid("proj"),
     title,
     client: { name, phone, address },
 
+    status: "active",
     stage: "estimate",
     urgent: false,
 
     positions: [],
+    stages: [],
     discount: 0,
     payments: [],
     expenses: [],
@@ -1194,16 +1776,6 @@ function createProject(){
       features: []
     },
 
-    status: {
-      pricesConfirmed: false,
-      clientApproved: false,
-      advanceReceived: false,
-      materialsPurchased: false,
-      workStarted: false,
-      workFinished: false,
-      closed: false
-    },
-
     createdAt: now,
     updatedAt: now
   };
@@ -1216,17 +1788,48 @@ function createProject(){
   render();
 
   toast("Об'єкт створено");
+
+  // Якщо це перший об'єкт і профіль ще не заповнений — показати профіль
+  const profileEmpty = !profile.firstName && !profile.lastName && !profile.company;
+  if(wasFirst && profileEmpty){
+    setTimeout(() => {
+      openProfile();
+    }, 400);
+  }
 }
 
 /* =========================================================
    INIT
 ========================================================= */
 
-render();
+// Обробники чипів — принцип оплати людини в команді
+document.getElementById("apChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingPayType = chip.dataset.type;
+  updateAddPersonChips();
+  updateAddPersonValueUI();
+});
 
+// Чипи принципу оплати в профілі
+document.getElementById("pfChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  profilePayType = chip.dataset.type;
+  updateProfileChips();
+  updateProfileValueUI();
+});
+
+// Клік по фону модалок
 document.getElementById("newProjectSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeNewProject();
 });
+
+document.getElementById("addPersonSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeAddPerson();
+});
+
+render();
 
 </script>
 
