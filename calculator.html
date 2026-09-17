@@ -29,6 +29,7 @@
   --red:#FF3B30;
   --green:#34C759;
   --orange:#FF9500;
+  --xls:#1D6F42;
   --dot-gray:#C7C7CC;
   --dot-dark:#1C1C1E;
   --sat:env(safe-area-inset-top,0px);
@@ -48,6 +49,7 @@
     --gbr:rgba(255,255,255,.12);
     --gs:0 .5rem 2rem rgba(0,0,0,.4);
     --card:#2C2C2E;
+    --xls:#5FB37C;
     --dot-dark:#F2F2F7;
   }
 }
@@ -1255,7 +1257,37 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .addCustomButton:active{transform:scale(.98)}
 
-/* ==== PRICES LIST (множинне введення) ==== */
+/* ==== IMPORT BUTTON ==== */
+
+.importExcelButton{
+  width:100%;
+  height:2.75rem;
+  border-radius:.875rem;
+  background:rgba(29,111,66,.1);
+  color:var(--xls);
+  font-size:.875rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.5rem;
+  margin-top:.25rem;
+  margin-bottom:.5rem;
+  flex:0 0 auto;
+  transition:transform .12s;
+}
+
+.importExcelButton:active{
+  transform:scale(.98);
+}
+
+.importExcelButton svg{
+  width:1.375rem;
+  height:1.375rem;
+  flex:0 0 auto;
+}
+
+/* ==== PRICES LIST ==== */
 
 .pricesList{
   display:flex;
@@ -1654,6 +1686,15 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
       <div class="catalogList" id="catalogList"></div>
 
+      <button class="importExcelButton" id="importExcelButton" onclick="openImportFile()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 3 14 8 19 8"/>
+          <text x="12" y="17.5" font-size="5.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="-apple-system,sans-serif">XLS</text>
+        </svg>
+        <span>Імпорт з Excel</span>
+      </button>
+
       <button class="addCustomButton" onclick="openCustomPosition()">
         <span style="font-size:1.125rem;line-height:1">＋</span>
         <span id="addCustomLabel">Додати свою</span>
@@ -1899,6 +1940,13 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 <div class="toast" id="toast"></div>
 
+<input
+  type="file"
+  id="importFileInput"
+  accept=".xls,.xlsx,.xlsm"
+  style="display:none"
+>
+
 <script>
 
 /* =========================================================
@@ -1993,7 +2041,8 @@ try{
         manufacturer: item.manufacturer || "",
         system: item.system || "",
         article: item.article || "",
-        basePriceEUR: Number(item.basePriceEUR) || 0
+        basePriceEUR: Number(item.basePriceEUR) || 0,
+        supplierOffers: Array.isArray(item.supplierOffers) ? item.supplierOffers : []
       }));
     }else{
       catalog = DEFAULT_WORKS.map(w => ({
@@ -2007,7 +2056,8 @@ try{
         manufacturer: "",
         system: "",
         article: "",
-        basePriceEUR: 0
+        basePriceEUR: 0,
+        supplierOffers: []
       }));
     }
     saveCatalog();
@@ -2024,7 +2074,8 @@ try{
     manufacturer: "",
     system: "",
     article: "",
-    basePriceEUR: 0
+    basePriceEUR: 0,
+    supplierOffers: []
   }));
 }
 
@@ -2062,12 +2113,14 @@ let editingFeatures = [];
 let catalogMode = "work";
 let catalogFilter = "all";
 let catalogSearch = "";
-let catalogSelection = {};   // { catalogId: qty }
+let catalogSelection = {};
 
 let customType = "work";
 let customCategory = "other";
 
-let pricesPending = [];   // позиції, яким треба ввести ціну
+let pricesPending = [];
+
+let pendingImportFile = null;
 
 const FEATURE_SUGGESTIONS = [
   "Прихований монтаж",
@@ -2751,11 +2804,15 @@ function openCatalogFor(type){
   catalogMode = type;
   catalogFilter = "all";
   catalogSearch = "";
-  catalogSelection = {};   // скидаємо вибір
+  catalogSelection = {};
 
   document.getElementById("catalogSearch").value = "";
   document.getElementById("catalogTitle").textContent = (type === "work") ? "Вибір роботи" : "Вибір матеріалу";
   document.getElementById("addCustomLabel").textContent = (type === "work") ? "Додати свою роботу" : "Додати свій матеріал";
+
+  // Кнопка імпорту — тільки в матеріалах
+  const importBtn = document.getElementById("importExcelButton");
+  importBtn.style.display = (type === "material") ? "flex" : "none";
 
   renderCatalogChips();
   renderCatalogList();
@@ -2953,7 +3010,6 @@ function applyCatalogSelection(){
   closeCatalog();
   render();
 
-  // Якщо є позиції без ціни — відкриваємо модалку введення цін
   if(needPrice.length){
     openPricesSheet(needPrice);
   }else{
@@ -3011,7 +3067,8 @@ function saveCustom(){
     manufacturer: "",
     system: "",
     article: "",
-    basePriceEUR: 0
+    basePriceEUR: 0,
+    supplierOffers: []
   };
 
   catalog.push(newItem);
@@ -3019,7 +3076,6 @@ function saveCustom(){
 
   closeCustom();
 
-  // Додаємо в кошторис як одну позицію з кількістю 1
   const project = projects.find(p => p.id === currentProjectId);
   if(project){
     if(!Array.isArray(project.positions)) project.positions = [];
@@ -3040,7 +3096,7 @@ function saveCustom(){
 }
 
 /* =========================================================
-   PRICES MODAL (multi)
+   PRICES MODAL
 ========================================================= */
 
 function openPricesSheet(positions){
@@ -3096,7 +3152,6 @@ function savePrices(){
     if(value > 0){
       pos.price = value;
 
-      // Синхронізуємо з каталогом
       if(pos.catalogId){
         const cat = catalog.find(c => c.id === pos.catalogId);
         if(cat && (!cat.price || cat.price <= 0)){
@@ -3149,20 +3204,14 @@ function deletePosition(projectId, positionId){
    SINGLE PRICE EDITOR
 ========================================================= */
 
-let singlePriceContext = null;
-
 function openSinglePriceEditor(projectId, positionId){
   const project = projects.find(p => p.id === projectId);
   if(!project) return;
   const pos = project.positions.find(p => p.id === positionId);
   if(!pos) return;
 
-  singlePriceContext = { projectId, positionId };
-
   pricesPending = [pos];
-  document.getElementById("pricesList");
 
-  // Використовуємо ту ж модалку
   const list = document.getElementById("pricesList");
   list.innerHTML = `
     <div class="priceRow">
@@ -3186,7 +3235,36 @@ function openSinglePriceEditor(projectId, positionId){
   }, 200);
 }
 
-/* savePrices вже вище — він використає pricesPending */
+/* =========================================================
+   IMPORT FROM EXCEL (C4.1)
+========================================================= */
+
+function openImportFile(){
+  const input = document.getElementById("importFileInput");
+  input.value = "";
+  input.click();
+}
+
+document.getElementById("importFileInput").addEventListener("change", function(e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+
+  if(!file) return;
+
+  const name = String(file.name || "").toLowerCase();
+  const ok = name.endsWith(".xls") || name.endsWith(".xlsx") || name.endsWith(".xlsm");
+
+  if(!ok){
+    toast("Підтримуються файли .xls, .xlsx, .xlsm");
+    return;
+  }
+
+  pendingImportFile = file;
+
+  toast("Файл обрано: " + file.name);
+  console.log("[import] Файл обрано:", file);
+  console.log("[import] Буде оброблено в C4.2");
+});
 
 /* =========================================================
    ACTIONS
