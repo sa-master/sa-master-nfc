@@ -5169,24 +5169,34 @@ function openImportSheet(parsed, file){
     .map(n => `<option value="${escapeHtml(n)}"></option>`)
     .join("");
 
-  let currency = parsed.currency || autoDetectedCurrency || "";
+  // Валюта — з autoDetectedCurrency
+  const currency = autoDetectedCurrency || "UAH";
+  const rate = autoDetectedRate || 0;
 
-  if(!currency && parsed.detectedRate && parsed.detectedRate > 10){
-    currency = "EUR";
+  importCurrency = currency;
+
+  // Ховаємо поля валюти й курсу — бо вже визначено
+  const currencyField = document.getElementById("impCurrency");
+  if(currencyField && currencyField.parentElement){
+    currencyField.parentElement.style.display = "none";
   }
 
-  document.getElementById("impCurrency").value = currency;
-
-  let rate = parsed.detectedRate;
-
-  if(!rate){
-    if(currency === "USD" && importUsdRate > 0) rate = importUsdRate;
-    else if(importEurRate > 0) rate = importEurRate;
+  const rateField = document.getElementById("impRate");
+  if(rateField && rateField.parentElement){
+    rateField.parentElement.style.display = "none";
   }
 
-  document.getElementById("impRate").value = rate ? String(rate) : "";
-
-  updateImportRateField();
+  // Інформаційний текст
+  const hint = document.getElementById("impRateHint");
+  if(hint){
+    if(currency === "UAH"){
+      hint.textContent = "Ціни в гривні. Конвертація не потрібна.";
+      hint.className = "formHint auto";
+    }else{
+      hint.textContent = `Ціни в ${currency}. Курс: ${rate} ₴/${currency === "EUR" ? "€" : "$"}. Буде перераховано в грн.`;
+      hint.className = "formHint auto";
+    }
+  }
 
   renderImportPreview(items);
 
