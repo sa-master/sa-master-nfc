@@ -4603,40 +4603,8 @@ document.getElementById("importFileInput").addEventListener("change", async func
       blankrows: false
     });
 
-    const detection = detectInvoiceCurrencyAdvanced(allRows);
-
-    // Якщо валюта UAH — імпорт одразу
-    if(detection.detected && detection.currency === "UAH"){
-      proceedWithImport(workbook, file, "UAH", 0);
-      return;
-    }
-
-    // Якщо EUR або USD — питаємо курс
-    if(detection.detected && (detection.currency === "EUR" || detection.currency === "USD")){
-      const profileRate = detection.currency === "EUR"
-        ? (profile.eurRate || importEurRate || 0)
-        : (profile.usdRate || importUsdRate || 0);
-
-      openCurrencySheet(
-        detection.currency,
-        profileRate,
-        "detected",
-        `У рахунку знайдено ціни в ${detection.currency}. Вкажіть курс для конвертації в грн.`
-      );
-
-      importPendingResolve = function(){
-        proceedWithImport(workbook, file, importPendingCurrency, importPendingRate);
-      };
-      return;
-    }
-
-    // Не вдалось визначити — питаємо валюту
-    openCurrencySheet(
-      "UAH",
-      0,
-      "unknown",
-      "Не вдалося визначити валюту рахунку. Оберіть валюту та вкажіть курс, якщо потрібно."
-    );
+    // Завжди показуємо модалку з дефолтом UAH
+    openCurrencySheet("UAH", 0, "manual", "Оберіть валюту рахунку. Для UAH курс не потрібен.");
 
     importPendingResolve = function(){
       proceedWithImport(workbook, file, importPendingCurrency, importPendingRate);
