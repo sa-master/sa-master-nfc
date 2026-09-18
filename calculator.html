@@ -593,6 +593,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   box-shadow:none;
 }
 
+.btnDanger{
+  background:rgba(255,59,48,.1);
+  color:var(--red);
+  border:1px solid rgba(255,59,48,.2);
+}
+
 .formGroup{margin-bottom:.875rem}
 
 .formLabel{
@@ -856,6 +862,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:#fff;
   border-color:var(--p);
   box-shadow:0 .25rem .75rem rgba(0,122,255,.25);
+}
+
+.chip.danger{
+  background:rgba(255,59,48,.1);
+  color:var(--red);
+  border-color:rgba(255,59,48,.2);
 }
 
 .projectView{
@@ -1486,6 +1498,34 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   flex:0 0 auto;
 }
 
+.clearAllButton{
+  width:100%;
+  height:2.625rem;
+  border-radius:.875rem;
+  background:rgba(255,59,48,.08);
+  color:var(--red);
+  font-size:.8125rem;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.4375rem;
+  margin-top:.25rem;
+  margin-bottom:.4375rem;
+  flex:0 0 auto;
+  transition:transform .12s;
+}
+
+.clearAllButton:active{
+  transform:scale(.98);
+}
+
+.clearAllButton svg{
+  width:1.25rem;
+  height:1.25rem;
+  flex:0 0 auto;
+}
+
 .pricesList{
   display:flex;
   flex-direction:column;
@@ -1824,15 +1864,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 <div class="bg"></div>
 
 <div class="app" id="app">
-
   <section class="hero" id="hero"></section>
-
   <main class="main" id="main"></main>
-
 </div>
 
 <!-- SHEET: NEW/EDIT PROJECT -->
-
 <div class="sheet" id="projectSheet">
   <div class="panel">
     <div class="panelHead">
@@ -1921,7 +1957,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 </div>
 
 <!-- SHEET: CATALOG -->
-
 <div class="sheet" id="catalogSheet">
   <div class="panel tall">
     <div class="panelHead">
@@ -1956,6 +1991,17 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         <span>Імпорт з Excel</span>
       </button>
 
+      <button class="clearAllButton" id="clearAllMaterialsBtn" onclick="clearAllMaterials()" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"/>
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6"/>
+          <path d="M14 11v6"/>
+        </svg>
+        <span id="clearAllMaterialsLabel">Очистити всі матеріали</span>
+      </button>
+
       <button class="addCustomButton" onclick="openCustomPosition()">
         <span style="font-size:1.125rem;line-height:1">＋</span>
         <span id="addCustomLabel">Додати свою</span>
@@ -1970,7 +2016,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 </div>
 
 <!-- SHEET: EDIT CATALOG ITEM -->
-
 <div class="sheet" id="catalogEditSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2026,7 +2071,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 </div>
 
 <!-- SHEET: CUSTOM POSITION -->
-
 <div class="sheet" id="customSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2082,7 +2126,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 </div>
 
 <!-- SHEET: MULTI PRICE INPUT -->
-
 <div class="sheet" id="pricesSheet">
   <div class="panel tall">
     <div class="panelHead">
@@ -2105,7 +2148,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 </div>
 
 <!-- SHEET: IMPORT PREVIEW -->
-
 <div class="sheet" id="importSheet">
   <div class="panel tall">
     <div class="panelHead">
@@ -2116,13 +2158,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
     <div class="panelBody">
       <div class="formGroup">
         <label class="formLabel">Постачальник *</label>
-        <input
-          class="formInput"
-          id="impSupplierName"
-          list="impSupplierList"
-          placeholder="Назва постачальника"
-          autocomplete="off"
-        >
+        <input class="formInput" id="impSupplierName" list="impSupplierList" placeholder="Назва постачальника" autocomplete="off">
         <datalist id="impSupplierList"></datalist>
       </div>
 
@@ -2181,7 +2217,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 </div>
 
 <!-- SHEET: ACTIONS -->
-
 <div class="sheet" id="actionsSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2214,7 +2249,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 </div>
 
 <!-- SHEET: ADD PERSON -->
-
 <div class="sheet" id="addPersonSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2258,10 +2292,8 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 </div>
 
 <!-- FULLSCREEN: PROFILE -->
-
 <div class="fullscreen" id="profileScreen">
   <div class="fsBody">
-
     <div class="fsHead">
       <strong>Профіль</strong>
       <button class="close" onclick="closeProfile()">×</button>
@@ -2331,7 +2363,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         <span>Додати людину</span>
       </button>
     </div>
-
   </div>
 
   <div class="fsFooter">
@@ -2343,12 +2374,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 <div class="toast" id="toast"></div>
 
-<input
-  type="file"
-  id="importFileInput"
-  accept=".xls,.xlsx,.xlsm"
-  style="display:none"
->
+<input type="file" id="importFileInput" accept=".xls,.xlsx,.xlsm" style="display:none">
 
 <script>
 
@@ -2356,11 +2382,11 @@ const PROJECTS_KEY = "sa_projects";
 const PROFILE_KEY = "sa_profile";
 const TEAM_KEY = "sa_team";
 const CATALOG_KEY = "sa_catalog";
+const CATALOG_BACKUP_KEY = "sa_catalog_backup";
 const EUR_RATE_KEY = "sa_eurRate";
 const USD_RATE_KEY = "sa_usdRate";
 const SUPPLIER_NAMES_KEY = "sa_supplierNames";
 
-/* Дефолтні роботи — тепер із етапами */
 const DEFAULT_WORKS = [
   { name: "Розведення каналізації", unit: "компл.", stage: "rough" },
   { name: "Розведення водопостачання", unit: "компл.", stage: "rough" },
@@ -2477,15 +2503,12 @@ try{
   }));
 }
 
-/* ==== Міграція етапів для старих робіт (без stage) ==== */
-
 let catalogMigrated = false;
 
 catalog.forEach(item => {
   if(item.type !== "work") return;
   if(item.stage) return;
 
-  // Визначаємо етап за назвою
   const name = String(item.name || "").toLowerCase();
 
   if(
@@ -2654,13 +2677,30 @@ function personInitial(name){
 
 /* ==== Розрахунки кошторису ==== */
 
-function getEstimateSubtotal(project){
+function getWorksSubtotal(project){
   if(!project || !Array.isArray(project.positions)) return 0;
-  return project.positions.reduce((sum, p) => {
-    const price = Number(p.price) || 0;
-    const qty = Number(p.qty) || 0;
-    return sum + price * qty;
-  }, 0);
+  return project.positions
+    .filter(p => p.type === "work")
+    .reduce((sum, p) => {
+      const price = Number(p.price) || 0;
+      const qty = Number(p.qty) || 0;
+      return sum + price * qty;
+    }, 0);
+}
+
+function getMaterialsSubtotal(project){
+  if(!project || !Array.isArray(project.positions)) return 0;
+  return project.positions
+    .filter(p => p.type === "material")
+    .reduce((sum, p) => {
+      const price = Number(p.price) || 0;
+      const qty = Number(p.qty) || 0;
+      return sum + price * qty;
+    }, 0);
+}
+
+function getEstimateSubtotal(project){
+  return getWorksSubtotal(project) + getMaterialsSubtotal(project);
 }
 
 function getEstimateDiscountPercent(project){
@@ -2669,18 +2709,35 @@ function getEstimateDiscountPercent(project){
 }
 
 function getEstimateDiscountAmount(project){
-  const subtotal = getEstimateSubtotal(project);
+  const materials = getMaterialsSubtotal(project);
   const percent = getEstimateDiscountPercent(project);
-  return subtotal * percent / 100;
+  return materials * percent / 100;
 }
 
 function getEstimateTotal(project){
-  return getEstimateSubtotal(project) - getEstimateDiscountAmount(project);
+  return getWorksSubtotal(project)
+       + getMaterialsSubtotal(project)
+       - getEstimateDiscountAmount(project);
 }
 
 function getProjectPositionCount(project){
   return (project && Array.isArray(project.positions)) ? project.positions.length : 0;
 }
+
+function shouldShowSavingsToClient(project){
+  return !!(project && project.showSavingsToClient);
+}
+
+function toggleShowSavings(){
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+  project.showSavingsToClient = !project.showSavingsToClient;
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
+}
+
+/* ==== RENDER ==== */
 
 function render(){
   renderHero();
@@ -2983,42 +3040,59 @@ function renderEstimateBlock(p){
   const workPositions = positions.filter(x => x.type === "work");
   const materialPositions = positions.filter(x => x.type === "material");
 
-  const subtotal = getEstimateSubtotal(p);
+  const worksSubtotal = getWorksSubtotal(p);
+  const materialsSubtotal = getMaterialsSubtotal(p);
   const discountPercent = getEstimateDiscountPercent(p);
   const discountAmount = getEstimateDiscountAmount(p);
+  const materialsWithDiscount = materialsSubtotal - discountAmount;
   const total = getEstimateTotal(p);
+  const showSavings = shouldShowSavingsToClient(p);
 
   const discountChips = [0,5,10,15,20];
 
-  let discountHtml = `
-    <div class="discountBlock">
-      <div class="discountLabel">Знижка</div>
-      <div class="chips tight">
-        ${discountChips.map(value => `
+  let materialsDiscountHtml = "";
+
+  if(materialPositions.length){
+    materialsDiscountHtml = `
+      <div class="discountBlock">
+        <div class="discountLabel">Знижка на матеріали</div>
+        <div class="chips tight">
+          ${discountChips.map(value => `
+            <button
+              type="button"
+              class="chip small ${discountPercent === value ? 'active' : ''}"
+              onclick="setDiscountPercent(${value})"
+            >${value}%</button>
+          `).join("")}
           <button
             type="button"
-            class="chip small ${discountPercent === value ? 'active' : ''}"
-            onclick="setDiscountPercent(${value})"
-          >${value}%</button>
-        `).join("")}
-        <button
-          type="button"
-          class="chip small ${discountPercent && !discountChips.includes(discountPercent) ? 'active' : ''}"
-          onclick="promptCustomDiscount()"
-        >інша</button>
-      </div>
-      <div class="discountTotal">
-        <span class="discountTotalLabel">До сплати</span>
-        <span class="discountTotalValue">${money(total)}</span>
-      </div>
-      ${discountPercent > 0 ? `
-        <div class="discountDiff">
-          <span>Економія клієнту</span>
-          <span>−${money(discountAmount)}</span>
+            class="chip small ${discountPercent && !discountChips.includes(discountPercent) ? 'active' : ''}"
+            onclick="promptCustomDiscount()"
+          >інша</button>
         </div>
-      ` : ""}
-    </div>
-  `;
+
+        ${discountPercent > 0 ? `
+          <div class="discountDiff">
+            <span>Знижка ${discountPercent}% на матеріали</span>
+            <span>−${money(discountAmount)}</span>
+          </div>
+          <div class="estimateSectionTotal" style="padding-top:.25rem">
+            <span class="estimateSectionTotalLabel">Матеріали зі знижкою:</span>
+            <span class="estimateSectionTotalValue">${money(materialsWithDiscount)}</span>
+          </div>
+
+          <div class="checkRow ${showSavings ? 'on' : ''}"
+               style="margin-top:.625rem"
+               onclick="toggleShowSavings()">
+            <span class="checkBox">
+              <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
+            </span>
+            <span class="checkLabel">Показати клієнту економію</span>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  }
 
   return `
     <div class="estimateBlock">
@@ -3034,8 +3108,36 @@ function renderEstimateBlock(p){
         </div>
       ` : `
         ${renderEstimateSection("РОБОТИ", workPositions, p.id)}
-        ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id)}
-        ${discountHtml}
+
+        ${materialPositions.length ? `
+          <div class="estimateSection">
+            <div class="estimateSectionHead">
+              <span class="estimateSectionTitle">МАТЕРІАЛИ</span>
+              <span class="estimateSectionCount">${materialPositions.length}</span>
+            </div>
+
+            ${materialPositions.map(pos => renderPosition(p.id, pos)).join("")}
+
+            <div class="estimateSectionTotal">
+              <span class="estimateSectionTotalLabel">МАТЕРІАЛИ:</span>
+              <span class="estimateSectionTotalValue">${money(materialsSubtotal)}</span>
+            </div>
+
+            ${materialsDiscountHtml}
+          </div>
+        ` : ""}
+
+        <div class="discountTotal" style="margin-top:.75rem;padding-top:.75rem;border-top:2px solid rgba(120,130,140,.25)">
+          <span class="discountTotalLabel">ДО СПЛАТИ</span>
+          <span class="discountTotalValue">${money(total)}</span>
+        </div>
+
+        ${discountPercent > 0 && showSavings ? `
+          <div class="discountDiff">
+            <span>Економія клієнту</span>
+            <span>−${money(discountAmount)}</span>
+          </div>
+        ` : ""}
       `}
     </div>
   `;
@@ -3107,14 +3209,13 @@ function renderPosition(projectId, pos){
   `;
 }
 
-/* ==== Знижка ==== */
+/* ==== DISCOUNT ==== */
 
 function setDiscountPercent(value){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project) return;
 
   const num = Number(value) || 0;
-
   project.discount = (num > 0 && num < 100) ? num : 0;
   project.updatedAt = new Date().toISOString();
   saveProjects();
@@ -3126,13 +3227,11 @@ function promptCustomDiscount(){
   if(!project) return;
 
   const current = getEstimateDiscountPercent(project);
-
-  const value = prompt("Відсоток знижки (0–99):", current > 0 ? String(current) : "");
+  const value = prompt("Відсоток знижки на матеріали (0–99):", current > 0 ? String(current) : "");
 
   if(value === null) return;
 
   const num = Number(String(value).replace(",","."));
-
   if(!Number.isFinite(num) || num < 0 || num >= 100){
     toast("Некоректна знижка");
     return;
@@ -3143,6 +3242,8 @@ function promptCustomDiscount(){
   saveProjects();
   render();
 }
+
+/* ==== PROJECT SHEET ==== */
 
 function openNewProject(){
   editingProjectId = null;
@@ -3328,6 +3429,7 @@ function saveProjectSheet(){
       positions: [],
       stages: [],
       discount: 0,
+      showSavingsToClient: false,
       payments: [],
       expenses: [],
       salaries: [],
@@ -3353,6 +3455,8 @@ function saveProjectSheet(){
     }
   }
 }
+
+/* ==== CATALOG ==== */
 
 function openCatalogFor(type){
   if(!currentProjectId) return;
@@ -3419,15 +3523,31 @@ function updateCatalogFooter(){
   const footer = document.getElementById("catalogFooter");
   const importBtn = document.getElementById("importExcelButton");
   const customBtn = document.querySelector(".addCustomButton");
+  const clearBtn = document.getElementById("clearAllMaterialsBtn");
 
   if(catalogManageMode){
     footer.style.display = "none";
     importBtn.style.display = "none";
     if(customBtn) customBtn.style.display = "flex";
+
+    if(clearBtn){
+      const materialsCount = catalog.filter(c => c.type === "material").length;
+      const show = (catalogMode === "material") && materialsCount > 0;
+
+      clearBtn.style.display = show ? "flex" : "none";
+
+      if(show){
+        const label = document.getElementById("clearAllMaterialsLabel");
+        if(label){
+          label.textContent = `Очистити всі матеріали (${materialsCount})`;
+        }
+      }
+    }
   }else{
     footer.style.display = "flex";
     importBtn.style.display = (catalogMode === "material") ? "flex" : "none";
     if(customBtn) customBtn.style.display = "flex";
+    if(clearBtn) clearBtn.style.display = "none";
   }
 }
 
@@ -3440,7 +3560,6 @@ function renderCatalogChips(){
     return;
   }
 
-  // ==== РОБОТИ ====
   if(catalogMode === "work"){
     const hasAnyWorks = catalog.some(item => item.type === "work");
 
@@ -3486,7 +3605,6 @@ function renderCatalogChips(){
     return;
   }
 
-  // ==== МАТЕРІАЛИ ====
   const hasAnyMaterials = catalog.some(item => item.type === "material");
 
   if(!hasAnyMaterials){
@@ -3928,8 +4046,65 @@ function deleteCatalogItem(id){
   renderCatalogBrandChips();
   renderCatalogSystemChips();
   renderCatalogList();
+  updateCatalogFooter();
   toast("Видалено з каталогу");
 }
+
+/* ==== ОЧИЩЕННЯ КАТАЛОГУ МАТЕРІАЛІВ ==== */
+
+function clearAllMaterials(){
+  const materials = catalog.filter(c => c.type === "material");
+  const count = materials.length;
+
+  if(!count){
+    toast("Каталог матеріалів уже порожній");
+    return;
+  }
+
+  const confirmText = prompt(
+    `Видалити ВСІ ${count} позицій з каталогу матеріалів?\n\n` +
+    `Це НЕ видалить матеріали з існуючих кошторисів.\n` +
+    `Каталог матеріалів буде очищено повністю.\n\n` +
+    `Для підтвердження введіть ВИДАЛИТИ:`
+  );
+
+  if(confirmText !== "ВИДАЛИТИ"){
+    if(confirmText !== null){
+      toast("Скасовано");
+    }
+    return;
+  }
+
+  if(!confirm(`Останнє підтвердження: видалити ${count} матеріалів?`)) return;
+
+  try{
+    const backup = {
+      date: new Date().toISOString(),
+      count,
+      items: materials
+    };
+    localStorage.setItem(CATALOG_BACKUP_KEY, JSON.stringify(backup));
+  }catch(e){}
+
+  catalog = catalog.filter(c => c.type !== "material");
+  saveCatalog();
+
+  catalogSelection = {};
+  catalogFilter = "all";
+  catalogBrandFilter = "all";
+  catalogSystemFilter = "all";
+
+  renderCatalogChips();
+  renderCatalogBrandChips();
+  renderCatalogSystemChips();
+  renderCatalogList();
+  updateCatalogFooter();
+  updateCatalogAddButton();
+
+  toast(`Видалено ${count} матеріалів. Бекап збережено.`);
+}
+
+/* ==== CUSTOM POSITION ==== */
 
 function openCustomPosition(){
   customType = catalogMode;
@@ -3995,6 +4170,7 @@ function saveCustom(){
   if(catalogManageMode){
     renderCatalogChips();
     renderCatalogList();
+    updateCatalogFooter();
     toast("Додано в каталог");
     return;
   }
@@ -4017,6 +4193,8 @@ function saveCustom(){
     toast("Додано");
   }
 }
+
+/* ==== PRICES ==== */
 
 function openPricesSheet(positions){
   pricesPending = positions.slice();
@@ -4979,8 +5157,11 @@ function confirmImport(){
     renderCatalogBrandChips();
     renderCatalogSystemChips();
     renderCatalogList();
+    updateCatalogFooter();
   }
 }
+
+/* ==== ACTIONS ==== */
 
 function openActions(id){
   const p = projects.find(x => x.id === id);
@@ -5064,6 +5245,8 @@ function actionDelete(){
   render();
   toast("Видалено");
 }
+
+/* ==== PROFILE ==== */
 
 function openProfile(){
   document.getElementById("pfFirstName").value = profile.firstName || "";
@@ -5226,6 +5409,8 @@ function openProject(id){
   currentProjectId = id;
   render();
 }
+
+/* ==== EVENT LISTENERS ==== */
 
 document.getElementById("npTypeChips").addEventListener("click", e => {
   const chip = e.target.closest(".chip");
