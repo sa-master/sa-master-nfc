@@ -1222,6 +1222,159 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-weight:650;
 }
 
+/* ==== APPROVAL BAR ==== */
+
+.approvalBar{
+  margin-top:.875rem;
+  padding-top:.75rem;
+  border-top:1px solid rgba(120,130,140,.18);
+}
+
+.approvalBarHeader{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  padding:.5rem .625rem;
+  border-radius:.75rem;
+  background:rgba(255,255,255,.4);
+  border:1px solid var(--gbr);
+  cursor:pointer;
+  user-select:none;
+  transition:background .15s;
+}
+
+@media (prefers-color-scheme:dark){
+  .approvalBarHeader{background:rgba(255,255,255,.04)}
+}
+
+.approvalBarHeader:active{background:rgba(0,122,255,.06)}
+
+.approvalBarArrow{
+  flex:0 0 auto;
+  color:var(--tm);
+  font-size:1rem;
+  transition:transform .2s;
+  line-height:1;
+}
+
+.approvalBarHeader.open .approvalBarArrow{transform:rotate(90deg)}
+
+.approvalBarTrack{
+  flex:1 1 auto;
+  height:.375rem;
+  background:rgba(120,130,140,.18);
+  border-radius:999px;
+  overflow:hidden;
+  min-width:4rem;
+}
+
+.approvalBarFill{
+  height:100%;
+  border-radius:999px;
+  transition:width .35s ease, background .25s ease;
+}
+
+.approvalBarFill.state-none{background:var(--p)}
+.approvalBarFill.state-partial{background:var(--orange)}
+.approvalBarFill.state-full{background:var(--green)}
+.approvalBarFill.state-error{background:var(--red)}
+
+.approvalBarText{
+  flex:0 0 auto;
+  font-size:.75rem;
+  font-weight:750;
+  color:var(--ts);
+  white-space:nowrap;
+}
+
+.approvalBarText b{
+  color:var(--t);
+  font-size:.875rem;
+}
+
+.approvalBarDetails{
+  display:none;
+  margin-top:.5rem;
+  padding:.5rem .625rem;
+  border-radius:.75rem;
+  background:rgba(255,255,255,.3);
+  border:1px solid var(--gbr);
+  flex-direction:column;
+  gap:.375rem;
+}
+
+@media (prefers-color-scheme:dark){
+  .approvalBarDetails{background:rgba(255,255,255,.03)}
+}
+
+.approvalBarDetails.open{display:flex}
+
+.approvalRow{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  padding:.5rem .625rem;
+  border-radius:.625rem;
+  background:rgba(255,255,255,.4);
+  font-size:.8125rem;
+}
+
+@media (prefers-color-scheme:dark){
+  .approvalRow{background:rgba(255,255,255,.04)}
+}
+
+.approvalRowIcon{
+  flex:0 0 auto;
+  width:1.125rem;
+  text-align:center;
+  font-size:1rem;
+  line-height:1;
+}
+
+.approvalRowBody{
+  flex:1 1 auto;
+  min-width:0;
+}
+
+.approvalRowName{
+  font-weight:700;
+  color:var(--t);
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+
+.approvalRowMeta{
+  margin-top:.125rem;
+  font-size:.6875rem;
+  color:var(--tm);
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+
+.approvalRowSum{
+  flex:0 0 auto;
+  font-size:.75rem;
+  font-weight:700;
+  color:var(--ts);
+  white-space:nowrap;
+}
+
+.approvalBarActions{
+  display:flex;
+  gap:.375rem;
+  margin-top:.5rem;
+  padding-top:.5rem;
+  border-top:1px solid rgba(120,130,140,.15);
+}
+
+.approvalBarActions button{
+  flex:1;
+  height:2.25rem;
+  border-radius:.625rem;
+  font-size:.75rem;
+  font-weight:700;
+}
+
 .floatingPanel{
   position:fixed;
   left:50%;
@@ -2975,6 +3128,231 @@ function buildDetailsBadges(p){
 
   return badges.join("");
 }
+/* ==== ПОГОДЖЕННЯ ПОСТАЧАЛЬНИКІВ ==== */
+
+function getProjectMaterialSuppliers(project){
+  if(!project || !Array.isArray(project.positions)) return {};
+
+  const groups = {};
+
+  project.positions.forEach(pos => {
+    if(pos.type !== "material") return;
+    const supplier = String(pos.supplier || "").trim();
+    if(!supplier) return;
+
+    if(!groups[supplier]) groups[supplier] = [];
+    groups[supplier].push(pos);
+  });
+
+  return groups;
+}
+
+function getUnassignedMaterialPositions(project){
+  if(!project || !Array.isArray(project.positions)) return [];
+
+  return project.positions.filter(pos =>
+    pos.type === "material" && !String(pos.supplier || "").trim()
+  );
+}
+
+function getSupplierSum(positions){
+  return positions.reduce((sum, pos) => {
+    const price = Number(pos.price) || 0;
+    const qty = Number(pos.qty) || 0;
+    return sum + price * qty;
+  }, 0);
+}
+
+function getSupplierReview(project, supplierName){
+  if(!project || !Array.isArray(project.supplierReviews)) return null;
+  const key = normalizeText(supplierName);
+  return project.supplierReviews.find(r => normalizeText(r.supplier) === key) || null;
+}
+
+function getApprovalBarState(project){
+  const suppliers = getProjectMaterialSuppliers(project);
+  const names = Object.keys(suppliers);
+  const total = names.length;
+
+  if(!total){
+    return {
+      hasSuppliers: false,
+      state: "none",
+      percent: 0,
+      confirmed: 0,
+      changes: 0,
+      declined: 0,
+      pending: 0,
+      total: 0,
+      text: "Немає постачальників",
+      fillWidth: 0
+    };
+  }
+
+  let confirmed = 0;
+  let changes = 0;
+  let declined = 0;
+  let pending = 0;
+
+  names.forEach(name => {
+    const review = getSupplierReview(project, name);
+
+    if(!review || !review.status || review.status === "pending"){
+      pending++;
+    }else if(review.status === "confirmed"){
+      confirmed++;
+    }else if(review.status === "changes"){
+      changes++;
+    }else if(review.status === "declined"){
+      declined++;
+    }
+  });
+
+  const percent = Math.round((confirmed / total) * 100);
+  const fillWidth = (confirmed / total) * 100;
+
+  let state = "none";
+  let text = "";
+
+  if(declined > 0){
+    state = "error";
+    text = `${confirmed} з ${total} · ${declined} відмова`;
+  }else if(confirmed === total){
+    state = "full";
+    text = `Погоджено · ${total} з ${total}`;
+  }else if(confirmed > 0){
+    state = "partial";
+    text = `${confirmed} з ${total}`;
+  }else if(pending > 0){
+    state = "none";
+    text = `Очікує · 0 з ${total}`;
+  }else{
+    state = "none";
+    text = `Не надіслано · ${total}`;
+  }
+
+  return {
+    hasSuppliers: true,
+    state,
+    percent,
+    confirmed,
+    changes,
+    declined,
+    pending,
+    total,
+    text,
+    fillWidth
+  };
+}
+
+function getSupplierReviewIcon(review){
+  if(!review || !review.status || review.status === "pending"){
+    return { icon: "⏳", label: "Очікує" };
+  }
+  if(review.status === "confirmed"){
+    return { icon: "✅", label: "Погоджено" };
+  }
+  if(review.status === "changes"){
+    return { icon: "⚠️", label: "Є коригування" };
+  }
+  if(review.status === "declined"){
+    return { icon: "❌", label: "Відмова" };
+  }
+  return { icon: "⏳", label: "Очікує" };
+}
+
+function renderApprovalBar(project){
+  const state = getApprovalBarState(project);
+
+  if(!state.hasSuppliers){
+    return "";
+  }
+
+  const isOpen = !!project.approvalBarExpanded;
+  const suppliers = getProjectMaterialSuppliers(project);
+  const unassigned = getUnassignedMaterialPositions(project);
+
+  const percentText = state.state === "full"
+    ? "100%"
+    : (state.confirmed > 0 ? state.percent + "%" : "");
+
+  let rowsHtml = "";
+
+  Object.entries(suppliers).forEach(([name, positions]) => {
+    const review = getSupplierReview(project, name);
+    const status = getSupplierReviewIcon(review);
+    const sum = getSupplierSum(positions);
+    const count = positions.length;
+
+    rowsHtml += `
+      <div class="approvalRow">
+        <span class="approvalRowIcon">${status.icon}</span>
+        <div class="approvalRowBody">
+          <div class="approvalRowName">${escapeHtml(name)}</div>
+          <div class="approvalRowMeta">
+            ${count} ${count === 1 ? "позиція" : "позицій"} · ${status.label}
+          </div>
+        </div>
+        <span class="approvalRowSum">${money(sum)}</span>
+      </div>
+    `;
+  });
+
+  if(unassigned.length){
+    const sum = getSupplierSum(unassigned);
+    rowsHtml += `
+      <div class="approvalRow">
+        <span class="approvalRowIcon">—</span>
+        <div class="approvalRowBody">
+          <div class="approvalRowName" style="color:var(--tm)">Без постачальника</div>
+          <div class="approvalRowMeta">${unassigned.length} ${unassigned.length === 1 ? "позиція" : "позицій"} · ціна вручну</div>
+        </div>
+        <span class="approvalRowSum" style="color:var(--tm)">${money(sum)}</span>
+      </div>
+    `;
+  }
+
+  const hasNotConfirmed = state.confirmed < state.total;
+
+  const actionsHtml = hasNotConfirmed
+    ? `
+      <div class="approvalBarActions">
+        <button class="btnPrimary" style="flex:1;height:2.25rem;border-radius:.625rem;font-size:.75rem;font-weight:700" onclick="event.stopPropagation(); startSupplierReview()">
+          Надіслати запити
+        </button>
+      </div>
+    `
+    : "";
+
+  return `
+    <div class="approvalBar">
+      <div class="approvalBarHeader ${isOpen ? 'open' : ''}"
+           onclick="toggleApprovalBar('${escapeHtml(project.id)}')">
+        <span class="approvalBarArrow">›</span>
+        <div class="approvalBarTrack">
+          <div class="approvalBarFill state-${state.state}" style="width:${state.fillWidth}%"></div>
+        </div>
+        <span class="approvalBarText">
+          ${percentText ? `<b>${percentText}</b> · ` : ""}${state.text}
+        </span>
+      </div>
+
+      <div class="approvalBarDetails ${isOpen ? 'open' : ''}">
+        ${rowsHtml}
+        ${actionsHtml}
+      </div>
+    </div>
+  `;
+}
+
+function toggleApprovalBar(projectId){
+  const project = projects.find(p => p.id === projectId);
+  if(!project) return;
+
+  project.approvalBarExpanded = !project.approvalBarExpanded;
+  saveProjects();
+  render();
+}
 
 function renderEstimateBlock(p){
   const positions = Array.isArray(p.positions) ? p.positions : [];
@@ -2988,6 +3366,7 @@ function renderEstimateBlock(p){
   const discountAmount = getEstimateDiscountAmount(p);
   const total = getEstimateTotal(p);
 
+  const approvalBarHtml = renderApprovalBar(p);
   const discountChips = [0,5,10,15,20];
 
   let discountHtml = `
@@ -3035,6 +3414,7 @@ function renderEstimateBlock(p){
       ` : `
         ${renderEstimateSection("РОБОТИ", workPositions, p.id)}
         ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id)}
+        ${approvalBarHtml}
         ${discountHtml}
       `}
     </div>
