@@ -5484,41 +5484,41 @@ let importCurrency = "";
 function confirmImport(){
   importSupplierName = document.getElementById("impSupplierName").value.trim();
   importSupplierFullName = document.getElementById("impSupplierFullName").value.trim();
-  importCurrency = document.getElementById("impCurrency").value;
 
-  const rateRaw = document.getElementById("impRate").value.trim();
+  // Валюта й курс — уже визначені в момент відкриття
+  importCurrency = autoDetectedCurrency || "UAH";
+  const rate = autoDetectedRate || 0;
 
   if(!importSupplierName){
     toast("Вкажіть назву постачальника");
     return;
   }
 
-  if(!importCurrency){
-    toast("Оберіть валюту");
+  // Для EUR/USD — перевірка курсу
+  if(importCurrency !== "UAH" && rate <= 0){
+    toast(`Вкажіть курс ${importCurrency}`);
     return;
   }
 
-  const rate = Number(String(rateRaw).replace(",",".")) || 0;
-
-  if(importCurrency !== "EUR" && rate <= 0){
-    toast("Вкажіть коректний курс");
-    return;
-  }
-
-  if(importCurrency === "USD"){
-    importUsdRate = rate;
-    localStorage.setItem(USD_RATE_KEY, String(rate));
-
-    if(!Number.isFinite(importEurRate) || importEurRate <= 0){
-      toast("Спочатку вкажіть курс EUR");
-      return;
-    }
-  }else if(importCurrency === "UAH"){
+  // Зберігаємо курс
+  if(importCurrency === "EUR" && rate > 0){
     importEurRate = rate;
     localStorage.setItem(EUR_RATE_KEY, String(rate));
   }
 
+  if(importCurrency === "USD" && rate > 0){
+    importUsdRate = rate;
+    localStorage.setItem(USD_RATE_KEY, String(rate));
+  }
+
+  // Для UAH — курс EUR залишаємо як є в профілі
+  if(importCurrency === "UAH"){
+    importEurRate = profile.eurRate || importEurRate || 0;
+  }
+
   const items = pendingImportData?.items || [];
+  ...
+}
   const importedAt = new Date().toISOString();
 
   let created = 0;
