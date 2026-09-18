@@ -4984,11 +4984,15 @@ function openCurrencySheet(currency, rate, mode, hintText){
   // Валюта
   currencySelect.value = currency || "UAH";
 
-  // Курс
+// Курс
   if(currency && currency !== "UAH"){
     rateGroup.style.display = "block";
     rateLabel.textContent = `Курс, ₴/${currency === "EUR" ? "€" : "$"}`;
-    rateInput.value = rate > 0 ? String(rate) : "";
+    rateInput.value = rate > 0 ? String(rate) : String(
+      currency === "EUR" 
+        ? (profile.eurRate || importEurRate || "") 
+        : (profile.usdRate || importUsdRate || "")
+    );
   }else{
     rateGroup.style.display = "none";
     rateInput.value = "";
