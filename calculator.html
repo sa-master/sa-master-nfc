@@ -4593,6 +4593,65 @@ document.getElementById("importFileInput").addEventListener("change", async func
   try{
     const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
+
+    // Отримуємо всі рядки першого аркуша для перевірки валюти
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const allRows = XLSX.utils.sheet_to_json(firstSheet, {
+      header: 1,
+      raw: false,
+      defval: "",
+      blankrows: false
+    });
+
+    const detection = detectInvoiceCurrencyAdvanced(allRows);
+
+    // Якщо валюта UAH — імпорт одразу
+    if(detection.detected && detection.currency === "UAH"){
+      proceedWithImport(workbook, file, "UAH", 0);
+      return;
+    }
+
+    // Якщо EUR або USD — питаємо курс
+    if(detection.detected && (detection.currency === "EUR" || detection.currency === "USD")){
+      const profileRate = detection.currency === "EUR"
+        ? (profile.eurRate || importEurRate || 0)
+        : (profile.usdRate || importUsdRate || 0);
+
+      openCurrencySheet(
+        detection.currency,
+        profileRate,
+        "detected",
+        `У рахунку знайдено ціни в ${detection.currency}. Вкажіть курс для конвертації в грн.`
+      );
+
+      importPendingResolve = function(){
+        proceedWithImport(workbook, file, importPendingCurrency, importPendingRate);
+      };
+      return;
+    }
+
+    // Не вдалось визначити — питаємо валюту
+    openCurrencySheet(
+      "UAH",
+      0,
+      "unknown",
+      "Не вдалося визначити валюту рахунку. Оберіть валюту та вкажіть курс, якщо потрібно."
+    );
+
+    importPendingResolve = function(){
+      proceedWithImport(workbook, file, importPendingCurrency, importPendingRate);
+    };
+
+  }catch(err){
+    console.error("Import error:", err);
+    toast("Не вдалося прочитати файл");
+  }
+});
+
+/* ==== ПРОДОВЖЕННЯ ІМПОРТУ ==== */
+
+function proceedWithImport(workbook, file, currency, rate){
+  try{
     const parsed = parseWorkbook(workbook);
 
     if(!parsed || !parsed.items.length){
@@ -4603,8 +4662,9 @@ document.getElementById("importFileInput").addEventListener("change", async func
     pendingImportFile = file;
     pendingImportData = parsed;
 
-    autoDetectedCurrency = parsed.currency || "";
-    autoDetectedRate = parsed.detectedRate || null;
+    // Зберігаємо валюту та курс для confirmImport
+    autoDetectedCurrency = currency;
+    autoDetectedRate = rate;
 
     openImportSheet(parsed, file);
 
@@ -4612,7 +4672,7 @@ document.getElementById("importFileInput").addEventListener("change", async func
     console.error("Import error:", err);
     toast("Не вдалося прочитати файл");
   }
-});
+}
 
 function parseWorkbook(workbook){
   let best = null;
