@@ -4594,21 +4594,21 @@ document.getElementById("importFileInput").addEventListener("change", async func
     const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
 
-    // Отримуємо всі рядки першого аркуша для перевірки валюти
-    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-    const allRows = XLSX.utils.sheet_to_json(firstSheet, {
-      header: 1,
-      raw: false,
-      defval: "",
-      blankrows: false
-    });
+    // Валюта завжди UAH — без модалки
+    autoDetectedCurrency = "UAH";
+    autoDetectedRate = 0;
 
-    // Завжди показуємо модалку з дефолтом UAH
-    openCurrencySheet("UAH", 0, "manual", "Оберіть валюту рахунку. Для UAH курс не потрібен.");
+    const parsed = parseWorkbook(workbook);
 
-    importPendingResolve = function(){
-      proceedWithImport(workbook, file, importPendingCurrency, importPendingRate);
-    };
+    if(!parsed || !parsed.items.length){
+      toast("Не вдалося знайти товари у файлі");
+      return;
+    }
+
+    pendingImportFile = file;
+    pendingImportData = parsed;
+
+    openImportSheet(parsed, file);
 
   }catch(err){
     console.error("Import error:", err);
