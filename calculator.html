@@ -4894,6 +4894,147 @@ function detectInvoiceCurrency(rows, header){
   return found.size === 1 ? Array.from(found)[0] : "";
 }
 
+/* ==== ВИЗНАЧЕННЯ ВАЛЮТИ (розширене) ==== */
+
+function detectInvoiceCurrencyAdvanced(rows){
+  // Перевіряємо перші 15 рядків
+  const source = rows
+    .slice(0, Math.min(rows.length, 15))
+    .flat()
+    .map(ntext)
+    .join(" ");
+
+  const hasEUR = /(?:\beur\b|€|євро)/.test(source);
+  const hasUSD = /(?:\busd\b|\$|долар)/.test(source);
+  const hasUAH = /(?:\buah\b|грн|₴|гривн)/.test(source);
+
+  // Пріоритет: EUR/USD сильніші за UAH
+  if(hasEUR){
+    return { detected: true, currency: "EUR" };
+  }
+
+  if(hasUSD){
+    return { detected: true, currency: "USD" };
+  }
+
+  if(hasUAH){
+    return { detected: true, currency: "UAH" };
+  }
+
+  // Не знайдено — питаємо
+  return { detected: false, currency: "UAH" };
+}
+
+/* ==== СТАН ІМПОРТУ ==== */
+
+let importPendingData = null;
+let importPendingFile = null;
+let importPendingCurrency = "UAH";
+let importPendingRate = 0;
+let importPendingResolve = null;
+
+/* ==== МОДАЛКА ВАЛЮТИ ==== */
+
+function openCurrencySheet(currency, rate, mode, hintText){
+  const sheet = document.getElementById("currencySheet");
+  const title = document.getElementById("currencySheetTitle");
+  const hint = document.getElementById("currencySheetHint");
+  const currencySelect = document.getElementById("curSheetCurrency");
+  const rateInput = document.getElementById("curSheetRate");
+  const rateGroup = document.getElementById("curSheetRateGroup");
+  const rateLabel = document.getElementById("curSheetRateLabel");
+
+  // Заголовок
+  if(mode === "detected"){
+    title.textContent = `Рахунок у ${currency}`;
+  }else{
+    title.textContent = "Валюта рахунку";
+  }
+
+  hint.textContent = hintText || "Вкажіть валюту та курс для конвертації в гривню.";
+
+  // Валюта
+  currencySelect.value = currency || "UAH";
+
+  // Курс
+  if(currency && currency !== "UAH"){
+    rateGroup.style.display = "block";
+    rateLabel.textContent = `Курс, ₴/${currency === "EUR" ? "€" : "$"}`;
+    rateInput.value = rate > 0 ? String(rate) : "";
+  }else{
+    rateGroup.style.display = "none";
+    rateInput.value = "";
+  }
+
+  // Обробник зміни валюти
+  currencySelect.onchange = function(){
+    const cur = currencySelect.value;
+    if(cur === "UAH"){
+      rateGroup.style.display = "none";
+      rateInput.value = "";
+    }else{
+      rateGroup.style.display = "block";
+      rateLabel.textContent = `Курс, ₴/${cur === "EUR" ? "€" : "$"}`;
+      // Підставити з профілю
+      const profileRate = cur === "EUR" ? (profile.eurRate || importEurRate || 0) : (profile.usdRate || importUsdRate || 0);
+      if(profileRate > 0) rateInput.value = String(profileRate);
+    }
+  };
+
+  sheet.classList.add("open");
+  setTimeout(() => {
+    if(rateGroup.style.display === "block"){
+      rateInput.focus();
+    }
+  }, 200);
+}
+
+function closeCurrencySheet(){
+  document.getElementById("currencySheet").classList.remove("open");
+  importPendingResolve = null;
+}
+
+function confirmCurrencySheet(){
+  const currencySelect = document.getElementById("curSheetCurrency");
+  const rateInput = document.getElementById("curSheetRate");
+
+  const currency = currencySelect.value;
+  const rateValue = rateInput ? Number(String(rateInput.value).replace(",",".")) || 0 : 0;
+
+  if(currency !== "UAH" && rateValue <= 0){
+    toast("Вкажіть коректний курс");
+    return;
+  }
+
+  // Зберігаємо в профіль
+  if(currency === "EUR" && rateValue > 0){
+    profile.eurRate = rateValue;
+    importEurRate = rateValue;
+    localStorage.setItem(EUR_RATE_KEY, String(rateValue));
+    saveProfileData();
+  }
+
+  if(currency === "USD" && rateValue > 0){
+    profile.usdRate = rateValue;
+    importUsdRate = rateValue;
+    localStorage.setItem(USD_RATE_KEY, String(rateValue));
+    saveProfileData();
+  }
+
+  // Передаємо в імпорт
+  importPendingCurrency = currency;
+  importPendingRate = rateValue;
+
+  document.getElementById("currencySheet").classList.remove("open");
+
+  // Продовжити імпорт
+  if(typeof importPendingResolve === "function"){
+    const resolve = importPendingResolve;
+    importPendingResolve = null;
+    resolve();
+  }
+}
+
 function detectInvoiceRate(rows, header){
   const limit = Math.min(rows.length, header.rowIndex + 5);
 
