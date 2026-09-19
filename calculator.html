@@ -4349,6 +4349,10 @@ function parseDualPriceList(rows, sheet){
   const masterCol = dealerCol;
   const masterUnitCol = dealerCol + 1;
   const start = Math.max(articleHeaderRow, dealerHeaderRow) + 1;
+  /* За робочим правилом майстра цей прайс Ecosoft ведеться в EUR.
+     Воно має пріоритет над технічним форматом XLS-комірок, який у
+     постачальника може бути застарілим або помилково підписаним. */
+  const isEcosoft = rows.slice(0, 12).some(row => /\becosoft\b/i.test(rowText(row)));
   const context = { category:"", brand:"", system:"" };
   const items = [];
 
@@ -4382,10 +4386,10 @@ function parseDualPriceList(rows, sheet){
   }
   if(!items.length) return null;
   return {
-    profile:"dual-price-list",
+    profile:isEcosoft ? "ecosoft-eur-price-list" : "dual-price-list",
     items,
     header:{rowIndex:start - 1},
-    currency:cellNumberFormatCurrency(sheet, start, [retailCol, masterCol]),
+    currency:isEcosoft ? "EUR" : (cellNumberFormatCurrency(sheet, start, [retailCol, masterCol]) || detectInvoiceCurrency(rows, {rowIndex:start - 1})),
     detectedRate:null,
     supplierFullName:""
   };
@@ -4874,6 +4878,7 @@ function renderImportPreview(items){
   const box = document.getElementById("impPreviewList");
   const limit = 5;
   const visible = items.slice(0, limit);
+  const currencySuffix = autoDetectedCurrency ? " " + autoDetectedCurrency : "";
 
   let html = visible.map(it => {
     const parts = [];
@@ -4883,9 +4888,9 @@ function renderImportPreview(items){
     if(it.unit) parts.push(`Од: ${escapeHtml(it.unit)}`);
 
     const prices = [];
-    if(Number.isFinite(it.retailPrice)) prices.push(`Роздріб: <b>${it.retailPrice}</b>`);
-    if(Number.isFinite(it.masterPrice)) prices.push(`Оптова: <b>${it.masterPrice}</b>`);
-    if(!prices.length && Number.isFinite(it.price)) prices.push(`Ціна: <b>${it.price}</b>`);
+    if(Number.isFinite(it.retailPrice)) prices.push(`Роздріб: <b>${it.retailPrice}${currencySuffix}</b>`);
+    if(Number.isFinite(it.masterPrice)) prices.push(`Оптова: <b>${it.masterPrice}${currencySuffix}</b>`);
+    if(!prices.length && Number.isFinite(it.price)) prices.push(`Ціна: <b>${it.price}${currencySuffix}</b>`);
 
     return `
       <div class="importPreviewItem">
