@@ -796,6 +796,33 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color: var(--p);
 }
 
+/* Повноекранний імпорт */
+.fsImportBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding: calc(0.75rem + var(--sat)) 1rem calc(1rem + var(--sab));
+  width: min(30rem, 100%);
+  margin: 0 auto;
+}
+
+.fsImportBody::-webkit-scrollbar{display:none}
+
+.fsImportHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.fsImportHeader strong {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--t);
+  flex: 1 1 auto;
+}
+
 /* Решта стилів */
 .formGroup{margin-bottom:.875rem}
 
@@ -2054,12 +2081,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   </div>
 </div>
 
-<!-- FULLSCREEN: CATALOG (ОБ'ЄДНАНИЙ) -->
+<!-- FULLSCREEN: CATALOG -->
 
 <div class="fullscreen" id="catalogScreen">
   <div class="fsCatalogBody">
     
-    <!-- Хедер -->
     <div class="fsCatalogHeader">
       <button class="fsCatalogBackBtn" onclick="closeCatalog()" aria-label="Назад">←</button>
       <strong id="catalogTitle">Каталог</strong>
@@ -2069,13 +2095,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
     </div>
 
-    <!-- Перемикач типів -->
     <div class="type-toggle" id="catalogTypeToggle">
       <button class="active" onclick="setCatalogMode('work')">Роботи</button>
       <button onclick="setCatalogMode('material')">Матеріали</button>
     </div>
 
-    <!-- Пошук -->
     <div style="padding: 0 1rem;">
       <input
         class="catalogSearch"
@@ -2086,7 +2110,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       >
     </div>
 
-    <!-- Компактні фільтри в один рядок -->
     <div class="catalogFiltersCompact" id="catalogFiltersCompact">
       <div class="filterGroup" id="catalogCategoryFilterGroup">
         <span class="filterGroupLabel">Категорія:</span>
@@ -2108,10 +2131,8 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
     </div>
 
-    <!-- Список -->
     <div class="catalogListFull" id="catalogList"></div>
 
-    <!-- Кнопки внизу -->
     <div class="catalogBottomActions">
       <button class="importExcelButton" id="importExcelButton" onclick="openImportFile()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -2128,6 +2149,81 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </button>
     </div>
 
+  </div>
+</div>
+
+<!-- FULLSCREEN: IMPORT -->
+
+<div class="fullscreen" id="importScreen">
+  <div class="fsImportBody">
+    <div class="fsImportHeader">
+      <button class="fsCatalogBackBtn" onclick="closeImportScreen()" aria-label="Назад">←</button>
+      <strong>Імпорт з Excel</strong>
+    </div>
+
+    <div class="formGroup">
+      <label class="formLabel">Постачальник *</label>
+      <input
+        class="formInput"
+        id="impSupplierName"
+        list="impSupplierList"
+        placeholder="Назва постачальника"
+        autocomplete="off"
+      >
+      <datalist id="impSupplierList"></datalist>
+    </div>
+
+    <div class="formGroup">
+      <label class="formLabel">Повна назва з файлу</label>
+      <input class="formInput" id="impSupplierFullName" placeholder="Необов'язково" autocomplete="off">
+    </div>
+
+    <div class="formRow">
+      <div class="formGroup">
+        <label class="formLabel">Валюта *</label>
+        <select class="formSelect" id="impCurrency">
+          <option value="">Оберіть</option>
+          <option value="UAH">UAH</option>
+          <option value="EUR">EUR</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
+      <div class="formGroup">
+        <label class="formLabel" id="impRateLabel">Курс, ₴/€</label>
+        <input class="formInput" id="impRate" inputmode="decimal" placeholder="0" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="formHint" id="impRateHint" style="margin-bottom:.875rem">
+      Вкажіть валюту та курс цієї накладної.
+    </div>
+
+    <div class="importSummaryBox">
+      <div class="importSummaryRow">
+        <span>Файл</span>
+        <b id="impFileName">—</b>
+      </div>
+      <div class="importSummaryRow">
+        <span>Знайдено товарів</span>
+        <b id="impItemsCount">0</b>
+      </div>
+      <div class="importSummaryRow">
+        <span>З них з цінами</span>
+        <b id="impItemsWithPrice">0</b>
+      </div>
+    </div>
+
+    <div style="font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin:.5rem .25rem .25rem">
+      Попередній перегляд
+    </div>
+
+    <div class="importPreviewList" id="impPreviewList"></div>
+  </div>
+
+  <div class="fsFooter">
+    <div class="fsFooterInner">
+      <button onclick="confirmImport()">Імпортувати</button>
+    </div>
   </div>
 </div>
 
@@ -2262,82 +2358,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
     <div class="panelFooter">
       <button class="btnGhost" onclick="skipPrices()">Пропустити</button>
       <button class="btnPrimary" onclick="savePrices()">Зберегти</button>
-    </div>
-  </div>
-</div>
-
-<!-- SHEET: IMPORT PREVIEW -->
-
-<div class="sheet" id="importSheet">
-  <div class="panel tall">
-    <div class="panelHead">
-      <strong>Перевірка імпорту</strong>
-      <button class="close" onclick="closeImportSheet()">×</button>
-    </div>
-
-    <div class="panelBody">
-      <div class="formGroup">
-        <label class="formLabel">Постачальник *</label>
-        <input
-          class="formInput"
-          id="impSupplierName"
-          list="impSupplierList"
-          placeholder="Назва постачальника"
-          autocomplete="off"
-        >
-        <datalist id="impSupplierList"></datalist>
-      </div>
-
-      <div class="formGroup">
-        <label class="formLabel">Повна назва з файлу</label>
-        <input class="formInput" id="impSupplierFullName" placeholder="Необов'язково" autocomplete="off">
-      </div>
-
-      <div class="formRow">
-        <div class="formGroup">
-          <label class="formLabel">Валюта *</label>
-          <select class="formSelect" id="impCurrency">
-            <option value="">Оберіть</option>
-            <option value="UAH">UAH</option>
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-          </select>
-        </div>
-        <div class="formGroup">
-          <label class="formLabel" id="impRateLabel">Курс, ₴/€</label>
-          <input class="formInput" id="impRate" inputmode="decimal" placeholder="0" autocomplete="off">
-        </div>
-      </div>
-
-      <div class="formHint" id="impRateHint" style="margin-bottom:.875rem">
-        Вкажіть валюту та курс цієї накладної.
-      </div>
-
-      <div class="importSummaryBox">
-        <div class="importSummaryRow">
-          <span>Файл</span>
-          <b id="impFileName">—</b>
-        </div>
-        <div class="importSummaryRow">
-          <span>Знайдено товарів</span>
-          <b id="impItemsCount">0</b>
-        </div>
-        <div class="importSummaryRow">
-          <span>З них з цінами</span>
-          <b id="impItemsWithPrice">0</b>
-        </div>
-      </div>
-
-      <div style="font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin:.5rem .25rem .25rem">
-        Попередній перегляд
-      </div>
-
-      <div class="importPreviewList" id="impPreviewList"></div>
-    </div>
-
-    <div class="panelFooter">
-      <button class="btnGhost" onclick="closeImportSheet()">Скасувати</button>
-      <button class="btnPrimary" onclick="confirmImport()">Імпортувати</button>
     </div>
   </div>
 </div>
@@ -3522,10 +3542,18 @@ function openCatalogFor(type){
   catalogSearch = "";
   catalogManageMode = false;
 
+  // СИНХРОНІЗАЦІЯ з кошторисом
+  catalogSelection = {};
+  const project = projects.find(p => p.id === currentProjectId);
+  if(project && Array.isArray(project.positions)){
+    project.positions.forEach(pos => {
+      if(pos.catalogId) catalogSelection[pos.catalogId] = Number(pos.qty) || 1;
+    });
+  }
+
   document.getElementById("catalogSearch").value = "";
   document.getElementById("catalogTitle").textContent = (type === "work") ? "Роботи" : "Матеріали";
   
-  // Оновлюємо перемикач
   updateCatalogTypeToggle();
 
   const importBtn = document.getElementById("importExcelButton");
@@ -3581,6 +3609,9 @@ function closeCatalog(){
   catalogManageMode = false;
   document.getElementById("catalogClearButton").classList.add("hidden");
   editingCatalogItemId = null;
+  catalogSelection = {};
+  // Оновлюємо кошторис
+  render();
 }
 
 function toggleCatalogManage(){
@@ -3615,7 +3646,6 @@ function renderCatalogChips(){
     return;
   }
 
-  // Для робіт показуємо етапи (Чорнові/Чистові), для матеріалів - категорії
   if(catalogMode === "work"){
     const stages = new Set();
     catalog.forEach(item => {
@@ -3645,7 +3675,6 @@ function renderCatalogChips(){
     return;
   }
 
-  // Для матеріалів
   const hasAnyMaterials = catalog.some(item => item.type === "material");
   if(!hasAnyMaterials){
     group.style.display = "none";
@@ -3899,30 +3928,69 @@ function renderCatalogList(){
   }).join("");
 }
 
+/* ==== ДОДАВАННЯ/ВИДАЛЕННЯ ПОЗИЦІЙ З КАТАЛОГУ В КОШТОРИС ==== */
+
 function catalogCounterIncrement(catalogId){
   const item = catalog.find(c => c.id === catalogId);
   if(!item) return;
 
-  const current = Number(catalogSelection[catalogId]) || 0;
-  catalogSelection[catalogId] = current + 1;
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  if(!Array.isArray(project.positions)) project.positions = [];
+
+  // Шукаємо позицію в кошторисі
+  let pos = project.positions.find(p => p.catalogId === catalogId);
+
+  if(pos){
+    // Якщо вже є — збільшуємо кількість
+    pos.qty = (Number(pos.qty) || 0) + 1;
+  }else{
+    // Якщо немає — створюємо нову
+    pos = {
+      id: uid("pos"),
+      catalogId: item.id,
+      type: item.type,
+      name: item.name,
+      unit: item.unit || "шт",
+      price: Number(item.price) || 0,
+      qty: 1
+    };
+    project.positions.push(pos);
+  }
+
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+
+  // Оновлюємо стан вибору для UI
+  catalogSelection[catalogId] = Number(pos.qty) || 1;
 
   renderCatalogList();
 }
 
 function catalogCounterDecrement(catalogId){
-  const current = Number(catalogSelection[catalogId]) || 0;
-  if(current <= 1){
+  const project = projects.find(p => p.id === currentProjectId);
+  if(!project) return;
+
+  const pos = project.positions.find(p => p.catalogId === catalogId);
+  if(!pos) return;
+
+  const currentQty = Number(pos.qty) || 1;
+
+  if(currentQty <= 1){
+    // Якщо остання одиниця — видаляємо позицію з кошторису
+    project.positions = project.positions.filter(p => p.catalogId !== catalogId);
     delete catalogSelection[catalogId];
   }else{
-    catalogSelection[catalogId] = current - 1;
+    // Інакше просто зменшуємо кількість
+    pos.qty = currentQty - 1;
+    catalogSelection[catalogId] = pos.qty;
   }
 
-  renderCatalogList();
-}
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
 
-function applyCatalogSelection(){
-  // Ця функція більше не використовується, але залишена для сумісності
-  toast("Позиції додаються автоматично");
+  renderCatalogList();
 }
 
 function openCatalogItemEditor(id){
@@ -4109,9 +4177,10 @@ function saveCustom(){
       price: newItem.price,
       qty: 1
     });
+    catalogSelection[newItem.id] = 1;
     project.updatedAt = new Date().toISOString();
     saveProjects();
-    render();
+    renderCatalogList();
     toast("Додано");
   }
 }
@@ -4247,6 +4316,7 @@ function openSinglePriceEditor(projectId, positionId){
 /* ==== IMPORT ==== */
 
 function openImportFile(){
+  // Відкриваємо вибір файлу
   const input = document.getElementById("importFileInput");
   input.value = "";
   input.click();
@@ -4287,7 +4357,7 @@ document.getElementById("importFileInput").addEventListener("change", async func
     autoDetectedCurrency = parsed.currency || "";
     autoDetectedRate = parsed.detectedRate || null;
 
-    openImportSheet(parsed, file);
+    openImportScreen(parsed, file);
 
   }catch(err){
     console.error("Import error:", err);
@@ -4861,7 +4931,7 @@ function detectSupplierFullName(rows, header){
   return "";
 }
 
-function openImportSheet(parsed, file){
+function openImportScreen(parsed, file){
   const items = parsed.items || [];
 
   document.getElementById("impFileName").textContent = file.name;
@@ -4895,7 +4965,15 @@ function openImportSheet(parsed, file){
 
   renderImportPreview(items);
 
-  document.getElementById("importSheet").classList.add("open");
+  document.getElementById("importScreen").classList.add("open");
+}
+
+function closeImportScreen(){
+  document.getElementById("importScreen").classList.remove("open");
+  pendingImportFile = null;
+  pendingImportData = null;
+  autoDetectedCurrency = "";
+  autoDetectedRate = null;
 }
 
 function collectKnownSupplierNames(){
@@ -5004,14 +5082,6 @@ function updateImportRateField(){
   }
 
   hint.textContent = hintText;
-}
-
-function closeImportSheet(){
-  document.getElementById("importSheet").classList.remove("open");
-  pendingImportFile = null;
-  pendingImportData = null;
-  autoDetectedCurrency = "";
-  autoDetectedRate = null;
 }
 
 function detectBrand(text, article){
@@ -5325,10 +5395,11 @@ function confirmImport(){
 
   saveSupplierNames(names);
 
-  closeImportSheet();
+  closeImportScreen();
 
   toast(`Імпортовано: ${created} нових, ${updated} оновлено${skipped ? `, ${skipped} без артикула пропущено` : ""}`);
 
+  // ОНОВЛЮЄМО КАТАЛОГ, щоб показати нові товари
   if(catalogManageMode){
     renderCatalogChips();
     renderCatalogBrandChips();
@@ -5678,10 +5749,6 @@ document.getElementById("projectSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeProjectSheet();
 });
 
-document.getElementById("catalogScreen").addEventListener("click", e => {
-  // Каталог тепер повноекранний, клік по фону не закриває
-});
-
 document.getElementById("catalogEditSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeCatalogItemEditor();
 });
@@ -5692,10 +5759,6 @@ document.getElementById("customSheet").addEventListener("click", e => {
 
 document.getElementById("pricesSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closePricesSheet();
-});
-
-document.getElementById("importSheet").addEventListener("click", e => {
-  if(e.target === e.currentTarget) closeImportSheet();
 });
 
 document.getElementById("addPersonSheet").addEventListener("click", e => {
