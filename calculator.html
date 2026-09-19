@@ -1314,6 +1314,47 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .catalogSearch:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
 
+/* Стилі для нових фільтрів у каталозі */
+.catalogFiltersWrapper {
+  padding: 0;
+  margin-bottom: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.filterLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--tm);
+  white-space: nowrap;
+  min-width: 70px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chips-scroll {
+  display: flex;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex: 1;
+}
+
+.chips-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .catalogList{
   flex:1 1 auto;
   min-height:0;
@@ -1931,12 +1972,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   </div>
 </div>
 
-<!-- SHEET: CATALOG -->
+<!-- SHEET: CATALOG (ОНОВЛЕНО) -->
 
 <div class="sheet" id="catalogSheet">
   <div class="panel tall">
     <div class="panelHead">
-      <strong id="catalogTitle">Вибір</strong>
+      <strong id="catalogTitle">Вибір матеріалу</strong>
       <div class="panelHeadActions">
         <button class="catalogEditButton" id="catalogEditButton" onclick="toggleCatalogManage()">✎ Каталог</button>
         <button class="catalogClearButton hidden" id="catalogClearButton" onclick="clearCatalog()">Очистити</button>
@@ -1944,34 +1985,58 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
     </div>
 
-    <div class="panelBody" style="display:flex;flex-direction:column;padding-bottom:0">
-      <input
-        class="catalogSearch"
-        id="catalogSearch"
-        placeholder="Пошук позиції…"
-        autocomplete="off"
-        oninput="renderCatalogList()"
-      >
+    <div class="panelBody" style="display:flex;flex-direction:column;padding-bottom:0;overflow:hidden;">
+      <!-- Пошук -->
+      <div style="padding: 0 1rem;">
+        <input
+          class="catalogSearch"
+          id="catalogSearch"
+          placeholder="Пошук позиції..."
+          autocomplete="off"
+          oninput="renderCatalogList()"
+        >
+      </div>
 
-      <div class="chips tight" id="catalogChips" style="display:none"></div>
-      <div class="chips tight" id="catalogBrandChips" style="display:none"></div>
-      <div class="chips tight" id="catalogSystemChips" style="display:none"></div>
+      <!-- Фільтри (Горизонтальний скрол) -->
+      <div class="catalogFiltersWrapper" id="catalogFiltersWrapper">
+        <!-- Категорії -->
+        <div class="filterRow" id="catalogCategoryFilterRow">
+          <div class="filterLabel">Категорія:</div>
+          <div class="chips-scroll" id="catalogChips"></div>
+        </div>
+        
+        <!-- Бренди -->
+        <div class="filterRow" id="catalogBrandFilterRow">
+          <div class="filterLabel">Бренд:</div>
+          <div class="chips-scroll" id="catalogBrandChips"></div>
+        </div>
 
-      <div class="catalogList" id="catalogList"></div>
+        <!-- Системи -->
+        <div class="filterRow" id="catalogSystemFilterRow">
+          <div class="filterLabel">Система:</div>
+          <div class="chips-scroll" id="catalogSystemChips"></div>
+        </div>
+      </div>
 
-      <button class="importExcelButton" id="importExcelButton" onclick="openImportFile()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 3 14 8 19 8"/>
-          <text x="12" y="17.5" font-size="5.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="-apple-system,sans-serif">XLS</text>
-        </svg>
-        <span>Імпорт з Excel</span>
-      </button>
+      <!-- Список товарів -->
+      <div class="catalogList" id="catalogList" style="padding: 0 1rem;"></div>
 
-      <button class="addCustomButton" onclick="openCustomPosition()">
-        <span style="font-size:1.125rem;line-height:1">＋</span>
-        <span id="addCustomLabel">Додати свою</span>
-      </button>
+      <!-- Кнопки внизу списку -->
+      <div style="padding: 0.5rem 1rem 1rem;">
+        <button class="importExcelButton" id="importExcelButton" onclick="openImportFile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 3 14 8 19 8"/>
+            <text x="12" y="17.5" font-size="5.5" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="-apple-system,sans-serif">XLS</text>
+          </svg>
+          <span>Імпорт з Excel</span>
+        </button>
+
+        <button class="addCustomButton" onclick="openCustomPosition()">
+          <span style="font-size:1.125rem;line-height:1">＋</span>
+          <span id="addCustomLabel">Додати свій матеріал</span>
+        </button>
+      </div>
     </div>
 
     <div class="panelFooter" id="catalogFooter">
@@ -2497,7 +2562,6 @@ catalog.forEach(item => {
   if(item.type !== "work") return;
   if(item.stage) return;
 
-  // Визначаємо етап за назвою
   const name = String(item.name || "").toLowerCase();
 
   if(
@@ -3450,70 +3514,20 @@ function updateCatalogFooter(){
 
 function renderCatalogChips(){
   const box = document.getElementById("catalogChips");
+  const row = document.getElementById("catalogCategoryFilterRow");
 
-  if(catalogManageMode){
-    box.style.display = "none";
-    box.innerHTML = "";
+  if(catalogManageMode || catalogMode !== "material"){
+    row.style.display = "none";
     return;
   }
 
-  // ==== РОБОТИ ====
-  if(catalogMode === "work"){
-    const hasAnyWorks = catalog.some(item => item.type === "work");
-
-    if(!hasAnyWorks){
-      box.style.display = "none";
-      box.innerHTML = "";
-      return;
-    }
-
-    const stages = new Set();
-    catalog.forEach(item => {
-      if(item.type !== "work") return;
-      const stage = String(item.stage || "").trim();
-      if(stage) stages.add(stage);
-    });
-
-    if(!stages.size){
-      box.style.display = "none";
-      box.innerHTML = "";
-      catalogFilter = "all";
-      return;
-    }
-
-    if(catalogFilter !== "all" && !stages.has(catalogFilter)){
-      catalogFilter = "all";
-    }
-
-    box.style.display = "flex";
-
-    const stageLabels = {
-      "rough": "Чорнові",
-      "finish": "Чистові"
-    };
-
-    let html = `<button class="chip small ${catalogFilter === "all" ? 'active' : ''}" onclick="setCatalogFilter('all')">Усі</button>`;
-
-    ["rough","finish"].forEach(stage => {
-      if(!stages.has(stage)) return;
-      html += `<button class="chip small ${catalogFilter === stage ? 'active' : ''}" onclick="setCatalogFilter('${stage}')">${stageLabels[stage]}</button>`;
-    });
-
-    box.innerHTML = html;
-    return;
-  }
-
-  // ==== МАТЕРІАЛИ ====
   const hasAnyMaterials = catalog.some(item => item.type === "material");
-
   if(!hasAnyMaterials){
-    box.style.display = "none";
-    box.innerHTML = "";
-    catalogFilter = "all";
+    row.style.display = "none";
     return;
   }
 
-  box.style.display = "flex";
+  row.style.display = "flex";
 
   const availableCategories = new Set(["all"]);
   catalog.forEach(item => {
@@ -3557,19 +3571,17 @@ function setCatalogFilter(v){
 
 function renderCatalogBrandChips(){
   const box = document.getElementById("catalogBrandChips");
+  const row = document.getElementById("catalogBrandFilterRow");
 
   if(catalogManageMode || catalogMode !== "material"){
-    box.style.display = "none";
-    box.innerHTML = "";
+    row.style.display = "none";
     return;
   }
 
   const brands = collectBrands();
 
   if(!brands.length){
-    box.style.display = "none";
-    box.innerHTML = "";
-    catalogBrandFilter = "all";
+    row.style.display = "none";
     return;
   }
 
@@ -3580,9 +3592,9 @@ function renderCatalogBrandChips(){
     catalogBrandFilter = "all";
   }
 
-  box.style.display = "flex";
+  row.style.display = "flex";
 
-  let html = `<button class="chip small ${catalogBrandFilter === "all" ? 'active' : ''}" onclick="setCatalogBrandFilter('all')">Усі бренди</button>`;
+  let html = `<button class="chip small ${catalogBrandFilter === "all" ? 'active' : ''}" onclick="setCatalogBrandFilter('all')">Усі</button>`;
 
   html += brands.map(brand => {
     const enc = encodeURIComponent(brand);
@@ -3602,19 +3614,17 @@ function setCatalogBrandFilter(brand){
 
 function renderCatalogSystemChips(){
   const box = document.getElementById("catalogSystemChips");
+  const row = document.getElementById("catalogSystemFilterRow");
 
   if(catalogManageMode || catalogMode !== "material"){
-    box.style.display = "none";
-    box.innerHTML = "";
+    row.style.display = "none";
     return;
   }
 
   const systems = collectSystems();
 
   if(!systems.length){
-    box.style.display = "none";
-    box.innerHTML = "";
-    catalogSystemFilter = "all";
+    row.style.display = "none";
     return;
   }
 
@@ -3625,9 +3635,9 @@ function renderCatalogSystemChips(){
     catalogSystemFilter = "all";
   }
 
-  box.style.display = "flex";
+  row.style.display = "flex";
 
-  let html = `<button class="chip small ${catalogSystemFilter === "all" ? 'active' : ''}" onclick="setCatalogSystemFilter('all')">Усі системи</button>`;
+  let html = `<button class="chip small ${catalogSystemFilter === "all" ? 'active' : ''}" onclick="setCatalogSystemFilter('all')">Усі</button>`;
 
   html += systems.map(system => {
     const enc = encodeURIComponent(system);
@@ -4245,8 +4255,6 @@ function parseWorkbook(workbook){
       blankrows: true
     });
 
-    /* Спочатку перевіряємо відомі формати. Загальний парсер лишається
-       резервним варіантом для незнайомих рахунків. */
     let parsed = parseKnownSupplierSheet(rows, sheet);
 
     if(!parsed){
@@ -4333,7 +4341,6 @@ function cellNumberFormatCurrency(sheet, row, cols){
   return found.size === 1 ? Array.from(found)[0] : "";
 }
 
-/* TECE / Ecosoft: подвійний заголовок, артикул у власній колонці. */
 function parseDualPriceList(rows, sheet){
   const articleHeaderRow = rows.findIndex(row => rowHas(row, /номенклатура\.артикул|артикул/));
   const dealerHeaderRow = rows.findIndex(row => rowHas(row, /дилер|dealer/));
@@ -4349,9 +4356,6 @@ function parseDualPriceList(rows, sheet){
   const masterCol = dealerCol;
   const masterUnitCol = dealerCol + 1;
   const start = Math.max(articleHeaderRow, dealerHeaderRow) + 1;
-  /* За робочим правилом майстра цей прайс Ecosoft ведеться в EUR.
-     Воно має пріоритет над технічним форматом XLS-комірок, який у
-     постачальника може бути застарілим або помилково підписаним. */
   const isEcosoft = rows.slice(0, 12).some(row => /\becosoft\b/i.test(rowText(row)));
   const context = { category:"", brand:"", system:"" };
   const items = [];
@@ -4395,7 +4399,6 @@ function parseDualPriceList(rows, sheet){
   };
 }
 
-/* Великі замовлення: окремі колонки «Ціна» та «Ціна без знижки». */
 function parseWideDiscountOrder(rows, sheet){
   const headerIndex = rows.findIndex(row => rowHas(row, /ціна\s*\/\s*без\s*зниж|ціна\s*без\s*зниж/) && rowHas(row, /артикул/) && rowHas(row, /товар/));
   if(headerIndex < 0) return null;
@@ -4448,7 +4451,6 @@ function findRowUnit(row){
   return (row || []).map(cleanText).find(isUnit) || "";
 }
 
-/* Звичайний рахунок: одна ціна за одиницю, артикул може бути відсутній. */
 function parseStandardInvoice(rows, sheet){
   const headerIndex = rows.findIndex(row =>
     rowHas(row, /товар|найменув/) &&
@@ -4824,7 +4826,6 @@ function openImportSheet(parsed, file){
     .map(n => `<option value="${escapeHtml(n)}"></option>`)
     .join("");
 
-  /* Валюта лише підказується. Майстер завжди бачить і підтверджує її. */
   let currency = parsed.currency || autoDetectedCurrency || "";
 
   document.getElementById("impCurrency").value = currency;
@@ -5066,7 +5067,6 @@ function findExistingCatalogItem(imported, supplierName){
     if(bySupplierArticle) return bySupplierArticle;
   }
 
-  /* Назва не є достатнім ідентифікатором: не зливаємо товари за нею. */
   return null;
 }
 
@@ -5156,7 +5156,6 @@ function confirmImport(){
   let skipped = 0;
   const unitConflicts = [];
 
-  /* Без артикула немає безпечної ідентифікації — не створюємо дублікати. */
   const accepted = items.filter(item => {
     if(!cleanText(item.article) && !cleanText(item.supplierArticle)){
       skipped++;
