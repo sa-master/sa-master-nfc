@@ -4061,11 +4061,17 @@ function catalogCounterDecrement(catalogId){
 
 function openCatalogItemEditor(id){
   const item = catalog.find(c => c.id === id);
-  if(!item) return;
+  if(!item){
+    toast("Позицію не знайдено");
+    return;
+  }
 
   editingCatalogItemId = id;
 
   document.getElementById("ceName").value = item.name || "";
+  document.getElementById("ceNameMaster").value = item.nameMaster || "";
+  document.getElementById("ceNameSupplier").value = item.nameSupplier || "";
+  document.getElementById("ceArticle").value = item.article || "";
   document.getElementById("cePrice").value = item.price > 0 ? item.price : "";
   document.getElementById("ceUnit").value = item.unit || "шт";
 
