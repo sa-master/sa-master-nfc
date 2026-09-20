@@ -1504,34 +1504,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .addCustomButton:active{transform:scale(.98)}
 
-.importExcelButton{
-  width:100%;
-  height:2.625rem;
-  border-radius:.875rem;
-  background:rgba(29,111,66,.1);
-  color:var(--xls);
-  font-size:.8125rem;
-  font-weight:700;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:.4375rem;
-  margin-top:.25rem;
-  margin-bottom:.4375rem;
-  flex:0 0 auto;
-  transition:transform .12s;
-}
-
-.importExcelButton:active{
-  transform:scale(.98);
-}
-
-.importExcelButton svg{
-  width:1.25rem;
-  height:1.25rem;
-  flex:0 0 auto;
-}
-
 .pricesList{
   display:flex;
   flex-direction:column;
@@ -1973,7 +1945,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
     <div class="panelHead">
       <strong id="catalogTitle">Вибір</strong>
       <div class="panelHeadActions">
-        <button class="catalogEditButton" id="catalogEditButton" onclick="toggleCatalogManage()">✎ Каталог</button>
+        <button class="catalogEditButton" id="catalogEditButton" onclick="toggleCatalogManage()">Каталог</button>
         <button class="catalogImportButton hidden" id="catalogImportButton" onclick="openImportFile()">Імпорт</button>
         <button class="catalogClearButton hidden" id="catalogClearButton" onclick="clearCatalog()">Очистити</button>
         <button class="close" onclick="closeCatalog()">×</button>
@@ -3409,7 +3381,7 @@ function openCatalogFor(type){
 
   const editBtn = document.getElementById("catalogEditButton");
   editBtn.classList.remove("active");
-  editBtn.textContent = "✎ Каталог";
+  editBtn.textContent = "Каталог";
   document.getElementById("catalogClearButton").classList.add("hidden");
   document.getElementById("catalogImportButton").classList.add("hidden");
 
@@ -3442,13 +3414,13 @@ function toggleCatalogManage(){
   const importBtn = document.getElementById("catalogImportButton");
   if(catalogManageMode){
     editBtn.classList.add("active");
-    editBtn.textContent = "✓ Готово";
+    editBtn.textContent = "← Вибір";
     if(clearBtn) clearBtn.classList.remove("hidden");
     if(importBtn) importBtn.classList.toggle("hidden", catalogMode !== "material");
     document.getElementById("catalogTitle").textContent = (catalogMode === "work") ? "Каталог робіт" : "Каталог матеріалів";
   }else{
     editBtn.classList.remove("active");
-    editBtn.textContent = "✎ Каталог";
+    editBtn.textContent = "Каталог";
     if(clearBtn) clearBtn.classList.add("hidden");
     if(importBtn) importBtn.classList.add("hidden");
     document.getElementById("catalogTitle").textContent = (catalogMode === "work") ? "Вибір роботи" : "Вибір матеріалу";
@@ -3476,12 +3448,6 @@ function updateCatalogFooter(){
 
 function renderCatalogChips(){
   const box = document.getElementById("catalogChips");
-
-  if(catalogManageMode){
-    box.style.display = "none";
-    box.innerHTML = "";
-    return;
-  }
 
   // ==== РОБОТИ ====
   if(catalogMode === "work"){
@@ -3584,7 +3550,7 @@ function setCatalogFilter(v){
 function renderCatalogBrandChips(){
   const box = document.getElementById("catalogBrandChips");
 
-  if(catalogManageMode || catalogMode !== "material"){
+  if(catalogMode !== "material"){
     box.style.display = "none";
     box.innerHTML = "";
     return;
@@ -3629,7 +3595,7 @@ function setCatalogBrandFilter(brand){
 function renderCatalogSystemChips(){
   const box = document.getElementById("catalogSystemChips");
 
-  if(catalogManageMode || catalogMode !== "material"){
+  if(catalogMode !== "material"){
     box.style.display = "none";
     box.innerHTML = "";
     return;
@@ -3751,7 +3717,7 @@ function renderCatalogList(){
   if(catalogManageMode){
     list.innerHTML = items.map(item => `
       <div class="catalogItem">
-        <div class="catalogItemBody">
+        <div class="catalogItemBody" onclick="openCatalogItemEditor('${escapeHtml(item.id)}')">
           <div class="catalogItemName">${escapeHtml(item.name)}</div>
           <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">
             ${item.price > 0 ? moneyWithCents(item.price) : "ціна не задана"} · ${escapeHtml(item.unit || "шт")}
@@ -3759,7 +3725,6 @@ function renderCatalogList(){
         </div>
 
         <div class="catalogManageRow">
-          <button class="manageBtn edit" onclick="openCatalogItemEditor('${escapeHtml(item.id)}')" aria-label="Редагувати">✎</button>
           <button class="manageBtn delete" onclick="deleteCatalogItem('${escapeHtml(item.id)}')" aria-label="Видалити">×</button>
         </div>
       </div>
