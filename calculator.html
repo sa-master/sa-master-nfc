@@ -1441,6 +1441,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--orange);
 }
 
+.catalogReviewMark{
+  color:var(--orange);
+  font-weight:750;
+}
+
 .catalogCounter{
   flex:0 0 auto;
   display:flex;
@@ -2297,7 +2302,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
 
       <div id="ceMaterialFields" class="hidden">
-        <div class="formGroup" style="margin-bottom:0">
+        <div class="formGroup">
           <label class="formLabel">Категорія</label>
           <div class="chips" id="ceCategoryChips">
             <button type="button" class="chip" data-value="other">Інше</button>
@@ -2305,6 +2310,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
             <button type="button" class="chip" data-value="sewer">Каналізація</button>
             <button type="button" class="chip" data-value="fittings">Арматура</button>
           </div>
+        </div>
+
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Бренд / виробник</label>
+          <input class="formInput" id="ceManufacturer" placeholder="Наприклад: TECE" autocomplete="off">
+          <div class="formHint" id="ceManufacturerHint">Якщо мітка «Перевірити бренд» — вкажіть виробника з накладної або упаковки. Після збереження мітка зникне.</div>
         </div>
       </div>
     </div>
@@ -2783,6 +2794,11 @@ let catalogMigrated = false;
 catalog.forEach(item => {
   if(typeof item.nameMaster !== "string"){
     item.nameMaster = "";
+    catalogMigrated = true;
+  }
+
+  if(typeof item.needsReview !== "boolean"){
+    item.needsReview = false;
     catalogMigrated = true;
   }
 
@@ -4141,6 +4157,10 @@ function renderCatalogList(){
       ? moneyWithCents(item.price) + " / " + escapeHtml(item.unit)
       : "ціна не задана · " + escapeHtml(item.unit);
 
+    const reviewText = item.needsReview
+      ? ` <span class="catalogReviewMark">· Перевірити бренд</span>`
+      : "";
+
     return `
       <div class="catalogItem ${selected ? 'selected' : ''}">
         <div
@@ -4151,7 +4171,7 @@ function renderCatalogList(){
           ontouchcancel="cancelCatalogItemTouch()"
         >
           <div class="catalogItemName">${escapeHtml(catalogDisplayName(item))}</div>
-          <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">${priceText}</div>
+          <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">${priceText}${reviewText}</div>
         </div>
 
         ${selected ? `
@@ -4307,6 +4327,10 @@ function openCatalogItemEditor(id){
   document.getElementById("ceNameMaster").value = isWork
     ? (item.nameMaster || item.name || "")
     : (item.nameMaster || "");
+  document.getElementById("ceManufacturer").value = isMaterial ? (item.manufacturer || "") : "";
+  document.getElementById("ceManufacturerHint").textContent = item.needsReview
+    ? "Цей товар імпортовано без визначеного бренду. Вкажіть виробника з накладної або упаковки й збережіть."
+    : "За потреби виправте бренд за накладною або упаковкою.";
   document.getElementById("cePrice").value = item.price > 0 ? item.price : "";
   document.getElementById("ceUnit").value = item.unit || "шт";
 
@@ -4339,6 +4363,7 @@ function saveCatalogItemEditor(){
   if(!item) return;
 
   const nameMaster = document.getElementById("ceNameMaster").value.trim();
+  const manufacturer = document.getElementById("ceManufacturer").value.trim();
   const price = Number(String(document.getElementById("cePrice").value).replace(",",".")) || 0;
   const unit = document.getElementById("ceUnit").value.trim() || "шт";
 
@@ -4348,6 +4373,8 @@ function saveCatalogItemEditor(){
 
   if(item.type === "material"){
     item.category = editingCatalogCategory || "other";
+    item.manufacturer = manufacturer;
+    if(manufacturer) item.needsReview = false;
     item.stage = "";
   }else{
     item.stage = editingCatalogStage || "rough";
@@ -4436,6 +4463,30 @@ function saveCustom(){
   if(!name){
     toast("Вкажіть назву");
     return;
+  }
+
+  if(customType === "material" && article){
+    const sameArticle = findCatalogMaterialsByArticle(article);
+    const noBrandMatch = sameArticle.find(item => !ntext(item.manufacturer));
+
+    if(noBrandMatch){
+      toast("Матеріал з таким артикулом уже є в каталозі");
+      closeCustom();
+      setTimeout(() => openCatalogItemEditor(noBrandMatch.id), 160);
+      return;
+    }
+
+    if(sameArticle.length){
+      const brands = sameArticle
+        .map(item => cleanText(item.manufacturer) || "без бренду")
+        .filter((value, index, values) => values.indexOf(value) === index)
+        .join(", ");
+
+      if(!confirm(
+        `Артикул «${article}» уже є в каталозі (${brands}).\n\n` +
+        "Новий матеріал не має бренду, тому буде доданий окремо. Продовжити?"
+      )) return;
+    }
   }
 
   const newItem = {
@@ -5481,17 +5532,14 @@ function findExistingCatalogItem(imported, supplierName){
   const article = ntext(imported.article);
   const brand = ntext(imported.manufacturer);
 
-  if(article){
-    const byArticle = catalog.filter(item =>
-      item.type === "material" && ntext(item.article) === article
+  if(article && brand){
+    const byBrandAndArticle = catalog.find(item =>
+      item.type === "material" &&
+      ntext(item.article) === article &&
+      ntext(item.manufacturer) === brand
     );
 
-    const byBrandAndArticle = brand
-      ? byArticle.find(item => ntext(item.manufacturer) === brand)
-      : null;
-
     if(byBrandAndArticle) return byBrandAndArticle;
-    if(byArticle.length === 1) return byArticle[0];
   }
 
   const supplierArticle = ntext(imported.supplierArticle || imported.article);
@@ -5510,6 +5558,15 @@ function findExistingCatalogItem(imported, supplierName){
 
   /* Назва не є достатнім ідентифікатором: не зливаємо товари за нею. */
   return null;
+}
+
+function findCatalogMaterialsByArticle(article){
+  const key = ntext(article);
+  if(!key) return [];
+
+  return catalog.filter(item =>
+    item.type === "material" && ntext(item.article) === key
+  );
 }
 
 function makePriceSnapshot(sourcePrice, importedAt, currency, rate){
@@ -5652,25 +5709,58 @@ function confirmImport(){
     return;
   }
 
+  /* Одна й та сама позиція в одному файлі має мати однакову одиницю. */
+  const importUnitsByIdentity = new Map();
+  for(const value of prepared){
+    if(value.invalid) continue;
+
+    const article = ntext(value.imported.article);
+    if(!article) continue;
+
+    const identity = ntext(value.brand) + "|" + article;
+    const known = importUnitsByIdentity.get(identity);
+    const unit = cleanText(value.imported.unit) || "шт";
+
+    if(known && ntext(known.unit) !== ntext(unit)){
+      unitConflicts.push({ imported:value.imported, existing:{ unit:known.unit } });
+      continue;
+    }
+
+    if(!known) importUnitsByIdentity.set(identity, { unit });
+  }
+
+  if(unitConflicts.length){
+    alert("Імпорт зупинено: одна позиція у файлі має різні одиниці виміру.\n\n" +
+      unitConflicts.slice(0,8).map(x => `${x.imported.name}: «${x.existing.unit}» та «${x.imported.unit}»`).join("\n") +
+      (unitConflicts.length > 8 ? "\n…" : ""));
+    return;
+  }
+
   if(prepared.some(value => value.invalid)){
     toast("Не вдалося визначити ціну для частини позицій");
     return;
   }
 
   prepared.forEach(({ imported, brand, system, category, pricePair, existing }) => {
+    const target = existing || findExistingCatalogItem({
+      article: imported.article,
+      supplierArticle: imported.supplierArticle,
+      manufacturer: brand
+    }, importSupplierName);
 
-    if(existing){
-      existing.supplierOffers = Array.isArray(existing.supplierOffers) ? existing.supplierOffers : [];
-      upsertSupplierOffer(existing, pricePair, importedAt, imported.supplierArticle || imported.article);
+    if(target){
+      target.supplierOffers = Array.isArray(target.supplierOffers) ? target.supplierOffers : [];
+      upsertSupplierOffer(target, pricePair, importedAt, imported.supplierArticle || imported.article);
 
-      if(!existing.article && imported.article) existing.article = imported.article;
-      if(!existing.manufacturer && brand) existing.manufacturer = brand;
-      if(!existing.system && system) existing.system = system;
-      if(!existing.category && category) existing.category = category;
-      existing.retailPriceUAH = pricePair.retail ? pricePair.retail.priceUAH : (Number(existing.retailPriceUAH) || 0);
-      existing.purchasePriceUAH = pricePair.master ? pricePair.master.priceUAH : (Number(existing.purchasePriceUAH) || 0);
-      if(pricePair.retail) existing.price = pricePair.retail.priceUAH;
-      else if(!existing.price && pricePair.master) existing.price = pricePair.master.priceUAH;
+      if(!target.article && imported.article) target.article = imported.article;
+      if(!target.manufacturer && brand) target.manufacturer = brand;
+      if(target.manufacturer) target.needsReview = false;
+      if(!target.system && system) target.system = system;
+      if(!target.category && category) target.category = category;
+      target.retailPriceUAH = pricePair.retail ? pricePair.retail.priceUAH : (Number(target.retailPriceUAH) || 0);
+      target.purchasePriceUAH = pricePair.master ? pricePair.master.priceUAH : (Number(target.purchasePriceUAH) || 0);
+      if(pricePair.retail) target.price = pricePair.retail.priceUAH;
+      else if(!target.price && pricePair.master) target.price = pricePair.master.priceUAH;
 
       updated++;
     }else{
@@ -5688,6 +5778,7 @@ function confirmImport(){
         manufacturer: brand,
         system,
         article: imported.article || "",
+        needsReview: !brand,
         basePriceEUR: 0,
         supplierOffers: []
       };
