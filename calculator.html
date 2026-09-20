@@ -1605,6 +1605,36 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   padding:2rem 1rem;
 }
 
+.catalogEmptyTitle{
+  color:var(--t);
+  font-size:.9375rem;
+  font-weight:750;
+  margin-bottom:.25rem;
+}
+
+.catalogEmptyActions{
+  display:flex;
+  flex-direction:column;
+  gap:.375rem;
+  max-width:17rem;
+  margin:1rem auto 0;
+}
+
+.catalogEmptyAction{
+  width:100%;
+  height:2.5rem;
+  border-radius:.75rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.8125rem;
+  font-weight:750;
+}
+
+.catalogEmptyAction.primary{
+  background:var(--p);
+  color:#fff;
+}
+
 .addCustomButton{
   width:100%;
   height:2.625rem;
@@ -2254,6 +2284,36 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
     <div class="panelBody" style="padding-bottom:1.25rem">
       <div class="originalNameCard" id="originalNameText"></div>
       <div class="formHint" id="originalNameHint">Оригінальна назва з файлу постачальника. Вона не редагується.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: REQUEST SUPPLIER PRICE LIST -->
+
+<div class="sheet" id="supplierRequestSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong>Запросити прайс</strong>
+      <button class="close" onclick="closeSupplierRequest()">×</button>
+    </div>
+
+    <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="formGroup">
+        <label class="formLabel">Постачальник *</label>
+        <input class="formInput" id="srSupplierName" list="srSupplierList" placeholder="Наприклад: ETK" autocomplete="off">
+        <datalist id="srSupplierList"></datalist>
+      </div>
+
+      <div class="formHint" style="margin-bottom:.875rem">
+        Постачальник збережеться у вашому каталозі. Додаток лише підготує текст — канал і одержувача ви оберете самі.
+      </div>
+
+      <div class="originalNameCard" id="srRequestPreview"></div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="copySupplierRequest()">Скопіювати</button>
+      <button class="btnPrimary" onclick="shareSupplierRequest()">Поділитися</button>
     </div>
   </div>
 </div>
@@ -4139,6 +4199,23 @@ function renderCatalogList(){
   const positions = Array.isArray(project && project.positions) ? project.positions : [];
 
   if(!items.length){
+    const hasMaterials = catalog.some(item => item.type === "material");
+
+    if(catalogMode === "material" && !hasMaterials){
+      list.innerHTML = `
+        <div class="catalogEmpty">
+          <div class="catalogEmptyTitle">Каталог матеріалів порожній</div>
+          <div>Імпортуйте прайс, запросіть його у постачальника або додайте першу позицію вручну.</div>
+          <div class="catalogEmptyActions">
+            <button class="catalogEmptyAction primary" onclick="openImportFile()">Імпортувати прайс</button>
+            <button class="catalogEmptyAction" onclick="openSupplierRequest()">Запросити прайс</button>
+            <button class="catalogEmptyAction" onclick="openCustomPosition()">Додати вручну</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
     list.innerHTML = `
       <div class="catalogEmpty">
         Нічого не знайдено.<br>
@@ -4676,6 +4753,112 @@ function openSinglePriceEditor(projectId, positionId){
 }
 
 /* ==== IMPORT ==== */
+
+function supplierPriceRequestText(supplierName){
+  const supplier = cleanText(supplierName) || "вашої компанії";
+
+  return `Доброго дня!\n\n` +
+    `Я формую робочий каталог матеріалів. Будь ласка, надішліть актуальний прайс ${supplier} у форматі XLS/XLSX.\n\n` +
+    `Бажано, щоб у файлі були: повна назва товару, артикул, одиниця виміру, роздрібна та закупівельна/майстерська ціна, валюта.\n\n` +
+    `Дякую!`;
+}
+
+function rememberSupplierFromRequest(rawName){
+  const name = cleanText(rawName);
+  if(!name){
+    toast("Вкажіть назву постачальника");
+    return "";
+  }
+
+  const names = loadSupplierNames();
+  const key = "short:" + ntext(name);
+  const previous = names[key];
+  const data = previous && typeof previous === "object" ? previous : {};
+
+  names[key] = {
+    ...data,
+    name,
+    requestedPriceListAt: new Date().toISOString()
+  };
+  saveSupplierNames(names);
+  return name;
+}
+
+function refreshSupplierRequestPreview(){
+  const input = document.getElementById("srSupplierName");
+  const preview = document.getElementById("srRequestPreview");
+  if(!input || !preview) return;
+  preview.textContent = supplierPriceRequestText(input.value);
+}
+
+function openSupplierRequest(){
+  const input = document.getElementById("srSupplierName");
+  const known = collectKnownSupplierNames();
+
+  document.getElementById("srSupplierList").innerHTML = known
+    .map(name => `<option value="${escapeHtml(name)}"></option>`)
+    .join("");
+  input.value = "";
+  refreshSupplierRequestPreview();
+  document.getElementById("supplierRequestSheet").classList.add("open");
+  setTimeout(() => input.focus(), 200);
+}
+
+function closeSupplierRequest(){
+  document.getElementById("supplierRequestSheet").classList.remove("open");
+}
+
+async function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.style.position = "fixed";
+  area.style.opacity = "0";
+  document.body.appendChild(area);
+  area.select();
+  document.execCommand("copy");
+  area.remove();
+}
+
+async function copySupplierRequest(){
+  const name = rememberSupplierFromRequest(document.getElementById("srSupplierName").value);
+  if(!name) return;
+
+  try{
+    await copyText(supplierPriceRequestText(name));
+    toast("Запит скопійовано");
+  }catch(e){
+    toast("Не вдалося скопіювати запит");
+  }
+}
+
+async function shareSupplierRequest(){
+  const name = rememberSupplierFromRequest(document.getElementById("srSupplierName").value);
+  if(!name) return;
+
+  const text = supplierPriceRequestText(name);
+
+  if(navigator.share){
+    try{
+      await navigator.share({ title:"Запит прайсу", text });
+      toast("Запит готовий до надсилання");
+      return;
+    }catch(e){
+      if(e && e.name === "AbortError") return;
+    }
+  }
+
+  try{
+    await copyText(text);
+    toast("Надсилання недоступне — запит скопійовано");
+  }catch(e){
+    toast("Не вдалося підготувати запит");
+  }
+}
 
 function openImportFile(){
   const input = document.getElementById("importFileInput");
@@ -6132,6 +6315,8 @@ document.getElementById("pfChips").addEventListener("click", e => {
 
 document.getElementById("impCurrency").addEventListener("change", updateImportRateField);
 
+document.getElementById("srSupplierName").addEventListener("input", refreshSupplierRequestPreview);
+
 document.getElementById("impSupplierName").addEventListener("input", function(){
   const name = this.value.trim();
   if(!name) return;
@@ -6170,6 +6355,10 @@ document.getElementById("catalogFiltersSheet").addEventListener("click", e => {
 
 document.getElementById("originalNameSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeOriginalNameSheet();
+});
+
+document.getElementById("supplierRequestSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeSupplierRequest();
 });
 
 document.getElementById("catalogEditSheet").addEventListener("click", e => {
