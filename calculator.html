@@ -2305,15 +2305,15 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
 
       <div class="formHint" style="margin-bottom:.875rem">
-        Постачальник збережеться у вашому каталозі. Додаток лише підготує текст — канал і одержувача ви оберете самі.
+        Постачальник збережеться у вашому каталозі. Додаток підготує текст і Excel-шаблон. Канал та одержувача ви оберете самі.
       </div>
 
       <div class="originalNameCard" id="srRequestPreview"></div>
     </div>
 
     <div class="panelFooter">
-      <button class="btnGhost" onclick="copySupplierRequest()">Скопіювати</button>
-      <button class="btnPrimary" onclick="shareSupplierRequest()">Поділитися</button>
+      <button class="btnGhost" onclick="copySupplierRequest()">Скопіювати текст</button>
+      <button class="btnPrimary" onclick="shareSupplierRequest()">Текст і шаблон</button>
     </div>
   </div>
 </div>
@@ -2502,6 +2502,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
           <label class="formLabel">Валюта *</label>
           <select class="formSelect" id="impCurrency">
             <option value="">Оберіть</option>
+            <option value="BRAND_RATES">За брендами</option>
             <option value="UAH">UAH</option>
             <option value="EUR">EUR</option>
             <option value="USD">USD</option>
@@ -4758,9 +4759,73 @@ function supplierPriceRequestText(supplierName){
   const supplier = cleanText(supplierName) || "вашої компанії";
 
   return `Доброго дня!\n\n` +
-    `Я формую робочий каталог матеріалів. Будь ласка, надішліть актуальний прайс ${supplier} у форматі XLS/XLSX.\n\n` +
-    `Бажано, щоб у файлі були: повна назва товару, артикул, одиниця виміру, роздрібна та закупівельна/майстерська ціна, валюта.\n\n` +
+    `Я формую робочий каталог матеріалів. Надсилаю Excel-шаблон для прайсу ${supplier}. Будь ласка, заповніть його та поверніть у форматі XLSX.\n\n` +
+    `У шаблоні валюта й курс задаються окремо для кожного бренду — так ціни коректно потраплять у каталог.\n\n` +
     `Дякую!`;
+}
+
+function supplierTemplateFileName(supplierName){
+  const safe = cleanText(supplierName)
+    .replace(/[\\\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, "-")
+    .slice(0, 48) || "постачальник";
+  return `SA-MASTER-прайс-${safe}.xlsx`;
+}
+
+function buildSupplierPriceTemplateFile(supplierName){
+  if(typeof XLSX === "undefined") throw new Error("XLSX unavailable");
+
+  const rows = [
+    ["SA_MASTER_PRICE_TEMPLATE", 1],
+    ["Прайс для імпорту в sa-master.pro"],
+    ["Заповніть дві таблиці нижче. Валюта і курс задаються окремо для кожного бренду."],
+    [],
+    ["КУРСИ ЗА БРЕНДАМИ"],
+    ["Бренд", "Валюта", "Курс, ₴", "Примітка (необов’язково)"],
+    [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
+    [], [],
+    ["ТОВАРИ"],
+    ["Артикул", "Повна назва", "Бренд", "Роздрібна ціна", "Ціна майстра", "Одиниця"]
+  ];
+
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  sheet["!cols"] = [
+    { wch: 22 }, { wch: 46 }, { wch: 18 }, { wch: 20 }, { wch: 18 }, { wch: 14 }
+  ];
+  sheet["!freeze"] = { xSplit: 0, ySplit: 40 };
+
+  const guideRows = [
+    ["Як заповнити прайс для sa-master.pro"],
+    [],
+    ["1. У таблиці «Курси за брендами» внесіть кожен бренд, його валюту та курс до гривні."],
+    ["2. Для UAH курс залиште порожнім. Для EUR або USD курс обов’язковий."],
+    ["3. У таблиці «Товари» у кожного рядка обов’язкові: артикул, повна назва, бренд, одиниця та хоча б одна ціна."],
+    ["4. Бренд у товарі має точно збігатися з брендом у таблиці курсів. Один файл може містити бренди в різних валютах."],
+    ["5. Не змінюйте назви аркушів, заголовки колонок і технічний рядок SA_MASTER_PRICE_TEMPLATE."],
+    [],
+    ["Після заповнення збережіть файл у форматі XLSX і надішліть його майстру."]
+  ];
+  const guide = XLSX.utils.aoa_to_sheet(guideRows);
+  guide["!cols"] = [{ wch: 120 }];
+
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Прайс");
+  XLSX.utils.book_append_sheet(book, guide, "Як заповнювати");
+  const bytes = XLSX.write(book, { bookType: "xlsx", type: "array" });
+  return new File([bytes], supplierTemplateFileName(supplierName), {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+}
+
+function downloadFile(file){
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function rememberSupplierFromRequest(rawName){
@@ -4841,11 +4906,19 @@ async function shareSupplierRequest(){
   if(!name) return;
 
   const text = supplierPriceRequestText(name);
+  let file;
 
-  if(navigator.share){
+  try{
+    file = buildSupplierPriceTemplateFile(name);
+  }catch(e){
+    toast("Не вдалося створити Excel-шаблон");
+    return;
+  }
+
+  if(navigator.share && (!navigator.canShare || navigator.canShare({ files:[file] }))){
     try{
-      await navigator.share({ title:"Запит прайсу", text });
-      toast("Запит готовий до надсилання");
+      await navigator.share({ title:"Запит прайсу", text, files:[file] });
+      toast("Текст і шаблон готові до надсилання");
       return;
     }catch(e){
       if(e && e.name === "AbortError") return;
@@ -4853,8 +4926,9 @@ async function shareSupplierRequest(){
   }
 
   try{
+    downloadFile(file);
     await copyText(text);
-    toast("Надсилання недоступне — запит скопійовано");
+    toast("Шаблон завантажено, текст скопійовано");
   }catch(e){
     toast("Не вдалося підготувати запит");
   }
@@ -4890,6 +4964,13 @@ document.getElementById("importFileInput").addEventListener("change", async func
     const workbook = XLSX.read(buffer, { type: "array", cellDates: false, cellNF: true });
     const parsed = parseWorkbook(workbook);
 
+    if(parsed && Array.isArray(parsed.importErrors) && parsed.importErrors.length){
+      alert("Шаблон не імпортовано. Виправте ці поля у файлі:\n\n" +
+        parsed.importErrors.slice(0,10).join("\n") +
+        (parsed.importErrors.length > 10 ? "\n…" : ""));
+      return;
+    }
+
     if(!parsed || !parsed.items.length){
       toast("Не вдалося знайти товари у файлі");
       return;
@@ -4910,6 +4991,9 @@ document.getElementById("importFileInput").addEventListener("change", async func
 });
 
 function parseWorkbook(workbook){
+  const strictTemplate = parseSaMasterTemplate(workbook);
+  if(strictTemplate) return strictTemplate;
+
   let best = null;
 
   for(const sheetName of workbook.SheetNames){
@@ -4949,6 +5033,155 @@ function parseWorkbook(workbook){
   }
 
   return best;
+}
+
+function parseSaMasterTemplate(workbook){
+  const priceSheetName = workbook.SheetNames.find(name => ntext(name) === "прайс");
+  if(!priceSheetName) return null;
+
+  const sheet = workbook.Sheets[priceSheetName];
+  const rows = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    raw: false,
+    defval: "",
+    blankrows: true
+  });
+
+  if(ntext(rows?.[0]?.[0]) !== "sa_master_price_template") return null;
+
+  const errors = [];
+  const version = Number(parseNumber(rows?.[0]?.[1]));
+  if(version !== 1){
+    return {
+      items: [],
+      profile: "sa-master-template",
+      usesBrandRates: true,
+      importErrors: ["Непідтримувана версія шаблону. Завантажте новий шаблон із SA-MASTER."]
+    };
+  }
+
+  const coursesTitleRow = rows.findIndex(row => ntext(rowText(row)) === "курси за брендами");
+  const productsTitleRow = rows.findIndex(row => ntext(rowText(row)) === "товари");
+  const coursesHeaderRow = coursesTitleRow >= 0 ? coursesTitleRow + 1 : -1;
+  const productsHeaderRow = productsTitleRow >= 0 ? productsTitleRow + 1 : -1;
+
+  if(coursesTitleRow < 0 || productsTitleRow < 0 || productsTitleRow <= coursesTitleRow){
+    return {
+      items: [],
+      profile: "sa-master-template",
+      usesBrandRates: true,
+      importErrors: ["Не знайдено таблиці «Курси за брендами» або «Товари»."]
+    };
+  }
+
+  const coursesHeader = rows[coursesHeaderRow] || [];
+  const productsHeader = rows[productsHeaderRow] || [];
+  const findCol = (header, predicate) => header.findIndex(cell => predicate(ntext(cell)));
+  const courseBrandCol = findCol(coursesHeader, text => text === "бренд");
+  const courseCurrencyCol = findCol(coursesHeader, text => text === "валюта");
+  const courseRateCol = findCol(coursesHeader, text => text.startsWith("курс"));
+  const articleCol = findCol(productsHeader, text => text === "артикул");
+  const nameCol = findCol(productsHeader, text => text === "повна назва");
+  const productBrandCol = findCol(productsHeader, text => text === "бренд");
+  const retailCol = findCol(productsHeader, text => text.startsWith("роздріб"));
+  const masterCol = findCol(productsHeader, text => text === "ціна майстра");
+  const unitCol = findCol(productsHeader, text => text.startsWith("одиниц"));
+
+  if([courseBrandCol, courseCurrencyCol, courseRateCol, articleCol, nameCol, productBrandCol, retailCol, masterCol, unitCol].some(col => col < 0)){
+    return {
+      items: [],
+      profile: "sa-master-template",
+      usesBrandRates: true,
+      importErrors: ["Змінені заголовки колонок. Завантажте новий шаблон і перенесіть дані без зміни його заголовків."]
+    };
+  }
+
+  const ratesByBrand = new Map();
+  for(let rowIndex = coursesHeaderRow + 1; rowIndex < productsTitleRow; rowIndex++){
+    const row = rows[rowIndex] || [];
+    if(!rowText(row)) continue;
+
+    const brand = cleanText(row[courseBrandCol]);
+    const currency = cleanText(row[courseCurrencyCol]).toUpperCase();
+    const rate = parseNumber(row[courseRateCol]);
+    const label = `Курси, рядок ${rowIndex + 1}`;
+
+    if(!brand || !currency){
+      errors.push(`${label}: вкажіть бренд і валюту.`);
+      continue;
+    }
+    if(!["UAH", "EUR", "USD"].includes(currency)){
+      errors.push(`${label}: валюта має бути UAH, EUR або USD.`);
+      continue;
+    }
+    if(currency !== "UAH" && (!Number.isFinite(rate) || rate <= 0)){
+      errors.push(`${label}: для ${currency} вкажіть курс до гривні.`);
+      continue;
+    }
+    const key = ntext(brand);
+    if(ratesByBrand.has(key)){
+      errors.push(`${label}: бренд «${brand}» повторюється.`);
+      continue;
+    }
+    ratesByBrand.set(key, { brand, currency, rate: currency === "UAH" ? null : rate });
+  }
+
+  const items = [];
+  for(let rowIndex = productsHeaderRow + 1; rowIndex < rows.length; rowIndex++){
+    const row = rows[rowIndex] || [];
+    if(!rowText(row)) continue;
+
+    const article = cleanText(row[articleCol]);
+    const name = cleanText(row[nameCol]);
+    const brand = cleanText(row[productBrandCol]);
+    const unit = cleanText(row[unitCol]);
+    const retailPrice = parseNumber(row[retailCol]);
+    const masterPrice = parseNumber(row[masterCol]);
+    const label = `Товари, рядок ${rowIndex + 1}`;
+
+    if(!article || !name || !brand || !unit){
+      errors.push(`${label}: потрібні артикул, повна назва, бренд і одиниця.`);
+      continue;
+    }
+    if(!Number.isFinite(retailPrice) && !Number.isFinite(masterPrice)){
+      errors.push(`${label}: вкажіть роздрібну або майстерську ціну.`);
+      continue;
+    }
+    const rateData = ratesByBrand.get(ntext(brand));
+    if(!rateData){
+      errors.push(`${label}: для бренду «${brand}» немає валюти й курсу в таблиці зверху.`);
+      continue;
+    }
+
+    items.push({
+      rowIndex: rowIndex + 1,
+      name,
+      article,
+      supplierArticle: article,
+      qty: null,
+      unit,
+      price: Number.isFinite(retailPrice) ? retailPrice : masterPrice,
+      retailPrice: Number.isFinite(retailPrice) ? retailPrice : null,
+      masterPrice: Number.isFinite(masterPrice) ? masterPrice : null,
+      manufacturer: rateData.brand,
+      system: detectSystem(name),
+      category: detectCategory(name, rateData.brand, ""),
+      currency: rateData.currency,
+      rate: rateData.rate
+    });
+  }
+
+  return {
+    sheetName: priceSheetName,
+    items,
+    header: { rowIndex: productsHeaderRow },
+    currency: "BRAND_RATES",
+    detectedRate: null,
+    supplierFullName: "",
+    profile: "sa-master-template",
+    usesBrandRates: true,
+    importErrors: errors
+  };
 }
 
 function rowHas(row, pattern){
@@ -5500,19 +5733,23 @@ function openImportSheet(parsed, file){
     .map(n => `<option value="${escapeHtml(n)}"></option>`)
     .join("");
 
-  /* Валюта лише підказується. Майстер завжди бачить і підтверджує її. */
-  let currency = parsed.currency || autoDetectedCurrency || "";
+  const isBrandRatesTemplate = Boolean(parsed.usesBrandRates);
+  const currencySelect = document.getElementById("impCurrency");
 
-  document.getElementById("impCurrency").value = currency;
+  /* У нашому шаблоні валюта й курс уже задані по брендах. Для звичайного
+     файлу майстер як і раніше бачить та підтверджує одну валюту накладної. */
+  let currency = isBrandRatesTemplate ? "BRAND_RATES" : (parsed.currency || autoDetectedCurrency || "");
+  currencySelect.disabled = isBrandRatesTemplate;
+  currencySelect.value = currency;
 
   let rate = parsed.detectedRate || autoDetectedRate;
 
-  if(!rate){
+  if(!rate && !isBrandRatesTemplate){
     if(currency === "USD" && importUsdRate > 0) rate = importUsdRate;
     else if(importEurRate > 0) rate = importEurRate;
   }
 
-  document.getElementById("impRate").value = rate ? String(rate) : "";
+  document.getElementById("impRate").value = !isBrandRatesTemplate && rate ? String(rate) : "";
 
   updateImportRateField();
 
@@ -5554,8 +5791,6 @@ function renderImportPreview(items){
   const box = document.getElementById("impPreviewList");
   const limit = 5;
   const visible = items.slice(0, limit);
-  const currencySuffix = autoDetectedCurrency ? " " + autoDetectedCurrency : "";
-
   let html = visible.map(it => {
     const parts = [];
     if(it.article) parts.push(`Арт: ${escapeHtml(it.article)}`);
@@ -5564,6 +5799,7 @@ function renderImportPreview(items){
     if(it.unit) parts.push(`Од: ${escapeHtml(it.unit)}`);
 
     const prices = [];
+    const currencySuffix = it.currency ? " " + escapeHtml(it.currency) : (autoDetectedCurrency ? " " + autoDetectedCurrency : "");
     if(Number.isFinite(it.retailPrice)) prices.push(`Роздріб: <b>${it.retailPrice}${currencySuffix}</b>`);
     if(Number.isFinite(it.masterPrice)) prices.push(`Оптова: <b>${it.masterPrice}${currencySuffix}</b>`);
     if(!prices.length && Number.isFinite(it.price)) prices.push(`Ціна: <b>${it.price}${currencySuffix}</b>`);
@@ -5594,7 +5830,9 @@ function updateImportRateField(){
   const hint = document.getElementById("impRateHint");
 
   const rateGroup = input && input.closest(".formGroup");
-  if(currency === "EUR"){
+  if(currency === "BRAND_RATES"){
+    if(rateGroup) rateGroup.style.display = "none";
+  }else if(currency === "EUR"){
     if(rateGroup) rateGroup.style.display = "block";
     label.textContent = "Курс, ₴/€";
     if(!input.value && importEurRate > 0) input.value = String(importEurRate);
@@ -5613,7 +5851,10 @@ function updateImportRateField(){
 
   let hintText = "Вкажіть валюту та курс цієї накладної.";
 
-  if(currency === "UAH"){
+  if(currency === "BRAND_RATES"){
+    hintText = "Валюта й курс уже задані у файлі окремо для кожного бренду.";
+    hint.className = "formHint auto";
+  }else if(currency === "UAH"){
     hintText = "Ціни буде збережено в гривнях без конвертації.";
     hint.className = "formHint auto";
   }else if(autoDetectedRate && document.getElementById("impRate").value === String(autoDetectedRate)){
@@ -5801,6 +6042,7 @@ function confirmImport(){
   importSupplierName = document.getElementById("impSupplierName").value.trim();
   importSupplierFullName = document.getElementById("impSupplierFullName").value.trim();
   importCurrency = document.getElementById("impCurrency").value;
+  const usesBrandRates = Boolean(pendingImportData?.usesBrandRates);
 
   const rateRaw = document.getElementById("impRate").value.trim();
 
@@ -5809,22 +6051,22 @@ function confirmImport(){
     return;
   }
 
-  if(!importCurrency){
+  if(!importCurrency || importCurrency === "BRAND_RATES" && !usesBrandRates){
     toast("Оберіть валюту");
     return;
   }
 
   const rate = Number(String(rateRaw).replace(",",".")) || 0;
 
-  if(importCurrency !== "UAH" && rate <= 0){
+  if(!usesBrandRates && importCurrency !== "UAH" && rate <= 0){
     toast("Вкажіть коректний курс");
     return;
   }
 
-  if(importCurrency === "USD" && rate > 0){
+  if(!usesBrandRates && importCurrency === "USD" && rate > 0){
     importUsdRate = rate;
     localStorage.setItem(USD_RATE_KEY, String(rate));
-  }else if(importCurrency === "EUR" && rate > 0){
+  }else if(!usesBrandRates && importCurrency === "EUR" && rate > 0){
     importEurRate = rate;
     localStorage.setItem(EUR_RATE_KEY, String(rate));
   }
@@ -5865,9 +6107,12 @@ function confirmImport(){
       ? imported.masterPrice
       : null;
 
+    const itemCurrency = cleanText(imported.currency || (usesBrandRates ? "" : importCurrency)).toUpperCase();
+    const itemRate = imported.rate !== undefined && imported.rate !== null ? imported.rate : rate;
+
     const pricePair = {
-      retail: Number.isFinite(retailPrice) ? makePriceSnapshot(retailPrice, importedAt, importCurrency, rate) : null,
-      master: masterPrice !== null ? makePriceSnapshot(masterPrice, importedAt, importCurrency, rate) : null
+      retail: Number.isFinite(retailPrice) ? makePriceSnapshot(retailPrice, importedAt, itemCurrency, itemRate) : null,
+      master: masterPrice !== null ? makePriceSnapshot(masterPrice, importedAt, itemCurrency, itemRate) : null
     };
 
     if(!pricePair.retail && !pricePair.master) return { imported, invalid:true };
@@ -5980,8 +6225,8 @@ function confirmImport(){
   if(shortKey){
     names["short:" + shortKey] = {
       name: importSupplierName,
-      currency: importCurrency,
-      rate: importCurrency === "UAH" ? null : rate
+      currency: usesBrandRates ? "" : importCurrency,
+      rate: usesBrandRates || importCurrency === "UAH" ? null : rate
     };
 
     if(importSupplierFullName){
