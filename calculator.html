@@ -1094,6 +1094,13 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   min-width:0;
 }
 
+.positionName.materialName{
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+  touch-action:pan-y;
+}
+
 .qtyControl{
   flex:0 0 auto;
   display:flex;
@@ -2232,13 +2239,13 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 <div class="sheet" id="originalNameSheet">
   <div class="panel">
     <div class="panelHead">
-      <strong>Повна назва</strong>
+      <strong id="originalNameTitle">Повна назва</strong>
       <button class="close" onclick="closeOriginalNameSheet()">×</button>
     </div>
 
     <div class="panelBody" style="padding-bottom:1.25rem">
       <div class="originalNameCard" id="originalNameText"></div>
-      <div class="formHint">Оригінальна назва з файлу постачальника. Вона не редагується.</div>
+      <div class="formHint" id="originalNameHint">Оригінальна назва з файлу постачальника. Вона не редагується.</div>
     </div>
   </div>
 </div>
@@ -2262,7 +2269,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       <div class="formGroup">
         <label class="formLabel">Назва для майстра</label>
         <input class="formInput" id="ceNameMaster" placeholder="Наприклад: Труба TECE Ø20" autocomplete="off">
-        <div class="formHint">Можете залишити короткий запропонований варіант або відредагувати його — після збереження він стане назвою в каталозі.</div>
+        <div class="formHint">Необов’язково. Якщо заповнити, ця назва показуватиметься майстру в каталозі.</div>
       </div>
 
       <div class="formRow">
@@ -2321,6 +2328,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         <input class="formInput" id="csName" placeholder="Назва роботи або матеріалу" autocomplete="off">
       </div>
 
+      <div class="formGroup hidden" id="csArticleGroup">
+        <label class="formLabel">Артикул</label>
+        <input class="formInput" id="csArticle" placeholder="Наприклад: 720420" autocomplete="off">
+      </div>
+
       <div class="formRow">
         <div class="formGroup">
           <label class="formLabel">Ціна, ₴</label>
@@ -2356,7 +2368,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
     </div>
 
     <div class="panelFooter">
-      <button class="btnGhost" onclick="closeCustom()">Скасувати</button>
       <button class="btnPrimary" onclick="saveCustom()">Додати</button>
     </div>
   </div>
@@ -2637,6 +2648,7 @@ const PROJECTS_KEY = "sa_projects";
 const PROFILE_KEY = "sa_profile";
 const TEAM_KEY = "sa_team";
 const CATALOG_KEY = "sa_catalog";
+const DEFAULT_WORKS_SEEDED_KEY = "sa_defaultWorksSeeded";
 const EUR_RATE_KEY = "sa_eurRate";
 const USD_RATE_KEY = "sa_usdRate";
 const SUPPLIER_NAMES_KEY = "sa_supplierNames";
@@ -2793,8 +2805,41 @@ catalog.forEach(item => {
   catalogMigrated = true;
 });
 
-if(catalogMigrated){
+let defaultWorksAdded = false;
+const shouldSeedDefaultWorks = localStorage.getItem(DEFAULT_WORKS_SEEDED_KEY) !== "1";
+
+if(shouldSeedDefaultWorks) DEFAULT_WORKS.forEach(work => {
+  const exists = catalog.some(item =>
+    item.type === "work" && normalizeText(item.name) === normalizeText(work.name)
+  );
+
+  if(exists) return;
+
+  catalog.push({
+    id: uid("cat"),
+    type: "work",
+    name: work.name,
+    nameMaster: "",
+    unit: work.unit,
+    price: 0,
+    category: "",
+    stage: work.stage,
+    manufacturer: "",
+    system: "",
+    article: "",
+    basePriceEUR: 0,
+    supplierOffers: []
+  });
+
+  defaultWorksAdded = true;
+});
+
+if(catalogMigrated || defaultWorksAdded){
   saveCatalog();
+}
+
+if(shouldSeedDefaultWorks){
+  try{ localStorage.setItem(DEFAULT_WORKS_SEEDED_KEY, "1"); }catch(e){}
 }
 
 function saveProjects(){
@@ -2908,44 +2953,6 @@ function catalogDisplayName(item){
   return String(item && (item.nameMaster || item.name) || "").trim() || "Без назви";
 }
 
-function suggestMasterName(item){
-  const original = String(item && item.name || "").replace(/\s+/g, " ").trim();
-  if(!original) return "";
-
-  const source = original.toLowerCase();
-  const kinds = [
-    [/колін|кутник|угол|отвод|elbow/, "Коліно"],
-    [/трійник|тройник|\btee\b/, "Трійник"],
-    [/труба|\bpipe\b/, "Труба"],
-    [/муфта|coupling/, "Муфта"],
-    [/перехід|переход|редукц|adapter|reduction/, "Перехід"],
-    [/кран|кульов|valve/, "Кран"],
-    [/зворотн.*клапан|обратн.*клапан/, "Клапан зворотний"],
-    [/клапан/, "Клапан"],
-    [/колектор|коллектор|manifold/, "Колектор"],
-    [/фільтр|фильтр|filter/, "Фільтр"],
-    [/сифон|siphon/, "Сифон"]
-  ];
-
-  const found = kinds.find(([pattern]) => pattern.test(source));
-  if(!found) return original.length > 42 ? original.slice(0, 42).trim() + "…" : original;
-
-  let size = "";
-  const combined = source.match(/\b(\d{1,3}(?:[.,]\d+)?(?:\s*[xх×]\s*\d{1,3}(?:[.,]\d+)?){1,2})\b/i);
-  const diameter = source.match(/(?:ø|⌀|ф|\bdn|\bd)\s*(\d{1,3}(?:[.,]\d+)?)/i);
-  const mm = source.match(/\b(16|20|25|32|40|50|63|75|90|110)\s*мм\b/i);
-  const standard = source.match(/\b(16|20|25|32|40|50|63|75|90|110)\b/i);
-  const inch = source.match(/\b(\d{1,2}(?:\s*\/\s*\d{1,2})?)\s*(?:″|"|дюйм)/i);
-
-  if(combined) size = "Ø" + combined[1].replace(/\s*[xх×]\s*/g, "×").replace(/\s+/g, "");
-  else if(diameter) size = "Ø" + diameter[1];
-  else if(mm) size = "Ø" + mm[1];
-  else if(standard) size = "Ø" + standard[1];
-  else if(inch) size = inch[1].replace(/\s+/g, "") + "″";
-
-  return found[1] + (size ? " " + size : "");
-}
-
 function payTypeLabel(t){
   switch(t){
     case "percent_of_income": return "% від доходу";
@@ -2992,13 +2999,21 @@ function getEstimateSubtotal(project){
   }, 0);
 }
 
+function getMaterialsSubtotal(project){
+  if(!project || !Array.isArray(project.positions)) return 0;
+  return project.positions.reduce((sum, p) => {
+    if(p.type !== "material") return sum;
+    return sum + (Number(p.price) || 0) * (Number(p.qty) || 0);
+  }, 0);
+}
+
 function getEstimateDiscountPercent(project){
   const d = Number(project && project.discount);
   return Number.isFinite(d) && d > 0 && d < 100 ? d : 0;
 }
 
 function getEstimateDiscountAmount(project){
-  const subtotal = getEstimateSubtotal(project);
+  const subtotal = getMaterialsSubtotal(project);
   const percent = getEstimateDiscountPercent(project);
   return subtotal * percent / 100;
 }
@@ -3321,7 +3336,7 @@ function renderEstimateBlock(p){
 
   let discountHtml = `
     <div class="discountBlock">
-      <div class="discountLabel">Знижка</div>
+      <div class="discountLabel">Знижка на матеріали</div>
       <div class="chips tight">
         ${discountChips.map(value => `
           <button
@@ -3364,7 +3379,7 @@ function renderEstimateBlock(p){
       ` : `
         ${renderEstimateSection("РОБОТИ", workPositions, p.id)}
         ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id)}
-        ${discountHtml}
+        ${materialPositions.length ? discountHtml : ""}
       `}
     </div>
   `;
@@ -3407,10 +3422,17 @@ function renderPosition(projectId, pos){
     ? money(price) + " / " + escapeHtml(unit)
     : "ціна не задана";
 
+  const namePressHandlers = pos.type === "material" ? `
+    ontouchstart="startMaterialNamePress('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')"
+    ontouchend="endMaterialNamePress()"
+    ontouchcancel="endMaterialNamePress()"
+    oncontextmenu="event.preventDefault()"
+  ` : "";
+
   return `
     <div class="position">
       <div class="positionRow1">
-        <div class="positionName">${escapeHtml(pos.name)}</div>
+        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(pos.name)}</div>
 
         <div class="qtyControl">
           <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
@@ -4172,7 +4194,8 @@ function catalogCounterIncrement(catalogId){
       id: uid("pos"),
       catalogId: item.id,
       type: item.type,
-      name: item.name,
+      name: catalogDisplayName(item),
+      fullName: item.name || catalogDisplayName(item),
       unit: item.unit || "шт",
       price: Number(item.price) || 0,
       qty: 1
@@ -4218,15 +4241,48 @@ function setCatalogItemQty(catalogId, rawValue){
   render();
 }
 
+function showFullNameSheet(title, name, hint){
+  document.getElementById("originalNameTitle").textContent = title;
+  document.getElementById("originalNameText").textContent = name || "—";
+  document.getElementById("originalNameHint").textContent = hint;
+  document.getElementById("originalNameSheet").classList.add("open");
+}
+
 function openOriginalNameSheet(catalogId){
   const item = catalog.find(c => c.id === catalogId);
   if(!item) return;
-  document.getElementById("originalNameText").textContent = item.name || "—";
-  document.getElementById("originalNameSheet").classList.add("open");
+  showFullNameSheet(
+    "Повна назва",
+    item.name,
+    "Оригінальна назва з файлу постачальника. Вона не редагується."
+  );
 }
 
 function closeOriginalNameSheet(){
   document.getElementById("originalNameSheet").classList.remove("open");
+}
+
+let materialNamePressTimer = null;
+
+function startMaterialNamePress(projectId, positionId){
+  clearTimeout(materialNamePressTimer);
+  materialNamePressTimer = setTimeout(() => {
+    const project = projects.find(p => p.id === projectId);
+    const position = project && Array.isArray(project.positions)
+      ? project.positions.find(p => p.id === positionId)
+      : null;
+    if(!position || position.type !== "material") return;
+
+    showFullNameSheet(
+      "Повна назва матеріалу",
+      position.fullName || position.name,
+      "Повна назва з каталогу — для перевірки та запиту постачальнику."
+    );
+  }, 550);
+}
+
+function endMaterialNamePress(){
+  clearTimeout(materialNamePressTimer);
 }
 
 function openCatalogItemEditor(id){
@@ -4236,7 +4292,7 @@ function openCatalogItemEditor(id){
   editingCatalogItemId = id;
 
   document.getElementById("ceOriginalName").textContent = item.name || "—";
-  document.getElementById("ceNameMaster").value = item.nameMaster || suggestMasterName(item);
+  document.getElementById("ceNameMaster").value = item.nameMaster || "";
   document.getElementById("cePrice").value = item.price > 0 ? item.price : "";
   document.getElementById("ceUnit").value = item.unit || "шт";
 
@@ -4336,9 +4392,11 @@ function openCustomPosition(){
     customType === "work" ? "Нова робота" : "Новий матеріал";
 
   document.getElementById("csName").value = "";
+  document.getElementById("csArticle").value = "";
   document.getElementById("csPrice").value = "";
   document.getElementById("csUnit").value = "";
 
+  document.getElementById("csArticleGroup").classList.toggle("hidden", customType !== "material");
   document.getElementById("csWorkFields").classList.toggle("hidden", customType !== "work");
   document.getElementById("csMaterialFields").classList.toggle("hidden", customType !== "material");
 
@@ -4360,6 +4418,7 @@ function closeCustom(){
 
 function saveCustom(){
   const name = document.getElementById("csName").value.trim();
+  const article = document.getElementById("csArticle").value.trim();
   const price = Number(String(document.getElementById("csPrice").value).replace(",",".")) || 0;
   const unit = document.getElementById("csUnit").value.trim() || "шт";
 
@@ -4379,7 +4438,7 @@ function saveCustom(){
     stage: customType === "work" ? customStage : "",
     manufacturer: "",
     system: "",
-    article: "",
+    article: customType === "material" ? article : "",
     basePriceEUR: 0,
     supplierOffers: []
   };
@@ -4396,7 +4455,8 @@ function saveCustom(){
       id: uid("pos"),
       catalogId: newItem.id,
       type: newItem.type,
-      name: newItem.name,
+      name: catalogDisplayName(newItem),
+      fullName: newItem.name || catalogDisplayName(newItem),
       unit: newItem.unit,
       price: newItem.price,
       qty: 1
