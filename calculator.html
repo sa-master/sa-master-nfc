@@ -1068,9 +1068,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .position{
   background:rgba(255,255,255,.4);
   border:1px solid var(--gbr);
-  border-radius:.75rem;
-  padding:.5rem .75rem;
-  margin-bottom:.375rem;
+  border-radius:.625rem;
+  padding:.375rem .5rem;
+  margin-bottom:.25rem;
 }
 
 @media (prefers-color-scheme: dark){
@@ -1081,13 +1081,13 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:.5rem;
+  gap:.375rem;
 }
 
 .positionName{
-  font-size:.8125rem;
+  font-size:.75rem;
   font-weight:650;
-  line-height:1.25;
+  line-height:1.2;
   overflow-wrap:anywhere;
   color:var(--t);
   flex:1 1 auto;
@@ -1100,18 +1100,18 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   align-items:center;
   gap:0;
   background:rgba(120,130,140,.1);
-  border-radius:.5rem;
+  border-radius:.4375rem;
   overflow:hidden;
 }
 
 .qtyBtn{
-  width:1.625rem;
-  height:1.625rem;
+  width:1.5rem;
+  height:1.5rem;
   display:flex;
   align-items:center;
   justify-content:center;
   color:var(--p);
-  font-size:1rem;
+  font-size:.875rem;
   font-weight:600;
   line-height:0;
 }
@@ -1119,9 +1119,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .qtyBtn:active{background:rgba(0,122,255,.1)}
 
 .qtyValue{
-  min-width:1.5rem;
+  min-width:1.125rem;
   text-align:center;
-  font-size:.75rem;
+  font-size:.6875rem;
   font-weight:750;
   color:var(--t);
   padding:0 .1875rem;
@@ -1131,12 +1131,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:.5rem;
-  margin-top:.25rem;
+  gap:.375rem;
+  margin-top:.125rem;
 }
 
 .positionPrice{
-  font-size:.6875rem;
+  font-size:.625rem;
   color:var(--ts);
   font-weight:600;
   flex:1 1 auto;
@@ -1154,11 +1154,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   flex:0 0 auto;
   display:flex;
   align-items:center;
-  gap:.5rem;
+  gap:.375rem;
 }
 
 .positionTotal{
-  font-size:.8125rem;
+  font-size:.75rem;
   font-weight:750;
   color:var(--t);
   white-space:nowrap;
@@ -1166,14 +1166,14 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .positionTotal.notSet{
   color:var(--tm);
-  font-size:.6875rem;
+  font-size:.625rem;
   font-weight:600;
 }
 
 .positionDelete{
   flex:0 0 auto;
-  width:1.5rem;
-  height:1.5rem;
+  width:1.375rem;
+  height:1.375rem;
   border-radius:50%;
   background:rgba(255,59,48,.1);
   color:var(--red);
@@ -1495,7 +1495,8 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--p);
 }
 
-.catalogQtyInput{
+.catalogQtyInput,
+.estimateQtyInput{
   width:2.125rem;
   height:1.5rem;
   border:0;
@@ -1509,7 +1510,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .catalogQtyInput::-webkit-outer-spin-button,
-.catalogQtyInput::-webkit-inner-spin-button{
+.catalogQtyInput::-webkit-inner-spin-button,
+.estimateQtyInput::-webkit-outer-spin-button,
+.estimateQtyInput::-webkit-inner-spin-button{
   -webkit-appearance:none;
   margin:0;
 }
@@ -1642,6 +1645,31 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 #catalogSheet .panelHeadActions{gap:.25rem}
 #catalogSheet .close{width:2rem;height:2rem;font-size:1.375rem}
+
+#catalogSheet .catalogTabs{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:.1875rem;
+  padding:.125rem;
+  margin:0 1rem .375rem;
+  border-radius:.625rem;
+  background:rgba(120,130,140,.1);
+  flex:0 0 auto;
+}
+
+#catalogSheet .catalogTab{
+  height:1.875rem;
+  border-radius:.5rem;
+  color:var(--ts);
+  font-size:.75rem;
+  font-weight:700;
+}
+
+#catalogSheet .catalogTab.active{
+  background:var(--card);
+  color:var(--p);
+  box-shadow:0 .125rem .375rem rgba(0,0,0,.08);
+}
 
 #catalogSheet .catalogFilterRows{
   display:flex;
@@ -2128,6 +2156,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
     </div>
 
+    <div class="catalogTabs" role="tablist" aria-label="Тип позицій">
+      <button class="catalogTab active" id="catalogTabWork" role="tab" onclick="setCatalogMode('work')">Роботи</button>
+      <button class="catalogTab" id="catalogTabMaterial" role="tab" onclick="setCatalogMode('material')">Матеріали</button>
+    </div>
+
     <div class="panelBody" style="display:flex;flex-direction:column;padding-bottom:0">
       <input
         class="catalogSearch"
@@ -2181,8 +2214,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
 
       <div class="formGroup">
-        <label class="formLabel">Коротка назва для майстра</label>
+        <label class="formLabel">Назва для майстра</label>
         <input class="formInput" id="ceNameMaster" placeholder="Наприклад: Труба TECE Ø20" autocomplete="off">
+        <div class="formHint">Можете залишити запропонований варіант — після збереження він стане назвою в каталозі.</div>
       </div>
 
       <div class="formRow">
@@ -3296,7 +3330,17 @@ function renderPosition(projectId, pos){
 
         <div class="qtyControl">
           <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
-          <span class="qtyValue">${qty}</span>
+          <input
+            class="estimateQtyInput"
+            type="number"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            value="${qty}"
+            aria-label="Кількість"
+            onfocus="this.select()"
+            onchange="setPositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',this.value)"
+          >
           <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',1)">＋</button>
         </div>
       </div>
@@ -3567,6 +3611,13 @@ function saveProjectSheet(){
 
 function openCatalogFor(type){
   if(!currentProjectId) return;
+  setCatalogMode(type);
+  document.getElementById("catalogSheet").classList.add("open");
+  setTimeout(() => document.getElementById("catalogSearch").focus(), 200);
+}
+
+function setCatalogMode(type){
+  if(type !== "work" && type !== "material") return;
   catalogMode = type;
   catalogFilter = "all";
   catalogBrandFilter = "all";
@@ -3574,16 +3625,19 @@ function openCatalogFor(type){
   catalogSearch = "";
 
   document.getElementById("catalogSearch").value = "";
-  document.getElementById("catalogTitle").textContent = (type === "work") ? "Роботи" : "Матеріали";
+  document.getElementById("catalogTitle").textContent = "Каталог";
   document.getElementById("catalogImportButton").classList.toggle("hidden", type !== "material");
+  updateCatalogTabs();
 
   renderCatalogChips();
   renderCatalogBrandChips();
   renderCatalogSystemChips();
   renderCatalogList();
+}
 
-  document.getElementById("catalogSheet").classList.add("open");
-  setTimeout(() => document.getElementById("catalogSearch").focus(), 200);
+function updateCatalogTabs(){
+  document.getElementById("catalogTabWork").classList.toggle("active", catalogMode === "work");
+  document.getElementById("catalogTabMaterial").classList.toggle("active", catalogMode === "material");
 }
 
 function closeCatalog(){
@@ -4045,7 +4099,7 @@ function openCatalogItemEditor(id){
   editingCatalogItemId = id;
 
   document.getElementById("ceOriginalName").textContent = item.name || "—";
-  document.getElementById("ceNameMaster").value = item.nameMaster || "";
+  document.getElementById("ceNameMaster").value = item.nameMaster || item.name || "";
   document.getElementById("cePrice").value = item.price > 0 ? item.price : "";
   document.getElementById("ceUnit").value = item.unit || "шт";
 
@@ -4299,6 +4353,19 @@ function changePositionQty(projectId, positionId, delta){
   if(!pos) return;
 
   pos.qty = Math.max(1, (Number(pos.qty) || 1) + delta);
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
+}
+
+function setPositionQty(projectId, positionId, rawValue){
+  const project = projects.find(p => p.id === projectId);
+  if(!project) return;
+  const pos = project.positions.find(p => p.id === positionId);
+  if(!pos) return;
+
+  const value = Number(String(rawValue || "").replace(",", "."));
+  pos.qty = Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
   project.updatedAt = new Date().toISOString();
   saveProjects();
   render();
