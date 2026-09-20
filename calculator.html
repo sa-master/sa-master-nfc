@@ -1671,20 +1671,34 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   box-shadow:0 .125rem .375rem rgba(0,0,0,.08);
 }
 
-#catalogSheet .catalogFilterRows{
-  display:flex;
-  gap:.25rem;
-  overflow-x:auto;
-  scrollbar-width:none;
-  margin:0 -.125rem .25rem;
-  padding:0 .125rem;
-  flex:0 0 auto;
-}
-#catalogSheet .catalogFilterRows::-webkit-scrollbar{display:none}
-#catalogSheet .catalogFilterRows .chips{flex:0 0 auto;gap:.1875rem;margin:0}
-#catalogSheet .chip.small{padding:.25rem .375rem;border-radius:.5rem;font-size:.625rem;line-height:1.1}
+#catalogSheet .catalogSearchRow{display:flex;gap:.375rem;margin-bottom:.375rem;flex:0 0 auto}
+#catalogSheet .catalogSearch{height:2.375rem;margin:0;font-size:.875rem;min-width:0;flex:1 1 auto}
 
-#catalogSheet .catalogSearch{height:2.375rem;margin-bottom:.375rem;font-size:.875rem}
+#catalogSheet .catalogFilterButton{
+  flex:0 0 auto;
+  height:2.375rem;
+  min-width:2.375rem;
+  padding:0 .625rem;
+  border-radius:.75rem;
+  background:rgba(120,130,140,.12);
+  color:var(--ts);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.25rem;
+  font-size:.6875rem;
+  font-weight:700;
+}
+
+#catalogSheet .catalogFilterButton.active{background:rgba(0,122,255,.12);color:var(--p)}
+#catalogSheet .catalogFilterButton svg{width:1rem;height:1rem;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round}
+.catalogFilterCount{min-width:1rem;height:1rem;padding:0 .1875rem;border-radius:.5rem;background:var(--p);color:#fff;font-size:.625rem;display:flex;align-items:center;justify-content:center}
+
+.catalogFilterSection{margin-bottom:1rem}
+.catalogFilterSection:last-child{margin-bottom:0}
+.catalogFilterSectionTitle{font-size:.6875rem;font-weight:750;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin:0 .25rem .375rem}
+.catalogFilterSection .chips{margin:0;gap:.375rem}
+.catalogFilterSection .chip.small{padding:.4375rem .625rem;font-size:.75rem}
 
 #catalogSheet .catalogItem{
   gap:.375rem;
@@ -2162,21 +2176,53 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
     </div>
 
     <div class="panelBody" style="display:flex;flex-direction:column;padding-bottom:0">
-      <input
-        class="catalogSearch"
-        id="catalogSearch"
-        placeholder="Пошук позиції…"
-        autocomplete="off"
-        oninput="renderCatalogList()"
-      >
-
-      <div class="catalogFilterRows">
-        <div class="chips tight" id="catalogChips" style="display:none"></div>
-        <div class="chips tight" id="catalogBrandChips" style="display:none"></div>
-        <div class="chips tight" id="catalogSystemChips" style="display:none"></div>
+      <div class="catalogSearchRow">
+        <input
+          class="catalogSearch"
+          id="catalogSearch"
+          placeholder="Пошук позиції…"
+          autocomplete="off"
+          oninput="renderCatalogList()"
+        >
+        <button class="catalogFilterButton" id="catalogFilterButton" onclick="openCatalogFilters()" aria-label="Фільтри">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M7 12h10M10 17h4"/></svg>
+          <span id="catalogFilterButtonText">Фільтри</span>
+          <span class="catalogFilterCount hidden" id="catalogFilterCount">0</span>
+        </button>
       </div>
 
       <div class="catalogList" id="catalogList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: CATALOG FILTERS -->
+
+<div class="sheet" id="catalogFiltersSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong>Фільтри</strong>
+      <div class="panelHeadActions">
+        <button class="catalogEditButton" onclick="clearCatalogFilters()">Скинути</button>
+        <button class="close" onclick="closeCatalogFilters()">×</button>
+      </div>
+    </div>
+
+    <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="catalogFilterSection" id="catalogCategoryFilterSection">
+        <div class="catalogFilterSectionTitle" id="catalogCategoryFilterTitle">Категорія</div>
+        <div class="chips" id="catalogChips"></div>
+      </div>
+
+      <div class="catalogFilterSection" id="catalogBrandFilterSection">
+        <div class="catalogFilterSectionTitle">Бренд</div>
+        <div class="chips" id="catalogBrandChips"></div>
+      </div>
+
+      <div class="catalogFilterSection" id="catalogSystemFilterSection">
+        <div class="catalogFilterSectionTitle">Система</div>
+        <div class="chips" id="catalogSystemChips"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -2216,7 +2262,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       <div class="formGroup">
         <label class="formLabel">Назва для майстра</label>
         <input class="formInput" id="ceNameMaster" placeholder="Наприклад: Труба TECE Ø20" autocomplete="off">
-        <div class="formHint">Можете залишити запропонований варіант — після збереження він стане назвою в каталозі.</div>
+        <div class="formHint">Можете залишити короткий запропонований варіант або відредагувати його — після збереження він стане назвою в каталозі.</div>
       </div>
 
       <div class="formRow">
@@ -2860,6 +2906,44 @@ function normalizeText(value){
 
 function catalogDisplayName(item){
   return String(item && (item.nameMaster || item.name) || "").trim() || "Без назви";
+}
+
+function suggestMasterName(item){
+  const original = String(item && item.name || "").replace(/\s+/g, " ").trim();
+  if(!original) return "";
+
+  const source = original.toLowerCase();
+  const kinds = [
+    [/колін|кутник|угол|отвод|elbow/, "Коліно"],
+    [/трійник|тройник|\btee\b/, "Трійник"],
+    [/труба|\bpipe\b/, "Труба"],
+    [/муфта|coupling/, "Муфта"],
+    [/перехід|переход|редукц|adapter|reduction/, "Перехід"],
+    [/кран|кульов|valve/, "Кран"],
+    [/зворотн.*клапан|обратн.*клапан/, "Клапан зворотний"],
+    [/клапан/, "Клапан"],
+    [/колектор|коллектор|manifold/, "Колектор"],
+    [/фільтр|фильтр|filter/, "Фільтр"],
+    [/сифон|siphon/, "Сифон"]
+  ];
+
+  const found = kinds.find(([pattern]) => pattern.test(source));
+  if(!found) return original.length > 42 ? original.slice(0, 42).trim() + "…" : original;
+
+  let size = "";
+  const combined = source.match(/\b(\d{1,3}(?:[.,]\d+)?(?:\s*[xх×]\s*\d{1,3}(?:[.,]\d+)?){1,2})\b/i);
+  const diameter = source.match(/(?:ø|⌀|ф|\bdn|\bd)\s*(\d{1,3}(?:[.,]\d+)?)/i);
+  const mm = source.match(/\b(16|20|25|32|40|50|63|75|90|110)\s*мм\b/i);
+  const standard = source.match(/\b(16|20|25|32|40|50|63|75|90|110)\b/i);
+  const inch = source.match(/\b(\d{1,2}(?:\s*\/\s*\d{1,2})?)\s*(?:″|"|дюйм)/i);
+
+  if(combined) size = "Ø" + combined[1].replace(/\s*[xх×]\s*/g, "×").replace(/\s+/g, "");
+  else if(diameter) size = "Ø" + diameter[1];
+  else if(mm) size = "Ø" + mm[1];
+  else if(standard) size = "Ø" + standard[1];
+  else if(inch) size = inch[1].replace(/\s+/g, "") + "″";
+
+  return found[1] + (size ? " " + size : "");
 }
 
 function payTypeLabel(t){
@@ -3642,20 +3726,61 @@ function updateCatalogTabs(){
 
 function closeCatalog(){
   document.getElementById("catalogSheet").classList.remove("open");
+  closeCatalogFilters();
   document.getElementById("catalogImportButton").classList.add("hidden");
   editingCatalogItemId = null;
 }
 
+function openCatalogFilters(){
+  renderCatalogChips();
+  renderCatalogBrandChips();
+  renderCatalogSystemChips();
+  document.getElementById("catalogFiltersSheet").classList.add("open");
+}
+
+function closeCatalogFilters(){
+  document.getElementById("catalogFiltersSheet").classList.remove("open");
+}
+
+function clearCatalogFilters(){
+  catalogFilter = "all";
+  catalogBrandFilter = "all";
+  catalogSystemFilter = "all";
+  renderCatalogChips();
+  renderCatalogBrandChips();
+  renderCatalogSystemChips();
+  renderCatalogList();
+}
+
+function setCatalogFilterSectionVisible(sectionId, visible){
+  const section = document.getElementById(sectionId);
+  if(section) section.style.display = visible ? "block" : "none";
+}
+
+function updateCatalogFilterButton(){
+  const count = [catalogFilter, catalogBrandFilter, catalogSystemFilter]
+    .filter(value => value && value !== "all").length;
+  const button = document.getElementById("catalogFilterButton");
+  const badge = document.getElementById("catalogFilterCount");
+  if(!button || !badge) return;
+  button.classList.toggle("active", count > 0);
+  badge.classList.toggle("hidden", count === 0);
+  badge.textContent = String(count);
+}
+
 function renderCatalogChips(){
   const box = document.getElementById("catalogChips");
+  const title = document.getElementById("catalogCategoryFilterTitle");
 
   // ==== РОБОТИ ====
   if(catalogMode === "work"){
+    if(title) title.textContent = "Етап";
     const hasAnyWorks = catalog.some(item => item.type === "work");
 
     if(!hasAnyWorks){
       box.style.display = "none";
       box.innerHTML = "";
+      setCatalogFilterSectionVisible("catalogCategoryFilterSection", false);
       return;
     }
 
@@ -3670,6 +3795,7 @@ function renderCatalogChips(){
       box.style.display = "none";
       box.innerHTML = "";
       catalogFilter = "all";
+      setCatalogFilterSectionVisible("catalogCategoryFilterSection", false);
       return;
     }
 
@@ -3678,6 +3804,7 @@ function renderCatalogChips(){
     }
 
     box.style.display = "flex";
+    setCatalogFilterSectionVisible("catalogCategoryFilterSection", true);
 
     const stageLabels = {
       "rough": "Чорнові",
@@ -3696,16 +3823,19 @@ function renderCatalogChips(){
   }
 
   // ==== МАТЕРІАЛИ ====
+  if(title) title.textContent = "Категорія";
   const hasAnyMaterials = catalog.some(item => item.type === "material");
 
   if(!hasAnyMaterials){
     box.style.display = "none";
     box.innerHTML = "";
     catalogFilter = "all";
+    setCatalogFilterSectionVisible("catalogCategoryFilterSection", false);
     return;
   }
 
   box.style.display = "flex";
+  setCatalogFilterSectionVisible("catalogCategoryFilterSection", true);
 
   const availableCategories = new Set(["all"]);
   catalog.forEach(item => {
@@ -3753,6 +3883,7 @@ function renderCatalogBrandChips(){
   if(catalogMode !== "material"){
     box.style.display = "none";
     box.innerHTML = "";
+    setCatalogFilterSectionVisible("catalogBrandFilterSection", false);
     return;
   }
 
@@ -3762,6 +3893,7 @@ function renderCatalogBrandChips(){
     box.style.display = "none";
     box.innerHTML = "";
     catalogBrandFilter = "all";
+    setCatalogFilterSectionVisible("catalogBrandFilterSection", false);
     return;
   }
 
@@ -3773,6 +3905,7 @@ function renderCatalogBrandChips(){
   }
 
   box.style.display = "flex";
+  setCatalogFilterSectionVisible("catalogBrandFilterSection", true);
 
   let html = `<button class="chip small ${catalogBrandFilter === "all" ? 'active' : ''}" onclick="setCatalogBrandFilter('all')">Усі бренди</button>`;
 
@@ -3798,6 +3931,7 @@ function renderCatalogSystemChips(){
   if(catalogMode !== "material"){
     box.style.display = "none";
     box.innerHTML = "";
+    setCatalogFilterSectionVisible("catalogSystemFilterSection", false);
     return;
   }
 
@@ -3807,6 +3941,7 @@ function renderCatalogSystemChips(){
     box.style.display = "none";
     box.innerHTML = "";
     catalogSystemFilter = "all";
+    setCatalogFilterSectionVisible("catalogSystemFilterSection", false);
     return;
   }
 
@@ -3818,6 +3953,7 @@ function renderCatalogSystemChips(){
   }
 
   box.style.display = "flex";
+  setCatalogFilterSectionVisible("catalogSystemFilterSection", true);
 
   let html = `<button class="chip small ${catalogSystemFilter === "all" ? 'active' : ''}" onclick="setCatalogSystemFilter('all')">Усі системи</button>`;
 
@@ -3952,6 +4088,7 @@ function catalogItemTap(catalogId){
 
 function renderCatalogList(){
   catalogSearch = document.getElementById("catalogSearch").value || "";
+  updateCatalogFilterButton();
   const list = document.getElementById("catalogList");
   const items = getCatalogItems();
   const project = projects.find(p => p.id === currentProjectId);
@@ -4099,7 +4236,7 @@ function openCatalogItemEditor(id){
   editingCatalogItemId = id;
 
   document.getElementById("ceOriginalName").textContent = item.name || "—";
-  document.getElementById("ceNameMaster").value = item.nameMaster || item.name || "";
+  document.getElementById("ceNameMaster").value = item.nameMaster || suggestMasterName(item);
   document.getElementById("cePrice").value = item.price > 0 ? item.price : "";
   document.getElementById("ceUnit").value = item.unit || "шт";
 
@@ -5863,6 +6000,10 @@ document.getElementById("projectSheet").addEventListener("click", e => {
 
 document.getElementById("catalogSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeCatalog();
+});
+
+document.getElementById("catalogFiltersSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeCatalogFilters();
 });
 
 document.getElementById("originalNameSheet").addEventListener("click", e => {
