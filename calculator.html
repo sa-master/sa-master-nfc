@@ -3311,6 +3311,37 @@ function getCustomerMaterialsTotal(project){
   return getMaterialsSubtotal(project) - getEstimateDiscountAmount(project);
 }
 
+/* Після імпорту прайсу дозаповнюємо тільки відсутню закупівельну ціну
+   у вже доданих позиціях. Роздрібна ціна, кількість і знижка кошторису
+   залишаються незмінними. */
+function fillMissingProjectPurchasePrices(){
+  let changed = 0;
+
+  projects.forEach(project => {
+    if(!project || !Array.isArray(project.positions)) return;
+    let projectChanged = false;
+
+    project.positions.forEach(pos => {
+      if(!pos || pos.type !== "material" || !pos.catalogId) return;
+      if(Number(pos.purchasePrice) > 0) return;
+
+      const catalogItem = catalog.find(item => item.id === pos.catalogId);
+      const purchasePrice = Number(catalogItem && catalogItem.purchasePriceUAH);
+      if(!Number.isFinite(purchasePrice) || purchasePrice <= 0) return;
+
+      pos.purchasePrice = purchasePrice;
+      pos.purchasePriceState = "estimated";
+      projectChanged = true;
+      changed++;
+    });
+
+    if(projectChanged) project.updatedAt = new Date().toISOString();
+  });
+
+  if(changed) saveProjects();
+  return changed;
+}
+
 function getMaterialsProfit(project){
   const result = { value:0, hasMaterials:false, hasUnknownPrice:false, confirmed:true };
   if(!project || !Array.isArray(project.positions)) return result;
@@ -6689,6 +6720,7 @@ function confirmImport(){
   });
 
   saveCatalog();
+  const restoredPurchasePrices = fillMissingProjectPurchasePrices();
 
   const names = loadSupplierNames();
   const shortKey = ntext(importSupplierName);
@@ -6709,7 +6741,7 @@ function confirmImport(){
 
   closeImportSheet();
 
-  toast(`Імпортовано: ${created} нових, ${updated} оновлено${skipped ? `, ${skipped} без артикула пропущено` : ""}`);
+  toast(`Імпортовано: ${created} нових, ${updated} оновлено${restoredPurchasePrices ? `, додано ${restoredPurchasePrices} закупівельних цін у кошториси` : ""}${skipped ? `, ${skipped} без артикула пропущено` : ""}`);
 
   // Показуємо нові та оновлені товари одразу, без повторного відкриття каталогу.
   renderCatalogChips();
