@@ -931,7 +931,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   display:flex;
   flex-direction:column;
   padding:.25rem 0;
-  padding-bottom:calc(9rem + var(--sab));
+  padding-bottom:calc(13rem + var(--sab));
   overflow-y:auto;
   scrollbar-width:none;
   gap:.625rem;
@@ -963,13 +963,16 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .projectHeaderCard{
+  position:sticky;
+  top:0;
+  z-index:5;
   background:var(--gb);
   backdrop-filter:blur(1.5rem) saturate(200%);
   -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
   border:1px solid var(--gbr);
   border-radius:1.25rem;
   box-shadow:var(--gs);
-  padding:1rem 1.125rem;
+  padding:.625rem .75rem;
 }
 
 .projectHeaderTitleRow{
@@ -980,7 +983,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .projectHeaderTitle{
-  font-size:1.0625rem;
+  font-size:.9375rem;
   font-weight:800;
   line-height:1.25;
   overflow-wrap:anywhere;
@@ -997,14 +1000,45 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .projectHeaderMeta{
-  margin-top:.5rem;
+  margin:.3125rem .125rem 0;
   color:var(--ts);
-  font-size:.8125rem;
-  line-height:1.55;
+  font-size:.75rem;
+  line-height:1.4;
   overflow-wrap:anywhere;
 }
 
 .projectHeaderMeta b{color:var(--t);font-weight:700}
+
+.projectHeaderTop{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  min-width:0;
+}
+
+.projectHeaderBack{
+  flex:0 0 auto;
+  width:1.875rem;
+  height:1.875rem;
+  border-radius:.625rem;
+  background:rgba(120,130,140,.12);
+  color:var(--p);
+  font-size:1.125rem;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.projectStatusBadge{
+  flex:0 0 auto;
+  color:var(--p);
+  background:rgba(0,122,255,.1);
+  border-radius:.5rem;
+  padding:.25rem .4375rem;
+  font-size:.625rem;
+  font-weight:750;
+  white-space:nowrap;
+}
 
 .detailsRow{
   display:flex;
@@ -1310,7 +1344,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   border:1px solid var(--gbr);
   border-radius:1.5rem;
   box-shadow:0 .5rem 2rem rgba(0,0,0,.12);
-  padding:.625rem .75rem .75rem;
+  padding:.5rem .75rem .75rem;
   display:flex;
   flex-direction:column;
   gap:.5rem;
@@ -1338,6 +1372,43 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--t);
 }
 
+.floatingBreakdown{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.375rem;
+  padding:0 .125rem .5rem;
+  border-bottom:1px solid rgba(120,130,140,.15);
+}
+
+.floatingMetric{
+  min-width:0;
+}
+
+.floatingMetricLabel{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--tm);
+  font-size:.625rem;
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.25px;
+}
+
+.floatingMetricValue{
+  display:block;
+  margin-top:.125rem;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--t);
+  font-size:.75rem;
+  font-weight:800;
+}
+
+.floatingMetricValue.unknown{color:var(--orange)}
+
 .floatingButtons{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -1359,9 +1430,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .addButton:active{transform:scale(.98)}
-.addButton.full{grid-column:1 / -1}
-.addButton.primary{background:linear-gradient(135deg,#007AFF,#0A84FF);color:#fff;box-shadow:0 .375rem 1rem rgba(0,122,255,.22)}
-.estimateLockedNote{grid-column:1 / -1;text-align:center;font-size:.75rem;color:var(--green);font-weight:750}
 
 .catalogSearch{
   flex:0 0 auto;
@@ -2941,6 +3009,43 @@ function saveCatalog(){
   try{ localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog)); }catch(e){}
 }
 
+/* У версії тесту 18 була ручна фіксація. Вона не входить у погоджений
+   сценарій, тому повертаємо такі об'єкти до звичайного редагування. */
+let legacyManualLockCleared = false;
+projects.forEach(project => {
+  if(!project || !project.estimateLocked) return;
+  delete project.estimateLocked;
+  delete project.estimateLockedAt;
+  delete project.estimateUnlockedAt;
+  delete project.estimateSnapshot;
+  if(project.stage === "procurement") project.stage = "estimate";
+  legacyManualLockCleared = true;
+});
+if(legacyManualLockCleared) saveProjects();
+
+/* Закупівельна ціна фіксується в позиції кошторису в момент додавання.
+   Для старих кошторисів один раз переносимо останню відому ціну з каталогу,
+   щоб подальші оновлення каталогу вже не змінювали їхній розрахунок. */
+let purchaseSnapshotMigrated = false;
+projects.forEach(project => {
+  if(!project || !Array.isArray(project.positions)) return;
+
+  project.positions.forEach(pos => {
+    if(!pos || pos.type !== "material") return;
+    if(Object.prototype.hasOwnProperty.call(pos, "purchasePrice")) return;
+
+    const catalogItem = catalog.find(item => item.id === pos.catalogId);
+    const purchasePrice = Number(catalogItem && catalogItem.purchasePriceUAH);
+
+    pos.purchasePrice = Number.isFinite(purchasePrice) && purchasePrice > 0
+      ? purchasePrice
+      : null;
+    pos.purchasePriceState = "estimated";
+    purchaseSnapshotMigrated = true;
+  });
+});
+if(purchaseSnapshotMigrated) saveProjects();
+
 function saveSupplierNames(value){
   try{ localStorage.setItem(SUPPLIER_NAMES_KEY, JSON.stringify(value)); }catch(e){}
 }
@@ -3090,6 +3195,14 @@ function getMaterialsSubtotal(project){
   }, 0);
 }
 
+function getWorksSubtotal(project){
+  if(!project || !Array.isArray(project.positions)) return 0;
+  return project.positions.reduce((sum, p) => {
+    if(p.type !== "work") return sum;
+    return sum + (Number(p.price) || 0) * (Number(p.qty) || 0);
+  }, 0);
+}
+
 function getEstimateDiscountPercent(project){
   const d = Number(project && project.discount);
   return Number.isFinite(d) && d > 0 && d < 100 ? d : 0;
@@ -3105,23 +3218,34 @@ function getEstimateTotal(project){
   return getEstimateSubtotal(project) - getEstimateDiscountAmount(project);
 }
 
-function isEstimateLocked(project){
-  return Boolean(project && project.estimateLocked);
+function getCustomerMaterialsTotal(project){
+  return getMaterialsSubtotal(project) - getEstimateDiscountAmount(project);
 }
 
-function buildEstimateSnapshot(project){
-  const positions = Array.isArray(project.positions) ? project.positions : [];
-  const copiedPositions = positions.map(position => ({ ...position }));
-  return {
-    lockedAt: new Date().toISOString(),
-    positions: copiedPositions,
-    discount: getEstimateDiscountPercent(project),
-    workSubtotal: copiedPositions
-      .filter(position => position.type === "work")
-      .reduce((sum, position) => sum + (Number(position.price) || 0) * (Number(position.qty) || 0), 0),
-    materialsSubtotal: getMaterialsSubtotal(project),
-    total: getEstimateTotal(project)
-  };
+function getMaterialsProfit(project){
+  const result = { value:0, hasMaterials:false, hasUnknownPrice:false, confirmed:true };
+  if(!project || !Array.isArray(project.positions)) return result;
+
+  let purchaseTotal = 0;
+  project.positions.forEach(pos => {
+    if(pos.type !== "material") return;
+    result.hasMaterials = true;
+    const purchasePrice = Number(pos.purchasePrice);
+    const qty = Number(pos.qty) || 0;
+
+    if(!Number.isFinite(purchasePrice) || purchasePrice <= 0){
+      result.hasUnknownPrice = true;
+      result.confirmed = false;
+      return;
+    }
+
+    purchaseTotal += purchasePrice * qty;
+    if(pos.purchasePriceState !== "confirmed") result.confirmed = false;
+  });
+
+  if(result.hasUnknownPrice) return result;
+  result.value = getCustomerMaterialsTotal(project) - purchaseTotal;
+  return result;
 }
 
 function getProjectPositionCount(project){
@@ -3348,30 +3472,25 @@ function renderProject(p){
   const phone = escapeHtml(p.client?.phone || "");
   const address = escapeHtml(p.client?.address || "");
   const stageLabel = projectStageLabel(p);
-  const detailsBadges = buildDetailsBadges(p);
 
   main.innerHTML = `
     <div class="projectView">
-      <div class="backRow">
-        <button class="backButton" onclick="backToList()" aria-label="Назад">←</button>
-      </div>
-
       <div class="projectHeaderCard">
-        <div class="projectHeaderTitleRow">
+        <div class="projectHeaderTop">
+          <button class="projectHeaderBack" onclick="backToList()" aria-label="Назад">←</button>
           <div class="projectHeaderTitle">${title}</div>
           <div class="projectHeaderRight">
             ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
+            <span class="projectStatusBadge">${escapeHtml(stageLabel)}</span>
             <button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>
           </div>
         </div>
 
         <div class="projectHeaderMeta">
-          ${client ? `<b>${client}</b>${phone ? " · " + phone : ""}<br>` : ""}
-          ${address ? `${address}<br>` : ""}
-          <span style="color:var(--tm);font-size:.75rem">${escapeHtml(stageLabel)}</span>
+          ${client ? `<b>${client}</b>${phone ? " · " + phone : ""}` : ""}
+          ${client && address ? `<span> · </span>` : ""}
+          ${address ? `<span>${address}</span>` : ""}
         </div>
-
-        ${detailsBadges ? `<div class="detailsRow">${detailsBadges}</div>` : ""}
       </div>
 
       ${renderEstimateBlock(p)}
@@ -3383,30 +3502,43 @@ function renderProject(p){
 
 function renderFloatingPanel(p){
   const total = getEstimateTotal(p);
-  const locked = isEstimateLocked(p);
+  const worksTotal = getWorksSubtotal(p);
+  const materialsTotal = getCustomerMaterialsTotal(p);
+  const profit = getMaterialsProfit(p);
+  const profitLabel = profit.confirmed ? "Прибуток" : "≈ Прибуток";
+  const profitValue = profit.hasUnknownPrice ? "—" : money(profit.value);
 
   return `
     <div class="floatingPanel">
       <div class="floatingTotal">
-        <span class="floatingTotalLabel">Разом</span>
+        <span class="floatingTotalLabel">До сплати</span>
         <span class="floatingTotalValue">${money(total)}</span>
       </div>
 
+      <div class="floatingBreakdown">
+        <div class="floatingMetric">
+          <span class="floatingMetricLabel">Роботи</span>
+          <span class="floatingMetricValue">${money(worksTotal)}</span>
+        </div>
+        <div class="floatingMetric">
+          <span class="floatingMetricLabel">Матеріали</span>
+          <span class="floatingMetricValue">${money(materialsTotal)}</span>
+        </div>
+        <div class="floatingMetric">
+          <span class="floatingMetricLabel">${profitLabel}</span>
+          <span class="floatingMetricValue ${profit.hasUnknownPrice ? "unknown" : ""}">${profitValue}</span>
+        </div>
+      </div>
+
       <div class="floatingButtons">
-        ${locked ? `
-          <div class="estimateLockedNote">Кошторис зафіксовано</div>
-          <button class="addButton full" onclick="unlockEstimate()">Зняти фіксацію</button>
-        ` : `
-          <button class="addButton" onclick="openCatalogFor('work')">
-            <span style="font-size:1.125rem;line-height:1">＋</span>
-            <span>Робота</span>
-          </button>
-          <button class="addButton" onclick="openCatalogFor('material')">
-            <span style="font-size:1.125rem;line-height:1">＋</span>
-            <span>Матеріал</span>
-          </button>
-          <button class="addButton primary full" onclick="lockEstimate()">Зафіксувати кошторис</button>
-        `}
+        <button class="addButton" onclick="openCatalogFor('work')">
+          <span style="font-size:1.125rem;line-height:1">＋</span>
+          <span>Робота</span>
+        </button>
+        <button class="addButton" onclick="openCatalogFor('material')">
+          <span style="font-size:1.125rem;line-height:1">＋</span>
+          <span>Матеріал</span>
+        </button>
       </div>
     </div>
   `;
@@ -3433,15 +3565,11 @@ function buildDetailsBadges(p){
 function renderEstimateBlock(p){
   const positions = Array.isArray(p.positions) ? p.positions : [];
   const count = positions.length;
-  const locked = isEstimateLocked(p);
 
   const workPositions = positions.filter(x => x.type === "work");
   const materialPositions = positions.filter(x => x.type === "material");
 
-  const subtotal = getEstimateSubtotal(p);
   const discountPercent = getEstimateDiscountPercent(p);
-  const discountAmount = getEstimateDiscountAmount(p);
-  const total = getEstimateTotal(p);
 
   const discountChips = [0,5,10,15,20];
 
@@ -3453,25 +3581,15 @@ function renderEstimateBlock(p){
           <button
             type="button"
             class="chip small ${discountPercent === value ? 'active' : ''}"
-            ${locked ? "disabled" : `onclick="setDiscountPercent(${value})"`}
+            onclick="setDiscountPercent(${value})"
           >${value}%</button>
         `).join("")}
           <button
             type="button"
             class="chip small ${discountPercent && !discountChips.includes(discountPercent) ? 'active' : ''}"
-            ${locked ? "disabled" : 'onclick="promptCustomDiscount()"'}
+            onclick="promptCustomDiscount()"
           >інша</button>
       </div>
-      <div class="discountTotal">
-        <span class="discountTotalLabel">До сплати</span>
-        <span class="discountTotalValue">${money(total)}</span>
-      </div>
-      ${discountPercent > 0 ? `
-        <div class="discountDiff">
-          <span>Економія клієнту</span>
-          <span>−${money(discountAmount)}</span>
-        </div>
-      ` : ""}
     </div>
   `;
 
@@ -3479,7 +3597,7 @@ function renderEstimateBlock(p){
     <div class="estimateBlock">
       <div class="estimateHead">
         <strong>Кошторис</strong>
-        <span class="estimateCount">${locked ? "зафіксовано" : (count ? count + " поз." : "порожній")}</span>
+        <span class="estimateCount">${count ? count + " поз." : "порожній"}</span>
       </div>
 
       ${count === 0 ? `
@@ -3528,8 +3646,6 @@ function renderPosition(projectId, pos){
   const unit = pos.unit || "шт";
   const total = price * qty;
   const priceSet = price > 0;
-  const project = projects.find(item => item.id === projectId);
-  const locked = isEstimateLocked(project);
 
   const priceText = priceSet
     ? money(price) + " / " + escapeHtml(unit)
@@ -3547,38 +3663,34 @@ function renderPosition(projectId, pos){
       <div class="positionRow1">
         <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(pos.name)}</div>
 
-        ${locked ? `<div class="qtyControl"><span class="qtyValue">${qty}</span></div>` : `
-          <div class="qtyControl">
-            <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
-            <input
-              class="estimateQtyInput"
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              value="${qty}"
-              aria-label="Кількість"
-              onfocus="this.select()"
-              onchange="setPositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',this.value)"
-            >
-            <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',1)">＋</button>
-          </div>
-        `}
+        <div class="qtyControl">
+          <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
+          <input
+            class="estimateQtyInput"
+            type="number"
+            min="1"
+            step="1"
+            inputmode="numeric"
+            value="${qty}"
+            aria-label="Кількість"
+            onfocus="this.select()"
+            onchange="setPositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',this.value)"
+          >
+          <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',1)">＋</button>
+        </div>
       </div>
 
       <div class="positionRow2">
-        ${locked ? `<div class="positionPrice ${priceSet ? 'set' : 'notSet'}">${priceText}</div>` : `
-          <button class="positionPrice ${priceSet ? 'set' : 'notSet'}" onclick="openSinglePriceEditor('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')">
-            ${priceText}
-          </button>
-        `}
+        <button class="positionPrice ${priceSet ? 'set' : 'notSet'}" onclick="openSinglePriceEditor('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')">
+          ${priceText}
+        </button>
 
         <div class="positionRight">
           <div class="positionTotal ${priceSet ? '' : 'notSet'}">
             ${priceSet ? money(total) : "—"}
           </div>
 
-          ${locked ? "" : `<button class="positionDelete" onclick="deletePosition('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')" aria-label="Видалити">×</button>`}
+          <button class="positionDelete" onclick="deletePosition('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')" aria-label="Видалити">×</button>
         </div>
       </div>
     </div>
@@ -3587,46 +3699,9 @@ function renderPosition(projectId, pos){
 
 /* ==== Знижка ==== */
 
-function lockEstimate(){
-  const project = projects.find(p => p.id === currentProjectId);
-  if(!project || isEstimateLocked(project)) return;
-  if(!Array.isArray(project.positions) || !project.positions.length){
-    toast("Додайте хоча б одну позицію");
-    return;
-  }
-  if(!confirm("Зафіксувати кошторис?\n\nПісля цього змінити позиції, кількість, ціни або знижку можна буде лише після зняття фіксації.")) return;
-
-  project.estimateSnapshot = buildEstimateSnapshot(project);
-  project.estimateLocked = true;
-  project.estimateLockedAt = project.estimateSnapshot.lockedAt;
-  project.stage = "procurement";
-  project.updatedAt = project.estimateSnapshot.lockedAt;
-  saveProjects();
-  render();
-  toast("Кошторис зафіксовано");
-}
-
-function unlockEstimate(){
-  const project = projects.find(p => p.id === currentProjectId);
-  if(!project || !isEstimateLocked(project)) return;
-  if(!confirm("Зняти фіксацію кошторису?\n\nПісля змін його потрібно буде зафіксувати повторно.")) return;
-
-  project.estimateLocked = false;
-  project.estimateUnlockedAt = new Date().toISOString();
-  project.stage = "estimate";
-  project.updatedAt = project.estimateUnlockedAt;
-  saveProjects();
-  render();
-  toast("Фіксацію знято");
-}
-
 function setDiscountPercent(value){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити знижку");
-    return;
-  }
 
   const num = Number(value) || 0;
 
@@ -3639,10 +3714,6 @@ function setDiscountPercent(value){
 function promptCustomDiscount(){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити знижку");
-    return;
-  }
 
   const current = getEstimateDiscountPercent(project);
 
@@ -3875,11 +3946,6 @@ function saveProjectSheet(){
 
 function openCatalogFor(type){
   if(!currentProjectId) return;
-  const project = projects.find(p => p.id === currentProjectId);
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити кошторис");
-    return;
-  }
   setCatalogMode(type);
   document.getElementById("catalogSheet").classList.add("open");
   setTimeout(() => document.getElementById("catalogSearch").focus(), 200);
@@ -4385,10 +4451,6 @@ function catalogCounterIncrement(catalogId){
   if(!item) return;
   const project = projects.find(p => p.id === currentProjectId);
   if(!project) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити кошторис");
-    return;
-  }
 
   if(!Array.isArray(project.positions)) project.positions = [];
   const existing = project.positions.find(pos => pos.catalogId === catalogId);
@@ -4404,6 +4466,10 @@ function catalogCounterIncrement(catalogId){
       fullName: item.name || catalogDisplayName(item),
       unit: item.unit || "шт",
       price: Number(item.price) || 0,
+      purchasePrice: item.type === "material" && Number(item.purchasePriceUAH) > 0
+        ? Number(item.purchasePriceUAH)
+        : null,
+      purchasePriceState: item.type === "material" ? "estimated" : "",
       qty: 1
     });
   }
@@ -4417,10 +4483,6 @@ function catalogCounterIncrement(catalogId){
 function catalogCounterDecrement(catalogId){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project || !Array.isArray(project.positions)) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити кошторис");
-    return;
-  }
   const position = project.positions.find(pos => pos.catalogId === catalogId);
   if(!position) return;
 
@@ -4439,10 +4501,6 @@ function catalogCounterDecrement(catalogId){
 function setCatalogItemQty(catalogId, rawValue){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project || !Array.isArray(project.positions)) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити кошторис");
-    return;
-  }
 
   const position = project.positions.find(pos => pos.catalogId === catalogId);
   if(!position) return;
@@ -4709,6 +4767,10 @@ function saveCustom(){
       fullName: newItem.name || catalogDisplayName(newItem),
       unit: newItem.unit,
       price: newItem.price,
+      purchasePrice: newItem.type === "material" && Number(newItem.purchasePriceUAH) > 0
+        ? Number(newItem.purchasePriceUAH)
+        : null,
+      purchasePriceState: newItem.type === "material" ? "estimated" : "",
       qty: 1
     });
     project.updatedAt = new Date().toISOString();
@@ -4766,11 +4828,6 @@ function savePrices(){
 
   const project = projects.find(p => p.id === currentProjectId);
   if(!project) return;
-  if(isEstimateLocked(project)){
-    closePricesSheet();
-    toast("Зніміть фіксацію, щоб змінити ціну");
-    return;
-  }
 
   pricesPending.forEach((pos, i) => {
     const input = document.getElementById("priceRowInput_" + i);
@@ -4801,10 +4858,6 @@ function savePrices(){
 function changePositionQty(projectId, positionId, delta){
   const project = projects.find(p => p.id === projectId);
   if(!project) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити кошторис");
-    return;
-  }
   const pos = project.positions.find(p => p.id === positionId);
   if(!pos) return;
 
@@ -4817,10 +4870,6 @@ function changePositionQty(projectId, positionId, delta){
 function setPositionQty(projectId, positionId, rawValue){
   const project = projects.find(p => p.id === projectId);
   if(!project) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити кошторис");
-    return;
-  }
   const pos = project.positions.find(p => p.id === positionId);
   if(!pos) return;
 
@@ -4834,10 +4883,6 @@ function setPositionQty(projectId, positionId, rawValue){
 function deletePosition(projectId, positionId){
   const project = projects.find(p => p.id === projectId);
   if(!project) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити кошторис");
-    return;
-  }
   const pos = project.positions.find(p => p.id === positionId);
   if(!pos) return;
   if(!confirm(`Видалити «${pos.name}» з кошторису?`)) return;
@@ -4852,10 +4897,6 @@ function deletePosition(projectId, positionId){
 function openSinglePriceEditor(projectId, positionId){
   const project = projects.find(p => p.id === projectId);
   if(!project) return;
-  if(isEstimateLocked(project)){
-    toast("Зніміть фіксацію, щоб змінити ціну");
-    return;
-  }
   const pos = project.positions.find(p => p.id === positionId);
   if(!pos) return;
 
