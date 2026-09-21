@@ -4249,14 +4249,22 @@ function setCatalogMode(type){
 
   document.getElementById("catalogSearch").value = "";
   document.getElementById("catalogTitle").textContent = "Каталог";
-  document.getElementById("catalogImportButton").classList.toggle("hidden", type !== "material");
-  document.getElementById("catalogRequestButton").classList.toggle("hidden", type !== "material");
   updateCatalogTabs();
 
   renderCatalogChips();
   renderCatalogBrandChips();
   renderCatalogSystemChips();
   renderCatalogList();
+}
+
+function updateCatalogHeaderActions(){
+  const emptyMaterials = catalogMode === "material" && !catalog.some(item => item.type === "material");
+  const hideActions = catalogMode !== "material" || emptyMaterials;
+
+  document.getElementById("catalogAddButton").classList.toggle("hidden", emptyMaterials);
+  document.getElementById("catalogImportButton").classList.toggle("hidden", hideActions);
+  document.getElementById("catalogRequestButton").classList.toggle("hidden", hideActions);
+  document.getElementById("catalogClearButton").classList.toggle("hidden", emptyMaterials);
 }
 
 function updateCatalogTabs(){
@@ -4647,6 +4655,7 @@ function catalogItemTap(catalogId){
 
 function renderCatalogList(){
   catalogSearch = document.getElementById("catalogSearch").value || "";
+  updateCatalogHeaderActions();
   updateCatalogFilterButton();
   const list = document.getElementById("catalogList");
   const items = getCatalogItems();
