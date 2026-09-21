@@ -1574,12 +1574,54 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .catalogEstimateControl .counterBtn{
   border-radius:0;
-  background:transparent;
+  background:rgba(0,122,255,.14);
+  color:var(--p);
+  font-size:1.125rem;
+  font-weight:800;
 }
+
+.catalogEstimateControl .counterBtn:active{background:rgba(0,122,255,.26)}
 
 .catalogEstimateControl .counterValue{
   color:var(--p);
 }
+
+.catalogEstimateControl .catalogQtyInput{
+  background:rgba(0,122,255,.08);
+  color:var(--t);
+  font-weight:850;
+}
+
+.projectTeamSelector{
+  display:flex;
+  flex-direction:column;
+  gap:.375rem;
+}
+
+.projectTeamOption{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  padding:.625rem .75rem;
+  border:1px solid var(--gbr);
+  border-radius:.75rem;
+  background:var(--gb);
+}
+
+.projectTeamOption.selected{border-color:rgba(0,122,255,.35);background:rgba(0,122,255,.07)}
+
+.projectTeamCheck{
+  flex:0 0 auto;
+  width:1.125rem;
+  height:1.125rem;
+  accent-color:var(--p);
+}
+
+.projectTeamPerson{flex:1 1 auto;min-width:0}
+.projectTeamName{font-size:.8125rem;font-weight:750;color:var(--t)}
+.projectTeamMeta{margin-top:.0625rem;font-size:.6875rem;color:var(--tm);line-height:1.25}
+.projectTeamUnits{flex:0 0 auto;width:4.25rem;height:2rem;border:1px solid var(--gbr);border-radius:.625rem;background:var(--card);text-align:center;font-size:.8125rem;font-weight:750;outline:0}
+.projectTeamUnits:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
 
 .catalogQtyInput,
 .estimateQtyInput{
@@ -2207,6 +2249,23 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         <input class="formInput" id="npAddress" placeholder="Київ, вул. Салютна, 2" autocomplete="off">
       </div>
 
+      <div class="formRow">
+        <div class="formGroup">
+          <label class="formLabel">Початок робіт</label>
+          <input class="formInput" id="npWorkStart" type="date">
+        </div>
+        <div class="formGroup">
+          <label class="formLabel">Завершення робіт</label>
+          <input class="formInput" id="npWorkEnd" type="date">
+        </div>
+      </div>
+
+      <div class="formGroup" id="npTeamGroup">
+        <label class="formLabel">Виконавці</label>
+        <div class="projectTeamSelector" id="npTeamList"></div>
+        <div class="formHint" id="npTeamHint"></div>
+      </div>
+
       <div class="detailsToggle" id="detailsToggle" onclick="toggleDetails()">
         <span class="detailsToggleText">Деталі об'єкта</span>
         <span class="detailsToggleIcon">›</span>
@@ -2672,12 +2731,23 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
 
       <div class="formGroup">
+        <label class="formLabel">Формат співпраці</label>
+        <div class="chips" id="apCollaborationChips">
+          <button type="button" class="chip active" data-type="permanent">Постійна команда</button>
+          <button type="button" class="chip" data-type="per_project">На об'єкт</button>
+          <button type="button" class="chip" data-type="one_off">Разово</button>
+        </div>
+      </div>
+
+      <div class="formGroup">
         <label class="formLabel">Принцип оплати</label>
         <div class="chips" id="apChips">
-          <button type="button" class="chip active" data-type="percent_of_income">% від доходу</button>
+          <button type="button" class="chip active" data-type="percent_of_income">% від суми об'єкта</button>
+          <button type="button" class="chip" data-type="percent_of_work">% від робіт</button>
           <button type="button" class="chip" data-type="per_day">За день</button>
           <button type="button" class="chip" data-type="per_month">За місяць</button>
           <button type="button" class="chip" data-type="fixed_per_object">Фіксована</button>
+          <button type="button" class="chip" data-type="manual">Вручну</button>
         </div>
       </div>
 
@@ -2744,10 +2814,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
           <div class="formGroup">
             <label class="formLabel">Принцип оплати</label>
             <div class="chips" id="pfChips">
-              <button type="button" class="chip active" data-type="percent_of_income">% від доходу</button>
+              <button type="button" class="chip active" data-type="percent_of_income">% від суми об'єкта</button>
+              <button type="button" class="chip" data-type="percent_of_work">% від робіт</button>
               <button type="button" class="chip" data-type="per_day">За день</button>
               <button type="button" class="chip" data-type="per_month">За місяць</button>
               <button type="button" class="chip" data-type="fixed_per_object">Фіксована</button>
+              <button type="button" class="chip" data-type="manual">Вручну</button>
             </div>
           </div>
 
@@ -3046,6 +3118,14 @@ projects.forEach(project => {
 });
 if(purchaseSnapshotMigrated) saveProjects();
 
+let teamCollaborationMigrated = false;
+team.forEach(person => {
+  if(!person || person.collaborationType) return;
+  person.collaborationType = "permanent";
+  teamCollaborationMigrated = true;
+});
+if(teamCollaborationMigrated) saveTeamData();
+
 function saveSupplierNames(value){
   try{ localStorage.setItem(SUPPLIER_NAMES_KEY, JSON.stringify(value)); }catch(e){}
 }
@@ -3061,12 +3141,14 @@ let currentProjectId = null;
 let editingProjectId = null;
 let actionsProjectId = null;
 let editingPayType = "percent_of_income";
+let editingCollaborationType = "permanent";
 let profilePayType = "percent_of_income";
 let ownerMode = true;
 
 let editingType = "";
 let editingWork = "";
 let editingFeatures = [];
+let editingTeamAssignments = [];
 
 let catalogMode = "work";
 let catalogFilter = "all";
@@ -3143,10 +3225,21 @@ function catalogDisplayName(item){
 
 function payTypeLabel(t){
   switch(t){
-    case "percent_of_income": return "% від доходу";
+    case "percent_of_income": return "% від суми об'єкта";
+    case "percent_of_work": return "% від робіт";
     case "per_day": return "за день";
     case "per_month": return "за місяць";
     case "fixed_per_object": return "за об'єкт";
+    case "manual": return "за домовленістю";
+    default: return "";
+  }
+}
+
+function collaborationLabel(t){
+  switch(t){
+    case "permanent": return "постійна команда";
+    case "per_project": return "на об'єкт";
+    case "one_off": return "разово";
     default: return "";
   }
 }
@@ -3154,19 +3247,23 @@ function payTypeLabel(t){
 function payValueUnit(t){
   switch(t){
     case "percent_of_income": return "%";
+    case "percent_of_work": return "%";
     case "per_day": return "₴/день";
     case "per_month": return "₴/міс";
     case "fixed_per_object": return "₴";
+    case "manual": return "₴";
     default: return "";
   }
 }
 
 function payValueHint(t){
   switch(t){
-    case "percent_of_income": return "% від доходу об'єкта";
+    case "percent_of_income": return "% від суми об'єкта після знижки";
+    case "percent_of_work": return "% лише від вартості робіт";
     case "per_day": return "фіксована ставка за робочий день";
     case "per_month": return "фіксована ставка за місяць";
     case "fixed_per_object": return "фіксована сума за об'єкт";
+    case "manual": return "сума за об'єкт, за потреби змінюється вручну";
     default: return "";
   }
 }
@@ -3246,6 +3343,54 @@ function getMaterialsProfit(project){
   if(result.hasUnknownPrice) return result;
   result.value = getCustomerMaterialsTotal(project) - purchaseTotal;
   return result;
+}
+
+function getProjectAssignmentEarning(project, assignment){
+  if(!assignment) return null;
+  const rate = Number(assignment.payValue) || 0;
+  const units = Number(assignment.units) || 0;
+
+  switch(assignment.payType){
+    case "percent_of_income": return getEstimateTotal(project) * rate / 100;
+    case "percent_of_work": return getWorksSubtotal(project) * rate / 100;
+    case "per_day": return units > 0 ? rate * units : null;
+    case "per_month": return units > 0 ? rate * units : null;
+    case "fixed_per_object": return rate;
+    case "manual": return Number(assignment.manualAmount) || 0;
+    default: return null;
+  }
+}
+
+function getProjectTeamSummary(project){
+  const assignments = Array.isArray(project && project.teamAssignments)
+    ? project.teamAssignments
+    : [];
+  if(!assignments.length) return null;
+
+  const done = ["done", "closed"].includes(project.stage) || project.status === "archived";
+  const names = assignments.map(a => a.name || "Майстер").join(" · ");
+  const earnings = assignments.map(a => {
+    const amount = getProjectAssignmentEarning(project, a);
+    return `${a.name || "Майстер"}: ${amount === null ? "уточнити" : money(amount)}`;
+  }).join(" · ");
+
+  return {
+    peopleLabel: done ? "Працювали" : "Виконавці",
+    names,
+    earnings
+  };
+}
+
+function formatProjectDates(project){
+  const start = project && project.workStartDate;
+  const end = project && project.workEndDate;
+  if(!start && !end) return "";
+  const format = value => {
+    const date = new Date(value + "T12:00:00");
+    return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat("uk-UA", { day:"2-digit", month:"2-digit", year:"numeric" }).format(date);
+  };
+  if(start && end) return `${format(start)} — ${format(end)}`;
+  return start ? `З ${format(start)}` : `До ${format(end)}`;
 }
 
 function getProjectPositionCount(project){
@@ -3393,6 +3538,8 @@ function renderProjectCard(p){
   const amountText = count ? money(total) : "";
 
   const details = buildDetailsLine(p);
+  const dates = formatProjectDates(p);
+  const teamSummary = getProjectTeamSummary(p);
 
   return `
     <div class="projectCard">
@@ -3413,6 +3560,11 @@ function renderProjectCard(p){
           ${amountText ? `<span class="projectAmount">${amountText}</span>` : ""}
         </div>
         ${details ? `<div class="projectDetails">${escapeHtml(details)}</div>` : ""}
+        ${dates ? `<div class="projectDetails">Роботи: ${escapeHtml(dates)}</div>` : ""}
+        ${teamSummary ? `
+          <div class="projectDetails">${escapeHtml(teamSummary.peopleLabel)}: ${escapeHtml(teamSummary.names)}</div>
+          <div class="projectDetails">Заробіток: ${escapeHtml(teamSummary.earnings)}</div>
+        ` : ""}
       </div>
     </div>
   `;
@@ -3505,8 +3657,10 @@ function renderFloatingPanel(p){
   const worksTotal = getWorksSubtotal(p);
   const materialsTotal = getCustomerMaterialsTotal(p);
   const profit = getMaterialsProfit(p);
+  const discountPercent = getEstimateDiscountPercent(p);
   const profitLabel = profit.confirmed ? "Прибуток" : "≈ Прибуток";
   const profitValue = profit.hasUnknownPrice ? "—" : money(profit.value);
+  const materialsLabel = discountPercent > 0 ? `Матеріали −${discountPercent}%` : "Матеріали";
 
   return `
     <div class="floatingPanel">
@@ -3521,7 +3675,7 @@ function renderFloatingPanel(p){
           <span class="floatingMetricValue">${money(worksTotal)}</span>
         </div>
         <div class="floatingMetric">
-          <span class="floatingMetricLabel">Матеріали</span>
+          <span class="floatingMetricLabel">${materialsLabel}</span>
           <span class="floatingMetricValue">${money(materialsTotal)}</span>
         </div>
         <div class="floatingMetric">
@@ -3746,10 +3900,13 @@ function openNewProject(){
   document.getElementById("npArea").value = "";
   document.getElementById("npBathrooms").value = "";
   document.getElementById("npFeatureInput").value = "";
+  document.getElementById("npWorkStart").value = "";
+  document.getElementById("npWorkEnd").value = "";
 
   editingType = profile.lastObjectType || "";
   editingWork = profile.lastWorkType || "";
   editingFeatures = [];
+  editingTeamAssignments = [];
 
   document.getElementById("detailsBlock").classList.remove("open");
   document.getElementById("detailsToggle").classList.remove("open");
@@ -3757,6 +3914,7 @@ function openNewProject(){
   updateProjectChips();
   renderFeatureTags();
   renderFeatureSuggestions();
+  renderProjectTeamSelector();
 
   document.getElementById("projectSheet").classList.add("open");
   setTimeout(() => document.getElementById("npTitle").focus(), 200);
@@ -3779,10 +3937,15 @@ function openEditProject(id){
   document.getElementById("npArea").value = d.area || "";
   document.getElementById("npBathrooms").value = d.bathrooms || "";
   document.getElementById("npFeatureInput").value = "";
+  document.getElementById("npWorkStart").value = p.workStartDate || "";
+  document.getElementById("npWorkEnd").value = p.workEndDate || "";
 
   editingType = d.objectType || "";
   editingWork = d.workType || "";
   editingFeatures = Array.isArray(d.features) ? d.features.slice() : [];
+  editingTeamAssignments = Array.isArray(p.teamAssignments)
+    ? p.teamAssignments.map(a => ({ ...a }))
+    : [];
 
   document.getElementById("detailsBlock").classList.add("open");
   document.getElementById("detailsToggle").classList.add("open");
@@ -3790,6 +3953,7 @@ function openEditProject(id){
   updateProjectChips();
   renderFeatureTags();
   renderFeatureSuggestions();
+  renderProjectTeamSelector();
 
   document.getElementById("projectSheet").classList.add("open");
   setTimeout(() => document.getElementById("npTitle").focus(), 200);
@@ -3859,6 +4023,90 @@ function addFeatureFromInput(){
   input.value = "";
 }
 
+function makeProjectTeamAssignment(person){
+  return {
+    personId: person.id,
+    name: person.name || "",
+    collaborationType: person.collaborationType || "permanent",
+    payType: person.payType || "percent_of_income",
+    payValue: Number(person.payValue) || 0,
+    units: 0,
+    manualAmount: Number(person.payValue) || 0
+  };
+}
+
+function assignmentNeedsUnits(assignment){
+  return assignment && (assignment.payType === "per_day" || assignment.payType === "per_month");
+}
+
+function assignmentUnitsLabel(assignment){
+  return assignment && assignment.payType === "per_month" ? "міс." : "днів";
+}
+
+function renderProjectTeamSelector(){
+  const box = document.getElementById("npTeamList");
+  const hint = document.getElementById("npTeamHint");
+  if(!box || !hint) return;
+
+  if(!team.length){
+    box.innerHTML = "";
+    hint.textContent = "Команди ще немає. Її можна додати у профілі.";
+    return;
+  }
+
+  hint.textContent = "Оберіть тих, хто працюватиме на цьому об'єкті.";
+  box.innerHTML = team.map(person => {
+    const assignment = editingTeamAssignments.find(a => a.personId === person.id);
+    const selected = Boolean(assignment);
+    const description = assignment
+      ? `${collaborationLabel(assignment.collaborationType)} · ${payTypeLabel(assignment.payType)}`
+      : `${collaborationLabel(person.collaborationType || "permanent")} · ${payTypeLabel(person.payType)}`;
+    const extra = !selected ? "" : assignmentNeedsUnits(assignment) ? `
+      <input class="projectTeamUnits" type="number" min="0" step="${assignment.payType === "per_month" ? "0.5" : "1"}" value="${Number(assignment.units) || ""}" placeholder="${assignmentUnitsLabel(assignment)}" inputmode="decimal" onchange="setProjectTeamUnits('${escapeHtml(person.id)}', this.value)" onclick="event.stopPropagation()">
+    ` : assignment.payType === "manual" ? `
+      <input class="projectTeamUnits" type="number" min="0" step="1" value="${Number(assignment.manualAmount) || ""}" placeholder="₴" inputmode="decimal" onchange="setProjectTeamManualAmount('${escapeHtml(person.id)}', this.value)" onclick="event.stopPropagation()">
+    ` : "";
+
+    return `
+      <label class="projectTeamOption ${selected ? "selected" : ""}">
+        <input class="projectTeamCheck" type="checkbox" ${selected ? "checked" : ""} onchange="toggleProjectTeamMember('${escapeHtml(person.id)}', this.checked)">
+        <span class="projectTeamPerson">
+          <span class="projectTeamName">${escapeHtml(person.name)}</span>
+          <span class="projectTeamMeta">${escapeHtml(description)}</span>
+        </span>
+        ${extra}
+      </label>
+    `;
+  }).join("");
+}
+
+function toggleProjectTeamMember(personId, selected){
+  const person = team.find(p => p.id === personId);
+  if(!person) return;
+  if(selected){
+    if(!editingTeamAssignments.some(a => a.personId === personId)){
+      editingTeamAssignments.push(makeProjectTeamAssignment(person));
+    }
+  }else{
+    editingTeamAssignments = editingTeamAssignments.filter(a => a.personId !== personId);
+  }
+  renderProjectTeamSelector();
+}
+
+function setProjectTeamUnits(personId, value){
+  const assignment = editingTeamAssignments.find(a => a.personId === personId);
+  if(!assignment) return;
+  const units = Number(String(value).replace(",", "."));
+  assignment.units = Number.isFinite(units) && units >= 0 ? units : 0;
+}
+
+function setProjectTeamManualAmount(personId, value){
+  const assignment = editingTeamAssignments.find(a => a.personId === personId);
+  if(!assignment) return;
+  const amount = Number(String(value).replace(",", "."));
+  assignment.manualAmount = Number.isFinite(amount) && amount >= 0 ? amount : 0;
+}
+
 function saveProjectSheet(){
   const title = document.getElementById("npTitle").value.trim();
   const address = document.getElementById("npAddress").value.trim();
@@ -3866,6 +4114,8 @@ function saveProjectSheet(){
   const phone = document.getElementById("npClientPhone").value.trim();
   const areaRaw = document.getElementById("npArea").value.trim();
   const bathroomsRaw = document.getElementById("npBathrooms").value.trim();
+  const workStartDate = document.getElementById("npWorkStart").value || "";
+  const workEndDate = document.getElementById("npWorkEnd").value || "";
 
   if(!title){
     toast("Вкажіть назву об'єкта");
@@ -3897,6 +4147,9 @@ function saveProjectSheet(){
     p.title = title;
     p.client = { name, phone, address };
     p.details = details;
+    p.workStartDate = workStartDate;
+    p.workEndDate = workEndDate;
+    p.teamAssignments = editingTeamAssignments.map(a => ({ ...a }));
     p.updatedAt = now;
 
     saveProjects();
@@ -3921,6 +4174,10 @@ function saveProjectSheet(){
       payments: [],
       expenses: [],
       salaries: [],
+
+      workStartDate,
+      workEndDate,
+      teamAssignments: editingTeamAssignments.map(a => ({ ...a })),
 
       details,
 
@@ -6568,7 +6825,7 @@ function renderTeamList(){
         <div class="personAvatar">${escapeHtml(personInitial(p.name))}</div>
         <div class="personBody">
           <div class="personName">${escapeHtml(p.name)}</div>
-          <div class="personMeta">${Number(p.payValue) || 0}${payValueUnit(p.payType)} · ${payTypeLabel(p.payType)}</div>
+          <div class="personMeta">${escapeHtml(collaborationLabel(p.collaborationType || "permanent"))} · ${Number(p.payValue) || 0}${payValueUnit(p.payType)} · ${escapeHtml(payTypeLabel(p.payType))}</div>
         </div>
         <button class="personDelete" onclick="deletePerson('${escapeHtml(p.id)}')" aria-label="Видалити">×</button>
       </div>
@@ -6595,7 +6852,9 @@ function openAddPerson(){
   document.getElementById("apPhone").value = "";
   document.getElementById("apValue").value = "0";
   editingPayType = "percent_of_income";
+  editingCollaborationType = "permanent";
   updateAddPersonChips();
+  updateAddPersonCollaborationChips();
   updateAddPersonValueUI();
   document.getElementById("addPersonSheet").classList.add("open");
   setTimeout(() => document.getElementById("apName").focus(), 200);
@@ -6608,6 +6867,12 @@ function closeAddPerson(){
 function updateAddPersonChips(){
   document.querySelectorAll("#apChips .chip").forEach(c => {
     c.classList.toggle("active", c.dataset.type === editingPayType);
+  });
+}
+
+function updateAddPersonCollaborationChips(){
+  document.querySelectorAll("#apCollaborationChips .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.type === editingCollaborationType);
   });
 }
 
@@ -6632,6 +6897,7 @@ function savePerson(){
     id: uid("p"),
     name,
     phone,
+    collaborationType: editingCollaborationType,
     payType: editingPayType,
     payValue: value
   });
@@ -6720,6 +6986,13 @@ document.getElementById("apChips").addEventListener("click", e => {
   editingPayType = chip.dataset.type;
   updateAddPersonChips();
   updateAddPersonValueUI();
+});
+
+document.getElementById("apCollaborationChips").addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if(!chip) return;
+  editingCollaborationType = chip.dataset.type;
+  updateAddPersonCollaborationChips();
 });
 
 document.getElementById("pfChips").addEventListener("click", e => {
