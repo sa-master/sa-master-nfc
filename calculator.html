@@ -566,6 +566,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .catalogIconButton.add{background:rgba(0,122,255,.1);color:var(--p)}
 .catalogIconButton.import{background:rgba(29,111,66,.12);color:var(--xls)}
+.catalogIconButton.request{background:rgba(88,86,214,.12);color:#5856D6}
 .catalogIconButton.clear{background:rgba(255,59,48,.1);color:var(--red)}
 
 .catalogIconButton svg,
@@ -2338,6 +2339,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         <button class="catalogIconButton import hidden" id="catalogImportButton" onclick="openImportFile()" aria-label="Імпорт з Excel">
           <svg viewBox="0 0 24 24"><path d="M12 3v11M8 10l4 4 4-4M5 21h14M5 17v4h14v-4"/></svg>
         </button>
+        <button class="catalogIconButton request hidden" id="catalogRequestButton" onclick="openSupplierRequest()" aria-label="Запросити прайс">
+          <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 8.7 8.7 0 0 1-3.8-.9L3 20l1.7-4.8A8.3 8.3 0 0 1 3 10a8.4 8.4 0 0 1 9-8.5A8.4 8.4 0 0 1 21 10z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
+        </button>
         <button class="catalogIconButton clear" id="catalogClearButton" onclick="clearCatalog()" aria-label="Очистити каталог">
           <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"/></svg>
         </button>
@@ -2715,8 +2719,8 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 <div class="sheet" id="addPersonSheet">
   <div class="panel">
     <div class="panelHead">
-      <strong>Додати в команду</strong>
-      <button class="close" onclick="closeAddPerson()">×</button>
+      <strong id="personSheetTitle">Новий майстер</strong>
+      <button class="close" onclick="closeAddPerson()" aria-label="Назад">←</button>
     </div>
 
     <div class="panelBody">
@@ -2726,29 +2730,15 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       </div>
 
       <div class="formGroup">
-        <label class="formLabel">Телефон (опційно)</label>
-        <input class="formInput" id="apPhone" placeholder="+380 67 123 45 67" inputmode="tel" autocomplete="off">
-      </div>
-
-      <div class="formGroup">
-        <label class="formLabel">Формат співпраці</label>
-        <div class="chips" id="apCollaborationChips">
-          <button type="button" class="chip active" data-type="permanent">Постійна команда</button>
-          <button type="button" class="chip" data-type="per_project">На об'єкт</button>
-          <button type="button" class="chip" data-type="one_off">Разово</button>
-        </div>
-      </div>
-
-      <div class="formGroup">
-        <label class="formLabel">Принцип оплати</label>
-        <div class="chips" id="apChips">
-          <button type="button" class="chip active" data-type="percent_of_income">% від суми об'єкта</button>
-          <button type="button" class="chip" data-type="percent_of_work">% від робіт</button>
-          <button type="button" class="chip" data-type="per_day">За день</button>
-          <button type="button" class="chip" data-type="per_month">За місяць</button>
-          <button type="button" class="chip" data-type="fixed_per_object">Фіксована</button>
-          <button type="button" class="chip" data-type="manual">Вручну</button>
-        </div>
+        <label class="formLabel">Як оплачується</label>
+        <select class="formSelect" id="apPayType" onchange="changeAddPersonPayType(this.value)">
+          <option value="percent_of_work">% від вартості робіт</option>
+          <option value="percent_of_income">% від суми об'єкта</option>
+          <option value="per_day">За день</option>
+          <option value="per_month">За місяць</option>
+          <option value="fixed_per_object">Фіксовано за об'єкт</option>
+          <option value="manual">Вручну за домовленістю</option>
+        </select>
       </div>
 
       <div class="formGroup">
@@ -2756,11 +2746,31 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         <input class="formInput" id="apValue" inputmode="decimal" placeholder="0">
         <div class="formHint" id="apValueHint">% від доходу об'єкта</div>
       </div>
+
+      <div class="detailsToggle" id="personDetailsToggle" onclick="togglePersonDetails()">
+        <span class="detailsToggleText">Додатково</span>
+        <span class="detailsToggleIcon">›</span>
+      </div>
+
+      <div class="detailsBlock" id="personDetailsBlock">
+        <div class="formGroup">
+          <label class="formLabel">Телефон (опційно)</label>
+          <input class="formInput" id="apPhone" placeholder="+380 67 123 45 67" inputmode="tel" autocomplete="off">
+        </div>
+        <div class="formGroup" style="margin-bottom:0">
+          <label class="formLabel">Формат співпраці</label>
+          <select class="formSelect" id="apCollaborationType">
+            <option value="permanent">Постійна команда</option>
+            <option value="per_project">На конкретний об'єкт</option>
+            <option value="one_off">Разовий підрядник</option>
+          </select>
+        </div>
+        <button class="addPersonButton hidden" id="personDeleteButton" type="button" onclick="deleteEditingPerson()" style="color:var(--red);background:rgba(255,59,48,.1)">Видалити майстра</button>
+      </div>
     </div>
 
     <div class="panelFooter">
-      <button class="btnGhost" onclick="closeAddPerson()">Скасувати</button>
-      <button class="btnPrimary" onclick="savePerson()">Зберегти</button>
+      <button class="btnPrimary" onclick="savePerson()">Готово</button>
     </div>
   </div>
 </div>
@@ -2801,38 +2811,19 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
     </div>
 
     <div class="fsSection">
-      <div class="fsSectionTitle">Оплата праці</div>
+      <div class="fsSectionTitle">Режим роботи</div>
       <div class="fsCard">
-        <div class="checkRow" id="pfOwnerRow" onclick="toggleOwner()">
+        <div class="checkRow" id="pfSoloRow" onclick="toggleSoloMode()">
           <div class="checkBox">
             <svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>
           </div>
-          <div class="checkLabel">Я власник — мені залишається залишок</div>
+          <div class="checkLabel">Працюю сам</div>
         </div>
-
-        <div id="pfPayBlock" style="margin-top:.75rem">
-          <div class="formGroup">
-            <label class="formLabel">Принцип оплати</label>
-            <div class="chips" id="pfChips">
-              <button type="button" class="chip active" data-type="percent_of_income">% від суми об'єкта</button>
-              <button type="button" class="chip" data-type="percent_of_work">% від робіт</button>
-              <button type="button" class="chip" data-type="per_day">За день</button>
-              <button type="button" class="chip" data-type="per_month">За місяць</button>
-              <button type="button" class="chip" data-type="fixed_per_object">Фіксована</button>
-              <button type="button" class="chip" data-type="manual">Вручну</button>
-            </div>
-          </div>
-
-          <div class="formGroup" style="margin-bottom:0">
-            <label class="formLabel" id="pfValueLabel">Сума</label>
-            <input class="formInput" id="pfValue" inputmode="decimal" placeholder="0">
-            <div class="formHint" id="pfValueHint">% від доходу об'єкта</div>
-          </div>
-        </div>
+        <div class="formHint">У цьому режимі поля команди та виконавців в об'єктах не показуються.</div>
       </div>
     </div>
 
-    <div class="fsSection">
+    <div class="fsSection" id="pfTeamSection">
       <div class="fsSectionTitle">Команда</div>
       <div id="teamList"></div>
 
@@ -2903,6 +2894,7 @@ let profile = {
   isOwner: true,
   payType: "per_day",
   payValue: 0,
+  isSolo: false,
   lastObjectType: "",
   lastWorkType: ""
 };
@@ -3142,8 +3134,8 @@ let editingProjectId = null;
 let actionsProjectId = null;
 let editingPayType = "percent_of_income";
 let editingCollaborationType = "permanent";
-let profilePayType = "percent_of_income";
-let ownerMode = true;
+let editingPersonId = null;
+let soloMode = false;
 
 let editingType = "";
 let editingWork = "";
@@ -3369,15 +3361,18 @@ function getProjectTeamSummary(project){
 
   const done = ["done", "closed"].includes(project.stage) || project.status === "archived";
   const names = assignments.map(a => a.name || "Майстер").join(" · ");
-  const earnings = assignments.map(a => {
+  const rows = assignments.map(a => {
     const amount = getProjectAssignmentEarning(project, a);
-    return `${a.name || "Майстер"}: ${amount === null ? "уточнити" : money(amount)}`;
-  }).join(" · ");
+    return { assignment:a, amount };
+  });
+  const hasUnknown = rows.some(row => row.amount === null);
+  const total = hasUnknown ? null : rows.reduce((sum, row) => sum + row.amount, 0);
 
   return {
     peopleLabel: done ? "Працювали" : "Виконавці",
     names,
-    earnings
+    total,
+    rows
   };
 }
 
@@ -3562,8 +3557,7 @@ function renderProjectCard(p){
         ${details ? `<div class="projectDetails">${escapeHtml(details)}</div>` : ""}
         ${dates ? `<div class="projectDetails">Роботи: ${escapeHtml(dates)}</div>` : ""}
         ${teamSummary ? `
-          <div class="projectDetails">${escapeHtml(teamSummary.peopleLabel)}: ${escapeHtml(teamSummary.names)}</div>
-          <div class="projectDetails">Заробіток: ${escapeHtml(teamSummary.earnings)}</div>
+          <div class="projectDetails">${escapeHtml(teamSummary.peopleLabel)}: ${escapeHtml(teamSummary.names)}${teamSummary.total === null ? " · уточнити" : " · " + money(teamSummary.total)}</div>
         ` : ""}
       </div>
     </div>
@@ -3646,9 +3640,39 @@ function renderProject(p){
       </div>
 
       ${renderEstimateBlock(p)}
+      ${renderProjectTeamBlock(p)}
     </div>
 
     ${renderFloatingPanel(p)}
+  `;
+}
+
+function renderProjectTeamBlock(project){
+  if(profile.isSolo === true) return "";
+  const summary = getProjectTeamSummary(project);
+  if(!summary) return "";
+
+  return `
+    <div class="estimateBlock">
+      <div class="estimateHead">
+        <strong>${escapeHtml(summary.peopleLabel)}</strong>
+        <span class="estimateCount">${summary.rows.length}</span>
+      </div>
+      ${summary.rows.map(({ assignment, amount }) => {
+        const units = assignmentNeedsUnits(assignment) && Number(assignment.units) > 0
+          ? ` · ${assignment.units} ${assignmentUnitsLabel(assignment)}`
+          : "";
+        return `
+          <div class="position">
+            <div class="positionRow1">
+              <div class="positionName">${escapeHtml(assignment.name || "Майстер")}</div>
+              <div class="positionTotal ${amount === null ? "notSet" : ""}">${amount === null ? "уточнити" : money(amount)}</div>
+            </div>
+            <div class="positionPrice set">${escapeHtml(payTypeLabel(assignment.payType))}${units}</div>
+          </div>
+        `;
+      }).join("")}
+    </div>
   `;
 }
 
@@ -4046,7 +4070,14 @@ function assignmentUnitsLabel(assignment){
 function renderProjectTeamSelector(){
   const box = document.getElementById("npTeamList");
   const hint = document.getElementById("npTeamHint");
+  const group = document.getElementById("npTeamGroup");
   if(!box || !hint) return;
+
+  if(profile.isSolo === true){
+    if(group) group.classList.add("hidden");
+    return;
+  }
+  if(group) group.classList.remove("hidden");
 
   if(!team.length){
     box.innerHTML = "";
@@ -4149,7 +4180,7 @@ function saveProjectSheet(){
     p.details = details;
     p.workStartDate = workStartDate;
     p.workEndDate = workEndDate;
-    p.teamAssignments = editingTeamAssignments.map(a => ({ ...a }));
+    p.teamAssignments = profile.isSolo === true ? [] : editingTeamAssignments.map(a => ({ ...a }));
     p.updatedAt = now;
 
     saveProjects();
@@ -4177,7 +4208,7 @@ function saveProjectSheet(){
 
       workStartDate,
       workEndDate,
-      teamAssignments: editingTeamAssignments.map(a => ({ ...a })),
+      teamAssignments: profile.isSolo === true ? [] : editingTeamAssignments.map(a => ({ ...a })),
 
       details,
 
@@ -4219,6 +4250,7 @@ function setCatalogMode(type){
   document.getElementById("catalogSearch").value = "";
   document.getElementById("catalogTitle").textContent = "Каталог";
   document.getElementById("catalogImportButton").classList.toggle("hidden", type !== "material");
+  document.getElementById("catalogRequestButton").classList.toggle("hidden", type !== "material");
   updateCatalogTabs();
 
   renderCatalogChips();
@@ -4236,6 +4268,7 @@ function closeCatalog(){
   document.getElementById("catalogSheet").classList.remove("open");
   closeCatalogFilters();
   document.getElementById("catalogImportButton").classList.add("hidden");
+  document.getElementById("catalogRequestButton").classList.add("hidden");
   editingCatalogItemId = null;
 }
 
@@ -6764,14 +6797,10 @@ function openProfile(){
   document.getElementById("pfLastName").value = profile.lastName || "";
   document.getElementById("pfCompany").value = profile.company || "";
   document.getElementById("pfPhone").value = profile.phone || "";
-  document.getElementById("pfValue").value = profile.payValue || 0;
 
-  ownerMode = profile.isOwner !== false;
-  profilePayType = profile.payType || "percent_of_income";
+  soloMode = profile.isSolo === true || (!team.length && profile.isSolo !== false);
 
-  updateOwnerUI();
-  updateProfileChips();
-  updateProfileValueUI();
+  updateSoloUI();
   renderTeamList();
 
   document.getElementById("profileScreen").classList.add("open");
@@ -6781,29 +6810,16 @@ function closeProfile(){
   document.getElementById("profileScreen").classList.remove("open");
 }
 
-function toggleOwner(){
-  ownerMode = !ownerMode;
-  updateOwnerUI();
+function toggleSoloMode(){
+  soloMode = !soloMode;
+  updateSoloUI();
 }
 
-function updateOwnerUI(){
-  const row = document.getElementById("pfOwnerRow");
-  const block = document.getElementById("pfPayBlock");
-  row.classList.toggle("on", ownerMode);
-  block.style.display = ownerMode ? "none" : "block";
-}
-
-function updateProfileChips(){
-  document.querySelectorAll("#pfChips .chip").forEach(c => {
-    c.classList.toggle("active", c.dataset.type === profilePayType);
-  });
-}
-
-function updateProfileValueUI(){
-  const label = document.getElementById("pfValueLabel");
-  const hint = document.getElementById("pfValueHint");
-  label.textContent = "Сума (" + payValueUnit(profilePayType) + ")";
-  hint.textContent = payValueHint(profilePayType);
+function updateSoloUI(){
+  const row = document.getElementById("pfSoloRow");
+  const teamSection = document.getElementById("pfTeamSection");
+  if(row) row.classList.toggle("on", soloMode);
+  if(teamSection) teamSection.classList.toggle("hidden", soloMode);
 }
 
 function renderTeamList(){
@@ -6820,16 +6836,16 @@ function renderTeamList(){
     return;
   }
   box.innerHTML = team.map(p => `
-    <div class="fsCard">
+    <button class="fsCard" type="button" onclick="openEditPerson('${escapeHtml(p.id)}')" style="width:100%;text-align:left">
       <div class="personRow">
         <div class="personAvatar">${escapeHtml(personInitial(p.name))}</div>
         <div class="personBody">
           <div class="personName">${escapeHtml(p.name)}</div>
-          <div class="personMeta">${escapeHtml(collaborationLabel(p.collaborationType || "permanent"))} · ${Number(p.payValue) || 0}${payValueUnit(p.payType)} · ${escapeHtml(payTypeLabel(p.payType))}</div>
+          <div class="personMeta">${Number(p.payValue) || 0}${payValueUnit(p.payType)} · ${escapeHtml(payTypeLabel(p.payType))}</div>
         </div>
-        <button class="personDelete" onclick="deletePerson('${escapeHtml(p.id)}')" aria-label="Видалити">×</button>
+        <span style="color:var(--p);font-size:1.125rem">›</span>
       </div>
-    </div>
+    </button>
   `).join("");
 }
 
@@ -6838,23 +6854,46 @@ function saveProfile(){
   profile.lastName = document.getElementById("pfLastName").value.trim();
   profile.company = document.getElementById("pfCompany").value.trim();
   profile.phone = document.getElementById("pfPhone").value.trim();
-  profile.isOwner = ownerMode;
-  profile.payType = profilePayType;
-  profile.payValue = Number(String(document.getElementById("pfValue").value).replace(",",".")) || 0;
+  profile.isSolo = soloMode;
 
   saveProfileData();
   closeProfile();
-  renderHero();
+  render();
 }
 
 function openAddPerson(){
+  editingPersonId = null;
+  document.getElementById("personSheetTitle").textContent = "Новий майстер";
   document.getElementById("apName").value = "";
   document.getElementById("apPhone").value = "";
   document.getElementById("apValue").value = "0";
-  editingPayType = "percent_of_income";
+  editingPayType = "percent_of_work";
   editingCollaborationType = "permanent";
-  updateAddPersonChips();
-  updateAddPersonCollaborationChips();
+  document.getElementById("apPayType").value = editingPayType;
+  document.getElementById("apCollaborationType").value = editingCollaborationType;
+  document.getElementById("personDeleteButton").classList.add("hidden");
+  document.getElementById("personDetailsBlock").classList.remove("open");
+  document.getElementById("personDetailsToggle").classList.remove("open");
+  updateAddPersonValueUI();
+  document.getElementById("addPersonSheet").classList.add("open");
+  setTimeout(() => document.getElementById("apName").focus(), 200);
+}
+
+function openEditPerson(id){
+  const person = team.find(p => p.id === id);
+  if(!person) return;
+  editingPersonId = id;
+  document.getElementById("personSheetTitle").textContent = "Редагувати майстра";
+  document.getElementById("apName").value = person.name || "";
+  document.getElementById("apPhone").value = person.phone || "";
+  editingPayType = person.payType || "percent_of_work";
+  editingCollaborationType = person.collaborationType || "permanent";
+  document.getElementById("apPayType").value = editingPayType;
+  document.getElementById("apCollaborationType").value = editingCollaborationType;
+  document.getElementById("apValue").value = Number(person.payValue) || "";
+  document.getElementById("personDeleteButton").classList.remove("hidden");
+  document.getElementById("personDetailsBlock").classList.add("open");
+  document.getElementById("personDetailsToggle").classList.add("open");
   updateAddPersonValueUI();
   document.getElementById("addPersonSheet").classList.add("open");
   setTimeout(() => document.getElementById("apName").focus(), 200);
@@ -6862,18 +6901,12 @@ function openAddPerson(){
 
 function closeAddPerson(){
   document.getElementById("addPersonSheet").classList.remove("open");
+  editingPersonId = null;
 }
 
-function updateAddPersonChips(){
-  document.querySelectorAll("#apChips .chip").forEach(c => {
-    c.classList.toggle("active", c.dataset.type === editingPayType);
-  });
-}
-
-function updateAddPersonCollaborationChips(){
-  document.querySelectorAll("#apCollaborationChips .chip").forEach(c => {
-    c.classList.toggle("active", c.dataset.type === editingCollaborationType);
-  });
+function changeAddPersonPayType(value){
+  editingPayType = value;
+  updateAddPersonValueUI();
 }
 
 function updateAddPersonValueUI(){
@@ -6881,6 +6914,11 @@ function updateAddPersonValueUI(){
   const hint = document.getElementById("apValueHint");
   label.textContent = "Сума (" + payValueUnit(editingPayType) + ")";
   hint.textContent = payValueHint(editingPayType);
+}
+
+function togglePersonDetails(){
+  document.getElementById("personDetailsBlock").classList.toggle("open");
+  document.getElementById("personDetailsToggle").classList.toggle("open");
 }
 
 function savePerson(){
@@ -6893,19 +6931,40 @@ function savePerson(){
     return;
   }
 
-  team.push({
-    id: uid("p"),
+  const person = {
+    id: editingPersonId || uid("p"),
     name,
     phone,
-    collaborationType: editingCollaborationType,
+    collaborationType: document.getElementById("apCollaborationType").value || "permanent",
     payType: editingPayType,
     payValue: value
-  });
+  };
+  const isEditing = Boolean(editingPersonId);
+
+  if(isEditing){
+    const index = team.findIndex(p => p.id === editingPersonId);
+    if(index >= 0) team[index] = person;
+  }else{
+    team.push(person);
+  }
 
   saveTeamData();
   closeAddPerson();
   renderTeamList();
-  toast("Додано в команду");
+  toast(isEditing ? "Збережено" : "Додано в команду");
+}
+
+function deleteEditingPerson(){
+  if(!editingPersonId) return;
+  const id = editingPersonId;
+  const person = team.find(p => p.id === id);
+  if(!person) return;
+  if(!confirm(`Видалити «${person.name}» з команди?`)) return;
+  team = team.filter(p => p.id !== id);
+  saveTeamData();
+  closeAddPerson();
+  renderTeamList();
+  toast("Видалено з команди");
 }
 
 function deletePerson(id){
@@ -6978,29 +7037,6 @@ document.getElementById("ceStageChips").addEventListener("click", e => {
   document.querySelectorAll("#ceStageChips .chip").forEach(c => {
     c.classList.toggle("active", c.dataset.value === editingCatalogStage);
   });
-});
-
-document.getElementById("apChips").addEventListener("click", e => {
-  const chip = e.target.closest(".chip");
-  if(!chip) return;
-  editingPayType = chip.dataset.type;
-  updateAddPersonChips();
-  updateAddPersonValueUI();
-});
-
-document.getElementById("apCollaborationChips").addEventListener("click", e => {
-  const chip = e.target.closest(".chip");
-  if(!chip) return;
-  editingCollaborationType = chip.dataset.type;
-  updateAddPersonCollaborationChips();
-});
-
-document.getElementById("pfChips").addEventListener("click", e => {
-  const chip = e.target.closest(".chip");
-  if(!chip) return;
-  profilePayType = chip.dataset.type;
-  updateProfileChips();
-  updateProfileValueUI();
 });
 
 document.getElementById("impCurrency").addEventListener("change", updateImportRateField);
