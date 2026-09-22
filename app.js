@@ -133,10 +133,6 @@
       stopAutoplay();
     }, { passive: true });
 
-    galleryWindow.addEventListener('touchmove', (e) => {
-      if (!gallerySwiping) return;
-    }, { passive: true });
-
     galleryWindow.addEventListener('touchend', (e) => {
       if (!gallerySwiping) return;
       gallerySwiping = false;
@@ -247,8 +243,6 @@
 
     const isTel = type === 'tel';
     if (isTel) {
-      // НЕ використовуємо type='tel' та inputMode='tel' на iOS Safari —
-      // вони блокують введення символу '+'
       input.setAttribute('inputmode', 'text');
       input.setAttribute('autocomplete', 'tel');
       input.setAttribute('autocorrect', 'off');
@@ -257,7 +251,6 @@
       input.setAttribute('pattern', '[+0-9\\s\\-()]{9,}');
     }
 
-    // Авто-нормалізація телефону при втраті фокусу
     if (isTel) {
       input.addEventListener('blur', () => {
         const normalized = normalizeUAPhone(input.value);
@@ -288,7 +281,6 @@
       let value = input.value.trim();
       if (!value) { input.focus(); return; }
 
-      // Для телефону — нормалізуємо перед відправкою
       if (isTel) {
         const normalized = normalizeUAPhone(value);
         if (!normalized) {
@@ -365,7 +357,6 @@
   function askPhone() {
     chatStep = 3;
     chatBot('Дякую. Тепер залиште номер телефону для зв’язку.');
-    chatBot('Формат: +380XXXXXXXXX. Якщо забудете «+380» — я додам автоматично.');
     addInput(
       'Наприклад: 0979111871',
       'tel',
