@@ -6,6 +6,18 @@
   const lock = () => { document.body.style.overflow = 'hidden'; };
   const unlock = () => { document.body.style.overflow = ''; };
 
+  /* ============ Нормалізація телефону ============ */
+  function normalizeUAPhone(input) {
+    const digits = String(input || '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.length === 12 && digits.startsWith('380')) return '+' + digits;
+    if (digits.length === 11 && digits.startsWith('80'))  return '+3' + digits;
+    if (digits.length === 10 && digits.startsWith('0'))   return '+38' + digits;
+    if (digits.length === 9)                              return '+380' + digits;
+    if (digits.length >= 10 && digits.length <= 13)       return '+' + digits;
+    return '';
+  }
+
   /* ============ Модальна карусель ============ */
   const MODALS = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
   let currentModal = 0;
@@ -110,7 +122,6 @@
   let galleryStartX = 0;
   let galleryStartY = 0;
   let gallerySwiping = false;
-  let gallerySwiped = false;
 
   function bindGallerySwipe() {
     if (!galleryWindow) return;
@@ -119,17 +130,11 @@
       galleryStartX = e.touches[0].clientX;
       galleryStartY = e.touches[0].clientY;
       gallerySwiping = true;
-      gallerySwiped = false;
       stopAutoplay();
     }, { passive: true });
 
     galleryWindow.addEventListener('touchmove', (e) => {
       if (!gallerySwiping) return;
-      const dx = e.touches[0].clientX - galleryStartX;
-      const dy = e.touches[0].clientY - galleryStartY;
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
-        gallerySwiped = true;
-      }
     }, { passive: true });
 
     galleryWindow.addEventListener('touchend', (e) => {
@@ -167,7 +172,7 @@
     if (c) c.textContent = `${lightboxIndex + 1} / ${GALLERY_SIZE}`;
   }
 
-  /* ============ Чат-заявка (state machine) ============ */
+  /* ============ Чат-заявка ============ */
   const REQUEST_STATE = {
     type: '', typeLabel: '', name: '', phone: '',
     location: '', timing: '', project: '', consultationDate: ''
@@ -239,7 +244,26 @@
     input.placeholder = placeholder;
     input.autocomplete = 'off';
     input.setAttribute('aria-label', placeholder);
-    if (type === 'tel') input.inputMode = 'tel';
+
+    const isTel = type === 'tel';
+    if (isTel) {
+      // НЕ використовуємо type='tel' та inputMode='tel' на iOS Safari —
+      // вони блокують введення символу '+'
+      input.setAttribute('inputmode', 'text');
+      input.setAttribute('autocomplete', 'tel');
+      input.setAttribute('autocorrect', 'off');
+      input.setAttribute('autocapitalize', 'off');
+      input.setAttribute('spellcheck', 'false');
+      input.setAttribute('pattern', '[+0-9\\s\\-()]{9,}');
+    }
+
+    // Авто-нормалізація телефону при втраті фокусу
+    if (isTel) {
+      input.addEventListener('blur', () => {
+        const normalized = normalizeUAPhone(input.value);
+        if (normalized) input.value = normalized;
+      });
+    }
 
     send.type = 'button';
     send.className = 'chat-send';
@@ -261,13 +285,26 @@
     setTimeout(() => input.focus(), 50);
 
     function submit() {
-      const value = input.value.trim();
+      let value = input.value.trim();
       if (!value) { input.focus(); return; }
+
+      // Для телефону — нормалізуємо перед відправкою
+      if (isTel) {
+        const normalized = normalizeUAPhone(value);
+        if (!normalized) {
+          input.setAttribute('aria-invalid', 'true');
+          input.focus();
+          return;
+        }
+        value = normalized;
+      }
+
       if (validate && !validate(value)) {
         input.setAttribute('aria-invalid', 'true');
         input.focus();
         return;
       }
+
       wrap.remove();
       chatUser(value);
       onDone(value);
@@ -324,15 +361,26 @@
     });
     updateProgress();
   }
+
   function askPhone() {
     chatStep = 3;
     chatBot('Дякую. Тепер залиште номер телефону для зв’язку.');
-    addInput('Ваш телефон', 'tel', (v) => {
-      REQUEST_STATE.phone = v;
-      askLocation();
-    }, (v) => /^\+?[\d\s\-()]{10,}$/.test(v));
+    chatBot('Формат: +380XXXXXXXXX. Якщо забудете «+380» — я додам автоматично.');
+    addInput(
+      'Наприклад: 0979111871',
+      'tel',
+      (v) => {
+        REQUEST_STATE.phone = v;
+        askLocation();
+      },
+      (v) => {
+        const digits = String(v || '').replace(/\D/g, '');
+        return digits.length >= 9 && digits.length <= 13;
+      }
+    );
     updateProgress();
   }
+
   function askLocation() {
     chatStep = 4;
     chatBot('Де знаходиться об’єкт? Вкажіть ЖК, вулицю або адресу.');
@@ -342,6 +390,7 @@
     });
     updateProgress();
   }
+
   function afterLocation() {
     if (REQUEST_STATE.type === 'consultation') {
       chatStep = 5;
@@ -366,6 +415,7 @@
     }
     askTiming();
   }
+
   function askTiming() {
     chatStep = 5;
     chatBot('Коли орієнтовно плануєте початок робіт?');
@@ -551,7 +601,6 @@
 
   /* ============ Глобальні обробники ============ */
   function bindGlobal() {
-    // Кліки
     document.addEventListener('click', (e) => {
       const closeBtn = e.target.closest('.mc');
       if (closeBtn) {
@@ -593,9 +642,7 @@
       }
     });
 
-    // Клавіатура
     document.addEventListener('keydown', (e) => {
-      // WC — активувати Enter/Space
       const wc = e.target.closest('.wc');
       if (wc && (e.key === 'Enter' || e.key === ' ')) {
         e.preventDefault();
@@ -667,12 +714,10 @@
   }
 
   function init() {
-    // Тема
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     applyTheme();
     if (mq.addEventListener) mq.addEventListener('change', applyTheme);
 
-    // Заявка
     const rl = $('requestLaunch');
     if (rl) rl.addEventListener('click', openRequest);
     const rc = $('requestClose');
@@ -680,7 +725,6 @@
     const rm = $('requestModal');
     if (rm) rm.addEventListener('click', (e) => { if (e.target === rm) closeRequest(); });
 
-    // Галерея
     if (galleryWindow) {
       galleryWindow.addEventListener('mouseenter', stopAutoplay);
       galleryWindow.addEventListener('mouseleave', startAutoplay);
@@ -691,7 +735,6 @@
     updateGallery(false);
     startAutoplay();
 
-    // Соцслайдер
     bindSocialSwipe();
     setTimeout(() => {
       const st = $('socialTrack');
@@ -701,14 +744,11 @@
       }
     }, 900);
 
-    // Калькулятор
     bindCalculator();
 
-    // Рік
     const y = $('currentYear');
     if (y) y.textContent = new Date().getFullYear();
 
-    // Глобальні
     bindGlobal();
   }
 
