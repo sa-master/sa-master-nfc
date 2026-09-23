@@ -160,6 +160,54 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   letter-spacing:-1px;
 }
 
+.profileLogoEditor{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  padding:.625rem 0 .875rem;
+}
+
+.profileLogoPreview{
+  flex:0 0 auto;
+  width:3.25rem;
+  height:3.25rem;
+  border-radius:.875rem;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,122,255,.1);
+  border:1px solid var(--gbr);
+}
+
+.profileLogoPreview img{width:100%;height:100%;object-fit:contain;display:block}
+
+.profileLogoActions{display:flex;flex:1 1 auto;gap:.375rem;min-width:0}
+
+.profileLogoButton{
+  flex:1 1 auto;
+  min-width:0;
+  height:2.5rem;
+  padding:0 .625rem;
+  border-radius:.75rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.8125rem;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.profileLogoReset{
+  flex:0 0 auto;
+  height:2.5rem;
+  padding:0 .625rem;
+  border-radius:.75rem;
+  background:rgba(120,130,140,.12);
+  color:var(--ts);
+  font-size:.75rem;
+  font-weight:700;
+}
+
 .heroDivider{
   width:1px;
   height:2.25rem;
@@ -2829,6 +2877,18 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
       <div class="fsSectionTitle">Мої дані</div>
       <div class="fsCard">
         <div class="formGroup">
+          <label class="formLabel">Логотип</label>
+          <div class="profileLogoEditor">
+            <div class="profileLogoPreview" id="pfLogoPreview"></div>
+            <div class="profileLogoActions">
+              <button type="button" class="profileLogoButton" onclick="openProfileLogoPicker()">Змінити логотип</button>
+              <button type="button" class="profileLogoReset hidden" id="pfLogoResetButton" onclick="resetProfileLogo()">Стандартний</button>
+            </div>
+          </div>
+          <input type="file" id="pfLogoInput" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="handleProfileLogoChange(event)">
+        </div>
+
+        <div class="formGroup">
           <label class="formLabel">Ім'я</label>
           <input class="formInput" id="pfFirstName" placeholder="Сергій" autocomplete="off">
         </div>
@@ -2839,7 +2899,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         </div>
 
         <div class="formGroup">
-          <label class="formLabel">Компанія</label>
+          <label class="formLabel">Назва компанії</label>
           <input class="formInput" id="pfCompany" placeholder="SA-MASTER.PRO" autocomplete="off">
         </div>
 
@@ -2935,6 +2995,7 @@ let profile = {
   payType: "per_day",
   payValue: 0,
   isSolo: false,
+  logoData: "",
   lastObjectType: "",
   lastWorkType: ""
 };
@@ -3176,6 +3237,7 @@ let editingPayType = "percent_of_income";
 let editingCollaborationType = "permanent";
 let editingPersonId = null;
 let soloMode = false;
+let profileLogoDraft = "";
 
 let editingType = "";
 let editingWork = "";
@@ -3510,6 +3572,15 @@ function render(){
   }
 }
 
+function profileCompanyName(){
+  return String(profile.company || "").trim() || "SA-MASTER.pro";
+}
+
+function profileLogoMarkup(logoData, companyName){
+  const source = logoData || "logo.png";
+  return `<img src="${escapeHtml(source)}" alt="${escapeHtml(companyName)}" onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\\'heroLogoFallback\\'>S</span>'">`;
+}
+
 function renderHero(){
   const hero = document.getElementById("hero");
 
@@ -3521,14 +3592,16 @@ function renderHero(){
 
   hero.style.display = "";
 
+  const companyName = profileCompanyName();
+
   hero.innerHTML = `
     <div class="heroRow">
       <div class="heroLogo">
-        <img src="logo.png" alt="SA-MASTER.PRO" onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\\'heroLogoFallback\\'>S</span>'">
+        ${profileLogoMarkup(profile.logoData, companyName)}
       </div>
       <div class="heroDivider"></div>
       <div class="heroText">
-        <div class="heroTitle">SA-MASTER<span class="pro">.pro</span></div>
+        <div class="heroTitle">${escapeHtml(companyName)}</div>
         <div class="heroSub">Кошторис. Звітність. Аудит.</div>
       </div>
       <button class="heroAction" onclick="openProfile()" aria-label="Профіль">
@@ -7144,6 +7217,8 @@ function openProfile(){
   document.getElementById("pfLastName").value = profile.lastName || "";
   document.getElementById("pfCompany").value = profile.company || "";
   document.getElementById("pfPhone").value = profile.phone || "";
+  profileLogoDraft = profile.logoData || "";
+  renderProfileLogoPreview();
 
   soloMode = profile.isSolo === true || (!team.length && profile.isSolo !== false);
 
@@ -7155,6 +7230,58 @@ function openProfile(){
 
 function closeProfile(){
   document.getElementById("profileScreen").classList.remove("open");
+}
+
+function renderProfileLogoPreview(){
+  const preview = document.getElementById("pfLogoPreview");
+  const resetButton = document.getElementById("pfLogoResetButton");
+  if(preview) preview.innerHTML = profileLogoMarkup(profileLogoDraft, profileCompanyName());
+  if(resetButton) resetButton.classList.toggle("hidden", !profileLogoDraft);
+}
+
+function openProfileLogoPicker(){
+  const input = document.getElementById("pfLogoInput");
+  if(!input) return;
+  input.value = "";
+  input.click();
+}
+
+function resetProfileLogo(){
+  profileLogoDraft = "";
+  renderProfileLogoPreview();
+}
+
+function handleProfileLogoChange(event){
+  const file = event.target && event.target.files && event.target.files[0];
+  if(!file) return;
+  if(!/^image\/(png|jpeg|webp)$/i.test(file.type)){
+    toast("Оберіть PNG, JPG або WEBP");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onerror = () => toast("Не вдалося прочитати логотип");
+  reader.onload = () => {
+    const image = new Image();
+    image.onerror = () => toast("Не вдалося відкрити логотип");
+    image.onload = () => {
+      const maxSide = 512;
+      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || 1, image.naturalHeight || 1));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
+      canvas.height = Math.max(1, Math.round((image.naturalHeight || 1) * scale));
+      canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+      const data = canvas.toDataURL("image/png");
+      if(data.length > 1500000){
+        toast("Логотип завеликий — оберіть простіше зображення");
+        return;
+      }
+      profileLogoDraft = data;
+      renderProfileLogoPreview();
+    };
+    image.src = String(reader.result || "");
+  };
+  reader.readAsDataURL(file);
 }
 
 function toggleSoloMode(){
@@ -7202,6 +7329,7 @@ function saveProfile(){
   profile.company = document.getElementById("pfCompany").value.trim();
   profile.phone = document.getElementById("pfPhone").value.trim();
   profile.isSolo = soloMode;
+  profile.logoData = profileLogoDraft;
 
   saveProfileData();
   closeProfile();
