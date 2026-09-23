@@ -458,7 +458,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .sheet{
   position:fixed;
   inset:0;
-  z-index:100;
+  z-index:250;
   display:none;
   align-items:flex-end;
   background:rgba(0,0,0,.35);
@@ -2807,7 +2807,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
         </div>
       </div>
 
-      <button class="addPersonButton hidden" id="personDeleteButton" type="button" onclick="deleteEditingPerson()" style="color:var(--red);background:rgba(255,59,48,.1)">Видалити майстра</button>
     </div>
 
     <div class="panelFooter">
@@ -7184,16 +7183,16 @@ function renderTeamList(){
     return;
   }
   box.innerHTML = team.map(p => `
-    <button class="fsCard" type="button" onclick="openEditPerson('${escapeHtml(p.id)}')" style="width:100%;text-align:left">
+    <div class="fsCard" style="padding:.75rem .875rem">
       <div class="personRow">
         <div class="personAvatar">${escapeHtml(personInitial(p.name))}</div>
-        <div class="personBody">
+        <button class="personBody" type="button" onclick="openEditPerson('${escapeHtml(p.id)}')" style="text-align:left">
           <div class="personName">${escapeHtml(p.name)}</div>
           <div class="personMeta">${Number(p.payValue) || 0}${payValueUnit(p.payType)} · ${escapeHtml(payTypeLabel(p.payType))}</div>
-        </div>
-        <span style="color:var(--p);font-size:1.125rem">›</span>
+        </button>
+        <button class="personDelete" type="button" onclick="deletePerson('${escapeHtml(p.id)}')" aria-label="Видалити ${escapeHtml(p.name)}">×</button>
       </div>
-    </button>
+    </div>
   `).join("");
 }
 
@@ -7219,7 +7218,6 @@ function openAddPerson(){
   editingCollaborationType = "permanent";
   document.getElementById("apPayType").value = editingPayType;
   document.getElementById("apCollaborationType").value = editingCollaborationType;
-  document.getElementById("personDeleteButton").classList.add("hidden");
   document.getElementById("personDetailsBlock").classList.remove("open");
   document.getElementById("personDetailsToggle").classList.remove("open");
   updateAddPersonValueUI();
@@ -7239,7 +7237,6 @@ function openEditPerson(id){
   document.getElementById("apPayType").value = editingPayType;
   document.getElementById("apCollaborationType").value = editingCollaborationType;
   document.getElementById("apValue").value = Number(person.payValue) || "";
-  document.getElementById("personDeleteButton").classList.remove("hidden");
   document.getElementById("personDetailsBlock").classList.add("open");
   document.getElementById("personDetailsToggle").classList.add("open");
   updateAddPersonValueUI();
@@ -7300,19 +7297,6 @@ function savePerson(){
   closeAddPerson();
   renderTeamList();
   toast(isEditing ? "Збережено" : "Додано в команду");
-}
-
-function deleteEditingPerson(){
-  if(!editingPersonId) return;
-  const id = editingPersonId;
-  const person = team.find(p => p.id === id);
-  if(!person) return;
-  if(!confirm(`Видалити «${person.name}» з команди?`)) return;
-  team = team.filter(p => p.id !== id);
-  saveTeamData();
-  closeAddPerson();
-  renderTeamList();
-  toast("Видалено з команди");
 }
 
 function deletePerson(id){
