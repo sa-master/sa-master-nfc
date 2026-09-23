@@ -1480,6 +1480,34 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .addButton:active{transform:scale(.98)}
 
+.procurementGroup{margin-bottom:1rem}
+.procurementGroup:last-child{margin-bottom:0}
+
+.procurementGroupHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+  padding:0 .25rem .375rem;
+}
+
+.procurementGroupName{font-size:.875rem;font-weight:800;color:var(--t)}
+.procurementGroupMeta{font-size:.75rem;font-weight:700;color:var(--tm);white-space:nowrap}
+
+.procurementItem{
+  padding:.625rem .75rem;
+  border-radius:.875rem;
+  background:var(--gb);
+  border:1px solid var(--gbr);
+  margin-bottom:.375rem;
+}
+
+.procurementItemTop{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem}
+.procurementItemName{font-size:.8125rem;font-weight:700;line-height:1.25;color:var(--t);min-width:0}
+.procurementItemQty{font-size:.75rem;font-weight:750;color:var(--p);white-space:nowrap}
+.procurementItemMeta{margin-top:.25rem;font-size:.6875rem;color:var(--tm)}
+.procurementSupplierSelect{height:2.25rem;margin-top:.5rem;font-size:.8125rem;border-radius:.625rem}
+
 .catalogSearch{
   flex:0 0 auto;
   width:100%;
@@ -2863,6 +2891,50 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   </div>
 </div>
 
+<!-- FULLSCREEN: PROCUREMENT PLAN -->
+
+<div class="fullscreen" id="procurementPlanScreen">
+  <div class="fsBody">
+    <div class="fsHead">
+      <strong>План закупівлі</strong>
+      <button class="close" onclick="closeProcurementPlan()" aria-label="Закрити">×</button>
+    </div>
+
+    <div class="formHint" style="margin:0 .25rem 1rem">
+      Розподіліть матеріали за постачальниками перед погодженням цін.
+    </div>
+
+    <button class="addPersonButton" type="button" style="margin:0 0 1rem" onclick="openBestPriceProposal()">
+      <span style="font-size:1rem;line-height:1">↯</span>
+      <span>Підібрати вигідніше</span>
+    </button>
+
+    <div id="procurementPlanContent"></div>
+  </div>
+
+  <div class="fsFooter">
+    <div class="fsFooterInner">
+      <button onclick="closeProcurementPlan()">Готово</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: BEST PRICE PROPOSAL -->
+
+<div class="sheet" id="bestPriceSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong>Найвигідніші ціни</strong>
+      <button class="close" onclick="closeBestPriceProposal()">×</button>
+    </div>
+    <div class="panelBody" id="bestPriceContent"></div>
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeBestPriceProposal()">Залишити план</button>
+      <button class="btnPrimary" onclick="applyBestPriceProposal()">Застосувати</button>
+    </div>
+  </div>
+</div>
+
 <!-- FULLSCREEN: PROFILE -->
 
 <div class="fullscreen" id="profileScreen">
@@ -3260,6 +3332,7 @@ let customCategory = "other";
 let customStage = "rough";
 
 let pricesPending = [];
+let bestPriceProposal = null;
 
 let pendingImportFile = null;
 let pendingImportData = null;
@@ -3346,6 +3419,298 @@ function supplierOfferPrice(offer, kind){
   const snapshot = offer && offer[kind];
   const price = Number(snapshot && snapshot.priceUAH);
   return Number.isFinite(price) && price > 0 ? price : 0;
+}
+
+function getPositionCatalogItem(position){
+  return position && position.catalogId ? catalog.find(item => item.id === position.catalogId) : null;
+}
+
+function getPositionPlannedSupplier(position){
+  const direct = String(position && position.plannedSupplierName || "").trim();
+  if(direct) return direct;
+  const item = getPositionCatalogItem(position);
+  return String(item && item.preferredSupplierName || "").trim();
+}
+
+function getPositionSupplierNames(position){
+  const item = getPositionCatalogItem(position);
+  const names = getCatalogSupplierOffers(item)
+    .map(offer => String(offer && offer.supplierName || "").trim())
+    .filter(Boolean);
+  const current = getPositionPlannedSupplier(position);
+  if(current && !names.some(name => normalizeText(name) === normalizeText(current))){
+    names.push(current);
+  }
+  return Array.from(new Set(names.map(name => normalizeText(name))))
+    .map(key => names.find(name => normalizeText(name) === key));
+}
+
+function getProcurementGroupMeta(positions){
+  const total = positions.reduce((sum, position) => {
+    const price = Number(position.purchasePrice);
+    const qty = Number(position.qty) || 0;
+    return sum + (Number.isFinite(price) && price > 0 ? price * qty : 0);
+  }, 0);
+  const hasUnknown = positions.some(position => !(Number(position.purchasePrice) > 0));
+  return `${positions.length} поз. · ${hasUnknown ? "сума уточнюється" : money(total)}`;
+}
+
+function procurementSupplierSelect(projectId, position){
+  const suppliers = getPositionSupplierNames(position);
+  const selected = getPositionPlannedSupplier(position);
+  if(!suppliers.length){
+    return `<div class="formHint" style="margin:.5rem 0 0">У каталозі ще немає постачальника для цієї позиції.</div>`;
+  }
+  return `
+    <select
+      class="formSelect procurementSupplierSelect"
+      onchange="setPositionPlannedSupplier('${escapeHtml(projectId)}','${escapeHtml(position.id)}',this.value)"
+      aria-label="Постачальник"
+    >
+      <option value="" ${selected ? "" : "selected"}>Не розподілено</option>
+      ${suppliers.map(name => `<option value="${escapeHtml(name)}" ${normalizeText(name) === normalizeText(selected) ? "selected" : ""}>${escapeHtml(name)}</option>`).join("")}
+    </select>
+  `;
+}
+
+function renderProcurementPlan(){
+  const box = document.getElementById("procurementPlanContent");
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!box || !project) return;
+
+  const materials = (project.positions || []).filter(position => position.type === "material");
+  if(!materials.length){
+    box.innerHTML = `<div class="fsCard"><div class="emptyTeam">У кошторисі ще немає матеріалів.</div></div>`;
+    return;
+  }
+
+  const groups = new Map();
+  materials.forEach(position => {
+    const supplier = getPositionPlannedSupplier(position);
+    const key = supplier ? `supplier:${normalizeText(supplier)}` : "unassigned";
+    if(!groups.has(key)) groups.set(key, { supplier, positions: [] });
+    groups.get(key).positions.push(position);
+  });
+
+  const ordered = Array.from(groups.values()).sort((a,b) => {
+    if(!a.supplier) return 1;
+    if(!b.supplier) return -1;
+    return a.supplier.localeCompare(b.supplier, "uk");
+  });
+
+  box.innerHTML = ordered.map(group => `
+    <section class="procurementGroup">
+      <div class="procurementGroupHead">
+        <span class="procurementGroupName">${group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</span>
+        <span class="procurementGroupMeta">${escapeHtml(getProcurementGroupMeta(group.positions))}</span>
+      </div>
+      ${group.positions.map(position => {
+        const qty = Number(position.qty) || 1;
+        const purchasePrice = Number(position.purchasePrice);
+        const priceText = purchasePrice > 0
+          ? `Закупка: ${moneyWithCents(purchasePrice)} / ${escapeHtml(position.unit || "шт")}`
+          : "Закупівельна ціна не вказана";
+        return `
+          <div class="procurementItem">
+            <div class="procurementItemTop">
+              <div class="procurementItemName">${escapeHtml(position.name || "Без назви")}</div>
+              <div class="procurementItemQty">${qty} ${escapeHtml(position.unit || "шт")}</div>
+            </div>
+            <div class="procurementItemMeta">${priceText}</div>
+            ${procurementSupplierSelect(project.id, position)}
+          </div>
+        `;
+      }).join("")}
+    </section>
+  `).join("");
+}
+
+function openProcurementPlan(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project || !(project.positions || []).some(position => position.type === "material")){
+    toast("У кошторисі немає матеріалів");
+    return;
+  }
+  renderProcurementPlan();
+  document.getElementById("procurementPlanScreen").classList.add("open");
+}
+
+function closeProcurementPlan(){
+  document.getElementById("procurementPlanScreen").classList.remove("open");
+}
+
+function setPositionPlannedSupplier(projectId, positionId, supplierName){
+  const project = projects.find(item => item.id === projectId);
+  const position = project && (project.positions || []).find(item => item.id === positionId);
+  if(!project || !position) return;
+
+  const supplier = String(supplierName || "").trim();
+  position.plannedSupplierName = supplier;
+
+  const catalogItem = getPositionCatalogItem(position);
+  const offer = getCatalogSupplierOffers(catalogItem).find(item =>
+    normalizeText(item && item.supplierName) === normalizeText(supplier)
+  );
+  const purchasePrice = supplierOfferPrice(offer, "master");
+  if(purchasePrice > 0){
+    position.purchasePrice = purchasePrice;
+    position.purchasePriceState = "estimated";
+  }
+
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  render();
+  renderProcurementPlan();
+}
+
+function getBestPurchaseOffer(position){
+  const item = getPositionCatalogItem(position);
+  const offers = getCatalogSupplierOffers(item)
+    .map(offer => ({
+      supplierName: String(offer && offer.supplierName || "").trim(),
+      price: supplierOfferPrice(offer, "master")
+    }))
+    .filter(offer => offer.supplierName && offer.price > 0);
+
+  return offers.sort((a,b) => a.price - b.price || a.supplierName.localeCompare(b.supplierName, "uk"))[0] || null;
+}
+
+function procurementPlanTotal(positions, changes){
+  let total = 0;
+  let unknown = 0;
+
+  positions.forEach(position => {
+    const changed = changes && changes.get(position.id);
+    const price = Number(changed ? changed.purchasePrice : position.purchasePrice);
+    const qty = Number(position.qty) || 0;
+    if(price > 0){
+      total += price * qty;
+    }else{
+      unknown++;
+    }
+  });
+
+  return { total, unknown };
+}
+
+function procurementSupplierCount(positions, changes){
+  const suppliers = new Set();
+  positions.forEach(position => {
+    const changed = changes && changes.get(position.id);
+    const supplier = String(changed ? changed.supplierName : getPositionPlannedSupplier(position) || "").trim();
+    if(supplier) suppliers.add(normalizeText(supplier));
+  });
+  return suppliers.size;
+}
+
+function formatProcurementTotal(value){
+  return value.unknown ? `${money(value.total)} + ${value.unknown} без ціни` : money(value.total);
+}
+
+function openBestPriceProposal(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+
+  const materials = (project.positions || []).filter(position => position.type === "material");
+  const changes = new Map();
+
+  materials.forEach(position => {
+    const best = getBestPurchaseOffer(position);
+    if(!best) return;
+
+    const currentPrice = Number(position.purchasePrice);
+    const currentSupplier = getPositionPlannedSupplier(position);
+    const shouldChange =
+      !(currentPrice > 0) ||
+      best.price < currentPrice - 0.005 ||
+      (!currentSupplier && best.price <= currentPrice + 0.005);
+
+    if(shouldChange){
+      changes.set(position.id, {
+        supplierName: best.supplierName,
+        purchasePrice: best.price,
+        previousPrice: currentPrice > 0 ? currentPrice : null,
+        previousSupplier: currentSupplier
+      });
+    }
+  });
+
+  if(!changes.size){
+    toast("Поточний план уже має найвигідніші ціни");
+    return;
+  }
+
+  const current = procurementPlanTotal(materials);
+  const optimized = procurementPlanTotal(materials, changes);
+  bestPriceProposal = {
+    projectId: project.id,
+    changes: Array.from(changes, ([positionId, value]) => ({ positionId, ...value })),
+    current,
+    optimized,
+    currentSuppliers: procurementSupplierCount(materials),
+    optimizedSuppliers: procurementSupplierCount(materials, changes)
+  };
+
+  renderBestPriceProposal();
+  document.getElementById("bestPriceSheet").classList.add("open");
+}
+
+function renderBestPriceProposal(){
+  const box = document.getElementById("bestPriceContent");
+  const proposal = bestPriceProposal;
+  const project = proposal && projects.find(item => item.id === proposal.projectId);
+  if(!box || !proposal || !project) return;
+
+  const positions = project.positions || [];
+  const saving = Math.max(0, proposal.current.total - proposal.optimized.total);
+
+  box.innerHTML = `
+    <div class="importSummaryBox">
+      <div class="importSummaryRow"><span>Поточний план</span><b>${formatProcurementTotal(proposal.current)}</b></div>
+      <div class="importSummaryRow"><span>Найвигідніший варіант</span><b>${formatProcurementTotal(proposal.optimized)}</b></div>
+      <div class="importSummaryRow"><span>Економія</span><b style="color:var(--green)">${money(saving)}</b></div>
+      <div class="importSummaryRow"><span>Постачальники</span><b>${proposal.currentSuppliers} → ${proposal.optimizedSuppliers}</b></div>
+    </div>
+    <div class="formHint" style="margin:0 .25rem .875rem">Калькулятор пропонує лише закупівельні ціни матеріалів. Перед застосуванням перевірте кількість постачальників.</div>
+    <div class="fsSectionTitle">Зміняться позиції (${proposal.changes.length})</div>
+    ${proposal.changes.map(change => {
+      const position = positions.find(item => item.id === change.positionId);
+      if(!position) return "";
+      const from = change.previousPrice ? moneyWithCents(change.previousPrice) : "ціна не вказана";
+      return `
+        <div class="procurementItem">
+          <div class="procurementItemName">${escapeHtml(position.name || "Без назви")}</div>
+          <div class="procurementItemMeta">${from} → <b>${moneyWithCents(change.purchasePrice)}</b> · ${escapeHtml(change.supplierName)}</div>
+        </div>
+      `;
+    }).join("")}
+  `;
+}
+
+function closeBestPriceProposal(){
+  document.getElementById("bestPriceSheet").classList.remove("open");
+  bestPriceProposal = null;
+}
+
+function applyBestPriceProposal(){
+  const proposal = bestPriceProposal;
+  const project = proposal && projects.find(item => item.id === proposal.projectId);
+  if(!proposal || !project) return;
+
+  proposal.changes.forEach(change => {
+    const position = (project.positions || []).find(item => item.id === change.positionId);
+    if(!position) return;
+    position.plannedSupplierName = change.supplierName;
+    position.purchasePrice = change.purchasePrice;
+    position.purchasePriceState = "estimated";
+  });
+
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  closeBestPriceProposal();
+  render();
+  renderProcurementPlan();
+  toast("Застосовано найвигідніший план");
 }
 
 function payTypeLabel(t){
@@ -3855,6 +4220,7 @@ function renderFloatingPanel(p){
   const total = getEstimateTotal(p);
   const worksTotal = getWorksSubtotal(p);
   const materialsTotal = getCustomerMaterialsTotal(p);
+  const hasMaterials = Array.isArray(p.positions) && p.positions.some(pos => pos.type === "material");
   const profit = getMaterialsProfit(p);
   const discountPercent = getEstimateDiscountPercent(p);
   const profitLabel = profit.confirmed ? "Прибуток" : "≈ Прибуток";
@@ -3882,6 +4248,13 @@ function renderFloatingPanel(p){
           <span class="floatingMetricValue ${profit.hasUnknownPrice ? "unknown" : ""}">${profitValue}</span>
         </div>
       </div>
+
+      ${hasMaterials ? `
+        <button class="addButton" onclick="openProcurementPlan()">
+          <span style="font-size:1rem;line-height:1">☷</span>
+          <span>План закупівлі</span>
+        </button>
+      ` : ""}
 
       <div class="floatingButtons">
         <button class="addButton" onclick="openCatalogFor('work')">
@@ -5052,6 +5425,7 @@ function catalogCounterIncrement(catalogId){
         ? Number(item.purchasePriceUAH)
         : null,
       purchasePriceState: item.type === "material" ? "estimated" : "",
+      plannedSupplierName: item.type === "material" ? String(item.preferredSupplierName || "").trim() : "",
       qty: 1
     });
   }
@@ -5412,6 +5786,7 @@ function saveCustom(){
         ? Number(newItem.purchasePriceUAH)
         : null,
       purchasePriceState: newItem.type === "material" ? "estimated" : "",
+      plannedSupplierName: "",
       qty: 1
     });
     project.updatedAt = new Date().toISOString();
@@ -7557,6 +7932,10 @@ document.getElementById("customSheet").addEventListener("click", e => {
 
 document.getElementById("pricesSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closePricesSheet();
+});
+
+document.getElementById("bestPriceSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeBestPriceProposal();
 });
 
 document.getElementById("importSheet").addEventListener("click", e => {
