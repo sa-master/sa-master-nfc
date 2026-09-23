@@ -244,18 +244,18 @@
 
     const isTel = type === 'tel';
     if (isTel) {
-      input.setAttributeh('inputmode', 'onetext');
+      input.setAttribute('inputmode', 'text');
       input.setAttribute('autocomplete', 'tel');
-(input      input.setAttribute('autocorrect', 'off');
-.value      input.setAttribute('autoc);
-apitalize', 'off');
-             input.setAttribute('spellcheck', 'false');
+      input.setAttribute('autocorrect', 'off');
+      input.setAttribute('autocapitalize', 'off');
+      input.setAttribute('spellcheck', 'false');
       input.setAttribute('pattern', '[+0-9\\s\\-()]{9,}');
     }
 
     if (isTel) {
       input.addEventListener('blur', () => {
-        const normalized = normalizeUAP if (normalized) input.value = normalized;
+        const normalized = normalizeUAPhone(input.value);
+        if (normalized) input.value = normalized;
       });
     }
 
