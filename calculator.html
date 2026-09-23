@@ -36,6 +36,8 @@
   --dot-dark:#1C1C1E;
   --sat:env(safe-area-inset-top,0px);
   --sab:env(safe-area-inset-bottom,0px);
+  --vv-bottom:0px;
+  --floating-panel-height:0px;
 }
 
 @media (prefers-color-scheme: dark){
@@ -980,7 +982,10 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   display:flex;
   flex-direction:column;
   padding:.25rem 0;
-  padding-bottom:calc(13rem + var(--sab));
+  padding-bottom:max(
+    calc(var(--floating-panel-height) + 1.25rem + var(--sab) + var(--vv-bottom)),
+    calc(var(--floating-panel-height) + 1.25rem + var(--sab) + (100lvh - 100dvh))
+  );
   overflow-y:auto;
   scrollbar-width:none;
   gap:.625rem;
@@ -1383,7 +1388,10 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .floatingPanel{
   position:fixed;
   left:50%;
-  bottom:calc(.75rem + var(--sab));
+  bottom:max(
+    calc(.75rem + var(--sab) + var(--vv-bottom)),
+    calc(.75rem + var(--sab) + (100lvh - 100dvh))
+  );
   transform:translateX(-50%);
   width:min(30rem,calc(100% - 1rem));
   z-index:20;
@@ -2253,7 +2261,10 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .toast{
   position:fixed;
   left:50%;
-  bottom:calc(1.5rem + var(--sab));
+  bottom:max(
+    calc(1.5rem + var(--sab) + var(--vv-bottom)),
+    calc(1.5rem + var(--sab) + (100lvh - 100dvh))
+  );
   transform:translateX(-50%) translateY(1.25rem);
   background:var(--t);
   color:var(--bg);
@@ -2280,7 +2291,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 @media (max-width:26rem){
   .heroTitle{font-size:1.125rem}
   .heroSub{font-size:.6875rem}
-  .projectView{padding-bottom:calc(8.5rem + var(--sab))}
 }
 </style>
 </head>
@@ -3921,6 +3931,12 @@ function getProjectPositionCount(project){
   return (project && Array.isArray(project.positions)) ? project.positions.length : 0;
 }
 
+function syncFloatingPanelSpace(){
+  const panel = document.querySelector(".floatingPanel");
+  const height = panel ? Math.ceil(panel.getBoundingClientRect().height) : 0;
+  document.documentElement.style.setProperty("--floating-panel-height", height + "px");
+}
+
 function render(){
   renderHero();
 
@@ -3929,12 +3945,15 @@ function render(){
     if(!project){
       currentProjectId = null;
       renderHome();
+      requestAnimationFrame(syncFloatingPanelSpace);
       return;
     }
     renderProject(project);
   }else{
     renderHome();
   }
+
+  requestAnimationFrame(syncFloatingPanelSpace);
 }
 
 function profileCompanyName(){
@@ -7949,6 +7968,25 @@ document.getElementById("addPersonSheet").addEventListener("click", e => {
 document.getElementById("actionsSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeActionsSheet();
 });
+
+function updateViewportBottomInset(){
+  const viewport = window.visualViewport;
+  if(!viewport){
+    document.documentElement.style.setProperty("--vv-bottom", "0px");
+    requestAnimationFrame(syncFloatingPanelSpace);
+    return;
+  }
+  const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+  document.documentElement.style.setProperty("--vv-bottom", Math.round(inset) + "px");
+  requestAnimationFrame(syncFloatingPanelSpace);
+}
+
+updateViewportBottomInset();
+window.addEventListener("resize", updateViewportBottomInset);
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize", updateViewportBottomInset);
+  window.visualViewport.addEventListener("scroll", updateViewportBottomInset);
+}
 
 render();
 
