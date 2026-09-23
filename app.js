@@ -175,7 +175,7 @@
     notes: ''
   };
   let chatStep = 0;
-  const CHAT_TOTAL_STEPS = 7;
+  const CHAT_TOTAL_STEPS = 6;
 
   const TYPE_LABELS = {
     complex: 'Комплексний монтаж',
@@ -389,7 +389,7 @@
       chatBot('Коли вам зручно провести консультацію?');
       addInput('Наприклад: 18 вересня після 17:00', 'text', (v) => {
         REQUEST_STATE.consultationDate = v;
-        askNotes();
+        finishChat();
       });
       updateProgress();
       return;
@@ -420,57 +420,6 @@
     updateProgress();
   }
 
-  function askNotes() {
-    chatStep = 6;
-    chatBot('Додайте короткий опис (необов\'язково):');
-
-    const b = $('chatBody');
-    if (!b) return;
-    const wrap = document.createElement('div');
-    const input = document.createElement('input');
-    const send = document.createElement('button');
-
-    wrap.className = 'chat-input-wrap';
-    input.className = 'chat-input';
-    input.type = 'text';
-    input.placeholder = 'Необов\'язково — короткий опис: деталі, побажання, терміни...';
-    input.autocomplete = 'off';
-    input.setAttribute('maxlength', '500');
-
-    send.type = 'button';
-    send.className = 'chat-send';
-    send.setAttribute('aria-label', 'Надіслати');
-    send.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/></svg>';
-
-    wrap.append(input, send);
-    b.appendChild(wrap);
-
-    chatScroll();
-
-    function submit(value) {
-      wrap.remove();
-      REQUEST_STATE.notes = value || '';
-      if (value) chatUser(value);
-      else chatUser('(без опису)');
-      finishChat();
-    }
-
-    send.addEventListener('click', () => {
-      const v = input.value.trim().slice(0, 500);
-      submit(v);
-    });
-
-    input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        send.click();
-      }
-    });
-
-    setTimeout(() => input.focus(), 50);
-    updateProgress();
-  }
-
   function afterType(value) {
     REQUEST_STATE.type = value;
     REQUEST_STATE.typeLabel = TYPE_LABELS[value] || value;
@@ -488,11 +437,11 @@
   function afterTiming(value) {
     REQUEST_STATE.timing = value;
     chatUser(value);
-    askNotes();
+    finishChat();
   }
 
   function finishChat() {
-    chatStep = 7;
+    chatStep = 6;
     chatBot('Готово. Перевірте, будь ласка, дані заявки перед відправленням.');
     const b = $('chatBody');
     if (!b) return;
@@ -524,7 +473,6 @@
     if (REQUEST_STATE.project) row('Дизайн-проєкт', REQUEST_STATE.project);
     if (REQUEST_STATE.timing) row('Початок', REQUEST_STATE.timing);
     if (REQUEST_STATE.consultationDate) row('Консультація', REQUEST_STATE.consultationDate);
-    if (REQUEST_STATE.notes) row('Опис', REQUEST_STATE.notes);
 
     if (REQUEST_STATE.type === 'consultation' || REQUEST_STATE.type === 'estimate') {
       const note = document.createElement('div');
@@ -533,6 +481,28 @@
       summary.appendChild(note);
     }
 
+    /* Поле для примітки */
+    const notesWrap = document.createElement('div');
+    notesWrap.className = 'chat-notes-wrap';
+    const notesLabel = document.createElement('div');
+    notesLabel.className = 'chat-notes-label';
+    notesLabel.textContent = '📝 Примітка (необов\'язково)';
+    const notesInput = document.createElement('input');
+    notesInput.className = 'chat-notes-input';
+    notesInput.type = 'text';
+    notesInput.placeholder = 'Наприклад: два санвузли, треба до 15 жовтня';
+    notesInput.autocomplete = 'off';
+    notesInput.setAttribute('maxlength', '500');
+    notesInput.value = REQUEST_STATE.notes || '';
+
+    notesInput.addEventListener('input', () => {
+      REQUEST_STATE.notes = notesInput.value.trim().slice(0, 500);
+    });
+
+    notesWrap.append(notesLabel, notesInput);
+    summary.appendChild(notesWrap);
+
+    /* Кнопки */
     const btns = document.createElement('div');
     const editBtn = document.createElement('button');
     const submitBtn = document.createElement('button');
