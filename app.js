@@ -481,16 +481,13 @@
       summary.appendChild(note);
     }
 
-    /* Поле для примітки */
+    /* Поле для примітки (один плейсхолдер) */
     const notesWrap = document.createElement('div');
     notesWrap.className = 'chat-notes-wrap';
-    const notesLabel = document.createElement('div');
-    notesLabel.className = 'chat-notes-label';
-    notesLabel.textContent = '📝 Примітка (необов\'язково)';
     const notesInput = document.createElement('input');
     notesInput.className = 'chat-notes-input';
     notesInput.type = 'text';
-    notesInput.placeholder = 'Наприклад: два санвузли, треба до 15 жовтня';
+    notesInput.placeholder = '📝 Примітка (необов\'язково)';
     notesInput.autocomplete = 'off';
     notesInput.setAttribute('maxlength', '500');
     notesInput.value = REQUEST_STATE.notes || '';
@@ -499,7 +496,7 @@
       REQUEST_STATE.notes = notesInput.value.trim().slice(0, 500);
     });
 
-    notesWrap.append(notesLabel, notesInput);
+    notesWrap.appendChild(notesInput);
     summary.appendChild(notesWrap);
 
     /* Кнопки */
