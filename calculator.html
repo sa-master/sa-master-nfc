@@ -977,13 +977,28 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   box-shadow:0 .25rem .75rem rgba(0,122,255,.25);
 }
 
-.projectView{
+.projectWorkspace{
   flex:1 1 auto;
+  min-height:0;
   display:flex;
   flex-direction:column;
-  padding:.25rem 0;
-  padding-bottom:calc(var(--floating-panel-height) + 1.25rem + var(--sab));
+  overflow:hidden;
+}
+
+.projectStickyHeader{
+  flex:0 0 auto;
+  padding:.25rem 0 .5rem;
+}
+
+.projectView{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  padding:0 .0625rem .5rem;
   overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
   scrollbar-width:none;
   gap:.625rem;
 }
@@ -1014,9 +1029,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .projectHeaderCard{
-  position:sticky;
-  top:0;
-  z-index:5;
   background:var(--gb);
   backdrop-filter:blur(1.5rem) saturate(200%);
   -webkit-backdrop-filter:blur(1.5rem) saturate(200%);
@@ -1383,12 +1395,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 
 .floatingPanel{
-  position:fixed;
-  left:50%;
-  bottom:calc(.75rem + var(--sab));
-  transform:translateX(-50%);
-  width:min(30rem,calc(100% - 1rem));
-  z-index:20;
+  position:relative;
+  flex:0 0 auto;
+  width:100%;
+  margin:0;
+  z-index:1;
   background:var(--gb);
   backdrop-filter:blur(1.75rem) saturate(220%);
   -webkit-backdrop-filter:blur(1.75rem) saturate(220%);
@@ -4170,7 +4181,8 @@ function renderProject(p){
   const stageLabel = projectStageLabel(p);
 
   main.innerHTML = `
-    <div class="projectView">
+    <div class="projectWorkspace">
+      <div class="projectStickyHeader">
       <div class="projectHeaderCard">
         <div class="projectHeaderTop">
           <button class="projectHeaderBack" onclick="backToList()" aria-label="Назад">←</button>
@@ -4188,9 +4200,12 @@ function renderProject(p){
           ${address ? `<span>${address}</span>` : ""}
         </div>
       </div>
+      </div>
 
+      <div class="projectView">
       ${renderEstimateBlock(p)}
       ${renderProjectTeamBlock(p)}
+      </div>
     </div>
 
     ${renderFloatingPanel(p)}
