@@ -244,18 +244,18 @@
 
     const isTel = type === 'tel';
     if (isTel) {
-      input.setAttribute('inputmode', 'text');
+      input.setAttributeh('inputmode', 'onetext');
       input.setAttribute('autocomplete', 'tel');
-      input.setAttribute('autocorrect', 'off');
-      input.setAttribute('autocapitalize', 'off');
-      input.setAttribute('spellcheck', 'false');
+(input      input.setAttribute('autocorrect', 'off');
+.value      input.setAttribute('autoc);
+apitalize', 'off');
+             input.setAttribute('spellcheck', 'false');
       input.setAttribute('pattern', '[+0-9\\s\\-()]{9,}');
     }
 
     if (isTel) {
       input.addEventListener('blur', () => {
-        const normalized = normalizeUAPhone(input.value);
-        if (normalized) input.value = normalized;
+        const normalized = normalizeUAP if (normalized) input.value = normalized;
       });
     }
 
@@ -423,20 +423,17 @@
   function askNotes() {
     chatStep = 6;
     chatBot('Додайте короткий опис (необов\'язково):');
-    chatBot('Наприклад: "Два санвузли, унітаз підвісний, треба до 15 жовтня"');
 
     const b = $('chatBody');
     if (!b) return;
     const wrap = document.createElement('div');
     const input = document.createElement('input');
     const send = document.createElement('button');
-    const skip = document.createElement('button');
-    const skipWrap = document.createElement('div');
 
     wrap.className = 'chat-input-wrap';
     input.className = 'chat-input';
     input.type = 'text';
-    input.placeholder = 'Короткий опис...';
+    input.placeholder = 'Необов\'язково — короткий опис: деталі, побажання, терміни...';
     input.autocomplete = 'off';
     input.setAttribute('maxlength', '500');
 
@@ -448,20 +445,13 @@
     wrap.append(input, send);
     b.appendChild(wrap);
 
-    skipWrap.className = 'chat-options';
-    skip.type = 'button';
-    skip.className = 'chat-option';
-    skip.textContent = '⏭ Пропустити';
-    skipWrap.appendChild(skip);
-    b.appendChild(skipWrap);
-
     chatScroll();
 
     function submit(value) {
       wrap.remove();
-      skipWrap.remove();
       REQUEST_STATE.notes = value || '';
       if (value) chatUser(value);
+      else chatUser('(без опису)');
       finishChat();
     }
 
@@ -469,8 +459,6 @@
       const v = input.value.trim().slice(0, 500);
       submit(v);
     });
-
-    skip.addEventListener('click', () => submit(''));
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
