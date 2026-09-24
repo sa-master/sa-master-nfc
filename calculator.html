@@ -8342,7 +8342,8 @@ function openActions(id){
     estimate: ["procurement", "До комплектації", "✓"],
     procurement: ["work", "Позначити: в роботі", "▶"],
     work: ["done", "Позначити: завершено", "✓"],
-    done: ["closed", "Закрити об'єкт", "✓"]
+    done: ["closed", "Закрити об'єкт", "✓"],
+    closed: ["estimate", "Відновити до прорахунку", "↺"]
   };
   const next = nextStages[p.stage || "estimate"];
   if(stageRow) stageRow.classList.toggle("hidden", isArchived || !next);
@@ -8364,8 +8365,9 @@ function openActions(id){
 function actionAdvanceStage(){
   const p = projects.find(x => x.id === actionsProjectId);
   if(!p) return;
-  const nextStages = { estimate:"procurement", procurement:"work", work:"done", done:"closed" };
-  const next = nextStages[p.stage || "estimate"];
+  const nextStages = { estimate:"procurement", procurement:"work", work:"done", done:"closed", closed:"estimate" };
+  const previousStage = p.stage || "estimate";
+  const next = nextStages[previousStage];
   if(!next) return;
   p.stage = next;
   p.updatedAt = new Date().toISOString();
@@ -8378,6 +8380,10 @@ function actionAdvanceStage(){
     done:"Об'єкт завершено.",
     closed:"Об'єкт закрито."
   }[next];
+  if(previousStage === "closed"){
+    toast("Об'єкт повернуто до прорахунку.");
+    return;
+  }
   toast(message, 3200);
 }
 
