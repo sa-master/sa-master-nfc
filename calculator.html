@@ -4744,6 +4744,27 @@ function createQuotePdfSource(paper){
   return { host, source };
 }
 
+function quoteShareMessage(project){
+  const positions = Array.isArray(project?.positions) ? project.positions : [];
+  const hasWorks = positions.some(position => position.type === "work");
+  const hasMaterials = positions.some(position => position.type === "material");
+  let message = "Кошторис";
+
+  if(hasWorks && hasMaterials) message = "Кошторис на роботи та матеріали";
+  else if(hasMaterials) message = "Кошторис на матеріали";
+  else if(hasWorks) message = "Кошторис на роботи";
+
+  const start = String(project?.workStartDate || "").trim();
+  if(!start) return message;
+
+  const date = new Date(start + "T12:00:00");
+  const displayDate = Number.isNaN(date.getTime())
+    ? start
+    : new Intl.DateTimeFormat("uk-UA", { day:"2-digit", month:"2-digit", year:"numeric" }).format(date);
+
+  return `${message}\nПочаток робіт запланований на: ${displayDate}`;
+}
+
 async function printQuotePreview(){
   const paper = document.getElementById("quotePreviewDocument");
   const button = document.getElementById("quotePdfButton");
@@ -4826,10 +4847,11 @@ async function printQuotePreview(){
       .trim()
       .slice(0, 72) || "кошторис";
     const file = new File([pdf.output("blob")], `Кошторис — ${safeTitle}.pdf`, { type:"application/pdf" });
+    const shareMessage = quoteShareMessage(project);
 
     if(navigator.canShare && navigator.canShare({ files:[file] }) && navigator.share){
       try{
-        await navigator.share({ title:"Кошторис", files:[file] });
+        await navigator.share({ title:shareMessage, text:shareMessage, files:[file] });
       }catch(e){
         if(e && e.name !== "AbortError") throw e;
       }
