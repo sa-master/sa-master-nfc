@@ -2349,36 +2349,42 @@ body.positionDragging{
 }
 
 .quoteUnifiedHead{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:.875rem;
-  padding-bottom:.875rem;
+  padding-bottom:.75rem;
   border-bottom:1px solid #e3e3e7;
 }
 
-.quoteProjectBlock{flex:1 1 auto;min-width:0}
-
-.quoteDocumentTitle{
-  margin:0 0 .25rem;
-  font-size:1.125rem;
-  font-weight:850;
-  letter-spacing:-.02em;
-}
-
-.quoteProjectName{font-size:.875rem;font-weight:750;line-height:1.3}
-.quoteClientMeta{margin-top:.1875rem;font-size:.6875rem;line-height:1.4;color:#5f5f66}
-
-.quoteCompanyBrand{
-  flex:0 0 auto;
+.quoteDocumentBar{
   display:flex;
   align-items:center;
-  justify-content:flex-end;
-  gap:.5rem;
-  max-width:44%;
-  min-width:0;
-  text-align:right;
+  justify-content:space-between;
+  gap:.75rem;
 }
+
+.quoteProjectBlock{padding:.75rem .125rem 0;min-width:0}
+
+.quoteDocumentTitle{
+  margin:0;
+  font-size:.8125rem;
+  font-weight:850;
+  letter-spacing:.4px;
+  text-transform:uppercase;
+}
+
+.quoteIssuedNote{margin-top:.125rem;font-size:.625rem;line-height:1.35;color:#6d6d73}
+.quoteProjectName{font-size:1rem;font-weight:800;line-height:1.3}
+.quoteClientMeta{margin-top:.25rem;font-size:.7rem;line-height:1.4;color:#5f5f66}
+
+.quoteCompanyBrand{
+  flex:1 1 auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:.5rem;
+  min-width:0;
+  text-align:left;
+}
+
+.quoteDocumentMeta{flex:0 0 auto;text-align:right}
 
 .quoteCompanyLogo{
   flex:0 0 auto;
@@ -2396,16 +2402,6 @@ body.positionDragging{
 
 .quoteCompanyName{font-size:.8125rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
 .quoteCompanyPhone{margin-top:.125rem;font-size:.625rem;color:#6d6d73}
-
-.quoteDateNote{
-  margin-top:.875rem;
-  padding:.625rem .75rem;
-  border-radius:.625rem;
-  background:#f5f7fa;
-  color:#5f5f66;
-  font-size:.6875rem;
-  line-height:1.45;
-}
 
 .quoteSection{margin-top:1.125rem}
 .quoteSectionHead{
@@ -4608,24 +4604,28 @@ function openQuotePreview(){
 
   quoteDocument.innerHTML = `
     <div class="quoteUnifiedHead">
+      <div class="quoteDocumentBar">
+        <div class="quoteCompanyBrand">
+          <div class="quoteCompanyLogo">
+            <img src="${escapeHtml(logoSource)}" alt="${escapeHtml(companyName)}">
+          </div>
+          <div>
+            <div class="quoteCompanyName">${escapeHtml(companyName)}</div>
+            ${companyPhone ? `<div class="quoteCompanyPhone">${escapeHtml(companyPhone)}</div>` : ""}
+          </div>
+        </div>
+
+        <div class="quoteDocumentMeta">
+          <div class="quoteDocumentTitle">Кошторис</div>
+          <div class="quoteIssuedNote">Ціни актуальні на: ${formatQuoteDate(new Date())}</div>
+        </div>
+      </div>
+
       <div class="quoteProjectBlock">
-        <div class="quoteDocumentTitle">Кошторис</div>
         <div class="quoteProjectName">${escapeHtml(projectTitlePlain(project))}</div>
         ${clientDetails ? `<div class="quoteClientMeta">${escapeHtml(clientDetails)}</div>` : ""}
       </div>
-
-      <div class="quoteCompanyBrand">
-        <div>
-          <div class="quoteCompanyName">${escapeHtml(companyName)}</div>
-          ${companyPhone ? `<div class="quoteCompanyPhone">${escapeHtml(companyPhone)}</div>` : ""}
-        </div>
-        <div class="quoteCompanyLogo">
-          <img src="${escapeHtml(logoSource)}" alt="${escapeHtml(companyName)}">
-        </div>
-      </div>
     </div>
-
-    <div class="quoteDateNote">Ціни актуальні на: ${formatQuoteDate(new Date())}</div>
 
     ${renderQuotePreviewSection("РОБОТИ", works)}
     ${renderQuotePreviewSection("МАТЕРІАЛИ", materials)}
