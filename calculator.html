@@ -2512,6 +2512,23 @@ body.positionDragging{
 .quotePreviewFooter .fsFooterInner{display:grid;grid-template-columns:1fr 1.25fr;gap:.5rem}
 .quotePreviewFooter .quoteBackButton{background:rgba(120,130,140,.12);color:var(--ts);box-shadow:none}
 
+/* Окремі розміри для реального A4 PDF, не для мобільного перегляду */
+.quotePdfExport .quoteUnifiedHead{
+  grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+  gap:2rem;
+  padding:2.25rem 2.5rem 2rem;
+}
+.quotePdfExport .quoteCompanyBrand{gap:1rem}
+.quotePdfExport .quoteCompanyLogo{width:4.5rem;height:4.5rem}
+.quotePdfExport .quoteCompanyName{font-size:1.5rem}
+.quotePdfExport .quoteCompanyPhone{margin-top:.3125rem;font-size:1rem}
+.quotePdfExport .quoteProjectName{font-size:1.25rem}
+.quotePdfExport .quoteClientMeta{margin-top:.3125rem;font-size:.9375rem}
+.quotePdfExport .quoteDocHeading{margin:1.5rem 2.5rem 1.25rem}
+.quotePdfExport .quoteDocumentTitle{font-size:1rem}
+.quotePdfExport .quoteIssuedNote{font-size:.8125rem}
+.quotePdfExport .quoteSection{margin-left:2.5rem;margin-right:2.5rem;margin-bottom:1.5rem}
+
 @media print{
   @page{margin:0}
   body{height:auto !important;background:#fff !important;overflow:visible !important}
@@ -4716,6 +4733,7 @@ function createQuotePdfSource(paper){
 
   const source = paper.cloneNode(true);
   source.id = "quotePdfSource";
+  source.classList.add("quotePdfExport");
   source.style.width = "794px";
   source.style.maxWidth = "none";
   source.style.borderRadius = "0";
