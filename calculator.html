@@ -4777,24 +4777,41 @@ function createQuotePdfSource(paper){
 }
 
 function quoteShareMessage(project){
-  const positions = Array.isArray(project?.positions) ? project.positions : [];
-  const hasWorks = positions.some(position => position.type === "work");
-  const hasMaterials = positions.some(position => position.type === "material");
-  let message = "Кошторис";
-
-  if(hasWorks && hasMaterials) message = "Кошторис на роботи та матеріали";
-  else if(hasMaterials) message = "Кошторис на матеріали";
-  else if(hasWorks) message = "Кошторис на роботи";
-
+  const client = project?.client || {};
+  const objectName = projectTitlePlain(project || {});
+  const clientName = String(client.name || "").trim();
+  const clientPhone = String(client.phone || "").trim();
   const start = String(project?.workStartDate || "").trim();
-  if(!start) return message;
+  const approvalLabels = {
+    approved: "Погоджено",
+    clarification: "Потребує уточнень",
+    rejected: "Відхилено"
+  };
+  const stageLabels = {
+    work: "Погоджено",
+    done: "Завершено",
+    closed: "Закрито"
+  };
+  const approvalStatus = approvalLabels[project?.customerApprovalStatus]
+    || stageLabels[project?.stage]
+    || "Потребує погодження";
+
+  const lines = [
+    `🏠 ЗАЯВКА · ${objectName}`,
+    clientName ? `👤 ${clientName}` : "",
+    clientPhone ? `📞 ${clientPhone}` : "",
+    `📊 Статус: ${approvalStatus}`
+  ];
+
+  if(!start) return lines.filter(Boolean).join("\n");
 
   const date = new Date(start + "T12:00:00");
   const displayDate = Number.isNaN(date.getTime())
     ? start
     : new Intl.DateTimeFormat("uk-UA", { day:"2-digit", month:"2-digit", year:"numeric" }).format(date);
 
-  return `${message}\nПочаток робіт запланований на: ${displayDate}`;
+  lines.push(`🕐 Заплановано на: ${displayDate}`);
+  return lines.filter(Boolean).join("\n");
 }
 
 async function printQuotePreview(){
