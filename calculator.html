@@ -2352,8 +2352,8 @@ body.positionDragging{
 
 .quoteUnifiedHead{
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  gap:1rem;
+  grid-template-columns:minmax(9.5rem,1fr) minmax(7.5rem,.9fr);
+  gap:.625rem;
   align-items:center;
   padding:1rem 1.125rem .875rem;
   border-bottom:1px solid #e5e7eb;
@@ -2363,19 +2363,24 @@ body.positionDragging{
 .quoteProjectSide{min-width:0;text-align:right}
 
 .quoteDocumentTitle{
-  margin:1rem 1.125rem 0;
-  text-align:center;
-  font-size:1.125rem;
+  margin:0;
+  text-align:left;
+  font-size:.75rem;
   font-weight:850;
-  letter-spacing:-.02em;
+  letter-spacing:.4px;
   text-transform:uppercase;
   color:#1c1c1e;
 }
 
 .quoteIssuedNote{margin-top:.1875rem;font-size:.625rem;line-height:1.35;color:#7a7a80}
-.quoteDocHeading{text-align:center}
-.quoteDocHeading .quoteDocumentTitle{margin-bottom:0}
-.quoteDocHeading .quoteIssuedNote{margin-bottom:1rem}
+.quoteDocHeading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+  margin:.5rem 1.125rem .625rem;
+}
+.quoteDocHeading .quoteIssuedNote{margin:0;text-align:right}
 .quoteProjectName{font-size:.75rem;font-weight:750;line-height:1.3}
 .quoteClientMeta{margin-top:.1875rem;font-size:.625rem;line-height:1.4;color:#6b7280}
 
@@ -2405,13 +2410,14 @@ body.positionDragging{
 
 .quoteCompanyBrand > div:last-child{min-width:0}
 .quoteCompanyName{
-  font-size:.9375rem;
+  font-size:.8125rem;
   font-weight:850;
   line-height:1.15;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
   color:#171717;
+  letter-spacing:-.015em;
 }
 .quoteCompanyPhone{
   margin-top:.1875rem;
@@ -2439,7 +2445,7 @@ body.positionDragging{
 .quoteTableHead,
 .quoteLine{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 3.25rem 4.25rem 4.75rem;
+  grid-template-columns:minmax(0,1fr) 2.75rem 3.35rem 3.9rem;
   column-gap:.5rem;
 }
 
@@ -2492,7 +2498,7 @@ body.positionDragging{
 
 .quoteSectionTotal{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 3.25rem 4.25rem 4.75rem;
+  grid-template-columns:minmax(0,1fr) 2.75rem 3.35rem 3.9rem;
   column-gap:.5rem;
   padding:.625rem .375rem 0;
   border:0;
@@ -4651,10 +4657,8 @@ function openQuotePreview(){
   const companyName = profileCompanyName();
   const companyPhone = String(profile.phone || "").trim();
   const client = project.client || {};
-  const clientName = [client.name, client.phone]
-    .map(value => String(value || "").trim())
-    .filter(Boolean)
-    .join(" · ");
+  const clientName = String(client.name || "").trim();
+  const clientPhone = String(client.phone || "").trim();
   const objectName = projectTitlePlain(project);
   const objectAddress = String(client.address || "").trim();
   const discountPercent = getEstimateDiscountPercent(project);
@@ -4679,6 +4683,7 @@ function openQuotePreview(){
       <div class="quoteProjectSide">
         <div class="quoteProjectName">${escapeHtml(objectName)}</div>
         ${clientName ? `<div class="quoteClientMeta">${escapeHtml(clientName)}</div>` : ""}
+        ${clientPhone ? `<div class="quoteClientMeta">${escapeHtml(clientPhone)}</div>` : ""}
         ${objectAddress ? `<div class="quoteClientMeta">${escapeHtml(objectAddress)}</div>` : ""}
       </div>
     </div>
