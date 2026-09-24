@@ -14,8 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 :root{
@@ -930,8 +929,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .chips:last-child{margin-bottom:0}
 
-/* Каталог: кожна група фільтрів займає один рядок і гортається пальцем.
-   Вертикальний простір залишається списку товарів. */
 #catalogChips,
 #catalogBrandChips,
 #catalogSystemChips{
@@ -1104,7 +1101,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-weight:750;
   white-space:nowrap;
 }
-
 
 .detailsRow{
   display:flex;
@@ -1379,8 +1375,6 @@ body.positionDragging{
   font-weight:750;
   color:var(--t);
 }
-
-/* ==== DISCOUNT ==== */
 
 .discountBlock{
   margin-top:.875rem;
@@ -1909,7 +1903,6 @@ body.positionDragging{
 
 .addCustomButton:active{transform:scale(.98)}
 
-/* Повноекранний каталог: простір віддано товарам, а не нижній панелі. */
 #catalogSheet{
   align-items:stretch;
   background:var(--bg);
@@ -2451,11 +2444,56 @@ body.positionDragging{
 .quoteSectionTotal{padding:.625rem .125rem 0;font-size:.75rem;font-weight:750}
 .quoteDiscountRow{padding:.625rem .125rem 0;color:#207a42;font-size:.75rem;font-weight:700}
 .quoteGrandTotal{margin-top:1.125rem;padding-top:.875rem;border-top:2px solid #1c1c1e;font-size:1rem;font-weight:850}
-.quotePreviewFooter .fsFooterInner{display:grid;grid-template-columns:1fr 1.25fr;gap:.5rem}
+.quotePreviewFooter .fsFooterInner{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:.5rem}
 .quotePreviewFooter .quoteBackButton{background:rgba(120,130,140,.12);color:var(--ts);box-shadow:none}
+.quotePreviewFooter .quoteShareButton{background:linear-gradient(135deg,#34C759,#30D158);box-shadow:0 .375rem 1rem rgba(52,199,89,.24)}
+
+/* PDF wrapper: тримаємо поза екраном, щоб не блимало */
+.pdf-document{
+  position:fixed;
+  left:-10000px;
+  top:0;
+  width:210mm;
+  min-height:297mm;
+  padding:15mm 14mm;
+  background:#fff;
+  color:#171717;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  font-size:11pt;
+  line-height:1.4;
+  box-sizing:border-box;
+  z-index:-1;
+}
+
+.pdf-document .quotePaper{
+  border-radius:0;
+  box-shadow:none;
+  padding:0;
+  background:#fff;
+}
+
+.pdf-document .quoteUnifiedHead{
+  padding-bottom:5mm;
+  border-bottom:2px solid #1c1c1e;
+  margin-bottom:4mm;
+}
+
+.pdf-document .quoteLine{
+  page-break-inside:avoid;
+}
+
+.pdf-document .quoteSectionHead{
+  page-break-after:avoid;
+}
+
+.pdf-document .quoteSectionTotal,
+.pdf-document .quoteDiscountRow,
+.pdf-document .quoteGrandTotal{
+  page-break-inside:avoid;
+}
 
 @media print{
-  @page{margin:0}
+  @page{size:A4;margin:0}
   body{height:auto !important;background:#fff !important;overflow:visible !important}
   body > *:not(#quotePreviewScreen){display:none !important}
   #quotePreviewScreen,
@@ -2472,7 +2510,7 @@ body.positionDragging{
     display:block !important;
     box-shadow:none !important;
     border-radius:0 !important;
-    padding:12mm !important;
+    padding:14mm !important;
   }
 }
 
@@ -2515,15 +2553,11 @@ body.positionDragging{
 <div class="bg"></div>
 
 <div class="app" id="app">
-
   <section class="hero" id="hero"></section>
-
   <main class="main" id="main"></main>
-
 </div>
 
 <!-- SHEET: NEW/EDIT PROJECT -->
-
 <div class="sheet" id="projectSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2628,7 +2662,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: CATALOG -->
-
 <div class="sheet" id="catalogSheet">
   <div class="panel tall">
     <div class="panelHead">
@@ -2677,7 +2710,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: CATALOG FILTERS -->
-
 <div class="sheet" id="catalogFiltersSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2718,7 +2750,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: ORIGINAL CATALOG NAME -->
-
 <div class="sheet" id="originalNameSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2734,7 +2765,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: REQUEST SUPPLIER PRICE LIST -->
-
 <div class="sheet" id="supplierRequestSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2764,7 +2794,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: EDIT CATALOG ITEM -->
-
 <div class="sheet" id="catalogEditSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2853,7 +2882,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: CUSTOM POSITION -->
-
 <div class="sheet" id="customSheet">
   <div class="panel">
     <div class="panelHead">
@@ -2919,7 +2947,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: MULTI PRICE INPUT -->
-
 <div class="sheet" id="pricesSheet">
   <div class="panel tall">
     <div class="panelHead">
@@ -2942,7 +2969,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: IMPORT PREVIEW -->
-
 <div class="sheet" id="importSheet">
   <div class="panel tall">
     <div class="panelHead">
@@ -3018,7 +3044,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: ACTIONS -->
-
 <div class="sheet" id="actionsSheet">
   <div class="panel">
     <div class="panelHead">
@@ -3056,7 +3081,6 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: ADD PERSON -->
-
 <div class="sheet" id="addPersonSheet">
   <div class="panel">
     <div class="panelHead">
@@ -3107,7 +3131,6 @@ body.positionDragging{
           </select>
         </div>
       </div>
-
     </div>
 
     <div class="panelFooter">
@@ -3117,7 +3140,6 @@ body.positionDragging{
 </div>
 
 <!-- FULLSCREEN: PROCUREMENT PLAN -->
-
 <div class="fullscreen" id="procurementPlanScreen">
   <div class="fsBody">
     <div class="fsHead">
@@ -3145,7 +3167,6 @@ body.positionDragging{
 </div>
 
 <!-- FULLSCREEN: CLIENT QUOTE PREVIEW -->
-
 <div class="fullscreen" id="quotePreviewScreen">
   <div class="quotePreviewBody">
     <div class="quotePreviewNav">
@@ -3159,13 +3180,13 @@ body.positionDragging{
   <div class="fsFooter quotePreviewFooter">
     <div class="fsFooterInner">
       <button class="quoteBackButton" onclick="closeQuotePreview()">Редагувати</button>
-      <button id="quotePdfButton" onclick="printQuotePreview()">PDF / надіслати</button>
+      <button onclick="downloadQuotePdf()">PDF</button>
+      <button class="quoteShareButton" onclick="shareQuotePdf()">Поділитися</button>
     </div>
   </div>
 </div>
 
 <!-- SHEET: BEST PRICE PROPOSAL -->
-
 <div class="sheet" id="bestPriceSheet">
   <div class="panel tall">
     <div class="panelHead">
@@ -3181,10 +3202,8 @@ body.positionDragging{
 </div>
 
 <!-- FULLSCREEN: PROFILE -->
-
 <div class="fullscreen" id="profileScreen">
   <div class="fsBody">
-
     <div class="fsHead">
       <strong>Профіль</strong>
       <button class="close" onclick="closeProfile()">×</button>
@@ -3249,7 +3268,6 @@ body.positionDragging{
         <span>Додати людину</span>
       </button>
     </div>
-
   </div>
 
   <div class="fsFooter">
@@ -3261,12 +3279,7 @@ body.positionDragging{
 
 <div class="toast" id="toast"></div>
 
-<input
-  type="file"
-  id="importFileInput"
-  accept=".xls,.xlsx,.xlsm"
-  style="display:none"
->
+<input type="file" id="importFileInput" accept=".xls,.xlsx,.xlsm" style="display:none">
 
 <script>
 
@@ -3279,7 +3292,6 @@ const EUR_RATE_KEY = "sa_eurRate";
 const USD_RATE_KEY = "sa_usdRate";
 const SUPPLIER_NAMES_KEY = "sa_supplierNames";
 
-/* Дефолтні роботи — тепер із етапами */
 const DEFAULT_WORKS = [
   { name: "Розведення каналізації", unit: "компл.", stage: "rough" },
   { name: "Розведення водопостачання", unit: "компл.", stage: "rough" },
@@ -3401,8 +3413,6 @@ try{
   }));
 }
 
-/* ==== Міграція етапів для старих робіт (без stage) ==== */
-
 let catalogMigrated = false;
 
 catalog.forEach(item => {
@@ -3419,7 +3429,6 @@ catalog.forEach(item => {
   if(item.type !== "work") return;
   if(item.stage) return;
 
-  // Визначаємо етап за назвою
   const name = String(item.name || "").toLowerCase();
 
   if(
@@ -3439,8 +3448,6 @@ catalog.forEach(item => {
 });
 
 let defaultWorksAdded = false;
-/* Safari та Chrome мають різні localStorage. Якщо в старому Safari-каталозі
-   колись зберігся порожній масив, базові роботи мають повернутися автоматично. */
 const shouldSeedDefaultWorks = !catalog.some(item => item.type === "work");
 
 if(shouldSeedDefaultWorks) DEFAULT_WORKS.forEach(work => {
@@ -3491,8 +3498,6 @@ function saveCatalog(){
   try{ localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog)); }catch(e){}
 }
 
-/* У версії тесту 18 була ручна фіксація. Вона не входить у погоджений
-   сценарій, тому повертаємо такі об'єкти до звичайного редагування. */
 let legacyManualLockCleared = false;
 projects.forEach(project => {
   if(!project || !project.estimateLocked) return;
@@ -3505,9 +3510,6 @@ projects.forEach(project => {
 });
 if(legacyManualLockCleared) saveProjects();
 
-/* Закупівельна ціна фіксується в позиції кошторису в момент додавання.
-   Для старих кошторисів один раз переносимо останню відому ціну з каталогу,
-   щоб подальші оновлення каталогу вже не змінювали їхній розрахунок. */
 let purchaseSnapshotMigrated = false;
 projects.forEach(project => {
   if(!project || !Array.isArray(project.positions)) return;
@@ -3631,6 +3633,18 @@ function moneyWithCents(value){
 
 function normalizeText(value){
   return String(value || "").trim().toLowerCase().replace(/\s+/g," ");
+}
+
+function cleanText(v){
+  return String(v ?? "")
+    .replace(/\u00a0/g," ")
+    .replace(/[\r\n]+/g," ")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+function ntext(v){
+  return cleanText(v).toLowerCase();
 }
 
 function catalogDisplayName(item){
@@ -4008,8 +4022,6 @@ function personInitial(name){
   return n ? n[0] : "?";
 }
 
-/* ==== Розрахунки кошторису ==== */
-
 function getEstimateSubtotal(project){
   if(!project || !Array.isArray(project.positions)) return 0;
   return project.positions.reduce((sum, p) => {
@@ -4054,9 +4066,6 @@ function getCustomerMaterialsTotal(project){
   return getMaterialsSubtotal(project) - getEstimateDiscountAmount(project);
 }
 
-/* Після імпорту прайсу дозаповнюємо тільки відсутню закупівельну ціну
-   у вже доданих позиціях. Роздрібна ціна, кількість і знижка кошторису
-   залишаються незмінними. */
 function fillMissingProjectPurchasePrices(){
   let changed = 0;
 
@@ -4443,7 +4452,6 @@ function renderProject(p){
 
     ${renderFloatingPanel(p)}
   `;
-
 }
 
 function renderProjectTeamBlock(project){
@@ -4601,6 +4609,8 @@ function openQuotePreview(){
     .join(" · ");
   const discountPercent = getEstimateDiscountPercent(project);
   const discountAmount = getEstimateDiscountAmount(project);
+  const subtotal = getEstimateSubtotal(project);
+  const grandTotal = getEstimateTotal(project);
   const logoSource = profile.logoData || "logo.png";
   const quoteDocument = document.getElementById("quotePreviewDocument");
 
@@ -4637,6 +4647,17 @@ function openQuotePreview(){
         <span>−${money(discountAmount)}</span>
       </div>
     ` : ""}
+
+    <div class="quoteGrandTotal">
+      <span>До сплати</span>
+      <span>${money(grandTotal)}</span>
+    </div>
+
+    <div class="quoteFootNote" style="margin-top:1.125rem;padding-top:.75rem;border-top:1px solid #e3e3e7;font-size:.6875rem;line-height:1.5;color:#6d6d73">
+      <div>Кошторис дійсний протягом 14 днів з дати видачі.</div>
+      <div>Ціни вказані в гривнях і включають вартість матеріалів та робіт.</div>
+      <div>Термін виконання робіт узгоджується окремо.</div>
+    </div>
   `;
 
   document.getElementById("quotePreviewScreen").classList.add("open");
@@ -4646,104 +4667,128 @@ function closeQuotePreview(){
   document.getElementById("quotePreviewScreen").classList.remove("open");
 }
 
-async function printQuotePreview(){
-  const paper = document.getElementById("quotePreviewDocument");
-  const button = document.getElementById("quotePdfButton");
-
-  if(!paper || typeof window.html2canvas !== "function" || !window.jspdf?.jsPDF){
-    toast("Модуль PDF ще завантажується. Спробуйте за мить.");
+function printQuotePreview(){
+  if(typeof window.print !== "function"){
+    toast("На цьому пристрої друк недоступний");
     return;
   }
+  window.print();
+}
 
-  const originalText = button ? button.textContent : "";
-  if(button){
-    button.disabled = true;
-    button.textContent = "Готуємо PDF…";
+/* ===== PDF ===== */
+
+function quotePdfFileName(){
+  const project = projects.find(p => p.id === currentProjectId);
+  const base = project ? projectTitlePlain(project) : "Кошторис";
+  const safe = String(base)
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, "-")
+    .slice(0, 60) || "Кошторис";
+  const date = new Date().toISOString().slice(0,10);
+  return `Кошторис-${safe}-${date}.pdf`;
+}
+
+function buildQuoteDocumentElement(){
+  const source = document.getElementById("quotePreviewDocument");
+  if(!source) return null;
+
+  const clone = source.cloneNode(true);
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "pdf-document";
+  wrapper.appendChild(clone);
+
+  document.body.appendChild(wrapper);
+  return wrapper;
+}
+
+async function generateQuotePdfBlob(){
+  if(typeof html2pdf === "undefined"){
+    throw new Error("html2pdf не завантажено");
   }
 
+  const element = buildQuoteDocumentElement();
+  if(!element) throw new Error("Немає документа");
+
   try{
-    const scale = Math.min(2, Math.max(1.5, window.devicePixelRatio || 1));
-    const canvas = await window.html2canvas(paper, {
-      backgroundColor:"#ffffff",
-      scale,
-      useCORS:true,
-      logging:false,
-      windowWidth:paper.scrollWidth,
-      windowHeight:paper.scrollHeight
-    });
+    const blob = await html2pdf()
+      .set({
+        margin: 0,
+        filename: quotePdfFileName(),
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          letterRendering: true
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait"
+        },
+        pagebreak: {
+          mode: ["avoid-all", "css", "legacy"],
+          avoid: [".quoteLine", ".quoteSectionTotal", ".quoteDiscountRow", ".quoteGrandTotal", ".quoteFootNote"]
+        }
+      })
+      .from(element)
+      .outputPdf("blob");
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation:"p", unit:"mm", format:"a4", compress:true });
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const margin = 10;
-    const contentWidth = pageWidth - margin * 2;
-    const contentHeight = pageHeight - margin * 2;
-    const pxPerMm = canvas.width / contentWidth;
-    const maxSliceHeight = Math.floor(contentHeight * pxPerMm);
-    const paperRect = paper.getBoundingClientRect();
+    return blob;
+  } finally {
+    element.remove();
+  }
+}
 
-    const safeBreaks = Array.from(
-      paper.querySelectorAll(".quoteLine, .quoteSectionTotal, .quoteDiscountRow")
-    ).map(el => {
-      const rect = el.getBoundingClientRect();
-      return Math.round((rect.bottom - paperRect.top) * scale);
-    }).filter(value => value > 0 && value < canvas.height).sort((a,b) => a - b);
+async function downloadQuotePdf(){
+  try{
+    toast("Готую PDF…", 1500);
+    const blob = await generateQuotePdfBlob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = quotePdfFileName();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast("PDF готовий");
+  }catch(err){
+    console.error("PDF error:", err);
+    toast("Не вдалося створити PDF");
+  }
+}
 
-    let offset = 0;
-    let pageIndex = 0;
+async function shareQuotePdf(){
+  try{
+    toast("Готую PDF…", 1500);
+    const blob = await generateQuotePdfBlob();
+    const file = new File([blob], quotePdfFileName(), { type: "application/pdf" });
 
-    while(offset < canvas.height){
-      const target = Math.min(offset + maxSliceHeight, canvas.height);
-      const candidates = safeBreaks.filter(value => value > offset + 80 && value <= target);
-      const end = target < canvas.height && candidates.length ? candidates[candidates.length - 1] : target;
-      const sliceHeight = Math.max(1, end - offset);
-      const slice = document.createElement("canvas");
-      slice.width = canvas.width;
-      slice.height = sliceHeight;
-      slice.getContext("2d").drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+    const project = projects.find(p => p.id === currentProjectId);
+    const title = project ? projectTitlePlain(project) : "Кошторис";
+    const total = project ? money(getEstimateTotal(project)) : "";
+    const text = `Кошторис: ${title}\nДо сплати: ${total}`;
 
-      if(pageIndex > 0) pdf.addPage();
-      const renderedHeight = sliceHeight / pxPerMm;
-      pdf.addImage(slice.toDataURL("image/jpeg", .94), "JPEG", margin, margin, contentWidth, renderedHeight, undefined, "FAST");
-
-      offset = end;
-      pageIndex++;
+    if(navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))){
+      await navigator.share({ title, text, files: [file] });
+      return;
     }
 
-    const project = projects.find(item => item.id === currentProjectId);
-    const safeTitle = projectTitlePlain(project || {})
-      .replace(/[\\/:*?"<>|]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 72) || "кошторис";
-    const file = new File([pdf.output("blob")], `Кошторис — ${safeTitle}.pdf`, { type:"application/pdf" });
-
-    if(navigator.canShare && navigator.canShare({ files:[file] }) && navigator.share){
-      try{
-        await navigator.share({ title:"Кошторис", files:[file] });
-      }catch(e){
-        if(e && e.name !== "AbortError") throw e;
-      }
-    }else{
-      const url = URL.createObjectURL(file);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = file.name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast("PDF завантажено");
-    }
-  }catch(e){
-    console.error("PDF export error:", e);
-    toast("Не вдалося сформувати PDF");
-  }finally{
-    if(button){
-      button.disabled = false;
-      button.textContent = originalText;
-    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast("PDF завантажено");
+  }catch(err){
+    if(err && err.name === "AbortError") return;
+    console.error("Share error:", err);
+    toast("Не вдалося поділитися PDF");
   }
 }
 
@@ -4909,8 +4954,6 @@ function renderPosition(projectId, pos){
     </div>
   `;
 }
-
-/* ==== Знижка ==== */
 
 function setDiscountPercent(value){
   const project = projects.find(p => p.id === currentProjectId);
@@ -5386,7 +5429,6 @@ function renderCatalogChips(){
   const box = document.getElementById("catalogChips");
   const title = document.getElementById("catalogCategoryFilterTitle");
 
-  // ==== РОБОТИ ====
   if(catalogMode === "work"){
     if(title) title.textContent = "Етап";
     const hasAnyWorks = catalog.some(item => item.type === "work");
@@ -5436,7 +5478,6 @@ function renderCatalogChips(){
     return;
   }
 
-  // ==== МАТЕРІАЛИ ====
   if(title) title.textContent = "Категорія";
   const hasAnyMaterials = catalog.some(item => item.type === "material");
 
@@ -6193,6 +6234,15 @@ function closeCustom(){
   document.getElementById("customSheet").classList.remove("open");
 }
 
+function findCatalogMaterialsByArticle(article){
+  const key = ntext(article);
+  if(!key) return [];
+
+  return catalog.filter(item =>
+    item.type === "material" && ntext(item.article) === key
+  );
+}
+
 function saveCustom(){
   const name = document.getElementById("csName").value.trim();
   const article = document.getElementById("csArticle").value.trim();
@@ -6515,8 +6565,6 @@ function openSinglePriceEditor(projectId, positionId){
   }, 200);
 }
 
-/* ==== IMPORT ==== */
-
 function supplierPriceRequestText(supplierName){
   const supplier = cleanText(supplierName) || "вашої компанії";
 
@@ -6790,8 +6838,6 @@ function parseWorkbook(workbook){
       blankrows: true
     });
 
-    /* Спочатку перевіряємо відомі формати. Загальний парсер лишається
-       резервним варіантом для незнайомих рахунків. */
     let parsed = parseKnownSupplierSheet(rows, sheet);
 
     if(!parsed){
@@ -7027,7 +7073,6 @@ function cellNumberFormatCurrency(sheet, row, cols){
   return found.size === 1 ? Array.from(found)[0] : "";
 }
 
-/* TECE / Ecosoft: подвійний заголовок, артикул у власній колонці. */
 function parseDualPriceList(rows, sheet){
   const articleHeaderRow = rows.findIndex(row => rowHas(row, /номенклатура\.артикул|артикул/));
   const dealerHeaderRow = rows.findIndex(row => rowHas(row, /дилер|dealer/));
@@ -7043,9 +7088,6 @@ function parseDualPriceList(rows, sheet){
   const masterCol = dealerCol;
   const masterUnitCol = dealerCol + 1;
   const start = Math.max(articleHeaderRow, dealerHeaderRow) + 1;
-  /* За робочим правилом майстра цей прайс Ecosoft ведеться в EUR.
-     Воно має пріоритет над технічним форматом XLS-комірок, який у
-     постачальника може бути застарілим або помилково підписаним. */
   const isEcosoft = rows.slice(0, 12).some(row => /\becosoft\b/i.test(rowText(row)));
   const context = { category:"", brand:"", system:"" };
   const items = [];
@@ -7089,7 +7131,6 @@ function parseDualPriceList(rows, sheet){
   };
 }
 
-/* Великі замовлення: окремі колонки «Ціна» та «Ціна без знижки». */
 function parseWideDiscountOrder(rows, sheet){
   const headerIndex = rows.findIndex(row => rowHas(row, /ціна\s*\/\s*без\s*зниж|ціна\s*без\s*зниж/) && rowHas(row, /артикул/) && rowHas(row, /товар/));
   if(headerIndex < 0) return null;
@@ -7142,7 +7183,6 @@ function findRowUnit(row){
   return (row || []).map(cleanText).find(isUnit) || "";
 }
 
-/* Звичайний рахунок: одна ціна за одиницю, артикул може бути відсутній. */
 function parseStandardInvoice(rows, sheet){
   const headerIndex = rows.findIndex(row =>
     rowHas(row, /товар|найменув/) &&
@@ -7190,18 +7230,6 @@ function parseStandardInvoice(rows, sheet){
 
 function parseKnownSupplierSheet(rows, sheet){
   return parseDualPriceList(rows, sheet) || parseWideDiscountOrder(rows, sheet) || parseStandardInvoice(rows, sheet);
-}
-
-function cleanText(v){
-  return String(v ?? "")
-    .replace(/\u00a0/g," ")
-    .replace(/[\r\n]+/g," ")
-    .replace(/\s+/g," ")
-    .trim();
-}
-
-function ntext(v){
-  return cleanText(v).toLowerCase();
 }
 
 function parseNumber(value){
@@ -7521,8 +7549,6 @@ function openImportSheet(parsed, file){
   const isBrandRatesTemplate = Boolean(parsed.usesBrandRates);
   const currencySelect = document.getElementById("impCurrency");
 
-  /* У нашому шаблоні валюта й курс уже задані по брендах. Для звичайного
-     файлу майстер як і раніше бачить та підтверджує одну валюту накладної. */
   let currency = isBrandRatesTemplate ? "BRAND_RATES" : (parsed.currency || autoDetectedCurrency || "");
   currencySelect.disabled = isBrandRatesTemplate;
   currencySelect.value = currency;
@@ -7765,17 +7791,7 @@ function findExistingCatalogItem(imported, supplierName){
     if(bySupplierArticle) return bySupplierArticle;
   }
 
-  /* Назва не є достатнім ідентифікатором: не зливаємо товари за нею. */
   return null;
-}
-
-function findCatalogMaterialsByArticle(article){
-  const key = ntext(article);
-  if(!key) return [];
-
-  return catalog.filter(item =>
-    item.type === "material" && ntext(item.article) === key
-  );
 }
 
 function makePriceSnapshot(sourcePrice, importedAt, currency, rate){
@@ -7865,7 +7881,6 @@ function confirmImport(){
   let skipped = 0;
   const unitConflicts = [];
 
-  /* Без артикула немає безпечної ідентифікації — не створюємо дублікати. */
   const accepted = items.filter(item => {
     if(!cleanText(item.article) && !cleanText(item.supplierArticle)){
       skipped++;
@@ -7922,7 +7937,6 @@ function confirmImport(){
     return;
   }
 
-  /* Одна й та сама позиція в одному файлі має мати однакову одиницю. */
   const importUnitsByIdentity = new Map();
   for(const value of prepared){
     if(value.invalid) continue;
@@ -8034,7 +8048,6 @@ function confirmImport(){
 
   toast(`Імпортовано: ${created} нових, ${updated} оновлено${restoredPurchasePrices ? `, додано ${restoredPurchasePrices} закупівельних цін у кошториси` : ""}${skipped ? `, ${skipped} без артикула пропущено` : ""}`);
 
-  // Показуємо нові та оновлені товари одразу, без повторного відкриття каталогу.
   renderCatalogChips();
   renderCatalogBrandChips();
   renderCatalogSystemChips();
