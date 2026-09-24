@@ -2350,20 +2350,17 @@ body.positionDragging{
   box-shadow:0 .5rem 1.5rem rgba(0,0,0,.12);
 }
 
-.quoteBrandHeader{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:.625rem;
+.quoteUnifiedHead{
+  display:grid;
+  grid-template-columns:minmax(0,.78fr) minmax(0,1.22fr);
+  gap:.875rem;
+  align-items:start;
   padding:0 .125rem .8125rem;
   border-bottom:1px solid #dedee3;
 }
 
-.quoteProjectBlock{
-  margin-top:.8125rem;
-  padding:0 .125rem .125rem;
-  min-width:0;
-}
+.quoteBrandSide{min-width:0}
+.quoteProjectSide{min-width:0;text-align:right}
 
 .quoteDocumentTitle{
   margin:0;
@@ -2387,8 +2384,6 @@ body.positionDragging{
   min-width:0;
   text-align:left;
 }
-
-.quoteDocumentMeta{flex:0 0 auto;min-width:6.5rem;text-align:right}
 
 .quoteCompanyLogo{
   flex:0 0 auto;
@@ -2436,25 +2431,51 @@ body.positionDragging{
   letter-spacing:.5px;
 }
 
+.quoteTableHead,
 .quoteLine{
   display:grid;
-  grid-template-columns:minmax(0,1fr) auto;
-  column-gap:.75rem;
-  padding:.625rem .125rem;
+  grid-template-columns:minmax(0,1fr) 2.3rem 3.8rem 4.2rem;
+  column-gap:.35rem;
+}
+
+.quoteTableHead{
+  padding:.375rem .125rem;
+  border-bottom:1px solid #dedee3;
+  color:#7a7a80;
+  font-size:.5625rem;
+  font-weight:750;
+  letter-spacing:.25px;
+  text-transform:uppercase;
+}
+
+.quoteTableHead span:not(:first-child){text-align:right;white-space:nowrap}
+
+.quoteLine{
+  align-items:start;
+  padding:.5625rem .125rem;
   border-bottom:1px solid #eeeeF1;
 }
 
 .quoteLineName{
   min-width:0;
-  font-size:.8125rem;
+  font-size:.75rem;
   font-weight:650;
   line-height:1.3;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  overflow-wrap:anywhere;
 }
-.quoteLineMeta{grid-column:1; margin-top:.125rem;font-size:.6875rem;line-height:1.35;color:#6d6d73}
-.quoteLineTotal{grid-column:2;grid-row:1 / span 2;align-self:center;font-size:.8125rem;font-weight:800;white-space:nowrap}
+.quoteLineQty,
+.quoteLinePrice,
+.quoteLineTotal{
+  min-width:0;
+  padding-top:.0625rem;
+  text-align:right;
+  font-size:.6875rem;
+  line-height:1.3;
+  white-space:nowrap;
+}
+.quoteLineQty{color:#5f5f66}
+.quoteLinePrice{color:#5f5f66}
+.quoteLineTotal{font-weight:800;color:#171717}
 
 .quoteSectionTotal,
 .quoteDiscountRow,
@@ -2465,7 +2486,16 @@ body.positionDragging{
   gap:.75rem;
 }
 
-.quoteSectionTotal{padding:.625rem .125rem 0;font-size:.75rem;font-weight:750}
+.quoteSectionTotal{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 2.3rem 3.8rem 4.2rem;
+  column-gap:.35rem;
+  padding:.625rem .125rem 0;
+  font-size:.75rem;
+  font-weight:750;
+}
+.quoteSectionTotal span:first-child{grid-column:1 / span 3}
+.quoteSectionTotal span:last-child{text-align:right;white-space:nowrap}
 .quoteDiscountRow{padding:.625rem .125rem 0;color:#207a42;font-size:.75rem;font-weight:700}
 .quoteGrandTotal{margin-top:1.125rem;padding-top:.875rem;border-top:2px solid #1c1c1e;font-size:1rem;font-weight:850}
 .quotePreviewFooter .fsFooterInner{display:grid;grid-template-columns:1fr 1.25fr;gap:.5rem}
@@ -4574,6 +4604,12 @@ function renderQuotePreviewSection(title, positions){
         <span>${escapeHtml(title)}</span>
         <span>${positions.length}</span>
       </div>
+      <div class="quoteTableHead">
+        <span>Позиція</span>
+        <span>К-сть</span>
+        <span>Ціна</span>
+        <span>Сума</span>
+      </div>
       ${positions.map(pos => {
         const qty = Number(pos.qty) || 1;
         const price = Number(pos.price) || 0;
@@ -4582,9 +4618,8 @@ function renderQuotePreviewSection(title, positions){
         return `
           <div class="quoteLine">
             <div class="quoteLineName">${escapeHtml(pos.name || "Без назви")}</div>
-            <div class="quoteLineMeta">
-              ${qty} ${escapeHtml(unit)} × ${price > 0 ? moneyWithCents(price) : "ціна уточнюється"}
-            </div>
+            <div class="quoteLineQty">${qty} ${escapeHtml(unit)}</div>
+            <div class="quoteLinePrice">${price > 0 ? moneyWithCents(price) : "—"}</div>
             <div class="quoteLineTotal">${price > 0 ? money(itemTotal) : "—"}</div>
           </div>
         `;
@@ -4622,26 +4657,25 @@ function openQuotePreview(){
   const quoteDocument = document.getElementById("quotePreviewDocument");
 
   quoteDocument.innerHTML = `
-    <div class="quoteBrandHeader">
-      <div class="quoteCompanyBrand">
-        <div class="quoteCompanyLogo">
-          <img src="${escapeHtml(logoSource)}" alt="${escapeHtml(companyName)}">
-        </div>
-        <div>
-          <div class="quoteCompanyName">${escapeHtml(companyName)}</div>
-          ${companyPhone ? `<div class="quoteCompanyPhone">${escapeHtml(companyPhone)}</div>` : ""}
+    <div class="quoteUnifiedHead">
+      <div class="quoteBrandSide">
+        <div class="quoteCompanyBrand">
+          <div class="quoteCompanyLogo">
+            <img src="${escapeHtml(logoSource)}" alt="${escapeHtml(companyName)}">
+          </div>
+          <div>
+            <div class="quoteCompanyName">${escapeHtml(companyName)}</div>
+            ${companyPhone ? `<div class="quoteCompanyPhone">${escapeHtml(companyPhone)}</div>` : ""}
+          </div>
         </div>
       </div>
 
-      <div class="quoteDocumentMeta">
+      <div class="quoteProjectSide">
         <div class="quoteDocumentTitle">Кошторис</div>
+        <div class="quoteProjectName">${escapeHtml(projectTitlePlain(project))}</div>
+        ${clientDetails ? `<div class="quoteClientMeta">${escapeHtml(clientDetails)}</div>` : ""}
         <div class="quoteIssuedNote">Ціни актуальні на: ${formatQuoteDate(new Date())}</div>
       </div>
-    </div>
-
-    <div class="quoteProjectBlock">
-      <div class="quoteProjectName">${escapeHtml(projectTitlePlain(project))}</div>
-      ${clientDetails ? `<div class="quoteClientMeta">${escapeHtml(clientDetails)}</div>` : ""}
     </div>
 
     ${renderQuotePreviewSection("РОБОТИ", works)}
