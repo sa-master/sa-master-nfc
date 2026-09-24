@@ -1103,11 +1103,6 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   white-space:nowrap;
 }
 
-.projectStatusBadge.clientQuoteStatus{background:rgba(120,130,140,.12);color:var(--ts)}
-.projectStatusBadge.clientQuoteStatus.approved{background:rgba(52,199,89,.14);color:#21823d}
-.projectStatusBadge.clientQuoteStatus.needs_clarification{background:rgba(255,149,0,.14);color:#b76500}
-.projectStatusBadge.clientQuoteStatus.rejected{background:rgba(255,59,48,.12);color:var(--red)}
-.projectStatusBadge.clientQuoteStatus.expired{background:rgba(120,130,140,.12);color:var(--tm)}
 
 .detailsRow{
   display:flex;
@@ -3141,26 +3136,7 @@ body.positionDragging{
   <div class="fsFooter quotePreviewFooter">
     <div class="fsFooterInner">
       <button class="quoteBackButton" onclick="closeQuotePreview()">Редагувати</button>
-      <button onclick="createClientQuoteLink()">Створити посилання</button>
-    </div>
-  </div>
-</div>
-
-<!-- SHEET: CLIENT QUOTE LINK -->
-
-<div class="sheet" id="quoteShareSheet">
-  <div class="panel">
-    <div class="panelHead">
-      <strong>Кошторис готовий</strong>
-      <button class="close" onclick="closeQuoteShare()" aria-label="Закрити">×</button>
-    </div>
-    <div class="panelBody" style="padding-bottom:1.25rem">
-      <div class="formHint" style="margin-bottom:.625rem">Надішліть замовнику це приватне посилання. Воно діє 7 днів.</div>
-      <div class="originalNameCard" id="quoteShareUrl"></div>
-    </div>
-    <div class="panelFooter">
-      <button class="btnGhost" onclick="copyClientQuoteLink()">Копіювати</button>
-      <button class="btnPrimary" onclick="shareClientQuoteLink()">Надіслати</button>
+      <button onclick="printQuotePreview()">PDF / друк</button>
     </div>
   </div>
 </div>
@@ -3279,7 +3255,6 @@ const DEFAULT_WORKS_SEEDED_KEY = "sa_defaultWorksSeeded";
 const EUR_RATE_KEY = "sa_eurRate";
 const USD_RATE_KEY = "sa_usdRate";
 const SUPPLIER_NAMES_KEY = "sa_supplierNames";
-const QUOTE_SERVICE_URL = "https://sa-master-quote.c6hht469s9.workers.dev";
 
 /* Дефолтні роботи — тепер із етапами */
 const DEFAULT_WORKS = [
@@ -3552,8 +3527,6 @@ function loadSupplierNames(){
 let currentProjectId = null;
 let editingProjectId = null;
 let actionsProjectId = null;
-let currentQuoteShareUrl = "";
-const quoteStatusRefreshInFlight = new Set();
 let editingPayType = "percent_of_income";
 let editingCollaborationType = "permanent";
 let editingPersonId = null;
@@ -4408,31 +4381,6 @@ function projectStageLabel(p){
   }
 }
 
-function clientQuoteStatusLabel(project){
-  const quote = project && project.clientQuote;
-  if(!quote || !quote.url) return "";
-
-  const expiry = Date.parse(quote.expiresAt || "");
-  if(Number.isFinite(expiry) && expiry < Date.now()){
-    return "Посилання минуло";
-  }
-
-  switch(quote.status){
-    case "approved": return "Погоджено";
-    case "needs_clarification": return "Потрібні уточнення";
-    case "rejected": return "Відхилено";
-    default: return "Очікує рішення";
-  }
-}
-
-function clientQuoteStatusClass(project){
-  const quote = project && project.clientQuote;
-  if(!quote || !quote.url) return "";
-  const expiry = Date.parse(quote.expiresAt || "");
-  if(Number.isFinite(expiry) && expiry < Date.now()) return "expired";
-  return String(quote.status || "pending");
-}
-
 function renderProject(p){
   const main = document.getElementById("main");
 
@@ -4452,7 +4400,6 @@ function renderProject(p){
           <div class="projectHeaderRight">
             ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
             <span class="projectStatusBadge">${escapeHtml(stageLabel)}</span>
-            ${clientQuoteStatusLabel(p) ? `<span class="projectStatusBadge clientQuoteStatus ${escapeHtml(clientQuoteStatusClass(p))}">${escapeHtml(clientQuoteStatusLabel(p))}</span>` : ""}
             <button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>
           </div>
         </div>
@@ -4474,7 +4421,6 @@ function renderProject(p){
     ${renderFloatingPanel(p)}
   `;
 
-  refreshClientQuoteStatus(p);
 }
 
 function renderProjectTeamBlock(project){
@@ -4611,88 +4557,6 @@ function renderQuotePreviewSection(title, positions){
   `;
 }
 
-function getQuoteLogoSource(){
-  const customLogo = String(profile.logoData || "");
-  if(/^data:image\/(png|jpe?g|webp);base64,/i.test(customLogo) && customLogo.length <= 350000){
-    return customLogo;
-  }
-  return "https://sa-master.pro/logo.png";
-}
-
-function buildClientQuoteSnapshot(project){
-  const positions = Array.isArray(project && project.positions) ? project.positions : [];
-  const toItems = list => list.map(pos => {
-    const qty = Number(pos.qty) || 1;
-    const price = Number(pos.price) || 0;
-    return {
-      name:String(pos.name || "Без назви"),
-      qty,
-      unit:String(pos.unit || "шт"),
-      price,
-      total:price * qty
-    };
-  });
-  const works = toItems(positions.filter(pos => pos.type === "work"));
-  const materials = toItems(positions.filter(pos => pos.type === "material"));
-  const section = (label, items) => ({
-    label,
-    items,
-    total:items.reduce((sum, item) => sum + (Number(item.total) || 0), 0)
-  });
-
-  return {
-    version:1,
-    issuedAt:new Date().toISOString(),
-    company:{
-      name:profileCompanyName(),
-      phone:String(profile.phone || "").trim(),
-      logo:getQuoteLogoSource()
-    },
-    project:{
-      id:String(project.id || ""),
-      title:projectTitlePlain(project),
-      clientName:String(project.client?.name || "").trim(),
-      clientPhone:String(project.client?.phone || "").trim(),
-      address:String(project.client?.address || "").trim()
-    },
-    sections:[section("РОБОТИ", works), section("МАТЕРІАЛИ", materials)].filter(section => section.items.length),
-    discount:getEstimateDiscountPercent(project) > 0 ? {
-      percent:getEstimateDiscountPercent(project),
-      amount:getEstimateDiscountAmount(project)
-    } : null
-  };
-}
-
-function quoteApiUrl(path){
-  return QUOTE_SERVICE_URL.replace(/\/$/, "") + path;
-}
-
-async function refreshClientQuoteStatus(project){
-  const quote = project && project.clientQuote;
-  if(!quote || !quote.token || !quote.url || quoteStatusRefreshInFlight.has(project.id)) return;
-
-  const expiry = Date.parse(quote.expiresAt || "");
-  if(Number.isFinite(expiry) && expiry < Date.now()) return;
-
-  quoteStatusRefreshInFlight.add(project.id);
-  try{
-    const response = await fetch(quoteApiUrl("/api/quotes/" + encodeURIComponent(quote.token) + "/status"));
-    if(!response.ok) return;
-
-    const remote = await response.json();
-    if(!remote || !remote.status || remote.status === quote.status) return;
-
-    quote.status = remote.status;
-    quote.clientComment = String(remote.clientComment || "");
-    quote.decidedAt = remote.decidedAt || "";
-    saveProjects();
-    if(currentProjectId === project.id) render();
-  }catch(e){}
-  finally{
-    setTimeout(() => quoteStatusRefreshInFlight.delete(project.id), 30000);
-  }
-}
-
 function openQuotePreview(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
@@ -4749,110 +4613,6 @@ function openQuotePreview(){
 
 function closeQuotePreview(){
   document.getElementById("quotePreviewScreen").classList.remove("open");
-}
-
-async function createClientQuoteLink(){
-  const project = projects.find(item => item.id === currentProjectId);
-  if(!project) return;
-
-  const positions = Array.isArray(project.positions) ? project.positions : [];
-  if(!positions.length){
-    toast("Додайте хоча б одну позицію до кошторису");
-    return;
-  }
-
-  const button = document.querySelector(".quotePreviewFooter button:last-child");
-  if(button) button.disabled = true;
-
-  try{
-    const response = await fetch(quoteApiUrl("/api/quotes"), {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        projectId:project.id,
-        snapshot:buildClientQuoteSnapshot(project)
-      })
-    });
-
-    const data = await response.json().catch(() => ({}));
-    if(!response.ok || !data.url || !data.token){
-      throw new Error(data.error || "Не вдалося створити посилання");
-    }
-
-    project.clientQuote = {
-      token:data.token,
-      url:data.url,
-      status:"pending",
-      createdAt:data.createdAt || new Date().toISOString(),
-      expiresAt:data.expiresAt || "",
-      clientComment:"",
-      decidedAt:""
-    };
-    project.updatedAt = new Date().toISOString();
-    saveProjects();
-
-    currentQuoteShareUrl = data.url;
-    document.getElementById("quoteShareUrl").textContent = data.url;
-    closeQuotePreview();
-    document.getElementById("quoteShareSheet").classList.add("open");
-    render();
-  }catch(e){
-    toast(e && e.message ? e.message : "Не вдалося створити посилання");
-  }finally{
-    if(button) button.disabled = false;
-  }
-}
-
-function closeQuoteShare(){
-  document.getElementById("quoteShareSheet").classList.remove("open");
-}
-
-function activeClientQuoteUrl(){
-  if(currentQuoteShareUrl) return currentQuoteShareUrl;
-  const project = projects.find(item => item.id === currentProjectId);
-  return String(project?.clientQuote?.url || "");
-}
-
-async function copyClientQuoteLink(){
-  const url = activeClientQuoteUrl();
-  if(!url) return;
-  try{
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      await navigator.clipboard.writeText(url);
-    }else{
-      const area = document.createElement("textarea");
-      area.value = url;
-      area.style.position = "fixed";
-      area.style.opacity = "0";
-      document.body.appendChild(area);
-      area.select();
-      document.execCommand("copy");
-      area.remove();
-    }
-    toast("Посилання скопійовано");
-  }catch(e){
-    toast("Не вдалося скопіювати посилання");
-  }
-}
-
-async function shareClientQuoteLink(){
-  const url = activeClientQuoteUrl();
-  if(!url) return;
-
-  if(navigator.share){
-    try{
-      await navigator.share({
-        title:"Кошторис",
-        text:"Кошторис для погодження",
-        url
-      });
-      return;
-    }catch(e){
-      if(e && e.name === "AbortError") return;
-    }
-  }
-
-  await copyClientQuoteLink();
 }
 
 function printQuotePreview(){
@@ -8626,10 +8386,6 @@ document.getElementById("pricesSheet").addEventListener("click", e => {
 
 document.getElementById("bestPriceSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeBestPriceProposal();
-});
-
-document.getElementById("quoteShareSheet").addEventListener("click", e => {
-  if(e.target === e.currentTarget) closeQuoteShare();
 });
 
 document.getElementById("importSheet").addEventListener("click", e => {
