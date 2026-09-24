@@ -14,6 +14,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
 
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <style>
 :root{
@@ -3157,7 +3159,7 @@ body.positionDragging{
   <div class="fsFooter quotePreviewFooter">
     <div class="fsFooterInner">
       <button class="quoteBackButton" onclick="closeQuotePreview()">Редагувати</button>
-      <button onclick="printQuotePreview()">PDF / друк</button>
+      <button id="quotePdfButton" onclick="printQuotePreview()">PDF / надіслати</button>
     </div>
   </div>
 </div>
@@ -4644,12 +4646,105 @@ function closeQuotePreview(){
   document.getElementById("quotePreviewScreen").classList.remove("open");
 }
 
-function printQuotePreview(){
-  if(typeof window.print !== "function"){
-    toast("На цьому пристрої друк недоступний");
+async function printQuotePreview(){
+  const paper = document.getElementById("quotePreviewDocument");
+  const button = document.getElementById("quotePdfButton");
+
+  if(!paper || typeof window.html2canvas !== "function" || !window.jspdf?.jsPDF){
+    toast("Модуль PDF ще завантажується. Спробуйте за мить.");
     return;
   }
-  window.print();
+
+  const originalText = button ? button.textContent : "";
+  if(button){
+    button.disabled = true;
+    button.textContent = "Готуємо PDF…";
+  }
+
+  try{
+    const scale = Math.min(2, Math.max(1.5, window.devicePixelRatio || 1));
+    const canvas = await window.html2canvas(paper, {
+      backgroundColor:"#ffffff",
+      scale,
+      useCORS:true,
+      logging:false,
+      windowWidth:paper.scrollWidth,
+      windowHeight:paper.scrollHeight
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation:"p", unit:"mm", format:"a4", compress:true });
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+    const contentWidth = pageWidth - margin * 2;
+    const contentHeight = pageHeight - margin * 2;
+    const pxPerMm = canvas.width / contentWidth;
+    const maxSliceHeight = Math.floor(contentHeight * pxPerMm);
+    const paperRect = paper.getBoundingClientRect();
+
+    const safeBreaks = Array.from(
+      paper.querySelectorAll(".quoteLine, .quoteSectionTotal, .quoteDiscountRow")
+    ).map(el => {
+      const rect = el.getBoundingClientRect();
+      return Math.round((rect.bottom - paperRect.top) * scale);
+    }).filter(value => value > 0 && value < canvas.height).sort((a,b) => a - b);
+
+    let offset = 0;
+    let pageIndex = 0;
+
+    while(offset < canvas.height){
+      const target = Math.min(offset + maxSliceHeight, canvas.height);
+      const candidates = safeBreaks.filter(value => value > offset + 80 && value <= target);
+      const end = target < canvas.height && candidates.length ? candidates[candidates.length - 1] : target;
+      const sliceHeight = Math.max(1, end - offset);
+      const slice = document.createElement("canvas");
+      slice.width = canvas.width;
+      slice.height = sliceHeight;
+      slice.getContext("2d").drawImage(canvas, 0, offset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+
+      if(pageIndex > 0) pdf.addPage();
+      const renderedHeight = sliceHeight / pxPerMm;
+      pdf.addImage(slice.toDataURL("image/jpeg", .94), "JPEG", margin, margin, contentWidth, renderedHeight, undefined, "FAST");
+
+      offset = end;
+      pageIndex++;
+    }
+
+    const project = projects.find(item => item.id === currentProjectId);
+    const safeTitle = projectTitlePlain(project || {})
+      .replace(/[\\/:*?"<>|]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 72) || "кошторис";
+    const file = new File([pdf.output("blob")], `Кошторис — ${safeTitle}.pdf`, { type:"application/pdf" });
+
+    if(navigator.canShare && navigator.canShare({ files:[file] }) && navigator.share){
+      try{
+        await navigator.share({ title:"Кошторис", files:[file] });
+      }catch(e){
+        if(e && e.name !== "AbortError") throw e;
+      }
+    }else{
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast("PDF завантажено");
+    }
+  }catch(e){
+    console.error("PDF export error:", e);
+    toast("Не вдалося сформувати PDF");
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
 }
 
 function buildDetailsBadges(p){
