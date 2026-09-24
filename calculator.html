@@ -4110,23 +4110,45 @@ function getWorksSubtotal(project){
   }, 0);
 }
 
-function getEstimateDiscountPercent(project){
-  const d = Number(project && project.discount);
+function normalizeDiscountPercent(value){
+  const d = Number(value);
   return Number.isFinite(d) && d > 0 && d < 100 ? d : 0;
 }
 
+function getWorksDiscountPercent(project){
+  return normalizeDiscountPercent(project && project.workDiscount);
+}
+
+function getMaterialsDiscountPercent(project){
+  // Старі кошториси мали одну знижку — вона завжди була знижкою на матеріали.
+  const value = project && project.materialDiscount !== undefined
+    ? project.materialDiscount
+    : project && project.discount;
+  return normalizeDiscountPercent(value);
+}
+
+function getWorksDiscountAmount(project){
+  return getWorksSubtotal(project) * getWorksDiscountPercent(project) / 100;
+}
+
+function getMaterialsDiscountAmount(project){
+  return getMaterialsSubtotal(project) * getMaterialsDiscountPercent(project) / 100;
+}
+
 function getEstimateDiscountAmount(project){
-  const subtotal = getMaterialsSubtotal(project);
-  const percent = getEstimateDiscountPercent(project);
-  return subtotal * percent / 100;
+  return getWorksDiscountAmount(project) + getMaterialsDiscountAmount(project);
 }
 
 function getEstimateTotal(project){
   return getEstimateSubtotal(project) - getEstimateDiscountAmount(project);
 }
 
+function getCustomerWorksTotal(project){
+  return getWorksSubtotal(project) - getWorksDiscountAmount(project);
+}
+
 function getCustomerMaterialsTotal(project){
-  return getMaterialsSubtotal(project) - getEstimateDiscountAmount(project);
+  return getMaterialsSubtotal(project) - getMaterialsDiscountAmount(project);
 }
 
 /* Після імпорту прайсу дозаповнюємо тільки відсутню закупівельну ціну
@@ -4193,7 +4215,7 @@ function getProjectAssignmentEarning(project, assignment){
 
   switch(assignment.payType){
     case "percent_of_income": return getEstimateTotal(project) * rate / 100;
-    case "percent_of_work": return getWorksSubtotal(project) * rate / 100;
+    case "percent_of_work": return getCustomerWorksTotal(project) * rate / 100;
     case "per_day": return units > 0 ? rate * units : null;
     case "per_month": return units > 0 ? rate * units : null;
     case "fixed_per_object": return rate;
@@ -4552,14 +4574,16 @@ function renderProjectTeamBlock(project){
 
 function renderFloatingPanel(p){
   const total = getEstimateTotal(p);
-  const worksTotal = getWorksSubtotal(p);
+  const worksTotal = getCustomerWorksTotal(p);
   const materialsTotal = getCustomerMaterialsTotal(p);
   const hasMaterials = Array.isArray(p.positions) && p.positions.some(pos => pos.type === "material");
   const profit = getMaterialsProfit(p);
-  const discountPercent = getEstimateDiscountPercent(p);
+  const workDiscountPercent = getWorksDiscountPercent(p);
+  const materialsDiscountPercent = getMaterialsDiscountPercent(p);
   const profitLabel = profit.confirmed ? "Прибуток" : "≈ Прибуток";
   const profitValue = profit.hasUnknownPrice ? "—" : money(profit.value);
-  const materialsLabel = discountPercent > 0 ? `Матеріали −${discountPercent}%` : "Матеріали";
+  const worksLabel = workDiscountPercent > 0 ? `Роботи −${workDiscountPercent}%` : "Роботи";
+  const materialsLabel = materialsDiscountPercent > 0 ? `Матеріали −${materialsDiscountPercent}%` : "Матеріали";
 
   return `
     <div class="floatingPanel">
@@ -4570,7 +4594,7 @@ function renderFloatingPanel(p){
 
       <div class="floatingBreakdown">
         <div class="floatingMetric">
-          <span class="floatingMetricLabel">Роботи</span>
+          <span class="floatingMetricLabel">${worksLabel}</span>
           <span class="floatingMetricValue">${money(worksTotal)}</span>
         </div>
         <div class="floatingMetric">
@@ -4678,8 +4702,10 @@ function openQuotePreview(){
   const clientPhone = String(client.phone || "").trim();
   const objectName = projectTitlePlain(project);
   const objectAddress = String(client.address || "").trim();
-  const discountPercent = getEstimateDiscountPercent(project);
-  const discountAmount = getEstimateDiscountAmount(project);
+  const workDiscountPercent = getWorksDiscountPercent(project);
+  const workDiscountAmount = getWorksDiscountAmount(project);
+  const materialsDiscountPercent = getMaterialsDiscountPercent(project);
+  const materialsDiscountAmount = getMaterialsDiscountAmount(project);
   const logoSource = profile.logoData || "logo.png";
   const quoteDocument = document.getElementById("quotePreviewDocument");
 
@@ -4711,11 +4737,17 @@ function openQuotePreview(){
     </div>
 
     ${renderQuotePreviewSection("РОБОТИ", works)}
-    ${renderQuotePreviewSection("МАТЕРІАЛИ", materials)}
-    ${discountPercent > 0 ? `
+    ${workDiscountPercent > 0 ? `
       <div class="quoteDiscountRow">
-        <span>Знижка на матеріали — ${discountPercent}%</span>
-        <span>−${money(discountAmount)}</span>
+        <span>Знижка на роботи — ${workDiscountPercent}%</span>
+        <span>−${money(workDiscountAmount)}</span>
+      </div>
+    ` : ""}
+    ${renderQuotePreviewSection("МАТЕРІАЛИ", materials)}
+    ${materialsDiscountPercent > 0 ? `
+      <div class="quoteDiscountRow">
+        <span>Знижка на матеріали — ${materialsDiscountPercent}%</span>
+        <span>−${money(materialsDiscountAmount)}</span>
       </div>
     ` : ""}
   `;
@@ -4901,30 +4933,8 @@ function renderEstimateBlock(p){
 
   const workPositions = positions.filter(x => x.type === "work");
   const materialPositions = positions.filter(x => x.type === "material");
-
-  const discountPercent = getEstimateDiscountPercent(p);
-
-  const discountChips = [0,5,10,15,20];
-
-  let discountHtml = `
-    <div class="discountBlock">
-      <div class="discountLabel">Знижка на матеріали</div>
-      <div class="chips tight">
-        ${discountChips.map(value => `
-          <button
-            type="button"
-            class="chip small ${discountPercent === value ? 'active' : ''}"
-            onclick="setDiscountPercent(${value})"
-          >${value}%</button>
-        `).join("")}
-          <button
-            type="button"
-            class="chip small ${discountPercent && !discountChips.includes(discountPercent) ? 'active' : ''}"
-            onclick="promptCustomDiscount()"
-          >інша</button>
-      </div>
-    </div>
-  `;
+  const workDiscountPercent = getWorksDiscountPercent(p);
+  const materialsDiscountPercent = getMaterialsDiscountPercent(p);
 
   return `
     <div class="estimateBlock">
@@ -4939,10 +4949,37 @@ function renderEstimateBlock(p){
           Скористайтесь кнопками внизу
         </div>
       ` : `
-        ${renderEstimateSection("РОБОТИ", workPositions, p.id)}
-        ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id, discountPercent)}
-        ${materialPositions.length ? discountHtml : ""}
+        ${renderEstimateSection("РОБОТИ", workPositions, p.id, workDiscountPercent)}
+        ${workPositions.length ? renderDiscountControl("work", workDiscountPercent) : ""}
+        ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id, materialsDiscountPercent)}
+        ${materialPositions.length ? renderDiscountControl("material", materialsDiscountPercent) : ""}
       `}
+    </div>
+  `;
+}
+
+function renderDiscountControl(type, discountPercent){
+  const isWork = type === "work";
+  const label = isWork ? "Знижка на роботи" : "Знижка на матеріали";
+  const discountChips = [0,5,10,15,20];
+
+  return `
+    <div class="discountBlock">
+      <div class="discountLabel">${label}</div>
+      <div class="chips tight">
+        ${discountChips.map(value => `
+          <button
+            type="button"
+            class="chip small ${discountPercent === value ? 'active' : ''}"
+            onclick="setDiscountPercent('${type}',${value})"
+          >${value}%</button>
+        `).join("")}
+        <button
+          type="button"
+          class="chip small ${discountPercent && !discountChips.includes(discountPercent) ? 'active' : ''}"
+          onclick="promptCustomDiscount('${type}')"
+        >інша</button>
+      </div>
     </div>
   `;
 }
@@ -4956,8 +4993,8 @@ function renderEstimateSection(label, items, projectId, discountPercent){
     return sum + price * qty;
   }, 0);
 
-  const totalLabel = label === "МАТЕРІАЛИ" && Number(discountPercent) > 0
-    ? "МАТЕРІАЛИ ДО ЗНИЖКИ"
+  const totalLabel = Number(discountPercent) > 0
+    ? label + " ДО ЗНИЖКИ"
     : label;
 
   return `
@@ -5042,25 +5079,26 @@ function renderPosition(projectId, pos){
 
 /* ==== Знижка ==== */
 
-function setDiscountPercent(value){
+function setDiscountPercent(type, value){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project) return;
 
   const num = Number(value) || 0;
-
-  project.discount = (num > 0 && num < 100) ? num : 0;
+  const key = type === "work" ? "workDiscount" : "materialDiscount";
+  project[key] = (num > 0 && num < 100) ? num : 0;
   project.updatedAt = new Date().toISOString();
   saveProjects();
   render();
 }
 
-function promptCustomDiscount(){
+function promptCustomDiscount(type){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project) return;
 
-  const current = getEstimateDiscountPercent(project);
+  const isWork = type === "work";
+  const current = isWork ? getWorksDiscountPercent(project) : getMaterialsDiscountPercent(project);
 
-  const value = prompt("Відсоток знижки (0–99):", current > 0 ? String(current) : "");
+  const value = prompt(`Відсоток знижки на ${isWork ? "роботи" : "матеріали"} (0–99):`, current > 0 ? String(current) : "");
 
   if(value === null) return;
 
@@ -5071,7 +5109,7 @@ function promptCustomDiscount(){
     return;
   }
 
-  project.discount = num > 0 ? num : 0;
+  project[isWork ? "workDiscount" : "materialDiscount"] = num > 0 ? num : 0;
   project.updatedAt = new Date().toISOString();
   saveProjects();
   render();
@@ -5366,7 +5404,8 @@ function saveProjectSheet(){
 
       positions: [],
       stages: [],
-      discount: 0,
+      workDiscount: 0,
+      materialDiscount: 0,
       payments: [],
       expenses: [],
       salaries: [],
