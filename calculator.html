@@ -1526,6 +1526,23 @@ body.positionDragging{
 
 .addButton:active{transform:scale(.98)}
 
+.quoteSendButton{
+  width:100%;
+  height:2.625rem;
+  border-radius:.875rem;
+  background:linear-gradient(135deg,#007AFF,#0A84FF);
+  color:#fff;
+  font-size:.875rem;
+  font-weight:750;
+  box-shadow:0 .375rem 1rem rgba(0,122,255,.22);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.375rem;
+}
+
+.quoteSendButton:active{transform:scale(.98)}
+
 .procurementGroup{margin-bottom:1rem}
 .procurementGroup:last-child{margin-bottom:0}
 
@@ -2296,6 +2313,137 @@ body.positionDragging{
   box-shadow:0 .375rem 1rem rgba(0,122,255,.22);
 }
 
+.quotePreviewBody{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  scrollbar-width:none;
+  padding:calc(.875rem + var(--sat)) 1rem 1rem;
+  width:min(30rem,100%);
+  margin:0 auto;
+}
+
+.quotePreviewBody::-webkit-scrollbar{display:none}
+
+.quotePreviewNav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+  margin-bottom:.875rem;
+}
+
+.quotePreviewNav strong{
+  font-size:1.0625rem;
+  font-weight:800;
+  color:var(--t);
+}
+
+.quotePaper{
+  background:#fff;
+  color:#171717;
+  border-radius:1rem;
+  padding:1.125rem;
+  box-shadow:0 .5rem 1.5rem rgba(0,0,0,.12);
+}
+
+.quoteCompanyHead{
+  display:flex;
+  align-items:center;
+  gap:.625rem;
+  padding-bottom:.875rem;
+  border-bottom:1px solid #e3e3e7;
+}
+
+.quoteCompanyLogo{
+  flex:0 0 auto;
+  width:2.625rem;
+  height:2.625rem;
+  border-radius:50%;
+  overflow:hidden;
+  background:#eef5ff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.quoteCompanyLogo img{width:100%;height:100%;object-fit:contain;display:block}
+
+.quoteCompanyName{font-size:1rem;font-weight:800;line-height:1.2}
+.quoteCompanyPhone{margin-top:.125rem;font-size:.75rem;color:#6d6d73}
+
+.quoteDocumentTitle{margin:1.125rem 0 .25rem;font-size:1.375rem;font-weight:850;letter-spacing:-.02em}
+.quoteProjectName{font-size:.9375rem;font-weight:750;line-height:1.3}
+.quoteClientMeta{margin-top:.25rem;font-size:.75rem;line-height:1.45;color:#5f5f66}
+
+.quoteDateNote{
+  margin-top:.875rem;
+  padding:.625rem .75rem;
+  border-radius:.625rem;
+  background:#f5f7fa;
+  color:#5f5f66;
+  font-size:.6875rem;
+  line-height:1.45;
+}
+
+.quoteSection{margin-top:1.125rem}
+.quoteSectionHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+  padding:0 .125rem .375rem;
+  border-bottom:1px solid #dedee3;
+  color:#55555b;
+  font-size:.6875rem;
+  font-weight:800;
+  letter-spacing:.5px;
+}
+
+.quoteLine{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  column-gap:.75rem;
+  padding:.625rem .125rem;
+  border-bottom:1px solid #eeeeF1;
+}
+
+.quoteLineName{font-size:.8125rem;font-weight:650;line-height:1.3;overflow-wrap:anywhere}
+.quoteLineMeta{grid-column:1; margin-top:.125rem;font-size:.6875rem;line-height:1.35;color:#6d6d73}
+.quoteLineTotal{grid-column:2;grid-row:1 / span 2;align-self:center;font-size:.8125rem;font-weight:800;white-space:nowrap}
+
+.quoteSectionTotal,
+.quoteDiscountRow,
+.quoteGrandTotal{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.75rem;
+}
+
+.quoteSectionTotal{padding:.625rem .125rem 0;font-size:.75rem;font-weight:750}
+.quoteDiscountRow{padding:.625rem .125rem 0;color:#207a42;font-size:.75rem;font-weight:700}
+.quoteGrandTotal{margin-top:1.125rem;padding-top:.875rem;border-top:2px solid #1c1c1e;font-size:1rem;font-weight:850}
+.quotePreviewFooter .fsFooterInner{display:grid;grid-template-columns:1fr 1.25fr;gap:.5rem}
+.quotePreviewFooter .quoteBackButton{background:rgba(120,130,140,.12);color:var(--ts);box-shadow:none}
+
+@media print{
+  @page{margin:12mm}
+  body{height:auto !important;background:#fff !important;overflow:visible !important}
+  body > *:not(#quotePreviewScreen){display:none !important}
+  #quotePreviewScreen,
+  #quotePreviewScreen.open{
+    position:static !important;
+    display:block !important;
+    overflow:visible !important;
+    background:#fff !important;
+  }
+  #quotePreviewScreen .quotePreviewBody{width:auto !important;overflow:visible !important;padding:0 !important}
+  #quotePreviewScreen .quotePreviewNav,
+  #quotePreviewScreen .quotePreviewFooter{display:none !important}
+  #quotePreviewDocument{display:block !important;box-shadow:none !important;border-radius:0 !important;padding:0 !important}
+}
+
 .toast{
   position:fixed;
   left:50%;
@@ -2960,6 +3108,26 @@ body.positionDragging{
   <div class="fsFooter">
     <div class="fsFooterInner">
       <button onclick="closeProcurementPlan()">Готово</button>
+    </div>
+  </div>
+</div>
+
+<!-- FULLSCREEN: CLIENT QUOTE PREVIEW -->
+
+<div class="fullscreen" id="quotePreviewScreen">
+  <div class="quotePreviewBody">
+    <div class="quotePreviewNav">
+      <strong>Перегляд для замовника</strong>
+      <button class="close" onclick="closeQuotePreview()" aria-label="Закрити">×</button>
+    </div>
+
+    <article class="quotePaper" id="quotePreviewDocument"></article>
+  </div>
+
+  <div class="fsFooter quotePreviewFooter">
+    <div class="fsFooterInner">
+      <button class="quoteBackButton" onclick="closeQuotePreview()">Редагувати</button>
+      <button onclick="printQuotePreview()">PDF / друк</button>
     </div>
   </div>
 </div>
@@ -4307,6 +4475,11 @@ function renderFloatingPanel(p){
         </div>
       </div>
 
+      <button class="quoteSendButton" onclick="openQuotePreview()">
+        <span style="font-size:1rem;line-height:1">↗</span>
+        <span>Надіслати кошторис</span>
+      </button>
+
       ${hasMaterials ? `
         <button class="addButton" onclick="openProcurementPlan()">
           <span style="font-size:1rem;line-height:1">☷</span>
@@ -4326,6 +4499,125 @@ function renderFloatingPanel(p){
       </div>
     </div>
   `;
+}
+
+function formatQuoteDate(value){
+  const date = value instanceof Date ? value : new Date(value);
+  if(Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("uk-UA", {
+    day:"2-digit",
+    month:"2-digit",
+    year:"numeric"
+  }).format(date);
+}
+
+function renderQuotePreviewSection(title, positions){
+  if(!positions.length) return "";
+
+  const total = positions.reduce((sum, pos) => {
+    return sum + (Number(pos.price) || 0) * (Number(pos.qty) || 0);
+  }, 0);
+
+  return `
+    <section class="quoteSection">
+      <div class="quoteSectionHead">
+        <span>${escapeHtml(title)}</span>
+        <span>${positions.length}</span>
+      </div>
+      ${positions.map(pos => {
+        const qty = Number(pos.qty) || 1;
+        const price = Number(pos.price) || 0;
+        const unit = pos.unit || "шт";
+        const itemTotal = price * qty;
+        return `
+          <div class="quoteLine">
+            <div class="quoteLineName">${escapeHtml(pos.name || "Без назви")}</div>
+            <div class="quoteLineMeta">
+              ${qty} ${escapeHtml(unit)} × ${price > 0 ? moneyWithCents(price) : "ціна уточнюється"}
+            </div>
+            <div class="quoteLineTotal">${price > 0 ? money(itemTotal) : "—"}</div>
+          </div>
+        `;
+      }).join("")}
+      <div class="quoteSectionTotal">
+        <span>Разом</span>
+        <span>${money(total)}</span>
+      </div>
+    </section>
+  `;
+}
+
+function openQuotePreview(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+
+  const positions = Array.isArray(project.positions) ? project.positions : [];
+  if(!positions.length){
+    toast("Додайте хоча б одну позицію до кошторису");
+    return;
+  }
+
+  const works = positions.filter(pos => pos.type === "work");
+  const materials = positions.filter(pos => pos.type === "material");
+  const companyName = profileCompanyName();
+  const companyPhone = String(profile.phone || "").trim();
+  const client = project.client || {};
+  const clientDetails = [client.name, client.phone, client.address]
+    .map(value => String(value || "").trim())
+    .filter(Boolean)
+    .join(" · ");
+  const discountPercent = getEstimateDiscountPercent(project);
+  const discountAmount = getEstimateDiscountAmount(project);
+  const logoSource = profile.logoData || "logo.png";
+  const quoteDocument = document.getElementById("quotePreviewDocument");
+
+  quoteDocument.innerHTML = `
+    <div class="quoteCompanyHead">
+      <div class="quoteCompanyLogo">
+        <img src="${escapeHtml(logoSource)}" alt="${escapeHtml(companyName)}">
+      </div>
+      <div>
+        <div class="quoteCompanyName">${escapeHtml(companyName)}</div>
+        ${companyPhone ? `<div class="quoteCompanyPhone">${escapeHtml(companyPhone)}</div>` : ""}
+      </div>
+    </div>
+
+    <div class="quoteDocumentTitle">Кошторис</div>
+    <div class="quoteProjectName">${escapeHtml(projectTitlePlain(project))}</div>
+    ${clientDetails ? `<div class="quoteClientMeta">${escapeHtml(clientDetails)}</div>` : ""}
+
+    <div class="quoteDateNote">
+      Складено: ${formatQuoteDate(new Date())}<br>
+      Ціни актуальні на: ${formatQuoteDate(new Date())}
+    </div>
+
+    ${renderQuotePreviewSection("РОБОТИ", works)}
+    ${renderQuotePreviewSection("МАТЕРІАЛИ", materials)}
+    ${discountPercent > 0 ? `
+      <div class="quoteDiscountRow">
+        <span>Знижка на матеріали — ${discountPercent}%</span>
+        <span>−${money(discountAmount)}</span>
+      </div>
+    ` : ""}
+    <div class="quoteGrandTotal">
+      <span>До сплати</span>
+      <span>${money(getEstimateTotal(project))}</span>
+    </div>
+  `;
+
+  document.getElementById("quotePreviewScreen").classList.add("open");
+}
+
+function closeQuotePreview(){
+  document.getElementById("quotePreviewScreen").classList.remove("open");
+}
+
+function printQuotePreview(){
+  if(typeof window.print !== "function"){
+    toast("На цьому пристрої друк недоступний");
+    return;
+  }
+  window.print();
 }
 
 function buildDetailsBadges(p){
