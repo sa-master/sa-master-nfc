@@ -1021,7 +1021,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .projectStickyHeader{
   flex:0 0 auto;
+  flex-shrink:0;
   padding:.25rem 0 .5rem;
+  position:relative;
+  z-index:2;
+  overscroll-behavior:none;
+  touch-action:none;
 }
 
 .projectView{
@@ -1465,9 +1470,12 @@ body.positionDragging{
 .floatingPanel{
   position:relative;
   flex:0 0 auto;
+  flex-shrink:0;
   width:100%;
   margin:0;
   z-index:1;
+  overscroll-behavior:none;
+  touch-action:none;
   background:var(--gb);
   backdrop-filter:blur(1.75rem) saturate(220%);
   -webkit-backdrop-filter:blur(1.75rem) saturate(220%);
@@ -8807,6 +8815,13 @@ document.getElementById("addPersonSheet").addEventListener("click", e => {
 document.getElementById("actionsSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeActionsSheet();
 });
+
+// На iOS не даємо жесту з нерухомих панелей передаватися сторінці.
+document.addEventListener("touchmove", e => {
+  const target = e.target;
+  if(!(target instanceof Element)) return;
+  if(target.closest(".projectStickyHeader, .floatingPanel")) e.preventDefault();
+}, { passive:false });
 
 document.addEventListener("pointermove", moveEstimatePositionDrag, { passive:false });
 document.addEventListener("pointerup", endEstimatePositionDrag);
