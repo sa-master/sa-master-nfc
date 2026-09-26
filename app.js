@@ -122,12 +122,42 @@
   const WORKER_URL = 'https://sa-master-worker.c6hht469s9.workers.dev';
   const REQUEST_STATE = {
     type: '', typeLabel: '', name: '', phone: '', location: '', timing: '',
-    project: '', consultationDate: '', notes: '', projectFile: null,
+    project: '', consultationDate: '', consultationFormat: '', servicePrice: '',
+    notes: '', projectFile: null,
     requestCode: '', uploadToken: '', fileUploaded: false
   };
   const TYPE_LABELS = { complex: 'Комплексний монтаж', local: 'Локальний монтаж', consultation: 'Консультація', estimate: 'Прорахунок' };
   let chatStep = 0;
+  let chatHistory = [];
   const CHAT_TOTAL_STEPS = 6;
+  function updateBackButton() {
+    const button = $('requestBack');
+    if (button) button.hidden = chatHistory.length === 0;
+  }
+  function saveBack(renderQuestion) {
+    chatHistory.push({ state: { ...REQUEST_STATE }, renderQuestion, chatStep });
+    updateBackButton();
+  }
+  function goBackInChat() {
+    const previous = chatHistory.pop();
+    if (!previous) return;
+    Object.keys(REQUEST_STATE).forEach((key) => { REQUEST_STATE[key] = previous.state[key]; });
+    const body = $('chatBody');
+    if (body) body.innerHTML = '';
+    chatStep = previous.chatStep;
+    updateBackButton();
+    previous.renderQuestion();
+  }
+  function ensureBackButton() {
+    if ($('requestBack')) return;
+    const close = $('requestClose');
+    if (!close || !close.parentElement) return;
+    const button = document.createElement('button');
+    button.id = 'requestBack'; button.type = 'button'; button.className = 'request-back';
+    button.setAttribute('aria-label', 'Попереднє питання'); button.textContent = '← Назад'; button.hidden = true;
+    button.addEventListener('click', goBackInChat);
+    close.parentElement.insertBefore(button, close);
+  }
   function chatScroll() { const body = $('chatBody'); if (body) setTimeout(() => { body.scrollTop = body.scrollHeight; }, 50); }
   function chatMsg(text, who) {
     const body = $('chatBody'); if (!body) return;
@@ -184,67 +214,155 @@
   function resetChat() {
     const body = $('chatBody'); if (body) body.innerHTML = '';
     Object.keys(REQUEST_STATE).forEach((key) => { REQUEST_STATE[key] = key === 'projectFile' ? null : ''; });
-    REQUEST_STATE.fileUploaded = false; chatStep = 0; updateProgress();
+    REQUEST_STATE.fileUploaded = false; chatStep = 0; chatHistory = []; updateProgress(); updateBackButton();
   }
   function openRequest() {
     const modal = $('requestModal'); if (!modal) return;
     resetChat(); document.body.classList.add('chat-open'); modal.classList.add('act'); modal.setAttribute('aria-hidden', 'false'); lock();
-    chatBot('Вітаю. Поставлю кілька коротких запитань, щоб підготувати заявку.'); chatBot('Що вас цікавить?');
-    addOptions([{ value: 'complex', label: 'Комплексний монтаж' }, { value: 'local', label: 'Локальний монтаж' }, { value: 'consultation', label: 'Консультація' }, { value: 'estimate', label: 'Прорахунок' }], afterType); updateProgress();
+    askType();
   }
   function closeRequest() { const modal = $('requestModal'); if (modal) { modal.classList.remove('act'); modal.setAttribute('aria-hidden', 'true'); } document.body.classList.remove('chat-open'); unlock(); }
-  function askName() { chatStep = 1; updateProgress(); chatBot('Як до вас звертатися?'); addInput("Ваше ім’я", 'text', (value) => { REQUEST_STATE.name = value; askPhone(); }); }
+  function askType() {
+    chatStep = 0; updateProgress();
+    chatBot('Вітаю. Поставлю кілька коротких запитань, щоб підготувати заявку.');
+    chatBot('Що вас цікавить?');
+    addOptions([{ value: 'complex', label: 'Комплексний монтаж' }, { value: 'local', label: 'Локальний монтаж' }, { value: 'consultation', label: 'Консультація' }, { value: 'estimate', label: 'Прорахунок' }], afterType);
+  }
+  function askName() { chatStep = 1; updateProgress(); chatBot('Як до вас звертатися?'); addInput("Ваше ім’я", 'text', (value) => { saveBack(askName); REQUEST_STATE.name = value; askPhone(); }); }
   function askPhone() {
     chatStep = 2; updateProgress(); chatBot('Залиште номер телефону для зв’язку.');
-    addInput('Наприклад: 0979111871', 'tel', (value) => { REQUEST_STATE.phone = value; REQUEST_STATE.type === 'estimate' ? askEstimateConsultation() : askLocation(); }, (value) => { const digits = String(value || '').replace(/\D/g, ''); return digits.length >= 9 && digits.length <= 13; });
+    addInput('Наприклад: 0979111871', 'tel', (value) => {
+      saveBack(askPhone);
+      REQUEST_STATE.phone = value;
+      if (REQUEST_STATE.type === 'consultation') askConsultationFormat(() => askConsultationDate(finishChat));
+      else if (REQUEST_STATE.type === 'estimate') askEstimateConsultation();
+      else askLocation();
+    }, (value) => { const digits = String(value || '').replace(/\D/g, ''); return digits.length >= 9 && digits.length <= 13; });
   }
   function askLocation() {
     chatStep = 3; updateProgress(); chatBot('Де знаходиться об’єкт? Вкажіть ЖК, вулицю або адресу.');
-    addInput('Наприклад: ЖК Файна Таун, вул. Салютна', 'text', (value) => { REQUEST_STATE.location = value; if (REQUEST_STATE.type === 'consultation') askConsultationDate(); else if (REQUEST_STATE.type === 'complex') askComplexProject(); else askTiming(); });
+    addInput('Наприклад: ЖК Файна Таун, вул. Салютна', 'text', (value) => {
+      saveBack(askLocation);
+      REQUEST_STATE.location = value;
+      if (REQUEST_STATE.type === 'complex') askComplexProject();
+      else askTiming();
+    });
   }
-  function askConsultationDate() { chatStep = 4; updateProgress(); chatBot('Коли вам зручно провести консультацію?'); addInput('Наприклад: 18 вересня після 17:00', 'text', (value) => { REQUEST_STATE.consultationDate = value; finishChat(); }); }
+  function askConsultationFormat(onDone) {
+    chatStep = 3; updateProgress();
+    chatBot('Який формат консультації вам підходить?');
+    addOptions([
+      { value: 'remote', label: 'Віддалено' },
+      { value: 'onsite', label: 'З виїздом на об’єкт' }
+    ], (value, label) => {
+      saveBack(() => askConsultationFormat(onDone));
+      REQUEST_STATE.consultationFormat = value;
+      chatUser(label);
+      if (value === 'onsite' && !REQUEST_STATE.location) {
+        askConsultationLocation(onDone);
+        return;
+      }
+      onDone();
+    });
+  }
+  function askConsultationLocation(onDone) {
+    chatStep = 4; updateProgress();
+    chatBot('Вкажіть адресу або ЖК об’єкта.');
+    addInput('Наприклад: ЖК Файна Таун, вул. Салютна', 'text', (value) => {
+      saveBack(() => askConsultationLocation(onDone));
+      REQUEST_STATE.location = value;
+      onDone();
+    });
+  }
+  function askConsultationDate(onDone) {
+    chatStep = 4; updateProgress();
+    chatBot('Коли вам буде зручно провести консультацію?');
+    addInput('Наприклад: 18 вересня після 17:00', 'text', (value) => {
+      saveBack(() => askConsultationDate(onDone));
+      REQUEST_STATE.consultationDate = value;
+      onDone();
+    });
+  }
   function askComplexProject() {
     chatStep = 4; updateProgress(); chatBot('Чи є у вас дизайн-проєкт?');
     addOptions([{ value: 'Так, є', label: 'Так, є' }, { value: 'Є, але зараз не можу надати', label: 'Є, але зараз не можу надати' }, { value: 'Немає', label: 'Немає' }], (value, label) => {
+      saveBack(askComplexProject);
       chatUser(label);
       if (value !== 'Так, є') { REQUEST_STATE.project = value; askTiming(); return; }
       REQUEST_STATE.project = 'Є, файл додається';
       askProjectConsultation(() => {
-        chatBot('Оберіть файл проєкту. Якщо зараз його немає під рукою — заявку все одно можна надіслати.');
-        addFileInput((file) => {
-          if (file) { REQUEST_STATE.projectFile = file; chatUser(`Файл: ${file.name}`); }
-          else { REQUEST_STATE.project = 'Є, надішле пізніше'; chatUser('Надішлю пізніше'); }
-          askTiming();
-        });
+        askProjectFile(askTiming);
       });
     });
   }
   function askProjectConsultation(onDone) {
     chatBot('Чи потрібна консультація перед початком робіт?');
-    addOptions([{ value: 'Потрібна', label: 'Так, потрібна' }, { value: 'Не потрібна', label: 'Ні, не потрібна' }], (value, label) => {
-      REQUEST_STATE.consultationDate = value;
+    addOptions([{ value: 'yes', label: 'Так, потрібна' }, { value: 'no', label: 'Ні, не потрібна' }], (value, label) => {
+      saveBack(() => askProjectConsultation(onDone));
       chatUser(label);
-      onDone();
+      if (value === 'no') { onDone(); return; }
+      askConsultationFormat(() => askConsultationDate(onDone));
     });
   }
   function askEstimateConsultation() {
     chatStep = 3; updateProgress(); chatBot('Чи потрібна консультація перед прорахунком?');
-    addOptions([{ value: 'Потрібна', label: 'Так, потрібна' }, { value: 'Не потрібна', label: 'Ні, не потрібна' }], (value, label) => { REQUEST_STATE.consultationDate = value; chatUser(label); askEstimateProject(); });
+    addOptions([{ value: 'yes', label: 'Так, потрібна' }, { value: 'no', label: 'Ні, потрібен лише прорахунок' }], (value, label) => {
+      saveBack(askEstimateConsultation);
+      chatUser(label);
+      if (value === 'no') { askEstimateProject(); return; }
+      askConsultationFormat(() => askConsultationDate(askEstimateProject));
+    });
   }
   function askEstimateProject() {
     chatStep = 4; updateProgress(); chatBot('Чи є дизайн-проєкт?');
     addOptions([{ value: 'yes', label: 'Є проєкт' }, { value: 'no', label: 'Немає проєкту' }], (value, label) => {
+      saveBack(askEstimateProject);
       chatUser(label);
       if (value === 'no') { REQUEST_STATE.project = 'Немає'; askTiming(); return; }
-      REQUEST_STATE.project = 'Є, файл додається'; chatBot('Оберіть файл проєкту. Якщо зараз його немає під рукою — заявку все одно можна надіслати.');
-      addFileInput((file) => { if (file) { REQUEST_STATE.projectFile = file; chatUser(`Файл: ${file.name}`); } else { REQUEST_STATE.project = 'Є, надішле пізніше'; chatUser('Надішлю пізніше'); } askTiming(); });
+      REQUEST_STATE.project = 'Є, файл додається';
+      askProjectFile(askTiming);
+    });
+  }
+  function askProjectFile(onDone) {
+    chatBot('Оберіть файл проєкту. Якщо зараз його немає під рукою — заявку все одно можна надіслати.');
+    addFileInput((file) => {
+      saveBack(() => askProjectFile(onDone));
+      if (file) { REQUEST_STATE.projectFile = file; chatUser(`Файл: ${file.name}`); }
+      else { REQUEST_STATE.project = 'Є, надішле пізніше'; chatUser('Надішлю пізніше'); }
+      onDone();
     });
   }
   function askTiming() {
     chatStep = 5; updateProgress(); chatBot('Коли орієнтовно плануєте початок робіт?');
-    addOptions([{ value: 'Якнайшвидше', label: 'Якнайшвидше' }, { value: 'Протягом місяця', label: 'Протягом місяця' }, { value: 'Через 1–2 місяці', label: 'Через 1–2 місяці' }, { value: 'Поки визначаюсь', label: 'Поки визначаюсь' }], (value) => { REQUEST_STATE.timing = value; chatUser(value); finishChat(); });
+    addOptions([{ value: 'Якнайшвидше', label: 'Якнайшвидше' }, { value: 'Протягом місяця', label: 'Протягом місяця' }, { value: 'Через 1–2 місяці', label: 'Через 1–2 місяці' }, { value: 'Поки визначаюсь', label: 'Поки визначаюсь' }], (value) => { saveBack(askTiming); REQUEST_STATE.timing = value; chatUser(value); finishChat(); });
   }
-  function afterType(value) { REQUEST_STATE.type = value; REQUEST_STATE.typeLabel = TYPE_LABELS[value] || value; chatUser(REQUEST_STATE.typeLabel); askName(); }
+  function afterType(value) { saveBack(askType); REQUEST_STATE.type = value; REQUEST_STATE.typeLabel = TYPE_LABELS[value] || value; chatUser(REQUEST_STATE.typeLabel); askName(); }
+  function consultationFormatLabel() {
+    if (REQUEST_STATE.consultationFormat === 'remote') return 'Віддалено';
+    if (REQUEST_STATE.consultationFormat === 'onsite') return 'З виїздом на об’єкт';
+    return '';
+  }
+  function servicePriceText() {
+    const format = REQUEST_STATE.consultationFormat;
+    if (REQUEST_STATE.type === 'consultation') {
+      return format === 'remote'
+        ? 'Віддалена консультація — 1 000 грн'
+        : 'Консультація з виїздом — 2 000 грн / година';
+    }
+    if (REQUEST_STATE.type === 'estimate') {
+      if (format === 'remote') return 'Прорахунок — 1 000 грн + віддалена консультація — 1 000 грн. Разом: 2 000 грн';
+      if (format === 'onsite') return 'Прорахунок — 1 000 грн + консультація з виїздом — 2 000 грн / година';
+      return 'Прорахунок вартості робіт — 1 000 грн';
+    }
+    if (format === 'remote') return 'Віддалена консультація — 1 000 грн';
+    if (format === 'onsite') return 'Консультація з виїздом — 2 000 грн / година';
+    return '';
+  }
+  function consultationDetails() {
+    const format = consultationFormatLabel();
+    if (!format) return '';
+    return REQUEST_STATE.consultationDate ? `${format} · ${REQUEST_STATE.consultationDate}` : format;
+  }
   function finishChat() {
     chatStep = 6; updateProgress(); chatBot('Готово. Перевірте дані заявки перед відправленням.');
     const body = $('chatBody'); if (!body) return;
@@ -253,10 +371,11 @@
     const row = (label, value) => { const item = document.createElement('div'), labelEl = document.createElement('div'), valueEl = document.createElement('div'); item.className = 'chat-summary-row'; labelEl.className = 'chat-summary-label'; valueEl.className = 'chat-summary-value'; labelEl.textContent = label; valueEl.textContent = value || '—'; item.append(labelEl, valueEl); summary.appendChild(item); };
     row('Тип', REQUEST_STATE.typeLabel); row("Ім’я", REQUEST_STATE.name); row('Телефон', REQUEST_STATE.phone);
     if (REQUEST_STATE.location) row('Об’єкт', REQUEST_STATE.location);
-    if (REQUEST_STATE.consultationDate) row('Консультація', REQUEST_STATE.consultationDate);
+    if (consultationDetails()) row('Консультація', consultationDetails());
     if (REQUEST_STATE.project) row('Проєкт', REQUEST_STATE.projectFile ? REQUEST_STATE.projectFile.name : REQUEST_STATE.project);
     if (REQUEST_STATE.timing) row('Початок', REQUEST_STATE.timing);
-    if (REQUEST_STATE.type === 'estimate' && REQUEST_STATE.consultationDate === 'Потрібна') { const note = document.createElement('div'); note.className = 'chat-note'; note.textContent = 'Консультація та детальний прорахунок вартості робіт — 2 000 грн.'; summary.appendChild(note); }
+    REQUEST_STATE.servicePrice = servicePriceText();
+    if (REQUEST_STATE.servicePrice) { const note = document.createElement('div'); note.className = 'chat-note'; note.textContent = `Вартість послуги: ${REQUEST_STATE.servicePrice}`; summary.appendChild(note); }
     const notesWrap = document.createElement('div'), notesInput = document.createElement('input');
     notesWrap.className = 'chat-notes-wrap'; notesInput.className = 'chat-notes-input'; notesInput.type = 'text'; notesInput.placeholder = '📝 Примітка (необов’язково)'; notesInput.maxLength = 500;
     notesInput.addEventListener('input', () => { REQUEST_STATE.notes = notesInput.value.trim(); }); notesWrap.appendChild(notesInput); summary.appendChild(notesWrap);
@@ -279,7 +398,11 @@
     try {
       if (!REQUEST_STATE.requestCode) {
         button.textContent = 'Надсилаємо…';
-        const result = await requestJson(`${WORKER_URL}/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: REQUEST_STATE.name, phone: REQUEST_STATE.phone, type: REQUEST_STATE.type, typeLabel: REQUEST_STATE.typeLabel, location: REQUEST_STATE.location, timing: REQUEST_STATE.timing, consultationDate: REQUEST_STATE.consultationDate, project: REQUEST_STATE.project, notes: REQUEST_STATE.notes, source: 'SA-MASTER.PRO' }) });
+        const notes = [
+          REQUEST_STATE.servicePrice ? `Вартість послуги: ${REQUEST_STATE.servicePrice}` : '',
+          REQUEST_STATE.notes
+        ].filter(Boolean).join('\n');
+        const result = await requestJson(`${WORKER_URL}/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: REQUEST_STATE.name, phone: REQUEST_STATE.phone, type: REQUEST_STATE.type, typeLabel: REQUEST_STATE.typeLabel, location: REQUEST_STATE.location, timing: REQUEST_STATE.timing, consultationDate: consultationDetails(), project: REQUEST_STATE.project, notes, source: 'SA-MASTER.PRO' }) });
         REQUEST_STATE.requestCode = result.request.request_code; REQUEST_STATE.uploadToken = result.request.upload_token;
       }
       if (REQUEST_STATE.projectFile && !REQUEST_STATE.fileUploaded) { button.textContent = 'Завантажуємо проєкт…'; await uploadProject(); REQUEST_STATE.fileUploaded = true; }
@@ -333,6 +456,7 @@
   }
   function init() {
     const media = window.matchMedia('(prefers-color-scheme: dark)'); applyTheme(); if (media.addEventListener) media.addEventListener('change', applyTheme);
+    ensureBackButton();
     const launch = $('requestLaunch'), requestClose = $('requestClose'), requestModal = $('requestModal');
     if (launch) launch.addEventListener('click', openRequest); if (requestClose) requestClose.addEventListener('click', closeRequest); if (requestModal) requestModal.addEventListener('click', (event) => { if (event.target === requestModal) closeRequest(); });
     galleryDots.forEach((dot, index) => dot.addEventListener('click', () => { currentSlide = index; updateGallery(); startAutoplay(); }));
