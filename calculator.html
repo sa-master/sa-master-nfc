@@ -651,6 +651,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .catalogIconButton.add{background:rgba(0,122,255,.1);color:var(--p)}
 .catalogIconButton.import{background:rgba(29,111,66,.12);color:var(--xls)}
 .catalogIconButton.request{background:rgba(88,86,214,.12);color:#5856D6}
+.catalogIconButton.rates{background:rgba(255,149,0,.13);color:var(--orange)}
 .catalogIconButton.clear{background:rgba(255,59,48,.1);color:var(--red)}
 
 .catalogIconButton svg,
@@ -663,6 +664,52 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   stroke-linecap:round;
   stroke-linejoin:round;
 }
+
+.supplierRatesIntro{
+  margin:.125rem .25rem 1rem;
+  color:var(--tm);
+  font-size:.8125rem;
+  line-height:1.45;
+}
+
+.supplierRateGroup{margin-bottom:1rem}
+.supplierRateGroup:last-child{margin-bottom:0}
+.supplierRateGroupHead{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:.5rem;
+  padding:0 .25rem .375rem;
+}
+.supplierRateGroupName{font-size:.9375rem;font-weight:800;color:var(--t)}
+.supplierRateGroupMeta{font-size:.6875rem;font-weight:650;color:var(--tm);white-space:nowrap}
+.supplierRateCard{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 4.75rem;
+  gap:.625rem;
+  align-items:center;
+  padding:.75rem .875rem;
+  margin-bottom:.375rem;
+  border:1px solid var(--gbr);
+  border-radius:.875rem;
+  background:var(--gb);
+}
+.supplierRateBrand{font-size:.8125rem;font-weight:750;color:var(--t);line-height:1.25}
+.supplierRateMeta{margin-top:.125rem;font-size:.6875rem;color:var(--tm);line-height:1.3}
+.supplierRateInput{
+  width:100%;
+  height:2.5rem;
+  padding:0 .375rem;
+  border:1px solid var(--gbr);
+  border-radius:.75rem;
+  outline:0;
+  background:var(--card);
+  color:var(--t);
+  text-align:center;
+  font-size:.875rem;
+  font-weight:800;
+}
+.supplierRateInput:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
 
 .close{
   width:2.25rem;
@@ -2818,6 +2865,9 @@ body.positionDragging{
         <button class="catalogIconButton request hidden" id="catalogRequestButton" onclick="openSupplierRequest()" aria-label="Запросити прайс">
           <svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.5 8.7 8.7 0 0 1-3.8-.9L3 20l1.7-4.8A8.3 8.3 0 0 1 3 10a8.4 8.4 0 0 1 9-8.5A8.4 8.4 0 0 1 21 10z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
         </button>
+        <button class="catalogIconButton rates hidden" id="catalogRatesButton" onclick="openSupplierRates()" aria-label="Прайси та курси">
+          ₴
+        </button>
         <button class="catalogIconButton clear" id="catalogClearButton" onclick="clearCatalog()" aria-label="Очистити каталог">
           <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v5M14 11v5"/></svg>
         </button>
@@ -2847,6 +2897,48 @@ body.positionDragging{
       </div>
 
       <div class="catalogList" id="catalogList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: SUPPLIER RATES -->
+
+<div class="sheet" id="supplierRatesSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong>Прайси та курси</strong>
+      <button class="close" onclick="closeSupplierRates()">×</button>
+    </div>
+    <div class="panelBody">
+      <div class="supplierRatesIntro">
+        Змінюйте курс лише коли постачальник оновив його. Ціни товарів перерахуються у каталозі; створені кошториси не зміняться.
+      </div>
+      <div id="supplierRatesContent"></div>
+    </div>
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeSupplierRates()">Скасувати</button>
+      <button class="btnPrimary" onclick="applySupplierRates()">Оновити ціни</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: CHECK COURSE BEFORE QUOTE -->
+
+<div class="sheet" id="quoteCourseCheckSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong>Перевірте курс</strong>
+      <button class="close" onclick="closeQuoteCourseCheck()">×</button>
+    </div>
+    <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="originalNameCard" style="font-size:.875rem">
+        Перед надсиланням кошторису перевірте актуальність курсу матеріалів. Наявність і фактичну закупівельну ціну потрібно звіряти вже на етапі комплектації.
+      </div>
+      <button class="addCustomButton" type="button" onclick="reviewQuoteCourses()">₴ Перевірити курси</button>
+    </div>
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeQuoteCourseCheck()">Скасувати</button>
+      <button class="btnPrimary" onclick="continueQuotePreview()">Надіслати з поточними</button>
     </div>
   </div>
 </div>
@@ -3453,6 +3545,7 @@ const DEFAULT_WORKS_SEEDED_KEY = "sa_defaultWorksSeeded";
 const EUR_RATE_KEY = "sa_eurRate";
 const USD_RATE_KEY = "sa_usdRate";
 const SUPPLIER_NAMES_KEY = "sa_supplierNames";
+const SUPPLIER_RATES_KEY = "sa_supplierRates";
 const REQUEST_IMPORT_PARAM = "request";
 
 /* Дефолтні роботи — тепер із етапами */
@@ -3494,6 +3587,7 @@ let profile = {
 };
 let team = [];
 let catalog = [];
+let supplierRates = loadSupplierRates();
 
 let importEurRate = Number(localStorage.getItem(EUR_RATE_KEY) || 0);
 let importUsdRate = Number(localStorage.getItem(USD_RATE_KEY) || 0);
@@ -3649,6 +3743,10 @@ if(catalogMigrated || defaultWorksAdded){
   saveCatalog();
 }
 
+/* Після першого оновлення версії витягуємо курси з уже імпортованих
+   пропозицій. Жодну ціну при цьому не перераховуємо. */
+syncSupplierRatesFromCatalog();
+
 try{ localStorage.setItem(DEFAULT_WORKS_SEEDED_KEY, "1"); }catch(e){}
 
 function saveProjects(){
@@ -3665,6 +3763,17 @@ function saveTeamData(){
 
 function saveCatalog(){
   try{ localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog)); }catch(e){}
+}
+
+function loadSupplierRates(){
+  try{
+    const value = JSON.parse(localStorage.getItem(SUPPLIER_RATES_KEY) || "{}");
+    return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  }catch(e){ return {}; }
+}
+
+function saveSupplierRates(){
+  try{ localStorage.setItem(SUPPLIER_RATES_KEY, JSON.stringify(supplierRates)); }catch(e){}
 }
 
 /* У версії тесту 18 була ручна фіксація. Вона не входить у погоджений
@@ -4891,6 +5000,33 @@ function openQuotePreview(){
     return;
   }
 
+  document.getElementById("quoteCourseCheckSheet").classList.add("open");
+}
+
+function closeQuoteCourseCheck(){
+  document.getElementById("quoteCourseCheckSheet").classList.remove("open");
+}
+
+function reviewQuoteCourses(){
+  closeQuoteCourseCheck();
+  openSupplierRates();
+}
+
+function continueQuotePreview(){
+  closeQuoteCourseCheck();
+  renderQuotePreview();
+}
+
+function renderQuotePreview(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+
+  const positions = Array.isArray(project.positions) ? project.positions : [];
+  if(!positions.length){
+    toast("Додайте хоча б одну позицію до кошторису");
+    return;
+  }
+
   const works = positions.filter(pos => pos.type === "work");
   const materials = positions.filter(pos => pos.type === "material");
   const companyName = profileCompanyName();
@@ -5687,6 +5823,7 @@ function updateCatalogHeaderActions(){
   document.getElementById("catalogAddButton").classList.toggle("hidden", emptyMaterials);
   document.getElementById("catalogImportButton").classList.toggle("hidden", hideActions);
   document.getElementById("catalogRequestButton").classList.toggle("hidden", hideActions);
+  document.getElementById("catalogRatesButton").classList.toggle("hidden", hideActions);
   document.getElementById("catalogClearButton").classList.toggle("hidden", emptyMaterials);
 }
 
@@ -5700,7 +5837,196 @@ function closeCatalog(){
   closeCatalogFilters();
   document.getElementById("catalogImportButton").classList.add("hidden");
   document.getElementById("catalogRequestButton").classList.add("hidden");
+  document.getElementById("catalogRatesButton").classList.add("hidden");
   editingCatalogItemId = null;
+}
+
+function supplierRateKey(supplierName, brand, currency){
+  return `${normalizeText(supplierName)}|${normalizeText(brand)}|${String(currency || "").toUpperCase()}`;
+}
+
+function getMaterialOfferRateProfile(item, offer){
+  if(!item || item.type !== "material" || !offer) return null;
+  const snapshots = [offer.retail, offer.master].filter(Boolean);
+  const snapshot = snapshots.find(value => ["EUR","USD"].includes(String(value.sourceCurrency || "").toUpperCase()));
+  if(!snapshot) return null;
+
+  const supplierName = cleanText(offer.supplierName);
+  const brand = cleanText(item.manufacturer) || "Без бренду";
+  const currency = String(snapshot.sourceCurrency || "").toUpperCase();
+  const rate = Number(snapshot.sourceRate);
+  if(!supplierName || !currency || !(rate > 0)) return null;
+
+  return { supplierName, brand, currency, rate, updatedAt: snapshot.importedAt || offer.updatedAt || "" };
+}
+
+function syncSupplierRatesFromCatalog(forceSupplierName){
+  let changed = false;
+
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    getCatalogSupplierOffers(item).forEach(offer => {
+      const profile = getMaterialOfferRateProfile(item, offer);
+      if(!profile) return;
+      const key = supplierRateKey(profile.supplierName, profile.brand, profile.currency);
+      const shouldOverwrite = forceSupplierName &&
+        normalizeText(profile.supplierName) === normalizeText(forceSupplierName);
+      if(!supplierRates[key] || shouldOverwrite){
+        supplierRates[key] = profile;
+        changed = true;
+      }
+    });
+  });
+
+  if(changed) saveSupplierRates();
+}
+
+function collectSupplierRateProfiles(){
+  syncSupplierRatesFromCatalog();
+  const profiles = new Map();
+
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    getCatalogSupplierOffers(item).forEach(offer => {
+      const detected = getMaterialOfferRateProfile(item, offer);
+      if(!detected) return;
+      const key = supplierRateKey(detected.supplierName, detected.brand, detected.currency);
+      const saved = supplierRates[key] || detected;
+      if(!profiles.has(key)){
+        profiles.set(key, { ...saved, key, itemIds:new Set() });
+      }
+      profiles.get(key).itemIds.add(item.id);
+    });
+  });
+
+  return Array.from(profiles.values())
+    .map(profile => ({ ...profile, itemCount:profile.itemIds.size }))
+    .sort((a,b) =>
+      a.supplierName.localeCompare(b.supplierName, "uk") ||
+      a.brand.localeCompare(b.brand, "uk") ||
+      a.currency.localeCompare(b.currency)
+    );
+}
+
+function formatSupplierRateDate(value){
+  if(!value) return "ще не оновлювався";
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return "дата невідома";
+  return new Intl.DateTimeFormat("uk-UA", { day:"2-digit", month:"2-digit", year:"numeric" }).format(date);
+}
+
+function openSupplierRates(){
+  const profiles = collectSupplierRateProfiles();
+  if(!profiles.length){
+    toast("Імпортуйте прайс у EUR або USD, щоб керувати курсом");
+    return;
+  }
+
+  const groups = new Map();
+  profiles.forEach(profile => {
+    const key = normalizeText(profile.supplierName);
+    if(!groups.has(key)) groups.set(key, { name:profile.supplierName, profiles:[] });
+    groups.get(key).profiles.push(profile);
+  });
+
+  document.getElementById("supplierRatesContent").innerHTML = Array.from(groups.values()).map(group => `
+    <section class="supplierRateGroup">
+      <div class="supplierRateGroupHead">
+        <span class="supplierRateGroupName">${escapeHtml(group.name)}</span>
+        <span class="supplierRateGroupMeta">${group.profiles.length} курс.</span>
+      </div>
+      ${group.profiles.map(profile => `
+        <div class="supplierRateCard">
+          <div>
+            <div class="supplierRateBrand">${escapeHtml(profile.brand)} · ${escapeHtml(profile.currency)}</div>
+            <div class="supplierRateMeta">${profile.itemCount} товарів · оновлено ${escapeHtml(formatSupplierRateDate(profile.updatedAt))}</div>
+          </div>
+          <input
+            class="supplierRateInput"
+            type="text"
+            inputmode="decimal"
+            value="${escapeHtml(String(profile.rate))}"
+            data-supplier-rate-key="${escapeHtml(profile.key)}"
+            aria-label="Курс ${escapeHtml(profile.brand)} ${escapeHtml(profile.currency)}"
+          >
+        </div>
+      `).join("")}
+    </section>
+  `).join("");
+
+  document.getElementById("supplierRatesSheet").classList.add("open");
+}
+
+function closeSupplierRates(){
+  document.getElementById("supplierRatesSheet").classList.remove("open");
+}
+
+function applySupplierRates(){
+  const profiles = new Map(collectSupplierRateProfiles().map(profile => [profile.key, profile]));
+  const inputs = Array.from(document.querySelectorAll("[data-supplier-rate-key]"));
+  const changedKeys = new Set();
+  const now = new Date().toISOString();
+
+  for(const input of inputs){
+    const key = input.dataset.supplierRateKey;
+    const profile = profiles.get(key);
+    if(!profile) continue;
+    const rate = parseNumber(input.value);
+    if(!Number.isFinite(rate) || rate <= 0){
+      toast(`Вкажіть коректний курс: ${profile.brand}`);
+      input.focus();
+      return;
+    }
+    if(Math.abs(rate - Number(profile.rate)) > 0.00001){
+      supplierRates[key] = { ...profile, rate, updatedAt:now };
+      changedKeys.add(key);
+    }
+  }
+
+  if(!changedKeys.size){
+    closeSupplierRates();
+    toast("Нових курсів немає");
+    return;
+  }
+
+  let priceChanges = 0;
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    getCatalogSupplierOffers(item).forEach(offer => {
+      const brand = cleanText(item.manufacturer) || "Без бренду";
+      ["retail","master"].forEach(kind => {
+        const snapshot = offer && offer[kind];
+        const currency = String(snapshot && snapshot.sourceCurrency || "").toUpperCase();
+        if(!snapshot || !["EUR","USD"].includes(currency)) return;
+        const key = supplierRateKey(offer.supplierName, brand, currency);
+        if(!changedKeys.has(key)) return;
+        const rate = Number(supplierRates[key] && supplierRates[key].rate);
+        const sourcePrice = Number(snapshot.sourcePrice);
+        if(!(rate > 0) || !Number.isFinite(sourcePrice)) return;
+        const nextPrice = sourcePrice * rate;
+        if(Math.abs(nextPrice - Number(snapshot.priceUAH || 0)) > 0.00001) priceChanges++;
+        snapshot.sourceRate = rate;
+        snapshot.priceUAH = nextPrice;
+        snapshot.rateUpdatedAt = now;
+        offer.updatedAt = now;
+      });
+    });
+
+    const selected = getSelectedCatalogSupplierOffer(item);
+    if(!selected) return;
+    const retail = supplierOfferPrice(selected, "retail");
+    const master = supplierOfferPrice(selected, "master");
+    if(retail) item.retailPriceUAH = retail;
+    if(master) item.purchasePriceUAH = master;
+    if(retail) item.price = retail;
+    else if(master && !(Number(item.price) > 0)) item.price = master;
+  });
+
+  saveSupplierRates();
+  saveCatalog();
+  closeSupplierRates();
+  renderCatalogList();
+  toast(`Оновлено ${changedKeys.size} курс. · ${priceChanges} цін у каталозі`);
 }
 
 function openCatalogFilters(){
@@ -8394,6 +8720,7 @@ function confirmImport(){
     }
   });
 
+  syncSupplierRatesFromCatalog(importSupplierName);
   saveCatalog();
   const restoredPurchasePrices = fillMissingProjectPurchasePrices();
 
@@ -8481,7 +8808,7 @@ function actionAdvanceStage(){
   closeActionsSheet();
   render();
   const message = {
-    procurement:"Етап: комплектація. Перевірте ціни постачальників.",
+    procurement:"Етап: комплектація. Перевірте наявність і фактичну закупівельну ціну.",
     work:"Етап: в роботі.",
     done:"Об'єкт завершено.",
     closed:"Об'єкт закрито."
@@ -8872,6 +9199,14 @@ document.getElementById("projectSheet").addEventListener("click", e => {
 
 document.getElementById("catalogSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeCatalog();
+});
+
+document.getElementById("supplierRatesSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeSupplierRates();
+});
+
+document.getElementById("quoteCourseCheckSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeQuoteCourseCheck();
 });
 
 document.getElementById("catalogFiltersSheet").addEventListener("click", e => {
