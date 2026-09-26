@@ -3453,6 +3453,7 @@ const DEFAULT_WORKS_SEEDED_KEY = "sa_defaultWorksSeeded";
 const EUR_RATE_KEY = "sa_eurRate";
 const USD_RATE_KEY = "sa_usdRate";
 const SUPPLIER_NAMES_KEY = "sa_supplierNames";
+const REQUEST_IMPORT_PARAM = "request";
 
 /* Дефолтні роботи — тепер із етапами */
 const DEFAULT_WORKS = [
@@ -3771,6 +3772,103 @@ const FEATURE_SUGGESTIONS = [
 
 function uid(prefix){
   return (prefix || "id") + "-" + Date.now() + "-" + Math.random().toString(36).slice(2,7);
+}
+
+/* ==== ІМПОРТ ЗАЯВКИ З TELEGRAM ==== */
+
+function clearRequestImportParams(url){
+  url.searchParams.delete(REQUEST_IMPORT_PARAM);
+  url.searchParams.delete("token");
+  url.searchParams.delete("api");
+  const query = url.searchParams.toString();
+  history.replaceState({}, document.title, url.pathname + (query ? "?" + query : "") + url.hash);
+}
+
+async function importRequestFromTelegramLink(){
+  const pageUrl = new URL(window.location.href);
+  const requestCode = String(pageUrl.searchParams.get(REQUEST_IMPORT_PARAM) || "").trim();
+  const token = String(pageUrl.searchParams.get("token") || "").trim();
+  const api = String(pageUrl.searchParams.get("api") || "").trim();
+
+  if(!requestCode || !token || !api) return;
+
+  const existing = projects.find(project => project.sourceRequestCode === requestCode);
+  if(existing){
+    clearRequestImportParams(pageUrl);
+    currentProjectId = existing.id;
+    render();
+    toast("Ця заявка вже є у калькуляторі");
+    return;
+  }
+
+  let apiUrl;
+  try{
+    apiUrl = new URL(api);
+    if(apiUrl.protocol !== "https:") throw new Error("insecure api");
+  }catch(e){
+    toast("Некоректне посилання із заявки");
+    return;
+  }
+
+  try{
+    const endpoint = new URL("/calculator-request/" + encodeURIComponent(requestCode), apiUrl.origin);
+    endpoint.searchParams.set("token", token);
+
+    const response = await fetch(endpoint.toString(), { method:"GET", cache:"no-store" });
+    const payload = await response.json().catch(() => null);
+    if(!response.ok || !payload?.ok || !payload.request){
+      throw new Error(payload?.error || "request unavailable");
+    }
+
+    const lead = payload.request;
+    const now = new Date().toISOString();
+    const title = String(lead.location || "").trim() || `Заявка ${lead.request_code || requestCode}`;
+
+    const importedProject = {
+      id: uid("proj"),
+      title,
+      client: {
+        name: String(lead.name || "").trim(),
+        phone: String(lead.phone || "").trim(),
+        address: String(lead.location || "").trim()
+      },
+      status:"active",
+      stage:"estimate",
+      urgent:false,
+      positions:[],
+      stages:[],
+      workDiscount:0,
+      materialDiscount:0,
+      payments:[],
+      expenses:[],
+      salaries:[],
+      workStartDate:"",
+      workEndDate:"",
+      teamAssignments:[],
+      details:{ objectType:"", workType:"", area:null, bathrooms:null, features:[], system:"" },
+      sourceRequestCode:String(lead.request_code || requestCode),
+      sourceRequest:{
+        type:String(lead.type_label || lead.type || "").trim(),
+        timing:String(lead.timing || "").trim(),
+        project:String(lead.project || "").trim(),
+        consultationDate:String(lead.consultation_date || "").trim(),
+        notes:String(lead.notes || "").trim(),
+        importedAt:now
+      },
+      createdAt:now,
+      updatedAt:now
+    };
+
+    projects.push(importedProject);
+    saveProjects();
+    clearRequestImportParams(pageUrl);
+    currentProjectId = importedProject.id;
+    render();
+    toast("Заявку додано до прорахунку");
+  }catch(e){
+    console.error("Request import failed:", e);
+    toast("Не вдалося завантажити заявку. Спробуйте ще раз.");
+  }
 }
 
 function escapeHtml(value){
@@ -8847,6 +8945,7 @@ if(window.visualViewport){
 }
 
 render();
+importRequestFromTelegramLink();
 
 </script>
 
