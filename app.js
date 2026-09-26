@@ -205,7 +205,27 @@
   function askConsultationDate() { chatStep = 4; updateProgress(); chatBot('Коли вам зручно провести консультацію?'); addInput('Наприклад: 18 вересня після 17:00', 'text', (value) => { REQUEST_STATE.consultationDate = value; finishChat(); }); }
   function askComplexProject() {
     chatStep = 4; updateProgress(); chatBot('Чи є у вас дизайн-проєкт?');
-    addOptions([{ value: 'Так, є', label: 'Так, є' }, { value: 'Є, але зараз не можу надати', label: 'Є, але зараз не можу надати' }, { value: 'Немає', label: 'Немає' }], (value) => { REQUEST_STATE.project = value; chatUser(value); askTiming(); });
+    addOptions([{ value: 'Так, є', label: 'Так, є' }, { value: 'Є, але зараз не можу надати', label: 'Є, але зараз не можу надати' }, { value: 'Немає', label: 'Немає' }], (value, label) => {
+      chatUser(label);
+      if (value !== 'Так, є') { REQUEST_STATE.project = value; askTiming(); return; }
+      REQUEST_STATE.project = 'Є, файл додається';
+      askProjectConsultation(() => {
+        chatBot('Оберіть файл проєкту. Якщо зараз його немає під рукою — заявку все одно можна надіслати.');
+        addFileInput((file) => {
+          if (file) { REQUEST_STATE.projectFile = file; chatUser(`Файл: ${file.name}`); }
+          else { REQUEST_STATE.project = 'Є, надішле пізніше'; chatUser('Надішлю пізніше'); }
+          askTiming();
+        });
+      });
+    });
+  }
+  function askProjectConsultation(onDone) {
+    chatBot('Чи потрібна консультація перед початком робіт?');
+    addOptions([{ value: 'Потрібна', label: 'Так, потрібна' }, { value: 'Не потрібна', label: 'Ні, не потрібна' }], (value, label) => {
+      REQUEST_STATE.consultationDate = value;
+      chatUser(label);
+      onDone();
+    });
   }
   function askEstimateConsultation() {
     chatStep = 3; updateProgress(); chatBot('Чи потрібна консультація перед прорахунком?');
