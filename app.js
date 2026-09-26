@@ -130,13 +130,16 @@
   let chatStep = 0;
   let chatHistory = [];
   const CHAT_TOTAL_STEPS = 6;
-  function updateBackButton() {
-    const button = $('requestBack');
-    if (button) button.hidden = chatHistory.length === 0;
-  }
   function saveBack(renderQuestion) {
     chatHistory.push({ state: { ...REQUEST_STATE }, renderQuestion, chatStep });
-    updateBackButton();
+  }
+  function appendBackControl(parent) {
+    if (!parent || chatHistory.length === 0) return;
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'chat-back';
+    button.textContent = '← Назад';
+    button.addEventListener('click', goBackInChat);
+    parent.appendChild(button);
   }
   function goBackInChat() {
     const previous = chatHistory.pop();
@@ -145,18 +148,7 @@
     const body = $('chatBody');
     if (body) body.innerHTML = '';
     chatStep = previous.chatStep;
-    updateBackButton();
     previous.renderQuestion();
-  }
-  function ensureBackButton() {
-    if ($('requestBack')) return;
-    const close = $('requestClose');
-    if (!close || !close.parentElement) return;
-    const button = document.createElement('button');
-    button.id = 'requestBack'; button.type = 'button'; button.className = 'request-back';
-    button.setAttribute('aria-label', 'Попереднє питання'); button.textContent = '← Назад'; button.hidden = true;
-    button.addEventListener('click', goBackInChat);
-    close.parentElement.insertBefore(button, close);
   }
   function chatScroll() { const body = $('chatBody'); if (body) setTimeout(() => { body.scrollTop = body.scrollHeight; }, 50); }
   function chatMsg(text, who) {
@@ -177,11 +169,12 @@
       button.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); wrap.remove(); onChoose(value, label); }, { once: true });
       wrap.appendChild(button);
     });
-    body.appendChild(wrap); chatScroll();
+    appendBackControl(wrap); body.appendChild(wrap); chatScroll();
   }
   function addInput(placeholder, type, onDone, validate) {
     const body = $('chatBody'); if (!body) return;
-    const wrap = document.createElement('div'), input = document.createElement('input'), send = document.createElement('button');
+    const section = document.createElement('div'), wrap = document.createElement('div'), input = document.createElement('input'), send = document.createElement('button');
+    section.className = 'chat-input-section';
     wrap.className = 'chat-input-wrap'; input.className = 'chat-input'; input.type = type || 'text'; input.placeholder = placeholder; input.autocomplete = type === 'tel' ? 'tel' : 'off'; input.setAttribute('aria-label', placeholder);
     if (type === 'tel') {
       input.inputMode = 'text'; input.setAttribute('autocorrect', 'off'); input.setAttribute('autocapitalize', 'off'); input.setAttribute('spellcheck', 'false');
@@ -192,11 +185,11 @@
       let value = input.value.trim(); if (!value) return input.focus();
       if (type === 'tel') { value = normalizeUAPhone(value); if (!value) { input.setAttribute('aria-invalid', 'true'); return input.focus(); } }
       if (validate && !validate(value)) { input.setAttribute('aria-invalid', 'true'); return input.focus(); }
-      wrap.remove(); chatUser(value); onDone(value);
+      section.remove(); chatUser(value); onDone(value);
     };
     send.addEventListener('click', submit);
     input.addEventListener('keydown', (event) => { if (event.key === 'Enter') { event.preventDefault(); submit(); } });
-    wrap.append(input, send); body.appendChild(wrap); setTimeout(() => input.focus(), 50); chatScroll();
+    wrap.append(input, send); section.appendChild(wrap); appendBackControl(section); body.appendChild(section); setTimeout(() => input.focus(), 50); chatScroll();
   }
   function addFileInput(onDone) {
     const body = $('chatBody'); if (!body) return;
@@ -209,12 +202,12 @@
     pick.addEventListener('click', () => input.click());
     input.addEventListener('change', () => { const file = input.files && input.files[0]; if (!file) return; if (file.size > 25 * 1024 * 1024) { chatBot('Файл завеликий. Оберіть файл до 25 МБ.'); input.value = ''; return; } wrap.remove(); onDone(file); });
     skip.addEventListener('click', () => { wrap.remove(); onDone(null); });
-    actions.append(pick, skip); wrap.append(title, hint, input, actions); body.appendChild(wrap); chatScroll();
+    actions.append(pick, skip); wrap.append(title, hint, input, actions); appendBackControl(wrap); body.appendChild(wrap); chatScroll();
   }
   function resetChat() {
     const body = $('chatBody'); if (body) body.innerHTML = '';
     Object.keys(REQUEST_STATE).forEach((key) => { REQUEST_STATE[key] = key === 'projectFile' ? null : ''; });
-    REQUEST_STATE.fileUploaded = false; chatStep = 0; chatHistory = []; updateProgress(); updateBackButton();
+    REQUEST_STATE.fileUploaded = false; chatStep = 0; chatHistory = []; updateProgress();
   }
   function openRequest() {
     const modal = $('requestModal'); if (!modal) return;
@@ -381,7 +374,7 @@
     notesInput.addEventListener('input', () => { REQUEST_STATE.notes = notesInput.value.trim(); }); notesWrap.appendChild(notesInput); summary.appendChild(notesWrap);
     const buttons = document.createElement('div'), edit = document.createElement('button'), submit = document.createElement('button');
     buttons.className = 'chat-final-buttons'; edit.type = 'button'; submit.type = 'button'; edit.className = 'chat-final-btn edit'; submit.className = 'chat-final-btn submit'; edit.textContent = 'Змінити'; submit.textContent = 'Надіслати';
-    edit.addEventListener('click', openRequest); submit.addEventListener('click', () => sendRequest(submit)); buttons.append(edit, submit); summary.appendChild(buttons); body.appendChild(summary); chatScroll();
+    edit.addEventListener('click', openRequest); submit.addEventListener('click', () => sendRequest(submit)); buttons.append(edit, submit); summary.appendChild(buttons); appendBackControl(summary); body.appendChild(summary); chatScroll();
   }
   async function requestJson(url, options, timeoutMs = 15000) {
     const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -456,7 +449,6 @@
   }
   function init() {
     const media = window.matchMedia('(prefers-color-scheme: dark)'); applyTheme(); if (media.addEventListener) media.addEventListener('change', applyTheme);
-    ensureBackButton();
     const launch = $('requestLaunch'), requestClose = $('requestClose'), requestModal = $('requestModal');
     if (launch) launch.addEventListener('click', openRequest); if (requestClose) requestClose.addEventListener('click', closeRequest); if (requestModal) requestModal.addEventListener('click', (event) => { if (event.target === requestModal) closeRequest(); });
     galleryDots.forEach((dot, index) => dot.addEventListener('click', () => { currentSlide = index; updateGallery(); startAutoplay(); }));
