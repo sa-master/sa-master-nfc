@@ -1646,6 +1646,8 @@ body.positionDragging{
 
 .procurementGroupName{font-size:.875rem;font-weight:800;color:var(--t)}
 .procurementGroupMeta{font-size:.75rem;font-weight:700;color:var(--tm);white-space:nowrap}
+.procurementCategoryTitle{margin:.625rem .25rem .3125rem;font-size:.6875rem;font-weight:800;color:var(--tm);letter-spacing:.45px;text-transform:uppercase}
+.procurementGroupHead + .procurementCategoryTitle{margin-top:0}
 
 .procurementItem{
   padding:.625rem .75rem;
@@ -3100,6 +3102,7 @@ body.positionDragging{
           <div class="chips" id="ceCategoryChips">
             <button type="button" class="chip" data-value="other">Інше</button>
             <button type="button" class="chip" data-value="water">Водопостачання</button>
+            <button type="button" class="chip" data-value="heating">Опалення</button>
             <button type="button" class="chip" data-value="sewer">Каналізація</button>
             <button type="button" class="chip" data-value="fittings">Арматура</button>
           </div>
@@ -3172,6 +3175,7 @@ body.positionDragging{
           <div class="chips" id="csCategoryChips">
             <button type="button" class="chip active" data-value="other">Інше</button>
             <button type="button" class="chip" data-value="water">Водопостачання</button>
+            <button type="button" class="chip" data-value="heating">Опалення</button>
             <button type="button" class="chip" data-value="sewer">Каналізація</button>
             <button type="button" class="chip" data-value="fittings">Арматура</button>
           </div>
@@ -4052,6 +4056,36 @@ function getPositionCatalogItem(position){
   return position && position.catalogId ? catalog.find(item => item.id === position.catalogId) : null;
 }
 
+/* Одна структура категорій використовується в кошторисі, PDF та комплектації.
+   Позиції старих або видалених з каталогу товарів без категорії лишаються в «Інше». */
+const MATERIAL_CATEGORY_GROUPS = [
+  { id:"fittings", label:"АРМАТУРА" },
+  { id:"water", label:"ВОДОПОСТАЧАННЯ" },
+  { id:"heating", label:"ОПАЛЕННЯ" },
+  { id:"sewer", label:"КАНАЛІЗАЦІЯ" },
+  { id:"other", label:"ІНШЕ" }
+];
+
+function normalizeMaterialCategory(value){
+  const category = String(value || "").trim();
+  return MATERIAL_CATEGORY_GROUPS.some(group => group.id === category) ? category : "other";
+}
+
+function getPositionMaterialCategory(position){
+  const catalogItem = getPositionCatalogItem(position);
+  return normalizeMaterialCategory((catalogItem && catalogItem.category) || (position && position.category));
+}
+
+function groupMaterialPositions(positions){
+  const byCategory = new Map(MATERIAL_CATEGORY_GROUPS.map(group => [group.id, []]));
+  (positions || []).forEach(position => {
+    byCategory.get(getPositionMaterialCategory(position)).push(position);
+  });
+  return MATERIAL_CATEGORY_GROUPS
+    .map(group => ({ ...group, positions: byCategory.get(group.id) || [] }))
+    .filter(group => group.positions.length);
+}
+
 function getPositionPlannedSupplier(position){
   const direct = String(position && position.plannedSupplierName || "").trim();
   if(direct) return direct;
@@ -4131,7 +4165,9 @@ function renderProcurementPlan(){
         <span class="procurementGroupName">${group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</span>
         <span class="procurementGroupMeta">${escapeHtml(getProcurementGroupMeta(group.positions))}</span>
       </div>
-      ${group.positions.map(position => {
+      ${groupMaterialPositions(group.positions).map(categoryGroup => `
+        <div class="procurementCategoryTitle">${escapeHtml(categoryGroup.label)}</div>
+        ${categoryGroup.positions.map(position => {
         const qty = Number(position.qty) || 1;
         const purchasePrice = Number(position.purchasePrice);
         const priceText = purchasePrice > 0
@@ -4147,7 +4183,8 @@ function renderProcurementPlan(){
             ${procurementSupplierSelect(project.id, position)}
           </div>
         `;
-      }).join("")}
+        }).join("")}
+      `).join("")}
     </section>
   `).join("");
 }
@@ -5077,7 +5114,9 @@ function renderQuotePreview(){
         <span>−${money(workDiscountAmount)}</span>
       </div>
     ` : ""}
-    ${renderQuotePreviewSection("МАТЕРІАЛИ", materials)}
+    ${groupMaterialPositions(materials).map(group =>
+      renderQuotePreviewSection(group.label, group.positions)
+    ).join("")}
     ${materialsDiscountPercent > 0 ? `
       <div class="quoteDiscountRow">
         <span>Знижка на матеріали — ${materialsDiscountPercent}%</span>
@@ -5302,7 +5341,9 @@ function renderEstimateBlock(p){
       ` : `
         ${renderEstimateSection("РОБОТИ", workPositions, p.id, workDiscountPercent)}
         ${workPositions.length ? renderDiscountControl("work", workDiscountPercent) : ""}
-        ${renderEstimateSection("МАТЕРІАЛИ", materialPositions, p.id, materialsDiscountPercent)}
+        ${groupMaterialPositions(materialPositions).map(group =>
+          renderEstimateSection(group.label, group.positions, p.id, materialsDiscountPercent)
+        ).join("")}
         ${materialPositions.length ? renderDiscountControl("material", materialsDiscountPercent) : ""}
       `}
     </div>
@@ -6176,6 +6217,7 @@ function renderCatalogChips(){
     ["all","Усі"],
     ["fittings","Арматура"],
     ["water","Водопостачання"],
+    ["heating","Опалення"],
     ["sewer","Каналізація"],
     ["other","Інше"]
   ];
@@ -6399,8 +6441,33 @@ function collectSystems(){
   return Array.from(set).sort((a,b) => a.localeCompare(b, "uk"));
 }
 
+/* Частота рахується за кількістю об'єктів, а не за кількістю штук.
+   Так одна велика закупівля труби не витіснить типову позицію майстра. */
+function getCatalogUsageCounts(){
+  const counts = new Map();
+
+  projects.forEach(project => {
+    const usedOnProject = new Set();
+    (project && Array.isArray(project.positions) ? project.positions : []).forEach(position => {
+      if(position && position.catalogId) usedOnProject.add(position.catalogId);
+    });
+    usedOnProject.forEach(catalogId => {
+      counts.set(catalogId, (counts.get(catalogId) || 0) + 1);
+    });
+  });
+
+  return counts;
+}
+
+function hasMasterCatalogName(item){
+  const custom = normalizeText(item && item.nameMaster);
+  const original = normalizeText(item && item.name);
+  return Boolean(custom && custom !== original);
+}
+
 function getCatalogItems(){
   const q = normalizeText(catalogSearch);
+  const usageCounts = getCatalogUsageCounts();
 
   return catalog.filter(item => {
     if(item.type !== catalogMode) return false;
@@ -6441,9 +6508,16 @@ function getCatalogItems(){
     }
 
     return true;
-  }).sort((a,b) =>
-    String(a.name || "").localeCompare(String(b.name || ""), "uk")
-  );
+  }).sort((a,b) => {
+    const aHasMasterName = hasMasterCatalogName(a);
+    const bHasMasterName = hasMasterCatalogName(b);
+    if(aHasMasterName !== bHasMasterName) return aHasMasterName ? -1 : 1;
+
+    const usageDifference = (usageCounts.get(b.id) || 0) - (usageCounts.get(a.id) || 0);
+    if(usageDifference) return usageDifference;
+
+    return catalogDisplayName(a).localeCompare(catalogDisplayName(b), "uk");
+  });
 }
 
 let catalogPressItemId = "";
@@ -8434,6 +8508,10 @@ function detectCategory(text, brand, system){
 
   if(/каналіз|канализ|sewer|htsafe|ht safe|хрестовин|крестовин|сифон|відвід.*канал|отвод.*канал|канализац/.test(source)){
     return "sewer";
+  }
+
+  if(/опален|отоплен|радіатор|радиатор|тепла\s*підлог|теплый\s*пол|конвектор|котел|котёл|теплонос|термостат|термоголов|гребінк.*опален|гребенк.*отоплен|wilo|meibes/.test(source)){
+    return "heating";
   }
 
   if(/flowfit|teceflex|tece flex|\bbwt\b|водопостач|водоснаб|водопров|труба.*вода|фітинг.*вода|фитинг.*вода|фільтр|фильтр|умягч|водоочист|аніоніт|анионит|purolite|вугілля|уголь|сіль таблет|соль таблет|atlas premier|eurocarb|ciech/.test(source)){
