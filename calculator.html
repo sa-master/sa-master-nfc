@@ -3101,6 +3101,10 @@ body.positionDragging{
     <div class="panelBody" style="padding-bottom:1.25rem">
       <div class="formHint" id="procurementRequestHint" style="margin:0 .25rem .875rem"></div>
       <div class="originalNameCard" id="procurementRequestPreview"></div>
+      <button class="addPersonButton hidden" id="procurementNextSupplierButton" type="button" onclick="openNextProcurementRequest()" style="margin:.75rem 0 0">
+        <span style="font-size:1rem;line-height:1">→</span>
+        <span id="procurementNextSupplierLabel">Наступний постачальник</span>
+      </button>
     </div>
 
     <div class="panelFooter">
@@ -7828,7 +7832,48 @@ function openProcurementRequest(rawSupplierName){
   document.getElementById("procurementRequestHint").textContent =
     `${supplierName} · ${positions.length} поз. · ${projectTitlePlain(project)}`;
   document.getElementById("procurementRequestPreview").textContent = procurementRequestText(procurementRequestDraft);
+  updateProcurementRequestNextButton();
   document.getElementById("procurementRequestSheet").classList.add("open");
+}
+
+function getProcurementRequestSupplierNames(project){
+  const names = new Map();
+  (project && project.positions || []).forEach(position => {
+    if(!position || position.type !== "material") return;
+    const supplierName = cleanText(getPositionPlannedSupplier(position));
+    const key = normalizeText(supplierName);
+    if(supplierName && key && !names.has(key)) names.set(key, supplierName);
+  });
+  return Array.from(names.values()).sort((a,b) => a.localeCompare(b, "uk"));
+}
+
+function getNextProcurementRequestSupplierName(draft){
+  const project = draft && projects.find(item => item.id === draft.projectId);
+  if(!project) return "";
+  const suppliers = getProcurementRequestSupplierNames(project);
+  const currentIndex = suppliers.findIndex(name =>
+    normalizeText(name) === normalizeText(draft.supplierName)
+  );
+  return currentIndex >= 0 ? (suppliers[currentIndex + 1] || "") : "";
+}
+
+function updateProcurementRequestNextButton(){
+  const button = document.getElementById("procurementNextSupplierButton");
+  const label = document.getElementById("procurementNextSupplierLabel");
+  if(!button || !label) return;
+  const nextSupplier = getNextProcurementRequestSupplierName(procurementRequestDraft);
+  button.classList.toggle("hidden", !nextSupplier);
+  label.textContent = nextSupplier ? `Наступний: ${nextSupplier}` : "Наступний постачальник";
+}
+
+function openNextProcurementRequest(){
+  const nextSupplier = getNextProcurementRequestSupplierName(procurementRequestDraft);
+  if(!nextSupplier){
+    closeProcurementRequest();
+    toast("Запити для всіх постачальників підготовлено");
+    return;
+  }
+  openProcurementRequest(nextSupplier);
 }
 
 function closeProcurementRequest(){
