@@ -1654,8 +1654,10 @@ body.positionDragging{
   padding:0 .25rem .375rem;
 }
 
+.procurementGroupTitle{min-width:0}
 .procurementGroupName{font-size:.875rem;font-weight:800;color:var(--t)}
 .procurementGroupMeta{font-size:.75rem;font-weight:700;color:var(--tm);white-space:nowrap}
+.procurementRequestButton{flex:0 0 auto;height:2rem;padding:0 .625rem;border-radius:.625rem;background:rgba(0,122,255,.1);color:var(--p);font-size:.6875rem;font-weight:750;white-space:nowrap}
 .procurementCategoryTitle{margin:.625rem .25rem .3125rem;font-size:.6875rem;font-weight:800;color:var(--tm);letter-spacing:.45px;text-transform:uppercase}
 .procurementGroupHead + .procurementCategoryTitle{margin-top:0}
 
@@ -1671,6 +1673,8 @@ body.positionDragging{
 .procurementItemName{font-size:.8125rem;font-weight:700;line-height:1.25;color:var(--t);min-width:0}
 .procurementItemQty{font-size:.75rem;font-weight:750;color:var(--p);white-space:nowrap}
 .procurementItemMeta{margin-top:.25rem;font-size:.6875rem;color:var(--tm)}
+.procurementItemMeta.confirmed{color:var(--green);font-weight:650}
+.procurementItemMeta.unavailable{color:var(--red);font-weight:650}
 .procurementSupplierSelect{height:2.25rem;margin-top:.5rem;font-size:.8125rem;border-radius:.625rem}
 
 .catalogSearch{
@@ -3085,6 +3089,49 @@ body.positionDragging{
   </div>
 </div>
 
+<!-- SHEET: PROJECT PROCUREMENT REQUEST -->
+
+<div class="sheet" id="procurementRequestSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong>Запит на звірку</strong>
+      <button class="close" onclick="closeProcurementRequest()">×</button>
+    </div>
+
+    <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="formHint" id="procurementRequestHint" style="margin:0 .25rem .875rem"></div>
+      <div class="originalNameCard" id="procurementRequestPreview"></div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="copyProcurementRequest()">Скопіювати текст</button>
+      <button class="btnPrimary" onclick="shareProcurementRequest()">Текст і файл</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: PROCUREMENT RESPONSE REVIEW -->
+
+<div class="sheet" id="procurementResponseSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong>Звірка з постачальником</strong>
+      <button class="close" onclick="closeProcurementResponseReview()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="importSummaryBox" id="procurementResponseSummary"></div>
+      <div class="formHint" id="procurementResponseHint" style="margin:0 .25rem .875rem"></div>
+      <div class="importPreviewList" id="procurementResponseList"></div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeProcurementResponseReview()">Скасувати</button>
+      <button class="btnPrimary" onclick="applyProcurementResponse()">Застосувати</button>
+    </div>
+  </div>
+</div>
+
 <!-- SHEET: EDIT CATALOG ITEM -->
 
 <div class="sheet" id="catalogEditSheet">
@@ -3450,12 +3497,17 @@ body.positionDragging{
     </div>
 
     <div class="formHint" style="margin:0 .25rem 1rem">
-      Розподіліть матеріали за постачальниками перед погодженням цін.
+      Розподіліть матеріали за постачальниками, надішліть запит на звірку та застосуйте підтверджені ціни лише до цього об’єкта.
     </div>
 
     <button class="addPersonButton" type="button" style="margin:0 0 1rem" onclick="openBestPriceProposal()">
       <span style="font-size:1rem;line-height:1">↯</span>
       <span>Підібрати вигідніше</span>
+    </button>
+
+    <button class="addPersonButton" type="button" style="margin:0 0 1rem" onclick="openProcurementResponseFile()">
+      <span style="font-size:1rem;line-height:1">⇩</span>
+      <span>Імпортувати відповідь</span>
     </button>
 
     <div id="procurementPlanContent"></div>
@@ -3588,6 +3640,13 @@ body.positionDragging{
 <input
   type="file"
   id="importFileInput"
+  accept=".xls,.xlsx,.xlsm"
+  style="display:none"
+>
+
+<input
+  type="file"
+  id="procurementResponseFileInput"
   accept=".xls,.xlsx,.xlsm"
   style="display:none"
 >
@@ -3923,6 +3982,8 @@ let bestPriceProposal = null;
 
 let pendingImportFile = null;
 let pendingImportData = null;
+let procurementRequestDraft = null;
+let pendingProcurementResponse = null;
 
 let autoDetectedCurrency = "";
 let autoDetectedRate = null;
@@ -4187,6 +4248,19 @@ function procurementSupplierSelect(projectId, position){
   `;
 }
 
+function procurementAvailabilityLabel(value){
+  switch(value){
+    case "available": return "Підтверджено в наявності";
+    case "pre_order": return "Під замовлення";
+    case "unavailable": return "Немає в наявності";
+    default: return "";
+  }
+}
+
+function procurementAvailabilityClass(value){
+  return value === "unavailable" ? "unavailable" : value === "available" ? "confirmed" : "";
+}
+
 function renderProcurementPlan(){
   const box = document.getElementById("procurementPlanContent");
   const project = projects.find(item => item.id === currentProjectId);
@@ -4215,8 +4289,11 @@ function renderProcurementPlan(){
   box.innerHTML = ordered.map(group => `
     <section class="procurementGroup">
       <div class="procurementGroupHead">
-        <span class="procurementGroupName">${group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</span>
-        <span class="procurementGroupMeta">${escapeHtml(getProcurementGroupMeta(group.positions))}</span>
+        <div class="procurementGroupTitle">
+          <div class="procurementGroupName">${group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</div>
+          <div class="procurementGroupMeta">${escapeHtml(getProcurementGroupMeta(group.positions))}</div>
+        </div>
+        ${group.supplier ? `<button class="procurementRequestButton" type="button" onclick="openProcurementRequest(decodeURIComponent('${encodeURIComponent(group.supplier)}'))">Запит</button>` : ""}
       </div>
       ${groupMaterialPositions(group.positions).map(categoryGroup => `
         <div class="procurementCategoryTitle">${escapeHtml(categoryGroup.label)}</div>
@@ -4226,6 +4303,7 @@ function renderProcurementPlan(){
         const priceText = purchasePrice > 0
           ? `Закупка: ${moneyWithCents(purchasePrice)} / ${escapeHtml(position.unit || "шт")}`
           : "Закупівельна ціна не вказана";
+        const availability = procurementAvailabilityLabel(position.supplierAvailability);
         return `
           <div class="procurementItem">
             <div class="procurementItemTop">
@@ -4233,6 +4311,7 @@ function renderProcurementPlan(){
               <div class="procurementItemQty">${qty} ${escapeHtml(position.unit || "шт")}</div>
             </div>
             <div class="procurementItemMeta">${priceText}</div>
+            ${availability ? `<div class="procurementItemMeta ${procurementAvailabilityClass(position.supplierAvailability)}">${availability}</div>` : ""}
             ${procurementSupplierSelect(project.id, position)}
           </div>
         `;
@@ -7629,6 +7708,348 @@ async function shareSupplierRequest(){
   }
 }
 
+/* ==== ЗВІРКА КОНКРЕТНОЇ ЗАКУПІВЛІ ==== */
+
+function procurementRequestText(draft){
+  const project = projects.find(item => item.id === draft.projectId);
+  const objectName = project ? projectTitlePlain(project) : "об’єкт";
+  return `Доброго дня!\n\n` +
+    `Надсилаю заявку на звірку матеріалів для об’єкта «${objectName}».\n\n` +
+    `Будь ласка, у вкладеному файлі позначте наявність і вкажіть фактичну закупівельну ціну. Якщо ціна залежить від курсу, зазначте валюту та ваш курс.\n\n` +
+    `Поверніть заповнений файл у форматі XLSX.\n\n` +
+    `Дякую!`;
+}
+
+function procurementRequestFileName(draft){
+  const project = projects.find(item => item.id === draft.projectId);
+  const source = `${project ? projectTitlePlain(project) : "обєкт"}-${draft.supplierName}`;
+  const safe = cleanText(source)
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, "-")
+    .slice(0, 70) || "закупівля";
+  return `SA-MASTER-звірка-${safe}.xlsx`;
+}
+
+function getPositionMaterialBrand(position){
+  const item = getPositionCatalogItem(position);
+  return cleanText(item && item.manufacturer) || "—";
+}
+
+function getPositionMaterialArticle(position){
+  const item = getPositionCatalogItem(position);
+  return cleanText(item && item.article);
+}
+
+function buildProcurementRequestTemplateFile(draft){
+  if(typeof XLSX === "undefined") throw new Error("XLSX unavailable");
+  const project = projects.find(item => item.id === draft.projectId);
+  if(!project) throw new Error("project unavailable");
+
+  const positions = (project.positions || []).filter(position =>
+    draft.positionIds.includes(position.id) && position.type === "material"
+  );
+  const rows = [
+    ["SA_MASTER_PROCUREMENT_REQUEST", 1],
+    ["Ідентифікатор об’єкта", project.id],
+    ["Об’єкт", projectTitlePlain(project)],
+    ["Постачальник", draft.supplierName],
+    ["Заповніть наявність, фактичну ціну, валюту та курс (якщо EUR/USD). Не змінюйте технічний стовпець SA_POSITION_ID."],
+    [],
+    ["Артикул", "Повна назва", "Бренд", "Кількість", "Одиниця", "Наявність", "Факт. ціна", "Валюта", "Курс, ₴", "Коментар", "SA_POSITION_ID"]
+  ];
+
+  groupMaterialPositions(positions).forEach(group => {
+    rows.push([group.label]);
+    group.positions.forEach(position => {
+      rows.push([
+        getPositionMaterialArticle(position),
+        position.fullName || position.name || "",
+        getPositionMaterialBrand(position),
+        Number(position.qty) || 1,
+        position.unit || "шт",
+        "",
+        "",
+        "",
+        "",
+        "",
+        position.id
+      ]);
+    });
+  });
+
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  sheet["!cols"] = [
+    { wch:18 }, { wch:48 }, { wch:18 }, { wch:11 }, { wch:12 },
+    { wch:18 }, { wch:16 }, { wch:11 }, { wch:13 }, { wch:28 }, { hidden:true }
+  ];
+  sheet["!freeze"] = { xSplit:0, ySplit:7 };
+
+  const guide = XLSX.utils.aoa_to_sheet([
+    ["Як заповнити звірку матеріалів"],
+    [],
+    ["1. У колонці «Наявність» вкажіть: Так, Ні або Під замовлення."],
+    ["2. У «Факт. ціна» зазначте актуальну закупівельну ціну за одиницю."],
+    ["3. Для фіксованої ціни у гривні вкажіть UAH; курс залиште порожнім."],
+    ["4. Для EUR/USD внесіть базову ціну, валюту та фактичний курс вашої компанії."],
+    ["5. За потреби додайте пояснення або заміну в колонці «Коментар»."],
+    ["6. Не змінюйте назву аркуша, заголовки та прихований технічний стовпець SA_POSITION_ID."],
+    [],
+    ["Після заповнення збережіть файл у форматі XLSX і поверніть майстру."]
+  ]);
+  guide["!cols"] = [{ wch:120 }];
+
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Звірка");
+  XLSX.utils.book_append_sheet(book, guide, "Як заповнювати");
+  const bytes = XLSX.write(book, { bookType:"xlsx", type:"array" });
+  return new File([bytes], procurementRequestFileName(draft), {
+    type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+}
+
+function openProcurementRequest(rawSupplierName){
+  const project = projects.find(item => item.id === currentProjectId);
+  const supplierName = cleanText(rawSupplierName);
+  if(!project || !supplierName) return;
+
+  const positions = (project.positions || []).filter(position =>
+    position.type === "material" && normalizeText(getPositionPlannedSupplier(position)) === normalizeText(supplierName)
+  );
+  if(!positions.length){
+    toast("Для цього постачальника немає матеріалів");
+    return;
+  }
+
+  procurementRequestDraft = {
+    projectId:project.id,
+    supplierName,
+    positionIds:positions.map(position => position.id)
+  };
+  document.getElementById("procurementRequestHint").textContent =
+    `${supplierName} · ${positions.length} поз. · ${projectTitlePlain(project)}`;
+  document.getElementById("procurementRequestPreview").textContent = procurementRequestText(procurementRequestDraft);
+  document.getElementById("procurementRequestSheet").classList.add("open");
+}
+
+function closeProcurementRequest(){
+  document.getElementById("procurementRequestSheet").classList.remove("open");
+  procurementRequestDraft = null;
+}
+
+async function copyProcurementRequest(){
+  if(!procurementRequestDraft) return;
+  try{
+    await copyText(procurementRequestText(procurementRequestDraft));
+    toast("Запит скопійовано");
+  }catch(e){
+    toast("Не вдалося скопіювати запит");
+  }
+}
+
+async function shareProcurementRequest(){
+  const draft = procurementRequestDraft;
+  if(!draft) return;
+  const text = procurementRequestText(draft);
+  let file;
+  try{
+    file = buildProcurementRequestTemplateFile(draft);
+  }catch(e){
+    toast("Не вдалося створити файл звірки");
+    return;
+  }
+
+  if(navigator.share && (!navigator.canShare || navigator.canShare({ files:[file] }))){
+    try{
+      await navigator.share({ title:"Звірка матеріалів", text, files:[file] });
+      toast("Текст і файл готові до надсилання");
+      return;
+    }catch(e){
+      if(e && e.name === "AbortError") return;
+    }
+  }
+
+  try{
+    downloadFile(file);
+    await copyText(text);
+    toast("Файл завантажено, текст скопійовано");
+  }catch(e){
+    toast("Не вдалося підготувати запит");
+  }
+}
+
+function normalizeProcurementAvailability(value){
+  const text = ntext(value);
+  if(!text) return "unknown";
+  if(/^(так|є|в наявності|підтверджено|available|yes)$/.test(text)) return "available";
+  if(/під замов|на замов|очікуван|expected|pre.?order/.test(text)) return "pre_order";
+  if(/^(ні|немає|відсут|no|not available)/.test(text)) return "unavailable";
+  return "unknown";
+}
+
+function parseProcurementResponseWorkbook(workbook){
+  const sheetName = workbook.SheetNames.find(name => {
+    const sheet = workbook.Sheets[name];
+    const firstCell = sheet && sheet["A1"];
+    return ntext(firstCell && firstCell.v) === "sa_master_procurement_request";
+  });
+  if(!sheetName) throw new Error("Це не файл звірки SA-MASTER");
+
+  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+    header:1, raw:false, defval:"", blankrows:true
+  });
+  if(Number(parseNumber(rows?.[0]?.[1])) !== 1) throw new Error("Непідтримувана версія файлу звірки");
+
+  const projectRow = rows.find(row => ntext(row && row[0]) === "ідентифікатор об’єкта");
+  const supplierRow = rows.find(row => ntext(row && row[0]) === "постачальник");
+  const projectId = cleanText(projectRow && projectRow[1]);
+  const supplierName = cleanText(supplierRow && supplierRow[1]);
+  if(!projectId || !supplierName) throw new Error("У файлі немає об’єкта або постачальника");
+
+  const headerIndex = rows.findIndex(row => ntext(row && row[0]) === "артикул" && row.some(cell => ntext(cell) === "sa_position_id"));
+  if(headerIndex < 0) throw new Error("Не знайдено таблицю звірки або змінено її заголовки");
+  const header = rows[headerIndex];
+  const findColumn = name => header.findIndex(cell => ntext(cell) === name);
+  const positionIdCol = findColumn("sa_position_id");
+  const availabilityCol = findColumn("наявність");
+  const priceCol = findColumn("факт. ціна");
+  const currencyCol = findColumn("валюта");
+  const rateCol = header.findIndex(cell => ntext(cell).startsWith("курс"));
+  const commentCol = findColumn("коментар");
+  if([positionIdCol, availabilityCol, priceCol, currencyCol, rateCol, commentCol].some(index => index < 0)){
+    throw new Error("У файлі бракує обов’язкових колонок звірки");
+  }
+
+  const records = [];
+  const seen = new Set();
+  const errors = [];
+  for(let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex++){
+    const row = rows[rowIndex] || [];
+    const positionId = cleanText(row[positionIdCol]);
+    if(!positionId) continue;
+    if(seen.has(positionId)){
+      errors.push(`Рядок ${rowIndex + 1}: позиція повторюється.`);
+      continue;
+    }
+    seen.add(positionId);
+
+    let availability = normalizeProcurementAvailability(row[availabilityCol]);
+    const sourcePrice = parseNumber(row[priceCol]);
+    const currency = cleanText(row[currencyCol]).toUpperCase() || "UAH";
+    const rate = parseNumber(row[rateCol]);
+    const comment = cleanText(row[commentCol]);
+    const hasPrice = Number.isFinite(sourcePrice) && sourcePrice > 0;
+    if(!hasPrice && availability === "unknown" && !comment) continue;
+    if(!["UAH","EUR","USD"].includes(currency)){
+      errors.push(`Рядок ${rowIndex + 1}: валюта має бути UAH, EUR або USD.`);
+      continue;
+    }
+    if(hasPrice && currency !== "UAH" && (!Number.isFinite(rate) || rate <= 0)){
+      errors.push(`Рядок ${rowIndex + 1}: для ${currency} вкажіть курс.`);
+      continue;
+    }
+    if(hasPrice && availability === "unknown") availability = "available";
+    records.push({
+      positionId,
+      availability,
+      sourcePrice:hasPrice ? sourcePrice : null,
+      currency,
+      rate:currency === "UAH" ? null : rate,
+      actualPriceUAH:hasPrice ? (currency === "UAH" ? sourcePrice : sourcePrice * rate) : null,
+      comment
+    });
+  }
+
+  if(errors.length) throw new Error(errors.slice(0,4).join("\n"));
+  return { projectId, supplierName, records };
+}
+
+function openProcurementResponseFile(){
+  const input = document.getElementById("procurementResponseFileInput");
+  input.value = "";
+  input.click();
+}
+
+function renderProcurementResponseReview(){
+  const response = pendingProcurementResponse;
+  const project = response && projects.find(item => item.id === response.projectId);
+  if(!response || !project) return;
+  const positionMap = new Map((project.positions || []).map(position => [position.id, position]));
+  const available = response.records.filter(record => record.availability === "available").length;
+  const unavailable = response.records.filter(record => record.availability === "unavailable").length;
+  const withPrice = response.records.filter(record => Number(record.actualPriceUAH) > 0).length;
+
+  document.getElementById("procurementResponseSummary").innerHTML = `
+    <div class="importSummaryRow"><span>Об’єкт</span><b>${escapeHtml(projectTitlePlain(project))}</b></div>
+    <div class="importSummaryRow"><span>Постачальник</span><b>${escapeHtml(response.supplierName)}</b></div>
+    <div class="importSummaryRow"><span>Звірено позицій</span><b>${response.records.length}</b></div>
+    <div class="importSummaryRow"><span>В наявності / немає</span><b>${available} / ${unavailable}</b></div>
+  `;
+  document.getElementById("procurementResponseHint").textContent =
+    `${withPrice} цін підтверджено. ${response.missingCount ? `Без відповіді: ${response.missingCount} поз.` : "Усі рядки опрацьовано."} Клієнтський кошторис не зміниться.`;
+  document.getElementById("procurementResponseList").innerHTML = response.records.map(record => {
+    const position = positionMap.get(record.positionId);
+    if(!position) return "";
+    const planned = Number(position.purchasePrice);
+    const actual = Number(record.actualPriceUAH);
+    const priceText = actual > 0
+      ? `${planned > 0 ? moneyWithCents(planned) + " → " : ""}<b>${moneyWithCents(actual)}</b>`
+      : "ціна не вказана";
+    const availability = procurementAvailabilityLabel(record.availability) || "Коментар постачальника";
+    return `
+      <div class="importPreviewItem">
+        <div class="importPreviewName">${escapeHtml(position.name || "Без назви")}</div>
+        <div class="importPreviewMeta"><b>${escapeHtml(availability)}</b> · ${priceText}${record.comment ? ` · ${escapeHtml(record.comment)}` : ""}</div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("procurementResponseSheet").classList.add("open");
+}
+
+function closeProcurementResponseReview(){
+  document.getElementById("procurementResponseSheet").classList.remove("open");
+  pendingProcurementResponse = null;
+}
+
+function applyProcurementResponse(){
+  const response = pendingProcurementResponse;
+  const project = response && projects.find(item => item.id === response.projectId);
+  if(!response || !project) return;
+
+  const now = new Date().toISOString();
+  let confirmedPrices = 0;
+  response.records.forEach(record => {
+    const position = (project.positions || []).find(item => item.id === record.positionId);
+    if(!position) return;
+    position.plannedSupplierName = response.supplierName;
+    if(record.availability !== "unknown") position.supplierAvailability = record.availability;
+    if(record.comment) position.supplierComment = record.comment;
+    position.supplierConfirmedAt = now;
+    if(Number(record.actualPriceUAH) > 0){
+      position.purchasePrice = record.actualPriceUAH;
+      position.purchasePriceState = "confirmed";
+      position.purchasePriceSnapshot = {
+        supplierName:response.supplierName,
+        sourcePrice:record.sourcePrice,
+        sourceCurrency:record.currency,
+        sourceRate:record.rate,
+        priceUAH:record.actualPriceUAH,
+        confirmedAt:now
+      };
+      confirmedPrices++;
+    }else if(record.availability === "unavailable"){
+      position.purchasePriceState = "unavailable";
+    }
+  });
+
+  project.updatedAt = now;
+  saveProjects();
+  currentProjectId = project.id;
+  closeProcurementResponseReview();
+  render();
+  renderProcurementPlan();
+  toast(`Звірку застосовано: ${confirmedPrices} цін підтверджено`);
+}
+
 function openImportFile(){
   const input = document.getElementById("importFileInput");
   input.value = "";
@@ -7705,6 +8126,49 @@ document.getElementById("importFileInput").addEventListener("change", async func
   }catch(err){
     console.error("Import error:", err);
     toast("Не вдалося прочитати файл");
+  }
+});
+
+document.getElementById("procurementResponseFileInput").addEventListener("change", async function(e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!file) return;
+  if(!/\.(xls|xlsx|xlsm)$/i.test(String(file.name || ""))){
+    toast("Підтримуються файли .xls, .xlsx, .xlsm");
+    return;
+  }
+  if(typeof XLSX === "undefined"){
+    toast("Модуль XLS/XLSX не завантажився");
+    return;
+  }
+
+  try{
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type:"array", cellDates:false, cellNF:true });
+    const parsed = parseProcurementResponseWorkbook(workbook);
+    const project = projects.find(item => item.id === parsed.projectId);
+    if(!project) throw new Error("Цей файл звірки належить до об’єкта, якого немає в калькуляторі");
+    if(!parsed.records.length) throw new Error("У файлі немає заповнених відповідей постачальника");
+
+    const expected = (project.positions || []).filter(position =>
+      position.type === "material" && normalizeText(getPositionPlannedSupplier(position)) === normalizeText(parsed.supplierName)
+    );
+    const expectedIds = new Set(expected.map(position => position.id));
+    const foreignRecords = parsed.records.filter(record => !expectedIds.has(record.positionId));
+    if(foreignRecords.length) throw new Error("Файл містить позиції іншого постачальника або застарілого запиту");
+
+    pendingProcurementResponse = {
+      ...parsed,
+      fileName:file.name,
+      missingCount:Math.max(0, expected.length - parsed.records.length)
+    };
+    currentProjectId = project.id;
+    render();
+    renderProcurementPlan();
+    renderProcurementResponseReview();
+  }catch(error){
+    console.error("Procurement response import error:", error);
+    alert(`Відповідь не імпортовано.\n\n${error && error.message ? error.message : "Не вдалося прочитати файл звірки."}`);
   }
 });
 
@@ -9450,6 +9914,14 @@ document.getElementById("originalNameSheet").addEventListener("click", e => {
 
 document.getElementById("supplierRequestSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeSupplierRequest();
+});
+
+document.getElementById("procurementRequestSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeProcurementRequest();
+});
+
+document.getElementById("procurementResponseSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeProcurementResponseReview();
 });
 
 document.getElementById("catalogEditSheet").addEventListener("click", e => {
