@@ -710,6 +710,16 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-weight:800;
 }
 .supplierRateInput:focus{box-shadow:inset 0 0 0 1.5px var(--p)}
+.supplierRateAddButton{
+  height:2.25rem;
+  padding:0 .625rem;
+  border-radius:.6875rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.75rem;
+  font-weight:750;
+  white-space:nowrap;
+}
 
 .close{
   width:2.25rem;
@@ -2909,17 +2919,60 @@ body.positionDragging{
   <div class="panel tall">
     <div class="panelHead">
       <strong>Прайси та курси</strong>
-      <button class="close" onclick="closeSupplierRates()">×</button>
+      <div class="panelHeadActions">
+        <button class="catalogEditButton" type="button" onclick="openAddSupplierRate('')">Додати</button>
+        <button class="close" onclick="closeSupplierRates()">×</button>
+      </div>
     </div>
     <div class="panelBody">
       <div class="supplierRatesIntro">
-        Змінюйте курс лише коли постачальник оновив його. Ціни товарів перерахуються у каталозі; створені кошториси не зміняться.
+        Змінюйте курс лише коли постачальник оновив його. Нижче також можна додати бренд, який уже є в каталозі, але ще не має курсу. Ціни товарів перерахуються у каталозі; створені кошториси не зміняться.
       </div>
       <div id="supplierRatesContent"></div>
     </div>
     <div class="panelFooter">
       <button class="btnGhost" onclick="closeSupplierRates()">Скасувати</button>
       <button class="btnPrimary" onclick="applySupplierRates()">Оновити ціни</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHEET: ADD SUPPLIER BRAND RATE -->
+
+<div class="sheet" id="supplierRateAddSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong>Додати курс бренду</strong>
+      <button class="close" onclick="closeAddSupplierRate()">×</button>
+    </div>
+    <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="formGroup">
+        <label class="formLabel">Постачальник *</label>
+        <input class="formInput" id="sraSupplierName" list="sraSupplierList" placeholder="Наприклад: ETK" autocomplete="off">
+        <datalist id="sraSupplierList"></datalist>
+      </div>
+      <div class="formGroup">
+        <label class="formLabel">Бренд *</label>
+        <input class="formInput" id="sraBrand" list="sraBrandList" placeholder="Наприклад: Geberit" autocomplete="off">
+        <datalist id="sraBrandList"></datalist>
+      </div>
+      <div class="formRow">
+        <div class="formGroup">
+          <label class="formLabel">Валюта *</label>
+          <select class="formSelect" id="sraCurrency">
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+        <div class="formGroup">
+          <label class="formLabel">Курс, ₴</label>
+          <input class="formInput" id="sraRate" inputmode="decimal" placeholder="0" autocomplete="off">
+        </div>
+      </div>
+      <div class="formHint">Цей запис застосовуватиметься до валютних позицій саме цього постачальника й бренду.</div>
+    </div>
+    <div class="panelFooter">
+      <button class="btnPrimary" onclick="saveManualSupplierRate()">Додати</button>
     </div>
   </div>
 </div>
@@ -5926,6 +5979,16 @@ function collectSupplierRateProfiles(){
   syncSupplierRatesFromCatalog();
   const profiles = new Map();
 
+  Object.values(supplierRates).forEach(saved => {
+    const supplierName = cleanText(saved && saved.supplierName);
+    const brand = cleanText(saved && saved.brand);
+    const currency = String(saved && saved.currency || "").toUpperCase();
+    const rate = Number(saved && saved.rate);
+    if(!supplierName || !brand || !["EUR","USD"].includes(currency) || !(rate > 0)) return;
+    const key = supplierRateKey(supplierName, brand, currency);
+    profiles.set(key, { ...saved, supplierName, brand, currency, rate, key, itemIds:new Set() });
+  });
+
   catalog.forEach(item => {
     if(item.type !== "material") return;
     getCatalogSupplierOffers(item).forEach(offer => {
@@ -5949,6 +6012,21 @@ function collectSupplierRateProfiles(){
     );
 }
 
+function collectCatalogMaterialBrands(){
+  const brands = new Map();
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    const brand = cleanText(item.manufacturer);
+    if(brand && !brands.has(normalizeText(brand))) brands.set(normalizeText(brand), brand);
+  });
+  return Array.from(brands.values()).sort((a,b) => a.localeCompare(b, "uk"));
+}
+
+function collectBrandsWithoutRate(profiles){
+  const ratedBrands = new Set((profiles || []).map(profile => normalizeText(profile.brand)));
+  return collectCatalogMaterialBrands().filter(brand => !ratedBrands.has(normalizeText(brand)));
+}
+
 function formatSupplierRateDate(value){
   if(!value) return "ще не оновлювався";
   const date = new Date(value);
@@ -5958,8 +6036,9 @@ function formatSupplierRateDate(value){
 
 function openSupplierRates(){
   const profiles = collectSupplierRateProfiles();
-  if(!profiles.length){
-    toast("Імпортуйте прайс у EUR або USD, щоб керувати курсом");
+  const brandsWithoutRate = collectBrandsWithoutRate(profiles);
+  if(!profiles.length && !brandsWithoutRate.length){
+    toast("Додайте матеріали з указаним брендом у каталог");
     return;
   }
 
@@ -5970,7 +6049,7 @@ function openSupplierRates(){
     groups.get(key).profiles.push(profile);
   });
 
-  document.getElementById("supplierRatesContent").innerHTML = Array.from(groups.values()).map(group => `
+  const rateGroupsHtml = Array.from(groups.values()).map(group => `
     <section class="supplierRateGroup">
       <div class="supplierRateGroupHead">
         <span class="supplierRateGroupName">${escapeHtml(group.name)}</span>
@@ -5980,7 +6059,7 @@ function openSupplierRates(){
         <div class="supplierRateCard">
           <div>
             <div class="supplierRateBrand">${escapeHtml(profile.brand)} · ${escapeHtml(profile.currency)}</div>
-            <div class="supplierRateMeta">${profile.itemCount} товарів · оновлено ${escapeHtml(formatSupplierRateDate(profile.updatedAt))}</div>
+            <div class="supplierRateMeta">${profile.itemCount ? profile.itemCount + " товарів" : "додано вручну"} · оновлено ${escapeHtml(formatSupplierRateDate(profile.updatedAt))}</div>
           </div>
           <input
             class="supplierRateInput"
@@ -5995,11 +6074,79 @@ function openSupplierRates(){
     </section>
   `).join("");
 
+  const withoutRateHtml = brandsWithoutRate.length ? `
+    <section class="supplierRateGroup">
+      <div class="supplierRateGroupHead">
+        <span class="supplierRateGroupName">Бренди без курсу</span>
+        <span class="supplierRateGroupMeta">${brandsWithoutRate.length}</span>
+      </div>
+      ${brandsWithoutRate.map(brand => `
+        <div class="supplierRateCard">
+          <div>
+            <div class="supplierRateBrand">${escapeHtml(brand)}</div>
+            <div class="supplierRateMeta">Оберіть постачальника, валюту й його курс.</div>
+          </div>
+          <button class="supplierRateAddButton" type="button" onclick="openAddSupplierRate(decodeURIComponent('${encodeURIComponent(brand)}'))">Додати</button>
+        </div>
+      `).join("")}
+    </section>
+  ` : "";
+
+  document.getElementById("supplierRatesContent").innerHTML = rateGroupsHtml + withoutRateHtml;
+
   document.getElementById("supplierRatesSheet").classList.add("open");
 }
 
 function closeSupplierRates(){
   document.getElementById("supplierRatesSheet").classList.remove("open");
+}
+
+function openAddSupplierRate(brand){
+  const suppliers = collectKnownSupplierNames();
+  const brands = collectCatalogMaterialBrands();
+  document.getElementById("sraSupplierList").innerHTML = suppliers
+    .map(name => `<option value="${escapeHtml(name)}"></option>`).join("");
+  document.getElementById("sraBrandList").innerHTML = brands
+    .map(name => `<option value="${escapeHtml(name)}"></option>`).join("");
+  document.getElementById("sraSupplierName").value = "";
+  document.getElementById("sraBrand").value = cleanText(brand);
+  document.getElementById("sraCurrency").value = "EUR";
+  document.getElementById("sraRate").value = "";
+  document.getElementById("supplierRateAddSheet").classList.add("open");
+  setTimeout(() => document.getElementById("sraSupplierName").focus(), 180);
+}
+
+function closeAddSupplierRate(){
+  document.getElementById("supplierRateAddSheet").classList.remove("open");
+}
+
+function saveManualSupplierRate(){
+  const supplierName = cleanText(document.getElementById("sraSupplierName").value);
+  const brand = cleanText(document.getElementById("sraBrand").value);
+  const currency = String(document.getElementById("sraCurrency").value || "").toUpperCase();
+  const rate = parseNumber(document.getElementById("sraRate").value);
+  if(!supplierName || !brand){
+    toast("Вкажіть постачальника і бренд");
+    return;
+  }
+  if(!["EUR","USD"].includes(currency) || !Number.isFinite(rate) || rate <= 0){
+    toast("Вкажіть коректну валюту і курс");
+    return;
+  }
+
+  const key = supplierRateKey(supplierName, brand, currency);
+  supplierRates[key] = { supplierName, brand, currency, rate, updatedAt:new Date().toISOString() };
+  const supplierNames = loadSupplierNames();
+  const previousSupplier = supplierNames["short:" + ntext(supplierName)];
+  supplierNames["short:" + ntext(supplierName)] = {
+    ...(previousSupplier && typeof previousSupplier === "object" ? previousSupplier : {}),
+    name:supplierName
+  };
+  saveSupplierNames(supplierNames);
+  saveSupplierRates();
+  closeAddSupplierRate();
+  openSupplierRates();
+  toast("Курс бренду додано");
 }
 
 function applySupplierRates(){
@@ -7306,7 +7453,8 @@ function supplierPriceRequestText(supplierName){
 
   return `Доброго дня!\n\n` +
     `Я формую робочий каталог матеріалів. Надсилаю Excel-шаблон для прайсу ${supplier}. Будь ласка, заповніть його та поверніть у форматі XLSX.\n\n` +
-    `У шаблоні валюта й курс задаються окремо для кожного бренду — так ціни коректно потраплять у каталог.\n\n` +
+    `Якщо ціна товару залежить від курсу, вкажіть її в EUR або USD, а ваш курс для кожного бренду внесіть у таблицю «Курси за брендами». Не перераховуйте такі ціни у гривню.\n\n` +
+    `Детальна інструкція є в окремому аркуші файлу.\n\n` +
     `Дякую!`;
 }
 
@@ -7324,7 +7472,7 @@ function buildSupplierPriceTemplateFile(supplierName){
   const rows = [
     ["SA_MASTER_PRICE_TEMPLATE", 1],
     ["Прайс для імпорту в sa-master.pro"],
-    ["Заповніть дві таблиці нижче. Валюта і курс задаються окремо для кожного бренду."],
+    ["Для EUR/USD вказуйте ціни товарів у базовій валюті бренду, а фактичний курс — окремо в таблиці зверху. UAH — лише для фіксованих гривневих цін."],
     [],
     ["КУРСИ ЗА БРЕНДАМИ"],
     ["Бренд", "Валюта", "Курс, ₴", "Примітка (необов’язково)"],
@@ -7343,11 +7491,12 @@ function buildSupplierPriceTemplateFile(supplierName){
   const guideRows = [
     ["Як заповнити прайс для sa-master.pro"],
     [],
-    ["1. У таблиці «Курси за брендами» внесіть кожен бренд, його валюту та курс до гривні."],
-    ["2. Для UAH курс залиште порожнім. Для EUR або USD курс обов’язковий."],
-    ["3. У таблиці «Товари» у кожного рядка обов’язкові: артикул, повна назва, бренд, одиниця та хоча б одна ціна."],
-    ["4. Бренд у товарі має точно збігатися з брендом у таблиці курсів. Один файл може містити бренди в різних валютах."],
-    ["5. Не змінюйте назви аркушів, заголовки колонок і технічний рядок SA_MASTER_PRICE_TEMPLATE."],
+    ["1. У таблиці «Курси за брендами» внесіть кожен бренд, його валюту та фактичний курс вашої компанії до гривні."],
+    ["2. Якщо бренд працює у EUR або USD, в обох цінових колонках товару вказуйте базову ціну саме в цій валюті. Не перераховуйте її в гривню."],
+    ["3. Для UAH вказуйте вже фіксовану гривневу ціну, а курс залишайте порожнім. UAH не використовується для товару, що залежить від курсу."],
+    ["4. У таблиці «Товари» у кожного рядка обов’язкові: артикул, повна назва, бренд, одиниця та хоча б одна ціна."],
+    ["5. Бренд у товарі має точно збігатися з брендом у таблиці курсів. Один файл може містити бренди в різних валютах."],
+    ["6. Не змінюйте назви аркушів, заголовки колонок і технічний рядок SA_MASTER_PRICE_TEMPLATE."],
     [],
     ["Після заповнення збережіть файл у форматі XLSX і надішліть його майстру."]
   ];
@@ -9281,6 +9430,10 @@ document.getElementById("catalogSheet").addEventListener("click", e => {
 
 document.getElementById("supplierRatesSheet").addEventListener("click", e => {
   if(e.target === e.currentTarget) closeSupplierRates();
+});
+
+document.getElementById("supplierRateAddSheet").addEventListener("click", e => {
+  if(e.target === e.currentTarget) closeAddSupplierRate();
 });
 
 document.getElementById("quoteCourseCheckSheet").addEventListener("click", e => {
