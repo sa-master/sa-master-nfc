@@ -9265,7 +9265,7 @@ function renderImportPreview(items){
   const html = items.map((it, index) => {
     const parts = [];
     if(it.article) parts.push(`Арт: ${escapeHtml(it.article)}`);
-    else parts.push(`<b style="color:var(--orange)">Без артикула — буде додано окремо</b>`);
+    else parts.push(`<b style="color:var(--orange)">Без артикула — звірка: постачальник, назва й одиниця</b>`);
     if(it.qty) parts.push(`К-сть: ${escapeHtml(String(it.qty))}`);
     if(it.unit) parts.push(`Од: ${escapeHtml(it.unit)}`);
 
@@ -9457,6 +9457,8 @@ function detectCategory(text, brand, system){
 function findExistingCatalogItem(imported, supplierName){
   const article = ntext(imported.article);
   const brand = ntext(imported.manufacturer);
+  const importedName = ntext(imported.name);
+  const importedUnit = ntext(imported.unit);
 
   if(article && brand){
     const byBrandAndArticle = catalog.find(item =>
@@ -9482,7 +9484,23 @@ function findExistingCatalogItem(imported, supplierName){
     if(bySupplierArticle) return bySupplierArticle;
   }
 
-  /* Назва не є достатнім ідентифікатором: не зливаємо товари за нею. */
+  /* Без артикула звіряємо лише точний збіг у того самого постачальника:
+     повна оригінальна назва й одиниця. Назву майстра (nameMaster) не чіпаємо. */
+  if(!article && !supplierArticle && supplierName && importedName && importedUnit){
+    const supplier = ntext(supplierName);
+    const byExactSupplierName = catalog.find(item =>
+      item.type === "material" &&
+      ntext(item.name) === importedName &&
+      ntext(item.unit) === importedUnit &&
+      Array.isArray(item.supplierOffers) &&
+      item.supplierOffers.some(offer =>
+        ntext(offer && offer.supplierName) === supplier
+      )
+    );
+    if(byExactSupplierName) return byExactSupplierName;
+  }
+
+  /* Назва сама по собі не є достатнім ідентифікатором: не зливаємо товари за нею. */
   return null;
 }
 
@@ -9613,6 +9631,7 @@ function confirmImport(){
       article: imported.article,
       supplierArticle: imported.supplierArticle,
       name: imported.name,
+      unit: imported.unit,
       manufacturer: brand
     }, importSupplierName);
 
@@ -9665,6 +9684,8 @@ function confirmImport(){
     const target = existing || findExistingCatalogItem({
       article: imported.article,
       supplierArticle: imported.supplierArticle,
+      name: imported.name,
+      unit: imported.unit,
       manufacturer: brand
     }, importSupplierName);
 
