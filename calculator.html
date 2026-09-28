@@ -2991,13 +2991,14 @@ body.positionDragging{
     </div>
     <div class="panelBody" style="padding-bottom:1.25rem">
       <div class="originalNameCard" style="font-size:.875rem">
-        Перед надсиланням кошторису перевірте актуальність курсу матеріалів. Наявність і фактичну закупівельну ціну потрібно звіряти вже на етапі комплектації.
+        Перед надсиланням кошторису перевірте актуальність курсу матеріалів. Якщо ви оновили курс у каталозі, застосуйте актуальні ціни до цієї чернетки.
       </div>
       <button class="addCustomButton" type="button" onclick="reviewQuoteCourses()">₴ Перевірити курси</button>
+      <button class="addCustomButton" type="button" onclick="applyCurrentCatalogPricesToQuoteDraft()">↻ Оновити ціни чернетки</button>
     </div>
     <div class="panelFooter">
       <button class="btnGhost" onclick="closeQuoteCourseCheck()">Скасувати</button>
-      <button class="btnPrimary" onclick="continueQuotePreview()">Надіслати з поточними</button>
+      <button class="btnPrimary" onclick="continueQuotePreview()">Курс перевірено</button>
     </div>
   </div>
 </div>
@@ -3983,6 +3984,7 @@ let customStage = "rough";
 
 let pricesPending = [];
 let bestPriceProposal = null;
+let quoteCourseCheckReturn = false;
 
 let pendingImportFile = null;
 let pendingImportData = null;
@@ -5173,19 +5175,79 @@ function openQuotePreview(){
     return;
   }
 
+  if(!projectHasCurrencyLinkedMaterials(project) || projectHasSupplierConfirmation(project)){
+    renderQuotePreview();
+    return;
+  }
+
+  openQuoteCourseCheck();
+}
+
+function projectHasCurrencyLinkedMaterials(project){
+  return (project && project.positions || []).some(position => {
+    if(!position || position.type !== "material") return false;
+    return catalogItemUsesCurrencyPrice(getPositionCatalogItem(position));
+  });
+}
+
+function catalogItemUsesCurrencyPrice(item){
+  const offer = getSelectedCatalogSupplierOffer(item);
+  return ["retail","master"].some(kind => {
+    const currency = String(offer && offer[kind] && offer[kind].sourceCurrency || "").toUpperCase();
+    return currency === "EUR" || currency === "USD";
+  });
+}
+
+function projectHasSupplierConfirmation(project){
+  const materials = (project && project.positions || []).filter(position => position && position.type === "material");
+  return materials.length > 0 && materials.every(position => Boolean(position.supplierConfirmedAt));
+}
+
+function openQuoteCourseCheck(){
   document.getElementById("quoteCourseCheckSheet").classList.add("open");
 }
 
 function closeQuoteCourseCheck(){
   document.getElementById("quoteCourseCheckSheet").classList.remove("open");
+  quoteCourseCheckReturn = false;
 }
 
 function reviewQuoteCourses(){
-  closeQuoteCourseCheck();
+  quoteCourseCheckReturn = true;
+  document.getElementById("quoteCourseCheckSheet").classList.remove("open");
   openSupplierRates();
 }
 
+function applyCurrentCatalogPricesToQuoteDraft(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+
+  let changed = 0;
+  (project.positions || []).forEach(position => {
+    if(!position || position.type !== "material") return;
+    const item = getPositionCatalogItem(position);
+    if(!item || !catalogItemUsesCurrencyPrice(item)) return;
+
+    const price = Number(item.price);
+    if(!(price > 0) || Math.abs(price - (Number(position.price) || 0)) < 0.005) return;
+    position.price = price;
+    changed++;
+  });
+
+  if(changed){
+    project.updatedAt = new Date().toISOString();
+    saveProjects();
+    render();
+  }
+  toast(changed ? `Оновлено ${changed} цін у чернетці` : "Ціни чернетки вже актуальні");
+}
+
 function continueQuotePreview(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(project){
+    project.quoteCourseCheckedAt = new Date().toISOString();
+    saveProjects();
+  }
   closeQuoteCourseCheck();
   renderQuotePreview();
 }
@@ -6182,6 +6244,10 @@ function openSupplierRates(){
 
 function closeSupplierRates(){
   document.getElementById("supplierRatesSheet").classList.remove("open");
+  if(quoteCourseCheckReturn){
+    quoteCourseCheckReturn = false;
+    openQuoteCourseCheck();
+  }
 }
 
 function openAddSupplierRate(brand){
