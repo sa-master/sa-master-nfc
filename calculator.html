@@ -1251,6 +1251,81 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-weight:600;
 }
 
+.procurementIssues{
+  margin:-.125rem 0 .875rem;
+  padding:.625rem .75rem;
+  border:1px solid rgba(255,149,0,.24);
+  border-radius:.875rem;
+  background:rgba(255,149,0,.07);
+}
+
+.procurementIssuesHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:.5rem;
+  margin-bottom:.375rem;
+}
+
+.procurementIssuesTitle{
+  font-size:.75rem;
+  font-weight:800;
+  color:var(--t);
+  text-transform:uppercase;
+  letter-spacing:.45px;
+}
+
+.procurementIssuesCount{
+  flex:0 0 auto;
+  padding:.125rem .4375rem;
+  border-radius:.5rem;
+  background:rgba(255,149,0,.14);
+  color:#B76800;
+  font-size:.6875rem;
+  font-weight:800;
+}
+
+.procurementIssue{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:.5rem;
+  padding:.375rem 0;
+  border-top:1px solid rgba(120,130,140,.12);
+}
+
+.procurementIssuesHead + .procurementIssue{border-top:0}
+
+.procurementIssueName{
+  min-width:0;
+  color:var(--t);
+  font-size:.75rem;
+  font-weight:700;
+  line-height:1.3;
+  overflow-wrap:anywhere;
+}
+
+.procurementIssueStatus{
+  flex:0 0 auto;
+  padding:.1875rem .4375rem;
+  border-radius:.5rem;
+  background:rgba(120,130,140,.12);
+  color:var(--ts);
+  font-size:.625rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+
+.procurementIssue.unavailable .procurementIssueStatus{
+  background:rgba(255,59,48,.12);
+  color:var(--red);
+}
+
+.procurementIssue.preOrder .procurementIssueStatus{
+  background:rgba(255,149,0,.14);
+  color:#B76800;
+}
+
 .emptyEstimate{
   text-align:center;
   color:var(--tm);
@@ -2159,6 +2234,48 @@ body.positionDragging{
   border-radius:.75rem;
   padding:.625rem .75rem;
 }
+
+.importPreviewItem.selectable{
+  display:flex;
+  align-items:flex-start;
+  gap:.625rem;
+  cursor:pointer;
+}
+
+.importPreviewItem.selectable:not(.selected){opacity:.56}
+
+.importPreviewCheck{
+  flex:0 0 auto;
+  width:1.125rem;
+  height:1.125rem;
+  margin-top:.0625rem;
+  accent-color:var(--p);
+}
+
+.importPreviewBody{flex:1 1 auto;min-width:0}
+.importPreviewBody .importPreviewName,
+.importPreviewBody .importPreviewMeta{display:block}
+
+.importSelectionActions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:.5rem;
+  margin:.5rem .25rem .375rem;
+}
+
+.importSelectionTools{display:flex;gap:.375rem}
+
+.importSelectionButton{
+  padding:.3125rem .5625rem;
+  border-radius:.5rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.6875rem;
+  font-weight:750;
+}
+
+.importSelectionHint{color:var(--tm);font-size:.6875rem;font-weight:650}
 
 @media (prefers-color-scheme: dark){
   .importPreviewItem{background:rgba(255,255,255,.04)}
@@ -3378,10 +3495,22 @@ body.positionDragging{
           <span>З них з цінами</span>
           <b id="impItemsWithPrice">0</b>
         </div>
+        <div class="importSummaryRow">
+          <span>Обрано для імпорту</span>
+          <b id="impSelectedCount">0</b>
+        </div>
       </div>
 
       <div style="font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.5px;margin:.5rem .25rem .25rem">
         Попередній перегляд
+      </div>
+
+      <div class="importSelectionActions">
+        <span class="importSelectionHint">Оберіть потрібні позиції</span>
+        <div class="importSelectionTools">
+          <button type="button" class="importSelectionButton" onclick="selectAllImportItems(true)">Усі</button>
+          <button type="button" class="importSelectionButton" onclick="selectAllImportItems(false)">Очистити</button>
+        </div>
       </div>
 
       <div class="importPreviewList" id="impPreviewList"></div>
@@ -3988,6 +4117,7 @@ let quoteCourseCheckReturn = false;
 
 let pendingImportFile = null;
 let pendingImportData = null;
+let pendingImportSelection = new Set();
 let procurementRequestDraft = null;
 let pendingProcurementResponse = null;
 
@@ -5523,6 +5653,7 @@ function renderEstimateBlock(p){
   const materialPositions = positions.filter(x => x.type === "material");
   const workDiscountPercent = getWorksDiscountPercent(p);
   const materialsDiscountPercent = getMaterialsDiscountPercent(p);
+  const procurementIssues = getProcurementIssues(p);
 
   return `
     <div class="estimateBlock">
@@ -5530,6 +5661,8 @@ function renderEstimateBlock(p){
         <strong>Кошторис</strong>
         <span class="estimateCount">${count ? count + " поз." : "порожній"}</span>
       </div>
+
+      ${renderProcurementIssues(procurementIssues)}
 
       ${count === 0 ? `
         <div class="emptyEstimate">
@@ -5545,6 +5678,52 @@ function renderEstimateBlock(p){
         ${materialPositions.length ? renderDiscountControl("material", materialsDiscountPercent) : ""}
       `}
     </div>
+  `;
+}
+
+function getProcurementIssues(project){
+  return (project && project.positions || []).reduce((issues, position) => {
+    if(!position || position.type !== "material") return issues;
+
+    const supplierName = cleanText(getPositionPlannedSupplier(position));
+    let status = "";
+    let label = "";
+
+    if(position.supplierAvailability === "unavailable"){
+      status = "unavailable";
+      label = "Потрібна заміна";
+    }else if(position.supplierAvailability === "pre_order"){
+      status = "preOrder";
+      label = "Під замовлення";
+    }else if(!supplierName){
+      status = "pending";
+      label = "Призначити постачальника";
+    }else if(!position.supplierConfirmedAt){
+      status = "pending";
+      label = "Очікує звірки";
+    }
+
+    if(status) issues.push({ position, status, label });
+    return issues;
+  }, []);
+}
+
+function renderProcurementIssues(issues){
+  if(!issues.length) return "";
+
+  return `
+    <section class="procurementIssues">
+      <div class="procurementIssuesHead">
+        <span class="procurementIssuesTitle">Потребують комплектації</span>
+        <span class="procurementIssuesCount">${issues.length}</span>
+      </div>
+      ${issues.map(issue => `
+        <div class="procurementIssue ${issue.status}">
+          <span class="procurementIssueName">${escapeHtml(issue.position.name || "Без назви")}</span>
+          <span class="procurementIssueStatus">${escapeHtml(issue.label)}</span>
+        </div>
+      `).join("")}
+    </section>
   `;
 }
 
@@ -9011,6 +9190,7 @@ function detectSupplierFullName(rows, header){
 
 function openImportSheet(parsed, file){
   const items = parsed.items || [];
+  pendingImportSelection = new Set(items.map((_, index) => index));
 
   document.getElementById("impFileName").textContent = file.name;
   document.getElementById("impItemsCount").textContent = String(items.length);
@@ -9082,9 +9262,7 @@ function collectKnownSupplierNames(){
 
 function renderImportPreview(items){
   const box = document.getElementById("impPreviewList");
-  const limit = 5;
-  const visible = items.slice(0, limit);
-  let html = visible.map(it => {
+  const html = items.map((it, index) => {
     const parts = [];
     if(it.article) parts.push(`Арт: ${escapeHtml(it.article)}`);
     else parts.push(`<b style="color:var(--orange)">Без артикула — ручна перевірка</b>`);
@@ -9097,23 +9275,49 @@ function renderImportPreview(items){
     if(Number.isFinite(it.masterPrice)) prices.push(`Оптова: <b>${it.masterPrice}${currencySuffix}</b>`);
     if(!prices.length && Number.isFinite(it.price)) prices.push(`Ціна: <b>${it.price}${currencySuffix}</b>`);
 
+    const selected = pendingImportSelection.has(index);
+
     return `
-      <div class="importPreviewItem">
-        <div class="importPreviewName">${escapeHtml(it.name)}</div>
-        <div class="importPreviewMeta">
-          ${parts.join(" · ")}
-          ${parts.length && prices.length ? " · " : ""}
-          ${prices.join(" · ")}
-        </div>
-      </div>
+      <label class="importPreviewItem selectable ${selected ? "selected" : ""}">
+        <input
+          class="importPreviewCheck"
+          type="checkbox"
+          ${selected ? "checked" : ""}
+          onchange="setImportItemSelected(${index},this.checked)"
+          aria-label="Імпортувати ${escapeHtml(it.name || "позицію")}">
+        <span class="importPreviewBody">
+          <span class="importPreviewName">${escapeHtml(it.name)}</span>
+          <span class="importPreviewMeta">
+            ${parts.join(" · ")}
+            ${parts.length && prices.length ? " · " : ""}
+            ${prices.join(" · ")}
+          </span>
+        </span>
+      </label>
     `;
   }).join("");
 
-  if(items.length > limit){
-    html += `<div class="importPreviewMore">…ще ${items.length - limit} товарів</div>`;
-  }
-
   box.innerHTML = html;
+  updateImportSelectedCount();
+}
+
+function setImportItemSelected(index, selected){
+  if(selected) pendingImportSelection.add(index);
+  else pendingImportSelection.delete(index);
+  updateImportSelectedCount();
+}
+
+function selectAllImportItems(selected){
+  const items = pendingImportData?.items || [];
+  pendingImportSelection = selected
+    ? new Set(items.map((_, index) => index))
+    : new Set();
+  renderImportPreview(items);
+}
+
+function updateImportSelectedCount(){
+  const count = document.getElementById("impSelectedCount");
+  if(count) count.textContent = String(pendingImportSelection.size);
 }
 
 function updateImportRateField(){
@@ -9167,6 +9371,7 @@ function closeImportSheet(){
   document.getElementById("importSheet").classList.remove("open");
   pendingImportFile = null;
   pendingImportData = null;
+  pendingImportSelection = new Set();
   autoDetectedCurrency = "";
   autoDetectedRate = null;
 }
@@ -9368,8 +9573,9 @@ function confirmImport(){
     localStorage.setItem(EUR_RATE_KEY, String(rate));
   }
 
-  const items = pendingImportData?.items || [];
-  if(!items.length){ toast("Немає позицій для імпорту"); return; }
+  const allItems = pendingImportData?.items || [];
+  const items = allItems.filter((item, index) => pendingImportSelection.has(index));
+  if(!items.length){ toast("Оберіть хоча б одну позицію для імпорту"); return; }
   const importedAt = new Date().toISOString();
 
   let created = 0;
