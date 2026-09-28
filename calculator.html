@@ -9265,7 +9265,7 @@ function renderImportPreview(items){
   const html = items.map((it, index) => {
     const parts = [];
     if(it.article) parts.push(`Арт: ${escapeHtml(it.article)}`);
-    else parts.push(`<b style="color:var(--orange)">Без артикула — ручна перевірка</b>`);
+    else parts.push(`<b style="color:var(--orange)">Без артикула — буде додано окремо</b>`);
     if(it.qty) parts.push(`К-сть: ${escapeHtml(String(it.qty))}`);
     if(it.unit) parts.push(`Од: ${escapeHtml(it.unit)}`);
 
@@ -9580,22 +9580,11 @@ function confirmImport(){
 
   let created = 0;
   let updated = 0;
-  let skipped = 0;
   const unitConflicts = [];
 
-  /* Без артикула немає безпечної ідентифікації — не створюємо дублікати. */
-  const accepted = items.filter(item => {
-    if(!cleanText(item.article) && !cleanText(item.supplierArticle)){
-      skipped++;
-      return false;
-    }
-    return true;
-  });
-
-  if(!accepted.length){
-    toast("У файлі немає товарів з артикулом");
-    return;
-  }
+  /* Позначену майстром позицію без артикула додаємо окремим товаром.
+     Автоматичного пошуку за назвою немає, тому вона не зіллється з іншим товаром. */
+  const accepted = items;
 
   const prepared = accepted.map(imported => {
     const brand = imported.manufacturer || detectBrand(imported.name, imported.article);
@@ -9751,7 +9740,7 @@ function confirmImport(){
 
   closeImportSheet();
 
-  toast(`Імпортовано: ${created} нових, ${updated} оновлено${restoredPurchasePrices ? `, додано ${restoredPurchasePrices} закупівельних цін у кошториси` : ""}${skipped ? `, ${skipped} без артикула пропущено` : ""}`);
+  toast(`Імпортовано: ${created} нових, ${updated} оновлено${restoredPurchasePrices ? `, додано ${restoredPurchasePrices} закупівельних цін у кошториси` : ""}`);
 
   // Показуємо нові та оновлені товари одразу, без повторного відкриття каталогу.
   renderCatalogChips();
