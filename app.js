@@ -54,7 +54,7 @@
    * Сайт:
    * 1. читає TOKEN;
    * 2. зберігає його локально на 30 днів;
-   * 3. передає Worker як referralToken;
+   * 3. передає Worker як ref;
    * 4. Worker сам перевіряє TOKEN та визначає master_id.
    * ========================================================= */
 
@@ -2182,13 +2182,13 @@
         /*
          * Якщо користувач прийшов
          * за персональним посиланням майстра —
-         * передаємо тільки referralToken.
+         * передаємо referral token у полі "ref".
          *
          * source_master_id тут НЕ передаємо.
          * Його визначає Worker після перевірки D1.
          */
         if (referralToken) {
-          payload.referralToken =
+          payload.ref =
             referralToken;
         }
 
