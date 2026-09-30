@@ -1,0 +1,184 @@
+/* =====================================================================
+   iOS-подібний вигляд і поведінка (шар поверх style.css)
+   Пружна анімація, bottom sheet, action sheet, segmented control,
+   iMessage-чат, реакція на дотик, стиль іконок як у iOS.
+   ===================================================================== */
+:root{--ios:cubic-bezier(.32,.72,0,1);--chat-bg:#FFFFFF;--chat-card:#F2F2F7;--bub-in:#E9E9EB;--bub-in-t:#000;--bub-out:#007AFF}
+.dark{--chat-bg:#000000;--chat-card:#1C1C1E;--bub-in:#262629;--bub-in-t:#fff;--bub-out:#0A84FF}
+
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  letter-spacing:-.011em;
+}
+a,button,summary,.gs{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.cw{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
+/* --- Реакція на дотик: як у iOS (швидко стискається, плавно повертається) --- */
+.wc,.isb,.request-launch,.calc-p,.rgl,.pbtn,.chat-option,.chat-final-btn,.chat-send,.mna,.mc,.request-close,.chat-summary-edit{
+  transition:transform .3s var(--ios),opacity .3s var(--ios),background-color .3s var(--ios);
+}
+/* після появи анімація більше не «тримає» стилі, тому :active працює */
+.wc,.request-launch{opacity:1;animation-fill-mode:backwards}
+.wc:active,.request-launch:active,.calc-p:active,.rgl:active,.chat-final-btn:active{transform:scale(.96);opacity:.85;transition-duration:.08s}
+.isb:active{transform:scale(.9);opacity:.85;transition-duration:.08s}
+.mna:active,.mc:active,.request-close:active,.chat-send:active{transform:scale(.9);opacity:.7;transition-duration:.08s}
+@media(hover:none){.wc:hover{transform:none}}
+
+/* --- Іконки та віджети --- */
+.isb{border-radius:22.4%}
+.wc{border-radius:1.25rem}
+.hero{border-radius:1.75rem}
+
+/* --- Bottom sheet замість повноекранної картки --- */
+.mcc{
+  background:rgba(0,0,0,0);opacity:1;
+  transition:background-color .45s var(--ios),visibility 0s linear .55s;
+}
+.mcc.act{background:rgba(0,0,0,.4);transition:background-color .45s var(--ios),visibility 0s}
+.mo{
+  top:calc(var(--sat) + 2.25rem);right:0;bottom:0;left:0;inset-block-start:calc(var(--sat) + 2.25rem);
+  border-radius:1.75rem 1.75rem 0 0;overflow:hidden;
+  box-shadow:0 -.5rem 2rem rgba(0,0,0,.18);
+  translate:0 100%;
+  transition:transform .5s var(--ios),opacity .3s,translate .55s var(--ios);
+}
+.mcc.act .mo{translate:0 0}
+.mo::before{
+  content:"";position:absolute;top:.5rem;left:50%;z-index:12;
+  width:2.25rem;height:.3125rem;border-radius:.25rem;
+  background:rgba(120,130,140,.42);transform:translateX(-50%);pointer-events:none;
+}
+.mbox{padding-top:2rem;overscroll-behavior:contain}
+.mc{
+  top:.875rem;right:.875rem;width:1.875rem;height:1.875rem;
+  border:0;background:rgba(120,130,140,.2);color:var(--tm);
+  font-size:1.25rem;box-shadow:none;
+}
+.mna{width:2.5rem;height:2.5rem;border:0;background:rgba(120,130,140,.14)}
+@media(min-width:34rem){.mo{left:50%;right:auto;width:32rem;margin-left:-16rem}}
+
+/* Ефект iOS: сторінка під шитом трохи зменшується */
+.cw{transform-origin:50% 0;transition:transform .55s var(--ios),border-radius .55s var(--ios)}
+body.sheet-open .cw{transform:scale(.94) translateY(.25rem);border-radius:1.5rem}
+
+/* --- Action sheet для оплати --- */
+.mpo{
+  display:flex;align-items:flex-end;justify-content:center;
+  padding:.5rem .5rem calc(.5rem + var(--sab));
+  background:rgba(0,0,0,0);backdrop-filter:none;-webkit-backdrop-filter:none;
+  visibility:hidden;transition:background-color .4s var(--ios),visibility 0s linear .5s;
+}
+.mpo.act{visibility:visible;background:rgba(0,0,0,.35);transition:background-color .4s var(--ios),visibility 0s}
+.mpb{
+  max-width:26rem;padding:0;background:transparent;box-shadow:none;overflow:visible;
+  display:flex;flex-direction:column;gap:.5rem;
+  transform:translateY(calc(100% + 1rem));transition:transform .5s var(--ios);
+}
+.mpo.act .mpb{transform:none}
+.asg{
+  border-radius:.875rem;overflow:hidden;
+  background:rgba(246,246,248,.94);
+  backdrop-filter:blur(1.5rem) saturate(180%);-webkit-backdrop-filter:blur(1.5rem) saturate(180%);
+}
+.dark .asg{background:rgba(44,44,46,.94)}
+.mpb .mt{text-align:center;font-size:.8125rem;font-weight:600;color:var(--tm);padding:.875rem 1rem .75rem}
+.pbtns{display:block;margin:0}
+.pbtn{
+  flex-direction:row;gap:.625rem;min-height:3.5625rem;border-radius:0;
+  background:none!important;color:#007AFF;font-size:1.25rem;font-weight:400;
+  border-top:.5px solid rgba(60,60,67,.29);
+}
+.dark .pbtn{color:#0A84FF;border-color:rgba(84,84,88,.6)}
+.pbtn:active{background:rgba(120,130,140,.18)!important;transform:none;opacity:1}
+.pbtn::before{content:"";width:1.5rem;height:1.5rem;border-radius:.4rem}
+.pbtn.privat::before{background:linear-gradient(145deg,#67D45B,#159C35)}
+.pbtn.mono::before{background:linear-gradient(145deg,#303034,#09090A)}
+.mpb .mc{
+  position:static;width:100%;height:3.5625rem;border:0;border-radius:.875rem;
+  background:rgba(246,246,248,.97);color:#007AFF;font-size:1.25rem;font-weight:600;box-shadow:none;
+}
+.dark .mpb .mc{background:#2C2C2E;color:#0A84FF}
+
+/* --- Segmented control з рухомим «повзунком» --- */
+.calc-s{position:relative;padding:2px;border-radius:.5625rem}
+.seg-thumb{
+  position:absolute;top:2px;bottom:2px;left:2px;z-index:0;
+  border-radius:.4375rem;background:#fff;
+  box-shadow:0 3px 8px rgba(0,0,0,.12),0 3px 1px rgba(0,0,0,.04);
+  transition:transform .35s var(--ios);
+}
+.dark .seg-thumb{background:#636366}
+.calc-b{position:relative;z-index:1;min-height:1.75rem;transition:font-weight .2s}
+.calc-b.act,.dark .calc-b.act{background:transparent;box-shadow:none}
+
+/* --- Фотопереглядач як у «Фото» --- */
+.lb{background:rgba(0,0,0,.94);transition:opacity .3s var(--ios),background-color .3s}
+.lb img{transition:transform .4s var(--ios),opacity .25s;border-radius:.5rem}
+
+/* --- Чат у стилі iMessage --- */
+.request-modal,.request-box,.chat-body{background:var(--chat-bg)}
+.request-modal.act .request-box{animation:sheetUp .55s var(--ios)}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
+.request-head{
+  position:relative;justify-content:center;
+  padding:calc(.5rem + var(--sat)) 3rem .5rem;
+  background:var(--gb);backdrop-filter:blur(1.25rem) saturate(180%);-webkit-backdrop-filter:blur(1.25rem) saturate(180%);
+  border-bottom:.5px solid rgba(120,130,140,.3);
+}
+.request-head-info{display:flex;flex-direction:column;align-items:center;gap:.1875rem}
+.request-avatar{width:2.5rem;height:2.5rem;border-radius:50%;object-fit:contain;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.request-title{font-size:.6875rem;font-weight:500;color:var(--mt)}
+.request-subtitle{display:none}
+.request-close{
+  position:absolute;right:.75rem;top:calc(.75rem + var(--sat));
+  width:1.875rem;height:1.875rem;border:0;background:rgba(120,130,140,.2);color:var(--tm);font-size:1.25rem;
+}
+.chat-progress{display:none}
+
+.chat-message{animation:none;margin-bottom:.5rem}
+.chat-bubble{position:relative;padding:.5rem .875rem;border-radius:1.125rem;font-size:1rem;line-height:1.3}
+.bot .chat-bubble{color:var(--bub-in-t);background:var(--bub-in);border-radius:1.125rem;transform-origin:0 100%;animation:bubbleIn .5s var(--ios)}
+.user .chat-bubble{color:#fff;background:var(--bub-out);border-radius:1.125rem;transform-origin:100% 100%;animation:bubbleIn .5s var(--ios)}
+@keyframes bubbleIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+/* «хвостики» бульбашок */
+.bot .chat-bubble::before,.user .chat-bubble::before{content:"";position:absolute;bottom:0;height:1.25rem;width:1.25rem;z-index:0}
+.bot .chat-bubble::after,.user .chat-bubble::after{content:"";position:absolute;bottom:0;width:.625rem;height:1.25rem;background:var(--chat-bg);z-index:1}
+.bot .chat-bubble::before{left:-.5rem;background:var(--bub-in);border-bottom-right-radius:1rem .9rem}
+.bot .chat-bubble::after{left:-.625rem;border-bottom-right-radius:.625rem}
+.user .chat-bubble::before{right:-.5rem;background:var(--bub-out);border-bottom-left-radius:1rem .9rem}
+.user .chat-bubble::after{right:-.625rem;border-bottom-left-radius:.625rem}
+.chat-message.bot:has(+ .chat-message.bot) .chat-bubble::before,
+.chat-message.bot:has(+ .chat-message.bot) .chat-bubble::after,
+.chat-message.user:has(+ .chat-message.user) .chat-bubble::before,
+.chat-message.user:has(+ .chat-message.user) .chat-bubble::after{display:none}
+
+/* швидкі відповіді — контурні капсули, як у Apple Business Chat */
+.chat-options{flex-direction:row;flex-wrap:wrap;justify-content:flex-end;gap:.4375rem;animation:none}
+.chat-option{
+  width:auto;padding:.5rem .875rem;border:1px solid #007AFF;border-radius:1.25rem;
+  background:transparent;color:#007AFF;font-size:.9375rem;font-weight:500;text-align:center;
+}
+.dark .chat-option{background:transparent;border-color:#0A84FF;color:#0A84FF}
+.chat-option:active{background:rgba(0,122,255,.14);transform:scale(.96)}
+
+/* поле вводу як в iMessage */
+.chat-input-wrap{align-items:flex-end;gap:.5rem;animation:none}
+.chat-input{padding:.5rem .875rem;border:1px solid rgba(120,130,140,.4);border-radius:1.25rem;background:transparent}
+.dark .chat-input{background:transparent}
+.chat-send{flex:0 0 2rem;width:2rem;max-width:2rem;height:2rem;border-radius:50%;background:var(--bub-out);margin-bottom:.125rem}
+.chat-send svg{width:1rem;height:1rem;stroke-width:2.6}
+
+/* підсумок — «згруповані» картки iOS */
+.chat-summary{background:var(--chat-card);border:0;border-radius:.875rem}
+.chat-summary-title{color:var(--tm);font-weight:600}
+.chat-notes-wrap{background:transparent;border:0;padding:.5rem 0 0}
+.chat-final-btn.submit{background:#007AFF;color:#fff;border-radius:.875rem}
+.chat-final-btn.edit{background:rgba(120,130,140,.16);color:#007AFF}
+.chat-delivered{text-align:right;font-size:.6875rem;font-weight:600;color:var(--tm);margin:-.125rem .25rem .5rem}
+
+@media(prefers-reduced-motion:reduce){
+  body.sheet-open .cw{transform:none}
+  .mo,.mpb,.seg-thumb,.lb img{transition-duration:.01s}
+  .request-modal.act .request-box,.bot .chat-bubble,.user .chat-bubble{animation-duration:.01s}
+}
