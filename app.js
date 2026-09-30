@@ -6,6 +6,11 @@
   const lock = () => { document.body.style.overflow = 'hidden'; };
   const unlock = () => { document.body.style.overflow = ''; };
 
+  /* ============ Referral / автозапуск заявки ============ */
+  const URL_PARAMS = new URLSearchParams(window.location.search);
+  const REFERRAL_TOKEN = String(URL_PARAMS.get('ref') || '').trim();
+  const AUTO_OPEN_REQUEST = URL_PARAMS.get('request') === '1';
+
   /* ============ Нормалізація телефону ============ */
   function normalizeUAPhone(input) {
     const digits = String(input || '').replace(/\D/g, '');
@@ -535,7 +540,8 @@
       consultationDate: REQUEST_STATE.consultationDate,
       project: REQUEST_STATE.project,
       notes: REQUEST_STATE.notes,
-      source: 'SA-MASTER.PRO'
+      source: 'SA-MASTER.PRO',
+      ref: REFERRAL_TOKEN
     };
 
     const controller = new AbortController();
@@ -736,6 +742,12 @@
     if (rc) rc.addEventListener('click', closeRequest);
     const rm = $('requestModal');
     if (rm) rm.addEventListener('click', (e) => { if (e.target === rm) closeRequest(); });
+
+    if (AUTO_OPEN_REQUEST) {
+      setTimeout(() => {
+        openRequest();
+      }, 150);
+    }
 
     if (galleryWindow) {
       galleryWindow.addEventListener('mouseenter', stopAutoplay);
