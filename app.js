@@ -548,6 +548,7 @@
     consultationFormat: '',
     servicePrice: '',
     notes: '',
+    workDescription: '',
     projectFile: null,
 
     requestCode: '',
@@ -559,7 +560,11 @@
     complex: 'Комплексний монтаж',
     local: 'Локальний монтаж',
     consultation: 'Консультація',
-    estimate: 'Прорахунок'
+    estimate: 'Прорахунок',
+    plumbing: '🔧 Монтаж сантехніки',
+    repair: '🚿 Ремонт або заміна',
+    emergency: '🚨 Аварійний виклик',
+    other_job: '📋 Інше'
   };
 
   let chatStep = 0;
@@ -944,7 +949,8 @@
 
 
   function addFileInput(
-    onDone
+    onDone,
+    options = {}
   ) {
     const body =
       $('chatBody');
@@ -985,15 +991,15 @@
       'chat-file-actions';
 
     title.textContent =
-      'Прикріпіть дизайн-проєкт';
+      options.title || 'Прикріпіть дизайн-проєкт';
 
     hint.textContent =
-      'PDF, фото, Word, Excel або ZIP. Максимальний розмір — 25 МБ.';
+      options.hint || 'PDF, фото, Word, Excel або ZIP. Максимальний розмір — 25 МБ.';
 
     input.type = 'file';
 
     input.accept =
-      '.pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx,.zip,.txt';
+      options.accept || '.pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx,.zip,.txt';
 
     pick.type = 'button';
 
@@ -1001,7 +1007,7 @@
       'chat-file-pick';
 
     pick.textContent =
-      'Обрати файл';
+      options.pickLabel || 'Обрати файл';
 
     skip.type = 'button';
 
@@ -1009,7 +1015,7 @@
       'chat-file-skip';
 
     skip.textContent =
-      'Надішлю пізніше';
+      options.skipLabel || 'Надішлю пізніше';
 
     pick.addEventListener(
       'click',
@@ -1157,43 +1163,153 @@
 
   function askType() {
     chatStep = 0;
-
     updateProgress();
 
-    chatBot(
-      requestText(
-        'Вітаю. Поставлю кілька коротких запитань, щоб підготувати заявку.',
-        'Передайте дані заявки від замовника.'
-      )
-    );
+    if (MASTER_TRANSFER_MODE) {
+      chatBot('Передайте заявку від замовника. Це займе менше хвилини.');
+      chatBot('Що потрібно зробити?');
+      addOptions(
+        [
+          { value: 'plumbing', label: '🔧 Монтаж сантехніки' },
+          { value: 'repair', label: '🚿 Ремонт або заміна' },
+          { value: 'emergency', label: '🚨 Аварійний виклик' },
+          { value: 'other_job', label: '📋 Інше' }
+        ],
+        afterType
+      );
+      return;
+    }
 
-    chatBot(
-      requestText('Що вас цікавить?', 'Який тип робіт потрібен?')
-    );
-
+    chatBot('Вітаю. Поставлю кілька коротких запитань, щоб підготувати заявку.');
+    chatBot('Що вас цікавить?');
     addOptions(
       [
-        {
-          value: 'complex',
-          label: 'Комплексний монтаж'
-        },
-        {
-          value: 'local',
-          label: 'Локальний монтаж'
-        },
-        {
-          value: 'consultation',
-          label: 'Консультація'
-        },
-        {
-          value: 'estimate',
-          label: 'Прорахунок'
-        }
+        { value: 'complex', label: 'Комплексний монтаж' },
+        { value: 'local', label: 'Локальний монтаж' },
+        { value: 'consultation', label: 'Консультація' },
+        { value: 'estimate', label: 'Прорахунок' }
       ],
       afterType
     );
   }
 
+
+  function askMasterLocation() {
+    chatStep = 1;
+    updateProgress();
+    chatBot('Де об’єкт?');
+    addInput(
+      'ЖК / район / адреса',
+      'text',
+      (value) => {
+        saveBack(askMasterLocation);
+        REQUEST_STATE.location = value;
+        askMasterDescription();
+      }
+    );
+  }
+
+
+  function askMasterDescription() {
+    chatStep = 2;
+    updateProgress();
+    chatBot('Коротко опишіть, що потрібно зробити.');
+    addInput(
+      'Наприклад: замінити бойлер 80 л',
+      'text',
+      (value) => {
+        saveBack(askMasterDescription);
+        REQUEST_STATE.workDescription = value;
+        askMasterTiming();
+      }
+    );
+  }
+
+
+  function askMasterTiming() {
+    chatStep = 3;
+    updateProgress();
+    chatBot('Коли потрібно виконати роботу?');
+    addOptions(
+      [
+        { value: 'Сьогодні', label: '🔥 Сьогодні' },
+        { value: 'Завтра', label: 'Завтра' },
+        { value: 'Найближчими днями', label: 'Найближчими днями' },
+        { value: 'Дата не визначена', label: 'Дата не визначена' }
+      ],
+      (value, label) => {
+        saveBack(askMasterTiming);
+        REQUEST_STATE.timing = value;
+        chatUser(label);
+        askMasterName();
+      }
+    );
+  }
+
+
+  function askMasterName() {
+    chatStep = 4;
+    updateProgress();
+    chatBot('Як звати замовника?');
+    addInput(
+      'Ім’я замовника',
+      'text',
+      (value) => {
+        saveBack(askMasterName);
+        REQUEST_STATE.name = value;
+        askMasterPhone();
+      }
+    );
+  }
+
+
+  function askMasterPhone() {
+    chatStep = 5;
+    updateProgress();
+    chatBot('Вкажіть номер телефону замовника.');
+    addInput(
+      'Наприклад: 0979111871',
+      'tel',
+      (value) => {
+        saveBack(askMasterPhone);
+        REQUEST_STATE.phone = value;
+        askMasterPhoto();
+      },
+      (value) => {
+        const digits = String(value || '').replace(/\D/g, '');
+        return digits.length >= 9 && digits.length <= 13;
+      }
+    );
+  }
+
+
+  function askMasterPhoto() {
+    chatStep = 5;
+    updateProgress();
+    chatBot('Можете додати фото об’єкта — це необов’язково.');
+    addFileInput(
+      (file) => {
+        saveBack(askMasterPhoto);
+        if (file) {
+          REQUEST_STATE.projectFile = file;
+          REQUEST_STATE.project = 'Фото до заявки';
+          chatUser(`Фото: ${file.name}`);
+        } else {
+          REQUEST_STATE.projectFile = null;
+          REQUEST_STATE.project = '';
+          chatUser('Без фото');
+        }
+        finishChat();
+      },
+      {
+        title: '📷 Фото об’єкта',
+        hint: 'Фото допоможе майстру швидше оцінити роботу. До 25 МБ.',
+        accept: 'image/*,.heic,.heif',
+        pickLabel: '📷 Додати фото',
+        skipLabel: 'Пропустити'
+      }
+    );
+  }
 
   function askName() {
     chatStep = 1;
@@ -1723,6 +1839,11 @@
       REQUEST_STATE.typeLabel
     );
 
+    if (MASTER_TRANSFER_MODE) {
+      askMasterLocation();
+      return;
+    }
+
     askName();
   }
 
@@ -1836,7 +1957,7 @@
       'chat-summary-title';
 
     title.textContent =
-      requestText('Ваша заявка', 'Заявка замовника');
+      requestText('Ваша заявка', 'Передача заявки');
 
     summary.appendChild(
       title
@@ -1883,12 +2004,16 @@
 
 
     row(
-      'Тип',
+      MASTER_TRANSFER_MODE ? 'Робота' : 'Тип',
       REQUEST_STATE.typeLabel
     );
 
+    if (MASTER_TRANSFER_MODE && REQUEST_STATE.workDescription) {
+      row('Опис', REQUEST_STATE.workDescription);
+    }
+
     row(
-      "Ім’я",
+      MASTER_TRANSFER_MODE ? 'Замовник' : "Ім’я",
       REQUEST_STATE.name
     );
 
@@ -1934,14 +2059,14 @@
       REQUEST_STATE.timing
     ) {
       row(
-        'Початок',
+        MASTER_TRANSFER_MODE ? 'Коли' : 'Початок',
         REQUEST_STATE.timing
       );
     }
 
 
     REQUEST_STATE.servicePrice =
-      servicePriceText();
+      MASTER_TRANSFER_MODE ? '' : servicePriceText();
 
 
     if (
@@ -2025,10 +2150,10 @@
       'chat-final-btn submit';
 
     edit.textContent =
-      'Змінити';
+      MASTER_TRANSFER_MODE ? '← Змінити' : 'Змінити';
 
     submit.textContent =
-      'Надіслати';
+      MASTER_TRANSFER_MODE ? '🤝 Передати заявку' : 'Надіслати';
 
 
     edit.addEventListener(
@@ -2175,6 +2300,9 @@
 
 
         const notes = [
+          MASTER_TRANSFER_MODE && REQUEST_STATE.workDescription
+            ? `Опис роботи: ${REQUEST_STATE.workDescription}`
+            : '',
           REQUEST_STATE.servicePrice
             ? `Вартість послуги: ${REQUEST_STATE.servicePrice}`
             : '',
