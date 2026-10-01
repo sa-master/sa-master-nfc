@@ -550,10 +550,12 @@
     notes: '',
     workDescription: '',
     projectFile: null,
+    photoFile: null,
 
     requestCode: '',
     uploadToken: '',
-    fileUploaded: false
+    fileUploaded: false,
+    photoUploaded: false
   };
 
   const TYPE_LABELS = {
@@ -997,6 +999,8 @@
       options.hint || 'PDF, фото, Word, Excel або ZIP. Максимальний розмір — 25 МБ.';
 
     input.type = 'file';
+    input.hidden = true;
+    input.style.display = 'none';
 
     input.accept =
       options.accept || '.pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx,.zip,.txt';
@@ -1004,7 +1008,7 @@
     pick.type = 'button';
 
     pick.className =
-      'chat-file-pick';
+      'chat-file-pick chat-option';
 
     pick.textContent =
       options.pickLabel || 'Обрати файл';
@@ -1013,6 +1017,30 @@
 
     skip.className =
       'chat-file-skip';
+
+    /* Акуратний блок завантаження замість системного file input */
+    wrap.style.display = 'grid';
+    wrap.style.gap = '10px';
+    wrap.style.padding = '16px';
+    wrap.style.borderRadius = '18px';
+    wrap.style.background = 'rgba(255,255,255,.055)';
+    title.style.fontWeight = '700';
+    title.style.fontSize = '18px';
+    hint.style.opacity = '.68';
+    hint.style.fontSize = '14px';
+    hint.style.lineHeight = '1.35';
+    actions.style.display = 'grid';
+    actions.style.gridTemplateColumns = '1fr 1fr';
+    actions.style.gap = '10px';
+    pick.style.gridColumn = '1 / -1';
+    pick.style.width = '100%';
+    pick.style.margin = '0';
+    skip.style.minHeight = '44px';
+    skip.style.border = '0';
+    skip.style.borderRadius = '12px';
+    skip.style.background = 'rgba(255,255,255,.08)';
+    skip.style.color = 'inherit';
+    skip.style.font = 'inherit';
 
     skip.textContent =
       options.skipLabel || 'Надішлю пізніше';
@@ -1095,13 +1123,13 @@
       .keys(REQUEST_STATE)
       .forEach((key) => {
         REQUEST_STATE[key] =
-          key === 'projectFile'
+          (key === 'projectFile' || key === 'photoFile')
             ? null
             : '';
       });
 
-    REQUEST_STATE.fileUploaded =
-      false;
+    REQUEST_STATE.fileUploaded = false;
+    REQUEST_STATE.photoUploaded = false;
 
     chatStep = 0;
 
@@ -1220,7 +1248,54 @@
       (value) => {
         saveBack(askMasterDescription);
         REQUEST_STATE.workDescription = value;
+        askMasterProject();
+      }
+    );
+  }
+
+
+  function askMasterProject() {
+    chatStep = 3;
+    updateProgress();
+    chatBot('Чи є у замовника дизайн-проєкт?');
+    addOptions(
+      [
+        { value: 'Є', label: '✅ Є' },
+        { value: 'Немає', label: '❌ Немає' },
+        { value: 'Не знаю', label: '❓ Не знаю' }
+      ],
+      (value, label) => {
+        saveBack(askMasterProject);
+        REQUEST_STATE.project = value;
+        chatUser(label);
+        if (value === 'Є') {
+          askMasterProjectFile();
+        } else {
+          REQUEST_STATE.projectFile = null;
+          askMasterTiming();
+        }
+      }
+    );
+  }
+
+
+  function askMasterProjectFile() {
+    chatStep = 3;
+    updateProgress();
+    addFileInput(
+      (file) => {
+        saveBack(askMasterProjectFile);
+        REQUEST_STATE.projectFile = file || null;
+        if (file) chatUser(`Проєкт: ${file.name}`);
+        else chatUser('Проєкт без файлу');
         askMasterTiming();
+      },
+      {
+        title: '📐 Файл дизайн-проєкту',
+        hint: 'Необов’язково · PDF, фото або документ · до 25 МБ.',
+        accept: 'image/*,.heic,.heif,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt',
+        pickLabel: '📎 Додати проєкт',
+        skipLabel: 'Без файлу'
       }
     );
   }
@@ -1286,24 +1361,21 @@
   function askMasterPhoto() {
     chatStep = 5;
     updateProgress();
-    chatBot('Можете додати фото об’єкта — це необов’язково.');
     addFileInput(
       (file) => {
         saveBack(askMasterPhoto);
         if (file) {
-          REQUEST_STATE.projectFile = file;
-          REQUEST_STATE.project = 'Фото до заявки';
+          REQUEST_STATE.photoFile = file;
           chatUser(`Фото: ${file.name}`);
         } else {
-          REQUEST_STATE.projectFile = null;
-          REQUEST_STATE.project = '';
+          REQUEST_STATE.photoFile = null;
           chatUser('Без фото');
         }
         finishChat();
       },
       {
         title: '📷 Фото об’єкта',
-        hint: 'Фото допоможе майстру швидше оцінити роботу. До 25 МБ.',
+        hint: 'Необов’язково · фото допоможе майстру швидше оцінити роботу · до 25 МБ.',
         accept: 'image/*,.heic,.heif',
         pickLabel: '📷 Додати фото',
         skipLabel: 'Пропустити'
@@ -2043,15 +2115,16 @@
     }
 
 
-    if (
-      REQUEST_STATE.project
-    ) {
-      row(
-        'Проєкт',
-        REQUEST_STATE.projectFile
-          ? REQUEST_STATE.projectFile.name
-          : REQUEST_STATE.project
-      );
+    if (REQUEST_STATE.project) {
+      row('Дизайн-проєкт', REQUEST_STATE.project);
+    }
+
+    if (MASTER_TRANSFER_MODE && REQUEST_STATE.projectFile) {
+      row('Файл проєкту', REQUEST_STATE.projectFile.name);
+    }
+
+    if (MASTER_TRANSFER_MODE && REQUEST_STATE.photoFile) {
+      row('Фото об’єкта', REQUEST_STATE.photoFile.name);
     }
 
 
@@ -2248,25 +2321,14 @@
   }
 
 
-  async function uploadProject() {
-    const form =
-      new FormData();
-
-    form.append(
-      'file',
-      REQUEST_STATE.projectFile
-    );
+  async function uploadRequestFile(file, kind) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('kind', kind);
 
     return requestJson(
-      `${WORKER_URL}/request/${encodeURIComponent(
-        REQUEST_STATE.requestCode
-      )}/project?token=${encodeURIComponent(
-        REQUEST_STATE.uploadToken
-      )}`,
-      {
-        method: 'POST',
-        body: form
-      },
+      `${WORKER_URL}/request/${encodeURIComponent(REQUEST_STATE.requestCode)}/project?token=${encodeURIComponent(REQUEST_STATE.uploadToken)}`,
+      { method: 'POST', body: form },
       45000
     );
   }
@@ -2340,7 +2402,9 @@
           notes,
 
           source:
-            'SA-MASTER.PRO'
+            MASTER_TRANSFER_MODE
+              ? 'SA-MASTER Jobs'
+              : 'SA-MASTER.PRO'
         };
 
 
@@ -2385,17 +2449,16 @@
       }
 
 
-      if (
-        REQUEST_STATE.projectFile &&
-        !REQUEST_STATE.fileUploaded
-      ) {
-        button.textContent =
-          'Завантажуємо проєкт…';
+      if (REQUEST_STATE.projectFile && !REQUEST_STATE.fileUploaded) {
+        button.textContent = 'Завантажуємо проєкт…';
+        await uploadRequestFile(REQUEST_STATE.projectFile, 'project');
+        REQUEST_STATE.fileUploaded = true;
+      }
 
-        await uploadProject();
-
-        REQUEST_STATE.fileUploaded =
-          true;
+      if (MASTER_TRANSFER_MODE && REQUEST_STATE.photoFile && !REQUEST_STATE.photoUploaded) {
+        button.textContent = 'Завантажуємо фото…';
+        await uploadRequestFile(REQUEST_STATE.photoFile, 'photo');
+        REQUEST_STATE.photoUploaded = true;
       }
 
 
