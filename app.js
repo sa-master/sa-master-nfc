@@ -1,821 +1,2947 @@
-    (function () {
-      'use strict';
+(function () {
+  'use strict';
 
-      /* ============ Утиліти ============ */
-      const $ = (id) => document.getElementById(id);
-      const lock = () => { document.body.style.overflow = 'hidden'; };
-      const unlock = () => { document.body.style.overflow = ''; };
+  /* =========================================================
+   * БАЗОВІ УТИЛІТИ
+   * ========================================================= */
 
-      /* ============ Referral / автозапуск заявки ============ */
-      const URL_PARAMS = new URLSearchParams(window.location.search);
-      const REFERRAL_TOKEN = String(URL_PARAMS.get('ref') || '').trim();
-      const AUTO_OPEN_REQUEST = URL_PARAMS.get('request') === '1';
-      const REQUEST_MODE = String(URL_PARAMS.get('mode') || '').trim().toLowerCase();
-      const MASTER_REQUEST_MODE = REQUEST_MODE === 'master' && !!REFERRAL_TOKEN;
+  const $ = (id) => document.getElementById(id);
 
-      /* ============ Нормалізація телефону ============ */
-      function normalizeUAPhone(input) {
-        const digits = String(input || '').replace(/\D/g, '');
-        if (!digits) return '';
-        if (digits.length === 12 && digits.startsWith('380')) return '+' + digits;
-        if (digits.length === 11 && digits.startsWith('80'))  return '+3' + digits;
-        if (digits.length === 10 && digits.startsWith('0'))   return '+38' + digits;
-        if (digits.length === 9)                              return '+380' + digits;
-        if (digits.length >= 10 && digits.length <= 13)       return '+' + digits;
+  const lock = () => {
+    document.body.style.overflow = 'hidden';
+  };
+
+  const unlock = () => {
+    document.body.style.overflow = '';
+  };
+
+  function normalizeUAPhone(input) {
+    const digits = String(input || '').replace(/\D/g, '');
+
+    if (!digits) return '';
+
+    if (digits.length === 12 && digits.startsWith('380')) {
+      return '+' + digits;
+    }
+
+    if (digits.length === 11 && digits.startsWith('80')) {
+      return '+3' + digits;
+    }
+
+    if (digits.length === 10 && digits.startsWith('0')) {
+      return '+38' + digits;
+    }
+
+    if (digits.length === 9) {
+      return '+380' + digits;
+    }
+
+    if (digits.length >= 10 && digits.length <= 13) {
+      return '+' + digits;
+    }
+
+    return '';
+  }
+
+
+  /* =========================================================
+   * REFERRAL / ДЖЕРЕЛО ЗАЯВКИ
+   *
+   * Майстер отримує персональне посилання:
+   *
+   * https://sa-master.pro/?ref=TOKEN
+   *
+   * Сайт:
+   * 1. читає TOKEN;
+   * 2. зберігає його локально на 30 днів;
+   * 3. передає Worker як referralToken;
+   * 4. Worker сам перевіряє TOKEN та визначає master_id.
+   * ========================================================= */
+
+  const REFERRAL_STORAGE_KEY = 'saMasterReferralV1';
+  const REFERRAL_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+
+  /*
+   * Режим передачі заявки зареєстрованим майстром.
+   * Вмикається ТІЛЬКИ для персонального URL з ?ref=...&request=1.
+   * Збережений referral у localStorage не перемикає звичайну клієнтську форму.
+   */
+  function isMasterTransferMode() {
+    try {
+      const url = new URL(window.location.href);
+      return Boolean(cleanReferralToken(url.searchParams.get('ref'))) &&
+        url.searchParams.get('request') === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  const MASTER_TRANSFER_MODE = isMasterTransferMode();
+
+  function requestText(clientText, masterText) {
+    return MASTER_TRANSFER_MODE ? masterText : clientText;
+  }
+
+  function cleanReferralToken(value) {
+    const token = String(value || '').trim();
+
+    if (!token) return '';
+
+    /*
+     * Дозволяємо тільки безпечний набір символів.
+     * crypto.randomUUID без дефісів також сюди підходить.
+     */
+    if (!/^[A-Za-z0-9_-]{6,120}$/.test(token)) {
+      return '';
+    }
+
+    return token;
+  }
+
+  function saveReferralToken(token) {
+    const cleanToken = cleanReferralToken(token);
+
+    if (!cleanToken) return;
+
+    const data = {
+      token: cleanToken,
+      savedAt: Date.now(),
+      expiresAt: Date.now() + REFERRAL_TTL_MS
+    };
+
+    try {
+      localStorage.setItem(
+        REFERRAL_STORAGE_KEY,
+        JSON.stringify(data)
+      );
+    } catch (error) {
+      console.warn('Не вдалося зберегти referral token:', error);
+    }
+  }
+
+  function getStoredReferralToken() {
+    try {
+      const raw = localStorage.getItem(REFERRAL_STORAGE_KEY);
+
+      if (!raw) return '';
+
+      const data = JSON.parse(raw);
+
+      const token = cleanReferralToken(data?.token);
+      const expiresAt = Number(data?.expiresAt || 0);
+
+      if (!token || !expiresAt) {
+        localStorage.removeItem(REFERRAL_STORAGE_KEY);
         return '';
       }
 
-      /* ============ Модальна карусель ============ */
-      const MODALS = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
-      let currentModal = 0;
-
-      const modalEls = {};
-      MODALS.forEach((id) => { modalEls[id] = $(id); });
-
-      function goModal(i) {
-        currentModal = Math.max(0, Math.min(MODALS.length - 1, i));
-        MODALS.forEach((id, x) => {
-          const m = modalEls[id];
-          if (!m) return;
-          const active = x === currentModal;
-          m.classList.toggle('act', active);
-          m.style.zIndex = active ? '2' : '1';
-          m.style.opacity = active ? '1' : '0';
-          m.style.visibility = active ? 'visible' : 'hidden';
-          m.style.transform = active
-            ? 'translateX(0)'
-            : (x < currentModal ? 'translateX(-100%)' : 'translateX(100%)');
-          m.setAttribute('aria-hidden', String(!active));
-        });
-        document.querySelectorAll('.mp').forEach((p) => {
-          p.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('act', i === currentModal));
-        });
+      if (Date.now() > expiresAt) {
+        localStorage.removeItem(REFERRAL_STORAGE_KEY);
+        return '';
       }
 
-      function openModal(id) {
-        if (id === 'modalPayment') {
-          const pm = $('modalPayment');
-          if (pm) { pm.classList.add('act'); pm.setAttribute('aria-hidden', 'false'); lock(); }
-          return;
-        }
-        const mc = $('modalCarousel');
-        if (mc) {
-          mc.classList.add('act');
-          mc.style.pointerEvents = 'auto';
-          mc.setAttribute('aria-hidden', 'false');
-        }
-        const ix = MODALS.indexOf(id);
-        if (ix !== -1) goModal(ix);
-        lock();
-      }
+      return token;
 
-      function closeModal(id) {
-        if (id === 'modalPayment') {
-          const pm = $('modalPayment');
-          if (pm) { pm.classList.remove('act'); pm.setAttribute('aria-hidden', 'true'); unlock(); }
-          return;
-        }
-        const mc = $('modalCarousel');
-        if (mc) {
-          mc.classList.remove('act');
-          mc.style.pointerEvents = 'none';
-          mc.setAttribute('aria-hidden', 'true');
-          unlock();
-        }
-      }
+    } catch (error) {
+      console.warn('Не вдалося прочитати referral token:', error);
 
-      /* ============ Галерея ============ */
-      const GALLERY_SIZE = 8;
-      let currentSlide = 0;
-      let galleryTimer = null;
-      const AUTOPLAY_MS = 4500;
+      try {
+        localStorage.removeItem(REFERRAL_STORAGE_KEY);
+      } catch {}
 
-      const galleryTrack = $('galleryTrack');
-      const galleryCounter = $('galleryCounter');
-      const galleryDots = Array.from(document.querySelectorAll('.gdot'));
-      const galleryWindow = $('galleryWindow');
+      return '';
+    }
+  }
 
-      function updateGallery(animate = true) {
-        if (!galleryTrack) return;
-        galleryTrack.style.transition = animate
-          ? 'transform .5s cubic-bezier(.22,.61,.36,1)'
-          : 'none';
-        galleryTrack.style.transform = `translate3d(-${currentSlide * 100}%, 0, 0)`;
-        if (galleryCounter) galleryCounter.textContent = `${currentSlide + 1} / ${GALLERY_SIZE}`;
-        galleryDots.forEach((d, i) => {
-          const active = i === currentSlide;
-          d.classList.toggle('act', active);
-          d.setAttribute('aria-selected', String(active));
-        });
-      }
+  function captureReferralFromUrl() {
+    try {
+      const url = new URL(window.location.href);
 
-      function nextSlide() {
-        currentSlide = (currentSlide + 1) % GALLERY_SIZE;
-        updateGallery();
-      }
-      function prevSlide() {
-        currentSlide = (currentSlide - 1 + GALLERY_SIZE) % GALLERY_SIZE;
-        updateGallery();
-      }
-      function startAutoplay() {
-        stopAutoplay();
-        galleryTimer = setInterval(nextSlide, AUTOPLAY_MS);
-      }
-      function stopAutoplay() {
-        if (galleryTimer) { clearInterval(galleryTimer); galleryTimer = null; }
-      }
+      const token = cleanReferralToken(
+        url.searchParams.get('ref')
+      );
 
-      /* Свайп галереї */
-      let galleryStartX = 0;
-      let galleryStartY = 0;
-      let gallerySwiping = false;
+      if (!token) return;
 
-      function bindGallerySwipe() {
-        if (!galleryWindow) return;
-        galleryWindow.addEventListener('touchstart', (e) => {
-          if (e.touches.length !== 1) return;
-          galleryStartX = e.touches[0].clientX;
-          galleryStartY = e.touches[0].clientY;
-          gallerySwiping = true;
-          stopAutoplay();
-        }, { passive: true });
+      /*
+       * Новий валідний ?ref= має пріоритет.
+       * Тобто якщо клієнт відкрив персональне посилання
+       * іншого майстра — запам'ятовується новий referral.
+       */
+      saveReferralToken(token);
 
-        galleryWindow.addEventListener('touchend', (e) => {
-          if (!gallerySwiping) return;
-          gallerySwiping = false;
-          const dx = e.changedTouches[0].clientX - galleryStartX;
-          const dy = e.changedTouches[0].clientY - galleryStartY;
-          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
-            if (dx < 0) nextSlide(); else prevSlide();
-          }
-          startAutoplay();
-        }, { passive: true });
-      }
+    } catch (error) {
+      console.warn('Не вдалося прочитати referral з URL:', error);
+    }
+  }
 
-      /* ============ Lightbox ============ */
-      let lightboxIndex = 0;
+  function getReferralToken() {
+    return getStoredReferralToken();
+  }
 
-      function openLightbox(i) {
-        lightboxIndex = Math.max(0, Math.min(GALLERY_SIZE - 1, i));
-        updateLightbox();
-        const lb = $('lightbox');
-        if (lb) { lb.classList.add('act'); lb.setAttribute('aria-hidden', 'false'); lock(); }
-      }
-      function closeLightbox() {
-        const lb = $('lightbox');
-        if (lb) { lb.classList.remove('act'); lb.setAttribute('aria-hidden', 'true'); unlock(); }
-      }
-      function updateLightbox() {
-        const img = $('lightboxImage');
-        const slides = document.querySelectorAll('.gs img');
-        if (!img || !slides[lightboxIndex]) return;
-        img.src = slides[lightboxIndex].src;
-        img.alt = slides[lightboxIndex].alt;
-        const c = $('lightboxCounter');
-        if (c) c.textContent = `${lightboxIndex + 1} / ${GALLERY_SIZE}`;
-      }
 
-      /* ============ Чат-заявка ============ */
-      const REQUEST_STATE = {
-        type: '', typeLabel: '', name: '', phone: '',
-        location: '', timing: '', project: '', consultationDate: '',
-        notes: ''
-      };
-      let chatStep = 0;
-      const CHAT_TOTAL_STEPS = 6;
+  /* =========================================================
+   * МОДАЛЬНА КАРУСЕЛЬ
+   * ========================================================= */
 
-      const TYPE_LABELS = {
-        complex: 'Комплексний монтаж',
-        local: 'Локальний монтаж',
-        consultation: 'Консультація',
-        estimate: 'Прорахунок'
-      };
+  const MODALS = [
+    'modalAbout',
+    'modalProcess',
+    'modalPrice',
+    'modalReviews'
+  ];
 
-      function chatScroll() {
-        const b = $('chatBody');
-        if (!b) return;
-        setTimeout(() => { b.scrollTop = b.scrollHeight; }, 50);
-      }
+  let currentModal = 0;
 
-      function chatMsg(text, who) {
-        const b = $('chatBody');
-        if (!b) return;
-        const row = document.createElement('div');
-        const bubble = document.createElement('div');
-        row.className = `chat-message ${who}`;
-        bubble.className = 'chat-bubble';
-        bubble.textContent = text;
-        row.appendChild(bubble);
-        b.appendChild(row);
-        chatScroll();
-      }
-      const chatBot = (t) => chatMsg(t, 'bot');
-      const chatUser = (t) => chatMsg(t, 'user');
+  const modalEls = {};
 
-      function updateProgress() {
-        const bar = $('chatProgressBar');
-        if (!bar) return;
-        bar.style.width = Math.max(5, Math.min(100, ((chatStep + 1) / CHAT_TOTAL_STEPS) * 100)) + '%';
-      }
+  MODALS.forEach((id) => {
+    modalEls[id] = $(id);
+  });
 
-      function addOptions(options) {
-        const b = $('chatBody');
-        if (!b) return;
-        const wrap = document.createElement('div');
-        wrap.className = 'chat-options';
-        options.forEach((o) => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'chat-option';
-          btn.textContent = o.label;
-          btn.dataset.chatValue = o.value;
-          wrap.appendChild(btn);
-        });
-        b.appendChild(wrap);
-        chatScroll();
-      }
+  function goModal(index) {
+    currentModal = Math.max(
+      0,
+      Math.min(MODALS.length - 1, index)
+    );
 
-      function addInput(placeholder, type, onDone, validate) {
-        const b = $('chatBody');
-        if (!b) return;
-        const wrap = document.createElement('div');
-        const input = document.createElement('input');
-        const send = document.createElement('button');
+    MODALS.forEach((id, position) => {
+      const modal = modalEls[id];
 
-        wrap.className = 'chat-input-wrap';
-        input.className = 'chat-input';
-        input.type = type || 'text';
-        input.placeholder = placeholder;
-        input.autocomplete = 'off';
-        input.setAttribute('aria-label', placeholder);
+      if (!modal) return;
 
-        const isTel = type === 'tel';
-        if (isTel) {
-          input.setAttribute('inputmode', 'text');
-          input.setAttribute('autocomplete', 'tel');
-          input.setAttribute('autocorrect', 'off');
-          input.setAttribute('autocapitalize', 'off');
-          input.setAttribute('spellcheck', 'false');
-          input.setAttribute('pattern', '[+0-9\\s\\-()]{9,}');
-        }
+      const active = position === currentModal;
 
-        if (isTel) {
-          input.addEventListener('blur', () => {
-            const normalized = normalizeUAPhone(input.value);
-            if (normalized) input.value = normalized;
+      modal.classList.toggle('act', active);
+
+      modal.style.zIndex = active ? '2' : '1';
+      modal.style.opacity = active ? '1' : '0';
+      modal.style.visibility = active
+        ? 'visible'
+        : 'hidden';
+
+      modal.style.transform = active
+        ? 'translateX(0)'
+        : (
+            position < currentModal
+              ? 'translateX(-100%)'
+              : 'translateX(100%)'
+          );
+
+      modal.setAttribute(
+        'aria-hidden',
+        String(!active)
+      );
+    });
+
+    document
+      .querySelectorAll('.mp')
+      .forEach((dots) => {
+        dots
+          .querySelectorAll('.dot')
+          .forEach((dot, index2) => {
+            dot.classList.toggle(
+              'act',
+              index2 === currentModal
+            );
           });
-        }
+      });
+  }
 
-        send.type = 'button';
-        send.className = 'chat-send';
-        send.setAttribute('aria-label', 'Надіслати');
-        send.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4z"/></svg>';
+  function openModal(id) {
+    if (id === 'modalPayment') {
+      const payment = $('modalPayment');
 
-        wrap.append(input, send);
-        b.appendChild(wrap);
-
-        let scrollTimer = null;
-        const scrollToInput = () => {
-          if (scrollTimer) clearTimeout(scrollTimer);
-          scrollTimer = setTimeout(() => {
-            b.scrollTop = b.scrollHeight;
-            wrap.scrollIntoView({ block: 'end', behavior: 'auto' });
-          }, 250);
-        };
-        input.addEventListener('focus', scrollToInput);
-        setTimeout(() => input.focus(), 50);
-
-        function submit() {
-          let value = input.value.trim();
-          if (!value) { input.focus(); return; }
-
-          if (isTel) {
-            const normalized = normalizeUAPhone(value);
-            if (!normalized) {
-              input.setAttribute('aria-invalid', 'true');
-              input.focus();
-              return;
-            }
-            value = normalized;
-          }
-
-          if (validate && !validate(value)) {
-            input.setAttribute('aria-invalid', 'true');
-            input.focus();
-            return;
-          }
-
-          wrap.remove();
-          chatUser(value);
-          onDone(value);
-        }
-        send.addEventListener('click', submit);
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') { e.preventDefault(); submit(); }
-        });
-
-        chatScroll();
-      }
-
-      function resetChat() {
-        const b = $('chatBody');
-        if (b) b.innerHTML = '';
-        Object.keys(REQUEST_STATE).forEach((k) => { REQUEST_STATE[k] = ''; });
-        chatStep = 0;
-        updateProgress();
-      }
-
-      function openRequest() {
-        const m = $('requestModal');
-        if (!m) return;
-
-        resetChat();
-
-        const title = m.querySelector('.request-title');
-        const subtitle = m.querySelector('.request-subtitle');
-        const page = document.querySelector('.cw');
-
-        if (MASTER_REQUEST_MODE) {
-          if (title) title.textContent = 'Передати заявку';
-          if (subtitle) subtitle.textContent = 'SA-MASTER Jobs';
-          if (page) page.style.visibility = 'hidden';
-          document.body.classList.add('master-request-mode');
-        } else {
-          if (title) title.textContent = 'Заявка SA-MASTER';
-          if (subtitle) subtitle.textContent = 'Кілька коротких запитань';
-          if (page) page.style.visibility = '';
-          document.body.classList.remove('master-request-mode');
-        }
-
-        document.body.classList.add('chat-open');
-        m.classList.add('act');
-        m.setAttribute('aria-hidden', 'false');
+      if (payment) {
+        payment.classList.add('act');
+        payment.setAttribute(
+          'aria-hidden',
+          'false'
+        );
         lock();
-
-        if (MASTER_REQUEST_MODE) {
-          chatBot('Передайте заявку замовника в SA-MASTER Jobs.');
-          chatBot('Оберіть, які роботи потрібні замовнику.');
-        } else {
-          chatBot('Вітаю. Щоб зрозуміти, чи можемо взяти ваш об’єкт у роботу, поставлю кілька коротких запитань.');
-          chatBot('Що вас цікавить?');
-        }
-        addOptions([
-          { value: 'complex', label: 'Комплексний монтаж' },
-          { value: 'local', label: 'Локальний монтаж' },
-          { value: 'consultation', label: 'Консультація' },
-          { value: 'estimate', label: 'Прорахунок' }
-        ]);
-        updateProgress();
       }
 
-      function closeRequest() {
-        const m = $('requestModal');
-        if (m) { m.classList.remove('act'); m.setAttribute('aria-hidden', 'true'); }
+      return;
+    }
 
-        const page = document.querySelector('.cw');
-        if (page) page.style.visibility = '';
+    const carousel = $('modalCarousel');
 
-        document.body.classList.remove('chat-open');
-        document.body.classList.remove('master-request-mode');
+    if (carousel) {
+      carousel.classList.add('act');
+      carousel.style.pointerEvents = 'auto';
+
+      carousel.setAttribute(
+        'aria-hidden',
+        'false'
+      );
+    }
+
+    const index = MODALS.indexOf(id);
+
+    if (index !== -1) {
+      goModal(index);
+    }
+
+    lock();
+  }
+
+  function closeModal(id) {
+    if (id === 'modalPayment') {
+      const payment = $('modalPayment');
+
+      if (payment) {
+        payment.classList.remove('act');
+
+        payment.setAttribute(
+          'aria-hidden',
+          'true'
+        );
+
         unlock();
       }
 
-      /* Кроки чату */
-      function askName() {
-        chatStep = 2;
-        chatBot('Як до вас звертатися?');
-        addInput("Ваше ім'я", 'text', (v) => {
-          REQUEST_STATE.name = v;
-          askPhone();
-        });
-        updateProgress();
+      return;
+    }
+
+    const carousel = $('modalCarousel');
+
+    if (carousel) {
+      carousel.classList.remove('act');
+
+      carousel.style.pointerEvents = 'none';
+
+      carousel.setAttribute(
+        'aria-hidden',
+        'true'
+      );
+
+      unlock();
+    }
+  }
+
+
+  /* =========================================================
+   * ГАЛЕРЕЯ
+   * ========================================================= */
+
+  const GALLERY_SIZE = 8;
+  const AUTOPLAY_MS = 4500;
+
+  let currentSlide = 0;
+  let galleryTimer = null;
+
+  const galleryTrack = $('galleryTrack');
+  const galleryCounter = $('galleryCounter');
+
+  const galleryDots = Array.from(
+    document.querySelectorAll('.gdot')
+  );
+
+  const galleryWindow = $('galleryWindow');
+
+  function updateGallery(animate = true) {
+    if (!galleryTrack) return;
+
+    galleryTrack.style.transition = animate
+      ? 'transform .5s cubic-bezier(.22,.61,.36,1)'
+      : 'none';
+
+    galleryTrack.style.transform =
+      `translate3d(-${currentSlide * 100}%, 0, 0)`;
+
+    if (galleryCounter) {
+      galleryCounter.textContent =
+        `${currentSlide + 1} / ${GALLERY_SIZE}`;
+    }
+
+    galleryDots.forEach((dot, index) => {
+      const active = index === currentSlide;
+
+      dot.classList.toggle(
+        'act',
+        active
+      );
+
+      dot.setAttribute(
+        'aria-selected',
+        String(active)
+      );
+    });
+  }
+
+  function nextSlide() {
+    currentSlide =
+      (currentSlide + 1) % GALLERY_SIZE;
+
+    updateGallery();
+  }
+
+  function prevSlide() {
+    currentSlide =
+      (currentSlide - 1 + GALLERY_SIZE) %
+      GALLERY_SIZE;
+
+    updateGallery();
+  }
+
+  function stopAutoplay() {
+    if (galleryTimer) {
+      clearInterval(galleryTimer);
+      galleryTimer = null;
+    }
+  }
+
+  function startAutoplay() {
+    stopAutoplay();
+
+    galleryTimer = setInterval(
+      nextSlide,
+      AUTOPLAY_MS
+    );
+  }
+
+  function bindGallerySwipe() {
+    if (!galleryWindow) return;
+
+    let startX = 0;
+    let startY = 0;
+    let active = false;
+
+    galleryWindow.addEventListener(
+      'touchstart',
+      (event) => {
+        if (event.touches.length !== 1) return;
+
+        startX = event.touches[0].clientX;
+        startY = event.touches[0].clientY;
+
+        active = true;
+
+        stopAutoplay();
+      },
+      { passive: true }
+    );
+
+    galleryWindow.addEventListener(
+      'touchend',
+      (event) => {
+        if (!active) return;
+
+        active = false;
+
+        const dx =
+          event.changedTouches[0].clientX -
+          startX;
+
+        const dy =
+          event.changedTouches[0].clientY -
+          startY;
+
+        if (
+          Math.abs(dx) > 45 &&
+          Math.abs(dx) > Math.abs(dy)
+        ) {
+          dx < 0
+            ? nextSlide()
+            : prevSlide();
+        }
+
+        startAutoplay();
+      },
+      { passive: true }
+    );
+  }
+
+
+  /* =========================================================
+   * LIGHTBOX
+   * ========================================================= */
+
+  let lightboxIndex = 0;
+
+  function updateLightbox() {
+    const image = $('lightboxImage');
+
+    const slides =
+      document.querySelectorAll('.gs img');
+
+    if (
+      !image ||
+      !slides[lightboxIndex]
+    ) {
+      return;
+    }
+
+    image.src =
+      slides[lightboxIndex].src;
+
+    image.alt =
+      slides[lightboxIndex].alt;
+
+    const counter =
+      $('lightboxCounter');
+
+    if (counter) {
+      counter.textContent =
+        `${lightboxIndex + 1} / ${GALLERY_SIZE}`;
+    }
+  }
+
+  function openLightbox(index) {
+    lightboxIndex = Math.max(
+      0,
+      Math.min(
+        GALLERY_SIZE - 1,
+        index
+      )
+    );
+
+    updateLightbox();
+
+    const lightbox = $('lightbox');
+
+    if (lightbox) {
+      lightbox.classList.add('act');
+
+      lightbox.setAttribute(
+        'aria-hidden',
+        'false'
+      );
+
+      lock();
+    }
+  }
+
+  function closeLightbox() {
+    const lightbox = $('lightbox');
+
+    if (lightbox) {
+      lightbox.classList.remove('act');
+
+      lightbox.setAttribute(
+        'aria-hidden',
+        'true'
+      );
+
+      unlock();
+    }
+  }
+
+
+  /* =========================================================
+   * ЧАТ-ЗАЯВКА
+   * ========================================================= */
+
+  const WORKER_URL =
+    'https://sa-master-worker.c6hht469s9.workers.dev';
+
+  const REQUEST_STATE = {
+    type: '',
+    typeLabel: '',
+    name: '',
+    phone: '',
+    location: '',
+    timing: '',
+    project: '',
+    consultationDate: '',
+    consultationFormat: '',
+    servicePrice: '',
+    notes: '',
+    projectFile: null,
+
+    requestCode: '',
+    uploadToken: '',
+    fileUploaded: false
+  };
+
+  const TYPE_LABELS = {
+    complex: 'Комплексний монтаж',
+    local: 'Локальний монтаж',
+    consultation: 'Консультація',
+    estimate: 'Прорахунок'
+  };
+
+  let chatStep = 0;
+  let chatHistory = [];
+
+  const CHAT_TOTAL_STEPS = 6;
+
+
+  function saveBack(renderQuestion) {
+    chatHistory.push({
+      state: {
+        ...REQUEST_STATE
+      },
+
+      renderQuestion,
+      chatStep
+    });
+  }
+
+
+  function appendBackControl(parent) {
+    if (
+      !parent ||
+      chatHistory.length === 0
+    ) {
+      return;
+    }
+
+    const button =
+      document.createElement('button');
+
+    button.type = 'button';
+    button.className = 'chat-back';
+    button.textContent = '← Назад';
+
+    button.addEventListener(
+      'click',
+      goBackInChat
+    );
+
+    parent.appendChild(button);
+  }
+
+
+  function goBackInChat() {
+    const previous =
+      chatHistory.pop();
+
+    if (!previous) return;
+
+    Object
+      .keys(REQUEST_STATE)
+      .forEach((key) => {
+        REQUEST_STATE[key] =
+          previous.state[key];
+      });
+
+    const body = $('chatBody');
+
+    if (body) {
+      body.innerHTML = '';
+    }
+
+    chatStep =
+      previous.chatStep;
+
+    previous.renderQuestion();
+  }
+
+
+  function chatScroll() {
+    const body = $('chatBody');
+
+    if (body) {
+      setTimeout(() => {
+        body.scrollTop =
+          body.scrollHeight;
+      }, 50);
+    }
+  }
+
+
+  function chatMsg(text, who) {
+    const body = $('chatBody');
+
+    if (!body) return;
+
+    const row =
+      document.createElement('div');
+
+    const bubble =
+      document.createElement('div');
+
+    row.className =
+      `chat-message ${who}`;
+
+    bubble.className =
+      'chat-bubble';
+
+    bubble.textContent =
+      text;
+
+    row.appendChild(bubble);
+    body.appendChild(row);
+
+    chatScroll();
+  }
+
+
+  const chatBot = (text) =>
+    chatMsg(text, 'bot');
+
+  const chatUser = (text) =>
+    chatMsg(text, 'user');
+
+
+  function updateProgress() {
+    const bar =
+      $('chatProgressBar');
+
+    if (!bar) return;
+
+    bar.style.width =
+      Math.max(
+        5,
+        Math.min(
+          100,
+          ((chatStep + 1) /
+            CHAT_TOTAL_STEPS) *
+            100
+        )
+      ) + '%';
+  }
+
+
+  function addOptions(
+    options,
+    onChoose
+  ) {
+    const body = $('chatBody');
+
+    if (!body) return;
+
+    const wrap =
+      document.createElement('div');
+
+    wrap.className =
+      'chat-options';
+
+    options.forEach(
+      ({ value, label }) => {
+        const button =
+          document.createElement(
+            'button'
+          );
+
+        button.type = 'button';
+
+        button.className =
+          'chat-option';
+
+        button.textContent =
+          label;
+
+        button.addEventListener(
+          'click',
+          (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
+            wrap.remove();
+
+            onChoose(
+              value,
+              label
+            );
+          },
+          { once: true }
+        );
+
+        wrap.appendChild(
+          button
+        );
+      }
+    );
+
+    appendBackControl(wrap);
+
+    body.appendChild(wrap);
+
+    chatScroll();
+  }
+
+
+  function addInput(
+    placeholder,
+    type,
+    onDone,
+    validate
+  ) {
+    const body =
+      $('chatBody');
+
+    if (!body) return;
+
+    const section =
+      document.createElement('div');
+
+    const wrap =
+      document.createElement('div');
+
+    const input =
+      document.createElement('input');
+
+    const send =
+      document.createElement('button');
+
+    section.className =
+      'chat-input-section';
+
+    wrap.className =
+      'chat-input-wrap';
+
+    input.className =
+      'chat-input';
+
+    input.type =
+      type || 'text';
+
+    input.placeholder =
+      placeholder;
+
+    input.autocomplete =
+      type === 'tel'
+        ? 'tel'
+        : 'off';
+
+    input.setAttribute(
+      'aria-label',
+      placeholder
+    );
+
+    if (type === 'tel') {
+      input.inputMode = 'text';
+
+      input.setAttribute(
+        'autocorrect',
+        'off'
+      );
+
+      input.setAttribute(
+        'autocapitalize',
+        'off'
+      );
+
+      input.setAttribute(
+        'spellcheck',
+        'false'
+      );
+
+      input.addEventListener(
+        'blur',
+        () => {
+          const value =
+            normalizeUAPhone(
+              input.value
+            );
+
+          if (value) {
+            input.value =
+              value;
+          }
+        }
+      );
+    }
+
+    send.type = 'button';
+
+    send.className =
+      'chat-send';
+
+    send.setAttribute(
+      'aria-label',
+      'Надіслати'
+    );
+
+    send.innerHTML = `
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path d="M22 2 11 13"/>
+        <path d="m22 2-7 20-4-9-9-4z"/>
+      </svg>
+    `;
+
+    const submit = () => {
+      let value =
+        input.value.trim();
+
+      if (!value) {
+        return input.focus();
       }
 
-      function askPhone() {
-        chatStep = 3;
-        chatBot('Дякую. Тепер залиште номер телефону для зв’язку.');
-        addInput(
-          'Наприклад: 0979111871',
-          'tel',
-          (v) => {
-            REQUEST_STATE.phone = v;
-            askLocation();
-          },
-          (v) => {
-            const digits = String(v || '').replace(/\D/g, '');
-            return digits.length >= 9 && digits.length <= 13;
+      if (type === 'tel') {
+        value =
+          normalizeUAPhone(
+            value
+          );
+
+        if (!value) {
+          input.setAttribute(
+            'aria-invalid',
+            'true'
+          );
+
+          return input.focus();
+        }
+      }
+
+      if (
+        validate &&
+        !validate(value)
+      ) {
+        input.setAttribute(
+          'aria-invalid',
+          'true'
+        );
+
+        return input.focus();
+      }
+
+      section.remove();
+
+      chatUser(value);
+
+      onDone(value);
+    };
+
+    send.addEventListener(
+      'click',
+      submit
+    );
+
+    input.addEventListener(
+      'keydown',
+      (event) => {
+        if (
+          event.key === 'Enter'
+        ) {
+          event.preventDefault();
+
+          submit();
+        }
+      }
+    );
+
+    wrap.append(
+      input,
+      send
+    );
+
+    section.appendChild(
+      wrap
+    );
+
+    appendBackControl(
+      section
+    );
+
+    body.appendChild(
+      section
+    );
+
+    setTimeout(
+      () => input.focus(),
+      50
+    );
+
+    chatScroll();
+  }
+
+
+  function addFileInput(
+    onDone
+  ) {
+    const body =
+      $('chatBody');
+
+    if (!body) return;
+
+    const wrap =
+      document.createElement('div');
+
+    const title =
+      document.createElement('div');
+
+    const hint =
+      document.createElement('div');
+
+    const actions =
+      document.createElement('div');
+
+    const input =
+      document.createElement('input');
+
+    const pick =
+      document.createElement('button');
+
+    const skip =
+      document.createElement('button');
+
+    wrap.className =
+      'chat-file-wrap';
+
+    title.className =
+      'chat-file-title';
+
+    hint.className =
+      'chat-file-hint';
+
+    actions.className =
+      'chat-file-actions';
+
+    title.textContent =
+      'Прикріпіть дизайн-проєкт';
+
+    hint.textContent =
+      'PDF, фото, Word, Excel або ZIP. Максимальний розмір — 25 МБ.';
+
+    input.type = 'file';
+
+    input.accept =
+      '.pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx,.zip,.txt';
+
+    pick.type = 'button';
+
+    pick.className =
+      'chat-file-pick';
+
+    pick.textContent =
+      'Обрати файл';
+
+    skip.type = 'button';
+
+    skip.className =
+      'chat-file-skip';
+
+    skip.textContent =
+      'Надішлю пізніше';
+
+    pick.addEventListener(
+      'click',
+      () => input.click()
+    );
+
+    input.addEventListener(
+      'change',
+      () => {
+        const file =
+          input.files &&
+          input.files[0];
+
+        if (!file) return;
+
+        if (
+          file.size >
+          25 * 1024 * 1024
+        ) {
+          chatBot(
+            'Файл завеликий. Оберіть файл до 25 МБ.'
+          );
+
+          input.value = '';
+
+          return;
+        }
+
+        wrap.remove();
+
+        onDone(file);
+      }
+    );
+
+    skip.addEventListener(
+      'click',
+      () => {
+        wrap.remove();
+
+        onDone(null);
+      }
+    );
+
+    actions.append(
+      pick,
+      skip
+    );
+
+    wrap.append(
+      title,
+      hint,
+      input,
+      actions
+    );
+
+    appendBackControl(
+      wrap
+    );
+
+    body.appendChild(
+      wrap
+    );
+
+    chatScroll();
+  }
+
+
+  function resetChat() {
+    const body =
+      $('chatBody');
+
+    if (body) {
+      body.innerHTML = '';
+    }
+
+    Object
+      .keys(REQUEST_STATE)
+      .forEach((key) => {
+        REQUEST_STATE[key] =
+          key === 'projectFile'
+            ? null
+            : '';
+      });
+
+    REQUEST_STATE.fileUploaded =
+      false;
+
+    chatStep = 0;
+
+    chatHistory = [];
+
+    updateProgress();
+  }
+
+
+  function openRequest() {
+    const modal =
+      $('requestModal');
+
+    if (!modal) return;
+
+    resetChat();
+
+    document.body.classList.add(
+      'chat-open'
+    );
+
+    modal.classList.add(
+      'act'
+    );
+
+    modal.setAttribute(
+      'aria-hidden',
+      'false'
+    );
+
+    lock();
+
+    askType();
+  }
+
+
+  function closeRequest() {
+    const modal =
+      $('requestModal');
+
+    if (modal) {
+      modal.classList.remove(
+        'act'
+      );
+
+      modal.setAttribute(
+        'aria-hidden',
+        'true'
+      );
+    }
+
+    document.body.classList.remove(
+      'chat-open'
+    );
+
+    unlock();
+  }
+
+
+  function askType() {
+    chatStep = 0;
+
+    updateProgress();
+
+    chatBot(
+      requestText(
+        'Вітаю. Поставлю кілька коротких запитань, щоб підготувати заявку.',
+        'Передайте дані заявки від замовника.'
+      )
+    );
+
+    chatBot(
+      requestText('Що вас цікавить?', 'Який тип робіт потрібен?')
+    );
+
+    addOptions(
+      [
+        {
+          value: 'complex',
+          label: 'Комплексний монтаж'
+        },
+        {
+          value: 'local',
+          label: 'Локальний монтаж'
+        },
+        {
+          value: 'consultation',
+          label: 'Консультація'
+        },
+        {
+          value: 'estimate',
+          label: 'Прорахунок'
+        }
+      ],
+      afterType
+    );
+  }
+
+
+  function askName() {
+    chatStep = 1;
+
+    updateProgress();
+
+    chatBot(
+      requestText('Як до вас звертатися?', 'Як звати замовника?')
+    );
+
+    addInput(
+      requestText("Ваше ім’я", "Ім’я замовника"),
+      'text',
+      (value) => {
+        saveBack(askName);
+
+        REQUEST_STATE.name =
+          value;
+
+        askPhone();
+      }
+    );
+  }
+
+
+  function askPhone() {
+    chatStep = 2;
+
+    updateProgress();
+
+    chatBot(
+      requestText('Залиште номер телефону для зв’язку.', 'Вкажіть номер телефону замовника.')
+    );
+
+    addInput(
+      'Наприклад: 0979111871',
+      'tel',
+      (value) => {
+        saveBack(askPhone);
+
+        REQUEST_STATE.phone =
+          value;
+
+        if (
+          REQUEST_STATE.type ===
+          'consultation'
+        ) {
+          askConsultationFormat(
+            () =>
+              askConsultationDate(
+                finishChat
+              )
+          );
+        } else if (
+          REQUEST_STATE.type ===
+          'estimate'
+        ) {
+          askEstimateConsultation();
+        } else {
+          askLocation();
+        }
+      },
+      (value) => {
+        const digits =
+          String(value || '')
+            .replace(/\D/g, '');
+
+        return (
+          digits.length >= 9 &&
+          digits.length <= 13
+        );
+      }
+    );
+  }
+
+
+  function askLocation() {
+    chatStep = 3;
+
+    updateProgress();
+
+    chatBot(
+      requestText(
+        'Де знаходиться об’єкт? Вкажіть ЖК, вулицю або адресу.',
+        'Де знаходиться об’єкт замовника? Вкажіть ЖК, вулицю або адресу.'
+      )
+    );
+
+    addInput(
+      'Наприклад: ЖК Файна Таун, вул. Салютна',
+      'text',
+      (value) => {
+        saveBack(
+          askLocation
+        );
+
+        REQUEST_STATE.location =
+          value;
+
+        if (
+          REQUEST_STATE.type ===
+          'complex'
+        ) {
+          askComplexProject();
+        } else {
+          askTiming();
+        }
+      }
+    );
+  }
+
+
+  function askConsultationFormat(
+    onDone
+  ) {
+    chatStep = 3;
+
+    updateProgress();
+
+    chatBot(
+      'Який формат консультації вам підходить?'
+    );
+
+    addOptions(
+      [
+        {
+          value: 'remote',
+          label: 'Віддалено'
+        },
+        {
+          value: 'onsite',
+          label: 'З виїздом на об’єкт'
+        }
+      ],
+      (value, label) => {
+        saveBack(
+          () =>
+            askConsultationFormat(
+              onDone
+            )
+        );
+
+        REQUEST_STATE.consultationFormat =
+          value;
+
+        chatUser(label);
+
+        if (
+          value === 'onsite' &&
+          !REQUEST_STATE.location
+        ) {
+          askConsultationLocation(
+            onDone
+          );
+
+          return;
+        }
+
+        onDone();
+      }
+    );
+  }
+
+
+  function askConsultationLocation(
+    onDone
+  ) {
+    chatStep = 4;
+
+    updateProgress();
+
+    chatBot(
+      'Вкажіть адресу або ЖК об’єкта.'
+    );
+
+    addInput(
+      'Наприклад: ЖК Файна Таун, вул. Салютна',
+      'text',
+      (value) => {
+        saveBack(
+          () =>
+            askConsultationLocation(
+              onDone
+            )
+        );
+
+        REQUEST_STATE.location =
+          value;
+
+        onDone();
+      }
+    );
+  }
+
+
+  function askConsultationDate(
+    onDone
+  ) {
+    chatStep = 4;
+
+    updateProgress();
+
+    chatBot(
+      requestText(
+        'Коли вам буде зручно провести консультацію?',
+        'Коли замовнику буде зручно провести консультацію?'
+      )
+    );
+
+    addInput(
+      'Наприклад: 18 вересня після 17:00',
+      'text',
+      (value) => {
+        saveBack(
+          () =>
+            askConsultationDate(
+              onDone
+            )
+        );
+
+        REQUEST_STATE.consultationDate =
+          value;
+
+        onDone();
+      }
+    );
+  }
+
+
+  function askComplexProject() {
+    chatStep = 4;
+
+    updateProgress();
+
+    chatBot(
+      requestText('Чи є у вас дизайн-проєкт?', 'Чи є у замовника дизайн-проєкт?')
+    );
+
+    addOptions(
+      [
+        {
+          value: 'Так, є',
+          label: 'Так, є'
+        },
+        {
+          value: 'Є, але зараз не можу надати',
+          label: 'Є, але зараз не можу надати'
+        },
+        {
+          value: 'Немає',
+          label: 'Немає'
+        }
+      ],
+      (value, label) => {
+        saveBack(
+          askComplexProject
+        );
+
+        chatUser(label);
+
+        if (
+          value !== 'Так, є'
+        ) {
+          REQUEST_STATE.project =
+            value;
+
+          askTiming();
+
+          return;
+        }
+
+        REQUEST_STATE.project =
+          'Є, файл додається';
+
+        askProjectConsultation(
+          () => {
+            askProjectFile(
+              askTiming
+            );
           }
         );
-        updateProgress();
       }
+    );
+  }
 
-      function askLocation() {
-        chatStep = 4;
-        chatBot('Де знаходиться об’єкт? Вкажіть ЖК, вулицю або адресу.');
-        addInput('Наприклад: ЖК Файна Таун, вул. Салютна', 'text', (v) => {
-          REQUEST_STATE.location = v;
-          afterLocation();
-        });
-        updateProgress();
-      }
 
-      function afterLocation() {
-        if (REQUEST_STATE.type === 'consultation') {
-          chatStep = 5;
-          chatBot('Коли вам зручно провести консультацію?');
-          addInput('Наприклад: 18 вересня після 17:00', 'text', (v) => {
-            REQUEST_STATE.consultationDate = v;
-            finishChat();
-          });
-          updateProgress();
+  function askProjectConsultation(
+    onDone
+  ) {
+    chatBot(
+      'Чи потрібна консультація перед початком робіт?'
+    );
+
+    addOptions(
+      [
+        {
+          value: 'yes',
+          label: 'Так, потрібна'
+        },
+        {
+          value: 'no',
+          label: 'Ні, не потрібна'
+        }
+      ],
+      (value, label) => {
+        saveBack(
+          () =>
+            askProjectConsultation(
+              onDone
+            )
+        );
+
+        chatUser(label);
+
+        if (
+          value === 'no'
+        ) {
+          onDone();
+
           return;
         }
-        if (REQUEST_STATE.type === 'complex') {
-          chatStep = 5;
-          chatBot('Чи є у вас дизайн-проєкт?');
-          addOptions([
-            { value: 'Так, є', label: 'Так, є' },
-            { value: 'Є, але зараз не можу надати', label: 'Є, але зараз не можу надати' },
-            { value: 'Немає', label: 'Немає' }
-          ]);
-          updateProgress();
+
+        askConsultationFormat(
+          () =>
+            askConsultationDate(
+              onDone
+            )
+        );
+      }
+    );
+  }
+
+
+  function askEstimateConsultation() {
+    chatStep = 3;
+
+    updateProgress();
+
+    chatBot(
+      'Чи потрібна консультація перед прорахунком?'
+    );
+
+    addOptions(
+      [
+        {
+          value: 'yes',
+          label: 'Так, потрібна'
+        },
+        {
+          value: 'no',
+          label: 'Ні, потрібен лише прорахунок'
+        }
+      ],
+      (value, label) => {
+        saveBack(
+          askEstimateConsultation
+        );
+
+        chatUser(label);
+
+        if (
+          value === 'no'
+        ) {
+          askEstimateProject();
+
           return;
         }
-        askTiming();
-      }
 
-      function askTiming() {
-        chatStep = 5;
-        chatBot('Коли орієнтовно плануєте початок робіт?');
-        addOptions([
-          { value: 'Якнайшвидше', label: 'Якнайшвидше' },
-          { value: 'Протягом місяця', label: 'Протягом місяця' },
-          { value: 'Через 1–2 місяці', label: 'Через 1–2 місяці' },
-          { value: 'Поки визначаюсь', label: 'Поки визначаюсь' }
-        ]);
-        updateProgress();
+        askConsultationFormat(
+          () =>
+            askConsultationDate(
+              askEstimateProject
+            )
+        );
       }
+    );
+  }
 
-      function afterType(value) {
-        REQUEST_STATE.type = value;
-        REQUEST_STATE.typeLabel = TYPE_LABELS[value] || value;
-        chatUser(REQUEST_STATE.typeLabel);
-        chatStep = 1;
-        askName();
+
+  function askEstimateProject() {
+    chatStep = 4;
+
+    updateProgress();
+
+    chatBot(
+      'Чи є дизайн-проєкт?'
+    );
+
+    addOptions(
+      [
+        {
+          value: 'yes',
+          label: 'Є проєкт'
+        },
+        {
+          value: 'no',
+          label: 'Немає проєкту'
+        }
+      ],
+      (value, label) => {
+        saveBack(
+          askEstimateProject
+        );
+
+        chatUser(label);
+
+        if (
+          value === 'no'
+        ) {
+          REQUEST_STATE.project =
+            'Немає';
+
+          askTiming();
+
+          return;
+        }
+
+        REQUEST_STATE.project =
+          'Є, файл додається';
+
+        askProjectFile(
+          askTiming
+        );
       }
+    );
+  }
 
-      function afterProject(value) {
-        REQUEST_STATE.project = value;
+
+  function askProjectFile(
+    onDone
+  ) {
+    chatBot(
+      'Оберіть файл проєкту. Якщо зараз його немає під рукою — заявку все одно можна надіслати.'
+    );
+
+    addFileInput(
+      (file) => {
+        saveBack(
+          () =>
+            askProjectFile(
+              onDone
+            )
+        );
+
+        if (file) {
+          REQUEST_STATE.projectFile =
+            file;
+
+          chatUser(
+            `Файл: ${file.name}`
+          );
+        } else {
+          REQUEST_STATE.project =
+            'Є, надішле пізніше';
+
+          chatUser(
+            'Надішлю пізніше'
+          );
+        }
+
+        onDone();
+      }
+    );
+  }
+
+
+  function askTiming() {
+    chatStep = 5;
+
+    updateProgress();
+
+    chatBot(
+      requestText(
+        'Коли орієнтовно плануєте початок робіт?',
+        'Коли замовник орієнтовно планує початок робіт?'
+      )
+    );
+
+    addOptions(
+      [
+        {
+          value: 'Якнайшвидше',
+          label: 'Якнайшвидше'
+        },
+        {
+          value: 'Протягом місяця',
+          label: 'Протягом місяця'
+        },
+        {
+          value: 'Через 1–2 місяці',
+          label: 'Через 1–2 місяці'
+        },
+        {
+          value: 'Поки визначаюсь',
+          label: 'Поки визначаюсь'
+        }
+      ],
+      (value) => {
+        saveBack(
+          askTiming
+        );
+
+        REQUEST_STATE.timing =
+          value;
+
         chatUser(value);
-        askTiming();
-      }
 
-      function afterTiming(value) {
-        REQUEST_STATE.timing = value;
-        chatUser(value);
         finishChat();
       }
+    );
+  }
 
-      function finishChat() {
-        chatStep = 6;
-        chatBot('Готово. Перевірте, будь ласка, дані заявки перед відправленням.');
-        const b = $('chatBody');
-        if (!b) return;
 
-        const summary = document.createElement('div');
-        summary.className = 'chat-summary';
+  function afterType(value) {
+    saveBack(
+      askType
+    );
 
-        const title = document.createElement('div');
-        title.className = 'chat-summary-title';
-        title.textContent = MASTER_REQUEST_MODE ? 'Заявка замовника' : 'Ваша заявка';
-        summary.appendChild(title);
+    REQUEST_STATE.type =
+      value;
 
-        function row(label, value) {
-          const r = document.createElement('div');
-          const l = document.createElement('div');
-          const v = document.createElement('div');
-          r.className = 'chat-summary-row';
-          l.className = 'chat-summary-label';
-          v.className = 'chat-summary-value';
-          l.textContent = label;
-          v.textContent = value || '—';
-          r.append(l, v);
-          summary.appendChild(r);
-        }
-        row('Тип', REQUEST_STATE.typeLabel);
-        row("Ім'я", REQUEST_STATE.name);
-        row('Телефон', REQUEST_STATE.phone);
-        row('Об’єкт', REQUEST_STATE.location);
-        if (REQUEST_STATE.project) row('Дизайн-проєкт', REQUEST_STATE.project);
-        if (REQUEST_STATE.timing) row('Початок', REQUEST_STATE.timing);
-        if (REQUEST_STATE.consultationDate) row('Консультація', REQUEST_STATE.consultationDate);
+    REQUEST_STATE.typeLabel =
+      TYPE_LABELS[value] ||
+      value;
 
-        if (REQUEST_STATE.type === 'consultation' || REQUEST_STATE.type === 'estimate') {
-          const note = document.createElement('div');
-          note.className = 'chat-note';
-          note.textContent = 'Консультація та детальний прорахунок вартості робіт — 2 000 грн.';
-          summary.appendChild(note);
-        }
+    chatUser(
+      REQUEST_STATE.typeLabel
+    );
 
-        /* Поле для примітки (один плейсхолдер) */
-        const notesWrap = document.createElement('div');
-        notesWrap.className = 'chat-notes-wrap';
-        const notesInput = document.createElement('input');
-        notesInput.className = 'chat-notes-input';
-        notesInput.type = 'text';
-        notesInput.placeholder = '📝 Примітка (необов\'язково)';
-        notesInput.autocomplete = 'off';
-        notesInput.setAttribute('maxlength', '500');
-        notesInput.value = REQUEST_STATE.notes || '';
+    askName();
+  }
 
-        notesInput.addEventListener('input', () => {
-          REQUEST_STATE.notes = notesInput.value.trim().slice(0, 500);
-        });
 
-        notesWrap.appendChild(notesInput);
-        summary.appendChild(notesWrap);
+  function consultationFormatLabel() {
+    if (
+      REQUEST_STATE.consultationFormat ===
+      'remote'
+    ) {
+      return 'Віддалено';
+    }
 
-        /* Кнопки */
-        const btns = document.createElement('div');
-        const editBtn = document.createElement('button');
-        const submitBtn = document.createElement('button');
-        btns.className = 'chat-final-buttons';
-        editBtn.type = 'button';
-        submitBtn.type = 'button';
-        editBtn.className = 'chat-final-btn edit';
-        submitBtn.className = 'chat-final-btn submit';
-        editBtn.textContent = 'Змінити';
-        submitBtn.textContent = 'Надіслати';
-        btns.append(editBtn, submitBtn);
-        summary.appendChild(btns);
-        b.appendChild(summary);
+    if (
+      REQUEST_STATE.consultationFormat ===
+      'onsite'
+    ) {
+      return 'З виїздом на об’єкт';
+    }
 
-        editBtn.addEventListener('click', openRequest);
-        submitBtn.addEventListener('click', () => sendRequest(submitBtn));
-        chatScroll();
-        updateProgress();
+    return '';
+  }
+
+
+  function servicePriceText() {
+    const format =
+      REQUEST_STATE.consultationFormat;
+
+    if (
+      REQUEST_STATE.type ===
+      'consultation'
+    ) {
+      return format === 'remote'
+        ? 'Віддалена консультація — 1 000 грн'
+        : 'Консультація з виїздом — 2 000 грн / година';
+    }
+
+    if (
+      REQUEST_STATE.type ===
+      'estimate'
+    ) {
+      if (
+        format === 'remote'
+      ) {
+        return 'Прорахунок — 1 000 грн + віддалена консультація — 1 000 грн. Разом: 2 000 грн';
       }
 
-      function sendRequest(btn) {
-        if (btn.disabled) return;
-        btn.disabled = true;
-        btn.textContent = 'Надсилаємо…';
+      if (
+        format === 'onsite'
+      ) {
+        return 'Прорахунок — 1 000 грн + консультація з виїздом — 2 000 грн / година';
+      }
+
+      return 'Прорахунок вартості робіт — 1 000 грн';
+    }
+
+    if (
+      format === 'remote'
+    ) {
+      return 'Віддалена консультація — 1 000 грн';
+    }
+
+    if (
+      format === 'onsite'
+    ) {
+      return 'Консультація з виїздом — 2 000 грн / година';
+    }
+
+    return '';
+  }
+
+
+  function consultationDetails() {
+    const format =
+      consultationFormatLabel();
+
+    if (!format) return '';
+
+    return REQUEST_STATE.consultationDate
+      ? `${format} · ${REQUEST_STATE.consultationDate}`
+      : format;
+  }
+
+
+  function finishChat() {
+    chatStep = 6;
+
+    updateProgress();
+
+    chatBot(
+      requestText(
+        'Готово. Перевірте дані заявки перед відправленням.',
+        'Перевірте дані заявки перед передачею.'
+      )
+    );
+
+    const body =
+      $('chatBody');
+
+    if (!body) return;
+
+    const summary =
+      document.createElement('div');
+
+    const title =
+      document.createElement('div');
+
+    summary.className =
+      'chat-summary';
+
+    title.className =
+      'chat-summary-title';
+
+    title.textContent =
+      requestText('Ваша заявка', 'Заявка замовника');
+
+    summary.appendChild(
+      title
+    );
+
+
+    const row = (
+      label,
+      value
+    ) => {
+      const item =
+        document.createElement('div');
+
+      const labelEl =
+        document.createElement('div');
+
+      const valueEl =
+        document.createElement('div');
+
+      item.className =
+        'chat-summary-row';
+
+      labelEl.className =
+        'chat-summary-label';
+
+      valueEl.className =
+        'chat-summary-value';
+
+      labelEl.textContent =
+        label;
+
+      valueEl.textContent =
+        value || '—';
+
+      item.append(
+        labelEl,
+        valueEl
+      );
+
+      summary.appendChild(
+        item
+      );
+    };
+
+
+    row(
+      'Тип',
+      REQUEST_STATE.typeLabel
+    );
+
+    row(
+      "Ім’я",
+      REQUEST_STATE.name
+    );
+
+    row(
+      'Телефон',
+      REQUEST_STATE.phone
+    );
+
+
+    if (
+      REQUEST_STATE.location
+    ) {
+      row(
+        'Об’єкт',
+        REQUEST_STATE.location
+      );
+    }
+
+
+    if (
+      consultationDetails()
+    ) {
+      row(
+        'Консультація',
+        consultationDetails()
+      );
+    }
+
+
+    if (
+      REQUEST_STATE.project
+    ) {
+      row(
+        'Проєкт',
+        REQUEST_STATE.projectFile
+          ? REQUEST_STATE.projectFile.name
+          : REQUEST_STATE.project
+      );
+    }
+
+
+    if (
+      REQUEST_STATE.timing
+    ) {
+      row(
+        'Початок',
+        REQUEST_STATE.timing
+      );
+    }
+
+
+    REQUEST_STATE.servicePrice =
+      servicePriceText();
+
+
+    if (
+      REQUEST_STATE.servicePrice
+    ) {
+      const note =
+        document.createElement('div');
+
+      note.className =
+        'chat-note';
+
+      note.textContent =
+        `Вартість послуги: ${REQUEST_STATE.servicePrice}`;
+
+      summary.appendChild(
+        note
+      );
+    }
+
+
+    const notesWrap =
+      document.createElement('div');
+
+    const notesInput =
+      document.createElement('input');
+
+    notesWrap.className =
+      'chat-notes-wrap';
+
+    notesInput.className =
+      'chat-notes-input';
+
+    notesInput.type =
+      'text';
+
+    notesInput.placeholder =
+      '📝 Примітка (необов’язково)';
+
+    notesInput.maxLength =
+      500;
+
+    notesInput.addEventListener(
+      'input',
+      () => {
+        REQUEST_STATE.notes =
+          notesInput.value.trim();
+      }
+    );
+
+    notesWrap.appendChild(
+      notesInput
+    );
+
+    summary.appendChild(
+      notesWrap
+    );
+
+
+    const buttons =
+      document.createElement('div');
+
+    const edit =
+      document.createElement('button');
+
+    const submit =
+      document.createElement('button');
+
+    buttons.className =
+      'chat-final-buttons';
+
+    edit.type =
+      'button';
+
+    submit.type =
+      'button';
+
+    edit.className =
+      'chat-final-btn edit';
+
+    submit.className =
+      'chat-final-btn submit';
+
+    edit.textContent =
+      'Змінити';
+
+    submit.textContent =
+      'Надіслати';
+
+
+    edit.addEventListener(
+      'click',
+      openRequest
+    );
+
+    submit.addEventListener(
+      'click',
+      () =>
+        sendRequest(
+          submit
+        )
+    );
+
+
+    buttons.append(
+      edit,
+      submit
+    );
+
+    summary.appendChild(
+      buttons
+    );
+
+    appendBackControl(
+      summary
+    );
+
+    body.appendChild(
+      summary
+    );
+
+    chatScroll();
+  }
+
+
+  /* =========================================================
+   * API
+   * ========================================================= */
+
+  async function requestJson(
+    url,
+    options,
+    timeoutMs = 15000
+  ) {
+    const controller =
+      new AbortController();
+
+    const timeout =
+      setTimeout(
+        () =>
+          controller.abort(),
+        timeoutMs
+      );
+
+    try {
+      const response =
+        await fetch(
+          url,
+          {
+            ...options,
+            signal:
+              controller.signal
+          }
+        );
+
+      const data =
+        await response
+          .json()
+          .catch(
+            () => ({})
+          );
+
+      if (
+        !response.ok ||
+        !data.ok
+      ) {
+        throw new Error(
+          data.error ||
+          'Помилка сервера'
+        );
+      }
+
+      return data;
+
+    } finally {
+      clearTimeout(
+        timeout
+      );
+    }
+  }
+
+
+  async function uploadProject() {
+    const form =
+      new FormData();
+
+    form.append(
+      'file',
+      REQUEST_STATE.projectFile
+    );
+
+    return requestJson(
+      `${WORKER_URL}/request/${encodeURIComponent(
+        REQUEST_STATE.requestCode
+      )}/project?token=${encodeURIComponent(
+        REQUEST_STATE.uploadToken
+      )}`,
+      {
+        method: 'POST',
+        body: form
+      },
+      45000
+    );
+  }
+
+
+  async function sendRequest(
+    button
+  ) {
+    if (button.disabled) {
+      return;
+    }
+
+    button.disabled =
+      true;
+
+    try {
+
+      /*
+       * Referral читаємо безпосередньо перед
+       * створенням заявки.
+       */
+      const referralToken =
+        getReferralToken();
+
+
+      if (
+        !REQUEST_STATE.requestCode
+      ) {
+        button.textContent =
+          'Надсилаємо…';
+
+
+        const notes = [
+          REQUEST_STATE.servicePrice
+            ? `Вартість послуги: ${REQUEST_STATE.servicePrice}`
+            : '',
+          REQUEST_STATE.notes
+        ]
+          .filter(Boolean)
+          .join('\n');
+
 
         const payload = {
-          name: REQUEST_STATE.name,
-          phone: REQUEST_STATE.phone,
-          type: REQUEST_STATE.type,
-          typeLabel: REQUEST_STATE.typeLabel,
-          location: REQUEST_STATE.location,
-          timing: REQUEST_STATE.timing,
-          consultationDate: REQUEST_STATE.consultationDate,
-          project: REQUEST_STATE.project,
-          notes: REQUEST_STATE.notes,
-          source: MASTER_REQUEST_MODE ? 'SA-MASTER Jobs' : 'SA-MASTER.PRO',
-          ref: REFERRAL_TOKEN
+          name:
+            REQUEST_STATE.name,
+
+          phone:
+            REQUEST_STATE.phone,
+
+          type:
+            REQUEST_STATE.type,
+
+          typeLabel:
+            REQUEST_STATE.typeLabel,
+
+          location:
+            REQUEST_STATE.location,
+
+          timing:
+            REQUEST_STATE.timing,
+
+          consultationDate:
+            consultationDetails(),
+
+          project:
+            REQUEST_STATE.project,
+
+          notes,
+
+          source:
+            'SA-MASTER.PRO'
         };
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-        fetch('https://sa-master-worker.c6hht469s9.workers.dev/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        })
-          .then((r) => r.text().then((t) => {
-            let data;
-            try { data = JSON.parse(t); }
-            catch (e) { throw new Error('Worker повернув некоректну відповідь: ' + t); }
-            if (!r.ok || !data.ok) throw new Error(data.error || 'Невідома помилка Worker');
-            return data;
-          }))
-          .then(() => {
-            btn.textContent = '✓ Надіслано';
+        /*
+         * Якщо користувач прийшов
+         * за персональним посиланням майстра —
+         * передаємо тільки referralToken.
+         *
+         * source_master_id тут НЕ передаємо.
+         * Його визначає Worker після перевірки D1.
+         */
+        if (referralToken) {
+          payload.referralToken =
+            referralToken;
+        }
 
-            if (MASTER_REQUEST_MODE) {
-              chatBot('✅ Заявку передано. Її створено та прив’язано до вашого профілю SA-MASTER Jobs.');
-              return;
+
+        const result =
+          await requestJson(
+            `${WORKER_URL}/`,
+            {
+              method: 'POST',
+
+              headers: {
+                'Content-Type':
+                  'application/json'
+              },
+
+              body:
+                JSON.stringify(
+                  payload
+                )
             }
+          );
 
-            chatBot('Заявку отримано. Дякую! Я зв’яжусь з вами після ознайомлення з інформацією.');
-            setTimeout(closeRequest, 1800);
-          })
-          .catch((err) => {
-            console.error('REQUEST ERROR:', err);
-            btn.disabled = false;
-            btn.textContent = 'Повторити';
-            const msg = err.name === 'AbortError'
-              ? 'Час очікування вичерпано. Спробуйте ще раз.'
-              : 'Не вдалося відправити заявку. Спробуйте ще раз або зателефонуйте за номером +38 (097) 911-18-71.';
-            chatBot(msg);
-          })
-          .finally(() => clearTimeout(timeoutId));
+
+        REQUEST_STATE.requestCode =
+          result.request.request_code;
+
+        REQUEST_STATE.uploadToken =
+          result.request.upload_token;
       }
 
-      /* ============ Калькулятор ============ */
-      const calcState = { bathrooms: 1, system: 'tee' };
-      const CALC_PRICES = {
-        '1-tee': 160000,
-        '1-radial': 240000,
-        '2-tee': 340000,
-        '2-radial': 420000
-      };
-      function updateCalc() {
-        const el = $('calcPrice');
-        if (!el) return;
-        const price = CALC_PRICES[`${calcState.bathrooms}-${calcState.system}`] || 160000;
-        el.textContent = price.toLocaleString('uk-UA') + ' грн';
+
+      if (
+        REQUEST_STATE.projectFile &&
+        !REQUEST_STATE.fileUploaded
+      ) {
+        button.textContent =
+          'Завантажуємо проєкт…';
+
+        await uploadProject();
+
+        REQUEST_STATE.fileUploaded =
+          true;
       }
 
-      /* ============ Соцслайдер ============ */
-      let socialPage = 0;
-      function setSocialPage(p) {
-        socialPage = Math.max(0, Math.min(1, p));
-        const track = $('socialTrack');
-        if (track) track.style.transform = `translate3d(-${socialPage * 50}%, 0, 0)`;
-        document.querySelectorAll('.ispd').forEach((d, i) => d.classList.toggle('act', i === socialPage));
-      }
-      function bindSocialSwipe() {
-        const vp = $('socialViewport');
-        if (!vp) return;
-        let sx = 0, active = false;
-        vp.addEventListener('touchstart', (e) => {
-          sx = e.touches[0].clientX;
-          active = true;
-        }, { passive: true });
-        vp.addEventListener('touchend', (e) => {
-          if (!active) return;
-          active = false;
-          const dx = e.changedTouches[0].clientX - sx;
-          if (Math.abs(dx) < 45) return;
-          setSocialPage(dx < 0 ? socialPage + 1 : socialPage - 1);
-        }, { passive: true });
-      }
 
-      /* ============ Глобальні обробники ============ */
-      function bindGlobal() {
-        document.addEventListener('click', (e) => {
-          const closeBtn = e.target.closest('.mc');
-          if (closeBtn) {
-            e.preventDefault();
-            closeModal(closeBtn.getAttribute('data-close'));
-            return;
+      button.textContent =
+        '✓ Надіслано';
+
+
+      chatBot(
+        requestText(
+          'Заявку отримано. Дякую! Я зв’яжусь з вами після ознайомлення з інформацією.',
+          'Заявку передано в SA-MASTER Jobs.'
+        )
+      );
+
+
+      setTimeout(
+        closeRequest,
+        1800
+      );
+
+    } catch (error) {
+
+      console.error(
+        'REQUEST ERROR:',
+        error
+      );
+
+
+      button.disabled =
+        false;
+
+
+      button.textContent =
+        REQUEST_STATE.requestCode
+          ? 'Повторити завантаження'
+          : 'Повторити';
+
+
+      chatBot(
+        REQUEST_STATE.requestCode
+          ? 'Заявку вже отримано, але файл не завантажився. Спробуйте ще раз.'
+          : 'Не вдалося відправити заявку. Спробуйте ще раз або зателефонуйте за номером +38 (097) 911-18-71.'
+      );
+    }
+  }
+
+
+  /* =========================================================
+   * КАЛЬКУЛЯТОР
+   * ========================================================= */
+
+  const calcState = {
+    bathrooms: 1,
+    system: 'tee'
+  };
+
+  const CALC_PRICES = {
+    '1-tee': 160000,
+    '1-radial': 240000,
+    '2-tee': 340000,
+    '2-radial': 420000
+  };
+
+  function updateCalc() {
+    const el =
+      $('calcPrice');
+
+    if (!el) return;
+
+    el.textContent =
+      (
+        CALC_PRICES[
+          `${calcState.bathrooms}-${calcState.system}`
+        ] ||
+        160000
+      ).toLocaleString(
+        'uk-UA'
+      ) +
+      ' грн';
+  }
+
+
+  /* =========================================================
+   * СОЦСЛАЙДЕР
+   * ========================================================= */
+
+  let socialPage = 0;
+
+  function setSocialPage(
+    page
+  ) {
+    socialPage =
+      Math.max(
+        0,
+        Math.min(
+          1,
+          page
+        )
+      );
+
+    const track =
+      $('socialTrack');
+
+    if (track) {
+      track.style.transform =
+        `translate3d(-${socialPage * 50}%, 0, 0)`;
+    }
+
+    document
+      .querySelectorAll('.ispd')
+      .forEach(
+        (dot, index) => {
+          dot.classList.toggle(
+            'act',
+            index === socialPage
+          );
+        }
+      );
+  }
+
+
+  function bindSocialSwipe() {
+    const viewport =
+      $('socialViewport');
+
+    if (!viewport) return;
+
+    let startX = 0;
+    let active = false;
+
+    viewport.addEventListener(
+      'touchstart',
+      (event) => {
+        startX =
+          event.touches[0]
+            .clientX;
+
+        active = true;
+      },
+      { passive: true }
+    );
+
+    viewport.addEventListener(
+      'touchend',
+      (event) => {
+        if (!active) return;
+
+        active = false;
+
+        const dx =
+          event.changedTouches[0]
+            .clientX -
+          startX;
+
+        if (
+          Math.abs(dx) >= 45
+        ) {
+          setSocialPage(
+            dx < 0
+              ? socialPage + 1
+              : socialPage - 1
+          );
+        }
+      },
+      { passive: true }
+    );
+  }
+
+
+  /* =========================================================
+   * ГЛОБАЛЬНІ ОБРОБНИКИ
+   * ========================================================= */
+
+  function bindGlobal() {
+
+    document.addEventListener(
+      'click',
+      (event) => {
+
+        const close =
+          event.target.closest(
+            '.mc'
+          );
+
+        if (close) {
+          event.preventDefault();
+
+          closeModal(
+            close.getAttribute(
+              'data-close'
+            )
+          );
+
+          return;
+        }
+
+
+        const open =
+          event.target.closest(
+            '[data-open]'
+          );
+
+        if (open) {
+          event.preventDefault();
+
+          openModal(
+            open.getAttribute(
+              'data-open'
+            )
+          );
+
+          return;
+        }
+
+
+        const section =
+          event.target.closest(
+            '.wc'
+          );
+
+        if (section) {
+          openModal(
+            section.getAttribute(
+              'data-modal'
+            )
+          );
+
+          return;
+        }
+
+
+        const nav =
+          event.target.closest(
+            '.mna'
+          );
+
+        if (nav) {
+          event.preventDefault();
+
+          goModal(
+            currentModal +
+            (
+              nav.getAttribute(
+                'data-direction'
+              ) === 'next'
+                ? 1
+                : -1
+            )
+          );
+
+          return;
+        }
+
+
+        if (
+          event.target.closest(
+            '#calcPayBtn'
+          )
+        ) {
+          event.preventDefault();
+
+          openModal(
+            'modalPayment'
+          );
+        }
+      }
+    );
+
+
+    document.addEventListener(
+      'keydown',
+      (event) => {
+
+        if (
+          event.key !==
+          'Escape'
+        ) {
+          return;
+        }
+
+        const lightbox =
+          $('lightbox');
+
+        const payment =
+          $('modalPayment');
+
+        const carousel =
+          $('modalCarousel');
+
+        const request =
+          $('requestModal');
+
+
+        if (
+          lightbox &&
+          lightbox.classList.contains(
+            'act'
+          )
+        ) {
+          return closeLightbox();
+        }
+
+
+        if (
+          payment &&
+          payment.classList.contains(
+            'act'
+          )
+        ) {
+          return closeModal(
+            'modalPayment'
+          );
+        }
+
+
+        if (
+          carousel &&
+          carousel.classList.contains(
+            'act'
+          )
+        ) {
+          return closeModal(
+            'modalAbout'
+          );
+        }
+
+
+        if (
+          request &&
+          request.classList.contains(
+            'act'
+          )
+        ) {
+          closeRequest();
+        }
+      }
+    );
+  }
+
+
+  function applyTheme() {
+    document.body.classList.toggle(
+      'dark',
+      window
+        .matchMedia(
+          '(prefers-color-scheme: dark)'
+        )
+        .matches
+    );
+  }
+
+
+  function bindLightbox() {
+    const lightbox =
+      $('lightbox');
+
+    const close =
+      $('lightboxClose');
+
+    const prev =
+      $('lightboxPrev');
+
+    const next =
+      $('lightboxNext');
+
+
+    if (close) {
+      close.addEventListener(
+        'click',
+        closeLightbox
+      );
+    }
+
+
+    if (prev) {
+      prev.addEventListener(
+        'click',
+        () => {
+          lightboxIndex =
+            (
+              lightboxIndex -
+              1 +
+              GALLERY_SIZE
+            ) %
+            GALLERY_SIZE;
+
+          updateLightbox();
+        }
+      );
+    }
+
+
+    if (next) {
+      next.addEventListener(
+        'click',
+        () => {
+          lightboxIndex =
+            (
+              lightboxIndex +
+              1
+            ) %
+            GALLERY_SIZE;
+
+          updateLightbox();
+        }
+      );
+    }
+
+
+    if (lightbox) {
+      lightbox.addEventListener(
+        'click',
+        (event) => {
+          if (
+            event.target ===
+            lightbox
+          ) {
+            closeLightbox();
           }
-          const openBtn = e.target.closest('[data-open]');
-          if (openBtn) {
-            e.preventDefault();
-            openModal(openBtn.getAttribute('data-open'));
-            return;
+        }
+      );
+    }
+  }
+
+
+  /* =========================================================
+   * ІНІЦІАЛІЗАЦІЯ
+   * ========================================================= */
+
+  function init() {
+
+    /*
+     * ВАЖЛИВО:
+     * referral фіксуємо одразу після відкриття сайту.
+     */
+    captureReferralFromUrl();
+
+    if (MASTER_TRANSFER_MODE) {
+      setTimeout(openRequest, 0);
+    }
+
+
+    const media =
+      window.matchMedia(
+        '(prefers-color-scheme: dark)'
+      );
+
+    applyTheme();
+
+    if (
+      media.addEventListener
+    ) {
+      media.addEventListener(
+        'change',
+        applyTheme
+      );
+    }
+
+
+    const launch =
+      $('requestLaunch');
+
+    const requestClose =
+      $('requestClose');
+
+    const requestModal =
+      $('requestModal');
+
+
+    if (launch) {
+      launch.addEventListener(
+        'click',
+        openRequest
+      );
+    }
+
+
+    if (requestClose) {
+      requestClose.addEventListener(
+        'click',
+        closeRequest
+      );
+    }
+
+
+    if (requestModal) {
+      requestModal.addEventListener(
+        'click',
+        (event) => {
+          if (
+            event.target ===
+            requestModal
+          ) {
+            closeRequest();
           }
-          const wc = e.target.closest('.wc');
-          if (wc) { openModal(wc.getAttribute('data-modal')); return; }
+        }
+      );
+    }
 
-          const navBtn = e.target.closest('.mna');
-          if (navBtn) {
-            e.preventDefault();
-            const dir = navBtn.getAttribute('data-direction');
-            if (dir === 'next') goModal(currentModal + 1);
-            if (dir === 'prev') goModal(currentModal - 1);
-            return;
-          }
-          const payBtn = e.target.closest('#calcPayBtn');
-          if (payBtn) { e.preventDefault(); openModal('modalPayment'); return; }
 
-          const opt = e.target.closest('.chat-option');
-          if (opt) {
-            const value = opt.dataset.chatValue;
-            const parent = opt.parentElement;
-            if (parent) parent.remove();
-            if (chatStep === 0) { afterType(value); return; }
-            if (chatStep === 5 && REQUEST_STATE.type === 'complex' && !REQUEST_STATE.project) {
-              afterProject(value);
-              return;
-            }
-            if (chatStep === 5) { afterTiming(value); return; }
-          }
-        });
+    galleryDots.forEach(
+      (dot, index) => {
+        dot.addEventListener(
+          'click',
+          () => {
+            currentSlide =
+              index;
 
-        document.addEventListener('keydown', (e) => {
-          const wc = e.target.closest('.wc');
-          if (wc && (e.key === 'Enter' || e.key === ' ')) {
-            e.preventDefault();
-            openModal(wc.getAttribute('data-modal'));
-            return;
-          }
-          if (e.key !== 'Escape') return;
-          const lb = $('lightbox');
-          if (lb && lb.classList.contains('act')) { closeLightbox(); return; }
-          const pm = $('modalPayment');
-          if (pm && pm.classList.contains('act')) { closeModal('modalPayment'); return; }
-          const mc = $('modalCarousel');
-          if (mc && mc.classList.contains('act')) { closeModal('modalAbout'); return; }
-          const rm = $('requestModal');
-          if (rm && rm.classList.contains('act')) closeRequest();
-        });
-      }
-
-      /* ============ Ініціалізація ============ */
-      function applyTheme() {
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        document.body.classList.toggle('dark', mq.matches);
-      }
-
-      function bindGalleryClicks() {
-        galleryDots.forEach((d, i) => {
-          d.addEventListener('click', () => {
-            currentSlide = i;
             updateGallery();
+
             startAutoplay();
-          });
-        });
-        document.querySelectorAll('.gs img').forEach((img, i) => {
-          if (i >= GALLERY_SIZE) return;
-          img.addEventListener('click', () => openLightbox(i));
-        });
-      }
-
-      function bindLightbox() {
-        const lb = $('lightbox');
-        const lc = $('lightboxClose');
-        const lp = $('lightboxPrev');
-        const ln = $('lightboxNext');
-        if (lc) lc.addEventListener('click', closeLightbox);
-        if (lp) lp.addEventListener('click', () => {
-          lightboxIndex = (lightboxIndex - 1 + GALLERY_SIZE) % GALLERY_SIZE;
-          updateLightbox();
-        });
-        if (ln) ln.addEventListener('click', () => {
-          lightboxIndex = (lightboxIndex + 1) % GALLERY_SIZE;
-          updateLightbox();
-        });
-        if (lb) lb.addEventListener('click', (e) => { if (e.target === lb) closeLightbox(); });
-      }
-
-      function bindCalculator() {
-        document.querySelectorAll('.calc-b').forEach((b) => {
-          b.addEventListener('click', () => {
-            const group = b.getAttribute('data-group');
-            const value = b.getAttribute('data-value');
-            if (group === 'bathrooms') calcState.bathrooms = parseInt(value, 10);
-            if (group === 'system') calcState.system = value;
-            document.querySelectorAll(`.calc-b[data-group="${group}"]`).forEach((x) => x.classList.remove('act'));
-            b.classList.add('act');
-            updateCalc();
-          });
-        });
-        updateCalc();
-      }
-
-      function init() {
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        applyTheme();
-        if (mq.addEventListener) mq.addEventListener('change', applyTheme);
-
-        const rl = $('requestLaunch');
-        if (rl) rl.addEventListener('click', openRequest);
-        const rc = $('requestClose');
-        if (rc) rc.addEventListener('click', closeRequest);
-        const rm = $('requestModal');
-        if (rm) rm.addEventListener('click', (e) => { if (e.target === rm) closeRequest(); });
-
-        if (AUTO_OPEN_REQUEST) {
-          setTimeout(() => {
-            openRequest();
-          }, 150);
-        }
-
-        if (galleryWindow) {
-          galleryWindow.addEventListener('mouseenter', stopAutoplay);
-          galleryWindow.addEventListener('mouseleave', startAutoplay);
-        }
-        bindGallerySwipe();
-        bindGalleryClicks();
-        bindLightbox();
-        updateGallery(false);
-        startAutoplay();
-
-        bindSocialSwipe();
-        setTimeout(() => {
-          const st = $('socialTrack');
-          if (st) {
-            st.classList.add('hint');
-            setTimeout(() => st.classList.remove('hint'), 1100);
           }
-        }, 900);
-
-        bindCalculator();
-
-        const y = $('currentYear');
-        if (y) y.textContent = new Date().getFullYear();
-
-        bindGlobal();
+        );
       }
+    );
 
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-      } else {
-        init();
-      }
-    })();
+
+    document
+      .querySelectorAll(
+        '.gs img'
+      )
+      .forEach(
+        (image, index) => {
+          if (
+            index <
+            GALLERY_SIZE
+          ) {
+            image.addEventListener(
+              'click',
+              () =>
+                openLightbox(
+                  index
+                )
+            );
+          }
+        }
+      );
+
+
+    if (galleryWindow) {
+      galleryWindow.addEventListener(
+        'mouseenter',
+        stopAutoplay
+      );
+
+      galleryWindow.addEventListener(
+        'mouseleave',
+        startAutoplay
+      );
+    }
+
+
+    bindGallerySwipe();
+
+    bindLightbox();
+
+    updateGallery(false);
+
+    startAutoplay();
+
+    bindSocialSwipe();
+
+
+    setTimeout(
+      () => {
+        const track =
+          $('socialTrack');
+
+        if (track) {
+          track.classList.add(
+            'hint'
+          );
+
+          setTimeout(
+            () =>
+              track.classList.remove(
+                'hint'
+              ),
+            1100
+          );
+        }
+      },
+      900
+    );
+
+
+    document
+      .querySelectorAll(
+        '.calc-b'
+      )
+      .forEach(
+        (button) =>
+          button.addEventListener(
+            'click',
+            () => {
+              const group =
+                button.getAttribute(
+                  'data-group'
+                );
+
+              const value =
+                button.getAttribute(
+                  'data-value'
+                );
+
+
+              if (
+                group ===
+                'bathrooms'
+              ) {
+                calcState.bathrooms =
+                  Number(value);
+              }
+
+
+              if (
+                group ===
+                'system'
+              ) {
+                calcState.system =
+                  value;
+              }
+
+
+              document
+                .querySelectorAll(
+                  `.calc-b[data-group="${group}"]`
+                )
+                .forEach(
+                  (item) =>
+                    item.classList.remove(
+                      'act'
+                    )
+                );
+
+
+              button.classList.add(
+                'act'
+              );
+
+
+              updateCalc();
+            }
+          )
+      );
+
+
+    updateCalc();
+
+
+    const year =
+      $('currentYear');
+
+    if (year) {
+      year.textContent =
+        new Date()
+          .getFullYear();
+    }
+
+
+    bindGlobal();
+  }
+
+
+  if (
+    document.readyState ===
+    'loading'
+  ) {
+    document.addEventListener(
+      'DOMContentLoaded',
+      init
+    );
+  } else {
+    init();
+  }
+
+})();
