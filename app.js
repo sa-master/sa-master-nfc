@@ -46,27 +46,11 @@
 
   /* =========================================================
    * REFERRAL / ДЖЕРЕЛО ЗАЯВКИ
-   *
-   * Майстер отримує персональне посилання:
-   *
-   * https://sa-master.pro/?ref=TOKEN
-   *
-   * Сайт:
-   * 1. читає TOKEN;
-   * 2. зберігає його локально на 30 днів;
-   * 3. передає Worker як ref;
-   * 4. Worker сам перевіряє TOKEN та визначає master_id.
    * ========================================================= */
 
   const REFERRAL_STORAGE_KEY = 'saMasterReferralV1';
   const REFERRAL_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-
-  /*
-   * Режим передачі заявки зареєстрованим майстром.
-   * Вмикається ТІЛЬКИ для персонального URL з ?ref=...&request=1.
-   * Збережений referral у localStorage не перемикає звичайну клієнтську форму.
-   */
   function isMasterTransferMode() {
     try {
       const url = new URL(window.location.href);
@@ -85,23 +69,13 @@
 
   function cleanReferralToken(value) {
     const token = String(value || '').trim();
-
     if (!token) return '';
-
-    /*
-     * Дозволяємо тільки безпечний набір символів.
-     * crypto.randomUUID без дефісів також сюди підходить.
-     */
-    if (!/^[A-Za-z0-9_-]{6,120}$/.test(token)) {
-      return '';
-    }
-
+    if (!/^[A-Za-z0-9_-]{6,120}$/.test(token)) return '';
     return token;
   }
 
   function saveReferralToken(token) {
     const cleanToken = cleanReferralToken(token);
-
     if (!cleanToken) return;
 
     const data = {
@@ -111,10 +85,7 @@
     };
 
     try {
-      localStorage.setItem(
-        REFERRAL_STORAGE_KEY,
-        JSON.stringify(data)
-      );
+      localStorage.setItem(REFERRAL_STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
       console.warn('Не вдалося зберегти referral token:', error);
     }
@@ -123,11 +94,9 @@
   function getStoredReferralToken() {
     try {
       const raw = localStorage.getItem(REFERRAL_STORAGE_KEY);
-
       if (!raw) return '';
 
       const data = JSON.parse(raw);
-
       const token = cleanReferralToken(data?.token);
       const expiresAt = Number(data?.expiresAt || 0);
 
@@ -142,14 +111,9 @@
       }
 
       return token;
-
     } catch (error) {
       console.warn('Не вдалося прочитати referral token:', error);
-
-      try {
-        localStorage.removeItem(REFERRAL_STORAGE_KEY);
-      } catch {}
-
+      try { localStorage.removeItem(REFERRAL_STORAGE_KEY); } catch {}
       return '';
     }
   }
@@ -157,20 +121,9 @@
   function captureReferralFromUrl() {
     try {
       const url = new URL(window.location.href);
-
-      const token = cleanReferralToken(
-        url.searchParams.get('ref')
-      );
-
+      const token = cleanReferralToken(url.searchParams.get('ref'));
       if (!token) return;
-
-      /*
-       * Новий валідний ?ref= має пріоритет.
-       * Тобто якщо клієнт відкрив персональне посилання
-       * іншого майстра — запам'ятовується новий referral.
-       */
       saveReferralToken(token);
-
     } catch (error) {
       console.warn('Не вдалося прочитати referral з URL:', error);
     }
@@ -185,137 +138,77 @@
    * МОДАЛЬНА КАРУСЕЛЬ
    * ========================================================= */
 
-  const MODALS = [
-    'modalAbout',
-    'modalProcess',
-    'modalPrice',
-    'modalReviews'
-  ];
-
+  const MODALS = ['modalAbout', 'modalProcess', 'modalPrice', 'modalReviews'];
   let currentModal = 0;
-
   const modalEls = {};
 
-  MODALS.forEach((id) => {
-    modalEls[id] = $(id);
-  });
+  MODALS.forEach((id) => { modalEls[id] = $(id); });
 
   function goModal(index) {
-    currentModal = Math.max(
-      0,
-      Math.min(MODALS.length - 1, index)
-    );
+    currentModal = Math.max(0, Math.min(MODALS.length - 1, index));
 
     MODALS.forEach((id, position) => {
       const modal = modalEls[id];
-
       if (!modal) return;
 
       const active = position === currentModal;
-
       modal.classList.toggle('act', active);
-
       modal.style.zIndex = active ? '2' : '1';
       modal.style.opacity = active ? '1' : '0';
-      modal.style.visibility = active
-        ? 'visible'
-        : 'hidden';
-
+      modal.style.visibility = active ? 'visible' : 'hidden';
       modal.style.transform = active
         ? 'translateX(0)'
-        : (
-            position < currentModal
-              ? 'translateX(-100%)'
-              : 'translateX(100%)'
-          );
+        : (position < currentModal ? 'translateX(-100%)' : 'translateX(100%)');
 
-      modal.setAttribute(
-        'aria-hidden',
-        String(!active)
-      );
+      modal.setAttribute('aria-hidden', String(!active));
     });
 
-    document
-      .querySelectorAll('.mp')
-      .forEach((dots) => {
-        dots
-          .querySelectorAll('.dot')
-          .forEach((dot, index2) => {
-            dot.classList.toggle(
-              'act',
-              index2 === currentModal
-            );
-          });
+    document.querySelectorAll('.mp').forEach((dots) => {
+      dots.querySelectorAll('.dot').forEach((dot, index2) => {
+        dot.classList.toggle('act', index2 === currentModal);
       });
+    });
   }
 
   function openModal(id) {
     if (id === 'modalPayment') {
       const payment = $('modalPayment');
-
       if (payment) {
         payment.classList.add('act');
-        payment.setAttribute(
-          'aria-hidden',
-          'false'
-        );
+        payment.setAttribute('aria-hidden', 'false');
         lock();
       }
-
       return;
     }
 
     const carousel = $('modalCarousel');
-
     if (carousel) {
       carousel.classList.add('act');
       carousel.style.pointerEvents = 'auto';
-
-      carousel.setAttribute(
-        'aria-hidden',
-        'false'
-      );
+      carousel.setAttribute('aria-hidden', 'false');
     }
 
     const index = MODALS.indexOf(id);
-
-    if (index !== -1) {
-      goModal(index);
-    }
-
+    if (index !== -1) goModal(index);
     lock();
   }
 
   function closeModal(id) {
     if (id === 'modalPayment') {
       const payment = $('modalPayment');
-
       if (payment) {
         payment.classList.remove('act');
-
-        payment.setAttribute(
-          'aria-hidden',
-          'true'
-        );
-
+        payment.setAttribute('aria-hidden', 'true');
         unlock();
       }
-
       return;
     }
 
     const carousel = $('modalCarousel');
-
     if (carousel) {
       carousel.classList.remove('act');
-
       carousel.style.pointerEvents = 'none';
-
-      carousel.setAttribute(
-        'aria-hidden',
-        'true'
-      );
-
+      carousel.setAttribute('aria-hidden', 'true');
       unlock();
     }
   }
@@ -327,17 +220,12 @@
 
   const GALLERY_SIZE = 8;
   const AUTOPLAY_MS = 4500;
-
   let currentSlide = 0;
   let galleryTimer = null;
 
   const galleryTrack = $('galleryTrack');
   const galleryCounter = $('galleryCounter');
-
-  const galleryDots = Array.from(
-    document.querySelectorAll('.gdot')
-  );
-
+  const galleryDots = Array.from(document.querySelectorAll('.gdot'));
   const galleryWindow = $('galleryWindow');
 
   function updateGallery(animate = true) {
@@ -351,37 +239,23 @@
       `translate3d(-${currentSlide * 100}%, 0, 0)`;
 
     if (galleryCounter) {
-      galleryCounter.textContent =
-        `${currentSlide + 1} / ${GALLERY_SIZE}`;
+      galleryCounter.textContent = `${currentSlide + 1} / ${GALLERY_SIZE}`;
     }
 
     galleryDots.forEach((dot, index) => {
       const active = index === currentSlide;
-
-      dot.classList.toggle(
-        'act',
-        active
-      );
-
-      dot.setAttribute(
-        'aria-selected',
-        String(active)
-      );
+      dot.classList.toggle('act', active);
+      dot.setAttribute('aria-selected', String(active));
     });
   }
 
   function nextSlide() {
-    currentSlide =
-      (currentSlide + 1) % GALLERY_SIZE;
-
+    currentSlide = (currentSlide + 1) % GALLERY_SIZE;
     updateGallery();
   }
 
   function prevSlide() {
-    currentSlide =
-      (currentSlide - 1 + GALLERY_SIZE) %
-      GALLERY_SIZE;
-
+    currentSlide = (currentSlide - 1 + GALLERY_SIZE) % GALLERY_SIZE;
     updateGallery();
   }
 
@@ -394,11 +268,7 @@
 
   function startAutoplay() {
     stopAutoplay();
-
-    galleryTimer = setInterval(
-      nextSlide,
-      AUTOPLAY_MS
-    );
+    galleryTimer = setInterval(nextSlide, AUTOPLAY_MS);
   }
 
   function bindGallerySwipe() {
@@ -408,49 +278,27 @@
     let startY = 0;
     let active = false;
 
-    galleryWindow.addEventListener(
-      'touchstart',
-      (event) => {
-        if (event.touches.length !== 1) return;
+    galleryWindow.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1) return;
+      startX = event.touches[0].clientX;
+      startY = event.touches[0].clientY;
+      active = true;
+      stopAutoplay();
+    }, { passive: true });
 
-        startX = event.touches[0].clientX;
-        startY = event.touches[0].clientY;
+    galleryWindow.addEventListener('touchend', (event) => {
+      if (!active) return;
+      active = false;
 
-        active = true;
+      const dx = event.changedTouches[0].clientX - startX;
+      const dy = event.changedTouches[0].clientY - startY;
 
-        stopAutoplay();
-      },
-      { passive: true }
-    );
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+        dx < 0 ? nextSlide() : prevSlide();
+      }
 
-    galleryWindow.addEventListener(
-      'touchend',
-      (event) => {
-        if (!active) return;
-
-        active = false;
-
-        const dx =
-          event.changedTouches[0].clientX -
-          startX;
-
-        const dy =
-          event.changedTouches[0].clientY -
-          startY;
-
-        if (
-          Math.abs(dx) > 45 &&
-          Math.abs(dx) > Math.abs(dy)
-        ) {
-          dx < 0
-            ? nextSlide()
-            : prevSlide();
-        }
-
-        startAutoplay();
-      },
-      { passive: true }
-    );
+      startAutoplay();
+    }, { passive: true });
   }
 
 
@@ -462,68 +310,34 @@
 
   function updateLightbox() {
     const image = $('lightboxImage');
+    const slides = document.querySelectorAll('.gs img');
 
-    const slides =
-      document.querySelectorAll('.gs img');
+    if (!image || !slides[lightboxIndex]) return;
 
-    if (
-      !image ||
-      !slides[lightboxIndex]
-    ) {
-      return;
-    }
+    image.src = slides[lightboxIndex].src;
+    image.alt = slides[lightboxIndex].alt;
 
-    image.src =
-      slides[lightboxIndex].src;
-
-    image.alt =
-      slides[lightboxIndex].alt;
-
-    const counter =
-      $('lightboxCounter');
-
-    if (counter) {
-      counter.textContent =
-        `${lightboxIndex + 1} / ${GALLERY_SIZE}`;
-    }
+    const counter = $('lightboxCounter');
+    if (counter) counter.textContent = `${lightboxIndex + 1} / ${GALLERY_SIZE}`;
   }
 
   function openLightbox(index) {
-    lightboxIndex = Math.max(
-      0,
-      Math.min(
-        GALLERY_SIZE - 1,
-        index
-      )
-    );
-
+    lightboxIndex = Math.max(0, Math.min(GALLERY_SIZE - 1, index));
     updateLightbox();
 
     const lightbox = $('lightbox');
-
     if (lightbox) {
       lightbox.classList.add('act');
-
-      lightbox.setAttribute(
-        'aria-hidden',
-        'false'
-      );
-
+      lightbox.setAttribute('aria-hidden', 'false');
       lock();
     }
   }
 
   function closeLightbox() {
     const lightbox = $('lightbox');
-
     if (lightbox) {
       lightbox.classList.remove('act');
-
-      lightbox.setAttribute(
-        'aria-hidden',
-        'true'
-      );
-
+      lightbox.setAttribute('aria-hidden', 'true');
       unlock();
     }
   }
@@ -585,13 +399,85 @@
     send.addEventListener('click',submit); input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!opts.multiline){e.preventDefault();submit();}}); wrap.append(input,send); section.appendChild(wrap); appendBackControl(section); body.appendChild(section); setTimeout(()=>input.focus(),50); chatScroll();
   }
 
-  function addFileInput(onDone,options={}){
-    const body=$('chatBody'); if(!body)return; const wrap=document.createElement('div'),title=document.createElement('div'),hint=document.createElement('div'),actions=document.createElement('div'),input=document.createElement('input'),pick=document.createElement('button'),skip=document.createElement('button');
-    wrap.className='chat-file-wrap'; title.className='chat-file-title'; hint.className='chat-file-hint'; actions.className='chat-file-actions';
-    title.textContent=options.title||'Додайте файл'; hint.textContent=options.hint||'Необов’язково · до 25 МБ.'; input.type='file'; input.hidden=true; input.accept=options.accept||'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt';
-    pick.type=skip.type='button'; pick.className='chat-file-btn'; skip.className='chat-file-btn secondary'; pick.textContent=options.pickLabel||'📎 Додати файл'; skip.textContent=options.skipLabel||'Пропустити';
-    pick.onclick=()=>input.click(); input.onchange=()=>{const f=input.files&&input.files[0]; if(!f)return; if(f.size>25*1024*1024){chatBot('Файл завеликий. Максимальний розмір — 25 МБ.');input.value='';return;} wrap.remove();onDone(f);}; skip.onclick=()=>{wrap.remove();onDone(null);};
-    actions.append(pick,skip); wrap.append(title,hint,input,actions); appendBackControl(wrap); body.appendChild(wrap); chatScroll();
+  /* ОНОВЛЕНО: акуратна картка файлу + окрема нижня навігація */
+  function addFileInput(onDone, options = {}) {
+    const body = $('chatBody');
+    if (!body) return;
+
+    const section = document.createElement('div');
+    const card = document.createElement('div');
+    const head = document.createElement('div');
+    const icon = document.createElement('div');
+    const text = document.createElement('div');
+    const title = document.createElement('div');
+    const hint = document.createElement('div');
+    const input = document.createElement('input');
+    const pick = document.createElement('button');
+    const nav = document.createElement('div');
+    const back = document.createElement('button');
+    const skip = document.createElement('button');
+
+    section.className = 'chat-file-section';
+    card.className = 'chat-file-card';
+    head.className = 'chat-file-head';
+    icon.className = 'chat-file-icon';
+    text.className = 'chat-file-text';
+    title.className = 'chat-file-title';
+    hint.className = 'chat-file-hint';
+
+    icon.textContent = '📎';
+    title.textContent = options.title || 'Додайте файл';
+    hint.textContent = options.hint || 'Необов’язково · до 25 МБ.';
+
+    text.append(title, hint);
+    head.append(icon, text);
+
+    input.type = 'file';
+    input.hidden = true;
+    input.accept = options.accept || 'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt';
+
+    pick.type = 'button';
+    pick.className = 'chat-file-pick';
+    pick.textContent = options.pickLabel || 'Обрати файл';
+    pick.addEventListener('click', () => input.click());
+
+    input.addEventListener('change', () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+
+      if (file.size > 25 * 1024 * 1024) {
+        chatBot('Файл завеликий. Максимальний розмір — 25 МБ.');
+        input.value = '';
+        return;
+      }
+
+      section.remove();
+      onDone(file);
+    });
+
+    card.append(head, input, pick);
+
+    nav.className = 'chat-file-nav';
+
+    back.type = 'button';
+    back.className = 'chat-file-back';
+    back.textContent = '← Назад';
+    back.addEventListener('click', goBackInChat);
+
+    skip.type = 'button';
+    skip.className = 'chat-file-skip';
+    skip.textContent = (options.skipLabel || 'Пропустити') + ' →';
+    skip.addEventListener('click', () => {
+      section.remove();
+      onDone(null);
+    });
+
+    if (chatHistory.length) nav.appendChild(back);
+    nav.appendChild(skip);
+
+    section.append(card, nav);
+    body.appendChild(section);
+    chatScroll();
   }
 
   function resetChat(){
@@ -602,7 +488,6 @@
   function openRequest(){ const modal=$('requestModal'); if(!modal)return; resetChat(); document.body.classList.add('chat-open'); modal.classList.add('act'); modal.setAttribute('aria-hidden','false'); lock(); askType(); }
   function closeRequest(){ const modal=$('requestModal'); if(modal){modal.classList.remove('act');modal.setAttribute('aria-hidden','true');} document.body.classList.remove('chat-open'); unlock(); }
 
-  /* ---------- окрема форма передачі заявки майстром: залишена без зміни логіки ---------- */
   function askType(){
     step(0);
     if(MASTER_TRANSFER_MODE){ chatBot('Передайте заявку від замовника. Це займе менше хвилини.'); chatBot('Що потрібно зробити?'); addOptions([{value:'plumbing',label:'🔧 Монтаж сантехніки'},{value:'repair',label:'🚿 Ремонт або заміна'},{value:'emergency',label:'🚨 Аварійний виклик'},{value:'other_job',label:'📋 Інше'}],afterMasterType); return; }
@@ -613,28 +498,26 @@
   function askMasterLocation(){step(1);chatBot('Де об’єкт?');addInput('ЖК / район / адреса','text',v=>{saveBack(askMasterLocation);REQUEST_STATE.location=v;askMasterDescription();});}
   function askMasterDescription(){step(2);chatBot('Коротко опишіть, що потрібно зробити.');addInput('Наприклад: замінити бойлер 80 л','text',v=>{saveBack(askMasterDescription);REQUEST_STATE.workDescription=v;askMasterProject();},null,{multiline:true});}
   function askMasterProject(){step(3);chatBot('Чи є у замовника дизайн-проєкт?');addOptions([{value:'Є',label:'✅ Є'},{value:'Немає',label:'❌ Немає'},{value:'Не знаю',label:'❓ Не знаю'}],(v,l)=>{saveBack(askMasterProject);REQUEST_STATE.project=v;chatUser(l);v==='Є'?askMasterProjectFile():askMasterTiming();});}
-  function askMasterProjectFile(){step(3);addFileInput(f=>{saveBack(askMasterProjectFile);REQUEST_STATE.projectFile=f;if(f)chatUser(`Проєкт: ${f.name}`);else chatUser('Проєкт без файлу');askMasterTiming();},{title:'📐 Файл дизайн-проєкту',hint:'Необов’язково · PDF, фото або документ · до 25 МБ.',pickLabel:'📎 Додати проєкт',skipLabel:'Без файлу'});}
+  function askMasterProjectFile(){step(3);addFileInput(f=>{saveBack(askMasterProjectFile);REQUEST_STATE.projectFile=f;if(f)chatUser(`Проєкт: ${f.name}`);else chatUser('Проєкт без файлу');askMasterTiming();},{title:'📐 Файл дизайн-проєкту',hint:'Необов’язково · PDF, фото або документ · до 25 МБ.',pickLabel:'Додати проєкт',skipLabel:'Без файлу'});}
   function askMasterTiming(){step(4);chatBot('Коли потрібно виконати роботу?');addOptions([{value:'Сьогодні',label:'🔥 Сьогодні'},{value:'Завтра',label:'Завтра'},{value:'Найближчими днями',label:'Найближчими днями'},{value:'Дата не визначена',label:'Дата не визначена'}],(v,l)=>{saveBack(askMasterTiming);REQUEST_STATE.timing=v;chatUser(l);askMasterName();});}
   function askMasterName(){step(5);chatBot('Як звати замовника?');addInput('Ім’я замовника','text',v=>{saveBack(askMasterName);REQUEST_STATE.name=v;askMasterPhone();});}
   function askMasterPhone(){step(6);chatBot('Вкажіть номер телефону замовника.');addInput('Наприклад: 0979111871','tel',v=>{saveBack(askMasterPhone);REQUEST_STATE.phone=v;askMasterPhoto();},v=>String(v).replace(/\D/g,'').length>=9);}
-  function askMasterPhoto(){step(7);addFileInput(f=>{saveBack(askMasterPhoto);REQUEST_STATE.photoFile=f;if(f)chatUser(`Фото: ${f.name}`);else chatUser('Без фото');finishChat();},{title:'📷 Фото об’єкта',hint:'Необов’язково · до 25 МБ.',accept:'image/*,.heic,.heif',pickLabel:'📷 Додати фото',skipLabel:'Пропустити'});}
+  function askMasterPhoto(){step(7);addFileInput(f=>{saveBack(askMasterPhoto);REQUEST_STATE.photoFile=f;if(f)chatUser(`Фото: ${f.name}`);else chatUser('Без фото');finishChat();},{title:'Фото об’єкта',hint:'Необов’язково · до 25 МБ.',accept:'image/*,.heic,.heif',pickLabel:'Додати фото',skipLabel:'Пропустити'});}
 
-  /* ---------- ВИКОНАТИ РОБОТИ ---------- */
   function askWorkScope(){step(1);chatBot('Які роботи плануються?');addOptions([{value:'complex',label:'Комплексний монтаж'},{value:'separate',label:'Окремі роботи'}],(v,l)=>{saveBack(askWorkScope);REQUEST_STATE.workScope=v;REQUEST_STATE.type=v==='complex'?'complex':'local';REQUEST_STATE.typeLabel=l;chatUser(l);v==='complex'?askWorkObject():askSeparateWorkDescription(true);});}
   function askWorkObject(){step(2);chatBot('Який це об’єкт?');addOptions([{value:'apartment',label:'Квартира'},{value:'house',label:'Будинок'}],(v,l)=>{saveBack(askWorkObject);REQUEST_STATE.objectType=v;chatUser(l);askNewBuild(()=>v==='house'?askHouseArea(()=>askWorkProject()):askWorkProject());});}
   function askNewBuild(next){step(3);chatBot('Це новобудова?');addOptions([{value:'yes',label:'Так'},{value:'no',label:'Ні'}],(v,l)=>{saveBack(()=>askNewBuild(next));REQUEST_STATE.requestDetails.new_build=v;chatUser(l);next();});}
   function askHouseArea(next){step(4);chatBot('Яка площа будинку?');addInput('Наприклад: 180 м²','text',v=>{saveBack(()=>askHouseArea(next));REQUEST_STATE.requestDetails.house_area=v;next();});}
   function askWorkProject(){step(4);chatBot('Чи є дизайн-проєкт або план із розміщенням меблів і сантехніки?');addOptions([{value:'design',label:'Є дизайн-проєкт'},{value:'plan',label:'Є план розміщення'},{value:'developing',label:'Ще в розробці'},{value:'none',label:'Немає'}],(v,l)=>{saveBack(askWorkProject);REQUEST_STATE.project=l;REQUEST_STATE.requestDetails.documentation=v;chatUser(l); if(v==='design'||v==='plan')askProjectFile(()=>askWorkMedia()); else askWorkMedia();});}
-  function askProjectFile(next){step(5);addFileInput(f=>{saveBack(()=>askProjectFile(next));REQUEST_STATE.projectFile=f;if(f)chatUser(`Файл: ${f.name}`);else chatUser('Без файлу');next();},{title:'Додайте проєкт або план',hint:'Необов’язково · один файл · до 25 МБ.',pickLabel:'📎 Додати файл',skipLabel:'Пропустити'});}
-  function askWorkMedia(){step(5);chatBot('За бажанням додайте фото або відео об’єкта.');addFileInput(f=>{saveBack(askWorkMedia);REQUEST_STATE.photoFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');askWorkLocation();},{title:'Фото або відео об’єкта',hint:'Необов’язково · один файл · до 25 МБ.',accept:'image/*,video/*,.heic,.heif',pickLabel:'📎 Додати',skipLabel:'Пропустити'});}
+  function askProjectFile(next){step(5);addFileInput(f=>{saveBack(()=>askProjectFile(next));REQUEST_STATE.projectFile=f;if(f)chatUser(`Файл: ${f.name}`);else chatUser('Без файлу');next();},{title:'Додайте проєкт або план',hint:'Необов’язково · один файл · до 25 МБ.',pickLabel:'Обрати файл',skipLabel:'Пропустити'});}
+  function askWorkMedia(){step(5);chatBot('За бажанням додайте фото або відео об’єкта.');addFileInput(f=>{saveBack(askWorkMedia);REQUEST_STATE.photoFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');askWorkLocation();},{title:'Фото або відео об’єкта',hint:'Необов’язково · один файл · до 25 МБ.',accept:'image/*,video/*,.heic,.heif',pickLabel:'Додати',skipLabel:'Пропустити'});}
   function askSeparateWorkDescription(isWork){step(2);chatBot('Що потрібно зробити?');chatBot(isWork?'Опишіть роботи якомога детальніше: що потрібно встановити, замінити, перенести, підключити або відремонтувати. Якщо є проблема — опишіть, у чому вона полягає.':'Опишіть роботи якомога детальніше, щоб ми могли попередньо оцінити їх вартість.');addInput('Опишіть роботи','text',v=>{saveBack(()=>askSeparateWorkDescription(isWork));REQUEST_STATE.workDescription=v;REQUEST_STATE.requestDetails.work_description=v;askSeparateMedia(isWork);},null,{multiline:true});}
-  function askSeparateMedia(isWork){step(3);chatBot('Додайте фото або відео.');chatBot(isWork?'Покажіть зону, де плануються роботи: загальний вигляд та, за можливості, крупним планом наявні підключення, комунікації, обладнання або проблему, яку потрібно усунути.':'Покажіть місце проведення робіт, наявні підключення, обладнання або проблему, яку потрібно усунути.');addFileInput(f=>{saveBack(()=>askSeparateMedia(isWork));REQUEST_STATE.photoFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');isWork?askWorkLocation():askName();},{title:'Фото або відео',hint:'Необов’язково · один файл · до 25 МБ.',accept:'image/*,video/*,.heic,.heif',pickLabel:'📎 Додати',skipLabel:'Пропустити'});}
+  function askSeparateMedia(isWork){step(3);chatBot('Додайте фото або відео.');chatBot(isWork?'Покажіть зону, де плануються роботи: загальний вигляд та, за можливості, крупним планом наявні підключення, комунікації, обладнання або проблему, яку потрібно усунути.':'Покажіть місце проведення робіт, наявні підключення, обладнання або проблему, яку потрібно усунути.');addFileInput(f=>{saveBack(()=>askSeparateMedia(isWork));REQUEST_STATE.photoFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');isWork?askWorkLocation():askName();},{title:'Фото або відео',hint:'Необов’язково · один файл · до 25 МБ.',accept:'image/*,video/*,.heic,.heif',pickLabel:'Додати',skipLabel:'Пропустити'});}
   function askWorkLocation(){step(6);chatBot('Де знаходиться об’єкт?');addInput('ЖК / район / населений пункт','text',v=>{saveBack(askWorkLocation);REQUEST_STATE.location=v;askWorkAddress();});}
   function askWorkAddress(){step(7);chatBot('Вкажіть точну адресу об’єкта.');addInput('Вулиця, будинок, квартира / приміщення','text',v=>{saveBack(askWorkAddress);REQUEST_STATE.address=v;askWorkTiming();});}
   function askWorkTiming(){step(8);chatBot('Коли потрібно виконати роботи?');const separate=REQUEST_STATE.workScope==='separate';addOptions(separate?[{value:'asap',label:'Якнайшвидше'},{value:'days',label:'Протягом кількох днів'},{value:'week',label:'Протягом тижня'}]:[{value:'asap',label:'Якнайшвидше'},{value:'month',label:'Протягом місяця'},{value:'1_3_months',label:'Через 1–3 місяці'}],(v,l)=>{saveBack(askWorkTiming);REQUEST_STATE.timing=l;REQUEST_STATE.requestDetails.timing_code=v;chatUser(l);askName();});}
   function askTransferConsent(){step(11);chatBot('Якщо ми не зможемо взяти заявку в роботу, передати її іншим перевіреним майстрам?');addOptions([{value:'yes',label:'Так, передати'},{value:'no',label:'Ні, тільки SA-MASTER'}],(v,l)=>{saveBack(askTransferConsent);REQUEST_STATE.transferConsent=v;REQUEST_STATE.requestDetails.transfer_consent=v;chatUser(l);finishChat();});}
 
-  /* ---------- ДІЗНАТИСЬ ВАРТІСТЬ ---------- */
   function askCostScope(){step(1);chatBot('Що потрібно прорахувати?');addOptions([{value:'complex',label:'Комплексний монтаж'},{value:'separate',label:'Окремі роботи'}],(v,l)=>{saveBack(askCostScope);REQUEST_STATE.workScope=v;REQUEST_STATE.type='estimate';REQUEST_STATE.typeLabel='Прорахунок';chatUser(l);if(v==='separate'){REQUEST_STATE.estimateType='approximate';chatBot('Для окремих робіт можемо попередньо зорієнтувати по вартості. Остаточний обсяг і вартість можуть уточнюватися під час виконання робіт залежно від фактичного стану комунікацій та обладнання.');askSeparateWorkDescription(false);}else askEstimateType();});}
   function askEstimateType(){step(2);chatBot('Який прорахунок потрібен?');addOptions([{value:'approximate',label:'Орієнтовна вартість робіт — безкоштовно'},{value:'detailed',label:'Детальний прорахунок — платний'}],(v,l)=>{saveBack(askEstimateType);REQUEST_STATE.estimateType=v;chatUser(l);if(v==='detailed')chatBot('Детально опрацюємо надану інформацію, документацію та технічні рішення для точного визначення обсягу і вартості робіт.');else chatBot('Орієнтовна вартість робіт на основі наданої інформації.');askEstimateObject();});}
   function askEstimateObject(){step(3);chatBot('Який це об’єкт?');addOptions([{value:'apartment',label:'Квартира'},{value:'house',label:'Будинок'}],(v,l)=>{saveBack(askEstimateObject);REQUEST_STATE.objectType=v;chatUser(l);askNewBuild(()=>askEstimateDocumentation());});}
@@ -648,9 +531,8 @@
   function askCombinedHeatSources(next){step(7);chatBot('Вкажіть джерела тепла, які плануються в комбінованій системі.');addInput('Наприклад: газовий котел + тепловий насос','text',v=>{saveBack(()=>askCombinedHeatSources(next));REQUEST_STATE.requestDetails.heat_sources_combined=v;next();});}
   function askWaterSupply(){step(8);chatBot('Яке водопостачання передбачене?');addOptions([{value:'central',label:'Централізоване'},{value:'individual',label:'Індивідуальне'},{value:'unknown',label:'Ще не визначились'}],(v,l)=>{saveBack(askWaterSupply);REQUEST_STATE.requestDetails.water_supply=v;chatUser(l);askWastewater();});}
   function askWastewater(){step(8);chatBot('Яке водовідведення передбачене?');addOptions([{value:'central',label:'Централізоване'},{value:'individual',label:'Індивідуальне'},{value:'unknown',label:'Ще не визначились'}],(v,l)=>{saveBack(askWastewater);REQUEST_STATE.requestDetails.wastewater=v;chatUser(l);REQUEST_STATE.estimateType==='detailed'?askWaterDistribution(()=>askRecirculation(()=>askHouseHotWater())):askApproxMedia();});}
-  function askApproxMedia(){step(9);addFileInput(f=>{saveBack(askApproxMedia);REQUEST_STATE.photoFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');askOptionalComment(()=>askName());},{title:'Додайте фото або відео',hint:'Необов’язково · один файл · до 25 МБ.',accept:'image/*,video/*,.heic,.heif',pickLabel:'📎 Додати',skipLabel:'Пропустити'});}
+  function askApproxMedia(){step(9);addFileInput(f=>{saveBack(askApproxMedia);REQUEST_STATE.photoFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');askOptionalComment(()=>askName());},{title:'Додайте фото або відео',hint:'Необов’язково · один файл · до 25 МБ.',accept:'image/*,video/*,.heic,.heif',pickLabel:'Додати',skipLabel:'Пропустити'});}
 
-  /* ---------- ДЕТАЛЬНИЙ ПРОРАХУНОК ---------- */
   function askDetailedAfterDocs(){ if(REQUEST_STATE.objectType==='house')askHouseArea(()=>askHouseHeating(()=>askHouseGas())); else askWaterDistribution(()=>askApartmentHeating()); }
   function askApartmentHeating(){step(6);chatBot('Що планується з існуючою системою опалення?');addOptions([{value:'keep',label:'Залишити без змін'},{value:'partial',label:'Частково змінити'},{value:'replace',label:'Повністю замінити'},{value:'unknown',label:'Ще не визначились'}],(v,l)=>{saveBack(askApartmentHeating);REQUEST_STATE.requestDetails.heating_change=v;chatUser(l);if(v==='partial')addInput('Що саме планується змінити?','text',x=>{REQUEST_STATE.requestDetails.heating_partial=x;askCentralHotWater();},null,{multiline:true});else if(v==='replace')askApartmentHeatingSystem();else askCentralHotWater();});}
   function askApartmentHeatingSystem(){step(6);chatBot('Яка система опалення планується?');addOptions([{value:'radial',label:'Променева'},{value:'tee',label:'Трійникова'},{value:'unknown',label:'Ще не визначились'}],(v,l)=>{saveBack(askApartmentHeatingSystem);REQUEST_STATE.requestDetails.heating_distribution=v;chatUser(l);askCentralHotWater();});}
@@ -662,23 +544,20 @@
   function askSewerRisers(){step(8);chatBot('Що планується з каналізаційними стояками?');addOptions([{value:'keep',label:'Залишити без змін'},{value:'soundproof',label:'Знешумити'},{value:'replace',label:'Замінити'},{value:'replace_soundproof',label:'Замінити та знешумити'},{value:'unknown',label:'Ще не визначились'}],(v,l)=>{saveBack(askSewerRisers);REQUEST_STATE.requestDetails.sewer_risers=v;chatUser(l);askBuiltInMixers(()=>askBathFill(()=>askWaterTreatment(()=>askDetailedMedia())));});}
   function askBuiltInMixers(next){step(9);chatBot('Чи плануються вбудовані змішувачі?');addOptions([{value:'yes',label:'Так'},{value:'no',label:'Ні'},{value:'unknown',label:'Ще не визначились'}],(v,l)=>{saveBack(()=>askBuiltInMixers(next));REQUEST_STATE.requestDetails.built_in_mixers=v;chatUser(l);if(v==='yes')addInput('Скільки вбудованих змішувачів?','text',x=>{REQUEST_STATE.requestDetails.built_in_mixers_count=x;next();},x=>/^\d+$/.test(x));else next();});}
   function askBathFill(next){step(9);chatBot('Якщо проєктом передбачена ванна, як планується її наповнення?');addOptions([{value:'classic',label:'Через класичний змішувач'},{value:'siphon',label:'Через сифон із функцією наповнення ванни'},{value:'no_bath',label:'Ванна не передбачена'},{value:'unknown',label:'Ще не визначились'}],(v,l)=>{saveBack(()=>askBathFill(next));REQUEST_STATE.requestDetails.bath_fill=v;chatUser(l);next();});}
-  function askDetailedMedia(){step(10);addFileInput(f=>{saveBack(askDetailedMedia);REQUEST_STATE.photoFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');askOptionalComment(()=>askName());},{title:'Додайте фото або відео',hint:'Необов’язково · один файл · до 25 МБ.',accept:'image/*,video/*,.heic,.heif',pickLabel:'📎 Додати',skipLabel:'Пропустити'});}
+  function askDetailedMedia(){step(10);addFileInput(f=>{saveBack(askDetailedMedia);REQUEST_STATE.photoFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');askOptionalComment(()=>askName());},{title:'Додайте фото або відео',hint:'Необов’язково · один файл · до 25 МБ.',accept:'image/*,video/*,.heic,.heif',pickLabel:'Додати',skipLabel:'Пропустити'});}
   function askOptionalComment(next){step(10);chatBot('Що ще важливо врахувати?');addOptions([{value:'add',label:'Додати коментар'},{value:'skip',label:'Пропустити'}],v=>{saveBack(()=>askOptionalComment(next));if(v==='skip'){chatUser('Пропустити');next();}else addInput('Додаткові побажання або особливості','text',x=>{REQUEST_STATE.notes=x;next();},null,{multiline:true});});}
 
-  /* ---------- КОНСУЛЬТАЦІЯ ---------- */
   function askConsultationType(){step(1);REQUEST_STATE.type='consultation';REQUEST_STATE.typeLabel='Консультація';chatBot('Яка консультація потрібна?');addOptions([{value:'short',label:'Коротка консультація'},{value:'individual',label:'Індивідуальна консультація — платна'},{value:'onsite',label:'Консультація на об’єкті — платна'}],(v,l)=>{saveBack(askConsultationType);REQUEST_STATE.requestDetails.consultation_type=v;REQUEST_STATE.requestDetails.consultation_paid=v!=='short';REQUEST_STATE.typeLabel=l;chatUser(l);askConsultationQuestion();});}
   function askConsultationQuestion(){step(2);chatBot('Опишіть ваше питання.');const t=REQUEST_STATE.requestDetails.consultation_type;chatBot(t==='onsite'?'Коротко опишіть об’єкт, заплановані роботи та питання, які потрібно розглянути під час консультації.':t==='individual'?'Опишіть ситуацію, технічне завдання або рішення, яке потрібно розібрати.':'Коротко опишіть ситуацію та що саме хочете уточнити.');addInput('Ваше питання','text',v=>{saveBack(askConsultationQuestion);REQUEST_STATE.requestDetails.question=v;REQUEST_STATE.workDescription=v;askConsultationFile();},null,{multiline:true});}
-  function askConsultationFile(){step(3);addFileInput(f=>{saveBack(askConsultationFile);REQUEST_STATE.projectFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');REQUEST_STATE.requestDetails.consultation_type==='onsite'?askConsultationLocation():askName();},{title:'Додайте фото, відео або документ',hint:'Необов’язково · один файл · до 25 МБ.',pickLabel:'📎 Додати',skipLabel:'Пропустити'});}
+  function askConsultationFile(){step(3);addFileInput(f=>{saveBack(askConsultationFile);REQUEST_STATE.projectFile=f;if(f)chatUser(`Матеріал: ${f.name}`);else chatUser('Пропустити');REQUEST_STATE.requestDetails.consultation_type==='onsite'?askConsultationLocation():askName();},{title:'Додайте фото, відео або документ',hint:'Необов’язково · один файл · до 25 МБ.',pickLabel:'Додати',skipLabel:'Пропустити'});}
   function askConsultationLocation(){step(4);chatBot('Де знаходиться об’єкт?');addInput('ЖК / район / населений пункт','text',v=>{saveBack(askConsultationLocation);REQUEST_STATE.location=v;askConsultationAddress();});}
   function askConsultationAddress(){step(5);chatBot('Вкажіть точну адресу об’єкта.');addInput('Вулиця, будинок, квартира / приміщення','text',v=>{saveBack(askConsultationAddress);REQUEST_STATE.address=v;askName();});}
 
-  /* ---------- КОНТАКТИ / НЕВИЗНАЧЕНІ РІШЕННЯ ---------- */
   function askName(){step(10);chatBot('Як до вас звертатися?');addInput('Ваше ім’я','text',v=>{saveBack(askName);REQUEST_STATE.name=v;askPhone();});}
   function askPhone(){step(10);chatBot('Залиште номер телефону для зв’язку.');addInput('Наприклад: 0979111871','tel',v=>{saveBack(askPhone);REQUEST_STATE.phone=v;if(REQUEST_STATE.requestGoal==='work')askTransferConsent();else if(REQUEST_STATE.estimateType==='detailed')askUnresolvedCheck();else finishChat();},v=>String(v).replace(/\D/g,'').length>=9);}
   function unresolvedItems(){ const d=REQUEST_STATE.requestDetails, labels={water_distribution:'Система водорозведення',heating_change:'Зміни системи опалення',heating_distribution:'Система опалення',central_hot_water:'Централізоване ГВП',recirculation:'Рециркуляція гарячої води',heating_system:'Система опалення',heat_source:'Джерело тепла',water_supply:'Водопостачання',wastewater:'Водовідведення',hot_water_source:'Приготування гарячої води',water_treatment:'Очищення / пом’якшення води',ac_drain:'Дренаж кондиціонерів',sewer_risers:'Каналізаційні стояки',built_in_mixers:'Вбудовані змішувачі',bath_fill:'Наповнення ванни'}; const out=[];Object.entries(labels).forEach(([k,l])=>{if(d[k]==='unknown')out.push(l);});if(d.ac_drain==='yes'&&!d.ac_drain_points)out.push('Кількість точок дренажу кондиціонерів');if(d.built_in_mixers==='yes'&&!d.built_in_mixers_count)out.push('Кількість вбудованих змішувачів');return out; }
   function askUnresolvedCheck(){const items=unresolvedItems();REQUEST_STATE.requestDetails.unresolved_items=items;if(!items.length)return finishChat();step(11);chatBot('Залишились невизначені технічні рішення.');chatBot('Для детального прорахунку потрібно уточнити: '+items.join(', ')+'. За потреби ми можемо допомогти підібрати оптимальні рішення під ваш об’єкт під час індивідуальної платної консультації онлайн.');addOptions([{value:'consultation',label:'Потрібна консультація'},{value:'continue',label:'Пропустити та продовжити'}],(v,l)=>{saveBack(askUnresolvedCheck);REQUEST_STATE.requestDetails.unresolved_action=v;chatUser(l);if(v==='continue')chatBot('Через невизначені технічні рішення прорахунок буде менш точним.');finishChat();});}
 
-  /* ---------- ПІДСУМОК ---------- */
   function finishChat(){
     step(12);chatBot(MASTER_TRANSFER_MODE?'Перевірте дані заявки перед передачею.':'Готово. Перевірте дані перед відправленням.');
     const body=$('chatBody');if(!body)return;const summary=document.createElement('div'),title=document.createElement('div');summary.className='chat-summary';title.className='chat-summary-title';title.textContent=MASTER_TRANSFER_MODE?'Передача заявки':'Ваша заявка';summary.appendChild(title);
@@ -688,9 +567,6 @@
     const buttons=document.createElement('div'),edit=document.createElement('button'),submit=document.createElement('button');buttons.className='chat-final-buttons';edit.type=submit.type='button';edit.className='chat-final-btn edit';submit.className='chat-final-btn submit';edit.textContent=MASTER_TRANSFER_MODE?'← Змінити':'Змінити';submit.textContent=MASTER_TRANSFER_MODE?'🤝 Передати заявку':'Надіслати';edit.onclick=openRequest;submit.onclick=()=>sendRequest(submit);buttons.append(edit,submit);summary.appendChild(buttons);appendBackControl(summary);body.appendChild(summary);chatScroll();
   }
 
-  /* =========================================================
-   * API
-   * ========================================================= */
   async function requestJson(url,options,timeoutMs=15000){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),timeoutMs);try{const response=await fetch(url,{...options,signal:controller.signal});const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.error||'Помилка сервера');return data;}finally{clearTimeout(timeout);}}
   async function uploadRequestFile(file,kind){const form=new FormData();form.append('file',file);form.append('kind',kind);return requestJson(`${WORKER_URL}/request/${encodeURIComponent(REQUEST_STATE.requestCode)}/project?token=${encodeURIComponent(REQUEST_STATE.uploadToken)}`,{method:'POST',body:form},45000);}
   function showSuccessTelegram(result){
@@ -707,635 +583,85 @@
     button.textContent='✓ Надіслано';button.closest('.chat-summary')?.remove();showSuccessTelegram(result);
   }catch(error){console.error('REQUEST ERROR:',error);button.disabled=false;button.textContent=REQUEST_STATE.requestCode?'Повторити завантаження':'Повторити';chatBot(REQUEST_STATE.requestCode?'Заявку вже отримано, але файл не завантажився. Спробуйте ще раз.':'Не вдалося відправити заявку. Спробуйте ще раз або зателефонуйте за номером +38 (097) 911-18-71.');}}
 
-
-
-  /* =========================================================
-   * КАЛЬКУЛЯТОР
-   * ========================================================= */
-
-  const calcState = {
-    bathrooms: 1,
-    system: 'tee'
-  };
-
-  const CALC_PRICES = {
-    '1-tee': 160000,
-    '1-radial': 240000,
-    '2-tee': 340000,
-    '2-radial': 420000
-  };
+  const calcState = { bathrooms: 1, system: 'tee' };
+  const CALC_PRICES = {'1-tee':160000,'1-radial':240000,'2-tee':340000,'2-radial':420000};
 
   function updateCalc() {
-    const el =
-      $('calcPrice');
-
-    if (!el) return;
-
-    el.textContent =
-      (
-        CALC_PRICES[
-          `${calcState.bathrooms}-${calcState.system}`
-        ] ||
-        160000
-      ).toLocaleString(
-        'uk-UA'
-      ) +
-      ' грн';
+    const el=$('calcPrice'); if(!el)return;
+    el.textContent=(CALC_PRICES[`${calcState.bathrooms}-${calcState.system}`]||160000).toLocaleString('uk-UA')+' грн';
   }
 
-
-  /* =========================================================
-   * СОЦСЛАЙДЕР
-   * ========================================================= */
-
-  let socialPage = 0;
-
-  function setSocialPage(
-    page
-  ) {
-    socialPage =
-      Math.max(
-        0,
-        Math.min(
-          1,
-          page
-        )
-      );
-
-    const track =
-      $('socialTrack');
-
-    if (track) {
-      track.style.transform =
-        `translate3d(-${socialPage * 50}%, 0, 0)`;
-    }
-
-    document
-      .querySelectorAll('.ispd')
-      .forEach(
-        (dot, index) => {
-          dot.classList.toggle(
-            'act',
-            index === socialPage
-          );
-        }
-      );
-  }
-
-
-  function bindSocialSwipe() {
-    const viewport =
-      $('socialViewport');
-
-    if (!viewport) return;
-
-    let startX = 0;
-    let active = false;
-
-    viewport.addEventListener(
-      'touchstart',
-      (event) => {
-        startX =
-          event.touches[0]
-            .clientX;
-
-        active = true;
-      },
-      { passive: true }
-    );
-
-    viewport.addEventListener(
-      'touchend',
-      (event) => {
-        if (!active) return;
-
-        active = false;
-
-        const dx =
-          event.changedTouches[0]
-            .clientX -
-          startX;
-
-        if (
-          Math.abs(dx) >= 45
-        ) {
-          setSocialPage(
-            dx < 0
-              ? socialPage + 1
-              : socialPage - 1
-          );
-        }
-      },
-      { passive: true }
-    );
-  }
-
-
-  /* =========================================================
-   * ГЛОБАЛЬНІ ОБРОБНИКИ
-   * ========================================================= */
+  let socialPage=0;
+  function setSocialPage(page){socialPage=Math.max(0,Math.min(1,page));const track=$('socialTrack');if(track)track.style.transform=`translate3d(-${socialPage*50}%, 0, 0)`;document.querySelectorAll('.ispd').forEach((dot,index)=>dot.classList.toggle('act',index===socialPage));}
+  function bindSocialSwipe(){const viewport=$('socialViewport');if(!viewport)return;let startX=0,active=false;viewport.addEventListener('touchstart',event=>{startX=event.touches[0].clientX;active=true;},{passive:true});viewport.addEventListener('touchend',event=>{if(!active)return;active=false;const dx=event.changedTouches[0].clientX-startX;if(Math.abs(dx)>=45)setSocialPage(dx<0?socialPage+1:socialPage-1);},{passive:true});}
 
   function bindGlobal() {
+    document.addEventListener('click',(event)=>{
+      const close=event.target.closest('.mc');if(close){event.preventDefault();closeModal(close.getAttribute('data-close'));return;}
+      const open=event.target.closest('[data-open]');if(open){event.preventDefault();openModal(open.getAttribute('data-open'));return;}
+      const section=event.target.closest('.wc');if(section){openModal(section.getAttribute('data-modal'));return;}
+      const nav=event.target.closest('.mna');if(nav){event.preventDefault();goModal(currentModal+(nav.getAttribute('data-direction')==='next'?1:-1));return;}
+      if(event.target.closest('#calcPayBtn')){event.preventDefault();openModal('modalPayment');}
+    });
 
-    document.addEventListener(
-      'click',
-      (event) => {
-
-        const close =
-          event.target.closest(
-            '.mc'
-          );
-
-        if (close) {
-          event.preventDefault();
-
-          closeModal(
-            close.getAttribute(
-              'data-close'
-            )
-          );
-
-          return;
-        }
-
-
-        const open =
-          event.target.closest(
-            '[data-open]'
-          );
-
-        if (open) {
-          event.preventDefault();
-
-          openModal(
-            open.getAttribute(
-              'data-open'
-            )
-          );
-
-          return;
-        }
-
-
-        const section =
-          event.target.closest(
-            '.wc'
-          );
-
-        if (section) {
-          openModal(
-            section.getAttribute(
-              'data-modal'
-            )
-          );
-
-          return;
-        }
-
-
-        const nav =
-          event.target.closest(
-            '.mna'
-          );
-
-        if (nav) {
-          event.preventDefault();
-
-          goModal(
-            currentModal +
-            (
-              nav.getAttribute(
-                'data-direction'
-              ) === 'next'
-                ? 1
-                : -1
-            )
-          );
-
-          return;
-        }
-
-
-        if (
-          event.target.closest(
-            '#calcPayBtn'
-          )
-        ) {
-          event.preventDefault();
-
-          openModal(
-            'modalPayment'
-          );
-        }
-      }
-    );
-
-
-    document.addEventListener(
-      'keydown',
-      (event) => {
-
-        if (
-          event.key !==
-          'Escape'
-        ) {
-          return;
-        }
-
-        const lightbox =
-          $('lightbox');
-
-        const payment =
-          $('modalPayment');
-
-        const carousel =
-          $('modalCarousel');
-
-        const request =
-          $('requestModal');
-
-
-        if (
-          lightbox &&
-          lightbox.classList.contains(
-            'act'
-          )
-        ) {
-          return closeLightbox();
-        }
-
-
-        if (
-          payment &&
-          payment.classList.contains(
-            'act'
-          )
-        ) {
-          return closeModal(
-            'modalPayment'
-          );
-        }
-
-
-        if (
-          carousel &&
-          carousel.classList.contains(
-            'act'
-          )
-        ) {
-          return closeModal(
-            'modalAbout'
-          );
-        }
-
-
-        if (
-          request &&
-          request.classList.contains(
-            'act'
-          )
-        ) {
-          closeRequest();
-        }
-      }
-    );
+    document.addEventListener('keydown',(event)=>{
+      if(event.key!=='Escape')return;
+      const lightbox=$('lightbox'),payment=$('modalPayment'),carousel=$('modalCarousel'),request=$('requestModal');
+      if(lightbox&&lightbox.classList.contains('act'))return closeLightbox();
+      if(payment&&payment.classList.contains('act'))return closeModal('modalPayment');
+      if(carousel&&carousel.classList.contains('act'))return closeModal('modalAbout');
+      if(request&&request.classList.contains('act'))closeRequest();
+    });
   }
 
-
-  function applyTheme() {
-    document.body.classList.toggle(
-      'dark',
-      window
-        .matchMedia(
-          '(prefers-color-scheme: dark)'
-        )
-        .matches
-    );
-  }
-
+  function applyTheme(){document.body.classList.toggle('dark',window.matchMedia('(prefers-color-scheme: dark)').matches);}
 
   function bindLightbox() {
-    const lightbox =
-      $('lightbox');
-
-    const close =
-      $('lightboxClose');
-
-    const prev =
-      $('lightboxPrev');
-
-    const next =
-      $('lightboxNext');
-
-
-    if (close) {
-      close.addEventListener(
-        'click',
-        closeLightbox
-      );
-    }
-
-
-    if (prev) {
-      prev.addEventListener(
-        'click',
-        () => {
-          lightboxIndex =
-            (
-              lightboxIndex -
-              1 +
-              GALLERY_SIZE
-            ) %
-            GALLERY_SIZE;
-
-          updateLightbox();
-        }
-      );
-    }
-
-
-    if (next) {
-      next.addEventListener(
-        'click',
-        () => {
-          lightboxIndex =
-            (
-              lightboxIndex +
-              1
-            ) %
-            GALLERY_SIZE;
-
-          updateLightbox();
-        }
-      );
-    }
-
-
-    if (lightbox) {
-      lightbox.addEventListener(
-        'click',
-        (event) => {
-          if (
-            event.target ===
-            lightbox
-          ) {
-            closeLightbox();
-          }
-        }
-      );
-    }
+    const lightbox=$('lightbox'),close=$('lightboxClose'),prev=$('lightboxPrev'),next=$('lightboxNext');
+    if(close)close.addEventListener('click',closeLightbox);
+    if(prev)prev.addEventListener('click',()=>{lightboxIndex=(lightboxIndex-1+GALLERY_SIZE)%GALLERY_SIZE;updateLightbox();});
+    if(next)next.addEventListener('click',()=>{lightboxIndex=(lightboxIndex+1)%GALLERY_SIZE;updateLightbox();});
+    if(lightbox)lightbox.addEventListener('click',event=>{if(event.target===lightbox)closeLightbox();});
   }
 
-
-  /* =========================================================
-   * ІНІЦІАЛІЗАЦІЯ
-   * ========================================================= */
-
   function init() {
-
-    /*
-     * ВАЖЛИВО:
-     * referral фіксуємо одразу після відкриття сайту.
-     */
     captureReferralFromUrl();
+    if(MASTER_TRANSFER_MODE)setTimeout(openRequest,0);
 
-    if (MASTER_TRANSFER_MODE) {
-      setTimeout(openRequest, 0);
-    }
-
-
-    const media =
-      window.matchMedia(
-        '(prefers-color-scheme: dark)'
-      );
-
+    const media=window.matchMedia('(prefers-color-scheme: dark)');
     applyTheme();
+    if(media.addEventListener)media.addEventListener('change',applyTheme);
 
-    if (
-      media.addEventListener
-    ) {
-      media.addEventListener(
-        'change',
-        applyTheme
-      );
-    }
+    const launch=$('requestLaunch'),requestClose=$('requestClose'),requestModal=$('requestModal');
+    if(launch)launch.addEventListener('click',openRequest);
+    if(requestClose)requestClose.addEventListener('click',closeRequest);
+    if(requestModal)requestModal.addEventListener('click',event=>{if(event.target===requestModal)closeRequest();});
 
+    galleryDots.forEach((dot,index)=>dot.addEventListener('click',()=>{currentSlide=index;updateGallery();startAutoplay();}));
+    document.querySelectorAll('.gs img').forEach((image,index)=>{if(index<GALLERY_SIZE)image.addEventListener('click',()=>openLightbox(index));});
+    if(galleryWindow){galleryWindow.addEventListener('mouseenter',stopAutoplay);galleryWindow.addEventListener('mouseleave',startAutoplay);}
 
-    const launch =
-      $('requestLaunch');
+    bindGallerySwipe();bindLightbox();updateGallery(false);startAutoplay();bindSocialSwipe();
 
-    const requestClose =
-      $('requestClose');
+    setTimeout(()=>{const track=$('socialTrack');if(track){track.classList.add('hint');setTimeout(()=>track.classList.remove('hint'),1100);}},900);
 
-    const requestModal =
-      $('requestModal');
-
-
-    if (launch) {
-      launch.addEventListener(
-        'click',
-        openRequest
-      );
-    }
-
-
-    if (requestClose) {
-      requestClose.addEventListener(
-        'click',
-        closeRequest
-      );
-    }
-
-
-    if (requestModal) {
-      requestModal.addEventListener(
-        'click',
-        (event) => {
-          if (
-            event.target ===
-            requestModal
-          ) {
-            closeRequest();
-          }
-        }
-      );
-    }
-
-
-    galleryDots.forEach(
-      (dot, index) => {
-        dot.addEventListener(
-          'click',
-          () => {
-            currentSlide =
-              index;
-
-            updateGallery();
-
-            startAutoplay();
-          }
-        );
-      }
-    );
-
-
-    document
-      .querySelectorAll(
-        '.gs img'
-      )
-      .forEach(
-        (image, index) => {
-          if (
-            index <
-            GALLERY_SIZE
-          ) {
-            image.addEventListener(
-              'click',
-              () =>
-                openLightbox(
-                  index
-                )
-            );
-          }
-        }
-      );
-
-
-    if (galleryWindow) {
-      galleryWindow.addEventListener(
-        'mouseenter',
-        stopAutoplay
-      );
-
-      galleryWindow.addEventListener(
-        'mouseleave',
-        startAutoplay
-      );
-    }
-
-
-    bindGallerySwipe();
-
-    bindLightbox();
-
-    updateGallery(false);
-
-    startAutoplay();
-
-    bindSocialSwipe();
-
-
-    setTimeout(
-      () => {
-        const track =
-          $('socialTrack');
-
-        if (track) {
-          track.classList.add(
-            'hint'
-          );
-
-          setTimeout(
-            () =>
-              track.classList.remove(
-                'hint'
-              ),
-            1100
-          );
-        }
-      },
-      900
-    );
-
-
-    document
-      .querySelectorAll(
-        '.calc-b'
-      )
-      .forEach(
-        (button) =>
-          button.addEventListener(
-            'click',
-            () => {
-              const group =
-                button.getAttribute(
-                  'data-group'
-                );
-
-              const value =
-                button.getAttribute(
-                  'data-value'
-                );
-
-
-              if (
-                group ===
-                'bathrooms'
-              ) {
-                calcState.bathrooms =
-                  Number(value);
-              }
-
-
-              if (
-                group ===
-                'system'
-              ) {
-                calcState.system =
-                  value;
-              }
-
-
-              document
-                .querySelectorAll(
-                  `.calc-b[data-group="${group}"]`
-                )
-                .forEach(
-                  (item) =>
-                    item.classList.remove(
-                      'act'
-                    )
-                );
-
-
-              button.classList.add(
-                'act'
-              );
-
-
-              updateCalc();
-            }
-          )
-      );
-
+    document.querySelectorAll('.calc-b').forEach(button=>button.addEventListener('click',()=>{
+      const group=button.getAttribute('data-group'),value=button.getAttribute('data-value');
+      if(group==='bathrooms')calcState.bathrooms=Number(value);
+      if(group==='system')calcState.system=value;
+      document.querySelectorAll(`.calc-b[data-group="${group}"]`).forEach(item=>item.classList.remove('act'));
+      button.classList.add('act');updateCalc();
+    }));
 
     updateCalc();
 
-
-    const year =
-      $('currentYear');
-
-    if (year) {
-      year.textContent =
-        new Date()
-          .getFullYear();
-    }
-
+    const year=$('currentYear');
+    if(year)year.textContent=new Date().getFullYear();
 
     bindGlobal();
   }
 
-
-  if (
-    document.readyState ===
-    'loading'
-  ) {
-    document.addEventListener(
-      'DOMContentLoaded',
-      init
-    );
-  } else {
-    init();
-  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);
+  else init();
 
 })();
