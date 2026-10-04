@@ -595,6 +595,9 @@
 
     box.append(t,p);
 
+    const actions=document.createElement('div');
+    actions.className='chat-success-actions';
+
     if(REQUEST_STATE.telegramLink){
       const a=document.createElement('a');
       a.className='chat-final-btn submit';
@@ -602,7 +605,7 @@
       a.href=REQUEST_STATE.telegramLink;
       a.target='_blank';
       a.rel='noopener';
-      box.appendChild(a);
+      actions.appendChild(a);
     }
 
     const close=document.createElement('button');
@@ -610,7 +613,9 @@
     close.className='chat-final-btn edit';
     close.textContent='Закрити';
     close.onclick=closeRequest;
-    box.appendChild(close);
+    actions.appendChild(close);
+
+    box.appendChild(actions);
 
     body.appendChild(box);
     chatScroll();
