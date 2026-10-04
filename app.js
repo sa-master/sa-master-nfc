@@ -353,8 +353,7 @@
     type:'', typeLabel:'', name:'', phone:'', location:'', address:'', timing:'',
     project:'', notes:'', workDescription:'', projectFile:null, photoFile:null,
     requestGoal:'', workScope:'', objectType:'', estimateType:'', requestDetails:{},
-    transferConsent:'', requestCode:'', uploadToken:'', telegramLink:'',
-    fileUploaded:false, photoUploaded:false
+    transferConsent:'', requestCode:'', uploadToken:'', fileUploaded:false, photoUploaded:false
   };
 
   const TYPE_LABELS = {
@@ -400,6 +399,7 @@
     send.addEventListener('click',submit); input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!opts.multiline){e.preventDefault();submit();}}); wrap.append(input,send); section.appendChild(wrap); appendBackControl(section); body.appendChild(section); setTimeout(()=>input.focus(),50); chatScroll();
   }
 
+  /* ОНОВЛЕНО: акуратна картка файлу + окрема нижня навігація */
   function addFileInput(onDone, options = {}) {
     const body = $('chatBody');
     if (!body) return;
@@ -569,140 +569,21 @@
 
   async function requestJson(url,options,timeoutMs=15000){const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),timeoutMs);try{const response=await fetch(url,{...options,signal:controller.signal});const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw new Error(data.error||'Помилка сервера');return data;}finally{clearTimeout(timeout);}}
   async function uploadRequestFile(file,kind){const form=new FormData();form.append('file',file);form.append('kind',kind);return requestJson(`${WORKER_URL}/request/${encodeURIComponent(REQUEST_STATE.requestCode)}/project?token=${encodeURIComponent(REQUEST_STATE.uploadToken)}`,{method:'POST',body:form},45000);}
-
-  function showSuccessTelegram(){
+  function showSuccess(){
     chatBot(MASTER_TRANSFER_MODE?'Заявку передано в SA-MASTER Jobs.':`Заявку ${REQUEST_STATE.requestCode} отримано.`);
-
-    if(MASTER_TRANSFER_MODE){
-      return setTimeout(closeRequest,1800);
-    }
-
-    const body=$('chatBody');
-    if(!body)return;
-
-    const box=document.createElement('div');
-    box.className='chat-summary';
-
-    const t=document.createElement('div');
-    t.className='chat-summary-title';
-    t.textContent='Стежити за статусом заявки';
-
-    const p=document.createElement('div');
-    p.className='chat-note';
-    p.textContent=REQUEST_STATE.telegramLink
-      ? 'Підключіть Telegram, щоб отримувати повідомлення про статус заявки та подальші дії. Це необов’язково — заявку вже успішно відправлено.'
-      : 'Заявку успішно відправлено.';
-
-    box.append(t,p);
-
-    const actions=document.createElement('div');
-    actions.className='chat-success-actions';
-
-    if(REQUEST_STATE.telegramLink){
-      const a=document.createElement('a');
-      a.className='chat-final-btn submit';
-      a.textContent='Отримувати статус у Telegram';
-      a.href=REQUEST_STATE.telegramLink;
-      a.target='_blank';
-      a.rel='noopener';
-      actions.appendChild(a);
-    }
-
-    const close=document.createElement('button');
-    close.type='button';
-    close.className='chat-final-btn edit';
-    close.textContent='Закрити';
-    close.onclick=closeRequest;
-    actions.appendChild(close);
-
-    box.appendChild(actions);
-
-    body.appendChild(box);
-    chatScroll();
+    if(MASTER_TRANSFER_MODE)return setTimeout(closeRequest,1800);
+    const body=$('chatBody');if(!body)return;
+    const box=document.createElement('div');box.className='chat-success-card';
+    const t=document.createElement('div');t.className='chat-success-title';t.textContent='Заявку успішно відправлено';
+    const p=document.createElement('div');p.className='chat-success-text';p.textContent='Ми отримали вашу заявку та зв’яжемося з вами за вказаним номером телефону.';
+    const close=document.createElement('button');close.type='button';close.className='chat-success-close';close.textContent='Закрити';close.onclick=closeRequest;
+    box.append(t,p,close);body.appendChild(box);chatScroll();
   }
-
-  async function sendRequest(button){
-    if(button.disabled)return;
-    button.disabled=true;
-
-    try{
-      const referralToken=getReferralToken();
-
-      if(!REQUEST_STATE.requestCode){
-        button.textContent='Надсилаємо…';
-
-        const notes=[
-          MASTER_TRANSFER_MODE&&REQUEST_STATE.workDescription
-            ? `Опис роботи: ${REQUEST_STATE.workDescription}`
-            : '',
-          REQUEST_STATE.notes
-        ].filter(Boolean).join('\n');
-
-        const payload={
-          name:REQUEST_STATE.name,
-          phone:REQUEST_STATE.phone,
-          type:REQUEST_STATE.type,
-          typeLabel:REQUEST_STATE.typeLabel,
-          location:REQUEST_STATE.location,
-          timing:REQUEST_STATE.timing,
-          project:REQUEST_STATE.project,
-          notes,
-          source:MASTER_TRANSFER_MODE?'SA-MASTER Jobs':'SA-MASTER.PRO',
-          request_goal:REQUEST_STATE.requestGoal,
-          work_scope:REQUEST_STATE.workScope,
-          object_type:REQUEST_STATE.objectType,
-          address:REQUEST_STATE.address,
-          request_details:REQUEST_STATE.requestDetails,
-          estimate_type:REQUEST_STATE.estimateType
-        };
-
-        if(referralToken)payload.ref=referralToken;
-
-        const result=await requestJson(`${WORKER_URL}/`,{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify(payload)
-        });
-
-        REQUEST_STATE.requestCode=result?.request?.request_code||'';
-        REQUEST_STATE.uploadToken=result?.request?.upload_token||'';
-        REQUEST_STATE.telegramLink=
-          result?.request?.telegram_link||
-          result?.telegram_link||
-          '';
-
-        if(!REQUEST_STATE.requestCode){
-          throw new Error('Сервер не повернув код заявки');
-        }
-      }
-
-      if(REQUEST_STATE.projectFile&&!REQUEST_STATE.fileUploaded){
-        button.textContent='Завантажуємо файл…';
-        await uploadRequestFile(REQUEST_STATE.projectFile,'project');
-        REQUEST_STATE.fileUploaded=true;
-      }
-
-      if(REQUEST_STATE.photoFile&&!REQUEST_STATE.photoUploaded){
-        button.textContent='Завантажуємо фото / відео…';
-        await uploadRequestFile(REQUEST_STATE.photoFile,'photo');
-        REQUEST_STATE.photoUploaded=true;
-      }
-
-      button.textContent='✓ Надіслано';
-      button.closest('.chat-summary')?.remove();
-      showSuccessTelegram();
-
-    }catch(error){
-      console.error('REQUEST ERROR:',error);
-      button.disabled=false;
-      button.textContent=REQUEST_STATE.requestCode?'Повторити завантаження':'Повторити';
-      chatBot(
-        REQUEST_STATE.requestCode
-          ? 'Заявку вже отримано, але файл не завантажився. Спробуйте ще раз.'
-          : 'Не вдалося відправити заявку. Спробуйте ще раз або зателефонуйте за номером +38 (097) 911-18-71.'
-      );
-    }
-  }
+  async function sendRequest(button){if(button.disabled)return;button.disabled=true;try{const referralToken=getReferralToken();let result=null;if(!REQUEST_STATE.requestCode){button.textContent='Надсилаємо…';const notes=[MASTER_TRANSFER_MODE&&REQUEST_STATE.workDescription?`Опис роботи: ${REQUEST_STATE.workDescription}`:'',REQUEST_STATE.notes].filter(Boolean).join('\n');const payload={name:REQUEST_STATE.name,phone:REQUEST_STATE.phone,type:REQUEST_STATE.type,typeLabel:REQUEST_STATE.typeLabel,location:REQUEST_STATE.location,timing:REQUEST_STATE.timing,project:REQUEST_STATE.project,notes,source:MASTER_TRANSFER_MODE?'SA-MASTER Jobs':'SA-MASTER.PRO',request_goal:REQUEST_STATE.requestGoal,work_scope:REQUEST_STATE.workScope,object_type:REQUEST_STATE.objectType,address:REQUEST_STATE.address,request_details:REQUEST_STATE.requestDetails,estimate_type:REQUEST_STATE.estimateType};if(referralToken)payload.ref=referralToken;result=await requestJson(`${WORKER_URL}/`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});REQUEST_STATE.requestCode=result.request.request_code;REQUEST_STATE.uploadToken=result.request.upload_token;}
+    if(REQUEST_STATE.projectFile&&!REQUEST_STATE.fileUploaded){button.textContent='Завантажуємо файл…';await uploadRequestFile(REQUEST_STATE.projectFile,'project');REQUEST_STATE.fileUploaded=true;}
+    if(REQUEST_STATE.photoFile&&!REQUEST_STATE.photoUploaded){button.textContent='Завантажуємо фото / відео…';await uploadRequestFile(REQUEST_STATE.photoFile,'photo');REQUEST_STATE.photoUploaded=true;}
+    button.textContent='✓ Надіслано';button.closest('.chat-summary')?.remove();showSuccess();
+  }catch(error){console.error('REQUEST ERROR:',error);button.disabled=false;button.textContent=REQUEST_STATE.requestCode?'Повторити завантаження':'Повторити';chatBot(REQUEST_STATE.requestCode?'Заявку вже отримано, але файл не завантажився. Спробуйте ще раз.':'Не вдалося відправити заявку. Спробуйте ще раз або зателефонуйте за номером +38 (097) 911-18-71.');}}
 
   const calcState = { bathrooms: 1, system: 'tee' };
   const CALC_PRICES = {'1-tee':160000,'1-radial':240000,'2-tee':340000,'2-radial':420000};
