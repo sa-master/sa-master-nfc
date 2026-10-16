@@ -3439,17 +3439,28 @@ body.positionDragging{
 <div class="sheet" id="procurementRequestSheet">
   <div class="panel">
     <div class="panelHead">
-      <strong>Запит постачальнику</strong>
+      <strong id="procurementRequestTitle">Замовлення постачальнику</strong>
       <button class="close" onclick="closeProcurementRequest()">×</button>
     </div>
 
     <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="quoteModeSwitch" role="tablist" aria-label="Що надіслати" style="margin:0 0 .75rem">
+        <button type="button" role="tab" data-mode="order" onclick="setProcurementRequestMode('order')">Відвантаження</button>
+        <button type="button" role="tab" data-mode="check" onclick="setProcurementRequestMode('check')">Звірка цін</button>
+      </div>
       <div class="formHint" id="procurementRequestHint" style="margin:0 .25rem .875rem"></div>
-      <div class="originalNameCard" id="procurementRequestPreview"></div>
-      <button class="addPersonButton" type="button" onclick="shareProcurementOrderText()" style="margin:.75rem 0 0">
-        <span style="font-size:1rem;line-height:1">☰</span>
-        <span>Замовлення списком (текст)</span>
-      </button>
+      <div id="procurementDeliveryBox" style="display:flex;flex-direction:column;gap:.5rem;margin:0 0 .75rem">
+        <div class="chips tight" id="procurementDeliveryKind">
+          <button type="button" class="chip small" data-kind="delivery" onclick="setProcurementDelivery('kind','delivery')">Доставка на об'єкт</button>
+          <button type="button" class="chip small" data-kind="pickup" onclick="setProcurementDelivery('kind','pickup')">Самовивіз</button>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <label class="formLabel" for="procurementDeliveryDate" style="margin:0;flex:0 0 auto">На коли</label>
+          <input class="formInput" id="procurementDeliveryDate" type="date" style="flex:1 1 auto;min-width:0" onchange="setProcurementDelivery('date',this.value)">
+        </div>
+        <input class="formInput" id="procurementDeliveryNote" type="text" placeholder="Коментар: час, під'їзд, хто прийме…" autocomplete="off" onchange="setProcurementDelivery('note',this.value)">
+      </div>
+      <div class="originalNameCard" id="procurementRequestPreview" style="white-space:pre-wrap;max-height:50vh;overflow:auto"></div>
       <button class="addPersonButton hidden" id="procurementNextSupplierButton" type="button" onclick="openNextProcurementRequest()" style="margin:.75rem 0 0">
         <span style="font-size:1rem;line-height:1">→</span>
         <span id="procurementNextSupplierLabel">Наступний постачальник</span>
@@ -3457,8 +3468,8 @@ body.positionDragging{
     </div>
 
     <div class="panelFooter">
-      <button class="btnGhost" onclick="copyProcurementRequest()">Скопіювати текст</button>
-      <button class="btnPrimary" onclick="shareProcurementRequest()">Текст і файл</button>
+      <button class="btnGhost" id="procurementRequestAlt" onclick="procurementRequestAltAction()">Скопіювати</button>
+      <button class="btnPrimary" id="procurementRequestSend" onclick="sendProcurementRequest()">Надіслати</button>
     </div>
   </div>
 </div>
@@ -9395,7 +9406,8 @@ function openProcurementRequest(rawSupplierName){
   document.getElementById("procurementRequestHint").innerHTML =
     `${escapeHtml(supplierName)} · ${positions.length} поз. · ${escapeHtml(projectTitlePlain(project))}` +
     (contact && contact.phone ? ` · ${contact.name ? escapeHtml(contact.name) + " " : ""}<a href="${escapeHtml(phoneHref(contact.phone))}">${escapeHtml(contact.phone)}</a>` : "");
-  document.getElementById("procurementRequestPreview").textContent = procurementRequestText(procurementRequestDraft);
+  procurementRequestMode = (project.stage || "estimate") === "estimate" ? "check" : "order";
+  renderProcurementRequestMode();
   updateProcurementRequestNextButton();
   document.getElementById("procurementRequestSheet").classList.add("open");
 }
@@ -9445,10 +9457,153 @@ function closeProcurementRequest(){
   procurementRequestDraft = null;
 }
 
+/* Після погодження за замовчуванням — замовлення на відвантаження (просто список).
+   Звірка цін з файлом лишається другою вкладкою, якщо потрібна. */
+let procurementRequestMode = "order";
+
+function setProcurementRequestMode(mode){
+  procurementRequestMode = mode === "check" ? "check" : "order";
+  renderProcurementRequestMode();
+}
+
+/* Доставка запам'ятовується в об'єкті для кожного постачальника. */
+function getProcurementDelivery(draft){
+  const project = draft && projects.find(item => item.id === draft.projectId);
+  if(!project) return {};
+  if(!project.deliveryPlans || typeof project.deliveryPlans !== "object") project.deliveryPlans = {};
+  const key = normalizeText(draft.supplierName);
+  if(!project.deliveryPlans[key]) project.deliveryPlans[key] = { kind:"delivery", date:"", note:"" };
+  return project.deliveryPlans[key];
+}
+
+function setProcurementDelivery(field, value){
+  const draft = procurementRequestDraft;
+  const project = draft && projects.find(item => item.id === draft.projectId);
+  if(!project) return;
+  getProcurementDelivery(draft)[field] = cleanText(value);
+  touchProject(project);
+  renderProcurementRequestMode();
+}
+
+function procurementDeliveryLine(draft){
+  const plan = getProcurementDelivery(draft);
+  const project = projects.find(item => item.id === draft.projectId);
+  const parts = [];
+  if(plan.date){
+    const date = new Date(plan.date + "T12:00:00");
+    const label = Number.isNaN(date.getTime()) ? plan.date
+      : new Intl.DateTimeFormat("uk-UA", { weekday:"long", day:"numeric", month:"long" }).format(date);
+    parts.push(`${plan.kind === "pickup" ? "Самовивіз" : "Доставка"}: ${label}`);
+  }else{
+    parts.push(plan.kind === "pickup" ? "Самовивіз" : "Доставка на об’єкт");
+  }
+  const address = cleanText(project && project.client && project.client.address);
+  if(plan.kind !== "pickup" && address) parts.push(`Адреса: ${address}`);
+  if(plan.note) parts.push(plan.note);
+  return parts.join("\n");
+}
+
+function renderProcurementDeliveryBox(){
+  const draft = procurementRequestDraft;
+  const box = document.getElementById("procurementDeliveryBox");
+  if(!box || !draft) return;
+  box.classList.toggle("hidden", procurementRequestMode !== "order");
+  const plan = getProcurementDelivery(draft);
+  box.querySelectorAll("[data-kind]").forEach(button => button.classList.toggle("active", button.dataset.kind === plan.kind));
+  const dateInput = document.getElementById("procurementDeliveryDate");
+  if(dateInput && dateInput.value !== plan.date) dateInput.value = plan.date || "";
+  const noteInput = document.getElementById("procurementDeliveryNote");
+  if(noteInput && document.activeElement !== noteInput) noteInput.value = plan.note || "";
+}
+
+function renderProcurementRequestMode(){
+  if(!procurementRequestDraft) return;
+  renderProcurementDeliveryBox();
+  const isOrder = procurementRequestMode === "order";
+  document.querySelectorAll("#procurementRequestSheet .quoteModeSwitch button").forEach(button => {
+    const active = button.dataset.mode === procurementRequestMode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+  document.getElementById("procurementRequestTitle").textContent = isOrder ? "Замовлення постачальнику" : "Звірка з постачальником";
+  document.getElementById("procurementRequestPreview").textContent = isOrder
+    ? procurementOrderText(procurementRequestDraft)
+    : procurementRequestText(procurementRequestDraft);
+  document.getElementById("procurementRequestAlt").classList.toggle("hidden", isOrder);
+  document.getElementById("procurementRequestAlt").textContent = "Скопіювати";
+  document.getElementById("procurementRequestSend").textContent = isOrder ? "Надіслати замовлення" : "Надіслати файл звірки";
+}
+
+function sendProcurementRequest(){
+  return procurementRequestMode === "order" ? shareProcurementOrderFile() : shareProcurementRequest();
+}
+
+function procurementRequestAltAction(){
+  return procurementRequestMode === "order" ? shareProcurementOrderText() : copyProcurementRequest();
+}
+
+/* Замовлення на відвантаження у файлі: артикул, повна назва з прайсу постачальника, кількість. */
+function buildProcurementOrderFile(draft){
+  const project = projects.find(item => item.id === draft.projectId);
+  if(!project || !window.XLSX) return null;
+  const groups = groupMaterialPositions((project.positions || []).filter(position => draft.positionIds.includes(position.id)));
+  const rows = [
+    [`Замовлення на відвантаження · ${projectTitlePlain(project)}`],
+    [`Постачальник: ${draft.supplierName}`],
+    [`Дата замовлення: ${formatQuoteDate(new Date())}`],
+    ...procurementDeliveryLine(draft).split("\n").map(line => [line]),
+    [],
+    ["№", "Артикул", "Найменування", "Кількість", "Од."]
+  ];
+  let n = 0;
+  groups.forEach(group => {
+    rows.push(["", "", group.label]);
+    group.positions.forEach(position => {
+      const item = getPositionCatalogItem(position);
+      const fullName = cleanText((item && item.name) || position.fullName || position.name);
+      rows.push([++n, getPositionMaterialArticle(position), fullName, positionOrderQty(position), position.unit || "шт"]);
+    });
+  });
+  rows.push([]);
+  rows.push(["", "", `Разом позицій: ${n}`]);
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  sheet["!cols"] = [{ wch:5 }, { wch:16 }, { wch:70 }, { wch:11 }, { wch:6 }];
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Замовлення");
+  const bytes = XLSX.write(book, { bookType:"xlsx", type:"array" });
+  const name = procurementRequestFileName(draft).replace("SA-MASTER-звірка-", "Замовлення-");
+  return new File([bytes], name, { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
+async function shareProcurementOrderFile(){
+  const draft = procurementRequestDraft;
+  if(!draft) return;
+  const project = projects.find(item => item.id === draft.projectId);
+  let file = null;
+  try{ file = buildProcurementOrderFile(draft); }catch(e){ console.error(e); }
+  if(!file){ toast("Модуль Excel ще завантажується. Спробуйте за мить."); return; }
+  const text = `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project || {})}» — ${draft.positionIds.length} поз., список у файлі.\n${procurementDeliveryLine(draft)}\n\nДякую!`;
+  if(navigator.share && (!navigator.canShare || navigator.canShare({ files:[file] }))){
+    try{
+      await navigator.share({ title:"Замовлення матеріалів", text, files:[file] });
+      return;
+    }catch(e){
+      if(e && e.name === "AbortError") return;
+    }
+  }
+  try{
+    downloadFile(file);
+    await copyText(text);
+    toast("Файл завантажено, текст скопійовано");
+  }catch(e){
+    toast("Не вдалося підготувати файл");
+  }
+}
+
 async function copyProcurementRequest(){
   if(!procurementRequestDraft) return;
   try{
-    await copyText(procurementRequestText(procurementRequestDraft));
+    await copyText(procurementRequestMode === "order" ? procurementOrderText(procurementRequestDraft) : procurementRequestText(procurementRequestDraft));
     toast("Запит скопійовано");
   }catch(e){
     toast("Не вдалося скопіювати запит");
@@ -9502,7 +9657,7 @@ function procurementOrderText(draft){
     });
     return `${group.label}\n${lines.join("\n")}`;
   });
-  return `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project)}» — ${count} поз.\n\n${blocks.join("\n\n")}\n\nДякую!`;
+  return `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project)}» — ${count} поз.\n${procurementDeliveryLine(draft)}\n\n${blocks.join("\n\n")}\n\nДякую!`;
 }
 
 async function shareProcurementOrderText(){
