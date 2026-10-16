@@ -1301,6 +1301,10 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   text-align:left;
 }
 .procurementSupplierInput{margin-top:.5rem}
+.supplierContactLine{display:flex;flex-wrap:wrap;align-items:center;gap:.375rem .5rem;margin-top:.25rem;font-size:.75rem;color:var(--ts)}
+.supplierContactLine a{color:var(--p);font-weight:700;text-decoration:none}
+.supplierContactLine button{padding:.125rem .375rem;border-radius:.4375rem;background:rgba(0,122,255,.08);color:var(--p);font-size:.6875rem;font-weight:700}
+.projectPhoneLink{color:var(--p);font-weight:650;text-decoration:none;white-space:nowrap}
 .noDiscountToggle{display:flex;gap:.625rem;align-items:flex-start;margin:.25rem 0 .75rem;font-size:.875rem;font-weight:650;cursor:pointer}
 .noDiscountToggle input{width:1.25rem;height:1.25rem;margin-top:.0625rem;flex:0 0 auto}
 .noDiscountToggle small{display:block;margin-top:.125rem;font-size:.75rem;font-weight:500;color:var(--tm)}
@@ -3435,6 +3439,31 @@ body.positionDragging{
   </div>
 </div>
 
+<!-- SHEET: SUPPLIER CONTACT -->
+
+<div class="sheet" id="supplierContactSheet">
+  <div class="panel">
+    <div class="panelHead">
+      <strong id="supplierContactTitle">Менеджер постачальника</strong>
+      <button class="close" onclick="closeSupplierContact()">×</button>
+    </div>
+    <div class="panelBody" style="padding-bottom:1.25rem">
+      <div class="formGroup">
+        <label class="formLabel" for="supplierContactName">Ім’я менеджера</label>
+        <input class="formInput" id="supplierContactName" placeholder="Наприклад: Ярослав" autocomplete="off">
+      </div>
+      <div class="formGroup" style="margin-bottom:0">
+        <label class="formLabel" for="supplierContactPhone">Телефон</label>
+        <input class="formInput" id="supplierContactPhone" placeholder="+380 …" inputmode="tel" autocomplete="off">
+      </div>
+    </div>
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeSupplierContact()">Скасувати</button>
+      <button class="btnPrimary" onclick="saveSupplierContact()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
 <!-- SHEET: CLIENT INVOICE FROM SUPPLIER -->
 
 <div class="sheet" id="clientInvoiceSheet">
@@ -4904,6 +4933,67 @@ function procurementAvailabilityClass(value){
   return value === "unavailable" ? "unavailable" : value === "available" ? "confirmed" : "";
 }
 
+/* ==== Контакти менеджерів постачальників ==== */
+const SUPPLIER_CONTACTS_KEY = "sa_supplierContacts";
+let editingSupplierContact = "";
+
+function loadSupplierContacts(){
+  try{
+    const value = JSON.parse(localStorage.getItem(SUPPLIER_CONTACTS_KEY) || "{}");
+    return value && typeof value === "object" ? value : {};
+  }catch(e){ return {}; }
+}
+
+function getSupplierContact(supplierName){
+  return loadSupplierContacts()[normalizeText(supplierName)] || null;
+}
+
+function phoneHref(phone){
+  return "tel:" + String(phone || "").replace(/[^\d+]/g, "");
+}
+
+function renderSupplierContactLine(supplierName){
+  const contact = getSupplierContact(supplierName);
+  const encoded = encodeURIComponent(supplierName);
+  if(contact && (contact.phone || contact.name)){
+    return `
+      <div class="supplierContactLine">
+        ${contact.name ? `<span>${escapeHtml(contact.name)}</span>` : ""}
+        ${contact.phone ? `<a href="${escapeHtml(phoneHref(contact.phone))}">${escapeHtml(contact.phone)}</a>` : ""}
+        <button type="button" onclick="openSupplierContact(decodeURIComponent('${encoded}'))" aria-label="Змінити контакт">✎</button>
+      </div>`;
+  }
+  return `<div class="supplierContactLine"><button type="button" class="supplierContactAdd" onclick="openSupplierContact(decodeURIComponent('${encoded}'))">✎ менеджер</button></div>`;
+}
+
+function openSupplierContact(supplierName){
+  editingSupplierContact = cleanText(supplierName);
+  const contact = getSupplierContact(editingSupplierContact) || {};
+  document.getElementById("supplierContactTitle").textContent = `Менеджер · ${editingSupplierContact}`;
+  document.getElementById("supplierContactName").value = contact.name || "";
+  document.getElementById("supplierContactPhone").value = contact.phone || "";
+  document.getElementById("supplierContactSheet").classList.add("open");
+}
+
+function closeSupplierContact(){
+  document.getElementById("supplierContactSheet").classList.remove("open");
+  editingSupplierContact = "";
+}
+
+function saveSupplierContact(){
+  if(!editingSupplierContact) return;
+  const contacts = loadSupplierContacts();
+  const name = cleanText(document.getElementById("supplierContactName").value);
+  const phone = cleanText(document.getElementById("supplierContactPhone").value);
+  const key = normalizeText(editingSupplierContact);
+  if(name || phone) contacts[key] = { supplierName: editingSupplierContact, name, phone };
+  else delete contacts[key];
+  try{ localStorage.setItem(SUPPLIER_CONTACTS_KEY, JSON.stringify(contacts)); }catch(e){}
+  closeSupplierContact();
+  renderProcurementPlan();
+  toast("Контакт збережено");
+}
+
 function collectAllSupplierNames(){
   const names = new Map();
   const add = value => {
@@ -4965,6 +5055,7 @@ function renderProcurementPlan(){
         <div class="procurementGroupTitle">
           <div class="procurementGroupName">${group.stock ? "Зі складу" : group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</div>
           <div class="procurementGroupMeta">${group.stock ? `${group.positions.length} поз. · не замовляються` : escapeHtml(getProcurementGroupMeta(group.positions))}</div>
+          ${group.supplier && !group.stock ? renderSupplierContactLine(group.supplier) : ""}
         </div>
         ${group.supplier && !group.stock ? `<button class="procurementRequestButton" type="button" onclick="openProcurementRequest(decodeURIComponent('${encodeURIComponent(group.supplier)}'))">Запит</button>` : ""}
       </div>
@@ -5770,7 +5861,7 @@ function renderProject(p){
         </div>
 
         <div class="projectHeaderMeta">
-          ${client ? `<b>${client}</b>${phone ? " · " + phone : ""}` : ""}
+          ${client ? `<b>${client}</b>` : ""}${phone ? `${client ? " · " : ""}<a class="projectPhoneLink" href="tel:${escapeHtml(String(p.client?.phone || "").replace(/[^\d+]/g, ""))}">${phone}</a>` : ""}
           ${client && address ? `<span> · </span>` : ""}
           ${address ? `<span>${address}</span>` : ""}
         </div>
@@ -8791,7 +8882,7 @@ function procurementRequestText(draft){
   return `Доброго дня!\n\n` +
     `Надсилаю список матеріалів на звірку для об’єкта «${objectName}».\n\n` +
     `У файлі, будь ласка:\n` +
-    `• вгорі — ваш курс EUR/USD;\n` +
+    `• вгорі — ваш курс EUR/USD, ваше ім’я і телефон;\n` +
     `• наявність і строк;\n` +
     `• дві ціни ЗА 1 ОДИНИЦЮ: роздрібну (для клієнта) і для мене;\n` +
     `• якщо щось змінюємо — правте кількість, вписуйте заміну або додавайте рядки внизу.\n\n` +
@@ -8845,6 +8936,8 @@ function buildProcurementRequestTemplateFile(draft){
     ["Постачальник", draft.supplierName],
     ["Курс EUR, ₴", ""],
     ["Курс USD, ₴", ""],
+    ["Менеджер (ваше ім’я)", (getSupplierContact(draft.supplierName) || {}).name || ""],
+    ["Телефон менеджера", (getSupplierContact(draft.supplierName) || {}).phone || ""],
     ["ЦІНИ — ЗА 1 ОДИНИЦЮ. Сума рахується сама. Можна змінити кількість, вписати заміну (новий артикул і назву) і додати рядки внизу. Не змінюйте стовпець SA_POSITION_ID."],
     [],
     header
@@ -8883,12 +8976,12 @@ function buildProcurementRequestTemplateFile(draft){
     { wch:18 }, { wch:14 }, { wch:18 }, { wch:16 },
     { wch:12 }, { wch:16 }, { wch:28 }, { hidden:true }
   ];
-  sheet["!freeze"] = { xSplit:0, ySplit:9 };
+  sheet["!freeze"] = { xSplit:0, ySplit:11 };
 
   const guide = XLSX.utils.aoa_to_sheet([
     ["Як заповнити звірку"],
     [],
-    ["1. Вгорі вкажіть ваш курс EUR і USD (якщо є такі товари). Один курс на весь файл."],
+    ["1. Вгорі вкажіть ваш курс EUR і USD (якщо є такі товари). Один курс на весь файл. Там же — ваше ім’я та телефон."],
     ["2. «Наявність»: Є, Під замовлення або Немає. Строк поставки — окремою колонкою (наприклад, 1-2 дні)."],
     ["3. Обидві ціни — ЗА 1 ОДИНИЦЮ, не за весь рядок. Колонка «Сума закупки» рахується сама — звірте її з вашим рахунком."],
     ["4. «Роздрібна ціна» — ціна для кінцевого клієнта. «Ціна для майстра» — ціна зі знижкою для мене."],
@@ -8930,8 +9023,10 @@ function openProcurementRequest(rawSupplierName){
     supplierName,
     positionIds:positions.map(position => position.id)
   };
-  document.getElementById("procurementRequestHint").textContent =
-    `${supplierName} · ${positions.length} поз. · ${projectTitlePlain(project)}`;
+  const contact = getSupplierContact(supplierName);
+  document.getElementById("procurementRequestHint").innerHTML =
+    `${escapeHtml(supplierName)} · ${positions.length} поз. · ${escapeHtml(projectTitlePlain(project))}` +
+    (contact && contact.phone ? ` · ${contact.name ? escapeHtml(contact.name) + " " : ""}<a href="${escapeHtml(phoneHref(contact.phone))}">${escapeHtml(contact.phone)}</a>` : "");
   document.getElementById("procurementRequestPreview").textContent = procurementRequestText(procurementRequestDraft);
   updateProcurementRequestNextButton();
   document.getElementById("procurementRequestSheet").classList.add("open");
@@ -9086,6 +9181,12 @@ function parseProcurementResponseWorkbook(workbook){
     return Number.isFinite(value) && value > 0 ? value : null;
   };
   const fileRates = { EUR: topRate("курс eur"), USD: topRate("курс usd") };
+  const topText = label => {
+    const row = rows.find(item => ntext(item && item[0]).startsWith(label));
+    return row ? cleanText(row[1]) : "";
+  };
+  const managerName = topText("менеджер");
+  const managerPhone = topText("телефон менеджера");
 
   const projectRow = rows.find(row => ntext(row && row[0]) === "ідентифікатор об’єкта");
   const supplierRow = rows.find(row => ntext(row && row[0]) === "постачальник");
@@ -9180,7 +9281,7 @@ function parseProcurementResponseWorkbook(workbook){
   }
 
   if(errors.length) throw new Error(Array.from(new Set(errors)).slice(0,4).join("\n"));
-  return { projectId, supplierName, records, fileVersion, fileRates };
+  return { projectId, supplierName, records, fileVersion, fileRates, managerName, managerPhone };
 }
 
 /* Буває, що постачальник у «Факт. ціна» вписує суму за весь рядок
@@ -9619,6 +9720,7 @@ function renderProcurementResponseReview(){
   document.getElementById("procurementResponseSummary").innerHTML = `
     <div class="importSummaryRow"><span>Об’єкт</span><b>${escapeHtml(projectTitlePlain(project))}</b></div>
     <div class="importSummaryRow"><span>Постачальник</span><b>${escapeHtml(response.supplierName)}</b></div>
+    ${response.managerName || response.managerPhone ? `<div class="importSummaryRow"><span>Менеджер</span><b>${escapeHtml([response.managerName, response.managerPhone].filter(Boolean).join(" · "))}</b></div>` : ""}
     <div class="importSummaryRow"><span>Звірено позицій</span><b>${response.records.length}</b></div>
     <div class="importSummaryRow"><span>В наявності / немає</span><b>${available} / ${unavailable}</b></div>
   `;
@@ -9855,6 +9957,17 @@ function applyProcurementResponse(){
   project.positions = (project.positions || []).filter(position => !(position.type === "material" && Number(position.qty) <= 0));
 
   if(catalogChanged) saveCatalog();
+  if(response.managerName || response.managerPhone){
+    const contacts = loadSupplierContacts();
+    const key = normalizeText(response.supplierName);
+    const previous = contacts[key] || {};
+    contacts[key] = {
+      supplierName: response.supplierName,
+      name: response.managerName || previous.name || "",
+      phone: response.managerPhone || previous.phone || ""
+    };
+    try{ localStorage.setItem(SUPPLIER_CONTACTS_KEY, JSON.stringify(contacts)); }catch(e){}
+  }
   project.updatedAt = now;
   saveProjects();
   currentProjectId = project.id;
