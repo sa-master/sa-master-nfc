@@ -1301,6 +1301,57 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   text-align:left;
 }
 .procurementSupplierInput{margin-top:.5rem}
+.procurementTotalsNote{
+  margin:0 0 .75rem;
+  padding:.625rem .75rem;
+  border-radius:.75rem;
+  background:rgba(255,149,0,.12);
+  color:var(--t);
+  font-size:.75rem;
+  line-height:1.4;
+}
+.procurementTotalsNote button{
+  display:block;
+  margin-top:.5rem;
+  padding:.375rem .625rem;
+  border-radius:.5rem;
+  background:rgba(255,255,255,.8);
+  color:var(--p);
+  font-size:.75rem;
+  font-weight:700;
+}
+.procurementDivided{color:var(--tm);font-weight:500}
+.procurementChangesNote{
+  margin:0 0 .625rem;
+  padding:.625rem .75rem;
+  border-radius:.75rem;
+  background:rgba(0,122,255,.08);
+  font-size:.75rem;
+  line-height:1.4;
+}
+.procurementChangesNote div{margin-top:.375rem;color:var(--tm)}
+.procurementChangeTag{
+  display:inline-block;
+  padding:.0625rem .375rem;
+  border-radius:.375rem;
+  background:rgba(0,122,255,.12);
+  color:var(--p);
+  font-size:.625rem;
+  font-weight:800;
+  vertical-align:1px;
+}
+.procurementChangeLine{color:var(--p) !important}
+.procurementInlineButton{
+  display:block;
+  margin-top:.5rem;
+  padding:.375rem .625rem;
+  border-radius:.5rem;
+  background:rgba(255,255,255,.85);
+  color:var(--p);
+  font-size:.75rem;
+  font-weight:700;
+}
+.procurementSuspicious{color:#B76800;font-weight:800}
 .approvedBanner{
   margin:-.125rem 0 .75rem;
   padding:.625rem .75rem;
@@ -2807,6 +2858,8 @@ body.positionDragging{
   line-height:1.3;
   overflow-wrap:anywhere;
 }
+.quoteLineRetail{display:block;font-size:.8em;font-weight:500;color:#9aa0a6}
+.positionRetail{color:var(--tm);font-weight:500;margin-right:.125rem}
 .quoteLineBrand{
   display:block;
   margin-top:.125rem;
@@ -3361,6 +3414,28 @@ body.positionDragging{
   </div>
 </div>
 
+<!-- SHEET: CLIENT INVOICE FROM SUPPLIER -->
+
+<div class="sheet" id="clientInvoiceSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong>Ціни для клієнта з рахунку</strong>
+      <button class="close" onclick="closeClientInvoiceReview()">×</button>
+    </div>
+
+    <div class="panelBody">
+      <div class="importSummaryBox" id="clientInvoiceSummary"></div>
+      <div id="clientInvoiceNotes"></div>
+      <div class="importPreviewList" id="clientInvoiceList"></div>
+    </div>
+
+    <div class="panelFooter">
+      <button class="btnGhost" onclick="closeClientInvoiceReview()">Скасувати</button>
+      <button class="btnPrimary" onclick="applyClientInvoice()">Застосувати</button>
+    </div>
+  </div>
+</div>
+
 <!-- SHEET: PROCUREMENT RESPONSE REVIEW -->
 
 <div class="sheet" id="procurementResponseSheet">
@@ -3780,7 +3855,12 @@ body.positionDragging{
 
     <button class="addPersonButton" type="button" style="margin:0 0 1rem" onclick="openProcurementResponseFile()">
       <span style="font-size:1rem;line-height:1">⇩</span>
-      <span>Імпортувати відповідь</span>
+      <span>Імпортувати відповідь (звірка)</span>
+    </button>
+
+    <button class="addPersonButton" type="button" style="margin:0 0 1rem" onclick="openClientInvoiceFile()">
+      <span style="font-size:1rem;line-height:1">₴</span>
+      <span>Ціни для клієнта з рахунку постачальника</span>
     </button>
 
     <div id="procurementPlanContent"></div>
@@ -3956,6 +4036,14 @@ body.positionDragging{
   accept="application/json,.json"
   style="display:none"
   onchange="handleBackupFile(event)"
+>
+
+<input
+  type="file"
+  id="clientInvoiceFileInput"
+  accept=".xls,.xlsx,.xlsm"
+  style="display:none"
+  onchange="handleClientInvoiceFile(event)"
 >
 
 <input
@@ -5768,6 +5856,7 @@ function formatQuoteDate(value){
 
 function renderQuotePreviewSection(title, positions, discountPercent, discountAmount){
   if(!positions.length) return "";
+  const linePercent = Number(discountPercent) || 0;
 
   const total = positions.reduce((sum, pos) => {
     return sum + (Number(pos.price) || 0) * (Number(pos.qty) || 0);
@@ -5788,29 +5877,26 @@ function renderQuotePreviewSection(title, positions, discountPercent, discountAm
         const qty = Number(pos.qty) || 1;
         const price = Number(pos.price) || 0;
         const unit = pos.unit || "шт";
-        const itemTotal = price * qty;
+        const netPrice = price * (1 - linePercent / 100);
+        const itemTotal = netPrice * qty;
         const lineName = pos.clientName !== undefined ? pos.clientName : positionClientName(pos);
         const lineBrand = pos.brand !== undefined ? pos.brand : positionBrand(pos);
         return `
           <div class="quoteLine">
             <div class="quoteLineName">${escapeHtml(lineName)}${lineBrand ? `<span class="quoteLineBrand">${escapeHtml(lineBrand)}</span>` : ""}</div>
             <div class="quoteLineQty">${formatQty(qty)} ${escapeHtml(unit)}</div>
-            <div class="quoteLinePrice">${price > 0 ? moneyWithCents(price) : "—"}</div>
+            <div class="quoteLinePrice">${price > 0 ? `${moneyWithCents(netPrice)}` : "—"}</div>
             <div class="quoteLineTotal">${price > 0 ? money(itemTotal) : "—"}</div>
           </div>
         `;
       }).join("")}
-      ${Number(discountPercent) > 0 ? `
-        <div class="quoteSectionTotal quoteSectionSubtotal">
-          <span>Сума</span>
-          <span>${money(total)}</span>
-        </div>
+      ${linePercent > 0 ? `
         <div class="quoteSectionTotal quoteSectionDiscount">
-          <span>Знижка ${discountPercent}%</span>
-          <span>−${money(discountAmount)}</span>
+          <span>Знижку ${linePercent}% враховано в цінах</span>
+          <span>${money(discountAmount)}</span>
         </div>
         <div class="quoteSectionTotal">
-          <span>Разом зі знижкою</span>
+          <span>Разом</span>
           <span>${money(total - (Number(discountAmount) || 0))}</span>
         </div>
       ` : `
@@ -5838,13 +5924,13 @@ function openQuotePreview(){
     return;
   }
 
-  const unpriced = positions.filter(pos => !(Number(pos.price) > 0));
+  const unpriced = positions.filter(pos => !(Number(pos.price) > 0) || pos.clientPriceCheck);
   if(unpriced.length){
-    const list = unpriced.slice(0, 6).map(pos => "• " + positionShortName(pos)).join("\n");
+    const list = unpriced.slice(0, 6).map(pos => "• " + positionShortName(pos) + (pos.clientPriceCheck && Number(pos.price) > 0 ? " — ціна від замінованого товару, перевірте" : "")).join("\n");
     const more = unpriced.length > 6 ? `\n…і ще ${unpriced.length - 6}` : "";
     if(!confirm(
       `Без ціни: ${unpriced.length} поз.\n\n${list}${more}\n\n` +
-      "У документі для клієнта вони будуть з прочерком і не ввійдуть у суму. Все одно продовжити?"
+      "Позиції без ціни будуть у документі з прочерком і не ввійдуть у суму. Все одно продовжити?"
     )) return;
   }
 
@@ -5871,9 +5957,18 @@ function catalogItemUsesCurrencyPrice(item){
   });
 }
 
+function positionHasSupplierClientPrice(position){
+  return Boolean(position && (position.clientInvoicePriceAt || position.clientPriceFromSupplierAt));
+}
+
+/* Перевірка курсу потрібна лише для валютних позицій, ціну яких ще не
+   підтвердив постачальник (звіркою або рахунком). */
 function projectHasSupplierConfirmation(project){
   const materials = (project && project.positions || []).filter(position => position && position.type === "material");
-  return materials.length > 0 && materials.every(position => Boolean(position.supplierConfirmedAt));
+  const pending = materials.filter(position =>
+    catalogItemUsesCurrencyPrice(getPositionCatalogItem(position)) &&
+    !position.supplierConfirmedAt && !positionHasSupplierClientPrice(position));
+  return materials.length > 0 && pending.length === 0;
 }
 
 function openQuoteCourseCheck(){
@@ -5900,6 +5995,8 @@ function applyCurrentCatalogPricesToQuoteDraft(){
     if(!position || position.type !== "material") return;
     const item = getPositionCatalogItem(position);
     if(!item || !catalogItemUsesCurrencyPrice(item)) return;
+    // Ціни від постачальника (звірка/рахунок) не перезаписуємо цінами каталогу.
+    if(positionHasSupplierClientPrice(position)) return;
 
     const price = Number(item.price);
     if(!(price > 0) || Math.abs(price - (Number(position.price) || 0)) < 0.005) return;
@@ -6381,9 +6478,9 @@ function renderEstimateSection(label, items, projectId, discountPercent){
     return sum + price * qty;
   }, 0);
 
-  const totalLabel = Number(discountPercent) > 0
-    ? label + " ДО ЗНИЖКИ"
-    : label;
+  const sectionPercent = Number(discountPercent) || 0;
+  const sectionNet = sectionTotal * (1 - sectionPercent / 100);
+  const totalLabel = sectionPercent > 0 ? label + ` (−${sectionPercent}%)` : label;
 
   return `
     <div class="estimateSection">
@@ -6396,7 +6493,7 @@ function renderEstimateSection(label, items, projectId, discountPercent){
 
       <div class="estimateSectionTotal">
         <span class="estimateSectionTotalLabel">${totalLabel}:</span>
-        <span class="estimateSectionTotalValue">${money(sectionTotal)}</span>
+        <span class="estimateSectionTotalValue">${money(sectionNet)}</span>
       </div>
     </div>
   `;
@@ -6406,11 +6503,16 @@ function renderPosition(projectId, pos){
   const qty = Number(pos.qty) || 1;
   const price = Number(pos.price) || 0;
   const unit = pos.unit || "шт";
-  const total = price * qty;
   const priceSet = price > 0;
+  const rowProject = projects.find(item => item.id === projectId);
+  const rowDiscount = pos.type === "work" ? getWorksDiscountPercent(rowProject) : getMaterialsDiscountPercent(rowProject);
+  const netPrice = price * (1 - rowDiscount / 100);
+  const total = netPrice * qty;
 
   const priceText = priceSet
-    ? money(price) + " / " + escapeHtml(unit)
+    ? (rowDiscount > 0
+        ? `${moneyWithCents(netPrice)} / ${escapeHtml(unit)}`
+        : moneyWithCents(price) + " / " + escapeHtml(unit))
     : "ціна не задана";
 
   const namePressHandlers = pos.type === "material" ? `
@@ -6429,7 +6531,7 @@ function renderPosition(projectId, pos){
           aria-label="Змінити порядок позиції"
           onpointerdown="startEstimatePositionDrag(event,'${escapeHtml(projectId)}','${escapeHtml(pos.id)}','${escapeHtml(pos.type)}')"
         >⠿</button>
-        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(positionShortName(pos))}${positionBrand(pos) || positionStockQty(pos) > 0 ? `<span class="positionBrand">${escapeHtml(positionBrand(pos))}${positionBrand(pos) && positionStockQty(pos) > 0 ? " · " : ""}${positionStockQty(pos) > 0 ? `<span class="positionStockTag">${isPositionFullyFromStock(pos) ? "усе зі складу" : "зі складу " + formatQty(positionStockQty(pos))}</span>` : ""}</span>` : ""}${approvedQtyNote(projects.find(item => item.id === projectId), pos)}</div>
+        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(positionShortName(pos))}${positionBrand(pos) || positionStockQty(pos) > 0 ? `<span class="positionBrand">${escapeHtml(positionBrand(pos))}${positionBrand(pos) && positionStockQty(pos) > 0 ? " · " : ""}${positionStockQty(pos) > 0 ? `<span class="positionStockTag">${isPositionFullyFromStock(pos) ? "усе зі складу" : "зі складу " + formatQty(positionStockQty(pos))}</span>` : ""}</span>` : ""}${approvedQtyNote(projects.find(item => item.id === projectId), pos)}${pos.clientPriceCheck ? `<span class="positionApprovedNote">заміна від постачальника — перевірте ціну для клієнта</span>` : ""}</div>
 
         <div class="qtyControl">
           <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
@@ -8212,6 +8314,7 @@ function savePrices(){
     const value = Number(String(input.value).replace(",",".")) || 0;
     if(value > 0){
       pos.price = value;
+      delete pos.clientPriceCheck;
 
       if(pos.catalogId){
         const cat = catalog.find(c => c.id === pos.catalogId);
@@ -8586,9 +8689,13 @@ function procurementRequestText(draft){
   const project = projects.find(item => item.id === draft.projectId);
   const objectName = project ? projectTitlePlain(project) : "об’єкт";
   return `Доброго дня!\n\n` +
-    `Надсилаю заявку на звірку матеріалів для об’єкта «${objectName}».\n\n` +
-    `Будь ласка, у вкладеному файлі позначте наявність і вкажіть фактичну закупівельну ціну. Якщо ціна залежить від курсу, зазначте валюту та ваш курс.\n\n` +
-    `Поверніть заповнений файл у форматі XLSX.\n\n` +
+    `Надсилаю список матеріалів на звірку для об’єкта «${objectName}».\n\n` +
+    `У файлі, будь ласка:\n` +
+    `• вгорі — ваш курс EUR/USD;\n` +
+    `• наявність і строк;\n` +
+    `• дві ціни ЗА 1 ОДИНИЦЮ: роздрібну (для клієнта) і для мене;\n` +
+    `• якщо щось змінюємо — правте кількість, вписуйте заміну або додавайте рядки внизу.\n\n` +
+    `Поверніть цей самий файл у форматі XLSX.\n\n` +
     `Дякую!`;
 }
 
@@ -8612,6 +8719,11 @@ function getPositionMaterialArticle(position){
   return cleanText(item && item.article);
 }
 
+/* Файл звірки v2: дві ціни ЗА ОДИНИЦЮ (для клієнта і для майстра),
+   курс один на весь файл, сума рахується формулою (видно, якщо вписали
+   суму замість ціни), можна змінити кількість, замінити товар і додати рядки. */
+const PROCUREMENT_EXTRA_ROWS = 12;
+
 function buildProcurementRequestTemplateFile(draft){
   if(typeof XLSX === "undefined") throw new Error("XLSX unavailable");
   const project = projects.find(item => item.id === draft.projectId);
@@ -8620,15 +8732,24 @@ function buildProcurementRequestTemplateFile(draft){
   const positions = (project.positions || []).filter(position =>
     draft.positionIds.includes(position.id) && position.type === "material"
   );
+  const header = [
+    "Артикул", "Повна назва", "Бренд", "Кількість", "Одиниця",
+    "Наявність (Є / Під замовлення / Немає)", "Строк поставки",
+    "Роздрібна ціна за 1 од. (для клієнта)", "Ціна для майстра за 1 од.",
+    "Валюта (UAH / EUR / USD)", "Сума закупки (рахується сама)", "Коментар / заміна", "SA_POSITION_ID"
+  ];
   const rows = [
-    ["SA_MASTER_PROCUREMENT_REQUEST", 1],
+    ["SA_MASTER_PROCUREMENT_REQUEST", 2],
     ["Ідентифікатор об’єкта", project.id],
     ["Об’єкт", projectTitlePlain(project)],
     ["Постачальник", draft.supplierName],
-    ["Заповніть наявність, фактичну ціну, валюту та курс (якщо EUR/USD). Не змінюйте технічний стовпець SA_POSITION_ID."],
+    ["Курс EUR, ₴", ""],
+    ["Курс USD, ₴", ""],
+    ["ЦІНИ — ЗА 1 ОДИНИЦЮ. Сума рахується сама. Можна змінити кількість, вписати заміну (новий артикул і назву) і додати рядки внизу. Не змінюйте стовпець SA_POSITION_ID."],
     [],
-    ["Артикул", "Повна назва", "Бренд", "Кількість", "Одиниця", "Наявність", "Факт. ціна", "Валюта", "Курс, ₴", "Коментар", "SA_POSITION_ID"]
+    header
   ];
+  const formulaRows = [];
 
   groupMaterialPositions(positions).forEach(group => {
     rows.push([group.label]);
@@ -8639,34 +8760,44 @@ function buildProcurementRequestTemplateFile(draft){
         getPositionMaterialBrand(position),
         positionOrderQty(position) || Number(position.qty) || 1,
         position.unit || "шт",
-        "",
-        "",
-        "",
-        "",
-        "",
+        "", "", "", "", "", "", "",
         position.id
       ]);
+      formulaRows.push(rows.length);
     });
   });
 
+  rows.push([]);
+  rows.push(["ДОДАТКОВІ ПОЗИЦІЇ (якщо домовились про щось ще)"]);
+  for(let i = 0; i < PROCUREMENT_EXTRA_ROWS; i++){
+    rows.push(["", "", "", "", "", "", "", "", "", "", "", "", ""]);
+    formulaRows.push(rows.length);
+  }
+
   const sheet = XLSX.utils.aoa_to_sheet(rows);
+  formulaRows.forEach(rowNumber => {
+    sheet[XLSX.utils.encode_cell({ r: rowNumber - 1, c: 10 })] = { t: "n", f: `IF(OR(D${rowNumber}="",I${rowNumber}=""),"",D${rowNumber}*I${rowNumber})` };
+  });
   sheet["!cols"] = [
-    { wch:18 }, { wch:48 }, { wch:18 }, { wch:11 }, { wch:12 },
-    { wch:18 }, { wch:16 }, { wch:11 }, { wch:13 }, { wch:28 }, { hidden:true }
+    { wch:16 }, { wch:46 }, { wch:14 }, { wch:10 }, { wch:9 },
+    { wch:18 }, { wch:14 }, { wch:18 }, { wch:16 },
+    { wch:12 }, { wch:16 }, { wch:28 }, { hidden:true }
   ];
-  sheet["!freeze"] = { xSplit:0, ySplit:7 };
+  sheet["!freeze"] = { xSplit:0, ySplit:9 };
 
   const guide = XLSX.utils.aoa_to_sheet([
-    ["Як заповнити звірку матеріалів"],
+    ["Як заповнити звірку"],
     [],
-    ["1. У колонці «Наявність» вкажіть: Так, Ні або Під замовлення."],
-    ["2. У «Факт. ціна» зазначте актуальну закупівельну ціну за одиницю."],
-    ["3. Для фіксованої ціни у гривні вкажіть UAH; курс залиште порожнім."],
-    ["4. Для EUR/USD внесіть базову ціну, валюту та фактичний курс вашої компанії."],
-    ["5. За потреби додайте пояснення або заміну в колонці «Коментар»."],
-    ["6. Не змінюйте назву аркуша, заголовки та прихований технічний стовпець SA_POSITION_ID."],
+    ["1. Вгорі вкажіть ваш курс EUR і USD (якщо є такі товари). Один курс на весь файл."],
+    ["2. «Наявність»: Є, Під замовлення або Немає. Строк поставки — окремою колонкою (наприклад, 1-2 дні)."],
+    ["3. Обидві ціни — ЗА 1 ОДИНИЦЮ, не за весь рядок. Колонка «Сума закупки» рахується сама — звірте її з вашим рахунком."],
+    ["4. «Роздрібна ціна» — ціна для кінцевого клієнта. «Ціна для майстра» — ціна зі знижкою для мене."],
+    ["5. Валюта — UAH, EUR або USD. Для EUR/USD вписуйте ціну у валюті, курс береться зверху."],
+    ["6. Якщо домовились про іншу кількість — змініть «Кількість». Замінили товар — впишіть новий артикул і назву в тому ж рядку."],
+    ["7. Щось додали — заповніть рядки в розділі «Додаткові позиції» внизу."],
+    ["8. Не змінюйте назву аркуша, заголовки та прихований стовпець SA_POSITION_ID."],
     [],
-    ["Після заповнення збережіть файл у форматі XLSX і поверніть майстру."]
+    ["Збережіть файл у форматі XLSX і поверніть майстру."]
   ]);
   guide["!cols"] = [{ wch:120 }];
 
@@ -8831,7 +8962,7 @@ function normalizeProcurementAvailability(value){
   const text = ntext(value);
   if(!text) return "unknown";
   if(/^(так|є|в наявності|підтверджено|available|yes)$/.test(text)) return "available";
-  if(/під замов|на замов|очікуван|expected|pre.?order/.test(text)) return "pre_order";
+  if(/під замов|на замов|очіку|чекаєм|expected|pre.?order|\d\s*-?\s*\d*\s*(?:дн|день|тиж)|наступн.*тиж/.test(text)) return "pre_order";
   if(/^(ні|немає|відсут|no|not available)/.test(text)) return "unavailable";
   return "unknown";
 }
@@ -8847,7 +8978,14 @@ function parseProcurementResponseWorkbook(workbook){
   const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
     header:1, raw:false, defval:"", blankrows:true
   });
-  if(Number(parseNumber(rows?.[0]?.[1])) !== 1) throw new Error("Непідтримувана версія файлу звірки");
+  const fileVersion = Number(parseNumber(rows?.[0]?.[1]));
+  if(![1, 2].includes(fileVersion)) throw new Error("Непідтримувана версія файлу звірки");
+  const topRate = label => {
+    const row = rows.find(item => ntext(item && item[0]).startsWith(label));
+    const value = row ? parseNumber(row[1]) : NaN;
+    return Number.isFinite(value) && value > 0 ? value : null;
+  };
+  const fileRates = { EUR: topRate("курс eur"), USD: topRate("курс usd") };
 
   const projectRow = rows.find(row => ntext(row && row[0]) === "ідентифікатор об’єкта");
   const supplierRow = rows.find(row => ntext(row && row[0]) === "постачальник");
@@ -8858,14 +8996,22 @@ function parseProcurementResponseWorkbook(workbook){
   const headerIndex = rows.findIndex(row => ntext(row && row[0]) === "артикул" && row.some(cell => ntext(cell) === "sa_position_id"));
   if(headerIndex < 0) throw new Error("Не знайдено таблицю звірки або змінено її заголовки");
   const header = rows[headerIndex];
-  const findColumn = name => header.findIndex(cell => ntext(cell) === name);
+  const findColumn = name => header.findIndex(cell => ntext(cell) === name || ntext(cell).startsWith(name + " "));
+  const startsColumn = prefix => header.findIndex(cell => ntext(cell).startsWith(prefix));
   const positionIdCol = findColumn("sa_position_id");
-  const availabilityCol = findColumn("наявність");
-  const priceCol = findColumn("факт. ціна");
-  const currencyCol = findColumn("валюта");
-  const rateCol = header.findIndex(cell => ntext(cell).startsWith("курс"));
-  const commentCol = findColumn("коментар");
-  if([positionIdCol, availabilityCol, priceCol, currencyCol, rateCol, commentCol].some(index => index < 0)){
+  const availabilityCol = startsColumn("наявність");
+  const priceCol = header.findIndex(cell => /^(факт\. ціна|ціна для майстра)/.test(ntext(cell)));
+  const retailCol = startsColumn("роздрібна ціна");
+  const deadlineCol = startsColumn("строк");
+  const currencyCol = startsColumn("валюта");
+  const rateCol = startsColumn("курс");
+  const commentCol = startsColumn("коментар");
+  const qtyCol = findColumn("кількість");
+  const articleCol = findColumn("артикул");
+  const nameCol = findColumn("повна назва");
+  const brandCol = findColumn("бренд");
+  const unitCol = findColumn("одиниця");
+  if([positionIdCol, availabilityCol, priceCol, currencyCol, commentCol].some(index => index < 0) || (fileVersion === 1 && rateCol < 0)){
     throw new Error("У файлі бракує обов’язкових колонок звірки");
   }
 
@@ -8875,42 +9021,484 @@ function parseProcurementResponseWorkbook(workbook){
   for(let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex++){
     const row = rows[rowIndex] || [];
     const positionId = cleanText(row[positionIdCol]);
-    if(!positionId) continue;
-    if(seen.has(positionId)){
+    const rowName = nameCol >= 0 ? cleanText(row[nameCol]) : "";
+    const rowArticle = articleCol >= 0 ? cleanText(row[articleCol]) : "";
+    const filledCells = row.filter(cell => cleanText(cell)).length;
+    // Рядок-заголовок категорії («ВОДОПОСТАЧАННЯ») має лише одну клітинку.
+    if(!positionId && (filledCells <= 1 || !(rowName || rowArticle))) continue;
+    if(positionId && seen.has(positionId)){
       errors.push(`Рядок ${rowIndex + 1}: позиція повторюється.`);
       continue;
     }
-    seen.add(positionId);
+    if(positionId) seen.add(positionId);
 
     let availability = normalizeProcurementAvailability(row[availabilityCol]);
     const sourcePrice = parseNumber(row[priceCol]);
-    const currency = cleanText(row[currencyCol]).toUpperCase() || "UAH";
-    const rate = parseNumber(row[rateCol]);
-    const comment = cleanText(row[commentCol]);
+    const retailSource = retailCol >= 0 ? parseNumber(row[retailCol]) : NaN;
+    const hasRetail = Number.isFinite(retailSource) && retailSource > 0;
+    const currency = cleanText(row[currencyCol]).toUpperCase().replace(/[^A-Z]/g, "") || "UAH";
+    const rowRate = rateCol >= 0 ? parseNumber(row[rateCol]) : NaN;
+    const rate = Number.isFinite(rowRate) && rowRate > 0 ? rowRate : (fileRates[currency] || NaN);
+    const rawAvailability = cleanText(row[availabilityCol]);
+    let comment = cleanText(row[commentCol]);
+    const deadline = deadlineCol >= 0 ? cleanText(row[deadlineCol]) : "";
+    if(deadline) comment = comment ? `строк ${deadline}; ${comment}` : `строк ${deadline}`;
+    if(availability === "pre_order" && rawAvailability && !/^під замовлення$/i.test(rawAvailability)){
+      comment = comment ? `${rawAvailability}; ${comment}` : rawAvailability;
+    }
+    const fileQty = qtyCol >= 0 ? parseNumber(row[qtyCol]) : NaN;
     const hasPrice = Number.isFinite(sourcePrice) && sourcePrice > 0;
-    if(!hasPrice && availability === "unknown" && !comment) continue;
+    if(positionId && !hasPrice && availability === "unknown" && !comment && !(Number.isFinite(fileQty) && fileQty >= 0)) continue;
+    if(!positionId && !hasPrice && !hasRetail) continue;
     if(!["UAH","EUR","USD"].includes(currency)){
       errors.push(`Рядок ${rowIndex + 1}: валюта має бути UAH, EUR або USD.`);
       continue;
     }
-    if(hasPrice && currency !== "UAH" && (!Number.isFinite(rate) || rate <= 0)){
-      errors.push(`Рядок ${rowIndex + 1}: для ${currency} вкажіть курс.`);
+    if((hasPrice || hasRetail) && currency !== "UAH" && (!Number.isFinite(rate) || rate <= 0)){
+      errors.push(fileVersion === 2 ? `Вгорі файлу не вказано курс ${currency}.` : `Рядок ${rowIndex + 1}: для ${currency} вкажіть курс.`);
       continue;
     }
     if(hasPrice && availability === "unknown") availability = "available";
     records.push({
-      positionId,
+      positionId:positionId || "",
       availability,
       sourcePrice:hasPrice ? sourcePrice : null,
       currency,
       rate:currency === "UAH" ? null : rate,
       actualPriceUAH:hasPrice ? (currency === "UAH" ? sourcePrice : sourcePrice * rate) : null,
+      retailSource:hasRetail ? retailSource : null,
+      retailUAH:hasRetail ? (currency === "UAH" ? retailSource : retailSource * rate) : null,
+      fileQty:Number.isFinite(fileQty) && fileQty >= 0 ? fileQty : null,
+      article:rowArticle,
+      name:rowName,
+      brand:brandCol >= 0 ? cleanText(row[brandCol]) : "",
+      unit:unitCol >= 0 ? normalizeUnit(row[unitCol]) : "",
+      rowNumber:rowIndex + 1,
+      answered:hasPrice || hasRetail || availability !== "unknown" || Boolean(comment),
       comment
     });
   }
 
-  if(errors.length) throw new Error(errors.slice(0,4).join("\n"));
-  return { projectId, supplierName, records };
+  if(errors.length) throw new Error(Array.from(new Set(errors)).slice(0,4).join("\n"));
+  return { projectId, supplierName, records, fileVersion, fileRates };
+}
+
+/* Буває, що постачальник у «Факт. ціна» вписує суму за весь рядок
+   (ціна × кількість). Порівнюємо з роздрібною ціною позиції: якщо більшість
+   рядків із кількістю > 1 після ділення на кількість дають звичайну
+   закупівельну ціну, вважаємо весь файл «сумами» і ділимо. */
+function detectProcurementLineTotals(response, project){
+  const positionMap = new Map((project.positions || []).map(position => [position.id, position]));
+  let candidates = 0;
+  let looksTotal = 0;
+  response.records.forEach(record => {
+    const position = positionMap.get(record.positionId);
+    const qty = Number(record.fileQty) || Number(position && position.qty) || 1;
+    const retail = Number(position && position.price) || 0;
+    const actual = Number(record.actualPriceUAH) || 0;
+    if(qty <= 1 || !(retail > 0) || !(actual > 0)) return;
+    candidates++;
+    const perUnit = actual / qty / retail;
+    if(actual / retail > 1.15 && perUnit >= 0.3 && perUnit <= 1.05) looksTotal++;
+  });
+  response.lineTotalsDetected = candidates >= 2 && looksTotal / candidates >= 0.6;
+  response.lineTotals = response.lineTotalsDetected;
+  response.lineTotalsStats = { candidates, looksTotal };
+}
+
+/* Файл постачальника — джерело правди: те, про що домовились по телефону
+   (інша кількість, заміна товару, додаткова позиція), переноситься в об'єкт.
+   Сума для клієнта при погодженому кошторисі не змінюється. */
+function classifyProcurementResponse(response, project){
+  const positionMap = new Map((project.positions || []).map(position => [position.id, position]));
+  response.records.forEach(record => {
+    let position = record.positionId ? positionMap.get(record.positionId) : null;
+    if(!position && !record.positionId && (record.article || record.name)){
+      // Рядок, доданий постачальником раніше і вже перенесений в об'єкт.
+      position = (project.positions || []).find(entry => {
+        if(entry.type !== "material") return false;
+        const item = getPositionCatalogItem(entry);
+        if(record.article) return ntext(item && item.article) === ntext(record.article);
+        return ntext((item && item.name) || entry.fullName) === ntext(record.name);
+      }) || null;
+      if(position) record.positionId = position.id;
+    }
+    record.changes = [];
+    if(!position){
+      record.kind = "new";
+      return;
+    }
+    record.kind = "existing";
+    const orderQty = positionOrderQty(position);
+    if(record.fileQty !== null && record.fileQty !== undefined && roundQty(record.fileQty) !== roundQty(orderQty)){
+      record.changes.push("qty");
+      record.previousQty = orderQty;
+    }
+    const oldArticle = ntext(getPositionMaterialArticle(position));
+    const newArticle = ntext(record.article);
+    const catalogItem = getPositionCatalogItem(position);
+    const oldName = ntext((catalogItem && catalogItem.name) || position.fullName || position.name);
+    const newName = ntext(record.name);
+    const articleChanged = newArticle && oldArticle && newArticle !== oldArticle;
+    const nameChanged = !newArticle && !oldArticle && newName && oldName && newName !== oldName;
+    if(articleChanged || nameChanged) record.changes.push("replace");
+    if(!record.answered && !record.changes.length) record.skip = true;
+  });
+  response.records = response.records.filter(record => !record.skip);
+}
+
+/* Поки кошторис не погоджено, курс із відповіді постачальника оновлює
+   й ціну для клієнта (роздрібна в валюті × новий курс). */
+function procurementRetailUpdate(record, position, response){
+  if(!position || !record || record.retailUAH || record.currency === "UAH" || !(Number(record.rate) > 0)) return null;
+  const project = projects.find(item => item.id === response.projectId);
+  if(getApproved(project)) return null;
+  if((record.changes || []).includes("replace")) return null;
+  const item = getPositionCatalogItem(position);
+  const offer = getCatalogSupplierOffers(item).find(entry => ntext(entry && entry.supplierName) === ntext(response.supplierName));
+  const retail = offer && offer.retail;
+  if(!retail || retail.sourceCurrency !== record.currency || !(Number(retail.sourcePrice) > 0)) return null;
+  const next = Number(retail.sourcePrice) * Number(record.rate);
+  const current = Number(position.price) || 0;
+  if(Math.abs(next - current) < 0.01) return null;
+  return { from: current, to: next };
+}
+
+function procurementRecordQty(record, position){
+  return Number(record.fileQty) || Number(position && position.qty) || 1;
+}
+
+function procurementRecordUnitPrice(record, position){
+  const actual = Number(record.actualPriceUAH) || 0;
+  if(!(actual > 0)) return 0;
+  const qty = procurementRecordQty(record, position);
+  return pendingProcurementResponse && pendingProcurementResponse.lineTotals && qty > 1 ? actual / qty : actual;
+}
+
+function procurementRecordRetail(record, position){
+  const retail = Number(record && record.retailUAH) || 0;
+  if(!(retail > 0)) return 0;
+  const qty = procurementRecordQty(record, position);
+  return pendingProcurementResponse && pendingProcurementResponse.lineTotals && qty > 1 ? retail / qty : retail;
+}
+
+/* Явна роздрібна ціна з файлу постачальника → ціна для клієнта (поки кошторис не погоджено). */
+function procurementExplicitRetail(record, position, response){
+  if(!response || response.useRetail === false) return null;
+  const project = projects.find(item => item.id === response.projectId);
+  if(getApproved(project)) return null;
+  const next = procurementRecordRetail(record, position);
+  if(!(next > 0)) return null;
+  const current = position ? (Number(position.price) || 0) : 0;
+  if(position && Math.abs(next - current) < 0.01) return null;
+  return { from: current, to: next };
+}
+
+function toggleProcurementUseRetail(){
+  if(!pendingProcurementResponse) return;
+  pendingProcurementResponse.useRetail = pendingProcurementResponse.useRetail === false;
+  renderProcurementResponseReview();
+}
+
+function toggleProcurementRetailUpdate(){
+  if(!pendingProcurementResponse) return;
+  pendingProcurementResponse.updateRetail = pendingProcurementResponse.updateRetail !== true;
+  renderProcurementResponseReview();
+}
+
+function toggleProcurementLineTotals(){
+  if(!pendingProcurementResponse) return;
+  pendingProcurementResponse.lineTotals = !pendingProcurementResponse.lineTotals;
+  renderProcurementResponseReview();
+}
+
+/* ==== Рахунок постачальника для замовника ====
+   Постачальник присилає рахунок з цінами для клієнта: «Ціна без знижки»
+   (роздріб) і «Ціна» (зі знижкою). Роздріб стає ціною позиції в кошторисі,
+   кількість — як у рахунку, нові рядки додаються в об'єкт. */
+let pendingClientInvoice = null;
+
+function openClientInvoiceFile(){
+  const input = document.getElementById("clientInvoiceFileInput");
+  input.value = "";
+  input.click();
+}
+
+function parseClientInvoiceRows(rows){
+  const headerIndex = rows.findIndex(row => Array.isArray(row) &&
+    row.some(cell => ntext(cell) === "артикул") &&
+    row.some(cell => /^ціна/.test(ntext(cell))));
+  if(headerIndex < 0) throw new Error("Не знайдено таблицю з колонками «Артикул» і «Ціна»");
+  const header = rows[headerIndex].map(cell => ntext(cell).replace(/\s+/g, " "));
+  const find = test => header.findIndex(test);
+  const articleCol = find(text => text === "артикул" || text === "код");
+  const nameCol = find(text => /^(товар|найменування|назва|номенклатура)/.test(text));
+  const qtyCol = find(text => /^(кількість|к-сть|кіл)/.test(text));
+  const retailCol = find(text => /без знижки|роздріб/.test(text));
+  const netCol = find(text => /^ціна$|^ціна зі знижкою|^ціна, грн$/.test(text));
+  const priceCol = retailCol >= 0 ? retailCol : netCol;
+  if(priceCol < 0 || (articleCol < 0 && nameCol < 0)) throw new Error("У рахунку бракує колонок з артикулом/назвою або ціною");
+
+  const firstText = (row, from, to) => {
+    for(let i = from; i < to; i++){
+      const value = cleanText(row[i]);
+      if(value && value !== "*" && !/^\d+([.,]\d+)?$/.test(value)) return value;
+    }
+    return "";
+  };
+  const items = [];
+  for(let r = headerIndex + 1; r < rows.length; r++){
+    const row = rows[r] || [];
+    const retail = parseNumber(row[priceCol]);
+    const net = netCol >= 0 ? parseNumber(row[netCol]) : NaN;
+    const qty = qtyCol >= 0 ? parseNumber(row[qtyCol]) : 1;
+    if(!(Number.isFinite(retail) && retail > 0) || !(Number.isFinite(qty) && qty > 0)) continue;
+    const article = articleCol >= 0 ? cleanText(row[articleCol]) : "";
+    // Назва може зсуватися на клітинку праворуч (позначка «*» у 1С-рахунках).
+    const name = nameCol >= 0 ? (firstText(row, nameCol, qtyCol >= 0 ? qtyCol : nameCol + 4) || cleanText(row[nameCol])) : "";
+    if(!article && !name) continue;
+    const unitCell = qtyCol >= 0 ? firstText(row, qtyCol + 1, priceCol) : "";
+    items.push({
+      row: r + 1,
+      article,
+      name,
+      qty: roundQty(qty),
+      unit: unitCell ? normalizeUnit(unitCell) : "",
+      retail,
+      net: Number.isFinite(net) && net > 0 ? net : retail
+    });
+  }
+  if(!items.length) throw new Error("У рахунку не знайдено жодного рядка з ціною");
+  return items;
+}
+
+function matchClientInvoice(items, project){
+  const materials = (project.positions || []).filter(position => position.type === "material");
+  const articlesOf = position => {
+    const item = getPositionCatalogItem(position);
+    const set = new Set();
+    if(item && item.article) set.add(ntext(item.article));
+    getCatalogSupplierOffers(item).forEach(offer => { if(offer && offer.supplierArticle) set.add(ntext(offer.supplierArticle)); });
+    return set;
+  };
+  const namesOf = position => {
+    const item = getPositionCatalogItem(position);
+    return [item && item.name, position.fullName, position.name].filter(Boolean).map(value => ntext(value).replace(/\s+/g, " "));
+  };
+  const matched = new Map();
+  items.forEach(entry => {
+    const key = ntext(entry.article);
+    const nameKey = ntext(entry.name).replace(/\s+/g, " ");
+    let position = key ? materials.find(candidate => !matched.has(candidate.id) && articlesOf(candidate).has(key)) : null;
+    if(!position && nameKey) position = materials.find(candidate => !matched.has(candidate.id) && namesOf(candidate).includes(nameKey));
+    if(!position && key){
+      // Той самий артикул удруге — додаткова кількість до вже знайденої позиції.
+      const again = materials.find(candidate => matched.has(candidate.id) && articlesOf(candidate).has(key));
+      if(again){
+        entry.positionId = again.id;
+        entry.extraForSame = true;
+        matched.get(again.id).qty = roundQty(matched.get(again.id).qty + entry.qty);
+        return;
+      }
+    }
+    if(position){
+      entry.positionId = position.id;
+      matched.set(position.id, { qty: entry.qty, retail: entry.retail, entry });
+    }
+  });
+
+  // Залишки: рядок рахунку без пари і позиція цього постачальника без пари
+  // з тією ж кількістю й одиницею — найімовірніше, той самий товар під іншим артикулом.
+  const supplierCount = new Map();
+  matched.forEach((info, id) => {
+    const name = normalizeText(getPositionPlannedSupplier(materials.find(item => item.id === id)));
+    if(name) supplierCount.set(name, (supplierCount.get(name) || 0) + 1);
+  });
+  const mainSupplier = Array.from(supplierCount.entries()).sort((a,b) => b[1] - a[1])[0]?.[0] || "";
+  const leftovers = materials.filter(position => !matched.has(position.id) &&
+    (!mainSupplier || normalizeText(getPositionPlannedSupplier(position)) === mainSupplier));
+  items.filter(entry => !entry.positionId).forEach(entry => {
+    const candidates = leftovers.filter(position => !matched.has(position.id) &&
+      roundQty(position.qty) === roundQty(entry.qty) &&
+      (!entry.unit || normalizeUnit(position.unit) === entry.unit));
+    if(candidates.length === 1){
+      entry.positionId = candidates[0].id;
+      entry.guessed = true;
+      matched.set(candidates[0].id, { qty: entry.qty, retail: entry.retail, entry });
+    }
+  });
+  return matched;
+}
+
+async function handleClientInvoiceFile(event){
+  const file = event.target.files && event.target.files[0];
+  event.target.value = "";
+  if(!file) return;
+  if(typeof XLSX === "undefined"){
+    toast("Модуль XLS/XLSX не завантажився");
+    return;
+  }
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  try{
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type:"array", cellDates:false });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header:1, raw:true, defval:"", blankrows:true });
+    const items = parseClientInvoiceRows(rows);
+    const matched = matchClientInvoice(items, project);
+    pendingClientInvoice = { projectId: project.id, fileName: file.name, items, matched };
+    renderClientInvoiceReview();
+  }catch(error){
+    console.error("Client invoice import error:", error);
+    alert(`Рахунок не імпортовано.\n\n${error && error.message ? error.message : "Не вдалося прочитати файл"}`);
+  }
+}
+
+function renderClientInvoiceReview(){
+  const data = pendingClientInvoice;
+  const project = data && projects.find(item => item.id === data.projectId);
+  if(!data || !project) return;
+  const positionMap = new Map((project.positions || []).map(position => [position.id, position]));
+  const newItems = data.items.filter(entry => !entry.positionId);
+  let priceChanged = 0, qtyChanged = 0;
+  data.matched.forEach((info, id) => {
+    const position = positionMap.get(id);
+    if(Math.abs((Number(position.price) || 0) - info.retail) >= 0.01) priceChanged++;
+    if(roundQty(position.qty) !== roundQty(info.qty)) qtyChanged++;
+  });
+  const retailTotal = data.items.reduce((sum, entry) => sum + entry.retail * entry.qty, 0);
+  const netTotal = data.items.reduce((sum, entry) => sum + entry.net * entry.qty, 0);
+  const invoicePercent = retailTotal > 0 ? Math.round((1 - netTotal / retailTotal) * 1000) / 10 : 0;
+  const projectPercent = getMaterialsDiscountPercent(project);
+  const suppliers = new Map();
+  data.matched.forEach((info, id) => {
+    const name = cleanText(getPositionPlannedSupplier(positionMap.get(id)));
+    if(name) suppliers.set(name, (suppliers.get(name) || 0) + 1);
+  });
+  const supplierName = Array.from(suppliers.entries()).sort((a,b) => b[1] - a[1])[0]?.[0] || "";
+  data.supplierName = supplierName;
+  const notInInvoice = supplierName ? (project.positions || []).filter(position =>
+    position.type === "material" && !data.matched.has(position.id) &&
+    normalizeText(getPositionPlannedSupplier(position)) === normalizeText(supplierName)) : [];
+
+  document.getElementById("clientInvoiceSummary").innerHTML = `
+    <div class="importSummaryRow"><span>Рядків у рахунку</span><b>${data.items.length}</b></div>
+    <div class="importSummaryRow"><span>Знайдено в об’єкті</span><b>${data.matched.size}</b></div>
+    <div class="importSummaryRow"><span>Роздріб за рахунком</span><b>${money(retailTotal)}</b></div>
+    <div class="importSummaryRow"><span>Ваша знижка клієнту</span><b>${projectPercent}% (з кошторису)</b></div>
+  `;
+  const notes = [];
+  notes.push(`Ціна для клієнта (роздріб) зміниться в ${priceChanged} поз.${qtyChanged ? `, кількість — у ${qtyChanged}` : ""}${newItems.length ? `, нових позицій: ${newItems.length}` : ""}.`);
+  if(getApproved(project)) notes.push(`<b>Кошторис уже погоджено.</b> Після застосування натисніть ⋯ → «Клієнт погодив нову версію», щоб документ для клієнта оновився.`);
+  if(notInInvoice.length) notes.push(`Немає в рахунку (${escapeHtml(supplierName)}): ${notInInvoice.map(position => escapeHtml(positionShortName(position))).join(", ")}`);
+  document.getElementById("clientInvoiceNotes").innerHTML = notes.map(text => `<div class="procurementChangesNote">${text}</div>`).join("");
+
+  const rowsHtml = data.items.map(entry => {
+    const position = entry.positionId ? positionMap.get(entry.positionId) : null;
+    if(!position){
+      return `
+        <div class="importPreviewItem procurementNewRow">
+          <div class="importPreviewName"><span class="procurementChangeTag">нова</span> ${escapeHtml(entry.name || entry.article)}</div>
+          <div class="importPreviewMeta">${entry.article ? `арт. ${escapeHtml(entry.article)} · ` : ""}${formatQty(entry.qty)} ${escapeHtml(entry.unit || "шт")} · <b>${moneyWithCents(entry.retail)}</b></div>
+        </div>`;
+    }
+    if(entry.extraForSame){
+      return `
+        <div class="importPreviewItem">
+          <div class="importPreviewName"><span class="procurementChangeTag">ще рядок</span> ${escapeHtml(positionShortName(position))}</div>
+          <div class="importPreviewMeta">+${formatQty(entry.qty)} до кількості</div>
+        </div>`;
+    }
+    const info = data.matched.get(position.id);
+    const oldPrice = Number(position.price) || 0;
+    const priceDiff = Math.abs(oldPrice - info.retail) >= 0.01;
+    const qtyDiff = roundQty(position.qty) !== roundQty(info.qty);
+    if(!priceDiff && !qtyDiff && !entry.guessed) return "";
+    return `
+      <div class="importPreviewItem">
+        <div class="importPreviewName">${entry.guessed ? `<span class="procurementChangeTag">перевірте</span> ` : ""}${escapeHtml(positionShortName(position))}</div>
+        ${entry.guessed ? `<div class="importPreviewMeta procurementChangeLine">Зіставлено за кількістю з «${escapeHtml(entry.name || entry.article)}»</div>` : ""}
+        <div class="importPreviewMeta">${priceDiff ? `${moneyWithCents(oldPrice)} → <b>${moneyWithCents(info.retail)}</b>` : moneyWithCents(info.retail)}${qtyDiff ? ` · кількість ${formatQty(position.qty)} → <b>${formatQty(info.qty)}</b>` : ""}</div>
+      </div>`;
+  }).join("");
+  document.getElementById("clientInvoiceList").innerHTML = rowsHtml || `<div class="formHint">Ціни й кількості вже збігаються з рахунком.</div>`;
+  document.getElementById("clientInvoiceSheet").classList.add("open");
+}
+
+function closeClientInvoiceReview(){
+  document.getElementById("clientInvoiceSheet").classList.remove("open");
+  pendingClientInvoice = null;
+}
+
+function applyClientInvoice(){
+  const data = pendingClientInvoice;
+  const project = data && projects.find(item => item.id === data.projectId);
+  if(!data || !project) return;
+  const now = new Date().toISOString();
+  let updated = 0, added = 0, catalogChanged = false;
+
+  data.matched.forEach((info, id) => {
+    const position = (project.positions || []).find(item => item.id === id);
+    if(!position) return;
+    position.price = info.retail;
+    delete position.clientPriceCheck;
+    if(roundQty(position.qty) !== roundQty(info.qty)) position.qty = info.qty;
+    position.clientInvoicePriceAt = now;
+    updated++;
+  });
+
+  data.items.filter(entry => !entry.positionId).forEach(entry => {
+    let item = entry.article ? findCatalogMaterialsByArticle(entry.article)[0] : null;
+    if(!item){
+      item = {
+        id: uid("cat"),
+        type: "material",
+        name: entry.name || entry.article,
+        nameMaster: "",
+        unit: entry.unit || "шт",
+        price: entry.retail,
+        retailPriceUAH: entry.retail,
+        purchasePriceUAH: 0,
+        availabilityStatus: "draft",
+        preferredSupplierName: data.supplierName || "",
+        category: detectCategory(entry.name || "", "", ""),
+        stage: "",
+        manufacturer: "",
+        system: detectSystem(entry.name || ""),
+        article: entry.article || "",
+        needsReview: true,
+        basePriceEUR: 0,
+        supplierOffers: []
+      };
+      catalog.push(item);
+      catalogChanged = true;
+    }
+    project.positions.push({
+      id: uid("pos"),
+      catalogId: item.id,
+      type: "material",
+      name: catalogDisplayName(item),
+      fullName: item.name,
+      unit: entry.unit || item.unit || "шт",
+      price: entry.retail,
+      purchasePrice: Number(item.purchasePriceUAH) > 0 ? Number(item.purchasePriceUAH) : null,
+      purchasePriceState: "estimated",
+      plannedSupplierName: data.supplierName || "",
+      qty: entry.qty,
+      clientInvoicePriceAt: now,
+      addedFromSupplierAt: now
+    });
+    added++;
+  });
+
+  if(catalogChanged) saveCatalog();
+  project.updatedAt = now;
+  saveProjects();
+  closeClientInvoiceReview();
+  render();
+  if(document.getElementById("procurementPlanScreen").classList.contains("open")) renderProcurementPlan();
+  toast(`Ціни для клієнта оновлено: ${updated} поз.${added ? `, додано ${added}` : ""}`, 3200);
 }
 
 function openProcurementResponseFile(){
@@ -8934,21 +9522,77 @@ function renderProcurementResponseReview(){
     <div class="importSummaryRow"><span>Звірено позицій</span><b>${response.records.length}</b></div>
     <div class="importSummaryRow"><span>В наявності / немає</span><b>${available} / ${unavailable}</b></div>
   `;
-  document.getElementById("procurementResponseHint").textContent =
-    `${withPrice} цін підтверджено. ${response.missingCount ? `Без відповіді: ${response.missingCount} поз.` : "Усі рядки опрацьовано."} Клієнтський кошторис не зміниться.`;
-  document.getElementById("procurementResponseList").innerHTML = response.records.map(record => {
+  const lineTotalsNote = response.lineTotalsDetected || response.lineTotals ? `
+    <div class="procurementTotalsNote">
+      <b>${response.lineTotals ? "Ціни поділено на кількість." : "Ціни взято як ціни за одиницю."}</b>
+      ${response.lineTotalsDetected ? `Схоже, постачальник у «Факт. ціна» вписав суму за весь рядок (${response.lineTotalsStats.looksTotal} з ${response.lineTotalsStats.candidates} рядків з кількістю більше 1).` : ""}
+      <button type="button" onclick="toggleProcurementLineTotals()">${response.lineTotals ? "Ні, це ціни за одиницю" : "Це суми за рядок — поділити"}</button>
+    </div>` : "";
+  document.getElementById("procurementResponseHint").innerHTML =
+    `${lineTotalsNote}${withPrice} цін підтверджено. ${response.missingCount ? `Без відповіді: ${response.missingCount} поз.` : "Усі рядки опрацьовано."} ${getApproved(project) ? "Сума для клієнта не зміниться." : "<b>Кошторис ще не погоджено:</b> нові позиції й зміни кількостей увійдуть у суму для клієнта."}`;
+  const qtyChanged = response.records.filter(record => (record.changes || []).includes("qty")).length;
+  const replaced = response.records.filter(record => (record.changes || []).includes("replace")).length;
+  const added = response.records.filter(record => record.kind === "new").length;
+  const notInFile = (response.notInFile || []).map(id => positionMap.get(id)).filter(Boolean);
+  const changeParts = [];
+  if(qtyChanged) changeParts.push(`кількість змінено: ${qtyChanged}`);
+  if(replaced) changeParts.push(`замінено товар: ${replaced}`);
+  if(added) changeParts.push(`нові позиції: ${added}`);
+  const hasExplicitRetail = response.records.some(record => Number(record.retailUAH) > 0);
+  const explicitCount = response.records.filter(record => record.positionId && positionMap.get(record.positionId) &&
+    procurementExplicitRetail(record, positionMap.get(record.positionId), { ...response, useRetail: true })).length;
+  const approvedNow = Boolean(getApproved(project));
+  const explicitBox = hasExplicitRetail ? `
+    <div class="procurementChangesNote">
+      ${approvedNow
+        ? `<b>Роздрібні ціни є у файлі, але кошторис уже погоджено</b> — ціни для клієнта не змінюються.`
+        : `<b>Роздрібні ціни від постачальника.</b> ${response.useRetail === false ? "Ціни для клієнта залишаться як є." : `Ціна для клієнта зміниться в ${explicitCount} поз. Знижку клієнту ви задаєте самі в кошторисі.`}
+           <button type="button" class="procurementInlineButton" onclick="toggleProcurementUseRetail()">${response.useRetail === false ? "Взяти роздрібні ціни з файлу" : "Не змінювати ціни для клієнта"}</button>`}
+    </div>` : "";
+  const retailUpdates = hasExplicitRetail ? 0 : response.records.filter(record => procurementRetailUpdate(record, positionMap.get(record.positionId), response)).length;
+  const retailBox = retailUpdates ? `
+    <div class="procurementChangesNote">
+      <b>Курс у звірці відрізняється від того, що в калькуляторі.</b> Ціни для клієнта краще брати з рахунку постачальника (кнопка «Ціни для клієнта з рахунку»).
+      ${response.updateRetail === true ? `Ціни для клієнта буде перераховано за новим курсом: ${retailUpdates} поз.` : `Ціни для клієнта залишаться як є.`}
+      <button type="button" class="procurementInlineButton" onclick="toggleProcurementRetailUpdate()">${response.updateRetail === true ? "Не змінювати ціни для клієнта" : "Перерахувати ціни для клієнта"}</button>
+    </div>` : "";
+  const changesBox = changeParts.length || notInFile.length ? `
+    <div class="procurementChangesNote">
+      ${changeParts.length ? `<b>Зміни від постачальника:</b> ${changeParts.join(", ")}. Їх буде перенесено в об’єкт.` : ""}
+      ${notInFile.length ? `<div>Без відповіді (лишаться без змін): ${notInFile.map(position => escapeHtml(positionShortName(position))).join(", ")}</div>` : ""}
+    </div>` : "";
+  document.getElementById("procurementResponseList").innerHTML = explicitBox + retailBox + changesBox + response.records.map(record => {
     const position = positionMap.get(record.positionId);
-    if(!position) return "";
+    if(!position){
+      const unit = procurementRecordUnitPrice(record, null);
+      return `
+        <div class="importPreviewItem procurementNewRow">
+          <div class="importPreviewName"><span class="procurementChangeTag">нова</span> ${escapeHtml(record.name || record.article)}</div>
+          <div class="importPreviewMeta">${record.article ? `арт. ${escapeHtml(record.article)} · ` : ""}${formatQty(record.fileQty || 1)} ${escapeHtml(record.unit || "шт")} · <b>${unit > 0 ? moneyWithCents(unit) : "ціна не вказана"}</b>${procurementRecordRetail(record, null) > 0 ? ` · для клієнта ${moneyWithCents(procurementRecordRetail(record, null))}` : ""}${record.comment ? ` · ${escapeHtml(record.comment)}` : ""}</div>
+        </div>
+      `;
+    }
     const planned = Number(position.purchasePrice);
-    const actual = Number(record.actualPriceUAH);
+    const actual = procurementRecordUnitPrice(record, position);
+    const qty = procurementRecordQty(record, position);
+    const divided = response.lineTotals && qty > 1 && Number(record.actualPriceUAH) > 0;
+    const retail = Number(position.price) || 0;
+    const suspicious = actual > 0 && ((planned > 0 && Math.abs(actual - planned) / planned > 0.3) || (retail > 0 && actual > retail));
     const priceText = actual > 0
-      ? `${planned > 0 ? moneyWithCents(planned) + " → " : ""}<b>${moneyWithCents(actual)}</b>`
+      ? `${planned > 0 ? moneyWithCents(planned) + " → " : ""}<b>${moneyWithCents(actual)}</b>${divided ? ` <span class="procurementDivided">(${moneyWithCents(record.actualPriceUAH)} ÷ ${formatQty(qty)})</span>` : ""}${suspicious ? ` <span class="procurementSuspicious">перевірте</span>` : ""}`
       : "ціна не вказана";
     const availability = procurementAvailabilityLabel(record.availability) || "Коментар постачальника";
+    const changes = record.changes || [];
+    const qtyNote = changes.includes("qty") ? `<div class="importPreviewMeta procurementChangeLine">Кількість: ${formatQty(record.previousQty)} → <b>${formatQty(record.fileQty)}</b> ${escapeHtml(position.unit || "шт")}</div>` : "";
+    const replaceNote = changes.includes("replace") ? `<div class="importPreviewMeta procurementChangeLine">Заміна: <b>${escapeHtml(record.name || record.article)}</b>${record.article ? ` (арт. ${escapeHtml(record.article)})` : ""}${!getApproved(project) ? " · ціну для клієнта перевірте після імпорту" : ""}</div>` : "";
+    const explicitRetail = procurementExplicitRetail(record, position, response);
+    const retailUpdate = explicitRetail || (response.updateRetail === true ? procurementRetailUpdate(record, position, response) : null);
+    const retailNote = retailUpdate ? `<div class="importPreviewMeta procurementChangeLine">Ціна для клієнта: ${moneyWithCents(retailUpdate.from)} → <b>${moneyWithCents(retailUpdate.to)}</b>${explicitRetail ? "" : ` (курс ${String(record.rate).replace(".", ",")})`}</div>` : "";
     return `
       <div class="importPreviewItem">
-        <div class="importPreviewName">${escapeHtml(positionShortName(position))}</div>
+        <div class="importPreviewName">${changes.length ? `<span class="procurementChangeTag">зміна</span> ` : ""}${escapeHtml(positionShortName(position))}</div>
         <div class="importPreviewMeta"><b>${escapeHtml(availability)}</b> · ${priceText}${record.comment ? ` · ${escapeHtml(record.comment)}` : ""}</div>
+        ${qtyNote}${replaceNote}${retailNote}
       </div>
     `;
   }).join("");
@@ -8967,22 +9611,138 @@ function applyProcurementResponse(){
 
   const now = new Date().toISOString();
   let confirmedPrices = 0;
+  let appliedChanges = 0;
+  let retailUpdated = 0;
+  let catalogChanged = false;
+
+  const findOrCreateCatalogItem = (record, unitPrice, fallbackCategory) => {
+    const byArticle = record.article ? findCatalogMaterialsByArticle(record.article) : [];
+    const brandKey = ntext(record.brand);
+    let item = byArticle.find(entry => !brandKey || ntext(entry.manufacturer) === brandKey) || byArticle[0] || null;
+    if(!item && record.name){
+      item = catalog.find(entry => entry.type === "material" && ntext(entry.name) === ntext(record.name)) || null;
+    }
+    if(item) return item;
+    item = {
+      id: uid("cat"),
+      type: "material",
+      name: record.name || record.article,
+      nameMaster: "",
+      unit: record.unit || "шт",
+      price: procurementRecordRetail(record, null) || 0,
+      retailPriceUAH: procurementRecordRetail(record, null) || 0,
+      purchasePriceUAH: unitPrice > 0 ? unitPrice : 0,
+      availabilityStatus: "draft",
+      preferredSupplierName: response.supplierName,
+      category: fallbackCategory || detectCategory(record.name || "", record.brand, ""),
+      stage: "",
+      manufacturer: record.brand || "",
+      system: detectSystem(record.name || ""),
+      article: record.article || "",
+      needsReview: !record.brand,
+      basePriceEUR: 0,
+      supplierOffers: [{
+        supplierName: response.supplierName,
+        supplierFullName: "",
+        retail: null,
+        master: unitPrice > 0 ? { priceUAH: unitPrice, sourcePrice: unitPrice, sourceCurrency: "UAH", sourceRate: null, importedAt: now } : null,
+        supplierArticle: record.article || "",
+        updatedAt: now
+      }]
+    };
+    catalog.push(item);
+    catalogChanged = true;
+    return item;
+  };
+
   response.records.forEach(record => {
-    const position = (project.positions || []).find(item => item.id === record.positionId);
-    if(!position) return;
+    let position = record.positionId ? (project.positions || []).find(item => item.id === record.positionId) : null;
+
+    if(!position){
+      const unitPrice = procurementRecordUnitPrice(record, null);
+      const item = findOrCreateCatalogItem(record, unitPrice, "");
+      // Повторний імпорт того самого файлу не має дублювати додані позиції.
+      const already = (project.positions || []).find(entry => entry.type === "material" && entry.catalogId === item.id);
+      if(already){
+        const wanted = roundQty(positionStockQty(already) + Number(record.fileQty || 1));
+        if(roundQty(already.qty) !== wanted){ already.qty = wanted; appliedChanges++; }
+        position = already;
+      }
+    }
+
+    if(!position){
+      const unitPrice = procurementRecordUnitPrice(record, null);
+      const item = findOrCreateCatalogItem(record, unitPrice, "");
+      position = {
+        id: uid("pos"),
+        catalogId: item.id,
+        type: "material",
+        name: catalogDisplayName(item),
+        fullName: item.name,
+        unit: record.unit || item.unit || "шт",
+        price: (response.useRetail !== false && procurementRecordRetail(record, null) > 0) ? procurementRecordRetail(record, null) : (Number(item.price) || 0),
+        purchasePrice: null,
+        purchasePriceState: "estimated",
+        plannedSupplierName: response.supplierName,
+        qty: roundQty(record.fileQty || 1),
+        addedFromSupplierAt: now
+      };
+      project.positions.push(position);
+      appliedChanges++;
+    }else{
+      const changes = record.changes || [];
+      if(changes.includes("qty")){
+        position.qty = roundQty(positionStockQty(position) + Number(record.fileQty));
+        if(!(position.qty > 0)){
+          position.qty = 0;
+        }
+        appliedChanges++;
+      }
+      const explicitRetail = procurementExplicitRetail(record, position, response);
+      if(explicitRetail){
+        position.price = explicitRetail.to;
+        position.clientPriceFromSupplierAt = now;
+        delete position.clientPriceCheck;
+        retailUpdated++;
+      }else if(response.updateRetail === true){
+        const retailUpdate = procurementRetailUpdate(record, position, response);
+        if(retailUpdate){ position.price = retailUpdate.to; retailUpdated++; }
+      }
+      if(changes.includes("replace")){
+        const previousName = positionShortName(position);
+        const item = findOrCreateCatalogItem(record, procurementRecordUnitPrice(record, position), getPositionMaterialCategory(position));
+        if(!getApproved(project)){
+          const fileRetail = response.useRetail === false ? 0 : procurementRecordRetail(record, position);
+          if(fileRetail > 0){ position.price = fileRetail; delete position.clientPriceCheck; }
+          else if(Number(item.price) > 0) position.price = Number(item.price);
+          else position.clientPriceCheck = true;
+        }
+        position.catalogId = item.id;
+        position.name = catalogDisplayName(item);
+        position.fullName = item.name;
+        if(record.unit) position.unit = record.unit;
+        position.replacedFrom = previousName;
+        appliedChanges++;
+      }
+    }
+
     position.plannedSupplierName = response.supplierName;
+    if(!record.answered) return;
     if(record.availability !== "unknown") position.supplierAvailability = record.availability;
     if(record.comment) position.supplierComment = record.comment;
     position.supplierConfirmedAt = now;
-    if(Number(record.actualPriceUAH) > 0){
-      position.purchasePrice = record.actualPriceUAH;
+    const unitPrice = procurementRecordUnitPrice(record, position);
+    if(unitPrice > 0){
+      const divider = Number(record.actualPriceUAH) > 0 ? Number(record.actualPriceUAH) / unitPrice : 1;
+      position.purchasePrice = unitPrice;
       position.purchasePriceState = "confirmed";
       position.purchasePriceSnapshot = {
         supplierName:response.supplierName,
-        sourcePrice:record.sourcePrice,
+        sourcePrice:divider > 1 ? record.sourcePrice / divider : record.sourcePrice,
         sourceCurrency:record.currency,
         sourceRate:record.rate,
-        priceUAH:record.actualPriceUAH,
+        priceUAH:unitPrice,
+        enteredAsLineTotal:divider > 1,
         confirmedAt:now
       };
       confirmedPrices++;
@@ -8991,13 +9751,17 @@ function applyProcurementResponse(){
     }
   });
 
+  // Позиції, які постачальник обнулив (кількість 0), прибираємо з об'єкта.
+  project.positions = (project.positions || []).filter(position => !(position.type === "material" && Number(position.qty) <= 0));
+
+  if(catalogChanged) saveCatalog();
   project.updatedAt = now;
   saveProjects();
   currentProjectId = project.id;
   closeProcurementResponseReview();
   render();
   renderProcurementPlan();
-  toast(`Звірку застосовано: ${confirmedPrices} цін підтверджено`);
+  toast(`Звірку застосовано: ${confirmedPrices} цін підтверджено${appliedChanges ? `, змін перенесено: ${appliedChanges}` : ""}${retailUpdated ? `, ціни для клієнта оновлено: ${retailUpdated}` : ""}`, 3600);
 }
 
 function openImportFile(){
@@ -9104,13 +9868,15 @@ document.getElementById("procurementResponseFileInput").addEventListener("change
       position.type === "material" && normalizeText(getPositionPlannedSupplier(position)) === normalizeText(parsed.supplierName)
     );
     const expectedIds = new Set(expected.map(position => position.id));
-    const foreignRecords = parsed.records.filter(record => !expectedIds.has(record.positionId));
-    if(foreignRecords.length) throw new Error("Файл містить позиції іншого постачальника або застарілого запиту");
+    classifyProcurementResponse(parsed, project);
+    const answeredIds = new Set(parsed.records.map(record => record.positionId).filter(Boolean));
+    parsed.notInFile = expected.filter(position => !answeredIds.has(position.id) && positionOrderQty(position) > 0).map(position => position.id);
 
+    detectProcurementLineTotals(parsed, project);
     pendingProcurementResponse = {
       ...parsed,
       fileName:file.name,
-      missingCount:Math.max(0, expected.length - parsed.records.length)
+      missingCount:parsed.notInFile.length
     };
     currentProjectId = project.id;
     render();
