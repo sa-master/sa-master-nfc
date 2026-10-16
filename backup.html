@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Резервна копія калькулятора</title>
+<meta name="color-scheme" content="light dark">
+<style>
+:root{--bg:#E7F4FE;--card:#fff;--t:#1C1C1E;--tm:#6B7178;--p:#0A84FF;--green:#1f7a3c;--red:#c62828}
+@media (prefers-color-scheme: dark){:root{--bg:#111214;--card:#1C1C1E;--t:#F2F2F7;--tm:#A1A1AA;--green:#4ade80;--red:#f87171}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,"SF Pro Text","Segoe UI",sans-serif;min-height:100vh;padding:24px 16px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:22px;font-weight:800}
+p{font-size:15px;line-height:1.45;color:var(--tm)}
+.card{background:var(--card);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;justify-content:space-between;font-size:15px}
+.row b{font-weight:750}
+button{font:inherit;border:0;border-radius:14px;height:52px;font-size:16px;font-weight:750;cursor:pointer}
+.primary{background:var(--p);color:#fff}
+.primary:disabled{opacity:.4}
+.ghost{background:transparent;color:var(--p);height:44px}
+.status{font-size:14px;font-weight:650;text-align:center;min-height:20px}
+.ok{color:var(--green)}.err{color:var(--red)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Резервна копія</h1>
+  <p>Ця сторінка лише зчитує дані калькулятора з цього браузера і зберігає їх одним файлом. Нічого не змінює і не видаляє.</p>
+
+  <div class="card" id="summary">
+    <div class="row"><span>Об'єкти</span><b id="cProjects">—</b></div>
+    <div class="row"><span>Позиції в каталозі</span><b id="cCatalog">—</b></div>
+    <div class="row"><span>Команда</span><b id="cTeam">—</b></div>
+    <div class="row"><span>Розмір даних</span><b id="cSize">—</b></div>
+  </div>
+
+  <button class="primary" id="saveButton" onclick="saveBackup()">Зберегти копію</button>
+  <div class="status" id="status"></div>
+
+  <p>На iPhone відкриється меню «Поділитися» — оберіть «Зберегти у Файли» або надішліть собі в Telegram. Цей файл відновлюється в новій версії калькулятора: Профіль → Резервна копія → «Відновити з файлу».</p>
+  <button class="ghost" onclick="location.href='calculator.html'">Повернутися до калькулятора</button>
+</main>
+
+<script>
+/* Формат збігається з кнопкою «Зберегти копію» в калькуляторі,
+   тож файл відновлюється там через «Відновити з файлу». */
+const APP_ID = "sa-master-calculator";
+
+function isBackupKey(key){
+  return (key.startsWith("sa_") || key.startsWith("plumber_")) && key !== "sa_lastBackupAt";
+}
+
+function readData(){
+  const data = {};
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && isBackupKey(key)) data[key] = localStorage.getItem(key);
+  }
+  return data;
+}
+
+function countArray(raw){
+  try{ const v = JSON.parse(raw || "[]"); return Array.isArray(v) ? v.length : 0; }catch(e){ return 0; }
+}
+
+function setStatus(text, kind){
+  const box = document.getElementById("status");
+  box.textContent = text;
+  box.className = "status " + (kind || "");
+}
+
+let data = {};
+try{
+  data = readData();
+  const projectsCount = countArray(data.sa_projects);
+  document.getElementById("cProjects").textContent = projectsCount;
+  document.getElementById("cCatalog").textContent = countArray(data.sa_catalog);
+  document.getElementById("cTeam").textContent = countArray(data.sa_team);
+  const size = Object.values(data).reduce((sum, value) => sum + String(value).length, 0);
+  document.getElementById("cSize").textContent = size > 1048576 ? (size / 1048576).toFixed(1) + " МБ" : Math.max(1, Math.round(size / 1024)) + " КБ";
+  if(!Object.keys(data).length){
+    document.getElementById("saveButton").disabled = true;
+    setStatus("У цьому браузері немає даних калькулятора. Відкрийте сторінку в тому ж браузері й за тією ж адресою, де ведете об'єкти.", "err");
+  }
+}catch(e){
+  document.getElementById("saveButton").disabled = true;
+  setStatus("Браузер не дає доступу до даних (можливо, приватний режим).", "err");
+}
+
+function buildFile(){
+  const now = new Date();
+  const payload = { app: APP_ID, version: 1, createdAt: now.toISOString(), projectsCount: countArray(data.sa_projects), data };
+  const pad = n => String(n).padStart(2, "0");
+  const name = `sa-master-копія-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`;
+  return new File([JSON.stringify(payload)], name, { type: "application/json" });
+}
+
+function download(file){
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+async function saveBackup(){
+  let file;
+  try{ file = buildFile(); }catch(e){ setStatus("Не вдалося підготувати файл", "err"); return; }
+
+  if(navigator.canShare && navigator.canShare({ files:[file] })){
+    try{
+      await navigator.share({ files:[file], title:"Резервна копія калькулятора" });
+      setStatus("Копію збережено ✓", "ok");
+      return;
+    }catch(e){
+      if(e && e.name === "AbortError"){ setStatus(""); return; }
+    }
+  }
+  download(file);
+  setStatus("Файл завантажено ✓ (папка «Завантаження»)", "ok");
+}
+</script>
+</body>
+</html>
