@@ -1251,6 +1251,30 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   font-weight:600;
 }
 
+.buyLater{
+  margin:-.125rem 0 .875rem;
+  padding:.75rem;
+  border:1.5px solid rgba(255,149,0,.45);
+  border-radius:.875rem;
+  background:rgba(255,149,0,.10);
+}
+.buyLaterHead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.5rem}
+.buyLaterTitle{font-size:.8125rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#B76800}
+.buyLaterAdd{font-size:.8125rem;font-weight:750;color:var(--p);padding:.25rem .375rem}
+.buyLaterHint{font-size:.75rem;color:var(--tm);margin:0 0 .5rem}
+.buyLaterItem{display:flex;align-items:center;gap:.5rem;padding:.4375rem 0;border-top:1px solid rgba(183,104,0,.15)}
+.buyLaterCheck{flex:0 0 auto;width:1.5rem;height:1.5rem;border-radius:.4375rem;border:1.5px solid #B76800;color:#fff;font-weight:800;font-size:.8125rem;display:flex;align-items:center;justify-content:center}
+.buyLaterItem.done .buyLaterCheck{background:var(--green);border-color:var(--green)}
+.buyLaterName{flex:1 1 auto;min-width:0;font-size:.8125rem;font-weight:700;line-height:1.25;overflow-wrap:anywhere;text-align:left}
+.buyLaterItem.done .buyLaterName{text-decoration:line-through;color:var(--tm);font-weight:600}
+.buyLaterRemove{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:.5rem;color:var(--tm);font-size:1rem}
+.buyLaterForm{display:flex;gap:.375rem;margin-top:.5rem;flex-wrap:wrap}
+.buyLaterForm input{flex:1 1 9rem;min-width:0;height:2.5rem;border-radius:.625rem;border:1px solid rgba(120,120,128,.25);padding:0 .625rem;font:inherit;font-size:.875rem;background:var(--card);color:var(--t)}
+.buyLaterForm input.qty{flex:0 0 4rem}
+.buyLaterForm button{height:2.5rem;padding:0 .875rem;border-radius:.625rem;background:var(--p);color:#fff;font-weight:750;font-size:.875rem}
+.stockLaterBtn{flex:0 0 auto;align-self:center;font-size:.6875rem;font-weight:750;padding:.375rem .5rem;border-radius:.5rem;background:rgba(120,120,128,.12);color:var(--tm)}
+.stockPickItem.later{background:rgba(255,149,0,.12)}
+.stockPickItem.later .stockLaterBtn{background:#B76800;color:#fff}
 .procurementIssues{
   margin:-.125rem 0 .875rem;
   padding:.625rem .75rem;
@@ -3934,6 +3958,7 @@ body.positionDragging{
       Відмітьте, скільки берете з полиці. Дотик по назві — взяти все. Решта автоматично піде в замовлення постачальнику. Клієнт бачить повну кількість, як у кошторисі.
     </div>
 
+    <input class="formInput" id="stockPickSearch" type="search" placeholder="Пошук: хомут, коліно 50, арт…" autocomplete="off" oninput="renderStockPick()" style="margin:0 0 .75rem">
     <div id="stockPickContent"></div>
   </div>
 
@@ -4758,13 +4783,48 @@ function getPositionMaterialCategory(position){
   return normalizeMaterialCategory(detectCategory(position && (position.fullName || position.name) || "", "", ""));
 }
 
+/* Усередині розділу: однакові вироби разом (хомути до хомутів), розміри — за зростанням. */
+function materialSortKey(position){
+  const name = positionShortName(position).toLowerCase();
+  const type = (name.match(/[a-zа-яіїєґ']+/i) || [""])[0];
+  const sizes = [];
+  name.replace(/(\d+(?:[.,]\d+)?)(?:\s*\/\s*(\d+(?:[.,]\d+)?))?/g, (_, rawA, rawB) => {
+    const a = parseFloat(rawA.replace(",", "."));
+    const b = rawB !== undefined ? parseFloat(rawB.replace(",", ".")) : NaN;
+    if(Number.isInteger(a) && a < b && [2, 4, 8, 16].includes(b)) sizes.push(a / b);
+    else{ sizes.push(a); if(!Number.isNaN(b)) sizes.push(b); }
+    return _;
+  });
+  return { type, sizes, name };
+}
+
+function compareSizes(a, b){
+  for(let i = 0; i < Math.max(a.length, b.length); i++){
+    if(a[i] === undefined) return -1;
+    if(b[i] === undefined) return 1;
+    if(a[i] !== b[i]) return a[i] - b[i];
+  }
+  return 0;
+}
+
+function sortMaterialPositions(list){
+  return list
+    .map(position => ({ position, key: materialSortKey(position) }))
+    .sort((x, y) =>
+      x.key.type.localeCompare(y.key.type, "uk") ||
+      compareSizes(x.key.sizes, y.key.sizes) ||
+      x.key.name.localeCompare(y.key.name, "uk")
+    )
+    .map(entry => entry.position);
+}
+
 function groupMaterialPositions(positions){
   const byCategory = new Map(MATERIAL_CATEGORY_GROUPS.map(group => [group.id, []]));
   (positions || []).forEach(position => {
     byCategory.get(getPositionMaterialCategory(position)).push(position);
   });
   return MATERIAL_CATEGORY_GROUPS
-    .map(group => ({ ...group, positions: byCategory.get(group.id) || [] }))
+    .map(group => ({ ...group, positions: sortMaterialPositions(byCategory.get(group.id) || []) }))
     .filter(group => group.positions.length);
 }
 
@@ -4796,6 +4856,153 @@ function positionStockQty(position){
   return roundQty(Math.max(0, Math.min(qty, fromStock)));
 }
 
+/* «Купити пізніше»: позиція не йде постачальнику, висить окремим списком перед очима. */
+function isBuyLater(position){
+  return Boolean(position && position.type === "material" && position.buyLater && positionOrderQty(position) > 0);
+}
+
+function isBuyLaterPending(position){
+  return isBuyLater(position) && !position.buyLaterDone;
+}
+
+function findCurrentPosition(positionId){
+  const project = projects.find(item => item.id === currentProjectId);
+  const position = project && (project.positions || []).find(item => item.id === positionId);
+  return { project, position };
+}
+
+function touchProject(project){
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+}
+
+function toggleBuyLater(positionId){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  position.buyLater = !position.buyLater;
+  if(!position.buyLater) delete position.buyLaterDone;
+  touchProject(project);
+  if(document.getElementById("stockPickScreen").classList.contains("open")) renderStockPick();
+  if(document.getElementById("procurementPlanScreen").classList.contains("open")) renderProcurementPlan();
+  render();
+}
+
+function toggleBuyLaterDone(positionId){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  position.buyLaterDone = !position.buyLaterDone;
+  touchProject(project);
+  render();
+}
+
+function changeBuyLaterQty(positionId, delta){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  const next = roundQty(Math.max(1, positionOrderQty(position) + delta));
+  position.qty = roundQty(positionStockQty(position) + next);
+  touchProject(project);
+  render();
+}
+
+function setBuyLaterQty(positionId, raw){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  const value = Number(String(raw || "").replace(",", "."));
+  if(!Number.isFinite(value) || value <= 0){ render(); return; }
+  position.qty = roundQty(positionStockQty(position) + value);
+  touchProject(project);
+  render();
+}
+
+function removeBuyLater(positionId){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  if(position.buyLaterOnly){
+    if(!confirm(`Прибрати «${positionShortName(position)}» зі списку?`)) return;
+    project.positions = project.positions.filter(item => item.id !== positionId);
+  }else{
+    position.buyLater = false;
+    delete position.buyLaterDone;
+    toast("Повернуто в замовлення постачальнику");
+  }
+  touchProject(project);
+  render();
+}
+
+let buyLaterFormOpen = false;
+
+function openBuyLaterForm(){
+  buyLaterFormOpen = !buyLaterFormOpen;
+  render();
+  if(buyLaterFormOpen) setTimeout(() => document.getElementById("buyLaterName")?.focus(), 60);
+}
+
+function addBuyLaterItem(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  const name = cleanText(document.getElementById("buyLaterName")?.value);
+  const qty = Number(String(document.getElementById("buyLaterQty")?.value || "1").replace(",", "."));
+  if(!name){ toast("Впишіть, що купити"); return; }
+  if(!Array.isArray(project.positions)) project.positions = [];
+  project.positions.push({
+    id: uid("pos"),
+    type: "material",
+    name,
+    fullName: name,
+    unit: "шт",
+    qty: Number.isFinite(qty) && qty > 0 ? roundQty(qty) : 1,
+    price: 0,
+    buyLater: true,
+    buyLaterOnly: true,
+    noDiscount: true
+  });
+  touchProject(project);
+  render();
+  setTimeout(() => document.getElementById("buyLaterName")?.focus(), 60);
+}
+
+function renderBuyLater(project){
+  const items = (project.positions || []).filter(isBuyLater);
+  const stage = project.stage || "estimate";
+  if(!items.length && stage === "estimate" && !buyLaterFormOpen) return "";
+  const pending = items.filter(position => !position.buyLaterDone);
+  const done = items.filter(position => position.buyLaterDone);
+  const row = position => {
+    const id = escapeHtml(position.id);
+    const unit = escapeHtml(position.unit || "шт");
+    return `
+      <div class="buyLaterItem ${position.buyLaterDone ? "done" : ""}">
+        <button type="button" class="buyLaterCheck" onclick="toggleBuyLaterDone('${id}')" aria-label="${position.buyLaterDone ? "Не куплено" : "Куплено"}">${position.buyLaterDone ? "✓" : ""}</button>
+        <button type="button" class="buyLaterName" onclick="toggleBuyLaterDone('${id}')">${escapeHtml(positionShortName(position))}</button>
+        ${position.buyLaterDone ? `<span class="stockPickMeta" style="margin:0">${formatQty(positionOrderQty(position))} ${unit}</span>` : `
+        <div class="qtyControl stockPickControl" aria-label="Кількість">
+          <button class="qtyBtn" type="button" onclick="changeBuyLaterQty('${id}',-1)" aria-label="Менше">−</button>
+          <input class="estimateQtyInput" type="text" inputmode="decimal" value="${formatQty(positionOrderQty(position))}" aria-label="Кількість, ${unit}" onfocus="this.select()" onchange="setBuyLaterQty('${id}',this.value)">
+          <button class="qtyBtn" type="button" onclick="changeBuyLaterQty('${id}',1)" aria-label="Більше">＋</button>
+        </div>`}
+        <button type="button" class="buyLaterRemove" onclick="removeBuyLater('${id}')" aria-label="Прибрати зі списку">×</button>
+      </div>
+    `;
+  };
+  return `
+    <section class="buyLater">
+      <div class="buyLaterHead">
+        <span class="buyLaterTitle">🛒 Купити пізніше${pending.length ? ` · ${pending.length}` : ""}</span>
+        <button type="button" class="buyLaterAdd" onclick="openBuyLaterForm()">${buyLaterFormOpen ? "Готово" : "＋ Додати"}</button>
+      </div>
+      ${items.length ? "" : `<div class="buyLaterHint">Що докупити самому (магазин, за потреби). Постачальнику не йде. Позиції з кошторису позначайте «Пізніше» на екрані «Що є на складі?».</div>`}
+      ${pending.map(row).join("")}
+      ${done.map(row).join("")}
+      ${buyLaterFormOpen ? `
+        <div class="buyLaterForm">
+          <input id="buyLaterName" type="text" placeholder="Що купити" autocomplete="off" onkeydown="if(event.key==='Enter')addBuyLaterItem()">
+          <input id="buyLaterQty" class="qty" type="text" inputmode="decimal" placeholder="1" autocomplete="off" onkeydown="if(event.key==='Enter')addBuyLaterItem()">
+          <button type="button" onclick="addBuyLaterItem()">Додати</button>
+        </div>` : ""}
+    </section>
+  `;
+}
+
 function positionOrderQty(position){
   return roundQty(Math.max(0, (Number(position && position.qty) || 0) - positionStockQty(position)));
 }
@@ -4807,6 +5014,8 @@ function isPositionFullyFromStock(position){
 function openStockPick(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
+  const search = document.getElementById("stockPickSearch");
+  if(search) search.value = "";
   if(!(project.positions || []).some(position => position.type === "material")){
     toast("У кошторисі ще немає матеріалів");
     return;
@@ -4852,8 +5061,15 @@ function renderStockPick(){
   const box = document.getElementById("stockPickContent");
   if(!project || !box) return;
   const materials = (project.positions || []).filter(position => position.type === "material");
+  const query = ntext(document.getElementById("stockPickSearch")?.value || "").split(/\s+/).filter(Boolean);
+  const visible = query.length
+    ? materials.filter(position => {
+        const hay = ntext([positionShortName(position), position.fullName, position.name, getPositionMaterialArticle(position), positionBrand(position)].join(" "));
+        return query.every(word => hay.includes(word));
+      })
+    : materials;
 
-  box.innerHTML = groupMaterialPositions(materials).map(group => `
+  box.innerHTML = (query.length && !visible.length) ? `<div class="formHint" style="text-align:center">Нічого не знайдено</div>` : groupMaterialPositions(visible).map(group => `
     <div class="procurementCategoryTitle">${escapeHtml(group.label)}</div>
     ${group.positions.map(position => {
       const qty = Number(position.qty) || 0;
@@ -4861,14 +5077,15 @@ function renderStockPick(){
       const fromStock = positionStockQty(position);
       const order = positionOrderQty(position);
       const brand = positionBrand(position);
-      const state = order <= 0 ? "full" : fromStock > 0 ? "part" : "";
+      const later = Boolean(position.buyLater) && order > 0;
+      const state = order <= 0 ? "full" : later ? "later" : fromStock > 0 ? "part" : "";
       return `
         <div class="stockPickItem ${state}">
           <button type="button" class="stockPickName" onclick="togglePositionStockAll('${escapeHtml(position.id)}')">
             <span class="stockPickCheck" aria-hidden="true">${order <= 0 ? "✓" : ""}</span>
             <span>
               <span class="stockPickTitle">${escapeHtml(positionShortName(position))}</span>
-              <span class="stockPickMeta">${brand ? escapeHtml(brand) + " · " : ""}треба ${formatQty(qty)} ${unit}${order <= 0 ? " · все зі складу" : fromStock > 0 ? ` · замовити ${formatQty(order)} ${unit}` : ""}</span>
+              <span class="stockPickMeta">${brand ? escapeHtml(brand) + " · " : ""}треба ${formatQty(qty)} ${unit}${order <= 0 ? " · все зі складу" : later ? ` · купити пізніше ${formatQty(order)} ${unit}` : fromStock > 0 ? ` · замовити ${formatQty(order)} ${unit}` : ""}</span>
             </span>
           </button>
           <div class="qtyControl stockPickControl" aria-label="Зі складу">
@@ -4886,6 +5103,7 @@ function renderStockPick(){
             >
             <button class="qtyBtn" type="button" onclick="changePositionStockQty('${escapeHtml(position.id)}',1)" aria-label="Більше">＋</button>
           </div>
+          ${order > 0 ? `<button type="button" class="stockLaterBtn" onclick="toggleBuyLater('${escapeHtml(position.id)}')">Пізніше</button>` : ""}
         </div>
       `;
     }).join("")}
@@ -4893,9 +5111,10 @@ function renderStockPick(){
 
   const full = materials.filter(isPositionFullyFromStock).length;
   const part = materials.filter(position => !isPositionFullyFromStock(position) && positionStockQty(position) > 0).length;
-  const toOrder = materials.filter(position => positionOrderQty(position) > 0).length;
+  const laterCount = materials.filter(isBuyLater).length;
+  const toOrder = materials.filter(position => positionOrderQty(position) > 0 && !isBuyLater(position)).length;
   document.getElementById("stockPickSummary").textContent =
-    `Зі складу: ${full + part} поз.${part ? ` (з них частково ${part})` : ""} · Замовити: ${toOrder} поз.`;
+    `Зі складу: ${full + part} поз.${part ? ` (частково ${part})` : ""} · Замовити: ${toOrder} поз.${laterCount ? ` · Пізніше: ${laterCount}` : ""}`;
 }
 
 function getProcurementGroupMeta(positions){
@@ -5045,6 +5264,11 @@ function renderProcurementPlan(){
 
   const groups = new Map();
   materials.forEach(position => {
+    if(isBuyLater(position)){
+      if(!groups.has("later")) groups.set("later", { supplier:"", later:true, positions: [] });
+      groups.get("later").positions.push(position);
+      return;
+    }
     if(isPositionFullyFromStock(position)){
       if(!groups.has("stock")) groups.set("stock", { supplier:"", stock:true, positions: [] });
       groups.get("stock").positions.push(position);
@@ -5057,6 +5281,8 @@ function renderProcurementPlan(){
   });
 
   const ordered = Array.from(groups.values()).sort((a,b) => {
+    if(a.later) return -1;
+    if(b.later) return 1;
     if(a.stock) return 1;
     if(b.stock) return -1;
     if(!a.supplier) return 1;
@@ -5068,11 +5294,11 @@ function renderProcurementPlan(){
     <section class="procurementGroup">
       <div class="procurementGroupHead">
         <div class="procurementGroupTitle">
-          <div class="procurementGroupName">${group.stock ? "Зі складу" : group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</div>
-          <div class="procurementGroupMeta">${group.stock ? `${group.positions.length} поз. · не замовляються` : escapeHtml(getProcurementGroupMeta(group.positions))}</div>
-          ${group.supplier && !group.stock ? renderSupplierContactLine(group.supplier) : ""}
+          <div class="procurementGroupName">${group.later ? "🛒 Купити пізніше" : group.stock ? "Зі складу" : group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</div>
+          <div class="procurementGroupMeta">${group.later ? `${group.positions.length} поз. · постачальнику не йдуть` : group.stock ? `${group.positions.length} поз. · не замовляються` : escapeHtml(getProcurementGroupMeta(group.positions))}</div>
+          ${group.supplier && !group.stock && !group.later ? renderSupplierContactLine(group.supplier) : ""}
         </div>
-        ${group.supplier && !group.stock ? `<button class="procurementRequestButton" type="button" onclick="openProcurementRequest(decodeURIComponent('${encodeURIComponent(group.supplier)}'))">Запит</button>` : ""}
+        ${group.supplier && !group.stock && !group.later ? `<button class="procurementRequestButton" type="button" onclick="openProcurementRequest(decodeURIComponent('${encodeURIComponent(group.supplier)}'))">Запит</button>` : ""}
       </div>
       ${groupMaterialPositions(group.positions).map(categoryGroup => `
         <div class="procurementCategoryTitle">${escapeHtml(categoryGroup.label)}</div>
@@ -5421,7 +5647,7 @@ function getCustomerMaterialsTotal(project){
    заміни й склад — внутрішня робота майстра: сума для клієнта й документ
    беруться зі знімка, а прибуток рахується від погодженої суми. */
 function makeApprovedSnapshot(project){
-  const positions = Array.isArray(project.positions) ? project.positions : [];
+  const positions = (Array.isArray(project.positions) ? project.positions : []).filter(pos => !pos.buyLaterOnly);
   const works = positions.filter(pos => pos.type === "work");
   const materials = groupMaterialPositions(positions.filter(pos => pos.type === "material")).flatMap(group => group.positions);
   const snap = pos => ({
@@ -5455,7 +5681,7 @@ function getApproved(project){
 function getApprovedChanges(project){
   const approved = getApproved(project);
   if(!approved) return { changed:[], added:[], removed:[] };
-  const current = Array.isArray(project.positions) ? project.positions : [];
+  const current = (Array.isArray(project.positions) ? project.positions : []).filter(pos => !pos.buyLaterOnly);
   const byId = new Map(approved.positions.map(item => [item.id, item]));
   const currentIds = new Set(current.map(pos => pos.id));
   const changed = current.filter(pos => byId.has(pos.id) &&
@@ -5538,7 +5764,7 @@ function getMaterialsProfit(project){
 
   let purchaseTotal = 0;
   project.positions.forEach(pos => {
-    if(pos.type !== "material") return;
+    if(pos.type !== "material" || pos.buyLaterOnly) return;
     result.hasMaterials = true;
     const purchasePrice = Number(pos.purchasePrice);
     const qty = Number(pos.qty) || 0;
@@ -5611,7 +5837,7 @@ function formatProjectDates(project){
 }
 
 function getProjectPositionCount(project){
-  return (project && Array.isArray(project.positions)) ? project.positions.length : 0;
+  return (project && Array.isArray(project.positions)) ? project.positions.filter(pos => !pos.buyLaterOnly).length : 0;
 }
 
 function syncFloatingPanelSpace(){
@@ -6188,7 +6414,7 @@ function renderQuotePreview(){
   });
 
   const approvedSnapshot = getApproved(project);
-  const positions = approvedSnapshot ? approvedSnapshot.positions : (Array.isArray(project.positions) ? project.positions : []);
+  const positions = approvedSnapshot ? approvedSnapshot.positions : (Array.isArray(project.positions) ? project.positions : []).filter(pos => !pos.buyLaterOnly);
   if(!positions.length){
     toast("Додайте хоча б одну позицію до кошторису");
     return;
@@ -6576,7 +6802,7 @@ function buildDetailsBadges(p){
 }
 
 function renderEstimateBlock(p){
-  const positions = Array.isArray(p.positions) ? p.positions : [];
+  const positions = (Array.isArray(p.positions) ? p.positions : []).filter(x => !x.buyLaterOnly);
   const count = positions.length;
 
   const workPositions = positions.filter(x => x.type === "work");
@@ -6593,6 +6819,7 @@ function renderEstimateBlock(p){
       </div>
 
       ${renderApprovedBanner(p)}
+      ${renderBuyLater(p)}
       ${renderProcurementIssues(procurementIssues, p)}
 
       ${count === 0 ? `
@@ -6615,7 +6842,7 @@ function renderEstimateBlock(p){
 function getProcurementIssues(project){
   return (project && project.positions || []).reduce((issues, position) => {
     if(!position || position.type !== "material") return issues;
-    if(isPositionFullyFromStock(position)) return issues;
+    if(isPositionFullyFromStock(position) || isBuyLater(position)) return issues;
 
     const supplierName = cleanText(getPositionPlannedSupplier(position));
     let status = "";
@@ -6673,7 +6900,7 @@ let procurementIssuesExpanded = false;
 
 function getPositionsWithoutPurchasePrice(project){
   return (project && project.positions || []).filter(position => {
-    if(!position || position.type !== "material") return false;
+    if(!position || position.type !== "material" || position.buyLaterOnly) return false;
     const price = Number(position.purchasePrice);
     return !Number.isFinite(price) || price <= 0;
   });
@@ -9151,6 +9378,7 @@ function openProcurementRequest(rawSupplierName){
   const positions = (project.positions || []).filter(position =>
     position.type === "material" &&
     positionOrderQty(position) > 0 &&
+    !isBuyLater(position) &&
     normalizeText(getPositionPlannedSupplier(position)) === normalizeText(supplierName)
   );
   if(!positions.length){
@@ -9175,7 +9403,7 @@ function openProcurementRequest(rawSupplierName){
 function getProcurementRequestSupplierNames(project){
   const names = new Map();
   (project && project.positions || []).forEach(position => {
-    if(!position || position.type !== "material" || positionOrderQty(position) <= 0) return;
+    if(!position || position.type !== "material" || positionOrderQty(position) <= 0 || isBuyLater(position)) return;
     const supplierName = cleanText(getPositionPlannedSupplier(position));
     const key = normalizeText(supplierName);
     if(supplierName && key && !names.has(key)) names.set(key, supplierName);
@@ -9261,16 +9489,20 @@ async function shareProcurementRequest(){
 function procurementOrderText(draft){
   const project = projects.find(item => item.id === draft.projectId);
   if(!project) return "";
-  const positions = groupMaterialPositions((project.positions || []).filter(position => draft.positionIds.includes(position.id)))
-    .flatMap(group => group.positions);
-  const lines = positions.map((position, index) => {
-    const item = getPositionCatalogItem(position);
-    const name = cleanText((item && item.name) || position.fullName || position.name);
-    const article = cleanText(item && item.article);
-    const shownArticle = article && !ntext(name).includes(ntext(article)) ? `, арт. ${article}` : "";
-    return `${index + 1}. ${name}${shownArticle} — ${formatQty(positionOrderQty(position))} ${position.unit || "шт"}`;
+  const groups = groupMaterialPositions((project.positions || []).filter(position => draft.positionIds.includes(position.id)));
+  const count = groups.reduce((sum, group) => sum + group.positions.length, 0);
+  const blocks = groups.map(group => {
+    const lines = group.positions.map(position => {
+      const article = getPositionMaterialArticle(position);
+      const item = getPositionCatalogItem(position);
+      const name = article
+        ? positionClientName(position)
+        : cleanText((item && item.name) || position.fullName || position.name).replace(/\s*\(\s*упак[^)]*\)/gi, "");
+      return `• ${article ? article + " · " : ""}${name} — ${formatQty(positionOrderQty(position))} ${position.unit || "шт"}`;
+    });
+    return `${group.label}\n${lines.join("\n")}`;
   });
-  return `Доброго дня!\n\nЗамовлення для об’єкта «${projectTitlePlain(project)}»:\n\n${lines.join("\n")}\n\nДякую!`;
+  return `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project)}» — ${count} поз.\n\n${blocks.join("\n\n")}\n\nДякую!`;
 }
 
 async function shareProcurementOrderText(){
