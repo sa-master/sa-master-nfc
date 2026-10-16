@@ -1301,6 +1301,18 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   text-align:left;
 }
 .procurementSupplierInput{margin-top:.5rem}
+.approvedBanner{
+  margin:-.125rem 0 .75rem;
+  padding:.625rem .75rem;
+  border-radius:.875rem;
+  border:1px solid rgba(52,199,89,.28);
+  background:rgba(52,199,89,.08);
+}
+.approvedBannerTitle{font-size:.75rem;font-weight:800;color:#1f7a3c}
+.approvedBannerText{margin-top:.25rem;font-size:.6875rem;line-height:1.35;color:var(--ts)}
+.approvedBannerChanges{margin-top:.375rem;font-size:.6875rem;font-weight:700;color:#B76800}
+.approvedBannerRemoved{margin-top:.25rem;font-size:.6875rem;color:var(--tm);overflow-wrap:anywhere}
+.positionApprovedNote{display:block;margin-top:.125rem;font-size:.625rem;font-weight:750;color:#B76800}
 .stockPickButton{background:rgba(52,199,89,.14) !important;color:#1f7a3c !important}
 .stockPickItem{
   display:flex;
@@ -3659,6 +3671,11 @@ body.positionDragging{
         <div class="actionSheetText" id="actionStageText">Наступний етап</div>
       </div>
 
+      <div class="actionSheetRow hidden" id="actionReapproveRow" onclick="actionReapprove()">
+        <div class="actionSheetIcon">↻</div>
+        <div class="actionSheetText">Клієнт погодив нову версію</div>
+      </div>
+
       <div class="actionSheetRow" onclick="actionToggleUrgent()">
         <div class="actionSheetIcon warn">🔥</div>
         <div class="actionSheetText" id="actionUrgentText">Позначити терміновим</div>
@@ -5169,6 +5186,90 @@ function getCustomerMaterialsTotal(project){
   return getMaterialsSubtotal(project) - getMaterialsDiscountAmount(project);
 }
 
+/* ==== Погоджений кошторис ====
+   Після погодження фіксуємо те, що бачив клієнт. Подальші зміни кількостей,
+   заміни й склад — внутрішня робота майстра: сума для клієнта й документ
+   беруться зі знімка, а прибуток рахується від погодженої суми. */
+function makeApprovedSnapshot(project){
+  const positions = Array.isArray(project.positions) ? project.positions : [];
+  const works = positions.filter(pos => pos.type === "work");
+  const materials = groupMaterialPositions(positions.filter(pos => pos.type === "material")).flatMap(group => group.positions);
+  const snap = pos => ({
+    id: pos.id,
+    type: pos.type,
+    qty: Number(pos.qty) || 0,
+    price: Number(pos.price) || 0,
+    unit: pos.unit || "шт",
+    clientName: positionClientName(pos),
+    brand: positionBrand(pos)
+  });
+  return {
+    at: new Date().toISOString(),
+    works: getCustomerWorksTotal(project),
+    materials: getCustomerMaterialsTotal(project),
+    total: getEstimateTotal(project),
+    workDiscountPercent: getWorksDiscountPercent(project),
+    workDiscountAmount: getWorksDiscountAmount(project),
+    materialsDiscountPercent: getMaterialsDiscountPercent(project),
+    materialsDiscountAmount: getMaterialsDiscountAmount(project),
+    positions: works.concat(materials).map(snap)
+  };
+}
+
+function getApproved(project){
+  const approved = project && project.approved;
+  return approved && Array.isArray(approved.positions) ? approved : null;
+}
+
+function getApprovedChanges(project){
+  const approved = getApproved(project);
+  if(!approved) return { changed:[], added:[], removed:[] };
+  const current = Array.isArray(project.positions) ? project.positions : [];
+  const byId = new Map(approved.positions.map(item => [item.id, item]));
+  const currentIds = new Set(current.map(pos => pos.id));
+  const changed = current.filter(pos => byId.has(pos.id) &&
+    (roundQty(byId.get(pos.id).qty) !== roundQty(pos.qty) || Number(byId.get(pos.id).price) !== (Number(pos.price) || 0)));
+  const added = current.filter(pos => !byId.has(pos.id));
+  const removed = approved.positions.filter(item => !currentIds.has(item.id));
+  return { changed, added, removed };
+}
+
+function getClientWorksTotal(project){
+  const approved = getApproved(project);
+  return approved ? Number(approved.works) || 0 : getCustomerWorksTotal(project);
+}
+
+function getClientMaterialsTotal(project){
+  const approved = getApproved(project);
+  return approved ? Number(approved.materials) || 0 : getCustomerMaterialsTotal(project);
+}
+
+function getClientTotal(project){
+  const approved = getApproved(project);
+  return approved ? Number(approved.total) || 0 : getEstimateTotal(project);
+}
+
+function approveProject(project){
+  project.approved = makeApprovedSnapshot(project);
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+}
+
+function actionReapprove(){
+  const p = projects.find(x => x.id === actionsProjectId);
+  if(!p) return;
+  const before = getClientTotal(p);
+  const after = getEstimateTotal(p);
+  if(!confirm(
+    `Оновити погоджений кошторис?\n\nБуло для клієнта: ${money(before)}\nСтане: ${money(after)}\n\n` +
+    "Робіть це, лише якщо клієнт погодив нову версію (наприклад, додаткові роботи)."
+  )) return;
+  approveProject(p);
+  closeActionsSheet();
+  render();
+  toast("Погоджений кошторис оновлено");
+}
+
 /* Після імпорту прайсу дозаповнюємо тільки відсутню закупівельну ціну
    у вже доданих позиціях. Роздрібна ціна, кількість і знижка кошторису
    залишаються незмінними. */
@@ -5223,7 +5324,7 @@ function getMaterialsProfit(project){
   });
 
   if(result.hasUnknownPrice) return result;
-  result.value = getCustomerMaterialsTotal(project) - purchaseTotal;
+  result.value = getClientMaterialsTotal(project) - purchaseTotal;
   return result;
 }
 
@@ -5234,7 +5335,7 @@ function getProjectAssignmentEarning(project, assignment){
 
   switch(assignment.payType){
     case "percent_of_income": return getEstimateTotal(project) * rate / 100;
-    case "percent_of_work": return getCustomerWorksTotal(project) * rate / 100;
+    case "percent_of_work": return getClientWorksTotal(project) * rate / 100;
     case "per_day": return units > 0 ? rate * units : null;
     case "per_month": return units > 0 ? rate * units : null;
     case "fixed_per_object": return rate;
@@ -5592,9 +5693,10 @@ function renderProjectTeamBlock(project){
 }
 
 function renderFloatingPanel(p){
-  const total = getEstimateTotal(p);
-  const worksTotal = getCustomerWorksTotal(p);
-  const materialsTotal = getCustomerMaterialsTotal(p);
+  const approvedSnapshot = getApproved(p);
+  const total = getClientTotal(p);
+  const worksTotal = getClientWorksTotal(p);
+  const materialsTotal = getClientMaterialsTotal(p);
   const hasMaterials = Array.isArray(p.positions) && p.positions.some(pos => pos.type === "material");
   const profit = getMaterialsProfit(p);
   const workDiscountPercent = getWorksDiscountPercent(p);
@@ -5607,7 +5709,7 @@ function renderFloatingPanel(p){
   return `
     <div class="floatingPanel">
       <div class="floatingTotal">
-        <span class="floatingTotalLabel">До сплати</span>
+        <span class="floatingTotalLabel">${approvedSnapshot ? "Погоджено" : "До сплати"}</span>
         <span class="floatingTotalValue">${money(total)}</span>
       </div>
 
@@ -5687,9 +5789,11 @@ function renderQuotePreviewSection(title, positions, discountPercent, discountAm
         const price = Number(pos.price) || 0;
         const unit = pos.unit || "шт";
         const itemTotal = price * qty;
+        const lineName = pos.clientName !== undefined ? pos.clientName : positionClientName(pos);
+        const lineBrand = pos.brand !== undefined ? pos.brand : positionBrand(pos);
         return `
           <div class="quoteLine">
-            <div class="quoteLineName">${escapeHtml(positionClientName(pos))}${positionBrand(pos) ? `<span class="quoteLineBrand">${escapeHtml(positionBrand(pos))}</span>` : ""}</div>
+            <div class="quoteLineName">${escapeHtml(lineName)}${lineBrand ? `<span class="quoteLineBrand">${escapeHtml(lineBrand)}</span>` : ""}</div>
             <div class="quoteLineQty">${formatQty(qty)} ${escapeHtml(unit)}</div>
             <div class="quoteLinePrice">${price > 0 ? moneyWithCents(price) : "—"}</div>
             <div class="quoteLineTotal">${price > 0 ? money(itemTotal) : "—"}</div>
@@ -5726,6 +5830,11 @@ function openQuotePreview(){
   const positions = Array.isArray(project.positions) ? project.positions : [];
   if(!positions.length){
     toast("Додайте хоча б одну позицію до кошторису");
+    return;
+  }
+
+  if(getApproved(project)){
+    renderQuotePreview();
     return;
   }
 
@@ -5820,14 +5929,17 @@ function renderQuotePreview(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
 
-  const positions = Array.isArray(project.positions) ? project.positions : [];
+  const approvedSnapshot = getApproved(project);
+  const positions = approvedSnapshot ? approvedSnapshot.positions : (Array.isArray(project.positions) ? project.positions : []);
   if(!positions.length){
     toast("Додайте хоча б одну позицію до кошторису");
     return;
   }
 
   const works = positions.filter(pos => pos.type === "work");
-  const materials = positions.filter(pos => pos.type === "material");
+  const materials = approvedSnapshot
+    ? positions.filter(pos => pos.type === "material")
+    : groupMaterialPositions(positions.filter(pos => pos.type === "material")).flatMap(group => group.positions);
   const companyName = profileCompanyName();
   const companyPhone = String(profile.phone || "").trim();
   const client = project.client || {};
@@ -5835,10 +5947,12 @@ function renderQuotePreview(){
   const clientPhone = String(client.phone || "").trim();
   const objectName = projectTitlePlain(project);
   const objectAddress = String(client.address || "").trim();
-  const workDiscountPercent = getWorksDiscountPercent(project);
-  const workDiscountAmount = getWorksDiscountAmount(project);
-  const materialsDiscountPercent = getMaterialsDiscountPercent(project);
-  const materialsDiscountAmount = getMaterialsDiscountAmount(project);
+  const workDiscountPercent = approvedSnapshot ? approvedSnapshot.workDiscountPercent : getWorksDiscountPercent(project);
+  const workDiscountAmount = approvedSnapshot ? approvedSnapshot.workDiscountAmount : getWorksDiscountAmount(project);
+  const materialsDiscountPercent = approvedSnapshot ? approvedSnapshot.materialsDiscountPercent : getMaterialsDiscountPercent(project);
+  const materialsDiscountAmount = approvedSnapshot ? approvedSnapshot.materialsDiscountAmount : getMaterialsDiscountAmount(project);
+  const documentDate = approvedSnapshot ? approvedSnapshot.at : new Date();
+  const documentTotal = approvedSnapshot ? approvedSnapshot.total : getEstimateTotal(project);
   const logoSource = profile.logoData || "logo.png";
   const quoteDocument = document.getElementById("quotePreviewDocument");
 
@@ -5866,14 +5980,14 @@ function renderQuotePreview(){
 
     <div class="quoteDocHeading">
       <div class="quoteDocumentTitle">Кошторис</div>
-      <div class="quoteIssuedNote">Ціни актуальні на: ${formatQuoteDate(new Date())}</div>
+      <div class="quoteIssuedNote">${approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
     </div>
 
     ${renderQuotePreviewSection("РОБОТИ", works, workDiscountPercent, workDiscountAmount)}
-    ${renderQuotePreviewSection("МАТЕРІАЛИ", groupMaterialPositions(materials).flatMap(group => group.positions), materialsDiscountPercent, materialsDiscountAmount)}
+    ${renderQuotePreviewSection("МАТЕРІАЛИ", materials, materialsDiscountPercent, materialsDiscountAmount)}
     <div class="quoteGrandTotal">
       <span>До сплати</span>
-      <span>${money(getEstimateTotal(project))}</span>
+      <span>${money(documentTotal)}</span>
     </div>
   `;
 
@@ -6086,6 +6200,7 @@ function renderEstimateBlock(p){
         <span class="estimateCount">${count ? count + " поз." : "порожній"}</span>
       </div>
 
+      ${renderApprovedBanner(p)}
       ${renderProcurementIssues(procurementIssues, p)}
 
       ${count === 0 ? `
@@ -6131,6 +6246,35 @@ function getProcurementIssues(project){
     if(status) issues.push({ position, status, label });
     return issues;
   }, []);
+}
+
+function renderApprovedBanner(project){
+  const approved = getApproved(project);
+  if(!approved) return "";
+  const changes = getApprovedChanges(project);
+  const parts = [];
+  if(changes.changed.length) parts.push(`змінено ${changes.changed.length}`);
+  if(changes.added.length) parts.push(`додано ${changes.added.length}`);
+  if(changes.removed.length) parts.push(`прибрано ${changes.removed.length}`);
+  const internalTotal = getEstimateTotal(project);
+  const diff = internalTotal - (Number(approved.total) || 0);
+  return `
+    <section class="approvedBanner">
+      <div class="approvedBannerTitle">✓ Погоджено з клієнтом ${formatQuoteDate(approved.at)} · ${money(approved.total)}</div>
+      <div class="approvedBannerText">Зміни нижче — внутрішні: клієнт їх не бачить, його сума й документ не змінюються.</div>
+      ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · за цінами для клієнта це ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
+      ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>` : ""}
+    </section>
+  `;
+}
+
+function approvedQtyNote(project, pos){
+  const approved = getApproved(project);
+  if(!approved) return "";
+  const item = approved.positions.find(entry => entry.id === pos.id);
+  if(!item) return `<span class="positionApprovedNote">нова, внутрішня</span>`;
+  if(roundQty(item.qty) !== roundQty(pos.qty)) return `<span class="positionApprovedNote">погоджено ${formatQty(item.qty)}</span>`;
+  return "";
 }
 
 let procurementIssuesExpanded = false;
@@ -6285,7 +6429,7 @@ function renderPosition(projectId, pos){
           aria-label="Змінити порядок позиції"
           onpointerdown="startEstimatePositionDrag(event,'${escapeHtml(projectId)}','${escapeHtml(pos.id)}','${escapeHtml(pos.type)}')"
         >⠿</button>
-        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(positionShortName(pos))}${positionBrand(pos) || positionStockQty(pos) > 0 ? `<span class="positionBrand">${escapeHtml(positionBrand(pos))}${positionBrand(pos) && positionStockQty(pos) > 0 ? " · " : ""}${positionStockQty(pos) > 0 ? `<span class="positionStockTag">${isPositionFullyFromStock(pos) ? "усе зі складу" : "зі складу " + formatQty(positionStockQty(pos))}</span>` : ""}</span>` : ""}</div>
+        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(positionShortName(pos))}${positionBrand(pos) || positionStockQty(pos) > 0 ? `<span class="positionBrand">${escapeHtml(positionBrand(pos))}${positionBrand(pos) && positionStockQty(pos) > 0 ? " · " : ""}${positionStockQty(pos) > 0 ? `<span class="positionStockTag">${isPositionFullyFromStock(pos) ? "усе зі складу" : "зі складу " + formatQty(positionStockQty(pos))}</span>` : ""}</span>` : ""}${approvedQtyNote(projects.find(item => item.id === projectId), pos)}</div>
 
         <div class="qtyControl">
           <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
@@ -10337,7 +10481,7 @@ function openActions(id){
   const stageText = document.getElementById("actionStageText");
   const stageIcon = document.getElementById("actionStageIcon");
   const nextStages = {
-    estimate: ["procurement", "До комплектації", "✓"],
+    estimate: ["procurement", "Клієнт погодив → комплектація", "✓"],
     procurement: ["work", "Позначити: в роботі", "▶"],
     work: ["done", "Позначити: завершено", "✓"],
     done: ["closed", "Закрити об'єкт", "✓"],
@@ -10349,6 +10493,8 @@ function openActions(id){
     stageText.textContent = next[1];
     stageIcon.textContent = next[2];
   }
+  const reapproveRow = document.getElementById("actionReapproveRow");
+  if(reapproveRow) reapproveRow.classList.toggle("hidden", !getApproved(p) || isArchived);
   if(isArchived){
     document.getElementById("actionArchiveText").textContent = "Відновити з архіву";
     document.getElementById("actionArchiveIcon").textContent = "📂";
@@ -10367,13 +10513,19 @@ function actionAdvanceStage(){
   const previousStage = p.stage || "estimate";
   const next = nextStages[previousStage];
   if(!next) return;
+  if(previousStage === "estimate" && next === "procurement"){
+    if(!getApproved(p)) approveProject(p);
+  }
+  if(next === "estimate" && getApproved(p)){
+    if(confirm("Повернути до прорахунку і зняти погодження?\n\nСума для клієнта знову рахуватиметься з поточного кошторису.")) delete p.approved;
+  }
   p.stage = next;
   p.updatedAt = new Date().toISOString();
   saveProjects();
   closeActionsSheet();
   render();
   const message = {
-    procurement:"Етап: комплектація. Перевірте наявність і фактичну закупівельну ціну.",
+    procurement:`Кошторис погоджено (${money(getClientTotal(p))}). Далі зміни — внутрішні, клієнт їх не бачить.`,
     work:"Етап: в роботі.",
     done:"Об'єкт завершено.",
     closed:"Об'єкт закрито."
