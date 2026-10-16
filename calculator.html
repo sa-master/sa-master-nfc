@@ -1294,7 +1294,98 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   border-top:1px solid rgba(120,130,140,.12);
 }
 
-.procurementIssuesHead + .procurementIssue{border-top:0}
+.procurementIssuesHead{
+  width:100%;
+  padding:0;
+  background:none;
+  text-align:left;
+}
+.procurementSupplierInput{margin-top:.5rem}
+.stockPickButton{background:rgba(52,199,89,.14) !important;color:#1f7a3c !important}
+.stockPickItem{
+  display:flex;
+  align-items:center;
+  gap:.5rem;
+  margin-bottom:.5rem;
+  padding:.625rem .625rem .625rem .5rem;
+  border-radius:.875rem;
+  background:var(--card);
+}
+.stockPickItem.full{background:rgba(52,199,89,.12)}
+.stockPickItem.part{background:rgba(255,149,0,.09)}
+.stockPickName{
+  flex:1 1 auto;
+  min-width:0;
+  display:flex;
+  align-items:flex-start;
+  gap:.5rem;
+  padding:0;
+  text-align:left;
+}
+.stockPickCheck{
+  flex:0 0 auto;
+  width:1.375rem;
+  height:1.375rem;
+  margin-top:.0625rem;
+  border-radius:.4375rem;
+  border:1.5px solid var(--dot-gray);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.8125rem;
+  font-weight:800;
+  color:#fff;
+}
+.stockPickItem.full .stockPickCheck{background:var(--green);border-color:var(--green)}
+.stockPickTitle{display:block;font-size:.8125rem;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.stockPickMeta{display:block;margin-top:.1875rem;font-size:.6875rem;font-weight:600;color:var(--tm)}
+.stockPickItem.part .stockPickMeta{color:#B76800}
+.stockPickItem.full .stockPickMeta{color:#1f7a3c}
+.stockPickControl{flex:0 0 auto}
+.procurementItemMeta.stockNote{color:#1f7a3c;font-weight:700}
+.positionStockTag{color:#1f7a3c;font-weight:750}
+.procurementIssuesToggle{
+  flex:0 0 auto;
+  color:var(--p);
+  font-size:.75rem;
+  font-weight:700;
+}
+.procurementSummary{
+  display:flex;
+  flex-wrap:wrap;
+  gap:.375rem;
+}
+.procurementSummaryChip{
+  padding:.25rem .5rem;
+  border-radius:.5rem;
+  background:rgba(120,130,140,.12);
+  color:var(--ts);
+  font-size:.6875rem;
+  font-weight:750;
+  white-space:nowrap;
+}
+.procurementSummaryChip.unavailable{background:rgba(255,59,48,.12);color:var(--red)}
+.procurementSummaryChip.missing{background:rgba(255,149,0,.14);color:#B76800}
+.procurementIssues.expanded .procurementSummary{margin-bottom:.375rem}
+.procurementIssue.missing .procurementIssueStatus{background:rgba(255,149,0,.14);color:#B76800}
+.procurementIssuesAction{
+  width:100%;
+  margin-top:.625rem;
+  height:2.5rem;
+  border-radius:.75rem;
+  background:rgba(0,122,255,.1);
+  color:var(--p);
+  font-size:.8125rem;
+  font-weight:700;
+}
+.floatingProfitHint{
+  padding:0;
+  background:none;
+  text-align:left;
+  font-size:.75rem !important;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
 
 .procurementIssueName{
   min-width:0;
@@ -1394,6 +1485,15 @@ body.positionDragging{
   color:var(--t);
   flex:1 1 auto;
   min-width:0;
+}
+
+.catalogItemBrand{font-weight:750;color:var(--ts)}
+.positionBrand{
+  display:block;
+  margin-top:.125rem;
+  font-size:.625rem;
+  font-weight:600;
+  color:var(--tm);
 }
 
 .positionName.materialName{
@@ -2695,6 +2795,13 @@ body.positionDragging{
   line-height:1.3;
   overflow-wrap:anywhere;
 }
+.quoteLineBrand{
+  display:block;
+  margin-top:.125rem;
+  font-size:.75em;
+  font-weight:500;
+  color:#6b7178;
+}
 .quoteLineQty,
 .quoteLinePrice,
 .quoteLineTotal{
@@ -2728,7 +2835,10 @@ body.positionDragging{
 .quoteSectionTotal span:first-child{grid-column:1 / span 3;padding:0;text-align:right;color:#4b5563}
 .quoteSectionTotal span:last-child{padding:0;text-align:right;white-space:nowrap;color:#171717}
 .quoteDiscountRow{margin:0 1.125rem 1rem;padding:.625rem 0 0;color:#207a42;font-size:.75rem;font-weight:700}
-.quoteGrandTotal{margin-top:1.125rem;padding-top:.875rem;border-top:2px solid #1c1c1e;font-size:1rem;font-weight:850}
+.quoteSectionSubtotal{font-weight:600 !important;color:#6b7178}
+.quoteSectionSubtotal span:last-child{font-weight:600}
+.quoteSectionDiscount,.quoteSectionDiscount span{color:#207a42 !important}
+.quoteGrandTotal{margin:1.125rem 1.125rem 1.25rem;padding-top:.875rem;border-top:2px solid #1c1c1e;font-size:1rem;font-weight:850}
 .quotePreviewFooter .fsFooterInner{display:grid;grid-template-columns:1fr 1.25fr;gap:.5rem}
 .quotePreviewFooter .quoteBackButton{background:rgba(120,130,140,.12);color:var(--ts);box-shadow:none}
 
@@ -2748,6 +2858,9 @@ body.positionDragging{
 .quotePdfExport .quoteDocumentTitle{font-size:1rem}
 .quotePdfExport .quoteIssuedNote{font-size:.8125rem}
 .quotePdfExport .quoteSection{margin-left:2.5rem;margin-right:2.5rem;margin-bottom:1.5rem}
+.quotePdfExport .quoteDiscountRow,
+.quotePdfExport .quoteGrandTotal{margin-left:2.5rem;margin-right:2.5rem}
+.quotePdfExport .quoteGrandTotal{font-size:1.25rem;margin-bottom:2rem}
 
 @media print{
   @page{margin:0}
@@ -3212,13 +3325,17 @@ body.positionDragging{
 <div class="sheet" id="procurementRequestSheet">
   <div class="panel">
     <div class="panelHead">
-      <strong>Запит на звірку</strong>
+      <strong>Запит постачальнику</strong>
       <button class="close" onclick="closeProcurementRequest()">×</button>
     </div>
 
     <div class="panelBody" style="padding-bottom:1.25rem">
       <div class="formHint" id="procurementRequestHint" style="margin:0 .25rem .875rem"></div>
       <div class="originalNameCard" id="procurementRequestPreview"></div>
+      <button class="addPersonButton" type="button" onclick="shareProcurementOrderText()" style="margin:.75rem 0 0">
+        <span style="font-size:1rem;line-height:1">☰</span>
+        <span>Замовлення списком (текст)</span>
+      </button>
       <button class="addPersonButton hidden" id="procurementNextSupplierButton" type="button" onclick="openNextProcurementRequest()" style="margin:.75rem 0 0">
         <span style="font-size:1rem;line-height:1">→</span>
         <span id="procurementNextSupplierLabel">Наступний постачальник</span>
@@ -3271,9 +3388,9 @@ body.positionDragging{
       </div>
 
       <div class="formGroup">
-        <label class="formLabel" id="ceNameMasterLabel">Назва для майстра</label>
+        <label class="formLabel" id="ceNameMasterLabel">Коротка назва</label>
         <input class="formInput" id="ceNameMaster" placeholder="Наприклад: Труба TECE Ø20" autocomplete="off">
-        <div class="formHint" id="ceNameMasterHint">Необов’язково. Якщо заповнити, ця назва показуватиметься майстру в каталозі.</div>
+        <div class="formHint" id="ceNameMasterHint">Показується в каталозі, кошторисі та документі для клієнта замість довгої назви з прайсу.</div>
       </div>
 
       <div class="formRow">
@@ -3634,6 +3751,11 @@ body.positionDragging{
       Розподіліть матеріали за постачальниками, надішліть запит на звірку та застосуйте підтверджені ціни лише до цього об’єкта.
     </div>
 
+    <button class="addPersonButton stockPickButton" type="button" style="margin:0 0 1rem" onclick="openStockPick()">
+      <span style="font-size:1rem;line-height:1">▣</span>
+      <span>Що є на складі?</span>
+    </button>
+
     <button class="addPersonButton" type="button" style="margin:0 0 1rem" onclick="openBestPriceProposal()">
       <span style="font-size:1rem;line-height:1">↯</span>
       <span>Підібрати вигідніше</span>
@@ -3653,6 +3775,29 @@ body.positionDragging{
     </div>
   </div>
 </div>
+
+<div class="fullscreen" id="stockPickScreen">
+  <div class="fsBody">
+    <div class="fsHead">
+      <strong>Що є на складі?</strong>
+      <button class="close" onclick="closeStockPick()" aria-label="Закрити">×</button>
+    </div>
+
+    <div class="formHint" style="margin:0 .25rem 1rem">
+      Відмітьте, скільки берете з полиці. Дотик по назві — взяти все. Решта автоматично піде в замовлення постачальнику. Клієнт бачить повну кількість, як у кошторисі.
+    </div>
+
+    <div id="stockPickContent"></div>
+  </div>
+
+  <div class="fsFooter">
+    <div class="formHint" id="stockPickSummary" style="margin:0 0 .625rem;text-align:center;font-weight:700"></div>
+    <div class="fsFooterInner">
+      <button onclick="closeStockPick()">Готово</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- FULLSCREEN: CLIENT QUOTE PREVIEW -->
 
@@ -3760,6 +3905,16 @@ body.positionDragging{
       </button>
     </div>
 
+    <div class="fsSection">
+      <div class="fsSectionTitle">Резервна копія</div>
+      <div class="fsCard">
+        <div class="formHint" style="margin-top:0">Усі об'єкти, каталог, профіль і команда зберігаються лише в цьому браузері. Зберігайте копію у «Файли» — з неї все відновлюється за хвилину.</div>
+        <div class="formHint" id="pfBackupStatus" style="font-weight:600"></div>
+        <button type="button" class="addPersonButton" onclick="exportBackup()">Зберегти копію</button>
+        <button type="button" class="addPersonButton" style="background:rgba(120,120,128,.12);color:var(--ts)" onclick="openBackupRestore()">Відновити з файлу</button>
+      </div>
+    </div>
+
   </div>
 
   <div class="fsFooter">
@@ -3776,6 +3931,14 @@ body.positionDragging{
   id="importFileInput"
   accept=".xls,.xlsx,.xlsm"
   style="display:none"
+>
+
+<input
+  type="file"
+  id="backupFileInput"
+  accept="application/json,.json"
+  style="display:none"
+  onchange="handleBackupFile(event)"
 >
 
 <input
@@ -3989,7 +4152,54 @@ if(shouldSeedDefaultWorks) DEFAULT_WORKS.forEach(work => {
   defaultWorksAdded = true;
 });
 
-if(catalogMigrated || defaultWorksAdded){
+/* Одиниці з різних прайсів («шт», «шт.», «Шт») зводимо до одного написання. */
+function normalizeUnit(value){
+  const raw = cleanText(value);
+  const key = raw.toLowerCase().replace(/\.+$/, "").replace(/\s+/g, "");
+  if(!key) return "шт";
+  if(["шт","штук","штука","штуки","pcs","pc"].includes(key)) return "шт";
+  if(["м","мп","м.п","п.м","пм","пог.м","погм","метр","m"].includes(key)) return "м";
+  if(["компл","комплект","к-т","кт"].includes(key)) return "компл.";
+  if(["уп","упак","упаковка"].includes(key)) return "уп.";
+  if(["м2","кв.м","м²"].includes(key)) return "м²";
+  if(["кг","kg"].includes(key)) return "кг";
+  if(["л","l"].includes(key)) return "л";
+  return raw;
+}
+
+let unitsNormalized = false;
+catalog.forEach(item => {
+  const unit = normalizeUnit(item.unit);
+  if(unit !== item.unit){ item.unit = unit; unitsNormalized = true; }
+});
+projects.forEach(project => (Array.isArray(project.positions) ? project.positions : []).forEach(position => {
+  const unit = normalizeUnit(position.unit);
+  if(unit !== position.unit){ position.unit = unit; unitsNormalized = true; }
+}));
+if(unitsNormalized){
+  try{ localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects)); }catch(e){}
+}
+
+/* Один раз розкладаємо матеріали з «Інше» за категоріями за назвою.
+   Позиції, які вже мають категорію, не чіпаємо. */
+const CATEGORY_AUTO_KEY = "sa_categoryAutoV2";
+let categoriesRedetected = false;
+let categoryAutoDone = false;
+try{ categoryAutoDone = localStorage.getItem(CATEGORY_AUTO_KEY) === "1"; }catch(e){}
+if(!categoryAutoDone){
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    if(item.category && item.category !== "other") return;
+    const detected = detectCategory(`${item.nameMaster || ""} ${item.name || ""}`, item.manufacturer, item.system);
+    if(detected && detected !== "other"){
+      item.category = detected;
+      categoriesRedetected = true;
+    }
+  });
+  try{ localStorage.setItem(CATEGORY_AUTO_KEY, "1"); }catch(e){}
+}
+
+if(catalogMigrated || defaultWorksAdded || unitsNormalized || categoriesRedetected){
   saveCatalog();
 }
 
@@ -4251,6 +4461,16 @@ function toast(msg, duration){
   el._t = setTimeout(() => el.classList.remove("show"), Number(duration) || 2200);
 }
 
+/* Кількість може бути дробовою (37,5 м труби). Зберігаємо до сотих. */
+function roundQty(value){
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function formatQty(value){
+  const n = roundQty(value);
+  return Number.isInteger(n) ? String(n) : String(n).replace(".", ",");
+}
+
 function money(value){
   const n = Number(value) || 0;
   return new Intl.NumberFormat("uk-UA").format(Math.round(n)) + " ₴";
@@ -4306,6 +4526,40 @@ function getPositionCatalogItem(position){
   return position && position.catalogId ? catalog.find(item => item.id === position.catalogId) : null;
 }
 
+/* Назва позиції береться з каталогу наживо: перейменування в каталозі
+   одразу видно в кошторисі, плані закупівлі та документі для клієнта. */
+function positionShortName(position){
+  const item = getPositionCatalogItem(position);
+  const name = item ? catalogDisplayName(item) : String(position && position.name || "").trim();
+  return name || "Без назви";
+}
+
+function positionBrand(position){
+  if(!position || position.type !== "material") return "";
+  const item = getPositionCatalogItem(position);
+  return cleanText(item && item.manufacturer);
+}
+
+/* Для замовника: коротка назва без артикулів і пакування. */
+function positionClientName(position){
+  const item = getPositionCatalogItem(position);
+  let name = positionShortName(position);
+  const article = cleanText((item && item.article) || "");
+  /* Коротку назву майстер написав сам — артикул/модель у ній лишаємо (напр. «Сифон HL4000.2»). */
+  const hasOwnShortName = Boolean(item && cleanText(item.nameMaster));
+  if(article && article.length >= 3 && !hasOwnShortName){
+    const escaped = article.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    name = name.replace(new RegExp("[\\s,;(]*(?:арт\\.?\\s*)?" + escaped + "\\)?", "gi"), " ");
+  }
+  name = name
+    .replace(/\(\s*упак[^)]*\)/gi, " ")
+    .replace(/\s+арт\.?\s*[A-Za-zА-Яа-яІіЇїЄєҐґ0-9._\/-]+\s*$/i, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/[\s,;]+$/, "")
+    .trim();
+  return name || positionShortName(position);
+}
+
 /* Одна структура категорій використовується в кошторисі, PDF та комплектації.
    Позиції старих або видалених з каталогу товарів без категорії лишаються в «Інше». */
 const MATERIAL_CATEGORY_GROUPS = [
@@ -4323,7 +4577,9 @@ function normalizeMaterialCategory(value){
 
 function getPositionMaterialCategory(position){
   const catalogItem = getPositionCatalogItem(position);
-  return normalizeMaterialCategory((catalogItem && catalogItem.category) || (position && position.category));
+  const stored = normalizeMaterialCategory((catalogItem && catalogItem.category) || (position && position.category));
+  if(stored !== "other" || catalogItem) return stored;
+  return normalizeMaterialCategory(detectCategory(position && (position.fullName || position.name) || "", "", ""));
 }
 
 function groupMaterialPositions(positions){
@@ -4356,10 +4612,120 @@ function getPositionSupplierNames(position){
     .map(key => names.find(name => normalizeText(name) === key));
 }
 
+/* ==== Склад: скільки береться з полиці, а скільки замовляється ==== */
+
+function positionStockQty(position){
+  const qty = Number(position && position.qty) || 0;
+  const fromStock = Number(position && position.fromStockQty) || 0;
+  return roundQty(Math.max(0, Math.min(qty, fromStock)));
+}
+
+function positionOrderQty(position){
+  return roundQty(Math.max(0, (Number(position && position.qty) || 0) - positionStockQty(position)));
+}
+
+function isPositionFullyFromStock(position){
+  return position && position.type === "material" && (Number(position.qty) || 0) > 0 && positionOrderQty(position) <= 0;
+}
+
+function openStockPick(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  if(!(project.positions || []).some(position => position.type === "material")){
+    toast("У кошторисі ще немає матеріалів");
+    return;
+  }
+  renderStockPick();
+  document.getElementById("stockPickScreen").classList.add("open");
+}
+
+function closeStockPick(){
+  document.getElementById("stockPickScreen").classList.remove("open");
+  render();
+  if(document.getElementById("procurementPlanScreen").classList.contains("open")) renderProcurementPlan();
+}
+
+function setPositionStockQty(positionId, rawValue, rerender){
+  const project = projects.find(item => item.id === currentProjectId);
+  const position = project && (project.positions || []).find(item => item.id === positionId);
+  if(!position) return;
+  const value = Number(String(rawValue ?? "").replace(",", "."));
+  const qty = Number(position.qty) || 0;
+  position.fromStockQty = Number.isFinite(value) && value > 0 ? roundQty(Math.min(qty, value)) : 0;
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  if(rerender !== false) renderStockPick();
+}
+
+function changePositionStockQty(positionId, delta){
+  const project = projects.find(item => item.id === currentProjectId);
+  const position = project && (project.positions || []).find(item => item.id === positionId);
+  if(!position) return;
+  setPositionStockQty(positionId, positionStockQty(position) + delta);
+}
+
+function togglePositionStockAll(positionId){
+  const project = projects.find(item => item.id === currentProjectId);
+  const position = project && (project.positions || []).find(item => item.id === positionId);
+  if(!position) return;
+  setPositionStockQty(positionId, isPositionFullyFromStock(position) ? 0 : position.qty);
+}
+
+function renderStockPick(){
+  const project = projects.find(item => item.id === currentProjectId);
+  const box = document.getElementById("stockPickContent");
+  if(!project || !box) return;
+  const materials = (project.positions || []).filter(position => position.type === "material");
+
+  box.innerHTML = groupMaterialPositions(materials).map(group => `
+    <div class="procurementCategoryTitle">${escapeHtml(group.label)}</div>
+    ${group.positions.map(position => {
+      const qty = Number(position.qty) || 0;
+      const unit = escapeHtml(position.unit || "шт");
+      const fromStock = positionStockQty(position);
+      const order = positionOrderQty(position);
+      const brand = positionBrand(position);
+      const state = order <= 0 ? "full" : fromStock > 0 ? "part" : "";
+      return `
+        <div class="stockPickItem ${state}">
+          <button type="button" class="stockPickName" onclick="togglePositionStockAll('${escapeHtml(position.id)}')">
+            <span class="stockPickCheck" aria-hidden="true">${order <= 0 ? "✓" : ""}</span>
+            <span>
+              <span class="stockPickTitle">${escapeHtml(positionShortName(position))}</span>
+              <span class="stockPickMeta">${brand ? escapeHtml(brand) + " · " : ""}треба ${formatQty(qty)} ${unit}${order <= 0 ? " · все зі складу" : fromStock > 0 ? ` · замовити ${formatQty(order)} ${unit}` : ""}</span>
+            </span>
+          </button>
+          <div class="qtyControl stockPickControl" aria-label="Зі складу">
+            <button class="qtyBtn" type="button" onclick="changePositionStockQty('${escapeHtml(position.id)}',-1)" aria-label="Менше">−</button>
+            <input
+              class="estimateQtyInput"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              value="${fromStock ? formatQty(fromStock) : ""}"
+              placeholder="0"
+              aria-label="Зі складу"
+              onfocus="this.select()"
+              onchange="setPositionStockQty('${escapeHtml(position.id)}',this.value)"
+            >
+            <button class="qtyBtn" type="button" onclick="changePositionStockQty('${escapeHtml(position.id)}',1)" aria-label="Більше">＋</button>
+          </div>
+        </div>
+      `;
+    }).join("")}
+  `).join("");
+
+  const full = materials.filter(isPositionFullyFromStock).length;
+  const part = materials.filter(position => !isPositionFullyFromStock(position) && positionStockQty(position) > 0).length;
+  const toOrder = materials.filter(position => positionOrderQty(position) > 0).length;
+  document.getElementById("stockPickSummary").textContent =
+    `Зі складу: ${full + part} поз.${part ? ` (з них частково ${part})` : ""} · Замовити: ${toOrder} поз.`;
+}
+
 function getProcurementGroupMeta(positions){
   const total = positions.reduce((sum, position) => {
     const price = Number(position.purchasePrice);
-    const qty = Number(position.qty) || 0;
+    const qty = positionOrderQty(position);
     return sum + (Number.isFinite(price) && price > 0 ? price * qty : 0);
   }, 0);
   const hasUnknown = positions.some(position => !(Number(position.purchasePrice) > 0));
@@ -4370,7 +4736,16 @@ function procurementSupplierSelect(projectId, position){
   const suppliers = getPositionSupplierNames(position);
   const selected = getPositionPlannedSupplier(position);
   if(!suppliers.length){
-    return `<div class="formHint" style="margin:.5rem 0 0">У каталозі ще немає постачальника для цієї позиції.</div>`;
+    return `
+      <input
+        class="formInput procurementSupplierInput"
+        list="knownSuppliersList"
+        placeholder="Вписати постачальника"
+        autocomplete="off"
+        aria-label="Постачальник"
+        onchange="setPositionPlannedSupplier('${escapeHtml(projectId)}','${escapeHtml(position.id)}',this.value.trim())"
+      >
+    `;
   }
   return `
     <select
@@ -4397,10 +4772,33 @@ function procurementAvailabilityClass(value){
   return value === "unavailable" ? "unavailable" : value === "available" ? "confirmed" : "";
 }
 
+function collectAllSupplierNames(){
+  const names = new Map();
+  const add = value => {
+    const name = cleanText(value);
+    if(name && !names.has(normalizeText(name))) names.set(normalizeText(name), name);
+  };
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    add(item.preferredSupplierName);
+    getCatalogSupplierOffers(item).forEach(offer => add(offer && offer.supplierName));
+  });
+  projects.forEach(project => (project.positions || []).forEach(position => add(position.plannedSupplierName)));
+  return Array.from(names.values()).sort((a,b) => a.localeCompare(b, "uk"));
+}
+
 function renderProcurementPlan(){
   const box = document.getElementById("procurementPlanContent");
   const project = projects.find(item => item.id === currentProjectId);
   if(!box || !project) return;
+
+  let datalist = document.getElementById("knownSuppliersList");
+  if(!datalist){
+    datalist = document.createElement("datalist");
+    datalist.id = "knownSuppliersList";
+    document.body.appendChild(datalist);
+  }
+  datalist.innerHTML = collectAllSupplierNames().map(name => `<option value="${escapeHtml(name)}"></option>`).join("");
 
   const materials = (project.positions || []).filter(position => position.type === "material");
   if(!materials.length){
@@ -4410,6 +4808,11 @@ function renderProcurementPlan(){
 
   const groups = new Map();
   materials.forEach(position => {
+    if(isPositionFullyFromStock(position)){
+      if(!groups.has("stock")) groups.set("stock", { supplier:"", stock:true, positions: [] });
+      groups.get("stock").positions.push(position);
+      return;
+    }
     const supplier = getPositionPlannedSupplier(position);
     const key = supplier ? `supplier:${normalizeText(supplier)}` : "unassigned";
     if(!groups.has(key)) groups.set(key, { supplier, positions: [] });
@@ -4417,6 +4820,8 @@ function renderProcurementPlan(){
   });
 
   const ordered = Array.from(groups.values()).sort((a,b) => {
+    if(a.stock) return 1;
+    if(b.stock) return -1;
     if(!a.supplier) return 1;
     if(!b.supplier) return -1;
     return a.supplier.localeCompare(b.supplier, "uk");
@@ -4426,10 +4831,10 @@ function renderProcurementPlan(){
     <section class="procurementGroup">
       <div class="procurementGroupHead">
         <div class="procurementGroupTitle">
-          <div class="procurementGroupName">${group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</div>
-          <div class="procurementGroupMeta">${escapeHtml(getProcurementGroupMeta(group.positions))}</div>
+          <div class="procurementGroupName">${group.stock ? "Зі складу" : group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</div>
+          <div class="procurementGroupMeta">${group.stock ? `${group.positions.length} поз. · не замовляються` : escapeHtml(getProcurementGroupMeta(group.positions))}</div>
         </div>
-        ${group.supplier ? `<button class="procurementRequestButton" type="button" onclick="openProcurementRequest(decodeURIComponent('${encodeURIComponent(group.supplier)}'))">Запит</button>` : ""}
+        ${group.supplier && !group.stock ? `<button class="procurementRequestButton" type="button" onclick="openProcurementRequest(decodeURIComponent('${encodeURIComponent(group.supplier)}'))">Запит</button>` : ""}
       </div>
       ${groupMaterialPositions(group.positions).map(categoryGroup => `
         <div class="procurementCategoryTitle">${escapeHtml(categoryGroup.label)}</div>
@@ -4443,12 +4848,13 @@ function renderProcurementPlan(){
         return `
           <div class="procurementItem">
             <div class="procurementItemTop">
-              <div class="procurementItemName">${escapeHtml(position.name || "Без назви")}</div>
-              <div class="procurementItemQty">${qty} ${escapeHtml(position.unit || "шт")}</div>
+              <div class="procurementItemName">${escapeHtml(positionShortName(position))}</div>
+              <div class="procurementItemQty">${formatQty(positionOrderQty(position) || qty)} ${escapeHtml(position.unit || "шт")}</div>
             </div>
+            ${positionStockQty(position) > 0 ? `<div class="procurementItemMeta stockNote">${isPositionFullyFromStock(position) ? "Усе зі складу" : `Треба ${formatQty(qty)} · зі складу ${formatQty(positionStockQty(position))} · замовити ${formatQty(positionOrderQty(position))}`}</div>` : ""}
             <div class="procurementItemMeta">${priceText}</div>
             ${availability ? `<div class="procurementItemMeta ${procurementAvailabilityClass(position.supplierAvailability)}">${availability}</div>` : ""}
-            ${procurementSupplierSelect(project.id, position)}
+            ${isPositionFullyFromStock(position) ? "" : procurementSupplierSelect(project.id, position)}
           </div>
         `;
         }).join("")}
@@ -4611,7 +5017,7 @@ function renderBestPriceProposal(){
       const from = change.previousPrice ? moneyWithCents(change.previousPrice) : "ціна не вказана";
       return `
         <div class="procurementItem">
-          <div class="procurementItemName">${escapeHtml(position.name || "Без назви")}</div>
+          <div class="procurementItemName">${escapeHtml(positionShortName(position))}</div>
           <div class="procurementItemMeta">${from} → <b>${moneyWithCents(change.purchasePrice)}</b> · ${escapeHtml(change.supplierName)}</div>
         </div>
       `;
@@ -4795,7 +5201,7 @@ function fillMissingProjectPurchasePrices(){
 }
 
 function getMaterialsProfit(project){
-  const result = { value:0, hasMaterials:false, hasUnknownPrice:false, confirmed:true };
+  const result = { value:0, hasMaterials:false, hasUnknownPrice:false, unknownCount:0, confirmed:true };
   if(!project || !Array.isArray(project.positions)) return result;
 
   let purchaseTotal = 0;
@@ -4807,6 +5213,7 @@ function getMaterialsProfit(project){
 
     if(!Number.isFinite(purchasePrice) || purchasePrice <= 0){
       result.hasUnknownPrice = true;
+      result.unknownCount++;
       result.confirmed = false;
       return;
     }
@@ -5215,7 +5622,9 @@ function renderFloatingPanel(p){
         </div>
         <div class="floatingMetric">
           <span class="floatingMetricLabel">${profitLabel}</span>
-          <span class="floatingMetricValue ${profit.hasUnknownPrice ? "unknown" : ""}">${profitValue}</span>
+          ${profit.hasUnknownPrice
+            ? `<button type="button" class="floatingMetricValue unknown floatingProfitHint" onclick="showMissingPurchasePrices()">${profit.unknownCount} без ціни</button>`
+            : `<span class="floatingMetricValue">${profitValue}</span>`}
         </div>
       </div>
 
@@ -5255,7 +5664,7 @@ function formatQuoteDate(value){
   }).format(date);
 }
 
-function renderQuotePreviewSection(title, positions){
+function renderQuotePreviewSection(title, positions, discountPercent, discountAmount){
   if(!positions.length) return "";
 
   const total = positions.reduce((sum, pos) => {
@@ -5280,17 +5689,32 @@ function renderQuotePreviewSection(title, positions){
         const itemTotal = price * qty;
         return `
           <div class="quoteLine">
-            <div class="quoteLineName">${escapeHtml(pos.name || "Без назви")}</div>
-            <div class="quoteLineQty">${qty} ${escapeHtml(unit)}</div>
+            <div class="quoteLineName">${escapeHtml(positionClientName(pos))}${positionBrand(pos) ? `<span class="quoteLineBrand">${escapeHtml(positionBrand(pos))}</span>` : ""}</div>
+            <div class="quoteLineQty">${formatQty(qty)} ${escapeHtml(unit)}</div>
             <div class="quoteLinePrice">${price > 0 ? moneyWithCents(price) : "—"}</div>
             <div class="quoteLineTotal">${price > 0 ? money(itemTotal) : "—"}</div>
           </div>
         `;
       }).join("")}
-      <div class="quoteSectionTotal">
-        <span>Разом</span>
-        <span>${money(total)}</span>
-      </div>
+      ${Number(discountPercent) > 0 ? `
+        <div class="quoteSectionTotal quoteSectionSubtotal">
+          <span>Сума</span>
+          <span>${money(total)}</span>
+        </div>
+        <div class="quoteSectionTotal quoteSectionDiscount">
+          <span>Знижка ${discountPercent}%</span>
+          <span>−${money(discountAmount)}</span>
+        </div>
+        <div class="quoteSectionTotal">
+          <span>Разом зі знижкою</span>
+          <span>${money(total - (Number(discountAmount) || 0))}</span>
+        </div>
+      ` : `
+        <div class="quoteSectionTotal">
+          <span>Разом</span>
+          <span>${money(total)}</span>
+        </div>
+      `}
     </section>
   `;
 }
@@ -5303,6 +5727,16 @@ function openQuotePreview(){
   if(!positions.length){
     toast("Додайте хоча б одну позицію до кошторису");
     return;
+  }
+
+  const unpriced = positions.filter(pos => !(Number(pos.price) > 0));
+  if(unpriced.length){
+    const list = unpriced.slice(0, 6).map(pos => "• " + positionShortName(pos)).join("\n");
+    const more = unpriced.length > 6 ? `\n…і ще ${unpriced.length - 6}` : "";
+    if(!confirm(
+      `Без ціни: ${unpriced.length} поз.\n\n${list}${more}\n\n` +
+      "У документі для клієнта вони будуть з прочерком і не ввійдуть у суму. Все одно продовжити?"
+    )) return;
   }
 
   if(!projectHasCurrencyLinkedMaterials(project) || projectHasSupplierConfirmation(project)){
@@ -5435,22 +5869,12 @@ function renderQuotePreview(){
       <div class="quoteIssuedNote">Ціни актуальні на: ${formatQuoteDate(new Date())}</div>
     </div>
 
-    ${renderQuotePreviewSection("РОБОТИ", works)}
-    ${workDiscountPercent > 0 ? `
-      <div class="quoteDiscountRow">
-        <span>Знижка на роботи — ${workDiscountPercent}%</span>
-        <span>−${money(workDiscountAmount)}</span>
-      </div>
-    ` : ""}
-    ${groupMaterialPositions(materials).map(group =>
-      renderQuotePreviewSection(group.label, group.positions)
-    ).join("")}
-    ${materialsDiscountPercent > 0 ? `
-      <div class="quoteDiscountRow">
-        <span>Знижка на матеріали — ${materialsDiscountPercent}%</span>
-        <span>−${money(materialsDiscountAmount)}</span>
-      </div>
-    ` : ""}
+    ${renderQuotePreviewSection("РОБОТИ", works, workDiscountPercent, workDiscountAmount)}
+    ${renderQuotePreviewSection("МАТЕРІАЛИ", groupMaterialPositions(materials).flatMap(group => group.positions), materialsDiscountPercent, materialsDiscountAmount)}
+    <div class="quoteGrandTotal">
+      <span>До сплати</span>
+      <span>${money(getEstimateTotal(project))}</span>
+    </div>
   `;
 
   document.getElementById("quotePreviewScreen").classList.add("open");
@@ -5662,7 +6086,7 @@ function renderEstimateBlock(p){
         <span class="estimateCount">${count ? count + " поз." : "порожній"}</span>
       </div>
 
-      ${renderProcurementIssues(procurementIssues)}
+      ${renderProcurementIssues(procurementIssues, p)}
 
       ${count === 0 ? `
         <div class="emptyEstimate">
@@ -5684,6 +6108,7 @@ function renderEstimateBlock(p){
 function getProcurementIssues(project){
   return (project && project.positions || []).reduce((issues, position) => {
     if(!position || position.type !== "material") return issues;
+    if(isPositionFullyFromStock(position)) return issues;
 
     const supplierName = cleanText(getPositionPlannedSupplier(position));
     let status = "";
@@ -5708,21 +6133,71 @@ function getProcurementIssues(project){
   }, []);
 }
 
-function renderProcurementIssues(issues){
-  if(!issues.length) return "";
+let procurementIssuesExpanded = false;
+
+function getPositionsWithoutPurchasePrice(project){
+  return (project && project.positions || []).filter(position => {
+    if(!position || position.type !== "material") return false;
+    const price = Number(position.purchasePrice);
+    return !Number.isFinite(price) || price <= 0;
+  });
+}
+
+function toggleProcurementIssues(){
+  procurementIssuesExpanded = !procurementIssuesExpanded;
+  render();
+}
+
+function showMissingPurchasePrices(){
+  procurementIssuesExpanded = true;
+  render();
+  setTimeout(() => {
+    const box = document.querySelector(".procurementIssues");
+    if(box) box.scrollIntoView({ behavior:"smooth", block:"start" });
+  }, 60);
+}
+
+/* Короткий підсумок замість повторення всього списку матеріалів.
+   Деталі — по дотику, а розподіл і звірка — у «Плані закупівлі». */
+function renderProcurementIssues(issues, project){
+  const missingPrice = getPositionsWithoutPurchasePrice(project);
+  if(!issues.length && !missingPrice.length) return "";
+
+  const counts = new Map();
+  issues.forEach(issue => counts.set(issue.label, (counts.get(issue.label) || 0) + 1));
+  const order = ["Потрібна заміна", "Під замовлення", "Призначити постачальника", "Очікує звірки"];
+  const parts = order.filter(label => counts.has(label)).map(label => ({ label, count: counts.get(label) }));
+  if(missingPrice.length) parts.push({ label:"Без закупівельної ціни", count: missingPrice.length, missing:true });
+
+  const summary = parts.map(part => `
+    <span class="procurementSummaryChip ${part.label === "Потрібна заміна" ? "unavailable" : part.missing ? "missing" : ""}">
+      ${escapeHtml(part.label)} · ${part.count}
+    </span>
+  `).join("");
+
+  const details = procurementIssuesExpanded ? `
+    ${issues.map(issue => `
+      <div class="procurementIssue ${issue.status}">
+        <span class="procurementIssueName">${escapeHtml(positionShortName(issue.position))}</span>
+        <span class="procurementIssueStatus">${escapeHtml(issue.label)}</span>
+      </div>
+    `).join("")}
+    ${missingPrice.map(position => `
+      <div class="procurementIssue missing">
+        <span class="procurementIssueName">${escapeHtml(positionShortName(position))}</span>
+        <span class="procurementIssueStatus">Без закупівельної ціни</span>
+      </div>
+    `).join("")}
+  ` : "";
 
   return `
-    <section class="procurementIssues">
-      <div class="procurementIssuesHead">
-        <span class="procurementIssuesTitle">Потребують комплектації</span>
-        <span class="procurementIssuesCount">${issues.length}</span>
-      </div>
-      ${issues.map(issue => `
-        <div class="procurementIssue ${issue.status}">
-          <span class="procurementIssueName">${escapeHtml(issue.position.name || "Без назви")}</span>
-          <span class="procurementIssueStatus">${escapeHtml(issue.label)}</span>
-        </div>
-      `).join("")}
+    <section class="procurementIssues ${procurementIssuesExpanded ? "expanded" : ""}">
+      <button type="button" class="procurementIssuesHead" onclick="toggleProcurementIssues()" aria-expanded="${procurementIssuesExpanded}">
+        <span class="procurementIssuesTitle">Комплектація</span>
+        <span class="procurementIssuesToggle">${procurementIssuesExpanded ? "Згорнути" : "Показати"}</span>
+      </button>
+      <div class="procurementSummary">${summary}</div>
+      ${details}
     </section>
   `;
 }
@@ -5810,17 +6285,16 @@ function renderPosition(projectId, pos){
           aria-label="Змінити порядок позиції"
           onpointerdown="startEstimatePositionDrag(event,'${escapeHtml(projectId)}','${escapeHtml(pos.id)}','${escapeHtml(pos.type)}')"
         >⠿</button>
-        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(pos.name)}</div>
+        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(positionShortName(pos))}${positionBrand(pos) || positionStockQty(pos) > 0 ? `<span class="positionBrand">${escapeHtml(positionBrand(pos))}${positionBrand(pos) && positionStockQty(pos) > 0 ? " · " : ""}${positionStockQty(pos) > 0 ? `<span class="positionStockTag">${isPositionFullyFromStock(pos) ? "усе зі складу" : "зі складу " + formatQty(positionStockQty(pos))}</span>` : ""}</span>` : ""}</div>
 
         <div class="qtyControl">
           <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
           <input
             class="estimateQtyInput"
-            type="number"
-            min="1"
-            step="1"
-            inputmode="numeric"
-            value="${qty}"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            value="${formatQty(qty)}"
             aria-label="Кількість"
             onfocus="this.select()"
             onchange="setPositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',this.value)"
@@ -7110,7 +7584,7 @@ function renderCatalogList(){
           ontouchcancel="cancelCatalogItemTouch()"
         >
           <div class="catalogItemName">${escapeHtml(catalogDisplayName(item))}</div>
-          <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">${priceText}${supplierText}${statusText}${reviewText}</div>
+          <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">${item.type === "material" && cleanText(item.manufacturer) ? `<b class="catalogItemBrand">${escapeHtml(cleanText(item.manufacturer))}</b> · ` : ""}${priceText}${supplierText}${statusText}${reviewText}</div>
         </div>
 
         ${selected ? `
@@ -7118,11 +7592,10 @@ function renderCatalogList(){
             <button class="counterBtn" onclick="catalogCounterDecrement('${escapeHtml(item.id)}')" aria-label="Зменшити кількість">−</button>
             <input
               class="catalogQtyInput"
-              type="number"
-              min="1"
-              step="1"
-              inputmode="numeric"
-              value="${qty}"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              value="${formatQty(qty)}"
               aria-label="Кількість"
               onclick="event.stopPropagation()"
               onfocus="this.select()"
@@ -7153,7 +7626,7 @@ function catalogCounterIncrement(catalogId){
   const existing = project.positions.find(pos => pos.catalogId === catalogId);
 
   if(existing){
-    existing.qty = (Number(existing.qty) || 0) + 1;
+    existing.qty = roundQty((Number(existing.qty) || 0) + 1);
   }else{
     project.positions.push({
       id: uid("pos"),
@@ -7187,7 +7660,7 @@ function catalogCounterDecrement(catalogId){
   if((Number(position.qty) || 1) <= 1){
     project.positions = project.positions.filter(pos => pos.catalogId !== catalogId);
   }else{
-    position.qty = (Number(position.qty) || 1) - 1;
+    position.qty = roundQty((Number(position.qty) || 1) - 1);
   }
 
   project.updatedAt = new Date().toISOString();
@@ -7204,7 +7677,7 @@ function setCatalogItemQty(catalogId, rawValue){
   if(!position) return;
 
   const parsed = Number(String(rawValue || "").replace(",", "."));
-  position.qty = Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+  position.qty = Number.isFinite(parsed) && parsed > 0 ? roundQty(parsed) : 1;
   project.updatedAt = new Date().toISOString();
   saveProjects();
   renderCatalogList();
@@ -7304,7 +7777,7 @@ function openCatalogItemEditor(id){
 
   document.getElementById("ceOriginalName").textContent = item.name || "—";
   document.getElementById("ceOriginalNameGroup").classList.toggle("hidden", !isMaterial);
-  document.getElementById("ceNameMasterLabel").textContent = isWork ? "Назва роботи" : "Назва для майстра";
+  document.getElementById("ceNameMasterLabel").textContent = isWork ? "Назва роботи" : "Коротка назва";
   document.getElementById("ceNameMasterHint").classList.toggle("hidden", isWork);
   document.getElementById("ceNameMaster").value = isWork
     ? (item.nameMaster || item.name || "")
@@ -7353,7 +7826,7 @@ function saveCatalogItemEditor(){
   const manufacturer = document.getElementById("ceManufacturer").value.trim();
   const price = Number(String(document.getElementById("cePrice").value).replace(",",".")) || 0;
   const purchasePrice = Number(String(document.getElementById("cePurchasePrice").value).replace(",",".")) || 0;
-  const unit = document.getElementById("ceUnit").value.trim() || "шт";
+  const unit = normalizeUnit(document.getElementById("ceUnit").value);
 
   item.nameMaster = nameMaster;
   item.price = price;
@@ -7378,6 +7851,7 @@ function saveCatalogItemEditor(){
   closeCatalogItemEditor();
   renderCatalogChips();
   renderCatalogList();
+  render();
   toast("Збережено");
 }
 
@@ -7457,7 +7931,7 @@ function saveCustom(){
   const article = document.getElementById("csArticle").value.trim();
   const price = Number(String(document.getElementById("csPrice").value).replace(",",".")) || 0;
   const purchasePrice = Number(String(document.getElementById("csPurchasePrice").value).replace(",",".")) || 0;
-  const unit = document.getElementById("csUnit").value.trim() || "шт";
+  const unit = normalizeUnit(document.getElementById("csUnit").value);
 
   if(!name){
     toast("Вкажіть назву");
@@ -7549,8 +8023,8 @@ function openPricesSheet(positions){
 
   list.innerHTML = pricesPending.map((pos, i) => `
     <div class="priceRow">
-      <div class="priceRowName">${escapeHtml(pos.name)}</div>
-      <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${pos.qty || 1}</div>
+      <div class="priceRowName">${escapeHtml(positionShortName(pos))}</div>
+      <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${formatQty(pos.qty || 1)}</div>
       <input
         class="formInput"
         id="priceRowInput_${i}"
@@ -7619,7 +8093,9 @@ function changePositionQty(projectId, positionId, delta){
   const pos = project.positions.find(p => p.id === positionId);
   if(!pos) return;
 
-  pos.qty = Math.max(1, (Number(pos.qty) || 1) + delta);
+  const currentQty = Number(pos.qty) || 1;
+  const nextQty = roundQty(currentQty + delta);
+  pos.qty = nextQty >= 1 ? nextQty : Math.min(currentQty, 1);
   project.updatedAt = new Date().toISOString();
   saveProjects();
   render();
@@ -7632,7 +8108,7 @@ function setPositionQty(projectId, positionId, rawValue){
   if(!pos) return;
 
   const value = Number(String(rawValue || "").replace(",", "."));
-  pos.qty = Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
+  pos.qty = Number.isFinite(value) && value > 0 ? roundQty(value) : 1;
   project.updatedAt = new Date().toISOString();
   saveProjects();
   render();
@@ -7734,7 +8210,7 @@ function deletePosition(projectId, positionId){
   if(!project) return;
   const pos = project.positions.find(p => p.id === positionId);
   if(!pos) return;
-  if(!confirm(`Видалити «${pos.name}» з кошторису?`)) return;
+  if(!confirm(`Видалити «${positionShortName(pos)}» з кошторису?`)) return;
 
   project.positions = project.positions.filter(p => p.id !== positionId);
   project.updatedAt = new Date().toISOString();
@@ -7754,8 +8230,8 @@ function openSinglePriceEditor(projectId, positionId){
   const list = document.getElementById("pricesList");
   list.innerHTML = `
     <div class="priceRow">
-      <div class="priceRowName">${escapeHtml(pos.name)}</div>
-      <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${pos.qty || 1}</div>
+      <div class="priceRowName">${escapeHtml(positionShortName(pos))}</div>
+      <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${formatQty(pos.qty || 1)}</div>
       <input
         class="formInput"
         id="priceRowInput_0"
@@ -7781,6 +8257,7 @@ function supplierPriceRequestText(supplierName){
 
   return `Доброго дня!\n\n` +
     `Я формую робочий каталог матеріалів. Надсилаю Excel-шаблон для прайсу ${supplier}. Будь ласка, заповніть його та поверніть у форматі XLSX.\n\n` +
+    `Для кожного товару, будь ласка, вкажіть дві ціни: роздрібну (для клієнта) і ціну майстра (зі знижкою для мене).\n\n` +
     `Якщо ціна товару залежить від курсу, вкажіть її в EUR або USD, а ваш курс для кожного бренду внесіть у таблицю «Курси за брендами». Не перераховуйте такі ціни у гривню.\n\n` +
     `Детальна інструкція є в окремому аркуші файлу.\n\n` +
     `Дякую!`;
@@ -7807,7 +8284,7 @@ function buildSupplierPriceTemplateFile(supplierName){
     [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [],
     [], [],
     ["ТОВАРИ"],
-    ["Артикул", "Повна назва", "Бренд", "Роздрібна ціна", "Ціна майстра", "Одиниця"]
+    ["Артикул", "Повна назва", "Бренд", "Роздрібна ціна (для клієнта)", "Ціна майстра (зі знижкою)", "Одиниця"]
   ];
 
   const sheet = XLSX.utils.aoa_to_sheet(rows);
@@ -7822,7 +8299,9 @@ function buildSupplierPriceTemplateFile(supplierName){
     ["1. У таблиці «Курси за брендами» внесіть кожен бренд, його валюту та фактичний курс вашої компанії до гривні."],
     ["2. Якщо бренд працює у EUR або USD, в обох цінових колонках товару вказуйте базову ціну саме в цій валюті. Не перераховуйте її в гривню."],
     ["3. Для UAH вказуйте вже фіксовану гривневу ціну, а курс залишайте порожнім. UAH не використовується для товару, що залежить від курсу."],
-    ["4. У таблиці «Товари» у кожного рядка обов’язкові: артикул, повна назва, бренд, одиниця та хоча б одна ціна."],
+    ["4. У таблиці «Товари» у кожного рядка обов’язкові: артикул, повна назва, бренд, одиниця та ОБИДВІ ціни."],
+    ["   • Роздрібна ціна — ціна для кінцевого клієнта."],
+    ["   • Ціна майстра — ваша ціна для мене з урахуванням знижки. Без неї товар імпортується, але прибуток по ньому не порахується."],
     ["5. Бренд у товарі має точно збігатися з брендом у таблиці курсів. Один файл може містити бренди в різних валютах."],
     ["6. Не змінюйте назви аркушів, заголовки колонок і технічний рядок SA_MASTER_PRICE_TEMPLATE."],
     [],
@@ -8014,7 +8493,7 @@ function buildProcurementRequestTemplateFile(draft){
         getPositionMaterialArticle(position),
         position.fullName || position.name || "",
         getPositionMaterialBrand(position),
-        Number(position.qty) || 1,
+        positionOrderQty(position) || Number(position.qty) || 1,
         position.unit || "шт",
         "",
         "",
@@ -8062,10 +8541,12 @@ function openProcurementRequest(rawSupplierName){
   if(!project || !supplierName) return;
 
   const positions = (project.positions || []).filter(position =>
-    position.type === "material" && normalizeText(getPositionPlannedSupplier(position)) === normalizeText(supplierName)
+    position.type === "material" &&
+    positionOrderQty(position) > 0 &&
+    normalizeText(getPositionPlannedSupplier(position)) === normalizeText(supplierName)
   );
   if(!positions.length){
-    toast("Для цього постачальника немає матеріалів");
+    toast("Для цього постачальника нічого замовляти — усе зі складу");
     return;
   }
 
@@ -8084,7 +8565,7 @@ function openProcurementRequest(rawSupplierName){
 function getProcurementRequestSupplierNames(project){
   const names = new Map();
   (project && project.positions || []).forEach(position => {
-    if(!position || position.type !== "material") return;
+    if(!position || position.type !== "material" || positionOrderQty(position) <= 0) return;
     const supplierName = cleanText(getPositionPlannedSupplier(position));
     const key = normalizeText(supplierName);
     if(supplierName && key && !names.has(key)) names.set(key, supplierName);
@@ -8164,6 +8645,41 @@ async function shareProcurementRequest(){
     toast("Файл завантажено, текст скопійовано");
   }catch(e){
     toast("Не вдалося підготувати запит");
+  }
+}
+
+function procurementOrderText(draft){
+  const project = projects.find(item => item.id === draft.projectId);
+  if(!project) return "";
+  const positions = groupMaterialPositions((project.positions || []).filter(position => draft.positionIds.includes(position.id)))
+    .flatMap(group => group.positions);
+  const lines = positions.map((position, index) => {
+    const item = getPositionCatalogItem(position);
+    const name = cleanText((item && item.name) || position.fullName || position.name);
+    const article = cleanText(item && item.article);
+    const shownArticle = article && !ntext(name).includes(ntext(article)) ? `, арт. ${article}` : "";
+    return `${index + 1}. ${name}${shownArticle} — ${formatQty(positionOrderQty(position))} ${position.unit || "шт"}`;
+  });
+  return `Доброго дня!\n\nЗамовлення для об’єкта «${projectTitlePlain(project)}»:\n\n${lines.join("\n")}\n\nДякую!`;
+}
+
+async function shareProcurementOrderText(){
+  const draft = procurementRequestDraft;
+  if(!draft) return;
+  const text = procurementOrderText(draft);
+  if(navigator.share){
+    try{
+      await navigator.share({ title:"Замовлення матеріалів", text });
+      return;
+    }catch(e){
+      if(e && e.name === "AbortError") return;
+    }
+  }
+  try{
+    await copyText(text);
+    toast("Замовлення скопійовано");
+  }catch(e){
+    toast("Не вдалося скопіювати");
   }
 }
 
@@ -8287,7 +8803,7 @@ function renderProcurementResponseReview(){
     const availability = procurementAvailabilityLabel(record.availability) || "Коментар постачальника";
     return `
       <div class="importPreviewItem">
-        <div class="importPreviewName">${escapeHtml(position.name || "Без назви")}</div>
+        <div class="importPreviewName">${escapeHtml(positionShortName(position))}</div>
         <div class="importPreviewMeta"><b>${escapeHtml(availability)}</b> · ${priceText}${record.comment ? ` · ${escapeHtml(record.comment)}` : ""}</div>
       </div>
     `;
@@ -8556,7 +9072,7 @@ function parseSaMasterTemplate(workbook){
   const nameCol = findCol(productsHeader, text => text === "повна назва");
   const productBrandCol = findCol(productsHeader, text => text === "бренд");
   const retailCol = findCol(productsHeader, text => text.startsWith("роздріб"));
-  const masterCol = findCol(productsHeader, text => text === "ціна майстра");
+  const masterCol = findCol(productsHeader, text => text.startsWith("ціна майстра"));
   const unitCol = findCol(productsHeader, text => text.startsWith("одиниц"));
 
   if([courseBrandCol, courseCurrencyCol, courseRateCol, articleCol, nameCol, productBrandCol, retailCol, masterCol, unitCol].some(col => col < 0)){
@@ -9443,11 +9959,35 @@ function detectCategory(text, brand, system){
     return "heating";
   }
 
+  /* Латунна різьбова дрібниця в дюймах (Ø1/2, 3/4Н, 1"В) — арматура. */
+  const inchSized = /(?<![xх×\d\/.,])(?:1\/2|3\/4|1\/4|3\/8)(?!\d)|[ø⌀]\s*1\s*['’"”]/i.test(source);
+  if(inchSized && !/труба\s*(?:м-пл|металопл)/.test(source)){
+    return "fittings";
+  }
+
+  if(/\bhl\s*\d{2,}/.test(source)) return "sewer";
+
+  /* Каналізаційні діаметри: Ø32–Ø110 у фасонних частинах і трубах. */
+  if(/(?:коліно|колено|трійник|тройник|редукц|заглушк|зглушк|компенсатор|ревіз|ревиз|хрестов|муфт|перехід|переход|відвід|отвод|труба)/.test(source) &&
+     /[ø⌀d]\s*(?:32|40|50|75|90|100|110)(?!\d)/.test(source)){
+    return "sewer";
+  }
+
+  /* Хомути: від Ø38 — під каналізаційні труби, менші — під водопровід. */
+  const clamp = source.match(/хомут[^\d]*(\d{2,3})\s*[-–]\s*(\d{2,3})/);
+  if(clamp){
+    return Number(clamp[1]) >= 38 ? "sewer" : "water";
+  }
+
+  if(/[ø⌀]\s*(?:14|16|20|25|26)(?!\d)|м-пл|металопласт|гільз|гильз|прес[\s-]*фіт|ізоляц|изоляц|бінокл|бинокл|водорозет|ельк/.test(source)){
+    return "water";
+  }
+
   if(/flowfit|teceflex|tece flex|\bbwt\b|водопостач|водоснаб|водопров|труба.*вода|фітинг.*вода|фитинг.*вода|фільтр|фильтр|умягч|водоочист|аніоніт|анионит|purolite|вугілля|уголь|сіль таблет|соль таблет|atlas premier|eurocarb|ciech/.test(source)){
     return "water";
   }
 
-  if(/запірн|запорн|кран|вентил|клапан|редуктор тиску|редуктор давления|колектор|коллектор|pattaroni|bonomi|tiemme|simplex/.test(source)){
+  if(/запірн|запорн|кран|вентил|клапан|редуктор тиску|редуктор давления|колектор|коллектор|pattaroni|bonomi|tiemme|simplex|футорк|ніпел|нипел|антишок|антипотоп|манометр|подовжувач|американк|\bам\./.test(source)){
     return "fittings";
   }
 
@@ -9697,7 +10237,7 @@ function confirmImport(){
       if(!target.manufacturer && brand) target.manufacturer = brand;
       if(target.manufacturer) target.needsReview = false;
       if(!target.system && system) target.system = system;
-      if(!target.category && category) target.category = category;
+      if((!target.category || target.category === "other") && category && category !== "other") target.category = category;
       const keepSelectedOffer = target.preferredSupplierName &&
         normalizeText(target.preferredSupplierName) !== normalizeText(importSupplierName);
       if(!keepSelectedOffer){
@@ -9716,7 +10256,7 @@ function confirmImport(){
         type: "material",
         name: imported.name,
         nameMaster: "",
-        unit: imported.unit || "шт",
+        unit: normalizeUnit(imported.unit),
         price: pricePair.retail ? pricePair.retail.priceUAH : pricePair.master.priceUAH,
         retailPriceUAH: pricePair.retail ? pricePair.retail.priceUAH : 0,
         purchasePriceUAH: pricePair.master ? pricePair.master.priceUAH : 0,
@@ -9761,7 +10301,14 @@ function confirmImport(){
 
   closeImportSheet();
 
+  const withoutMaster = prepared.filter(entry => entry && entry.pricePair && !entry.pricePair.master).length;
   toast(`Імпортовано: ${created} нових, ${updated} оновлено${restoredPurchasePrices ? `, додано ${restoredPurchasePrices} закупівельних цін у кошториси` : ""}`);
+  if(withoutMaster){
+    setTimeout(() => alert(
+      `${withoutMaster} поз. без ціни майстра (закупівельної).\n\n` +
+      "По них прибуток не порахується. Попросіть постачальника заповнити колонку «Ціна майстра» або впишіть ціну в картці товару."
+    ), 400);
+  }
 
   // Показуємо нові та оновлені товари одразу, без повторного відкриття каталогу.
   renderCatalogChips();
@@ -9908,8 +10455,145 @@ function openProfile(){
 
   updateSoloUI();
   renderTeamList();
+  renderBackupStatus();
 
   document.getElementById("profileScreen").classList.add("open");
+}
+
+/* ==== Резервна копія ==== */
+
+const BACKUP_APP_ID = "sa-master-calculator";
+const LAST_BACKUP_KEY = "sa_lastBackupAt";
+
+function isBackupKey(key){
+  return (key.startsWith("sa_") || key.startsWith("plumber_")) && key !== LAST_BACKUP_KEY;
+}
+
+function renderBackupStatus(){
+  const box = document.getElementById("pfBackupStatus");
+  if(!box) return;
+  let last = "";
+  try{ last = localStorage.getItem(LAST_BACKUP_KEY) || ""; }catch(e){}
+  const date = last ? new Date(last) : null;
+  if(!date || isNaN(date)){
+    box.textContent = "Копію ще не збережено.";
+    box.style.color = "var(--orange)";
+    return;
+  }
+  const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+  box.textContent = "Остання копія: " + date.toLocaleDateString("uk-UA") + (days > 0 ? ` (${days} дн. тому)` : " (сьогодні)");
+  box.style.color = days > 7 ? "var(--orange)" : "var(--tm)";
+}
+
+function buildBackupFile(){
+  const data = {};
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(key && isBackupKey(key)) data[key] = localStorage.getItem(key);
+  }
+  const now = new Date();
+  const payload = {
+    app: BACKUP_APP_ID,
+    version: 1,
+    createdAt: now.toISOString(),
+    projectsCount: (Array.isArray(projects) ? projects.length : 0),
+    data
+  };
+  const pad = n => String(n).padStart(2, "0");
+  const name = `sa-master-копія-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}.json`;
+  return new File([JSON.stringify(payload)], name, { type: "application/json" });
+}
+
+function markBackupDone(){
+  try{ localStorage.setItem(LAST_BACKUP_KEY, new Date().toISOString()); }catch(e){}
+  renderBackupStatus();
+}
+
+async function exportBackup(){
+  let file;
+  try{
+    file = buildBackupFile();
+  }catch(e){
+    toast("Не вдалося підготувати копію");
+    return;
+  }
+
+  if(navigator.canShare && navigator.canShare({ files:[file] })){
+    try{
+      await navigator.share({ files:[file], title:"Резервна копія калькулятора" });
+      markBackupDone();
+      toast("Копію збережено");
+    }catch(e){
+      if(e && e.name === "AbortError") return;
+      downloadFile(file);
+      markBackupDone();
+    }
+    return;
+  }
+
+  downloadFile(file);
+  markBackupDone();
+  toast("Копію завантажено");
+}
+
+function openBackupRestore(){
+  const input = document.getElementById("backupFileInput");
+  input.value = "";
+  input.click();
+}
+
+function handleBackupFile(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    let payload;
+    try{
+      payload = JSON.parse(String(reader.result || ""));
+    }catch(e){
+      toast("Це не файл резервної копії");
+      return;
+    }
+
+    if(!payload || payload.app !== BACKUP_APP_ID || !payload.data || typeof payload.data !== "object"){
+      toast("Це не файл резервної копії калькулятора");
+      return;
+    }
+
+    let backupProjects = [];
+    try{ backupProjects = JSON.parse(payload.data.sa_projects || "[]"); }catch(e){}
+    const created = payload.createdAt ? new Date(payload.createdAt).toLocaleString("uk-UA") : "невідомо";
+
+    if(!confirm(
+      `Відновити копію від ${created}?\n\n` +
+      `У копії об'єктів: ${Array.isArray(backupProjects) ? backupProjects.length : 0}. ` +
+      `Зараз у калькуляторі: ${projects.length}.\n\n` +
+      "Поточні дані буде замінено даними з копії."
+    )) return;
+
+    const current = {};
+    Object.keys(localStorage).filter(isBackupKey).forEach(key => { current[key] = localStorage.getItem(key); });
+
+    try{
+      Object.keys(current).forEach(key => localStorage.removeItem(key));
+      Object.entries(payload.data).forEach(([key, value]) => {
+        if(isBackupKey(key) && typeof value === "string") localStorage.setItem(key, value);
+      });
+    }catch(e){
+      try{
+        Object.keys(localStorage).filter(isBackupKey).forEach(key => localStorage.removeItem(key));
+        Object.entries(current).forEach(([key, value]) => localStorage.setItem(key, value));
+      }catch(e2){}
+      toast("Не вдалося відновити — поточні дані залишились без змін");
+      return;
+    }
+
+    toast("Дані відновлено");
+    setTimeout(() => location.reload(), 600);
+  };
+  reader.onerror = () => toast("Не вдалося прочитати файл");
+  reader.readAsText(file);
 }
 
 function closeProfile(){
