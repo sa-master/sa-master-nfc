@@ -9435,7 +9435,8 @@ function parseClientInvoiceRows(rows){
   const articleCol = find(text => text === "артикул" || text === "код");
   const nameCol = find(text => /^(товар|найменування|назва|номенклатура)/.test(text));
   const qtyCol = find(text => /^(кількість|к-сть|кіл)/.test(text));
-  const retailCol = find(text => /без знижки|роздріб/.test(text));
+  // Роздрібна ціна за одиницю: «Ціна без знижки» (не «Сума без знижки»!), інакше просто «Ціна».
+  const retailCol = find(text => /^ціна.*без знижки|^роздрібна ціна/.test(text));
   const netCol = find(text => /^ціна$|^ціна зі знижкою|^ціна, грн$/.test(text));
   const priceCol = retailCol >= 0 ? retailCol : netCol;
   if(priceCol < 0 || (articleCol < 0 && nameCol < 0)) throw new Error("У рахунку бракує колонок з артикулом/назвою або ціною");
@@ -9590,7 +9591,7 @@ function renderClientInvoiceReview(){
     <div class="importSummaryRow"><span>Ваша знижка клієнту</span><b>${projectPercent}% (з кошторису)</b></div>
   `;
   const notes = [];
-  notes.push(`Ціна для клієнта (роздріб) зміниться в ${priceChanged} поз.${qtyChanged ? `, кількість — у ${qtyChanged}` : ""}${newItems.length ? `, нових позицій: ${newItems.length}` : ""}.`);
+  notes.push(`Ціна для клієнта (роздріб) зміниться в ${priceChanged} поз.${qtyChanged ? `, кількість — у ${qtyChanged}` : ""}${newItems.length ? `, нових позицій: ${newItems.length}` : ""}`);
   if(getApproved(project)) notes.push(`<b>Кошторис уже погоджено.</b> Після застосування натисніть ⋯ → «Клієнт погодив нову версію», щоб документ для клієнта оновився.`);
   if(notInInvoice.length) notes.push(`Немає в рахунку (${escapeHtml(supplierName)}): ${notInInvoice.map(position => escapeHtml(positionShortName(position))).join(", ")}`);
   document.getElementById("clientInvoiceNotes").innerHTML = notes.map(text => `<div class="procurementChangesNote">${text}</div>`).join("");
