@@ -3967,7 +3967,7 @@ body.positionDragging{
   <div class="fsFooter quotePreviewFooter">
     <div class="fsFooterInner">
       <button class="quoteBackButton" onclick="closeQuotePreview()">Редагувати</button>
-      <button id="quotePdfButton" onclick="printQuotePreview()">PDF / надіслати</button>
+      <button id="quotePdfButton" onclick="printQuotePreview()">Надіслати клієнту</button>
     </div>
   </div>
 </div>
@@ -4056,6 +4056,21 @@ body.positionDragging{
         <span style="font-size:1.25rem;line-height:1">＋</span>
         <span>Додати людину</span>
       </button>
+    </div>
+
+    <div class="fsSection">
+      <div class="fsSectionTitle">Посилання для клієнтів</div>
+      <div class="fsCard">
+        <div class="formHint" style="margin-top:0">Коли заповнено — клієнт отримує одне посилання і сам обирає PDF чи Excel. Порожньо — надсилаються два файли.</div>
+        <div class="formGroup">
+          <label class="formLabel">Адреса сервера</label>
+          <input class="formInput" id="pfLinkServer" placeholder="https://sa-kp….workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+        <div class="formGroup">
+          <label class="formLabel">Ключ</label>
+          <input class="formInput" id="pfLinkKey" placeholder="ключ із Cloudflare" autocomplete="off" autocapitalize="off" spellcheck="false">
+        </div>
+      </div>
     </div>
 
     <div class="fsSection">
@@ -5774,7 +5789,7 @@ function renderProjectCard(p){
             <button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>
           </div>
         </div>
-        ${client ? `<div class="projectClient" onclick="openProject('${escapeHtml(p.id)}')">${client}${phone ? " · " + phone : ""}</div>` : ""}
+        ${client || phone ? `<div class="projectClient" onclick="openProject('${escapeHtml(p.id)}')">${client}${phone ? `${client ? " · " : ""}<a class="projectPhoneLink" href="tel:${escapeHtml(String(p.client?.phone || "").replace(/[^\d+]/g, ""))}" onclick="event.stopPropagation()">${phone}</a>` : ""}</div>` : ""}
         ${address ? `<div class="projectAddress" onclick="openProject('${escapeHtml(p.id)}')">${address}</div>` : ""}
         <div class="projectDivider"></div>
         <div class="projectMeta" onclick="openProject('${escapeHtml(p.id)}')">
@@ -6201,6 +6216,18 @@ function renderQuotePreview(){
   const logoSource = profile.logoData || "logo.png";
   const quoteDocument = document.getElementById("quotePreviewDocument");
 
+  /* Ті самі дані йдуть і в Excel-копію, щоб файли не розходились. */
+  const xlsxSections = [];
+  if(quoteMode !== "materials" && works.length) xlsxSections.push({ title:"РОБОТИ", positions:works, percent:workDiscountPercent, amount:workDiscountAmount });
+  if(quoteMode !== "works" && materials.length) xlsxSections.push({ title:"МАТЕРІАЛИ", positions:materials, percent:materialsDiscountPercent, amount:materialsDiscountAmount });
+  lastQuoteData = {
+    title: quoteModeTitle(),
+    dateLabel: `${approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
+    companyName, companyPhone, objectName, clientName, clientPhone, objectAddress,
+    sections: xlsxSections,
+    total: documentTotal
+  };
+
   quoteDocument.innerHTML = `
     <div class="quoteUnifiedHead">
       <div class="quoteBrandSide">
@@ -6305,6 +6332,92 @@ function quoteShareMessage(project){
   return lines.filter(Boolean).join("\n");
 }
 
+let lastQuoteData = null;
+/* Excel-копія кошторису: ті самі рядки, ціни й знижки, що в PDF. */
+function quoteXlsxRows(data){
+  const rows = [];
+  const formulas = [];
+  const sums = [];
+  rows.push([data.companyName || ""]);
+  if(data.companyPhone) rows.push([data.companyPhone]);
+  rows.push([]);
+  rows.push([data.title || "Кошторис"]);
+  rows.push([data.objectName || ""]);
+  [data.clientName, data.clientPhone, data.objectAddress].filter(Boolean).forEach(value => rows.push([value]));
+  rows.push([data.dateLabel || ""]);
+  (data.sections || []).forEach(section => {
+    const percent = Number(section.percent) || 0;
+    rows.push([]);
+    rows.push([section.title]);
+    rows.push(["№", "Позиція", "Бренд", "К-сть", "Од.", "Ціна, ₴", "Сума, ₴"]);
+    const first = rows.length + 1;
+    section.positions.forEach((pos, index) => {
+      const qty = Number(pos.qty) || 1;
+      const price = Number(pos.price) || 0;
+      const net = pos.noDiscount ? price : price * (1 - percent / 100);
+      const name = pos.clientName !== undefined ? pos.clientName : positionClientName(pos);
+      const brand = pos.brand !== undefined ? pos.brand : positionBrand(pos);
+      rows.push([index + 1, name, brand || "", roundQty(qty), pos.unit || "шт", price > 0 ? Math.round(net * 100) / 100 : "", null]);
+      formulas.push({ row: rows.length, col: 6, f: `IF(F${rows.length}="","",D${rows.length}*F${rows.length})` });
+    });
+    const last = rows.length;
+    if(percent > 0) rows.push(["", `Знижку ${percent}% враховано в цінах`]);
+    rows.push(["", "Разом", "", "", "", "", null]);
+    formulas.push({ row: rows.length, col: 6, f: `ROUND(SUM(G${first}:G${last}),2)` });
+    sums.push(`G${rows.length}`);
+  });
+  rows.push([]);
+  rows.push(["", "До сплати", "", "", "", "", null]);
+  formulas.push({ row: rows.length, col: 6, f: sums.length ? sums.join("+") : "0" });
+  rows.push([]);
+  rows.push(["", `Діючий кошторис — PDF від ${String(data.dateLabel || "").replace(/^[^:]*:\s*/, "")}. Excel — копія для зручності.`]);
+  return { rows, formulas };
+}
+
+function buildQuoteXlsxFile(data, baseName){
+  if(!window.XLSX || !data) return null;
+  const { rows, formulas } = quoteXlsxRows(data);
+  const sheet = XLSX.utils.aoa_to_sheet(rows.map(row => row.map(value => value === null ? "" : value)));
+  formulas.forEach(item => {
+    sheet[XLSX.utils.encode_cell({ r: item.row - 1, c: item.col })] = { t: "n", f: item.f, z: "#,##0.00" };
+  });
+  sheet["!cols"] = [{ wch:5 }, { wch:48 }, { wch:14 }, { wch:8 }, { wch:7 }, { wch:12 }, { wch:14 }];
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Кошторис");
+  const bytes = XLSX.write(book, { bookType:"xlsx", type:"array" });
+  return new File([bytes], `${baseName}.xlsx`, { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+
+const CLIENT_LINK_BASE = "https://sa-master.pro/k?id=";
+
+function clientLinksEnabled(){
+  return /^https:\/\/\S+$/.test(profile.linkServer || "") && !!profile.linkKey;
+}
+
+/* Завантажує PDF + Excel на сервер і повертає посилання для клієнта.
+   Для того ж об'єкта і того ж виду (усе / роботи / матеріали) посилання не змінюється — файли оновлюються. */
+async function uploadQuoteForLink(project, pdfFile, xlsxFile){
+  if(!project.quoteLinks || typeof project.quoteLinks !== "object") project.quoteLinks = {};
+  const form = new FormData();
+  const existingId = project.quoteLinks[quoteMode];
+  if(existingId) form.append("id", existingId);
+  form.append("pdf", pdfFile, pdfFile.name);
+  if(xlsxFile) form.append("xlsx", xlsxFile, xlsxFile.name);
+  const data = lastQuoteData || {};
+  form.append("meta", JSON.stringify({
+    title: data.title, dateLabel: data.dateLabel, total: data.total,
+    objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone
+  }));
+  const response = await fetch(`${profile.linkServer}/upload`, { method:"POST", headers:{ "X-Key": profile.linkKey }, body: form });
+  if(response.status === 401) throw new Error("key");
+  if(!response.ok) throw new Error("server");
+  const result = await response.json();
+  if(!result.id) throw new Error("server");
+  project.quoteLinks[quoteMode] = result.id;
+  saveProjects();
+  return CLIENT_LINK_BASE + result.id;
+}
+
 async function printQuotePreview(){
   const paper = document.getElementById("quotePreviewDocument");
   const button = document.getElementById("quotePdfButton");
@@ -6386,25 +6499,52 @@ async function printQuotePreview(){
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 72) || "кошторис";
-    const file = new File([pdf.output("blob")], `${quoteModeTitle()} — ${safeTitle}.pdf`, { type:"application/pdf" });
+    const baseName = `${quoteModeTitle()} — ${safeTitle}`;
+    const file = new File([pdf.output("blob")], `${baseName}.pdf`, { type:"application/pdf" });
+    let xlsxFile = null;
+    try{ xlsxFile = buildQuoteXlsxFile(lastQuoteData, baseName); }catch(e){ console.error("XLSX export error:", e); }
+    const files = xlsxFile ? [file, xlsxFile] : [file];
     const shareMessage = quoteShareMessage(project);
 
-    if(navigator.canShare && navigator.canShare({ files:[file] }) && navigator.share){
+    if(clientLinksEnabled() && project){
+      let link = "";
+      if(button) button.textContent = "Готуємо посилання…";
       try{
-        await navigator.share({ title:shareMessage, text:shareMessage, files:[file] });
+        link = await uploadQuoteForLink(project, file, xlsxFile);
+      }catch(e){
+        console.error("Link upload error:", e);
+        toast(e && e.message === "key"
+          ? "Невірний ключ у Профілі → Посилання. Надсилаю файлами."
+          : "Сервер недоступний. Надсилаю файлами.");
+      }
+      if(link){
+        const text = `${shareMessage}\n\n${link}`;
+        if(navigator.share){
+          try{ await navigator.share({ text }); }
+          catch(e){
+            if(e && e.name === "AbortError"){}
+            else prompt("Скопіюйте посилання і надішліть клієнту", link);
+          }
+        }else{
+          try{ await navigator.clipboard.writeText(text); toast("Посилання скопійовано"); }
+          catch(e){ prompt("Скопіюйте посилання", link); }
+        }
+        return;
+      }
+    }
+
+    const canShare = list => navigator.share && navigator.canShare && navigator.canShare({ files:list });
+    const shareFiles = canShare(files) ? files : (canShare([file]) ? [file] : null);
+
+    if(shareFiles){
+      try{
+        await navigator.share({ title:shareMessage, text:shareMessage, files:shareFiles });
       }catch(e){
         if(e && e.name !== "AbortError") throw e;
       }
     }else{
-      const url = URL.createObjectURL(file);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = file.name;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      toast("PDF завантажено");
+      files.forEach((item, index) => setTimeout(() => downloadFile(item), index * 400));
+      toast(xlsxFile ? "PDF і Excel завантажено" : "PDF завантажено");
     }
   }catch(e){
     console.error("PDF export error:", e);
@@ -11580,6 +11720,8 @@ function openProfile(){
   document.getElementById("pfLastName").value = profile.lastName || "";
   document.getElementById("pfCompany").value = profile.company || "";
   document.getElementById("pfPhone").value = profile.phone || "";
+  document.getElementById("pfLinkServer").value = profile.linkServer || "";
+  document.getElementById("pfLinkKey").value = profile.linkKey || "";
   profileLogoDraft = profile.logoData || "";
   renderProfileLogoPreview();
 
@@ -11828,6 +11970,8 @@ function saveProfile(){
   profile.lastName = document.getElementById("pfLastName").value.trim();
   profile.company = document.getElementById("pfCompany").value.trim();
   profile.phone = document.getElementById("pfPhone").value.trim();
+  profile.linkServer = document.getElementById("pfLinkServer").value.trim().replace(/\/+$/, "");
+  profile.linkKey = document.getElementById("pfLinkKey").value.trim();
   profile.isSolo = soloMode;
   profile.logoData = profileLogoDraft;
 
