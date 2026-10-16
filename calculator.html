@@ -1301,6 +1301,10 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   text-align:left;
 }
 .procurementSupplierInput{margin-top:.5rem}
+.noDiscountToggle{display:flex;gap:.625rem;align-items:flex-start;margin:.25rem 0 .75rem;font-size:.875rem;font-weight:650;cursor:pointer}
+.noDiscountToggle input{width:1.25rem;height:1.25rem;margin-top:.0625rem;flex:0 0 auto}
+.noDiscountToggle small{display:block;margin-top:.125rem;font-size:.75rem;font-weight:500;color:var(--tm)}
+.positionNoDiscount{display:block;margin-top:.125rem;font-size:.625rem;font-weight:750;color:var(--p)}
 .procurementTotalsNote{
   margin:0 0 .75rem;
   padding:.625rem .75rem;
@@ -2858,6 +2862,23 @@ body.positionDragging{
   line-height:1.3;
   overflow-wrap:anywhere;
 }
+.quoteModeSwitch{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:.25rem;
+  margin:0 0 .75rem;
+  padding:.25rem;
+  border-radius:.875rem;
+  background:rgba(120,130,140,.14);
+}
+.quoteModeSwitch button{
+  height:2.5rem;
+  border-radius:.6875rem;
+  font-size:.875rem;
+  font-weight:700;
+  color:var(--ts);
+}
+.quoteModeSwitch button.active{background:var(--card);color:var(--p);box-shadow:0 2px 6px rgba(0,0,0,.08)}
 .quoteLineRetail{display:block;font-size:.8em;font-weight:500;color:#9aa0a6}
 .positionRetail{color:var(--tm);font-weight:500;margin-right:.125rem}
 .quoteLineBrand{
@@ -3903,6 +3924,12 @@ body.positionDragging{
     <div class="quotePreviewNav">
       <strong>Перегляд для замовника</strong>
       <button class="close" onclick="closeQuotePreview()" aria-label="Закрити">×</button>
+    </div>
+
+    <div class="quoteModeSwitch" role="tablist" aria-label="Що надсилати">
+      <button type="button" role="tab" data-mode="all" onclick="setQuoteMode('all')">Усе</button>
+      <button type="button" role="tab" data-mode="works" onclick="setQuoteMode('works')">Роботи</button>
+      <button type="button" role="tab" data-mode="materials" onclick="setQuoteMode('materials')">Матеріали</button>
     </div>
 
     <article class="quotePaper" id="quotePreviewDocument"></article>
@@ -5250,12 +5277,21 @@ function getMaterialsDiscountPercent(project){
   return normalizeDiscountPercent(value);
 }
 
+/* Позиції з позначкою «Без знижки» (наприклад, розхідники) не знижуються. */
+function getDiscountableSubtotal(project, type){
+  if(!project || !Array.isArray(project.positions)) return 0;
+  return project.positions.reduce((sum, p) => {
+    if(p.type !== type || p.noDiscount) return sum;
+    return sum + (Number(p.price) || 0) * (Number(p.qty) || 0);
+  }, 0);
+}
+
 function getWorksDiscountAmount(project){
-  return getWorksSubtotal(project) * getWorksDiscountPercent(project) / 100;
+  return getDiscountableSubtotal(project, "work") * getWorksDiscountPercent(project) / 100;
 }
 
 function getMaterialsDiscountAmount(project){
-  return getMaterialsSubtotal(project) * getMaterialsDiscountPercent(project) / 100;
+  return getDiscountableSubtotal(project, "material") * getMaterialsDiscountPercent(project) / 100;
 }
 
 function getEstimateDiscountAmount(project){
@@ -5289,7 +5325,8 @@ function makeApprovedSnapshot(project){
     price: Number(pos.price) || 0,
     unit: pos.unit || "шт",
     clientName: positionClientName(pos),
-    brand: positionBrand(pos)
+    brand: positionBrand(pos),
+    noDiscount: Boolean(pos.noDiscount)
   });
   return {
     at: new Date().toISOString(),
@@ -5877,7 +5914,7 @@ function renderQuotePreviewSection(title, positions, discountPercent, discountAm
         const qty = Number(pos.qty) || 1;
         const price = Number(pos.price) || 0;
         const unit = pos.unit || "шт";
-        const netPrice = price * (1 - linePercent / 100);
+        const netPrice = pos.noDiscount ? price : price * (1 - linePercent / 100);
         const itemTotal = netPrice * qty;
         const lineName = pos.clientName !== undefined ? pos.clientName : positionClientName(pos);
         const lineBrand = pos.brand !== undefined ? pos.brand : positionBrand(pos);
@@ -5912,6 +5949,7 @@ function renderQuotePreviewSection(title, positions, discountPercent, discountAm
 function openQuotePreview(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
+  quoteMode = "all";
 
   const positions = Array.isArray(project.positions) ? project.positions : [];
   if(!positions.length){
@@ -6022,9 +6060,26 @@ function continueQuotePreview(){
   renderQuotePreview();
 }
 
+/* Що потрапляє в документ: усе, лише роботи або лише матеріали. */
+let quoteMode = "all";
+
+function setQuoteMode(mode){
+  quoteMode = ["all", "works", "materials"].includes(mode) ? mode : "all";
+  renderQuotePreview();
+}
+
+function quoteModeTitle(){
+  return quoteMode === "works" ? "Кошторис на роботи" : quoteMode === "materials" ? "Кошторис на матеріали" : "Кошторис";
+}
+
 function renderQuotePreview(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
+  document.querySelectorAll(".quoteModeSwitch button").forEach(button => {
+    const active = button.dataset.mode === quoteMode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
 
   const approvedSnapshot = getApproved(project);
   const positions = approvedSnapshot ? approvedSnapshot.positions : (Array.isArray(project.positions) ? project.positions : []);
@@ -6049,7 +6104,9 @@ function renderQuotePreview(){
   const materialsDiscountPercent = approvedSnapshot ? approvedSnapshot.materialsDiscountPercent : getMaterialsDiscountPercent(project);
   const materialsDiscountAmount = approvedSnapshot ? approvedSnapshot.materialsDiscountAmount : getMaterialsDiscountAmount(project);
   const documentDate = approvedSnapshot ? approvedSnapshot.at : new Date();
-  const documentTotal = approvedSnapshot ? approvedSnapshot.total : getEstimateTotal(project);
+  const worksPart = approvedSnapshot ? approvedSnapshot.works : getCustomerWorksTotal(project);
+  const materialsPart = approvedSnapshot ? approvedSnapshot.materials : getCustomerMaterialsTotal(project);
+  const documentTotal = quoteMode === "works" ? worksPart : quoteMode === "materials" ? materialsPart : (approvedSnapshot ? approvedSnapshot.total : getEstimateTotal(project));
   const logoSource = profile.logoData || "logo.png";
   const quoteDocument = document.getElementById("quotePreviewDocument");
 
@@ -6076,12 +6133,12 @@ function renderQuotePreview(){
     </div>
 
     <div class="quoteDocHeading">
-      <div class="quoteDocumentTitle">Кошторис</div>
+      <div class="quoteDocumentTitle">${quoteModeTitle()}</div>
       <div class="quoteIssuedNote">${approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
     </div>
 
-    ${renderQuotePreviewSection("РОБОТИ", works, workDiscountPercent, workDiscountAmount)}
-    ${renderQuotePreviewSection("МАТЕРІАЛИ", materials, materialsDiscountPercent, materialsDiscountAmount)}
+    ${quoteMode !== "materials" ? renderQuotePreviewSection("РОБОТИ", works, workDiscountPercent, workDiscountAmount) : ""}
+    ${quoteMode !== "works" ? renderQuotePreviewSection("МАТЕРІАЛИ", materials, materialsDiscountPercent, materialsDiscountAmount) : ""}
     <div class="quoteGrandTotal">
       <span>До сплати</span>
       <span>${money(documentTotal)}</span>
@@ -6132,10 +6189,17 @@ function quoteShareMessage(project){
     || stageLabels[project?.stage]
     || "Потребує погодження";
 
+  const approvedSnapshot = getApproved(project);
+  const sum = quoteMode === "works"
+    ? (approvedSnapshot ? approvedSnapshot.works : getCustomerWorksTotal(project))
+    : quoteMode === "materials"
+      ? (approvedSnapshot ? approvedSnapshot.materials : getCustomerMaterialsTotal(project))
+      : getClientTotal(project);
   const lines = [
-    `🏠 ЗАЯВКА · ${objectName}`,
+    `📄 ${quoteModeTitle()} · ${objectName}`,
     clientName ? `👤 ${clientName}` : "",
     clientPhone ? `📞 ${clientPhone}` : "",
+    `💰 До сплати: ${money(sum)}`,
     `📊 Статус: ${approvalStatus}`
   ];
 
@@ -6231,7 +6295,7 @@ async function printQuotePreview(){
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 72) || "кошторис";
-    const file = new File([pdf.output("blob")], `Кошторис — ${safeTitle}.pdf`, { type:"application/pdf" });
+    const file = new File([pdf.output("blob")], `${quoteModeTitle()} — ${safeTitle}.pdf`, { type:"application/pdf" });
     const shareMessage = quoteShareMessage(project);
 
     if(navigator.canShare && navigator.canShare({ files:[file] }) && navigator.share){
@@ -6479,7 +6543,10 @@ function renderEstimateSection(label, items, projectId, discountPercent){
   }, 0);
 
   const sectionPercent = Number(discountPercent) || 0;
-  const sectionNet = sectionTotal * (1 - sectionPercent / 100);
+  const sectionNet = items.reduce((sum, pos) => {
+    const line = (Number(pos.price) || 0) * (Number(pos.qty) || 0);
+    return sum + (pos.noDiscount ? line : line * (1 - sectionPercent / 100));
+  }, 0);
   const totalLabel = sectionPercent > 0 ? label + ` (−${sectionPercent}%)` : label;
 
   return `
@@ -6505,7 +6572,7 @@ function renderPosition(projectId, pos){
   const unit = pos.unit || "шт";
   const priceSet = price > 0;
   const rowProject = projects.find(item => item.id === projectId);
-  const rowDiscount = pos.type === "work" ? getWorksDiscountPercent(rowProject) : getMaterialsDiscountPercent(rowProject);
+  const rowDiscount = pos.noDiscount ? 0 : (pos.type === "work" ? getWorksDiscountPercent(rowProject) : getMaterialsDiscountPercent(rowProject));
   const netPrice = price * (1 - rowDiscount / 100);
   const total = netPrice * qty;
 
@@ -6531,7 +6598,7 @@ function renderPosition(projectId, pos){
           aria-label="Змінити порядок позиції"
           onpointerdown="startEstimatePositionDrag(event,'${escapeHtml(projectId)}','${escapeHtml(pos.id)}','${escapeHtml(pos.type)}')"
         >⠿</button>
-        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(positionShortName(pos))}${positionBrand(pos) || positionStockQty(pos) > 0 ? `<span class="positionBrand">${escapeHtml(positionBrand(pos))}${positionBrand(pos) && positionStockQty(pos) > 0 ? " · " : ""}${positionStockQty(pos) > 0 ? `<span class="positionStockTag">${isPositionFullyFromStock(pos) ? "усе зі складу" : "зі складу " + formatQty(positionStockQty(pos))}</span>` : ""}</span>` : ""}${approvedQtyNote(projects.find(item => item.id === projectId), pos)}${pos.clientPriceCheck ? `<span class="positionApprovedNote">заміна від постачальника — перевірте ціну для клієнта</span>` : ""}</div>
+        <div class="positionName ${pos.type === "material" ? "materialName" : ""}" ${namePressHandlers}>${escapeHtml(positionShortName(pos))}${positionBrand(pos) || positionStockQty(pos) > 0 ? `<span class="positionBrand">${escapeHtml(positionBrand(pos))}${positionBrand(pos) && positionStockQty(pos) > 0 ? " · " : ""}${positionStockQty(pos) > 0 ? `<span class="positionStockTag">${isPositionFullyFromStock(pos) ? "усе зі складу" : "зі складу " + formatQty(positionStockQty(pos))}</span>` : ""}</span>` : ""}${approvedQtyNote(projects.find(item => item.id === projectId), pos)}${pos.clientPriceCheck ? `<span class="positionApprovedNote">заміна від постачальника — перевірте ціну для клієнта</span>` : ""}${pos.noDiscount ? `<span class="positionNoDiscount">без знижки</span>` : ""}</div>
 
         <div class="qtyControl">
           <button class="qtyBtn" onclick="changePositionQty('${escapeHtml(projectId)}','${escapeHtml(pos.id)}',-1)">−</button>
@@ -7887,6 +7954,7 @@ function catalogCounterIncrement(catalogId){
         : null,
       purchasePriceState: item.type === "material" ? "estimated" : "",
       plannedSupplierName: item.type === "material" ? String(item.preferredSupplierName || "").trim() : "",
+      noDiscount: item.noDiscount ? true : undefined,
       qty: 1
     });
   }
@@ -8264,6 +8332,8 @@ function saveCustom(){
 
 function openPricesSheet(positions){
   pricesPending = positions.slice();
+  const hint = document.querySelector("#pricesSheet .formHint");
+  if(hint) hint.textContent = "Ці позиції додані без ціни. Введіть свої, щоб порахувати кошторис.";
 
   const list = document.getElementById("pricesList");
 
@@ -8306,6 +8376,28 @@ function savePrices(){
 
   const project = projects.find(p => p.id === currentProjectId);
   if(!project) return;
+
+  const nameInput = document.getElementById("priceRowName");
+  if(nameInput && pricesPending.length === 1){
+    const pos = pricesPending[0];
+    const newName = cleanText(nameInput.value);
+    if(newName && newName !== positionShortName(pos)){
+      const cat = pos.catalogId ? catalog.find(c => c.id === pos.catalogId) : null;
+      if(cat){
+        // Назва зберігається в каталозі як коротка — однаково всюди.
+        cat.nameMaster = normalizeText(newName) === normalizeText(cat.name) ? "" : newName;
+      }
+      pos.name = newName;
+    }
+  }
+
+  const noDiscountInput = document.getElementById("priceRowNoDiscount");
+  if(noDiscountInput && pricesPending.length === 1){
+    const pos = pricesPending[0];
+    if(noDiscountInput.checked) pos.noDiscount = true; else delete pos.noDiscount;
+    const cat = pos.catalogId ? catalog.find(c => c.id === pos.catalogId) : null;
+    if(cat){ if(noDiscountInput.checked) cat.noDiscount = true; else delete cat.noDiscount; }
+  }
 
   pricesPending.forEach((pos, i) => {
     const input = document.getElementById("priceRowInput_" + i);
@@ -8473,11 +8565,19 @@ function openSinglePriceEditor(projectId, positionId){
   if(!pos) return;
 
   pricesPending = [pos];
+  const hint = document.querySelector("#pricesSheet .formHint");
+  if(hint) hint.textContent = "Роздрібна ціна за одиницю. Знижку кошторису калькулятор віднімає сам.";
 
   const list = document.getElementById("pricesList");
   list.innerHTML = `
     <div class="priceRow">
-      <div class="priceRowName">${escapeHtml(positionShortName(pos))}</div>
+      <label class="formLabel" for="priceRowName">Назва</label>
+      <input class="formInput" id="priceRowName" value="${escapeHtml(positionShortName(pos))}" autocomplete="off" style="margin-bottom:.75rem">
+      <label class="formLabel" for="priceRowInput_0">Ціна за одиницю (роздріб)</label>
+      <label class="noDiscountToggle">
+        <input type="checkbox" id="priceRowNoDiscount" ${pos.noDiscount ? "checked" : ""}>
+        <span>Без знижки для клієнта<small>Знижка кошторису не застосовується до цієї позиції (напр., розхідники)</small></span>
+      </label>
       <div class="priceRowHint">${escapeHtml(pos.unit || "шт")} · кількість ${formatQty(pos.qty || 1)}</div>
       <input
         class="formInput"
