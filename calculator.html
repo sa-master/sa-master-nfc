@@ -3639,6 +3639,7 @@ body.positionDragging{
             <button type="button" class="chip" data-value="heating">Опалення</button>
             <button type="button" class="chip" data-value="sewer">Каналізація</button>
             <button type="button" class="chip" data-value="fittings">Арматура</button>
+            <button type="button" class="chip" data-value="fixtures">Прилади</button>
           </div>
         </div>
 
@@ -3691,6 +3692,12 @@ body.positionDragging{
         <label class="formLabel">Закупівельна ціна, ₴</label>
         <input class="formInput" id="csPurchasePrice" inputmode="decimal" placeholder="Не вказана" autocomplete="off">
         <div class="formHint">Необов’язково. Якщо вказати — одразу рахуватиметься прибуток.</div>
+        <label class="formLabel" for="csQty" style="margin-top:.75rem">Кількість</label>
+        <input class="formInput" id="csQty" inputmode="decimal" placeholder="1" autocomplete="off">
+        <label class="noDiscountToggle" style="margin-top:.75rem">
+          <input type="checkbox" id="csNoDiscount">
+          <span>Без знижки для клієнта<small>Ціна вже кінцева, знижка кошторису не застосовується</small></span>
+        </label>
       </div>
 
       <div id="csWorkFields" class="hidden">
@@ -3712,6 +3719,7 @@ body.positionDragging{
             <button type="button" class="chip" data-value="heating">Опалення</button>
             <button type="button" class="chip" data-value="sewer">Каналізація</button>
             <button type="button" class="chip" data-value="fittings">Арматура</button>
+            <button type="button" class="chip" data-value="fixtures">Прилади</button>
           </div>
         </div>
       </div>
@@ -4802,6 +4810,7 @@ const MATERIAL_CATEGORY_GROUPS = [
   { id:"water", label:"ВОДОПОСТАЧАННЯ" },
   { id:"heating", label:"ОПАЛЕННЯ" },
   { id:"sewer", label:"КАНАЛІЗАЦІЯ" },
+  { id:"fixtures", label:"ПРИЛАДИ" },
   { id:"other", label:"ІНШЕ" }
 ];
 
@@ -8111,6 +8120,7 @@ function renderCatalogChips(){
     ["water","Водопостачання"],
     ["heating","Опалення"],
     ["sewer","Каналізація"],
+    ["fixtures","Прилади"],
     ["other","Інше"]
   ];
 
@@ -8847,6 +8857,8 @@ function openCustomPosition(){
   document.getElementById("csArticle").value = "";
   document.getElementById("csPrice").value = "";
   document.getElementById("csPurchasePrice").value = "";
+  document.getElementById("csQty").value = "";
+  document.getElementById("csNoDiscount").checked = false;
   document.getElementById("csUnit").value = "";
 
   document.getElementById("csArticleGroup").classList.toggle("hidden", customType !== "material");
@@ -8948,7 +8960,8 @@ function saveCustom(){
         : null,
       purchasePriceState: newItem.type === "material" ? "estimated" : "",
       plannedSupplierName: "",
-      qty: 1
+      qty: newItem.type === "material" ? (Number(String(document.getElementById("csQty").value).replace(",", ".")) > 0 ? roundQty(Number(String(document.getElementById("csQty").value).replace(",", "."))) : 1) : 1,
+      noDiscount: newItem.type === "material" && document.getElementById("csNoDiscount").checked
     });
     project.updatedAt = new Date().toISOString();
     saveProjects();
