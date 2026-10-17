@@ -1275,6 +1275,29 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .stockLaterBtn{flex:0 0 auto;align-self:center;font-size:.6875rem;font-weight:750;padding:.375rem .5rem;border-radius:.5rem;background:rgba(120,120,128,.12);color:var(--tm)}
 .stockPickItem.later{background:rgba(255,149,0,.12)}
 .stockPickItem.later .stockLaterBtn{background:#B76800;color:#fff}
+.moneyBlock{margin:0 0 .875rem;padding:.75rem;border-radius:.875rem;background:var(--card);border:1px solid rgba(120,120,128,.16)}
+.moneyHead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;width:100%;text-align:left}
+.moneyTitle{font-size:.8125rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.moneyToggle{font-size:.8125rem;font-weight:700;color:var(--p)}
+.moneyStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.375rem;margin-top:.625rem}
+.moneyStat{background:rgba(120,120,128,.08);border-radius:.625rem;padding:.4375rem .5rem;min-width:0}
+.moneyStat span{display:block;font-size:.625rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.03em}
+.moneyStat b{display:block;font-size:.875rem;font-weight:800;margin-top:.125rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.moneyStat.debt b{color:#B42318}
+.moneyStat.ok b{color:var(--green)}
+.moneySection{margin-top:.75rem}
+.moneySectionHead{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;font-weight:800;color:var(--tm);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.25rem}
+.moneyRow{display:flex;align-items:center;gap:.5rem;padding:.4375rem 0;border-top:1px solid rgba(120,120,128,.14);font-size:.8125rem}
+.moneyRow .what{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.moneyRow .what small{display:block;color:var(--tm);font-size:.6875rem;font-weight:600}
+.moneyRow .sum{flex:0 0 auto;font-weight:800;font-variant-numeric:tabular-nums}
+.moneyRow .del{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:.5rem;color:var(--tm);font-size:1rem}
+.moneyForm{display:flex;gap:.375rem;flex-wrap:wrap;margin-top:.5rem}
+.moneyForm input{flex:1 1 8rem;min-width:0;height:2.5rem;border-radius:.625rem;border:1px solid rgba(120,120,128,.25);padding:0 .625rem;font:inherit;font-size:.875rem;background:var(--card);color:var(--t)}
+.moneyForm input.amount{flex:0 0 6.5rem}
+.moneyForm input.date{flex:0 0 9rem}
+.moneyForm button{height:2.5rem;padding:0 .875rem;border-radius:.625rem;background:var(--p);color:#fff;font-weight:750;font-size:.875rem}
+.moneyAdd{font-size:.8125rem;font-weight:750;color:var(--p);padding:.125rem .25rem;text-transform:none;letter-spacing:0}
 .procurementIssues{
   margin:-.125rem 0 .875rem;
   padding:.625rem .75rem;
@@ -6121,6 +6144,7 @@ function renderProject(p){
       </div>
 
       <div class="projectView">
+      ${renderMoneyBlock(p)}
       ${renderEstimateBlock(p)}
       ${renderProjectTeamBlock(p)}
       </div>
@@ -6129,6 +6153,123 @@ function renderProject(p){
     ${renderFloatingPanel(p)}
   `;
 
+}
+
+/* ==== Гроші об'єкта: оплати від клієнта і витрати ==== */
+let moneyExpanded = false;
+let moneyFormOpen = "";
+
+function moneyList(project, kind){
+  const key = kind === "payment" ? "payments" : "expenses";
+  if(!Array.isArray(project[key])) project[key] = [];
+  return project[key];
+}
+
+function moneySum(list){
+  return list.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0);
+}
+
+function todayIso(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function shortDate(iso){
+  const d = new Date(String(iso || "") + "T12:00:00");
+  return Number.isNaN(d.getTime()) ? "" : new Intl.DateTimeFormat("uk-UA", { day:"2-digit", month:"2-digit" }).format(d);
+}
+
+function toggleMoneyBlock(){
+  moneyExpanded = !moneyExpanded;
+  if(!moneyExpanded) moneyFormOpen = "";
+  render();
+}
+
+function openMoneyForm(kind){
+  moneyExpanded = true;
+  moneyFormOpen = moneyFormOpen === kind ? "" : kind;
+  render();
+  if(moneyFormOpen) setTimeout(() => document.getElementById("moneyAmount")?.focus(), 60);
+}
+
+function addMoneyEntry(kind){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  const amount = Number(String(document.getElementById("moneyAmount")?.value || "").replace(/\s/g, "").replace(",", "."));
+  if(!Number.isFinite(amount) || amount <= 0){ toast("Впишіть суму"); return; }
+  moneyList(project, kind).push({
+    id: uid(kind === "payment" ? "pay" : "exp"),
+    date: document.getElementById("moneyDate")?.value || todayIso(),
+    amount: Math.round(amount * 100) / 100,
+    note: cleanText(document.getElementById("moneyNote")?.value)
+  });
+  moneyFormOpen = "";
+  touchProject(project);
+  render();
+  toast(kind === "payment" ? "Оплату записано" : "Витрату записано");
+}
+
+function removeMoneyEntry(kind, id){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  const list = moneyList(project, kind);
+  const entry = list.find(item => item.id === id);
+  if(!entry || !confirm(`Видалити ${kind === "payment" ? "оплату" : "витрату"} ${money(entry.amount)}?`)) return;
+  project[kind === "payment" ? "payments" : "expenses"] = list.filter(item => item.id !== id);
+  touchProject(project);
+  render();
+}
+
+function renderMoneyBlock(project){
+  const payments = moneyList(project, "payment");
+  const expenses = moneyList(project, "expense");
+  const stage = project.stage || "estimate";
+  if(stage === "estimate" && !payments.length && !expenses.length) return "";
+  const received = moneySum(payments);
+  const spent = moneySum(expenses);
+  const debt = getClientTotal(project) - received;
+  const onHand = received - spent;
+  const sorted = list => list.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const row = (kind, entry) => `
+    <div class="moneyRow">
+      <span class="what">${escapeHtml(entry.note || (kind === "payment" ? "Оплата" : "Витрата"))}<small>${shortDate(entry.date)}</small></span>
+      <span class="sum">${kind === "payment" ? "+" : "−"}${money(entry.amount)}</span>
+      <button type="button" class="del" onclick="removeMoneyEntry('${kind}','${escapeHtml(entry.id)}')" aria-label="Видалити">×</button>
+    </div>`;
+  const form = kind => moneyFormOpen === kind ? `
+    <div class="moneyForm">
+      <input id="moneyAmount" class="amount" type="text" inputmode="decimal" placeholder="Сума, ₴" autocomplete="off">
+      <input id="moneyDate" class="date" type="date" value="${todayIso()}">
+      <input id="moneyNote" type="text" placeholder="${kind === "payment" ? "За що: аванс, матеріали, етап…" : "На що: Енерготрейд, магазин, доставка…"}" autocomplete="off" onkeydown="if(event.key==='Enter')addMoneyEntry('${kind}')">
+      <button type="button" onclick="addMoneyEntry('${kind}')">Записати</button>
+    </div>` : "";
+
+  return `
+    <section class="moneyBlock">
+      <button type="button" class="moneyHead" onclick="toggleMoneyBlock()" aria-expanded="${moneyExpanded}">
+        <span class="moneyTitle">💰 Гроші</span>
+        <span class="moneyToggle">${moneyExpanded ? "Згорнути" : "Відкрити"}</span>
+      </button>
+      <div class="moneyStats">
+        <div class="moneyStat"><span>Отримано</span><b>${money(received)}</b></div>
+        <div class="moneyStat"><span>Витрачено</span><b>${money(spent)}</b></div>
+        <div class="moneyStat ${debt > 0.5 ? "debt" : "ok"}"><span>${debt > 0.5 ? "Клієнт винен" : "Сплачено"}</span><b>${debt > 0.5 ? money(debt) : "✓"}</b></div>
+      </div>
+      ${moneyExpanded ? `
+        <div class="formHint" style="margin:.5rem 0 0">На руках з цього об'єкта: <b>${money(onHand)}</b> (отримано мінус витрачено)</div>
+        <div class="moneySection">
+          <div class="moneySectionHead"><span>Від клієнта</span><button type="button" class="moneyAdd" onclick="openMoneyForm('payment')">＋ Оплата</button></div>
+          ${form("payment")}
+          ${sorted(payments).map(entry => row("payment", entry)).join("") || `<div class="formHint" style="margin:.25rem 0">Ще немає оплат</div>`}
+        </div>
+        <div class="moneySection">
+          <div class="moneySectionHead"><span>Витрати</span><button type="button" class="moneyAdd" onclick="openMoneyForm('expense')">＋ Витрата</button></div>
+          ${form("expense")}
+          ${sorted(expenses).map(entry => row("expense", entry)).join("") || `<div class="formHint" style="margin:.25rem 0">Ще немає витрат</div>`}
+        </div>
+      ` : ""}
+    </section>
+  `;
 }
 
 function renderProjectTeamBlock(project){
@@ -6917,6 +7058,26 @@ function getPositionsWithoutPurchasePrice(project){
   });
 }
 
+/* Закупівельна ціна однієї позиції — дотиком зі списку «Без закупівельної ціни». */
+function askPurchasePrice(positionId){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  const raw = prompt(`Закупівельна ціна за 1 ${position.unit || "шт"}, ₴\n«${positionShortName(position)}»\n\nСкільки це коштує вам. Якщо витрат немає — впишіть 1.`, "");
+  if(raw === null) return;
+  const value = Number(String(raw).replace(/\s/g, "").replace(",", "."));
+  if(!Number.isFinite(value) || value <= 0){ toast("Впишіть число більше нуля"); return; }
+  position.purchasePrice = value;
+  position.purchasePriceState = "confirmed";
+  const item = getPositionCatalogItem(position);
+  if(item && !(Number(item.purchasePriceUAH) > 0)){
+    item.purchasePriceUAH = value;
+    saveCatalog();
+  }
+  touchProject(project);
+  render();
+  toast("Ціну збережено");
+}
+
 function toggleProcurementIssues(){
   procurementIssuesExpanded = !procurementIssuesExpanded;
   render();
@@ -6957,10 +7118,10 @@ function renderProcurementIssues(issues, project){
       </div>
     `).join("")}
     ${missingPrice.map(position => `
-      <div class="procurementIssue missing">
+      <button type="button" class="procurementIssue missing" style="width:100%;text-align:left" onclick="askPurchasePrice('${escapeHtml(position.id)}')">
         <span class="procurementIssueName">${escapeHtml(positionShortName(position))}</span>
-        <span class="procurementIssueStatus">Без закупівельної ціни</span>
-      </div>
+        <span class="procurementIssueStatus">Вписати ціну ›</span>
+      </button>
     `).join("")}
   ` : "";
 
@@ -8631,6 +8792,7 @@ function saveCatalogItemEditor(){
   }
 
   saveCatalog();
+  fillMissingProjectPurchasePrices();
   closeCatalogItemEditor();
   renderCatalogChips();
   renderCatalogList();
@@ -12656,6 +12818,8 @@ if(window.visualViewport){
   window.visualViewport.addEventListener("scroll", updateViewportBottomInset);
 }
 
+/* Ціни, вписані в каталог пізніше, підтягуються в позиції об’єктів без закупівельної ціни. */
+try{ fillMissingProjectPurchasePrices(); }catch(e){ console.error(e); }
 render();
 importRequestFromTelegramLink();
 
