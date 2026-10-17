@@ -6205,7 +6205,7 @@ function addMoneyEntry(kind){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
   const amount = Number(String(document.getElementById("moneyAmount")?.value || "").replace(/\s/g, "").replace(",", "."));
-  if(!Number.isFinite(amount) || amount <= 0){ toast("Впишіть суму"); return; }
+  if(!Number.isFinite(amount) || amount === 0){ toast("Впишіть суму"); return; }
   moneyList(project, kind).push({
     id: uid(kind === "payment" ? "pay" : "exp"),
     date: document.getElementById("moneyDate")?.value || todayIso(),
@@ -6223,7 +6223,7 @@ function removeMoneyEntry(kind, id){
   if(!project) return;
   const list = moneyList(project, kind);
   const entry = list.find(item => item.id === id);
-  if(!entry || !confirm(`Видалити ${kind === "payment" ? "оплату" : "витрату"} ${money(entry.amount)}?`)) return;
+  if(!entry || !confirm(`Видалити ${kind === "payment" ? "оплату" : "витрату"} ${money(Math.abs(Number(entry.amount) || 0))}?`)) return;
   project[kind === "payment" ? "payments" : "expenses"] = list.filter(item => item.id !== id);
   touchProject(project);
   render();
@@ -6242,14 +6242,14 @@ function renderMoneyBlock(project){
   const row = (kind, entry) => `
     <div class="moneyRow">
       <span class="what">${escapeHtml(entry.note || (kind === "payment" ? "Оплата" : "Витрата"))}<small>${shortDate(entry.date)}</small></span>
-      <span class="sum">${kind === "payment" ? "+" : "−"}${money(entry.amount)}</span>
+      <span class="sum">${(kind === "payment") === (Number(entry.amount) >= 0) ? "+" : "−"}${money(Math.abs(Number(entry.amount) || 0))}</span>
       <button type="button" class="del" onclick="removeMoneyEntry('${kind}','${escapeHtml(entry.id)}')" aria-label="Видалити">×</button>
     </div>`;
   const form = kind => moneyFormOpen === kind ? `
     <div class="moneyForm">
       <input id="moneyAmount" class="amount" type="text" inputmode="decimal" placeholder="Сума, ₴" autocomplete="off">
       <input id="moneyDate" class="date" type="date" value="${todayIso()}">
-      <input id="moneyNote" type="text" placeholder="${kind === "payment" ? "За що: аванс, матеріали, етап…" : "На що: Енерготрейд, магазин, доставка…"}" autocomplete="off" onkeydown="if(event.key==='Enter')addMoneyEntry('${kind}')">
+      <input id="moneyNote" type="text" placeholder="${kind === "payment" ? "За що: аванс, матеріали, етап… (повернення клієнту — з мінусом)" : "На що: постачальник, магазин… (повернення від постачальника — з мінусом)"}" autocomplete="off" onkeydown="if(event.key==='Enter')addMoneyEntry('${kind}')">
       <button type="button" onclick="addMoneyEntry('${kind}')">Записати</button>
     </div>` : "";
 
