@@ -3652,6 +3652,7 @@ body.positionDragging{
     </div>
 
     <div class="panelFooter">
+      <button class="btnGhost" style="color:var(--red)" onclick="deleteCatalogItemFromEditor()">Видалити</button>
       <button class="btnPrimary" onclick="saveCatalogItemEditor()">Зберегти</button>
     </div>
   </div>
@@ -8497,10 +8498,11 @@ function renderCatalogList(){
       return;
     }
 
+    const query = cleanText(catalogSearch);
     list.innerHTML = `
       <div class="catalogEmpty">
-        Нічого не знайдено.<br>
-        Додайте позицію кнопкою зверху.
+        Нічого не знайдено${query ? ` за «${escapeHtml(query)}»` : ""}.
+        ${query ? `<div class="catalogEmptyActions"><button class="catalogEmptyAction primary" onclick="openCustomFromSearch()">＋ Додати «${escapeHtml(query)}»</button></div>` : "<br>Додайте позицію кнопкою зверху."}
       </div>
     `;
     return;
@@ -8566,7 +8568,17 @@ function renderCatalogList(){
         </div>
       </div>
     `;
-  }).join("");
+  }).join("") + (cleanText(catalogSearch) ? `
+    <div class="catalogEmptyActions" style="margin:.75rem 0 1rem">
+      <button class="catalogEmptyAction" onclick="openCustomFromSearch()">Немає потрібного? ＋ Додати «${escapeHtml(cleanText(catalogSearch))}»</button>
+    </div>` : "");
+}
+
+/* Пошук не знайшов — додаємо нову позицію одразу з тим, що ввели. */
+function openCustomFromSearch(){
+  const query = cleanText(catalogSearch);
+  openCustomPosition();
+  document.getElementById("csName").value = query;
 }
 
 function catalogCounterIncrement(catalogId){
@@ -8810,11 +8822,22 @@ function saveCatalogItemEditor(){
   toast("Збережено");
 }
 
+function deleteCatalogItemFromEditor(){
+  const id = editingCatalogItemId;
+  if(!id) return;
+  if(deleteCatalogItem(id)) closeCatalogItemEditor();
+}
+
 function deleteCatalogItem(id){
   const item = catalog.find(c => c.id === id);
-  if(!item) return;
+  if(!item) return false;
 
-  if(!confirm(`Видалити «${item.name}» з каталогу?\n\nЦе не видалить позицію з існуючих кошторисів.`)) return;
+  if(!confirm(`Видалити «${catalogDisplayName(item)}» з каталогу?\n\nУ кошторисах об’єктів ця позиція залишиться — видалити її звідти можна кнопкою «×» у кошторисі.`)) return false;
+  /* Позиції в об’єктах зберігають свою назву, щоб після видалення з каталогу не показати стару назву з прайсу. */
+  projects.forEach(project => (project.positions || []).forEach(position => {
+    if(position.catalogId === id) position.name = catalogDisplayName(item);
+  }));
+  saveProjects();
 
   catalog = catalog.filter(c => c.id !== id);
   saveCatalog();
@@ -8824,7 +8847,9 @@ function deleteCatalogItem(id){
   renderCatalogSupplierChips();
   renderCatalogStatusChips();
   renderCatalogList();
+  render();
   toast("Видалено з каталогу");
+  return true;
 }
 
 function clearCatalog(){
