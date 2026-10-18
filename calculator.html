@@ -4174,17 +4174,21 @@ body.positionDragging{
     </div>
 
     <div class="fsSection">
-      <div class="fsSectionTitle">Посилання для клієнтів</div>
+      <div class="fsSectionTitle">Хмара</div>
       <div class="fsCard">
-        <div class="formHint" style="margin-top:0">Коли заповнено — клієнт отримує одне посилання і сам обирає PDF чи Excel. Порожньо — надсилаються два файли.</div>
+        <div class="formHint" style="margin-top:0">Дані автоматично зберігаються у вашому Cloudflare після кожної зміни, і ті самі об’єкти видно на всіх ваших пристроях. Також це вмикає посилання на кошторис для клієнтів.</div>
+        <div class="formHint" id="pfCloudStatus" style="font-weight:700"></div>
         <div class="formGroup">
           <label class="formLabel">Адреса сервера</label>
-          <input class="formInput" id="pfLinkServer" placeholder="https://sa-kp….workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <input class="formInput" id="pfLinkServer" placeholder="https://sa-master-api.….workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
         <div class="formGroup">
           <label class="formLabel">Ключ</label>
           <input class="formInput" id="pfLinkKey" placeholder="ключ із Cloudflare" autocomplete="off" autocapitalize="off" spellcheck="false">
         </div>
+        <button type="button" class="addPersonButton" onclick="cloudSaveNow()">Зберегти в хмару зараз</button>
+        <button type="button" class="addPersonButton" style="background:rgba(120,120,128,.12);color:var(--ts)" onclick="cloudShowHistory()">Відновити з хмари…</button>
+        <div id="pfCloudHistory"></div>
       </div>
     </div>
 
@@ -4240,6 +4244,314 @@ body.positionDragging{
 >
 
 <script>
+
+/* ==== Хмара: автозбереження в Cloudflare і синхронізація між пристроями ====
+   Налаштування й службові позначки лежать поза ключами sa_*, тому самі не синхронізуються. */
+const CLOUD_CFG_KEY = "sacloud_config";
+const CLOUD_REV_KEY = "sacloud_rev";
+const CLOUD_DIRTY_KEY = "sacloud_dirty";
+const CLOUD_AT_KEY = "sacloud_at";
+const CLOUD_HASH_KEY = "sacloud_hash";
+
+function cloudHash(data){
+  const text = JSON.stringify(Object.keys(data).sort().map(key => [key, data[key]]));
+  let h = 2166136261;
+  for(let i = 0; i < text.length; i++){ h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36) + ":" + text.length;
+}
+const cloudRawSet = Storage.prototype.setItem;
+const cloudRawRemove = Storage.prototype.removeItem;
+let cloudSuppress = false;
+let cloudTimer = null;
+let cloudBusy = false;
+let cloudLastError = "";
+/* Поки йде перша перевірка хмари, службові записи при запуску (міграції, стандартні роботи) не вважаються змінами. */
+let cloudStarting = true;
+let cloudStartupWrites = false;
+
+function cloudIsDataKey(key){
+  return typeof key === "string" && (key.startsWith("sa_") || key.startsWith("plumber_")) && key !== "sa_lastBackupAt";
+}
+
+function cloudGet(key){ try{ return localStorage.getItem(key); }catch(e){ return null; } }
+function cloudSet(key, value){ try{ cloudRawSet.call(localStorage, key, value); }catch(e){} }
+function cloudDel(key){ try{ cloudRawRemove.call(localStorage, key); }catch(e){} }
+
+function cloudConfig(){
+  try{ return JSON.parse(cloudGet(CLOUD_CFG_KEY) || "{}") || {}; }catch(e){ return {}; }
+}
+
+function saveCloudConfig(cfg){
+  cloudSet(CLOUD_CFG_KEY, JSON.stringify({ server: cfg.server || "", key: cfg.key || "" }));
+}
+
+function cloudEnabled(){
+  const cfg = cloudConfig();
+  return /^https:\/\/\S+$/.test(cfg.server || "") && Boolean(cfg.key);
+}
+
+function cloudDeviceName(){
+  const ua = navigator.userAgent || "";
+  if(/iPhone/.test(ua)) return "iPhone";
+  if(/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "iPad";
+  if(/Android/.test(ua)) return "Android";
+  if(/Macintosh/.test(ua)) return "Mac";
+  if(/Windows/.test(ua)) return "Windows";
+  return "пристрій";
+}
+
+function cloudCollect(){
+  const data = {};
+  for(let i = 0; i < localStorage.length; i++){
+    const key = localStorage.key(i);
+    if(cloudIsDataKey(key)) data[key] = localStorage.getItem(key);
+  }
+  return data;
+}
+
+function cloudApply(data){
+  cloudSuppress = true;
+  try{
+    const existing = [];
+    for(let i = 0; i < localStorage.length; i++){
+      const key = localStorage.key(i);
+      if(cloudIsDataKey(key)) existing.push(key);
+    }
+    existing.forEach(key => { if(!(key in data)) cloudDel(key); });
+    Object.keys(data).forEach(key => { if(cloudIsDataKey(key)) cloudSet(key, String(data[key])); });
+  }finally{
+    cloudSuppress = false;
+  }
+}
+
+/* Будь-який запис даних калькулятора позначає «є що зберегти» і за кілька секунд відправляє в хмару. */
+Storage.prototype.setItem = function(key, value){
+  cloudRawSet.call(this, key, value);
+  if(!cloudSuppress && this === window.localStorage && cloudIsDataKey(key)) cloudMarkDirty();
+};
+Storage.prototype.removeItem = function(key){
+  cloudRawRemove.call(this, key);
+  if(!cloudSuppress && this === window.localStorage && cloudIsDataKey(key)) cloudMarkDirty();
+};
+
+function cloudMarkDirty(){
+  if(!cloudEnabled()) return;
+  if(cloudStarting){ cloudStartupWrites = true; return; }
+  cloudSet(CLOUD_DIRTY_KEY, String(Date.now()));
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(cloudPush, 3000);
+  renderCloudStatus();
+}
+
+async function cloudFetch(path, options){
+  const cfg = cloudConfig();
+  const response = await fetch(`${cfg.server}${path}`, {
+    ...(options || {}),
+    headers: { "X-Key": cfg.key, "Content-Type": "application/json", ...((options && options.headers) || {}) },
+    cache: "no-store"
+  });
+  let body = null;
+  try{ body = await response.json(); }catch(e){}
+  return { status: response.status, body };
+}
+
+function cloudTime(iso){
+  const d = new Date(iso || "");
+  if(Number.isNaN(d.getTime())) return "";
+  const today = new Date().toDateString() === d.toDateString();
+  return today
+    ? "сьогодні о " + d.toLocaleTimeString("uk-UA", { hour:"2-digit", minute:"2-digit" })
+    : d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+
+function renderCloudStatus(){
+  const box = document.getElementById("pfCloudStatus");
+  if(!box) return;
+  if(!cloudEnabled()){ box.textContent = "Хмару не підключено — дані лише в цьому браузері."; box.style.color = "var(--tm)"; return; }
+  if(cloudLastError){ box.textContent = cloudLastError; box.style.color = "var(--red)"; return; }
+  if(cloudGet(CLOUD_DIRTY_KEY)){ box.textContent = "Зберігаю зміни…"; box.style.color = "var(--tm)"; return; }
+  const at = cloudGet(CLOUD_AT_KEY);
+  box.textContent = at ? `✓ У хмарі: ${cloudTime(at)}` : "Хмару підключено";
+  box.style.color = "var(--green)";
+}
+
+async function cloudPush(force){
+  if(!cloudEnabled()) return;
+  if(cloudBusy){ clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 2000); return; }
+  cloudBusy = true;
+  const dirtyStamp = cloudGet(CLOUD_DIRTY_KEY);
+  const data = cloudCollect();
+  const hash = cloudHash(data);
+  if(force !== true && hash === cloudGet(CLOUD_HASH_KEY) && Number(cloudGet(CLOUD_REV_KEY) || 0) > 0){
+    if(cloudGet(CLOUD_DIRTY_KEY) === dirtyStamp) cloudDel(CLOUD_DIRTY_KEY);
+    cloudBusy = false;
+    renderCloudStatus();
+    return;
+  }
+  try{
+    const { status, body } = await cloudFetch("/sync", {
+      method:"PUT",
+      headers:{ "X-Base-Rev": String(Number(cloudGet(CLOUD_REV_KEY) || 0)), "X-Device": encodeURIComponent(cloudDeviceName()), "X-Force": force === true ? "1" : "0" },
+      body: JSON.stringify(data)
+    });
+    if(status === 200 && body){
+      cloudSet(CLOUD_REV_KEY, String(body.rev));
+      cloudSet(CLOUD_AT_KEY, body.savedAt);
+      cloudSet(CLOUD_HASH_KEY, hash);
+      if(cloudGet(CLOUD_DIRTY_KEY) === dirtyStamp) cloudDel(CLOUD_DIRTY_KEY);
+      cloudLastError = "";
+    }else if(status === 409){
+      cloudBusy = false;
+      await cloudResolveConflict(body || {});
+      return;
+    }else if(status === 401){
+      cloudLastError = "Невірний ключ хмари (Профіль → Хмара)";
+    }else{
+      cloudLastError = "Хмара не відповідає — збережу пізніше";
+      clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 30000);
+    }
+  }catch(e){
+    cloudLastError = "Немає зв’язку — збережу, щойно з’явиться інтернет";
+    clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 30000);
+  }finally{
+    cloudBusy = false;
+    renderCloudStatus();
+  }
+}
+
+async function cloudPullAndReload(){
+  const { status, body } = await cloudFetch("/sync");
+  if(status !== 200 || !body || !body.data) throw new Error("pull");
+  cloudApply(body.data);
+  cloudSet(CLOUD_REV_KEY, String(body.rev));
+  cloudSet(CLOUD_AT_KEY, body.savedAt || "");
+  cloudSet(CLOUD_HASH_KEY, cloudHash(cloudCollect()));
+  cloudDel(CLOUD_DIRTY_KEY);
+  location.reload();
+}
+
+async function cloudArchive(data, reason){
+  try{ await cloudFetch("/sync/archive", { method:"POST", headers:{ "X-Reason": reason || "manual" }, body: JSON.stringify(data) }); }catch(e){}
+}
+
+/* Змінено і тут, і на іншому пристрої. Нічого не губимо: та версія, яку не обрали, лягає окремою копією. */
+async function cloudResolveConflict(remote){
+  const when = cloudTime(remote.savedAt);
+  const takeRemote = confirm(
+    `Дані змінювались і тут, і на іншому пристрої${remote.device ? ` (${remote.device})` : ""}${when ? `, ${when}` : ""}.\n\n` +
+    "OK — взяти дані з хмари.\nСкасувати — залишити дані з цього пристрою.\n\nІнша версія не загубиться — вона збережеться окремою копією в «Відновити з хмари»."
+  );
+  try{
+    if(takeRemote){
+      await cloudArchive(cloudCollect(), "conflict-local");
+      await cloudPullAndReload();
+    }else{
+      const { body } = await cloudFetch("/sync");
+      if(body && body.data) await cloudArchive(body.data, "conflict-cloud");
+      await cloudPush(true);
+    }
+  }catch(e){
+    cloudLastError = "Не вдалося синхронізувати — спробуйте пізніше";
+    renderCloudStatus();
+  }
+}
+
+function cloudLocalHasProjects(){
+  try{ return (JSON.parse(cloudGet("sa_projects") || "[]") || []).length > 0; }catch(e){ return false; }
+}
+
+async function cloudCheckRemote(firstConnect){
+  if(!cloudEnabled() || cloudBusy){ cloudStarting = false; return; }
+  let pulled = false;
+  try{
+    const { status, body } = await cloudFetch("/sync/meta");
+    if(status === 401){ cloudLastError = "Невірний ключ хмари (Профіль → Хмара)"; renderCloudStatus(); return; }
+    if(status !== 200 || !body) throw new Error("meta");
+    cloudLastError = "";
+    const remoteRev = Number(body.rev || 0);
+    const localRev = Number(cloudGet(CLOUD_REV_KEY) || 0);
+    const dirty = Boolean(cloudGet(CLOUD_DIRTY_KEY));
+
+    if(remoteRev === 0){
+      if(cloudLocalHasProjects()) await cloudPush(true);
+      return;
+    }
+    if(localRev === 0 && cloudLocalHasProjects()){
+      const take = confirm(
+        `У хмарі вже є дані (${body.device ? body.device + ", " : ""}${cloudTime(body.savedAt)}).\n\n` +
+        "OK — завантажити їх на цей пристрій.\nСкасувати — записати в хмару дані з цього пристрою.\n\nІнша версія збережеться окремою копією."
+      );
+      if(take){ await cloudArchive(cloudCollect(), "conflict-local"); await cloudPullAndReload(); }
+      else{ const r = await cloudFetch("/sync"); if(r.body && r.body.data) await cloudArchive(r.body.data, "conflict-cloud"); await cloudPush(true); }
+      return;
+    }
+    if(remoteRev > localRev){
+      pulled = true;
+      if(dirty) await cloudResolveConflict(body);
+      else await cloudPullAndReload();
+      return;
+    }
+    if(dirty) await cloudPush();
+  }catch(e){
+    cloudLastError = "Немає зв’язку з хмарою";
+  }finally{
+    const hadStartupWrites = cloudStartupWrites && !pulled;
+    cloudStarting = false;
+    cloudStartupWrites = false;
+    if(hadStartupWrites && Number(cloudGet(CLOUD_REV_KEY) || 0) > 0 && cloudHash(cloudCollect()) !== cloudGet(CLOUD_HASH_KEY)) cloudMarkDirty();
+    renderCloudStatus();
+  }
+}
+
+async function cloudSaveNow(){
+  if(!cloudEnabled()){ toast("Спершу впишіть адресу сервера й ключ і натисніть «Готово»"); return; }
+  cloudSet(CLOUD_DIRTY_KEY, String(Date.now()));
+  await cloudPush();
+  toast(cloudLastError || "Збережено в хмару ✓");
+}
+
+async function cloudShowHistory(){
+  const box = document.getElementById("pfCloudHistory");
+  if(!box) return;
+  if(!cloudEnabled()){ toast("Хмару не підключено"); return; }
+  box.innerHTML = `<div class="formHint">Завантажую копії…</div>`;
+  try{
+    const { status, body } = await cloudFetch("/sync/history");
+    if(status !== 200) throw new Error();
+    const items = (body.items || []).slice(0, 30);
+    if(!items.length){ box.innerHTML = `<div class="formHint">Копій ще немає.</div>`; return; }
+    const label = id => {
+      const m = id.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2})-(\d{2}))?/);
+      const date = m ? `${m[3]}.${m[2]}.${m[1]}${m[4] ? ` ${m[4]}:${m[5]} UTC` : ""}` : id;
+      return id.includes("conflict") ? `${date} · відкладена версія` : `${date} · копія дня`;
+    };
+    box.innerHTML = `<div class="formHint">Оберіть копію. Поточні дані перед цим теж збережуться окремо.</div>` +
+      items.map(item => `<button type="button" class="addPersonButton" style="background:rgba(120,120,128,.08);color:var(--t);justify-content:flex-start" onclick="cloudRestore('${escapeHtml(item.id)}')">${escapeHtml(label(item.id))}</button>`).join("");
+  }catch(e){
+    box.innerHTML = `<div class="formHint" style="color:var(--red)">Не вдалося отримати список копій.</div>`;
+  }
+}
+
+async function cloudRestore(id){
+  if(!confirm("Відновити дані з цієї копії? Поточні дані збережуться окремою копією, їх можна буде повернути.")) return;
+  try{
+    const { status, body } = await cloudFetch(`/sync/history/${encodeURIComponent(id)}`);
+    if(status !== 200 || !body || !body.data) throw new Error();
+    await cloudArchive(cloudCollect(), "before-restore");
+    cloudApply(body.data);
+    cloudSet(CLOUD_DIRTY_KEY, String(Date.now()));
+    await cloudPush(true);
+    location.reload();
+  }catch(e){
+    toast("Не вдалося відновити копію");
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible") cloudCheckRemote();
+  else if(cloudGet(CLOUD_DIRTY_KEY)) cloudPush();
+});
+setTimeout(() => { if(cloudEnabled()) cloudCheckRemote(); else cloudStarting = false; }, 1200);
 
 const PROJECTS_KEY = "sa_projects";
 const PROFILE_KEY = "sa_profile";
@@ -6821,7 +7133,7 @@ function buildQuoteXlsxFile(data, baseName){
 const CLIENT_LINK_BASE = "https://sa-master.pro/k?id=";
 
 function clientLinksEnabled(){
-  return /^https:\/\/\S+$/.test(profile.linkServer || "") && !!profile.linkKey;
+  return cloudEnabled();
 }
 
 /* Завантажує PDF + Excel на сервер і повертає посилання для клієнта.
@@ -6838,7 +7150,8 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
     title: data.title, dateLabel: data.dateLabel, total: data.total,
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone
   }));
-  const response = await fetch(`${profile.linkServer}/upload`, { method:"POST", headers:{ "X-Key": profile.linkKey }, body: form });
+  const cfg = cloudConfig();
+  const response = await fetch(`${cfg.server}/upload`, { method:"POST", headers:{ "X-Key": cfg.key }, body: form });
   if(response.status === 401) throw new Error("key");
   if(!response.ok) throw new Error("server");
   const result = await response.json();
@@ -12566,8 +12879,11 @@ function openProfile(){
   document.getElementById("pfLastName").value = profile.lastName || "";
   document.getElementById("pfCompany").value = profile.company || "";
   document.getElementById("pfPhone").value = profile.phone || "";
-  document.getElementById("pfLinkServer").value = profile.linkServer || "";
-  document.getElementById("pfLinkKey").value = profile.linkKey || "";
+  const cloudCfg = cloudConfig();
+  document.getElementById("pfLinkServer").value = cloudCfg.server || profile.linkServer || "";
+  document.getElementById("pfLinkKey").value = cloudCfg.key || profile.linkKey || "";
+  document.getElementById("pfCloudHistory").innerHTML = "";
+  renderCloudStatus();
   profileLogoDraft = profile.logoData || "";
   renderProfileLogoPreview();
 
@@ -12816,8 +13132,17 @@ function saveProfile(){
   profile.lastName = document.getElementById("pfLastName").value.trim();
   profile.company = document.getElementById("pfCompany").value.trim();
   profile.phone = document.getElementById("pfPhone").value.trim();
-  profile.linkServer = document.getElementById("pfLinkServer").value.trim().replace(/\/+$/, "");
-  profile.linkKey = document.getElementById("pfLinkKey").value.trim();
+  const newCloud = {
+    server: document.getElementById("pfLinkServer").value.trim().replace(/\/+$/, ""),
+    key: document.getElementById("pfLinkKey").value.trim()
+  };
+  const oldCloud = cloudConfig();
+  saveCloudConfig(newCloud);
+  delete profile.linkServer;
+  delete profile.linkKey;
+  if(cloudEnabled() && (oldCloud.server !== newCloud.server || oldCloud.key !== newCloud.key)){
+    setTimeout(() => cloudCheckRemote(true), 300);
+  }
   profile.isSolo = soloMode;
   profile.logoData = profileLogoDraft;
 
