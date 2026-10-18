@@ -4189,10 +4189,13 @@ body.positionDragging{
         <button type="button" class="addPersonButton" onclick="cloudSaveNow()">Зберегти в хмару зараз</button>
         <button type="button" class="addPersonButton" style="background:rgba(120,120,128,.12);color:var(--ts)" onclick="cloudShowHistory()">Відновити з хмари…</button>
         <div id="pfCloudHistory"></div>
+        <div class="formHint hidden" id="pfFileBackupLinks" style="text-align:center;margin-top:.25rem">
+          Копія у файл: <a href="#" onclick="event.preventDefault();exportBackup()">зберегти</a> · <a href="#" onclick="event.preventDefault();openBackupRestore()">відновити з файлу</a>
+        </div>
       </div>
     </div>
 
-    <div class="fsSection">
+    <div class="fsSection" id="pfBackupSection">
       <div class="fsSectionTitle">Резервна копія</div>
       <div class="fsCard">
         <div class="formHint" style="margin-top:0">Усі об'єкти, каталог, профіль і команда зберігаються лише в цьому браузері. Зберігайте копію у «Файли» — з неї все відновлюється за хвилину.</div>
@@ -4365,6 +4368,10 @@ function cloudTime(iso){
 }
 
 function renderCloudStatus(){
+  /* З хмарою окремий розділ «Резервна копія» не потрібен — лишаємо тихе посилання під «Хмарою». */
+  const on = cloudEnabled();
+  document.getElementById("pfBackupSection")?.classList.toggle("hidden", on);
+  document.getElementById("pfFileBackupLinks")?.classList.toggle("hidden", !on);
   const box = document.getElementById("pfCloudStatus");
   if(!box) return;
   if(!cloudEnabled()){ box.textContent = "Хмару не підключено — дані лише в цьому браузері."; box.style.color = "var(--tm)"; return; }
