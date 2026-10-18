@@ -3221,6 +3221,18 @@ body.positionDragging{
 .onbBar span{height:5px;border-radius:3px;background:rgba(120,120,128,.28)}
 .onbBar span.on{background:var(--p)}
 .onbBrand{display:flex;flex-direction:column;align-items:center;gap:.625rem;text-align:center}
+.authTg{display:flex;justify-content:center;min-height:2.75rem}
+.authOr{display:flex;align-items:center;gap:.75rem;color:var(--tm);font-size:.8125rem;font-weight:650}
+.authOr::before,.authOr::after{content:"";flex:1;height:1px;background:rgba(120,120,128,.25)}
+.authError{padding:.625rem .875rem;border-radius:.75rem;background:rgba(255,59,48,.1);color:var(--red);font-size:.875rem;font-weight:650}
+.accountRow{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.5rem 0;border-bottom:1px solid rgba(120,120,128,.14);font-size:.9375rem}
+.accountRow span{color:var(--tm);font-weight:650}
+.accountRow b{font-weight:750;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.accountRow button{height:2rem;padding:0 .75rem;border-radius:.625rem;background:rgba(10,132,255,.12);color:var(--p);font-size:.8125rem;font-weight:750}
+.accountLogout{display:flex;gap:.5rem;margin-top:.75rem}
+.accountLogout button{flex:1 1 0;height:2.5rem;border-radius:.75rem;background:rgba(255,59,48,.1);color:var(--red);font-size:.8125rem;font-weight:750}
+.pfDevDetails{margin-top:.875rem;font-size:.8125rem;color:var(--tm)}
+.pfDevDetails summary{cursor:pointer;font-weight:650;margin-bottom:.5rem}
 .etLogo{display:flex;flex-direction:column;align-items:center;gap:.5rem;margin:.5rem 0 .25rem}
 .etLogoWord{position:relative;font-family:Manrope,-apple-system,"Segoe UI",sans-serif;font-weight:800;font-size:2.75rem;line-height:.9;letter-spacing:-.05em;padding-top:.62em}
 .etLogoEt{color:#0A0F1A}
@@ -4301,24 +4313,32 @@ body.positionDragging{
     </div>
 
     <div class="fsSection">
-      <div class="fsSectionTitle">Хмара</div>
+      <div class="fsSectionTitle">Акаунт і хмара</div>
       <div class="fsCard">
-        <div class="formHint" style="margin-top:0">Дані автоматично зберігаються у вашому Cloudflare після кожної зміни, і ті самі об’єкти видно на всіх ваших пристроях. Також це вмикає посилання на кошторис для клієнтів.</div>
+        <div id="pfAccountBox"></div>
         <div class="formHint" id="pfCloudStatus" style="font-weight:700"></div>
-        <div class="formGroup">
-          <label class="formLabel">Адреса сервера</label>
-          <input class="formInput" id="pfLinkServer" placeholder="https://sa-master-api.….workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <div id="pfCloudRestoreButtons">
+          <button type="button" class="addPersonButton" style="background:rgba(120,120,128,.12);color:var(--ts)" onclick="cloudShowHistory()">Відновити з хмари…</button>
         </div>
-        <div class="formGroup">
-          <label class="formLabel">Ключ</label>
-          <input class="formInput" id="pfLinkKey" placeholder="ключ із Cloudflare" autocomplete="off" autocapitalize="off" spellcheck="false">
-        </div>
-        <button type="button" class="addPersonButton" onclick="cloudSaveNow()">Зберегти в хмару зараз</button>
-        <button type="button" class="addPersonButton" style="background:rgba(120,120,128,.12);color:var(--ts)" onclick="cloudShowHistory()">Відновити з хмари…</button>
         <div id="pfCloudHistory"></div>
         <div class="formHint hidden" id="pfFileBackupLinks" style="text-align:center;margin-top:.25rem">
           Копія у файл: <a href="#" onclick="event.preventDefault();exportBackup()">зберегти</a> · <a href="#" onclick="event.preventDefault();openBackupRestore()">відновити з файлу</a>
         </div>
+        <div id="pfLogoutButtons" class="accountLogout">
+          <button type="button" onclick="authLogout(false)">Вийти</button>
+          <button type="button" onclick="authLogout(true)">Вийти на всіх пристроях</button>
+        </div>
+        <details class="pfDevDetails">
+          <summary>Для розробника</summary>
+          <div class="formGroup">
+            <label class="formLabel">Адреса сервера</label>
+            <input class="formInput" id="pfLinkServer" placeholder="https://sa-master-api.….workers.dev" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </div>
+          <div class="formGroup" style="margin-bottom:0">
+            <label class="formLabel">Старий ключ (до акаунтів)</label>
+            <input class="formInput" id="pfLinkKey" placeholder="не потрібен, якщо ви увійшли" autocomplete="off" autocapitalize="off" spellcheck="false">
+          </div>
+        </details>
       </div>
     </div>
 
@@ -4386,6 +4406,12 @@ const CLOUD_REV_KEY = "sacloud_rev";
 const CLOUD_DIRTY_KEY = "sacloud_dirty";
 const CLOUD_AT_KEY = "sacloud_at";
 const CLOUD_HASH_KEY = "sacloud_hash";
+/* Акаунт: вхід поштою (код) або через Telegram. Сесія лежить поза sa_*, тому не синхронізується. */
+const CLOUD_DEFAULT_SERVER = "https://sa-master-api.c6hht469s9.workers.dev";
+const CLOUD_SESSION_KEY = "sacloud_session";
+const CLOUD_SKIP_KEY = "sacloud_skip";
+/* Юзернейм Telegram-бота (без @) для кнопки «Увійти через Telegram». Порожньо — кнопку не показуємо. */
+const TG_LOGIN_BOT = "";
 
 function cloudHash(data){
   const text = JSON.stringify(Object.keys(data).sort().map(key => [key, data[key]]));
@@ -4411,8 +4437,36 @@ function cloudGet(key){ try{ return localStorage.getItem(key); }catch(e){ return
 function cloudSet(key, value){ try{ cloudRawSet.call(localStorage, key, value); }catch(e){} }
 function cloudDel(key){ try{ cloudRawRemove.call(localStorage, key); }catch(e){} }
 
-function cloudConfig(){
+function cloudRawConfig(){
   try{ return JSON.parse(cloudGet(CLOUD_CFG_KEY) || "{}") || {}; }catch(e){ return {}; }
+}
+
+function cloudConfig(){
+  const cfg = cloudRawConfig();
+  return { server: String(cfg.server || CLOUD_DEFAULT_SERVER).replace(/\/+$/, ""), key: cfg.key || "" };
+}
+
+function cloudSession(){
+  try{ const s = JSON.parse(cloudGet(CLOUD_SESSION_KEY) || "null"); return s && s.token ? s : null; }catch(e){ return null; }
+}
+
+function cloudAuthHeaders(){
+  const session = cloudSession();
+  if(session) return { "Authorization": `Bearer ${session.token}` };
+  const key = cloudConfig().key;
+  return key ? { "X-Key": key } : {};
+}
+
+/* Сервер сказав «потрібно увійти»: сесію закрили (вихід на всіх пристроях) або старий ключ невірний. */
+function cloudUnauthorized(){
+  if(cloudSession()){
+    cloudDel(CLOUD_SESSION_KEY);
+    cloudLastError = "Потрібно увійти знову";
+    setTimeout(() => openAuthScreen(), 300);
+  }else{
+    cloudLastError = "Потрібно увійти (Профіль → Акаунт)";
+  }
+  renderCloudStatus();
 }
 
 function saveCloudConfig(cfg){
@@ -4421,7 +4475,7 @@ function saveCloudConfig(cfg){
 
 function cloudEnabled(){
   const cfg = cloudConfig();
-  return /^https:\/\/\S+$/.test(cfg.server || "") && Boolean(cfg.key);
+  return /^https?:\/\/\S+$/.test(cfg.server || "") && Boolean(cloudSession() || cfg.key);
 }
 
 function cloudDeviceName(){
@@ -4481,7 +4535,7 @@ async function cloudFetch(path, options){
   const cfg = cloudConfig();
   const response = await fetch(`${cfg.server}${path}`, {
     ...(options || {}),
-    headers: { "X-Key": cfg.key, "Content-Type": "application/json", ...((options && options.headers) || {}) },
+    headers: { ...cloudAuthHeaders(), "Content-Type": "application/json", ...((options && options.headers) || {}) },
     cache: "no-store"
   });
   let body = null;
@@ -4505,7 +4559,8 @@ function renderCloudStatus(){
   document.getElementById("pfFileBackupLinks")?.classList.toggle("hidden", !on);
   const box = document.getElementById("pfCloudStatus");
   if(!box) return;
-  if(!cloudEnabled()){ box.textContent = "Хмару не підключено — дані лише в цьому браузері."; box.style.color = "var(--tm)"; return; }
+  renderAccountBox();
+  if(!cloudEnabled()){ box.textContent = "Ви не увійшли — дані лише на цьому пристрої."; box.style.color = "var(--tm)"; return; }
   if(cloudLastError){ box.textContent = cloudLastError; box.style.color = "var(--red)"; return; }
   if(cloudGet(CLOUD_DIRTY_KEY)){ box.textContent = "Зберігаю зміни…"; box.style.color = "var(--tm)"; return; }
   const at = cloudGet(CLOUD_AT_KEY);
@@ -4543,7 +4598,7 @@ async function cloudPush(force){
       await cloudResolveConflict(body || {});
       return;
     }else if(status === 401){
-      cloudLastError = "Невірний ключ хмари (Профіль → Хмара)";
+      cloudUnauthorized();
     }else{
       cloudLastError = "Хмара не відповідає — збережу пізніше";
       clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 30000);
@@ -4603,7 +4658,7 @@ async function cloudCheckRemote(firstConnect){
   let pulled = false;
   try{
     const { status, body } = await cloudFetch("/sync/meta");
-    if(status === 401){ cloudLastError = "Невірний ключ хмари (Профіль → Хмара)"; renderCloudStatus(); return; }
+    if(status === 401){ cloudUnauthorized(); return; }
     if(status !== 200 || !body) throw new Error("meta");
     cloudLastError = "";
     const remoteRev = Number(body.rev || 0);
@@ -4642,7 +4697,7 @@ async function cloudCheckRemote(firstConnect){
 }
 
 async function cloudSaveNow(){
-  if(!cloudEnabled()){ toast("Спершу впишіть адресу сервера й ключ і натисніть «Готово»"); return; }
+  if(!cloudEnabled()){ toast("Спершу увійдіть в акаунт"); return; }
   cloudSet(CLOUD_DIRTY_KEY, String(Date.now()));
   await cloudPush();
   toast(cloudLastError || "Збережено в хмару ✓");
@@ -4651,7 +4706,7 @@ async function cloudSaveNow(){
 async function cloudShowHistory(){
   const box = document.getElementById("pfCloudHistory");
   if(!box) return;
-  if(!cloudEnabled()){ toast("Хмару не підключено"); return; }
+  if(!cloudEnabled()){ toast("Спершу увійдіть в акаунт"); return; }
   box.innerHTML = `<div class="formHint">Завантажую копії…</div>`;
   try{
     const { status, body } = await cloudFetch("/sync/history");
@@ -4683,6 +4738,235 @@ async function cloudRestore(id){
   }catch(e){
     toast("Не вдалося відновити копію");
   }
+}
+
+
+/* ==== Вхід: пошта (код) або Telegram ==== */
+let authStep = "email";
+let authEmail = "";
+let authMode = "login";
+let authBusy = false;
+
+function authNeeded(){
+  return !cloudSession() && !cloudGet(CLOUD_SKIP_KEY);
+}
+
+async function authPost(path, payload){
+  const headers = { "Content-Type": "application/json", "X-Device": encodeURIComponent(cloudDeviceName()) };
+  const session = cloudSession();
+  if(authMode === "link" && session) headers.Authorization = `Bearer ${session.token}`;
+  const response = await fetch(cloudConfig().server + path, { method:"POST", headers, body: JSON.stringify(payload || {}), cache:"no-store" });
+  let body = null;
+  try{ body = await response.json(); }catch(e){}
+  return { status: response.status, body: body || {} };
+}
+
+function openAuthScreen(mode){
+  authMode = mode === "link" ? "link" : "login";
+  authStep = "email";
+  authEmail = authMode === "link" ? "" : authEmail;
+  let screen = document.getElementById("authScreen");
+  if(!screen){
+    screen = document.createElement("div");
+    screen.id = "authScreen";
+    screen.className = "onbScreen";
+    document.body.appendChild(screen);
+  }
+  document.getElementById("profileScreen")?.classList.remove("open");
+  screen.classList.add("open");
+  renderAuthScreen();
+}
+
+function closeAuthScreen(){
+  document.getElementById("authScreen")?.classList.remove("open");
+}
+
+function authError(text){
+  const box = document.getElementById("authError");
+  if(box){ box.textContent = text || ""; box.classList.toggle("hidden", !text); }
+}
+
+function renderAuthScreen(){
+  const screen = document.getElementById("authScreen");
+  if(!screen) return;
+  const link = authMode === "link";
+  const session = cloudSession();
+  const showTg = Boolean(TG_LOGIN_BOT) && !(link && session && session.user && session.user.tg);
+  const showEmail = !(link && session && session.user && session.user.email);
+  const emailBlock = authStep === "email" ? `
+      <div class="onbCard">
+        <label>Пошта<input id="authEmailInput" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="name@gmail.com" value="${escapeHtml(authEmail)}" onkeydown="if(event.key==='Enter')authSendCode()"></label>
+      </div>
+      <button type="button" class="onbPrimary" onclick="authSendCode()">Отримати код</button>` : `
+      <div class="onbCard">
+        <p class="onbText" style="margin:0">Код надіслано на <b>${escapeHtml(authEmail)}</b>. Перевірте також «Спам».</p>
+        <label>Код із листа<input id="authCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="letter-spacing:.3em;font-size:1.25rem;font-weight:800;text-align:center" oninput="this.value=this.value.replace(/\\D/g,'').slice(0,6);if(this.value.length===6)authVerifyCode()"></label>
+      </div>
+      <button type="button" class="onbPrimary" onclick="authVerifyCode()">Увійти</button>
+      <div style="display:flex;justify-content:space-between"><button type="button" class="onbLink" onclick="authSendCode(true)">Надіслати ще раз</button><button type="button" class="onbLink" onclick="authStep='email';renderAuthScreen()">Інша пошта</button></div>`;
+
+  screen.innerHTML = `<div class="onbInner">
+    ${link ? `<div class="onbTop"><button type="button" class="onbBack" onclick="closeAuthScreen();openProfile()" aria-label="Назад">←</button><span>Акаунт</span></div>` : ""}
+    <div class="etLogo">
+      <div class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></div>
+      <div class="etLogoSub">Кошторис · Звітність · Аудит</div>
+    </div>
+    <div>
+      <h1 class="onbTitle">${link ? "Ще один спосіб входу" : "Вхід"}</h1>
+      <p class="onbText" style="margin-top:.5rem">${link ? "Прив’яжіть, щоб заходити в той самий акаунт і так, і так." : "Один акаунт — ті самі об’єкти на телефоні й комп’ютері. Без паролів."}</p>
+    </div>
+    ${showTg ? `<div id="tgLoginBox" class="authTg"></div>${showEmail ? `<div class="authOr"><span>або поштою</span></div>` : ""}` : ""}
+    ${showEmail ? emailBlock : ""}
+    <div id="authError" class="authError hidden"></div>
+    <div class="onbSpacer"></div>
+    ${link ? "" : `<button type="button" class="onbLink" onclick="authSkip()">Продовжити без входу</button><span class="onbNote">Без входу дані зберігаються лише на цьому пристрої</span>`}
+  </div>`;
+
+  if(showTg){
+    const box = document.getElementById("tgLoginBox");
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.setAttribute("data-telegram-login", TG_LOGIN_BOT);
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-radius", "14");
+    script.setAttribute("data-request-access", "write");
+    script.setAttribute("data-onauth", "authTelegram(user)");
+    box.appendChild(script);
+  }
+  setTimeout(() => document.getElementById(authStep === "email" ? "authEmailInput" : "authCodeInput")?.focus(), 80);
+}
+
+async function authSendCode(again){
+  if(authBusy) return;
+  const input = document.getElementById("authEmailInput");
+  if(input) authEmail = input.value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(authEmail)){ authError("Перевірте адресу пошти"); return; }
+  authBusy = true;
+  authError("");
+  try{
+    const { status, body } = await authPost("/auth/email/start", { email: authEmail });
+    if(status !== 200){ authError(body.error || "Не вдалося надіслати код"); return; }
+    authStep = "code";
+    renderAuthScreen();
+    if(body.devCode) authError(`Тестовий код: ${body.devCode}`);
+    else if(again) toast("Новий код надіслано");
+  }catch(e){
+    authError("Немає зв’язку — перевірте інтернет");
+  }finally{
+    authBusy = false;
+  }
+}
+
+async function authVerifyCode(){
+  if(authBusy) return;
+  const code = (document.getElementById("authCodeInput")?.value || "").replace(/\D/g, "");
+  if(code.length !== 6){ authError("Введіть 6 цифр із листа"); return; }
+  authBusy = true;
+  authError("");
+  try{
+    const { status, body } = await authPost("/auth/email/verify", { email: authEmail, code });
+    if(status !== 200){ authError(body.error || "Не вдалося увійти"); return; }
+    await authComplete(body);
+  }catch(e){
+    authError("Немає зв’язку — перевірте інтернет");
+  }finally{
+    authBusy = false;
+  }
+}
+
+async function authTelegram(user){
+  if(!user) return;
+  authError("");
+  try{
+    const { status, body } = await authPost("/auth/telegram", user);
+    if(status !== 200){ authError(body.error || "Не вдалося увійти через Telegram"); return; }
+    await authComplete(body);
+  }catch(e){
+    authError("Немає зв’язку — перевірте інтернет");
+  }
+}
+
+async function authComplete(result){
+  /* Прив’язали ще один спосіб входу до вже відкритого акаунта. */
+  if(result.linked){
+    const session = cloudSession();
+    if(session){ session.user = result.user; cloudSet(CLOUD_SESSION_KEY, JSON.stringify(session)); }
+    closeAuthScreen();
+    openProfile();
+    toast("Прив’язано ✓");
+    return;
+  }
+
+  cloudSet(CLOUD_SESSION_KEY, JSON.stringify({ token: result.token, user: result.user }));
+  cloudDel(CLOUD_SKIP_KEY);
+
+  /* Дані, що вже були в хмарі за старим ключем, переходять в акаунт — один раз. */
+  const legacyKey = cloudConfig().key;
+  let claimed = false;
+  if(legacyKey){
+    try{
+      const { status, body } = await cloudFetch("/auth/claim-legacy", { method:"POST", headers:{ "X-Key": legacyKey } });
+      claimed = status === 200 && body && body.claimed === true;
+    }catch(e){}
+    const raw = cloudRawConfig();
+    saveCloudConfig({ server: raw.server || "", key: "" });
+  }
+  if(!claimed){
+    cloudDel(CLOUD_REV_KEY);
+    cloudDel(CLOUD_HASH_KEY);
+    cloudDel(CLOUD_AT_KEY);
+  }
+
+  closeAuthScreen();
+  toast(result.created ? "Акаунт створено ✓" : "Ви увійшли ✓");
+  cloudStarting = true;
+  await cloudCheckRemote(true);
+  render();
+  if(shouldShowOnboarding()) setTimeout(openOnboarding, 250);
+}
+
+function authSkip(){
+  cloudSet(CLOUD_SKIP_KEY, "1");
+  closeAuthScreen();
+  if(shouldShowOnboarding()) setTimeout(openOnboarding, 200);
+}
+
+async function authLogout(all){
+  if(!confirm(all ? "Вийти з акаунта на всіх пристроях?" : "Вийти з акаунта на цьому пристрої?")) return;
+  if(cloudGet(CLOUD_DIRTY_KEY)) await cloudPush();
+  try{ await cloudFetch("/auth/logout", { method:"POST", body: JSON.stringify({ all: Boolean(all) }) }); }catch(e){}
+  const wipe = confirm("Ваші дані залишаються в хмарі.\n\nOK — прибрати їх з цього пристрою.\nСкасувати — залишити тут.");
+  [CLOUD_SESSION_KEY, CLOUD_REV_KEY, CLOUD_HASH_KEY, CLOUD_AT_KEY, CLOUD_DIRTY_KEY].forEach(cloudDel);
+  if(wipe){
+    const keys = [];
+    for(let i = 0; i < localStorage.length; i++){ const key = localStorage.key(i); if(cloudIsDataKey(key) || key === "sa_onboarded" || key === "sa_hintsSeen") keys.push(key); }
+    keys.forEach(cloudDel);
+  }
+  location.reload();
+}
+
+function authUserLabel(user){
+  if(!user) return "";
+  return user.email || (user.tg && (user.tg.username ? "@" + user.tg.username : user.tg.name)) || "акаунт";
+}
+
+function renderAccountBox(){
+  const box = document.getElementById("pfAccountBox");
+  if(!box) return;
+  const session = cloudSession();
+  document.getElementById("pfCloudRestoreButtons")?.classList.toggle("hidden", !cloudEnabled());
+  if(!session){
+    box.innerHTML = `
+      <div class="formHint" style="margin-top:0">Увійдіть, щоб об’єкти зберігались у хмарі й були на всіх ваших пристроях.</div>
+      <button type="button" class="addPersonButton" onclick="openAuthScreen()">Увійти</button>`;
+    return;
+  }
+  const user = session.user || {};
+  const tg = user.tg ? (user.tg.username ? "@" + user.tg.username : user.tg.name || "прив’язано") : "";
+  box.innerHTML = `
+    <div class="accountRow"><span>Пошта</span>${user.email ? `<b>${escapeHtml(user.email)}</b>` : `<button type="button" onclick="openAuthScreen('link')">Прив’язати</button>`}</div>
+    ${TG_LOGIN_BOT || tg ? `<div class="accountRow"><span>Telegram</span>${tg ? `<b>${escapeHtml(tg)}</b>` : `<button type="button" onclick="openAuthScreen('link')">Прив’язати</button>`}</div>` : ""}`;
 }
 
 document.addEventListener("visibilitychange", () => {
@@ -7309,7 +7593,7 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone
   }));
   const cfg = cloudConfig();
-  const response = await fetch(`${cfg.server}/upload`, { method:"POST", headers:{ "X-Key": cfg.key }, body: form });
+  const response = await fetch(`${cfg.server}/upload`, { method:"POST", headers: cloudAuthHeaders(), body: form });
   if(response.status === 401) throw new Error("key");
   if(!response.ok) throw new Error("server");
   const result = await response.json();
@@ -7416,7 +7700,7 @@ async function printQuotePreview(){
       }catch(e){
         console.error("Link upload error:", e);
         toast(e && e.message === "key"
-          ? "Невірний ключ у Профілі → Посилання. Надсилаю файлами."
+          ? "Потрібно увійти в акаунт (Профіль). Надсилаю файлами."
           : "Сервер недоступний. Надсилаю файлами.");
       }
       if(link){
@@ -13451,10 +13735,11 @@ function openProfile(){
   document.getElementById("pfTaxId").value = profile.taxId || "";
   document.getElementById("pfIban").value = profile.iban || "";
   const cloudCfg = cloudConfig();
-  document.getElementById("pfLinkServer").value = cloudCfg.server || profile.linkServer || "";
+  document.getElementById("pfLinkServer").value = cloudRawConfig().server || "";
   document.getElementById("pfLinkKey").value = cloudCfg.key || profile.linkKey || "";
   document.getElementById("pfCloudHistory").innerHTML = "";
   renderCloudStatus();
+  document.getElementById("pfLogoutButtons")?.classList.toggle("hidden", !cloudSession());
   profileLogoDraft = profile.logoData || "";
   renderProfileLogoPreview();
 
@@ -13714,7 +13999,8 @@ function saveProfile(){
   saveCloudConfig(newCloud);
   delete profile.linkServer;
   delete profile.linkKey;
-  if(cloudEnabled() && (oldCloud.server !== newCloud.server || oldCloud.key !== newCloud.key)){
+  const nowCloud = cloudConfig();
+  if(cloudEnabled() && (oldCloud.server !== nowCloud.server || oldCloud.key !== nowCloud.key)){
     setTimeout(() => cloudCheckRemote(true), 300);
   }
   profile.isSolo = soloMode;
@@ -14300,7 +14586,10 @@ function shouldShowOnboarding(){
 try{ fillMissingProjectPurchasePrices(); }catch(e){ console.error(e); }
 render();
 importRequestFromTelegramLink();
-if(shouldShowOnboarding()) setTimeout(openOnboarding, 300);
+setTimeout(() => {
+  if(authNeeded()) openAuthScreen();
+  else if(shouldShowOnboarding()) openOnboarding();
+}, 300);
 
 </script>
 
