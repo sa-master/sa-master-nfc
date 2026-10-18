@@ -7431,11 +7431,7 @@ function getNextSteps(p){
       const enc = encodeURIComponent(name);
       const missing = order ? order.lines.filter(l => l.received === false).length : 0;
       if(!order){ allReceived = false; steps.push({ text:`Замовлення: ${escapeHtml(name)}`, sub:"Excel із датою доставки", label:"Надіслати", action:`openProcurementRequest(decodeURIComponent('${enc}'))`, primary:true }); }
-      else if(order.status === "sent"){ allReceived = false; steps.push({ text:`Рахунок від ${escapeHtml(name)}?`, sub:"Звіримо суму із замовленням", label:"Внести", action:`orderAskInvoice('${order.id}')` }); }
-      else if(order.status === "invoiced"){ allReceived = false; steps.push({ text:`Оплатити ${escapeHtml(name)}`, sub:`Рахунок ${money(order.invoiceAmount || orderTotal(order))}`, label:"Оплачено", action:`orderAskPaid('${order.id}')`, primary:true }); }
-      else if(order.status === "paid"){ allReceived = false; steps.push({ text:`Чекаємо ${escapeHtml(name)}`, sub:orderDeliveryText(order) || "Доставка", label:"Отримано", action:`openOrderSheet('${order.id}','receive')` }); }
-      else if(missing){ allReceived = false; steps.push({ text:`${escapeHtml(name)}: не довезли ${missing} поз.`, sub:"Уточніть строки", label:"Довезли", action:`openOrderSheet('${order.id}','receive')` }); }
-      if(order && Number(order.pendingRefund) > 0.5) steps.push({ text:`${escapeHtml(name)} має повернути ${money(order.pendingRefund)}`, sub:"За повернення або обмін", label:"Повернули", action:`orderRefundReceived('${order.id}')` });
+      else if(order.status !== "received" || missing){ allReceived = false; steps.push({ text:`Чекаємо ${escapeHtml(name)}`, sub:missing ? `Не довезли ${missing} поз.` : (orderDeliveryText(order) || "Замовлення надіслано"), label:missing ? "Довезли" : "Привезли", action:`orderMarkReceived('${order.id}')` }); }
     });
     const later = (p.positions || []).filter(isBuyLaterPending).length;
     if(later) steps.push({ text:`Купити пізніше: ${later} поз.`, sub:"Магазин або за потреби", label:"Список", action:"setProjectTab('materials')" });
@@ -7562,7 +7558,7 @@ function orderMarkSent(project, supplierName){
   const lines = liveOrderPositions(project, supplierName).map(orderLineFromPosition);
   const delivery = getProcurementDelivery({ projectId:project.id, supplierName });
   if(!order){
-    order = { id:uid("ord"), supplierName, status:"sent", createdAt:new Date().toISOString(), lines:[], events:[], pendingRefund:0 };
+    order = { id:uid("ord"), supplierName, status:"sent", createdAt:new Date().toISOString(), lines:[], events:[] };
     projectOrders(project).push(order);
   }
   order.lines = lines;
@@ -7594,47 +7590,34 @@ function orderSupplierNames(project){
 function renderOrderCard(project, supplierName){
   const order = findOrder(project, supplierName);
   const enc = encodeURIComponent(supplierName);
-  const live = liveOrderPositions(project, supplierName);
-  const lines = order ? order.lines : live.map(orderLineFromPosition);
-  const total = order ? orderTotal(order) : lines.reduce((s, l) => s + orderLineTotal(l), 0);
-  const step = orderStepIndex(order);
-  const m = order ? orderMoney(project, order) : { paid:0, refunded:0, net:0 };
-  const notes = [];
-  if(order && order.invoiceAmount && Math.abs(order.invoiceAmount - total) >= 1){
-    const diff = order.invoiceAmount - total;
-    notes.push(`<div class="orderNote warn">Рахунок ${money(order.invoiceAmount)} — ${diff > 0 ? "більше" : "менше"} за замовлення на ${money(Math.abs(diff))}</div>`);
-  }
-  if(order && Number(order.pendingRefund) > 0.5) notes.push(`<div class="orderNote warn">Очікуємо повернення грошей: ${money(order.pendingRefund)}</div>`);
-  if(order && Number(order.pendingPayment) > 0.5) notes.push(`<div class="orderNote warn">Доплатити за обмін: ${money(order.pendingPayment)}</div>`);
-  const missing = order ? order.lines.filter(line => line.received === false) : [];
-  if(missing.length) notes.push(`<div class="orderNote warn">Не привезли: ${missing.map(l => escapeHtml(l.name)).join(", ")}</div>`);
-  if(order && order.sentAt && live.length && live.some(position => !order.lines.some(line => line.positionId === position.id && Math.abs(line.qty - positionOrderQty(position)) < 0.001)) && step < 2){
-    notes.push(`<div class="orderNote">Список змінився після надсилання — можна надіслати оновлений</div>`);
-  }
+  const lines = order ? order.lines : liveOrderPositions(project, supplierName).map(orderLineFromPosition);
+  const total = order ? orderTotal(order) : lines.reduce((sum, line) => sum + orderLineTotal(line), 0);
+  const paid = order ? orderMoney(project, order).net : 0;
+  const missing = order ? order.lines.filter(line => line.received === false).length : 0;
+  const received = order && order.status === "received";
+  const meta = [`${lines.length} поз.`];
+  if(order && orderDeliveryText(order)) meta.push(orderDeliveryText(order).toLowerCase());
+  if(missing) meta.push(`не довезли ${missing}`);
 
-  let action = "";
-  if(!order) action = `<button type="button" class="primary" onclick="openProcurementRequest(decodeURIComponent('${enc}'))">Надіслати замовлення</button>`;
-  else if(order.status === "sent") action = `<button type="button" class="primary" onclick="orderAskInvoice('${order.id}')">Внести рахунок</button>`;
-  else if(order.status === "invoiced") action = `<button type="button" class="primary" onclick="orderAskPaid('${order.id}')">Оплачено</button>`;
-  else if(order.status === "paid") action = `<button type="button" class="primary" onclick="openOrderSheet('${order.id}','receive')">Отримано</button>`;
-  else if(missing.length) action = `<button type="button" class="primary" onclick="openOrderSheet('${order.id}','receive')">Довезли решту</button>`;
-  else action = `<button type="button" onclick="openOrderSheet('${order.id}','lines')">Позиції</button>`;
-
+  let buttons = "";
+  if(!order){
+    buttons = `<button type="button" class="primary" onclick="openProcurementRequest(decodeURIComponent('${enc}'))">Надіслати замовлення</button>`;
+  }else{
+    buttons = `
+      <button type="button" class="${paid ? "" : "primary"}" onclick="orderAskPaid('${order.id}')">${paid ? `✓ Оплачено ${money(paid)}` : "Оплатив"}</button>
+      <button type="button" class="${received && !missing ? "" : "primary"}" onclick="orderMarkReceived('${order.id}')">${received && !missing ? "✓ Привезли" : missing ? "Довезли" : "Привезли"}</button>
+      <button type="button" class="more" onclick="openOrderSheet('${order.id}','lines')" aria-label="Позиції, повернення, історія">⋯</button>`;
+  }
   return `
     <section class="orderCard">
-      <button type="button" class="orderTop" onclick="${order ? `openOrderSheet('${order.id}','lines')` : `openProcurementRequest(decodeURIComponent('${enc}'))`}">
+      <div class="orderTop">
         <span>
           <span class="orderName">${escapeHtml(supplierName)}</span>
-          <span class="orderMeta" style="display:block">${lines.length} поз.${order && orderDeliveryText(order) ? " · " + escapeHtml(orderDeliveryText(order)) : ""}${m.net ? ` · оплачено ${money(m.net)}` : ""}</span>
+          <span class="orderMeta" style="display:block">${escapeHtml(meta.join(" · "))}</span>
         </span>
         <span class="orderSum">${money(total)}</span>
-      </button>
-      <div class="orderSteps">${ORDER_STEPS.map((s, i) => `<span class="orderStep ${i < step || (i === step && !(s[0] === "received" && missing.length)) ? "done" : i === step + 1 ? "now" : ""}">${s[1]}</span>`).join("")}</div>
-      ${notes.join("")}
-      <div class="orderActions">
-        ${action}
-        ${order ? `<button type="button" class="more" onclick="openOrderSheet('${order.id}','menu')" aria-label="Повернення, обмін, історія">⋯</button>` : ""}
       </div>
+      <div class="orderActions">${buttons}</div>
     </section>
   `;
 }
@@ -7674,38 +7657,45 @@ function parseMoneyInput(raw){
   return Number.isFinite(value) ? Math.round(value * 100) / 100 : NaN;
 }
 
-function orderAskInvoice(orderId){
-  const { project, order } = getOrderById(orderId);
-  if(!order) return;
-  const total = orderTotal(order);
-  const raw = prompt(`Сума рахунку від «${order.supplierName}», ₴\n\nЗа замовленням: ${moneyWithCents(total)}`, String(Math.round(total * 100) / 100).replace(".", ","));
-  if(raw === null) return;
-  const amount = parseMoneyInput(raw);
-  if(!(amount > 0)){ toast("Впишіть суму рахунку"); return; }
-  order.invoiceAmount = amount;
-  order.invoicedAt = new Date().toISOString();
-  order.status = "invoiced";
-  orderEvent(order, `Рахунок: ${moneyWithCents(amount)}${Math.abs(amount - total) >= 1 ? ` (замовлення ${moneyWithCents(total)})` : ""}`);
-  touchProject(project);
-  render();
-  toast(Math.abs(amount - total) >= 1 ? `Рахунок відрізняється на ${money(Math.abs(amount - total))} — перевірте` : "Рахунок збігається із замовленням ✓", 3200);
-}
-
 function orderAskPaid(orderId){
   const { project, order } = getOrderById(orderId);
   if(!order) return;
-  const due = Math.max(0, (order.invoiceAmount || orderTotal(order)) - orderMoney(project, order).net);
-  const raw = prompt(`Скільки заплатили «${order.supplierName}», ₴?`, String(Math.round(due * 100) / 100).replace(".", ","));
+  const already = orderMoney(project, order).net;
+  const suggested = already ? already : orderTotal(order);
+  const raw = prompt(already
+    ? `Оплачено «${order.supplierName}», ₴. Виправте, якщо сума інша:`
+    : `Скільки заплатили «${order.supplierName}», ₴?\nЯкщо рахунок відрізняється — виправте суму.`, String(Math.round(suggested * 100) / 100).replace(".", ","));
   if(raw === null) return;
   const amount = parseMoneyInput(raw);
-  if(!(amount > 0)){ toast("Впишіть суму"); return; }
-  moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount, note:`${order.supplierName} — оплата замовлення`, orderId:order.id });
-  order.paidAt = new Date().toISOString();
-  order.status = "paid";
-  orderEvent(order, `Оплачено ${moneyWithCents(amount)} (записано у «Гроші»)`);
+  if(!(amount >= 0)){ toast("Впишіть суму"); return; }
+  const list = moneyList(project, "expense");
+  const existing = list.find(entry => entry.orderId === order.id && entry.kind === "orderPayment");
+  if(existing){
+    if(amount > 0) existing.amount = amount; else project.expenses = list.filter(entry => entry !== existing);
+  }else if(amount > 0){
+    list.push({ id:uid("exp"), date:todayIso(), amount, note:`${order.supplierName} — замовлення`, orderId:order.id, kind:"orderPayment" });
+  }
+  order.paidAt = amount > 0 ? new Date().toISOString() : "";
+  orderEvent(order, amount > 0 ? `Оплачено ${moneyWithCents(amount)}` : "Оплату скасовано");
   touchProject(project);
   render();
-  toast("Оплату записано у витрати об’єкта");
+  toast(amount > 0 ? "Записано у «Гроші»" : "Оплату прибрано");
+}
+
+function orderMarkReceived(orderId){
+  const { project, order } = getOrderById(orderId);
+  if(!order) return;
+  if(order.status === "received" && !order.lines.some(line => line.received === false)){
+    openOrderSheet(order.id, "receive");
+    return;
+  }
+  order.lines.forEach(line => { line.received = true; });
+  order.status = "received";
+  order.receivedAt = new Date().toISOString();
+  orderEvent(order, "Привезли");
+  touchProject(project);
+  render();
+  toast("Привезли ✓ Якщо не все — «⋯» → «Привезли не все»", 3200);
 }
 
 /* ---- аркуш замовлення: позиції / отримання / повернення / обмін / історія ---- */
@@ -7746,21 +7736,19 @@ function renderOrderSheet(){
 
   if(st.mode === "menu" || st.mode === "lines"){
     body.innerHTML = `
-      <div class="formHint" style="margin:0 0 .5rem">Замовлення ${money(orderTotal(order))}${order.invoiceAmount ? ` · рахунок ${money(order.invoiceAmount)}` : ""} · оплачено ${money(m.net)}${m.refunded ? ` (повернуто ${money(m.refunded)})` : ""}</div>
-      <div class="formHint" style="margin:0 0 .25rem;font-weight:700">Позиції — повернути або обміняти</div>
+      <div class="formHint" style="margin:0 0 .5rem">${money(orderTotal(order))} · оплачено ${money(m.net)}</div>
       ${order.lines.map((line, i) => orderLineRow(order, line, i, { buttons:true })).join("") || `<div class="formHint">Позицій немає</div>`}
-      ${Number(order.pendingRefund) > 0.5 ? `<button type="button" class="addPersonButton" style="margin-top:.75rem" onclick="orderRefundReceived('${order.id}')">Постачальник повернув ${money(order.pendingRefund)}</button>` : ""}
-      ${Number(order.pendingPayment) > 0.5 ? `<button type="button" class="addPersonButton" style="margin-top:.5rem" onclick="orderExtraPaid('${order.id}')">Доплатив ${money(order.pendingPayment)} за обмін</button>` : ""}
+      <button type="button" class="addPersonButton" style="margin-top:.75rem;background:rgba(120,120,128,.12);color:var(--t)" onclick="openOrderSheet('${order.id}','receive')">Привезли не все…</button>
+      <button type="button" class="addPersonButton" style="margin-top:.5rem;background:rgba(120,120,128,.12);color:var(--t)" onclick="closeOrderSheet();openProcurementRequest(decodeURIComponent('${encodeURIComponent(order.supplierName)}'))">Надіслати замовлення ще раз</button>
       <div class="formHint" style="margin:1rem 0 .25rem;font-weight:700">Історія</div>
       ${(order.events || []).slice().reverse().map(e => `<div class="orderEvent"><b>${escapeHtml(cloudTime(e.at))}</b> — ${escapeHtml(e.text)}</div>`).join("") || `<div class="formHint">Поки порожньо</div>`}
-      ${order.status === "sent" || order.status === "invoiced" ? `<button type="button" class="addPersonButton" style="margin-top:1rem;background:rgba(120,120,128,.12);color:var(--ts)" onclick="closeOrderSheet();openProcurementRequest(decodeURIComponent('${encodeURIComponent(order.supplierName)}'))">Надіслати оновлене замовлення</button>` : ""}
     `;
     return;
   }
 
   if(st.mode === "receive"){
     body.innerHTML = `
-      <div class="formHint" style="margin:0 0 .5rem">Зніміть галочку з того, чого не привезли. Воно лишиться в замовленні з позначкою «чекаємо».</div>
+      <div class="formHint" style="margin:0 0 .5rem">Зніміть галочку з того, чого не привезли.</div>
       ${order.lines.map((line, i) => orderLineRow(order, line, i, { check: line.received !== false || order.status !== "received" })).join("")}
     `;
     footer.innerHTML = `<button class="btnPrimary" onclick="orderSaveReceived('${order.id}')">Зберегти</button>`;
@@ -7782,14 +7770,8 @@ function renderOrderSheet(){
           <button type="button" class="${st.dest === "stock" ? "active" : ""}" onclick="orderSheetState.dest='stock';renderOrderSheet()">Собі на склад</button>
         </div>
         ${st.dest === "supplier" ? `
-        <label>Гроші</label>
-        <div class="orderChoice">
-          <button type="button" class="${!st.refunded ? "active" : ""}" onclick="orderSheetState.refunded=false;renderOrderSheet()">Ще не повернули</button>
-          <button type="button" class="${st.refunded ? "active" : ""}" onclick="orderSheetState.refunded=true;renderOrderSheet()">Вже повернули</button>
-        </div>` : ""}
-        <label for="orderRetNote">Причина (необов’язково)</label>
-        <input class="formInput" id="orderRetNote" placeholder="наприклад: замінили на SmartBox" autocomplete="off">
-        <div class="formHint">Позиція зменшиться в кошторисі. Погоджена клієнтом сума не зміниться — якщо клієнту треба повернути гроші, натисніть потім «⋯ → Клієнт погодив нову версію».</div>
+        <label class="noDiscountToggle"><input type="checkbox" id="orderRetRefunded"><span>Гроші вже повернули<small>Запишеться мінусом у «Гроші». Якщо ще ні — внесете, коли повернуть.</small></span></label>` : ""}
+        <input class="formInput" id="orderRetNote" placeholder="Причина (необов’язково)" autocomplete="off">
       </div>`;
     footer.innerHTML = `<button class="btnGhost" onclick="openOrderSheet('${order.id}','lines')">Назад</button><button class="btnPrimary" onclick="orderSaveReturn('${order.id}',${st.lineIndex})">Повернути</button>`;
     return;
@@ -7800,7 +7782,7 @@ function renderOrderSheet(){
     body.innerHTML = `
       ${orderLineRow(order, line, st.lineIndex)}
       <div class="orderForm">
-        <div class="formHint" style="margin:0">Стара позиція повернеться постачальнику, нова стане на її місце в кошторисі й замовленні.</div>
+        <div class="formHint" style="margin:0">Нова позиція стане на місце старої в кошторисі. Різницю в грошах з постачальником внесете в «Гроші», коли розрахуєтесь.</div>
         <label for="orderExName">Що беремо замість</label>
         <input class="formInput" id="orderExName" placeholder="наприклад: Grohe SmartBox" autocomplete="off">
         <label for="orderExQty">Кількість, ${escapeHtml(line.unit)}</label>
@@ -7851,41 +7833,15 @@ function orderSaveReturn(orderId, index){
   line.qty = roundQty(line.qty - qty);
   if(line.qty <= 0) order.lines.splice(index, 1);
 
-  if(dest === "supplier" && amount > 0){
-    if(orderSheetState.refunded){
-      moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:-amount, note:`Повернення: ${line.name} — ${order.supplierName}`, orderId:order.id });
-    }else{
-      order.pendingRefund = Math.round(((Number(order.pendingRefund) || 0) + amount) * 100) / 100;
-    }
+  const refunded = dest === "supplier" && document.getElementById("orderRetRefunded")?.checked;
+  if(refunded && amount > 0){
+    moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:-amount, note:`Повернення: ${line.name} — ${order.supplierName}`, orderId:order.id });
   }
-  orderEvent(order, `Повернення ${formatQty(qty)} ${line.unit} «${line.name}» ${dest === "stock" ? "на склад" : "постачальнику"}${dest === "supplier" && amount ? ` (${moneyWithCents(amount)}${orderSheetState.refunded ? ", гроші повернули" : ", чекаємо гроші"})` : ""}${note ? " — " + note : ""}`);
+  orderEvent(order, `Повернення ${formatQty(qty)} ${line.unit} «${line.name}» ${dest === "stock" ? "на склад" : "постачальнику"}${amount && dest === "supplier" ? ` (${moneyWithCents(amount)}${refunded ? ", гроші повернули" : ""})` : ""}${note ? " — " + note : ""}`);
   touchProject(project);
   openOrderSheet(order.id, "lines");
   render();
   toast("Повернення записано");
-}
-
-function orderRefundReceived(orderId){
-  const { project, order } = getOrderById(orderId);
-  if(!order || !(order.pendingRefund > 0)) return;
-  moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:-order.pendingRefund, note:`Повернення від ${order.supplierName}`, orderId:order.id });
-  orderEvent(order, `Постачальник повернув ${moneyWithCents(order.pendingRefund)}`);
-  order.pendingRefund = 0;
-  touchProject(project);
-  renderOrderSheet();
-  render();
-  toast("Записано у «Гроші»");
-}
-
-function orderExtraPaid(orderId){
-  const { project, order } = getOrderById(orderId);
-  if(!order || !(order.pendingPayment > 0)) return;
-  moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:order.pendingPayment, note:`${order.supplierName} — доплата за обмін`, orderId:order.id });
-  orderEvent(order, `Доплачено ${moneyWithCents(order.pendingPayment)} за обмін`);
-  order.pendingPayment = 0;
-  touchProject(project);
-  renderOrderSheet();
-  render();
 }
 
 function orderSaveExchange(orderId, index){
@@ -7925,8 +7881,6 @@ function orderSaveExchange(orderId, index){
   }else{
     order.lines.splice(index, 1);
   }
-  if(diff < 0) order.pendingRefund = Math.round(((Number(order.pendingRefund) || 0) - diff) * 100) / 100;
-  if(diff > 0) order.pendingPayment = Math.round(((Number(order.pendingPayment) || 0) + diff) * 100) / 100;
   orderEvent(order, `Обмін: «${line.name}» → «${name}»${purchase > 0 ? "" : " (зі складу)"}${diff ? ` · ${diff < 0 ? "до повернення" : "доплатити"} ${moneyWithCents(Math.abs(diff))}` : ""}`);
   touchProject(project);
   openOrderSheet(order.id, "lines");
