@@ -1289,6 +1289,37 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .projectTabs button small{font-size:.6875rem;font-weight:700;opacity:.75;margin-left:.25rem}
 .tabActions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;margin:0 0 .75rem}
 .tabActions button{height:2.75rem;border-radius:.8125rem;background:rgba(10,132,255,.12);color:var(--p);font-size:.875rem;font-weight:750}
+.ordersBlock{margin:0 0 .875rem;display:flex;flex-direction:column;gap:.5rem}
+.ordersTitle{font-size:.75rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--tm);margin:.25rem .25rem 0}
+.orderCard{background:var(--card);border-radius:1rem;padding:.75rem .875rem;display:flex;flex-direction:column;gap:.5rem;box-shadow:0 2px 10px rgba(40,80,120,.06)}
+.orderTop{display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;width:100%;text-align:left}
+.orderName{font-size:1rem;font-weight:800;color:var(--t)}
+.orderMeta{font-size:.8125rem;font-weight:600;color:var(--tm);margin-top:.125rem}
+.orderSum{font-size:.9375rem;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--t)}
+.orderSteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.25rem}
+.orderStep{font-size:.6875rem;font-weight:750;color:var(--tm);text-align:center;padding-top:.375rem;border-top:3px solid rgba(120,120,128,.2)}
+.orderStep.done{color:var(--green);border-top-color:var(--green)}
+.orderStep.now{color:var(--p);border-top-color:var(--p)}
+.orderNote{font-size:.8125rem;font-weight:650;border-radius:.625rem;padding:.4375rem .625rem;background:rgba(120,120,128,.08);color:var(--ts)}
+.orderNote.warn{background:rgba(255,149,0,.12);color:#B76800}
+.orderNote.ok{background:rgba(52,199,89,.12);color:var(--green)}
+.orderActions{display:flex;gap:.5rem}
+.orderActions button{flex:1 1 auto;height:2.5rem;border-radius:.75rem;font-size:.875rem;font-weight:750;background:rgba(10,132,255,.12);color:var(--p)}
+.orderActions button.primary{background:var(--p);color:#fff}
+.orderActions button.more{flex:0 0 2.75rem}
+.orderLine{display:flex;align-items:center;gap:.625rem;padding:.5rem 0;border-top:1px solid rgba(120,120,128,.14)}
+.orderLine .nm{flex:1 1 auto;min-width:0;font-size:.875rem;font-weight:650;overflow-wrap:anywhere}
+.orderLine .nm small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
+.orderLine .q{flex:0 0 auto;font-size:.875rem;font-weight:750;font-variant-numeric:tabular-nums}
+.orderLine input[type=checkbox]{width:1.375rem;height:1.375rem;flex:0 0 auto}
+.orderLine button{flex:0 0 auto;height:2rem;padding:0 .625rem;border-radius:.5rem;font-size:.75rem;font-weight:750;background:rgba(120,120,128,.12);color:var(--t)}
+.orderEvent{font-size:.8125rem;padding:.4375rem 0;border-top:1px solid rgba(120,120,128,.14);color:var(--ts)}
+.orderEvent b{color:var(--t)}
+.orderForm{display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem}
+.orderForm label{font-size:.8125rem;font-weight:700;color:var(--tm)}
+.orderChoice{display:flex;gap:.375rem;flex-wrap:wrap}
+.orderChoice button{height:2.375rem;padding:0 .75rem;border-radius:.6875rem;background:rgba(120,120,128,.12);font-size:.8125rem;font-weight:700;color:var(--t)}
+.orderChoice button.active{background:var(--p);color:#fff}
 .moneyBlock{margin:0 0 .875rem;padding:.75rem;border-radius:.875rem;background:var(--card);border:1px solid rgba(120,120,128,.16)}
 .moneyHead{display:flex;align-items:center;justify-content:space-between;gap:.5rem;width:100%;text-align:left}
 .moneyTitle{font-size:.8125rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
@@ -3545,6 +3576,18 @@ body.positionDragging{
 </div>
 
 <!-- SHEET: SUPPLIER CONTACT -->
+
+<!-- SHEET: SUPPLIER ORDER -->
+<div class="sheet" id="orderSheet">
+  <div class="panel tall">
+    <div class="panelHead">
+      <strong id="orderSheetTitle">Замовлення</strong>
+      <button class="close" onclick="closeOrderSheet()">×</button>
+    </div>
+    <div class="panelBody" id="orderSheetBody"></div>
+    <div class="panelFooter" id="orderSheetFooter"></div>
+  </div>
+</div>
 
 <div class="sheet" id="supplierContactSheet">
   <div class="panel">
@@ -7379,14 +7422,24 @@ function getNextSteps(p){
   }
 
   if(stage === "procurement"){
+    migrateSentOrders(p);
     const unassigned = positions.filter(x => x.type === "material" && positionOrderQty(x) > 0 && !isBuyLater(x) && !cleanText(getPositionPlannedSupplier(x))).length;
     if(unassigned) steps.push({ text:`${unassigned} поз. без постачальника`, sub:"Не потраплять у жодне замовлення", label:"Розподілити", action:"openProcurementPlan()" });
-    const sent = p.ordersSent || {};
-    const toSend = getProcurementRequestSupplierNames(p).filter(name => !sent[normalizeText(name)]);
-    toSend.slice(0, 2).forEach(name => steps.push({ text:`Замовлення: ${escapeHtml(name)}`, sub:"Excel із датою доставки", label:"Надіслати", action:`openProcurementRequest(decodeURIComponent('${encodeURIComponent(name)}'))`, primary:true }));
+    let allReceived = true;
+    orderSupplierNames(p).forEach(name => {
+      const order = findOrder(p, name);
+      const enc = encodeURIComponent(name);
+      const missing = order ? order.lines.filter(l => l.received === false).length : 0;
+      if(!order){ allReceived = false; steps.push({ text:`Замовлення: ${escapeHtml(name)}`, sub:"Excel із датою доставки", label:"Надіслати", action:`openProcurementRequest(decodeURIComponent('${enc}'))`, primary:true }); }
+      else if(order.status === "sent"){ allReceived = false; steps.push({ text:`Рахунок від ${escapeHtml(name)}?`, sub:"Звіримо суму із замовленням", label:"Внести", action:`orderAskInvoice('${order.id}')` }); }
+      else if(order.status === "invoiced"){ allReceived = false; steps.push({ text:`Оплатити ${escapeHtml(name)}`, sub:`Рахунок ${money(order.invoiceAmount || orderTotal(order))}`, label:"Оплачено", action:`orderAskPaid('${order.id}')`, primary:true }); }
+      else if(order.status === "paid"){ allReceived = false; steps.push({ text:`Чекаємо ${escapeHtml(name)}`, sub:orderDeliveryText(order) || "Доставка", label:"Отримано", action:`openOrderSheet('${order.id}','receive')` }); }
+      else if(missing){ allReceived = false; steps.push({ text:`${escapeHtml(name)}: не довезли ${missing} поз.`, sub:"Уточніть строки", label:"Довезли", action:`openOrderSheet('${order.id}','receive')` }); }
+      if(order && Number(order.pendingRefund) > 0.5) steps.push({ text:`${escapeHtml(name)} має повернути ${money(order.pendingRefund)}`, sub:"За повернення або обмін", label:"Повернули", action:`orderRefundReceived('${order.id}')` });
+    });
     const later = (p.positions || []).filter(isBuyLaterPending).length;
     if(later) steps.push({ text:`Купити пізніше: ${later} поз.`, sub:"Магазин або за потреби", label:"Список", action:"setProjectTab('materials')" });
-    if(!toSend.length && steps.length < 3) steps.push({ text:"Матеріали на об’єкті?", sub:"Переходимо до робіт", label:"Почати роботи", action:`advanceProjectStage('${id}')`, primary:!unassigned });
+    if(allReceived && steps.length < 3) steps.push({ text:"Усе отримано", sub:"Переходимо до робіт", label:"Почати роботи", action:`advanceProjectStage('${id}')`, primary:!unassigned });
   }
 
   if(stage === "work"){
@@ -7448,6 +7501,439 @@ function renderWorksTab(p){
   `;
 }
 
+/* ==== Замовлення постачальнику як документ ====
+   Надіслано → Рахунок → Оплачено → Отримано. Повернення й обмін — у самому замовленні.
+   Рядки фіксуються при надсиланні; оплати й повернення пишуться у «Гроші → Витрати» з orderId. */
+const ORDER_STEPS = [["sent","Надіслано"],["invoiced","Рахунок"],["paid","Оплачено"],["received","Отримано"]];
+
+function projectOrders(project){
+  if(!Array.isArray(project.orders)) project.orders = [];
+  return project.orders;
+}
+
+function findOrder(project, supplierName){
+  const key = normalizeText(supplierName);
+  return projectOrders(project).find(order => normalizeText(order.supplierName) === key);
+}
+
+function liveOrderPositions(project, supplierName){
+  const key = normalizeText(supplierName);
+  return (project.positions || []).filter(position =>
+    position.type === "material" && positionOrderQty(position) > 0 && !isBuyLater(position) &&
+    normalizeText(getPositionPlannedSupplier(position)) === key);
+}
+
+function orderLineFromPosition(position){
+  const item = getPositionCatalogItem(position);
+  return {
+    positionId: position.id,
+    name: positionShortName(position),
+    fullName: cleanText((item && item.name) || position.fullName || position.name),
+    article: getPositionMaterialArticle(position),
+    qty: positionOrderQty(position),
+    unit: position.unit || "шт",
+    price: Number(position.purchasePrice) > 0 ? Number(position.purchasePrice) : 0,
+    received: true
+  };
+}
+
+function orderLineTotal(line){
+  return (Number(line.qty) || 0) * (Number(line.price) || 0);
+}
+
+function orderTotal(order){
+  return (order.lines || []).reduce((sum, line) => sum + orderLineTotal(line), 0);
+}
+
+function orderMoney(project, order){
+  const entries = moneyList(project, "expense").filter(entry => entry.orderId === order.id);
+  const paid = entries.filter(entry => Number(entry.amount) > 0).reduce((s, e) => s + Number(e.amount), 0);
+  const refunded = entries.filter(entry => Number(entry.amount) < 0).reduce((s, e) => s - Number(e.amount), 0);
+  return { paid, refunded, net: paid - refunded };
+}
+
+function orderEvent(order, text){
+  if(!Array.isArray(order.events)) order.events = [];
+  order.events.push({ at:new Date().toISOString(), text });
+}
+
+function orderMarkSent(project, supplierName){
+  let order = findOrder(project, supplierName);
+  const lines = liveOrderPositions(project, supplierName).map(orderLineFromPosition);
+  const delivery = getProcurementDelivery({ projectId:project.id, supplierName });
+  if(!order){
+    order = { id:uid("ord"), supplierName, status:"sent", createdAt:new Date().toISOString(), lines:[], events:[], pendingRefund:0 };
+    projectOrders(project).push(order);
+  }
+  order.lines = lines;
+  order.sentAt = new Date().toISOString();
+  order.delivery = { ...delivery };
+  if(!order.status || order.status === "draft") order.status = "sent";
+  orderEvent(order, `Надіслано замовлення: ${lines.length} поз. на ${money(orderTotal(order))}`);
+}
+
+function orderStepIndex(order){
+  return order ? ORDER_STEPS.findIndex(step => step[0] === order.status) : -1;
+}
+
+function orderDeliveryText(order){
+  const d = order && order.delivery;
+  if(!d) return "";
+  if(!d.date) return d.kind === "pickup" ? "Самовивіз" : "";
+  const date = new Date(d.date + "T12:00:00");
+  return `${d.kind === "pickup" ? "Самовивіз" : "Доставка"}: ${Number.isNaN(date.getTime()) ? d.date : new Intl.DateTimeFormat("uk-UA", { weekday:"short", day:"numeric", month:"short" }).format(date)}`;
+}
+
+function orderSupplierNames(project){
+  const names = new Map();
+  getProcurementRequestSupplierNames(project).forEach(name => names.set(normalizeText(name), name));
+  projectOrders(project).forEach(order => names.set(normalizeText(order.supplierName), order.supplierName));
+  return Array.from(names.values()).sort((a, b) => a.localeCompare(b, "uk"));
+}
+
+function renderOrderCard(project, supplierName){
+  const order = findOrder(project, supplierName);
+  const enc = encodeURIComponent(supplierName);
+  const live = liveOrderPositions(project, supplierName);
+  const lines = order ? order.lines : live.map(orderLineFromPosition);
+  const total = order ? orderTotal(order) : lines.reduce((s, l) => s + orderLineTotal(l), 0);
+  const step = orderStepIndex(order);
+  const m = order ? orderMoney(project, order) : { paid:0, refunded:0, net:0 };
+  const notes = [];
+  if(order && order.invoiceAmount && Math.abs(order.invoiceAmount - total) >= 1){
+    const diff = order.invoiceAmount - total;
+    notes.push(`<div class="orderNote warn">Рахунок ${money(order.invoiceAmount)} — ${diff > 0 ? "більше" : "менше"} за замовлення на ${money(Math.abs(diff))}</div>`);
+  }
+  if(order && Number(order.pendingRefund) > 0.5) notes.push(`<div class="orderNote warn">Очікуємо повернення грошей: ${money(order.pendingRefund)}</div>`);
+  if(order && Number(order.pendingPayment) > 0.5) notes.push(`<div class="orderNote warn">Доплатити за обмін: ${money(order.pendingPayment)}</div>`);
+  const missing = order ? order.lines.filter(line => line.received === false) : [];
+  if(missing.length) notes.push(`<div class="orderNote warn">Не привезли: ${missing.map(l => escapeHtml(l.name)).join(", ")}</div>`);
+  if(order && order.sentAt && live.length && live.some(position => !order.lines.some(line => line.positionId === position.id && Math.abs(line.qty - positionOrderQty(position)) < 0.001)) && step < 2){
+    notes.push(`<div class="orderNote">Список змінився після надсилання — можна надіслати оновлений</div>`);
+  }
+
+  let action = "";
+  if(!order) action = `<button type="button" class="primary" onclick="openProcurementRequest(decodeURIComponent('${enc}'))">Надіслати замовлення</button>`;
+  else if(order.status === "sent") action = `<button type="button" class="primary" onclick="orderAskInvoice('${order.id}')">Внести рахунок</button>`;
+  else if(order.status === "invoiced") action = `<button type="button" class="primary" onclick="orderAskPaid('${order.id}')">Оплачено</button>`;
+  else if(order.status === "paid") action = `<button type="button" class="primary" onclick="openOrderSheet('${order.id}','receive')">Отримано</button>`;
+  else if(missing.length) action = `<button type="button" class="primary" onclick="openOrderSheet('${order.id}','receive')">Довезли решту</button>`;
+  else action = `<button type="button" onclick="openOrderSheet('${order.id}','lines')">Позиції</button>`;
+
+  return `
+    <section class="orderCard">
+      <button type="button" class="orderTop" onclick="${order ? `openOrderSheet('${order.id}','lines')` : `openProcurementRequest(decodeURIComponent('${enc}'))`}">
+        <span>
+          <span class="orderName">${escapeHtml(supplierName)}</span>
+          <span class="orderMeta" style="display:block">${lines.length} поз.${order && orderDeliveryText(order) ? " · " + escapeHtml(orderDeliveryText(order)) : ""}${m.net ? ` · оплачено ${money(m.net)}` : ""}</span>
+        </span>
+        <span class="orderSum">${money(total)}</span>
+      </button>
+      <div class="orderSteps">${ORDER_STEPS.map((s, i) => `<span class="orderStep ${i < step || (i === step && !(s[0] === "received" && missing.length)) ? "done" : i === step + 1 ? "now" : ""}">${s[1]}</span>`).join("")}</div>
+      ${notes.join("")}
+      <div class="orderActions">
+        ${action}
+        ${order ? `<button type="button" class="more" onclick="openOrderSheet('${order.id}','menu')" aria-label="Повернення, обмін, історія">⋯</button>` : ""}
+      </div>
+    </section>
+  `;
+}
+
+/* Замовлення, надіслані до появи документів, стають документами зі статусом «Надіслано». */
+function migrateSentOrders(project){
+  const sent = project.ordersSent || {};
+  let changed = false;
+  getProcurementRequestSupplierNames(project).forEach(name => {
+    const key = normalizeText(name);
+    if(sent[key] && !findOrder(project, name)){
+      const order = { id:uid("ord"), supplierName:name, status:"sent", createdAt:sent[key], sentAt:sent[key], lines:liveOrderPositions(project, name).map(orderLineFromPosition), events:[{ at:sent[key], text:"Надіслано замовлення" }], pendingRefund:0, delivery:{ ...getProcurementDelivery({ projectId:project.id, supplierName:name }) } };
+      projectOrders(project).push(order);
+      changed = true;
+    }
+  });
+  if(changed) setTimeout(saveProjects, 0);
+}
+
+function renderOrdersBlock(project){
+  migrateSentOrders(project);
+  const stage = project.stage || "estimate";
+  const names = orderSupplierNames(project);
+  if(stage === "estimate" && !projectOrders(project).length) return "";
+  if(!names.length) return "";
+  return `<div class="ordersBlock"><div class="ordersTitle">Замовлення постачальникам</div>${names.map(name => renderOrderCard(project, name)).join("")}</div>`;
+}
+
+function getOrderById(orderId){
+  const project = projects.find(item => item.id === currentProjectId);
+  const order = project && projectOrders(project).find(item => item.id === orderId);
+  return { project, order };
+}
+
+function parseMoneyInput(raw){
+  const value = Number(String(raw ?? "").replace(/\s/g, "").replace(",", "."));
+  return Number.isFinite(value) ? Math.round(value * 100) / 100 : NaN;
+}
+
+function orderAskInvoice(orderId){
+  const { project, order } = getOrderById(orderId);
+  if(!order) return;
+  const total = orderTotal(order);
+  const raw = prompt(`Сума рахунку від «${order.supplierName}», ₴\n\nЗа замовленням: ${moneyWithCents(total)}`, String(Math.round(total * 100) / 100).replace(".", ","));
+  if(raw === null) return;
+  const amount = parseMoneyInput(raw);
+  if(!(amount > 0)){ toast("Впишіть суму рахунку"); return; }
+  order.invoiceAmount = amount;
+  order.invoicedAt = new Date().toISOString();
+  order.status = "invoiced";
+  orderEvent(order, `Рахунок: ${moneyWithCents(amount)}${Math.abs(amount - total) >= 1 ? ` (замовлення ${moneyWithCents(total)})` : ""}`);
+  touchProject(project);
+  render();
+  toast(Math.abs(amount - total) >= 1 ? `Рахунок відрізняється на ${money(Math.abs(amount - total))} — перевірте` : "Рахунок збігається із замовленням ✓", 3200);
+}
+
+function orderAskPaid(orderId){
+  const { project, order } = getOrderById(orderId);
+  if(!order) return;
+  const due = Math.max(0, (order.invoiceAmount || orderTotal(order)) - orderMoney(project, order).net);
+  const raw = prompt(`Скільки заплатили «${order.supplierName}», ₴?`, String(Math.round(due * 100) / 100).replace(".", ","));
+  if(raw === null) return;
+  const amount = parseMoneyInput(raw);
+  if(!(amount > 0)){ toast("Впишіть суму"); return; }
+  moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount, note:`${order.supplierName} — оплата замовлення`, orderId:order.id });
+  order.paidAt = new Date().toISOString();
+  order.status = "paid";
+  orderEvent(order, `Оплачено ${moneyWithCents(amount)} (записано у «Гроші»)`);
+  touchProject(project);
+  render();
+  toast("Оплату записано у витрати об’єкта");
+}
+
+/* ---- аркуш замовлення: позиції / отримання / повернення / обмін / історія ---- */
+let orderSheetState = null;
+
+function closeOrderSheet(){
+  document.getElementById("orderSheet").classList.remove("open");
+  orderSheetState = null;
+}
+
+function openOrderSheet(orderId, mode, lineIndex){
+  orderSheetState = { orderId, mode, lineIndex, dest:"supplier", refunded:false };
+  renderOrderSheet();
+  document.getElementById("orderSheet").classList.add("open");
+}
+
+function orderLineRow(order, line, index, extra){
+  return `
+    <div class="orderLine">
+      ${extra && extra.check !== undefined ? `<input type="checkbox" id="orderRecv_${index}" ${extra.check ? "checked" : ""} aria-label="Отримано">` : ""}
+      <span class="nm">${escapeHtml(line.name)}<small>${line.article ? "арт. " + escapeHtml(line.article) + " · " : ""}${line.price ? moneyWithCents(line.price) + " / " + escapeHtml(line.unit) : "ціна не вказана"}${line.note ? " · " + escapeHtml(line.note) : ""}</small></span>
+      <span class="q">${formatQty(line.qty)} ${escapeHtml(line.unit)}</span>
+      ${extra && extra.buttons ? `<button type="button" onclick="openOrderSheet('${order.id}','return',${index})">Повернути</button><button type="button" onclick="openOrderSheet('${order.id}','exchange',${index})">Обміняти</button>` : ""}
+    </div>`;
+}
+
+function renderOrderSheet(){
+  const st = orderSheetState;
+  if(!st) return;
+  const { project, order } = getOrderById(st.orderId);
+  if(!order){ closeOrderSheet(); return; }
+  const title = document.getElementById("orderSheetTitle");
+  const body = document.getElementById("orderSheetBody");
+  const footer = document.getElementById("orderSheetFooter");
+  const m = orderMoney(project, order);
+  title.textContent = order.supplierName;
+  footer.innerHTML = `<button class="btnPrimary" onclick="closeOrderSheet()">Готово</button>`;
+
+  if(st.mode === "menu" || st.mode === "lines"){
+    body.innerHTML = `
+      <div class="formHint" style="margin:0 0 .5rem">Замовлення ${money(orderTotal(order))}${order.invoiceAmount ? ` · рахунок ${money(order.invoiceAmount)}` : ""} · оплачено ${money(m.net)}${m.refunded ? ` (повернуто ${money(m.refunded)})` : ""}</div>
+      <div class="formHint" style="margin:0 0 .25rem;font-weight:700">Позиції — повернути або обміняти</div>
+      ${order.lines.map((line, i) => orderLineRow(order, line, i, { buttons:true })).join("") || `<div class="formHint">Позицій немає</div>`}
+      ${Number(order.pendingRefund) > 0.5 ? `<button type="button" class="addPersonButton" style="margin-top:.75rem" onclick="orderRefundReceived('${order.id}')">Постачальник повернув ${money(order.pendingRefund)}</button>` : ""}
+      ${Number(order.pendingPayment) > 0.5 ? `<button type="button" class="addPersonButton" style="margin-top:.5rem" onclick="orderExtraPaid('${order.id}')">Доплатив ${money(order.pendingPayment)} за обмін</button>` : ""}
+      <div class="formHint" style="margin:1rem 0 .25rem;font-weight:700">Історія</div>
+      ${(order.events || []).slice().reverse().map(e => `<div class="orderEvent"><b>${escapeHtml(cloudTime(e.at))}</b> — ${escapeHtml(e.text)}</div>`).join("") || `<div class="formHint">Поки порожньо</div>`}
+      ${order.status === "sent" || order.status === "invoiced" ? `<button type="button" class="addPersonButton" style="margin-top:1rem;background:rgba(120,120,128,.12);color:var(--ts)" onclick="closeOrderSheet();openProcurementRequest(decodeURIComponent('${encodeURIComponent(order.supplierName)}'))">Надіслати оновлене замовлення</button>` : ""}
+    `;
+    return;
+  }
+
+  if(st.mode === "receive"){
+    body.innerHTML = `
+      <div class="formHint" style="margin:0 0 .5rem">Зніміть галочку з того, чого не привезли. Воно лишиться в замовленні з позначкою «чекаємо».</div>
+      ${order.lines.map((line, i) => orderLineRow(order, line, i, { check: line.received !== false || order.status !== "received" })).join("")}
+    `;
+    footer.innerHTML = `<button class="btnPrimary" onclick="orderSaveReceived('${order.id}')">Зберегти</button>`;
+    return;
+  }
+
+  const line = order.lines[st.lineIndex];
+  if(!line){ st.mode = "lines"; renderOrderSheet(); return; }
+
+  if(st.mode === "return"){
+    body.innerHTML = `
+      ${orderLineRow(order, line, st.lineIndex)}
+      <div class="orderForm">
+        <label for="orderRetQty">Скільки повертаємо, ${escapeHtml(line.unit)}</label>
+        <input class="formInput" id="orderRetQty" inputmode="decimal" value="${formatQty(line.qty)}">
+        <label>Куди</label>
+        <div class="orderChoice">
+          <button type="button" class="${st.dest === "supplier" ? "active" : ""}" onclick="orderSheetState.dest='supplier';renderOrderSheet()">Постачальнику</button>
+          <button type="button" class="${st.dest === "stock" ? "active" : ""}" onclick="orderSheetState.dest='stock';renderOrderSheet()">Собі на склад</button>
+        </div>
+        ${st.dest === "supplier" ? `
+        <label>Гроші</label>
+        <div class="orderChoice">
+          <button type="button" class="${!st.refunded ? "active" : ""}" onclick="orderSheetState.refunded=false;renderOrderSheet()">Ще не повернули</button>
+          <button type="button" class="${st.refunded ? "active" : ""}" onclick="orderSheetState.refunded=true;renderOrderSheet()">Вже повернули</button>
+        </div>` : ""}
+        <label for="orderRetNote">Причина (необов’язково)</label>
+        <input class="formInput" id="orderRetNote" placeholder="наприклад: замінили на SmartBox" autocomplete="off">
+        <div class="formHint">Позиція зменшиться в кошторисі. Погоджена клієнтом сума не зміниться — якщо клієнту треба повернути гроші, натисніть потім «⋯ → Клієнт погодив нову версію».</div>
+      </div>`;
+    footer.innerHTML = `<button class="btnGhost" onclick="openOrderSheet('${order.id}','lines')">Назад</button><button class="btnPrimary" onclick="orderSaveReturn('${order.id}',${st.lineIndex})">Повернути</button>`;
+    return;
+  }
+
+  if(st.mode === "exchange"){
+    const pos = (project.positions || []).find(x => x.id === line.positionId);
+    body.innerHTML = `
+      ${orderLineRow(order, line, st.lineIndex)}
+      <div class="orderForm">
+        <div class="formHint" style="margin:0">Стара позиція повернеться постачальнику, нова стане на її місце в кошторисі й замовленні.</div>
+        <label for="orderExName">Що беремо замість</label>
+        <input class="formInput" id="orderExName" placeholder="наприклад: Grohe SmartBox" autocomplete="off">
+        <label for="orderExQty">Кількість, ${escapeHtml(line.unit)}</label>
+        <input class="formInput" id="orderExQty" inputmode="decimal" value="${formatQty(line.qty)}">
+        <label for="orderExPrice">Ціна для клієнта за 1, ₴</label>
+        <input class="formInput" id="orderExPrice" inputmode="decimal" value="${pos && pos.price ? String(Math.round(pos.price * 100) / 100).replace(".", ",") : ""}">
+        <label for="orderExPurchase">Закупка за 1, ₴ (0 — якщо зі складу)</label>
+        <input class="formInput" id="orderExPurchase" inputmode="decimal" value="">
+      </div>`;
+    footer.innerHTML = `<button class="btnGhost" onclick="openOrderSheet('${order.id}','lines')">Назад</button><button class="btnPrimary" onclick="orderSaveExchange('${order.id}',${st.lineIndex})">Обміняти</button>`;
+  }
+}
+
+function orderSaveReceived(orderId){
+  const { project, order } = getOrderById(orderId);
+  if(!order) return;
+  const missing = [];
+  order.lines.forEach((line, i) => {
+    const box = document.getElementById("orderRecv_" + i);
+    line.received = box ? box.checked : true;
+    if(!line.received) missing.push(line.name);
+  });
+  order.status = "received";
+  order.receivedAt = new Date().toISOString();
+  orderEvent(order, missing.length ? `Отримано частково, чекаємо: ${missing.join(", ")}` : "Отримано повністю");
+  touchProject(project);
+  closeOrderSheet();
+  render();
+  toast(missing.length ? `Чекаємо ${missing.length} поз.` : "Замовлення отримано ✓");
+}
+
+function orderSaveReturn(orderId, index){
+  const { project, order } = getOrderById(orderId);
+  const line = order && order.lines[index];
+  if(!line) return;
+  const qty = Math.min(line.qty, Math.max(0, parseMoneyInput(document.getElementById("orderRetQty").value) || 0));
+  if(!(qty > 0)){ toast("Вкажіть кількість"); return; }
+  const note = cleanText(document.getElementById("orderRetNote").value);
+  const dest = orderSheetState.dest;
+  const amount = Math.round(qty * (Number(line.price) || 0) * 100) / 100;
+
+  const pos = (project.positions || []).find(x => x.id === line.positionId);
+  if(pos){
+    pos.qty = roundQty(Math.max(0, (Number(pos.qty) || 0) - qty));
+    if(positionStockQty(pos) > pos.qty) pos.fromStockQty = pos.qty;
+    if(pos.qty <= 0) project.positions = project.positions.filter(x => x.id !== pos.id);
+  }
+  line.qty = roundQty(line.qty - qty);
+  if(line.qty <= 0) order.lines.splice(index, 1);
+
+  if(dest === "supplier" && amount > 0){
+    if(orderSheetState.refunded){
+      moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:-amount, note:`Повернення: ${line.name} — ${order.supplierName}`, orderId:order.id });
+    }else{
+      order.pendingRefund = Math.round(((Number(order.pendingRefund) || 0) + amount) * 100) / 100;
+    }
+  }
+  orderEvent(order, `Повернення ${formatQty(qty)} ${line.unit} «${line.name}» ${dest === "stock" ? "на склад" : "постачальнику"}${dest === "supplier" && amount ? ` (${moneyWithCents(amount)}${orderSheetState.refunded ? ", гроші повернули" : ", чекаємо гроші"})` : ""}${note ? " — " + note : ""}`);
+  touchProject(project);
+  openOrderSheet(order.id, "lines");
+  render();
+  toast("Повернення записано");
+}
+
+function orderRefundReceived(orderId){
+  const { project, order } = getOrderById(orderId);
+  if(!order || !(order.pendingRefund > 0)) return;
+  moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:-order.pendingRefund, note:`Повернення від ${order.supplierName}`, orderId:order.id });
+  orderEvent(order, `Постачальник повернув ${moneyWithCents(order.pendingRefund)}`);
+  order.pendingRefund = 0;
+  touchProject(project);
+  renderOrderSheet();
+  render();
+  toast("Записано у «Гроші»");
+}
+
+function orderExtraPaid(orderId){
+  const { project, order } = getOrderById(orderId);
+  if(!order || !(order.pendingPayment > 0)) return;
+  moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:order.pendingPayment, note:`${order.supplierName} — доплата за обмін`, orderId:order.id });
+  orderEvent(order, `Доплачено ${moneyWithCents(order.pendingPayment)} за обмін`);
+  order.pendingPayment = 0;
+  touchProject(project);
+  renderOrderSheet();
+  render();
+}
+
+function orderSaveExchange(orderId, index){
+  const { project, order } = getOrderById(orderId);
+  const line = order && order.lines[index];
+  if(!line) return;
+  const name = cleanText(document.getElementById("orderExName").value);
+  const qty = parseMoneyInput(document.getElementById("orderExQty").value);
+  const price = parseMoneyInput(document.getElementById("orderExPrice").value) || 0;
+  const purchase = parseMoneyInput(document.getElementById("orderExPurchase").value) || 0;
+  if(!name){ toast("Впишіть, що беремо замість"); return; }
+  if(!(qty > 0)){ toast("Вкажіть кількість"); return; }
+
+  const oldPos = (project.positions || []).find(x => x.id === line.positionId);
+  const oldAmount = Math.round(line.qty * (Number(line.price) || 0) * 100) / 100;
+  const newAmount = Math.round(qty * purchase * 100) / 100;
+
+  const newPos = {
+    id: uid("pos"), type:"material", name, fullName:name, unit:line.unit, qty:roundQty(qty), price,
+    purchasePrice: purchase > 0 ? purchase : null, purchasePriceState: purchase > 0 ? "confirmed" : "",
+    plannedSupplierName: purchase > 0 ? order.supplierName : "",
+    category: oldPos ? getPositionMaterialCategory(oldPos) : "other",
+    noDiscount: oldPos ? Boolean(oldPos.noDiscount) : true,
+    replacedFrom: line.name
+  };
+  if(!(purchase > 0)) newPos.fromStockQty = newPos.qty;
+  if(oldPos){
+    const at = project.positions.indexOf(oldPos);
+    project.positions.splice(at, 1, newPos);
+  }else{
+    project.positions.push(newPos);
+  }
+
+  const diff = Math.round((newAmount - oldAmount) * 100) / 100;
+  if(purchase > 0){
+    order.lines.splice(index, 1, { positionId:newPos.id, name, fullName:name, article:"", qty:newPos.qty, unit:line.unit, price:purchase, received:true, note:`замість ${line.name}` });
+  }else{
+    order.lines.splice(index, 1);
+  }
+  if(diff < 0) order.pendingRefund = Math.round(((Number(order.pendingRefund) || 0) - diff) * 100) / 100;
+  if(diff > 0) order.pendingPayment = Math.round(((Number(order.pendingPayment) || 0) + diff) * 100) / 100;
+  orderEvent(order, `Обмін: «${line.name}» → «${name}»${purchase > 0 ? "" : " (зі складу)"}${diff ? ` · ${diff < 0 ? "до повернення" : "доплатити"} ${moneyWithCents(Math.abs(diff))}` : ""}`);
+  touchProject(project);
+  openOrderSheet(order.id, "lines");
+  render();
+  toast("Обмін записано. Якщо змінилась сума для клієнта — «⋯ → Клієнт погодив нову версію»", 4200);
+}
+
 function renderMaterialsTab(p){
   const materials = (p.positions || []).filter(x => x.type === "material" && !x.buyLaterOnly);
   const percent = getMaterialsDiscountPercent(p);
@@ -7458,6 +7944,7 @@ function renderMaterialsTab(p){
         <button type="button" onclick="openStockPick()">▣ Склад</button>
         <button type="button" onclick="openBuyLaterForm()">🛒 Докупити</button>
       </div>` : ""}
+    ${renderOrdersBlock(p)}
     <div class="estimateBlock">
       ${renderBuyLater(p)}
       ${renderProcurementIssues(getProcurementIssues(p), p)}
@@ -10357,6 +10844,7 @@ async function shareProcurementOrderFile(){
     if(!project) return;
     if(!project.ordersSent || typeof project.ordersSent !== "object") project.ordersSent = {};
     project.ordersSent[normalizeText(draft.supplierName)] = new Date().toISOString();
+    orderMarkSent(project, draft.supplierName);
     touchProject(project);
     render();
   };
