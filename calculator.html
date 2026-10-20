@@ -1336,7 +1336,10 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .moneySection{margin-top:.75rem}
 .moneySectionHead{display:flex;justify-content:space-between;align-items:center;font-size:.75rem;font-weight:800;color:var(--tm);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.25rem}
 .moneyRow{display:flex;align-items:center;gap:.5rem;padding:.4375rem 0;border-top:1px solid rgba(120,120,128,.14);font-size:.8125rem}
-.moneyRow .what{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.moneyRow .what{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;cursor:pointer}
+.moneyRow .sum{cursor:pointer}
+.moneyRow.editing{background:rgba(10,108,214,.08);border-radius:.5rem}
+.moneyForm button.ghost{background:rgba(120,120,128,.14);color:var(--t)}
 .moneyRow .what small{display:block;color:var(--tm);font-size:.6875rem;font-weight:600}
 .moneyRow .sum{flex:0 0 auto;font-weight:800;font-variant-numeric:tabular-nums}
 .moneyRow .del{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:.5rem;color:var(--tm);font-size:1rem}
@@ -6777,9 +6780,6 @@ function renderRevision(){
       <div><span>Зараз у клієнта (${formatQuoteDate(approved.at)})</span><b>${money(approved.total)}</b></div>
       ${revision.selected.size ? `<div class="big"><span>Стане</span><b>${money(draft.total)}</b></div>` : ""}
     </div>
-    <div class="opStep"><span class="opLabel">Заголовок документа</span>
-      <div class="opChips"><button type="button" class="opChip ${revision.factual ? "" : "active"}" onclick="revision.factual=false;renderRevision()">Кошторис</button><button type="button" class="opChip ${revision.factual ? "active" : ""}" onclick="revision.factual=true;renderRevision()">Фактичний кошторис</button></div>
-    </div>
     <div class="onbSpacer"></div>
     ${revision.selected.size ? `<button type="button" class="onbPrimary" onclick="revisionApprove()">Зберегти в кошторис клієнта · ${revision.selected.size}</button>
     <button type="button" class="onbLink" onclick="revisionPreview()">Спершу глянути документ</button>` : `<button type="button" class="onbPrimary" onclick="revisionPreview()">Показати / надіслати клієнту</button>`}
@@ -6790,7 +6790,7 @@ function revisionPreview(){
   const project = revision && projects.find(x => x.id === revision.projectId);
   if(!project) return;
   quoteDraft = buildRevisionSnapshot(project, revision.selected);
-  quoteDraft.factual = revision.factual;
+  quoteDraft.factual = isFactualStage(project);
   if(!revision.selected.size) quoteDraft.at = getApproved(project).at;
   quoteMode = "all";
   document.getElementById("revisionScreen")?.classList.remove("open");
@@ -7274,6 +7274,7 @@ function toggleMoneyBlock(){
 
 function openMoneyForm(kind){
   moneyExpanded = true;
+  moneyEditId = "";
   moneyFormOpen = moneyFormOpen === kind ? "" : kind;
   render();
   if(moneyFormOpen) setTimeout(() => document.getElementById("moneyAmount")?.focus(), 60);
@@ -7294,6 +7295,19 @@ function addMoneyEntry(kind){
   if(!project) return;
   const amount = Number(String(document.getElementById("moneyAmount")?.value || "").replace(/\s/g, "").replace(",", "."));
   if(!Number.isFinite(amount) || amount === 0){ toast("Впишіть суму"); return; }
+  const editing = moneyEditId && moneyList(project, kind).find(e => e.id === moneyEditId);
+  if(editing){
+    editing.date = document.getElementById("moneyDate")?.value || editing.date;
+    editing.amount = Math.round(amount * 100) / 100;
+    if(kind === "expense") editing.to = cleanText(document.getElementById("moneyTo")?.value) || undefined;
+    editing.note = cleanText(document.getElementById("moneyNote")?.value);
+    moneyEditId = "";
+    moneyFormOpen = "";
+    touchProject(project);
+    render();
+    toast("Змінено");
+    return;
+  }
   moneyList(project, kind).push({
     id: uid(kind === "payment" ? "pay" : "exp"),
     date: document.getElementById("moneyDate")?.value || todayIso(),
@@ -7305,6 +7319,26 @@ function addMoneyEntry(kind){
   touchProject(project);
   render();
   toast(kind === "payment" ? "Оплату записано" : "Витрату записано");
+}
+
+let moneyEditId = "";
+function editMoneyEntry(kind, id){
+  const project = projects.find(item => item.id === currentProjectId);
+  const entry = project && moneyList(project, kind).find(e => e.id === id);
+  if(!entry) return;
+  if(Date.now() - lastScrollAt < 450) return;
+  moneyExpanded = true;
+  moneyFormOpen = kind;
+  moneyEditId = id;
+  render();
+  setTimeout(() => {
+    const set = (elId, v) => { const el = document.getElementById(elId); if(el) el.value = v; };
+    set("moneyAmount", String(entry.amount));
+    set("moneyDate", entry.date || todayIso());
+    set("moneyTo", entry.to || "");
+    set("moneyNote", entry.note || "");
+    document.querySelector(".moneyForm")?.scrollIntoView({ block:"center", behavior:"smooth" });
+  }, 30);
 }
 
 function removeMoneyEntry(kind, id){
@@ -7329,9 +7363,9 @@ function renderMoneyBlock(project, inTab){
   const onHand = received - spent;
   const sorted = list => list.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const row = (kind, entry) => `
-    <div class="moneyRow">
-      <span class="what">${escapeHtml(entry.to || entry.note || (kind === "payment" ? "Оплата" : "Витрата"))}<small>${shortDate(entry.date)}${entry.to && entry.note ? ` · ${escapeHtml(entry.note)}` : ""}</small></span>
-      <span class="sum">${(kind === "payment") === (Number(entry.amount) >= 0) ? "+" : "−"}${money(Math.abs(Number(entry.amount) || 0))}</span>
+    <div class="moneyRow ${moneyEditId === entry.id ? "editing" : ""}">
+      <span class="what" onclick="editMoneyEntry('${kind}','${escapeHtml(entry.id)}')">${escapeHtml(entry.to || entry.note || (kind === "payment" ? "Оплата" : "Витрата"))}<small>${shortDate(entry.date)}${entry.to && entry.note ? ` · ${escapeHtml(entry.note)}` : ""}</small></span>
+      <span class="sum" onclick="editMoneyEntry('${kind}','${escapeHtml(entry.id)}')">${(kind === "payment") === (Number(entry.amount) >= 0) ? "+" : "−"}${money(Math.abs(Number(entry.amount) || 0))}</span>
       <button type="button" class="del" onclick="removeMoneyEntry('${kind}','${escapeHtml(entry.id)}')" aria-label="Видалити">×</button>
     </div>`;
   const form = kind => moneyFormOpen === kind ? `
@@ -7340,7 +7374,8 @@ function renderMoneyBlock(project, inTab){
       <input id="moneyDate" class="date" type="date" value="${todayIso()}">
       ${kind === "expense" ? `<input id="moneyTo" type="text" list="moneyToList" placeholder="Кому: Енерготрейд, ринок, Толік…" autocomplete="off" style="flex:1 1 100%"><datalist id="moneyToList">${moneyToSuggestions(project).map(name => `<option value="${escapeHtml(name)}"></option>`).join("")}</datalist>` : ""}
       <input id="moneyNote" type="text" placeholder="${kind === "payment" ? "За що: аванс, матеріали, етап…" : "Коментар: за що, № рахунку…"}" autocomplete="off" style="flex:1 1 100%" onkeydown="if(event.key==='Enter')addMoneyEntry('${kind}')">
-      <button type="button" onclick="addMoneyEntry('${kind}')">Записати</button>
+      <button type="button" onclick="addMoneyEntry('${kind}')">${moneyEditId ? "Зберегти зміни" : "Записати"}</button>
+      ${moneyEditId ? `<button type="button" class="ghost" onclick="moneyEditId='';moneyFormOpen='';render()">Скасувати</button>` : ""}
       <div class="formHint" style="margin:0;grid-column:1/-1">${kind === "payment" ? "Повернули клієнту — пишіть суму з мінусом." : "Повернення від постачальника — сума з мінусом, напр. −5268."}</div>
     </div>` : "";
 
@@ -7647,9 +7682,16 @@ function setQuoteMode(mode){
   renderQuotePreview();
 }
 
+/* Після завершення робіт документ для клієнта — «Фактичний кошторис». */
+function isFactualStage(project){
+  return ["done", "closed"].includes(project && project.stage);
+}
+
 function quoteModeTitle(){
+  const current = projects.find(item => item.id === currentProjectId);
+  const factual = quoteDraft ? quoteDraft.factual : Boolean(getApproved(current) && isFactualStage(current));
   const base = quoteMode === "works" ? "Кошторис на роботи" : quoteMode === "materials" ? "Кошторис на матеріали" : "Кошторис";
-  return quoteDraft && quoteDraft.factual ? "Фактичний " + base.charAt(0).toLowerCase() + base.slice(1) : base;
+  return factual ? "Фактичний " + base.charAt(0).toLowerCase() + base.slice(1) : base;
 }
 
 function renderQuotePreview(){
@@ -8797,8 +8839,7 @@ function renderApprovedBanner(project){
       <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис для клієнта оновлено" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}</div>
       ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · за цінами для клієнта це ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
       ${changes.added.length ? `<div class="approvedBannerRemoved">Додано: ${changes.added.map(item => escapeHtml(item.clientName || positionClientName(item) || item.name || "")).join(", ")}</div>` : ""}
-      ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>
-      <div class="approvedBannerActions"><button type="button" class="soft" onclick="restoreRemovedPositions('${project.id}')">↩ Повернути прибране — взяв зі складу</button></div>` : ""}
+      ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>` : ""}
       <div class="approvedBannerActions"><button type="button" class="${parts.length ? "" : "soft"}" onclick="openRevision('${project.id}')">📄 Кошторис для клієнта${parts.length ? " · є зміни" : ""}</button></div>
     </section>
   `;
@@ -8983,7 +9024,7 @@ function renderPosition(projectId, pos){
   const note = approvedQtyNote(rowProject, pos);
 
   return `
-    <button type="button" class="posRow" data-position-id="${escapeHtml(pos.id)}" onclick="openSinglePriceEditor('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')">
+    <button type="button" class="posRow" data-position-id="${escapeHtml(pos.id)}" onclick="tapPosition('${escapeHtml(projectId)}','${escapeHtml(pos.id)}')">
       <span class="posMain">
         <span class="posName">${escapeHtml(positionShortName(pos))}</span>
         <span class="posMeta">
@@ -9004,6 +9045,9 @@ function setDiscountPercent(type, value){
 
   const num = Number(value) || 0;
   const key = type === "work" ? "workDiscount" : "materialDiscount";
+  const current = type === "work" ? getWorksDiscountPercent(project) : getMaterialsDiscountPercent(project);
+  if(num === current) return;
+  if(!confirm(`Змінити знижку на ${type === "work" ? "роботи" : "матеріали"}: ${current}% → ${num}%?`)) return;
   project[key] = (num > 0 && num < 100) ? num : 0;
   project.updatedAt = new Date().toISOString();
   saveProjects();
@@ -10993,6 +11037,14 @@ function deletePosition(projectId, positionId){
   saveProjects();
   render();
   toast("Видалено");
+}
+
+/* Запобіжник: дотик, яким гортали список, не відкриває позицію. */
+let lastScrollAt = 0;
+document.addEventListener("scroll", () => { lastScrollAt = Date.now(); }, true);
+function tapPosition(projectId, positionId){
+  if(Date.now() - lastScrollAt < 450) return;
+  openSinglePriceEditor(projectId, positionId);
 }
 
 function openSinglePriceEditor(projectId, positionId){
