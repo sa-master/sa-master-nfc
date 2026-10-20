@@ -1464,6 +1464,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 }
 .approvedBannerTitle{font-size:.75rem;font-weight:800;color:#1f7a3c}
 .approvedBannerText{margin-top:.25rem;font-size:.6875rem;line-height:1.35;color:var(--ts)}
+.approvedBannerActions{margin-top:.5rem}
+.approvedBannerActions button{width:100%;padding:.5625rem .75rem;border-radius:.75rem;background:#B76800;color:#fff;font-size:.8125rem;font-weight:800}
+.approvedBannerActions button.soft{background:rgba(183,104,0,.12);color:#B76800}
 .approvedBannerChanges{margin-top:.375rem;font-size:.6875rem;font-weight:700;color:#B76800}
 .approvedBannerRemoved{margin-top:.25rem;font-size:.6875rem;color:var(--tm);overflow-wrap:anywhere}
 .positionApprovedNote{display:block;margin-top:.125rem;font-size:.625rem;font-weight:750;color:#B76800}
@@ -6643,6 +6646,31 @@ function approveProject(project){
   saveProjects();
 }
 
+/* Позиції, які прибрали після погодження (бо взяли зі складу), повертаємо в кошторис
+   з тими ж цінами для клієнта й позначкою «все зі складу» — купувати їх не треба. */
+function restoreRemovedPositions(id){
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+  const removed = getApprovedChanges(p).removed;
+  if(!removed.length) return;
+  if(!Array.isArray(p.positions)) p.positions = [];
+  removed.forEach(item => {
+    const pos = { id:item.id, type:item.type, name:item.clientName, qty:item.qty, price:item.price, unit:item.unit || "шт" };
+    if(item.brand) pos.brand = item.brand;
+    if(item.noDiscount) pos.noDiscount = true;
+    if(item.type === "material") pos.fromStockQty = item.qty;
+    p.positions.push(pos);
+  });
+  touchProject(p);
+  render();
+  toast(`Повернуто ${removed.length} поз. · позначено «зі складу»`);
+}
+
+function reapproveProject(id){
+  actionsProjectId = id;
+  actionReapprove();
+}
+
 function actionReapprove(){
   const p = projects.find(x => x.id === actionsProjectId);
   if(!p) return;
@@ -8566,7 +8594,10 @@ function renderApprovedBanner(project){
     <section class="approvedBanner">
       <div class="approvedBannerTitle">✓ Погоджено з клієнтом ${formatQuoteDate(approved.at)} · ${money(approved.total)}</div>
       ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · за цінами для клієнта це ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
-      ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>` : ""}
+      ${changes.added.length ? `<div class="approvedBannerRemoved">Додано: ${changes.added.map(item => escapeHtml(item.clientName || positionClientName(item) || item.name || "")).join(", ")}</div>` : ""}
+      ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>
+      <div class="approvedBannerActions"><button type="button" class="soft" onclick="restoreRemovedPositions('${project.id}')">↩ Повернути прибране — взяв зі складу</button></div>` : ""}
+      ${Math.abs(diff) >= 1 ? `<div class="approvedBannerActions"><button type="button" onclick="reapproveProject('${project.id}')">Клієнт погодив — нова сума ${money(internalTotal)}</button></div>` : ""}
     </section>
   `;
 }
@@ -10771,6 +10802,8 @@ function openSinglePriceEditor(projectId, positionId){
   pricesPending = [pos];
   pricesSingleMode = true;
   const isMaterial = pos.type === "material";
+  const approvedSnap = getApproved(project);
+  const inApproved = Boolean(approvedSnap && approvedSnap.positions.some(entry => entry.id === pos.id));
   const item = getPositionCatalogItem(pos);
   const fullName = cleanText((item && item.name) || pos.fullName || "");
   document.querySelector("#pricesSheet .panelHead strong").textContent = isMaterial ? "Матеріал" : "Робота";
@@ -10812,7 +10845,8 @@ function openSinglePriceEditor(projectId, positionId){
           <button type="button" class="${pos.buyLater ? "on" : ""}" onclick="editorToggleBuyLater('${id}')">${pos.buyLater ? "✓ Докуплю сам" : "🛒 Докуплю сам"}</button>
         </div>` : ""}
 
-      <button type="button" class="posEditorDelete" onclick="editorDeletePosition('${escapeHtml(projectId)}','${id}')">Видалити з кошторису</button>
+      ${inApproved ? `<div class="formHint" style="margin:.25rem 0 0">Клієнт уже погодив цю позицію.${isMaterial ? " Взяли зі складу — натисніть «Беру зі складу», не видаляйте: клієнт за неї платить." : ""}</div>` : ""}
+      <button type="button" class="posEditorDelete" onclick="editorDeletePosition('${escapeHtml(projectId)}','${id}')">${inApproved ? "Клієнт відмовився — прибрати" : "Видалити з кошторису"}</button>
     </div>
   `;
 
@@ -10844,7 +10878,11 @@ function editorToggleBuyLater(positionId){
 function editorDeletePosition(projectId, positionId){
   const { position } = findCurrentPosition(positionId);
   if(!position) return;
-  if(!confirm(`Видалити «${positionShortName(position)}» з кошторису?`)) return;
+  const approvedP = getApproved(projects.find(p => p.id === projectId));
+  const wasApproved = approvedP && approvedP.positions.some(item => item.id === positionId);
+  if(!confirm(wasApproved
+    ? `Клієнт відмовився від «${positionShortName(position)}»?\n\nПозиція зникне з кошторису і з суми для клієнта (після «Клієнт погодив — нова сума»).\n\nЯкщо просто взяли зі складу — натисніть «Скасувати» і оберіть «Беру зі складу».`
+    : `Видалити «${positionShortName(position)}» з кошторису?`)) return;
   closePricesSheet();
   const project = projects.find(p => p.id === projectId);
   project.positions = project.positions.filter(p => p.id !== positionId);
