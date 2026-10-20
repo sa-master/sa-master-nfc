@@ -4092,9 +4092,9 @@ body.positionDragging{
         <div class="actionSheetText" id="actionStageText">Наступний етап</div>
       </div>
 
-      <div class="actionSheetRow hidden" id="actionReapproveRow" onclick="actionReapprove()">
-        <div class="actionSheetIcon">↻</div>
-        <div class="actionSheetText">Клієнт погодив нову версію</div>
+      <div class="actionSheetRow hidden" id="actionReapproveRow" onclick="actionOpenRevision()">
+        <div class="actionSheetIcon">📄</div>
+        <div class="actionSheetText">Кошторис для клієнта</div>
       </div>
 
       <div class="actionSheetRow" onclick="actionToggleUrgent()">
@@ -6810,6 +6810,13 @@ function revisionApprove(){
   render();
   renderRevision();
   toast("Кошторис для клієнта оновлено");
+}
+
+/* У меню «⋯» — той самий екран, що й кнопка в зеленому блоці: клієнт бачить лише те, що ви відмітите. */
+function actionOpenRevision(){
+  const id = actionsProjectId;
+  closeActionsSheet();
+  openRevision(id);
 }
 
 function reapproveProject(id){
@@ -14105,7 +14112,7 @@ function openActions(id){
     stageIcon.textContent = next[2];
   }
   const reapproveRow = document.getElementById("actionReapproveRow");
-  if(reapproveRow) reapproveRow.classList.toggle("hidden", !getApproved(p) || isArchived);
+  if(reapproveRow) reapproveRow.classList.add("hidden");
   if(isArchived){
     document.getElementById("actionArchiveText").textContent = "Відновити з архіву";
     document.getElementById("actionArchiveIcon").textContent = "📂";
