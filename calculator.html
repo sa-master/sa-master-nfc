@@ -3031,6 +3031,11 @@ body.positionDragging{
 .quoteSectionSubtotal{font-weight:600 !important;color:#6b7178}
 .quoteSectionSubtotal span:last-child{font-weight:600}
 .quoteSectionDiscount,.quoteSectionDiscount span{color:#207a42 !important}
+.quoteSummary{margin:1.125rem 1.125rem 0;padding-top:.75rem;border-top:1px solid #d9dde2;font-size:.8125rem;color:#4b5563}
+.quoteSummary div{display:flex;justify-content:space-between;padding:.1875rem 0}
+.quoteSummary span:last-child{font-weight:700;color:#171717;white-space:nowrap}
+.quoteSummary .sum{font-weight:800;color:#171717}
+.quotePdfExport .quoteSummary{margin-left:2.5rem;margin-right:2.5rem;font-size:1rem}
 .quoteGrandTotal{margin:1.125rem 1.125rem 1.25rem;padding-top:.875rem;border-top:2px solid #1c1c1e;font-size:1rem;font-weight:850}
 .quotePreviewFooter .fsFooterInner{display:grid;grid-template-columns:1fr 1.25fr;gap:.5rem}
 .quotePreviewFooter .quoteBackButton{background:rgba(120,130,140,.12);color:var(--ts);box-shadow:none}
@@ -7685,8 +7690,11 @@ function renderQuotePreview(){
     companyName, companyPhone, objectName, clientName, clientPhone, objectAddress,
     sections: xlsxSections,
     total: documentTotal,
+    received: quoteMode === "all" ? moneySum(moneyList(project, "payment")) : 0,
     pay: quotePayInfo(objectName)
   };
+  const received = lastQuoteData.received;
+  const showParts = quoteMode === "all" && works.length && materials.length;
 
   quoteDocument.innerHTML = `
     <div class="quoteUnifiedHead">
@@ -7717,9 +7725,14 @@ function renderQuotePreview(){
 
     ${quoteMode !== "materials" ? renderQuotePreviewSection("РОБОТИ", works, workDiscountPercent, workDiscountAmount) : ""}
     ${quoteMode !== "works" ? renderQuotePreviewSection("МАТЕРІАЛИ", materials, materialsDiscountPercent, materialsDiscountAmount) : ""}
+    ${showParts || received > 0.5 ? `<div class="quoteSummary">
+      ${showParts ? `<div><span>Роботи</span><span>${money(worksPart)}</span></div><div><span>Матеріали</span><span>${money(materialsPart)}</span></div>` : ""}
+      <div class="sum"><span>Разом за кошторисом</span><span>${money(documentTotal)}</span></div>
+      ${received > 0.5 ? `<div><span>Отримано</span><span>−${money(received)}</span></div>` : ""}
+    </div>` : ""}
     <div class="quoteGrandTotal">
-      <span>До сплати</span>
-      <span>${money(documentTotal)}</span>
+      <span>${received > 0.5 && documentTotal - received < 0.5 ? "Сплачено повністю" : "До сплати"}</span>
+      <span>${received > 0.5 && documentTotal - received < 0.5 ? "✓" : money(Math.max(0, documentTotal - received))}</span>
     </div>
     ${lastQuoteData.pay ? `<div class="quotePayBox"><b>Реквізити для оплати</b>${lastQuoteData.pay.map(([k, v]) => `<div>${escapeHtml(k)}: <strong>${escapeHtml(v)}</strong></div>`).join("")}</div>` : ""}
   `;
@@ -7782,7 +7795,9 @@ function quoteShareMessage(project){
     `📄 ${quoteModeTitle()} · ${objectName}`,
     clientName ? `👤 ${clientName}` : "",
     clientPhone ? `📞 ${clientPhone}` : "",
-    `💰 До сплати: ${money(sum)}`,
+    quoteMode === "all" && project && moneySum(moneyList(project, "payment")) > 0.5
+      ? `💰 Разом: ${money(sum)} · отримано ${money(moneySum(moneyList(project, "payment")))} · до сплати ${money(Math.max(0, sum - moneySum(moneyList(project, "payment"))))}`
+      : `💰 До сплати: ${money(sum)}`,
     `📊 Статус: ${approvalStatus}`
   ];
 
@@ -7843,8 +7858,17 @@ function quoteXlsxRows(data){
     sums.push(`G${rows.length}`);
   });
   rows.push([]);
-  rows.push(["", "До сплати", "", "", "", "", null]);
-  formulas.push({ row: rows.length, col: 6, f: sums.length ? sums.join("+") : "0" });
+  if(data.received > 0.5){
+    rows.push(["", "Разом за кошторисом", "", "", "", "", null]);
+    formulas.push({ row: rows.length, col: 6, f: sums.length ? sums.join("+") : "0" });
+    const totalRow = rows.length;
+    rows.push(["", "Отримано", "", "", "", "", Math.round(data.received * 100) / 100]);
+    rows.push(["", "До сплати", "", "", "", "", null]);
+    formulas.push({ row: rows.length, col: 6, f: `MAX(0,G${totalRow}-G${totalRow + 1})` });
+  }else{
+    rows.push(["", "До сплати", "", "", "", "", null]);
+    formulas.push({ row: rows.length, col: 6, f: sums.length ? sums.join("+") : "0" });
+  }
   if(data.pay){
     rows.push([]);
     rows.push(["", "Реквізити для оплати"]);
