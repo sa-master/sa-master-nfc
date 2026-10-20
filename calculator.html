@@ -5661,10 +5661,18 @@ function normalizeMaterialCategory(value){
 }
 
 function getPositionMaterialCategory(position){
+  if(position && position.isFixture === true) return "fixtures";
   const catalogItem = getPositionCatalogItem(position);
-  const stored = normalizeMaterialCategory((catalogItem && catalogItem.category) || (position && position.category));
-  if(stored !== "other" || catalogItem) return stored;
-  return normalizeMaterialCategory(detectCategory(position && (position.fullName || position.name) || "", "", ""));
+  let category = normalizeMaterialCategory((catalogItem && catalogItem.category) || (position && position.category));
+  if(category === "other" && !catalogItem) category = normalizeMaterialCategory(detectCategory(position && (position.fullName || position.name) || "", "", ""));
+  if(category === "other" && isFixtureName(position && (position.fullName || position.name))) category = "fixtures";
+  if(category === "fixtures" && position && position.isFixture === false) return "other";
+  return category;
+}
+
+/* Сантехприлади: змішувачі, душові системи, трапи, унітази… — у документі для клієнта окремим розділом. */
+function isFixtureName(name){
+  return /змішувач|смесител|душов\S*\s+систем|гігієнічн\S*\s+душ|гигиенич\S*\s+душ|ручн\S*\s+душ|тропічн|верхн\S*\s+душ|(^|[^а-яіїєґa-z])трап([^а-яіїєґa-z]|$)|cleanline|злив[\s-]*(?:\+\s*)?(?:в|пере)лив|унітаз|унитаз|інсталяц|инсталляц|раковин|умивальник|біде|биде|бойлер|водонагрів|водонагрев|піддон|поддон|кнопк\S*\s+змив|smartbox|rapido|grohtherm/i.test(String(name || ""));
 }
 
 /* Усередині розділу: однакові вироби разом (хомути до хомутів), розміри — за зростанням. */
@@ -6602,7 +6610,8 @@ function makeApprovedSnapshot(project){
     unit: pos.unit || "шт",
     clientName: positionClientName(pos),
     brand: positionBrand(pos),
-    noDiscount: Boolean(pos.noDiscount)
+    noDiscount: Boolean(pos.noDiscount),
+    category: pos.type === "material" ? getPositionMaterialCategory(pos) : undefined
   });
   return {
     at: new Date().toISOString(),
@@ -6666,6 +6675,7 @@ function restoreRemovedPositions(id){
   if(!Array.isArray(p.positions)) p.positions = [];
   removed.forEach(item => {
     const pos = { id:item.id, type:item.type, name:item.clientName, qty:item.qty, price:item.price, unit:item.unit || "шт" };
+    if(item.category === "fixtures") pos.isFixture = true;
     if(item.brand) pos.brand = item.brand;
     if(item.noDiscount) pos.noDiscount = true;
     if(item.type === "material") pos.fromStockQty = item.qty;
@@ -6707,7 +6717,7 @@ function buildRevisionSnapshot(project, selected){
   approved.positions.forEach(item => {
     const pos = current.get(item.id);
     if(!pos){
-      if(!selected.has(item.id)) merged.push({ id:item.id, type:item.type, name:item.clientName, fullName:item.clientName, brand:item.brand, qty:item.qty, price:item.price, unit:item.unit, noDiscount:item.noDiscount });
+      if(!selected.has(item.id)) merged.push({ id:item.id, type:item.type, name:item.clientName, fullName:item.clientName, brand:item.brand, qty:item.qty, price:item.price, unit:item.unit, noDiscount:item.noDiscount, isFixture:item.category === "fixtures" ? true : undefined });
       return;
     }
     merged.push(selected.has(item.id) ? pos : Object.assign({}, pos, { qty:item.qty, price:item.price }));
@@ -7496,7 +7506,7 @@ function renderQuotePreviewSection(title, positions, discountPercent, discountAm
           </div>
         `;
       }).join("")}
-      ${linePercent > 0 ? `
+      ${linePercent > 0 && (Number(discountAmount) || 0) >= 0.5 ? `
         <div class="quoteSectionTotal quoteSectionDiscount">
           <span>Знижку ${linePercent}% враховано в цінах</span>
           <span>${money(discountAmount)}</span>
@@ -7659,9 +7669,18 @@ function renderQuotePreview(){
   }
 
   const works = positions.filter(pos => pos.type === "work");
-  const materials = approvedSnapshot
+  const allMaterials = approvedSnapshot
     ? positions.filter(pos => pos.type === "material")
     : groupMaterialPositions(positions.filter(pos => pos.type === "material")).flatMap(group => group.positions);
+  const fixtureOf = pos => {
+    if(!approvedSnapshot) return getPositionMaterialCategory(pos) === "fixtures";
+    const live = (project.positions || []).find(x => x.id === pos.id);
+    if(live) return getPositionMaterialCategory(live) === "fixtures";
+    if(pos.category) return pos.category === "fixtures";
+    return isFixtureName(pos.clientName);
+  };
+  const fixtures = allMaterials.filter(fixtureOf);
+  const materials = allMaterials.filter(pos => !fixtureOf(pos));
   const companyName = profileCompanyName();
   const companyPhone = String(profile.phone || "").trim();
   const client = project.client || {};
@@ -7675,15 +7694,20 @@ function renderQuotePreview(){
   const materialsDiscountAmount = approvedSnapshot ? approvedSnapshot.materialsDiscountAmount : getMaterialsDiscountAmount(project);
   const documentDate = approvedSnapshot ? approvedSnapshot.at : new Date();
   const worksPart = approvedSnapshot ? approvedSnapshot.works : getCustomerWorksTotal(project);
-  const materialsPart = approvedSnapshot ? approvedSnapshot.materials : getCustomerMaterialsTotal(project);
-  const documentTotal = quoteMode === "works" ? worksPart : quoteMode === "materials" ? materialsPart : (approvedSnapshot ? approvedSnapshot.total : getEstimateTotal(project));
+  const materialsAllPart = approvedSnapshot ? approvedSnapshot.materials : getCustomerMaterialsTotal(project);
+  const sectionDiscount = list => list.reduce((sum, pos) => sum + (pos.noDiscount ? 0 : (Number(pos.price) || 0) * (Number(pos.qty) || 0)), 0) * (Number(materialsDiscountPercent) || 0) / 100;
+  const sectionNet = list => list.reduce((sum, pos) => sum + (Number(pos.price) || 0) * (Number(pos.qty) || 0), 0) - sectionDiscount(list);
+  const fixturesPart = sectionNet(fixtures);
+  const materialsPart = materialsAllPart - fixturesPart;
+  const documentTotal = quoteMode === "works" ? worksPart : quoteMode === "materials" ? materialsAllPart : (approvedSnapshot ? approvedSnapshot.total : getEstimateTotal(project));
   const logoSource = profile.logoData || "logo.png";
   const quoteDocument = document.getElementById("quotePreviewDocument");
 
   /* Ті самі дані йдуть і в Excel-копію, щоб файли не розходились. */
   const xlsxSections = [];
   if(quoteMode !== "materials" && works.length) xlsxSections.push({ title:"РОБОТИ", positions:works, percent:workDiscountPercent, amount:workDiscountAmount });
-  if(quoteMode !== "works" && materials.length) xlsxSections.push({ title:"МАТЕРІАЛИ", positions:materials, percent:materialsDiscountPercent, amount:materialsDiscountAmount });
+  if(quoteMode !== "works" && materials.length) xlsxSections.push({ title:"МАТЕРІАЛИ", positions:materials, percent:materialsDiscountPercent, amount:sectionDiscount(materials) });
+  if(quoteMode !== "works" && fixtures.length) xlsxSections.push({ title:"САНТЕХПРИЛАДИ", positions:fixtures, percent:materialsDiscountPercent, amount:sectionDiscount(fixtures) });
   lastQuoteData = {
     title: quoteModeTitle(),
     dateLabel: `${quoteDraft ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
@@ -7694,7 +7718,7 @@ function renderQuotePreview(){
     pay: quotePayInfo(objectName)
   };
   const received = lastQuoteData.received;
-  const showParts = quoteMode === "all" && works.length && materials.length;
+  const showParts = quoteMode === "all" && [works.length, materials.length, fixtures.length].filter(Boolean).length >= 2;
 
   quoteDocument.innerHTML = `
     <div class="quoteUnifiedHead">
@@ -7724,9 +7748,10 @@ function renderQuotePreview(){
     </div>
 
     ${quoteMode !== "materials" ? renderQuotePreviewSection("РОБОТИ", works, workDiscountPercent, workDiscountAmount) : ""}
-    ${quoteMode !== "works" ? renderQuotePreviewSection("МАТЕРІАЛИ", materials, materialsDiscountPercent, materialsDiscountAmount) : ""}
+    ${quoteMode !== "works" ? renderQuotePreviewSection("МАТЕРІАЛИ", materials, materialsDiscountPercent, sectionDiscount(materials)) : ""}
+    ${quoteMode !== "works" ? renderQuotePreviewSection("САНТЕХПРИЛАДИ", fixtures, materialsDiscountPercent, sectionDiscount(fixtures)) : ""}
     ${showParts || received > 0.5 ? `<div class="quoteSummary">
-      ${showParts ? `<div><span>Роботи</span><span>${money(worksPart)}</span></div><div><span>Матеріали</span><span>${money(materialsPart)}</span></div>` : ""}
+      ${showParts ? `${works.length ? `<div><span>Роботи</span><span>${money(worksPart)}</span></div>` : ""}${materials.length ? `<div><span>Матеріали</span><span>${money(materialsPart)}</span></div>` : ""}${fixtures.length ? `<div><span>Сантехприлади</span><span>${money(fixturesPart)}</span></div>` : ""}` : ""}
       <div class="sum"><span>Разом за кошторисом</span><span>${money(documentTotal)}</span></div>
       ${received > 0.5 ? `<div><span>Отримано</span><span>−${money(received)}</span></div>` : ""}
     </div>` : ""}
@@ -7795,13 +7820,15 @@ function quoteShareMessage(project){
     `📄 ${quoteModeTitle()} · ${objectName}`,
     clientName ? `👤 ${clientName}` : "",
     clientPhone ? `📞 ${clientPhone}` : "",
-    quoteMode === "all" && project && moneySum(moneyList(project, "payment")) > 0.5
-      ? `💰 Разом: ${money(sum)} · отримано ${money(moneySum(moneyList(project, "payment")))} · до сплати ${money(Math.max(0, sum - moneySum(moneyList(project, "payment"))))}`
-      : `💰 До сплати: ${money(sum)}`,
+    ...(quoteMode === "all" && project && moneySum(moneyList(project, "payment")) > 0.5
+      ? [`💰 Разом: ${money(sum)}`, `✅ Отримано: ${money(moneySum(moneyList(project, "payment")))}`, `👉 До сплати: ${money(Math.max(0, sum - moneySum(moneyList(project, "payment"))))}`]
+      : [`💰 До сплати: ${money(sum)}`]),
     `📊 Статус: ${approvalStatus}`
   ];
 
-  if(!start) return lines.filter(Boolean).join("\n");
+  /* Дата початку потрібна лише поки роботи не почались. */
+  const notStarted = ["estimate", "approval", "quote", "procurement"].includes(project?.stage || "estimate");
+  if(!start || !notStarted) return lines.filter(Boolean).join("\n");
 
   const date = new Date(start + "T12:00:00");
   const displayDate = Number.isNaN(date.getTime())
@@ -7852,12 +7879,19 @@ function quoteXlsxRows(data){
       formulas.push({ row: rows.length, col: 6, f: `IF(F${rows.length}="","",D${rows.length}*F${rows.length})` });
     });
     const last = rows.length;
-    if(percent > 0) rows.push(["", `Знижку ${percent}% враховано в цінах`]);
+    if(percent > 0 && (Number(section.amount) || 0) >= 0.5) rows.push(["", `Знижку ${percent}% враховано в цінах`]);
     rows.push(["", "Разом", "", "", "", "", null]);
     formulas.push({ row: rows.length, col: 6, f: `ROUND(SUM(G${first}:G${last}),2)` });
     sums.push(`G${rows.length}`);
   });
   rows.push([]);
+  if((data.sections || []).length >= 2){
+    const titles = { "РОБОТИ":"Роботи", "МАТЕРІАЛИ":"Матеріали", "САНТЕХПРИЛАДИ":"Сантехприлади" };
+    (data.sections || []).forEach((section, index) => {
+      rows.push(["", titles[section.title] || section.title, "", "", "", "", null]);
+      formulas.push({ row: rows.length, col: 6, f: sums[index] });
+    });
+  }
   if(data.received > 0.5){
     rows.push(["", "Разом за кошторисом", "", "", "", "", null]);
     formulas.push({ row: rows.length, col: 6, f: sums.length ? sums.join("+") : "0" });
@@ -7910,7 +7944,7 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
   if(xlsxFile) form.append("xlsx", xlsxFile, xlsxFile.name);
   const data = lastQuoteData || {};
   form.append("meta", JSON.stringify({
-    title: data.title, dateLabel: data.dateLabel, total: data.total,
+    title: data.title, dateLabel: data.dateLabel, total: data.total, received: data.received || 0,
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone
   }));
   const cfg = cloudConfig();
@@ -11003,6 +11037,7 @@ function openSinglePriceEditor(projectId, positionId){
         <div class="posEditorActions">
           <button type="button" class="${isPositionFullyFromStock(pos) ? "on" : ""}" onclick="editorToggleStock('${id}')">${isPositionFullyFromStock(pos) ? "✓ Зі складу" : "▣ Беру зі складу"}</button>
           <button type="button" class="${pos.buyLater ? "on" : ""}" onclick="editorToggleBuyLater('${id}')">${pos.buyLater ? "✓ Докуплю сам" : "🛒 Докуплю сам"}</button>
+          <button type="button" class="${getPositionMaterialCategory(pos) === "fixtures" ? "on" : ""}" style="grid-column:1/-1" onclick="editorToggleFixture('${id}')">${getPositionMaterialCategory(pos) === "fixtures" ? "✓ Сантехприлад — окремо в кошторисі" : "🚿 Це сантехприлад"}</button>
         </div>` : ""}
 
       ${inApproved ? `<div class="formHint" style="margin:.25rem 0 0">Клієнт уже погодив цю позицію.${isMaterial ? " Взяли зі складу — натисніть «Беру зі складу», не видаляйте: клієнт за неї платить." : ""}</div>` : ""}
@@ -11025,6 +11060,17 @@ function editorToggleStock(positionId){
   if(!position) return;
   savePrices(true);
   setPositionStockQty(positionId, isPositionFullyFromStock(position) ? 0 : position.qty, false);
+  openSinglePriceEditor(currentProjectId, positionId);
+  render();
+}
+
+function editorToggleFixture(positionId){
+  const { position } = findCurrentPosition(positionId);
+  if(!position) return;
+  savePrices(true);
+  position.isFixture = getPositionMaterialCategory(position) !== "fixtures";
+  const project = projects.find(p => p.id === currentProjectId);
+  if(project) touchProject(project);
   openSinglePriceEditor(currentProjectId, positionId);
   render();
 }
@@ -13605,6 +13651,8 @@ function detectCategory(text, brand, system){
   if(/опален|отоплен|радіатор|радиатор|тепла\s*підлог|теплый\s*пол|конвектор|котел|котёл|теплонос|термостат|термоголов|гребінк.*опален|гребенк.*отоплен|wilo|meibes/.test(source)){
     return "heating";
   }
+
+  if(isFixtureName(text)) return "fixtures";
 
   /* Латунна різьбова дрібниця в дюймах (Ø1/2, 3/4Н, 1"В) — арматура. */
   const inchSized = /(?<![xх×\d\/.,])(?:1\/2|3\/4|1\/4|3\/8)(?!\d)|[ø⌀]\s*1\s*['’"”]/i.test(source);
