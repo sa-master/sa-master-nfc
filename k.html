@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Кошторис</title>
+<meta name="color-scheme" content="light dark">
+<style>
+:root{--bg:#E7F4FE;--card:#fff;--t:#1C1C1E;--tm:#6B7178;--p:#0A84FF;--soft:#E3EFFC;--red:#c62828}
+@media (prefers-color-scheme: dark){:root{--bg:#111214;--card:#1C1C1E;--t:#F2F2F7;--tm:#A1A1AA;--soft:#22324a;--red:#f87171}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,"SF Pro Text","Segoe UI",sans-serif;min-height:100vh;padding:28px 16px calc(28px + env(safe-area-inset-bottom))}
+main{max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{width:48px;height:48px;border-radius:14px;object-fit:contain;background:var(--card)}
+.brand b{display:block;font-size:17px;font-weight:750}
+.brand .phone{display:block;font-size:14px;color:var(--tm);text-decoration:none}
+.card{background:var(--card);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.kind{font-size:13px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--p)}
+h1{font-size:22px;font-weight:800;line-height:1.25}
+.meta{font-size:14px;color:var(--tm)}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:12px;border-top:1px solid rgba(120,120,128,.18)}
+.total span{font-size:15px;color:var(--tm)}
+.total b{font-size:26px;font-weight:800}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;height:56px;border-radius:16px;font-size:17px;font-weight:750;text-decoration:none}
+.primary{background:var(--p);color:#fff}
+.second{background:var(--card);color:var(--p)}
+.rows{display:flex;flex-direction:column;gap:4px;margin-top:10px;padding-top:12px;border-top:1px solid rgba(120,120,128,.18)}
+.rows div{display:flex;justify-content:space-between;font-size:15px;color:var(--tm)}
+.rows b{color:var(--t);font-weight:700}
+.note{font-size:13px;line-height:1.45;color:var(--tm);text-align:center}
+.err{color:var(--red);text-align:center;font-weight:650}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <img src="logo.png" alt="" onerror="this.remove()">
+    <div><b id="company">SA-MASTER</b><a id="companyPhone" class="phone"></a></div>
+  </div>
+
+  <div id="loading" class="note">Завантажуємо кошторис…</div>
+  <div id="error" class="err hidden"></div>
+
+  <div id="content" class="hidden" style="display:flex;flex-direction:column;gap:14px">
+    <div class="card">
+      <div class="kind" id="title">Кошторис</div>
+      <h1 id="object"></h1>
+      <div class="meta" id="date"></div>
+      <div class="rows hidden" id="rows">
+        <div><span>Разом за кошторисом</span><b id="sum"></b></div>
+        <div><span>Отримано</span><b id="received"></b></div>
+      </div>
+      <div class="total"><span id="totalLabel">До сплати</span><b id="total"></b></div>
+    </div>
+
+    <a class="btn primary" id="pdfLink" href="#">📄 Відкрити PDF</a>
+    <a class="btn second" id="xlsxLink" href="#">📊 Відкрити Excel</a>
+
+    <div class="note">PDF — зручно переглянути й переслати. Excel — якщо хочете самі порахувати або змінити кількість.</div>
+  </div>
+</main>
+
+<script>
+/* Адреса вашого Cloudflare Worker (див. інструкцію). */
+const SERVER = "https://sa-master-api.c6hht469s9.workers.dev";
+
+const $ = id => document.getElementById(id);
+const id = (new URLSearchParams(location.search).get("id") || location.hash.replace(/^#/, "").replace(/^id=/, "") || "").trim();
+
+function money(value){
+  const n = Number(value);
+  if(!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("uk-UA", { maximumFractionDigits:0 }).format(Math.round(n)) + " ₴";
+}
+
+function fail(text){
+  $("loading").classList.add("hidden");
+  $("error").textContent = text;
+  $("error").classList.remove("hidden");
+}
+
+async function load(){
+  if(!/^[A-Za-z0-9_-]{6,40}$/.test(id || "")){ fail("Посилання неповне. Попросіть майстра надіслати його ще раз."); $("error").insertAdjacentHTML("beforeend", `<div style="margin-top:10px;font-size:11px;font-weight:400;color:var(--tm);word-break:break-all">${location.href.replace(/[<>&]/g, "")}</div>`); return; }
+  try{
+    const response = await fetch(`${SERVER}/q/${id}`, { cache:"no-store" });
+    if(!response.ok){ fail("Кошторис не знайдено або посилання застаріло. Зверніться до майстра."); return; }
+    const data = await response.json();
+    if(data.companyName) $("company").textContent = data.companyName;
+    if(data.companyPhone){
+      $("companyPhone").textContent = data.companyPhone;
+      $("companyPhone").href = `tel:${String(data.companyPhone).replace(/[^\d+]/g, "")}`;
+    }
+    $("title").textContent = data.title || "Кошторис";
+    $("object").textContent = data.objectName || "";
+    $("date").textContent = data.dateLabel || "";
+    const received = Number(data.received) || 0;
+    if(received > 0.5){
+      $("rows").classList.remove("hidden");
+      $("sum").textContent = money(data.total);
+      $("received").textContent = "−" + money(received);
+      const due = Math.max(0, (Number(data.total) || 0) - received);
+      if(due < 0.5){ $("totalLabel").textContent = "Сплачено повністю"; $("total").textContent = "✓"; }
+      else $("total").textContent = money(due);
+    }else{
+      $("total").textContent = money(data.total);
+    }
+    document.title = `${data.title || "Кошторис"} · ${data.objectName || ""}`;
+    $("pdfLink").href = `${SERVER}/q/${id}/pdf`;
+    if(data.xlsxName) $("xlsxLink").href = `${SERVER}/q/${id}/xlsx`;
+    else $("xlsxLink").classList.add("hidden");
+    $("loading").classList.add("hidden");
+    $("content").classList.remove("hidden");
+  }catch(e){
+    fail("Немає з'єднання. Перевірте інтернет і оновіть сторінку.");
+  }
+}
+load();
+</script>
+</body>
+</html>
