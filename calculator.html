@@ -3275,6 +3275,10 @@ body.positionDragging{
 .opName{flex:1 1 auto;min-width:0;font-size:.9375rem;font-weight:650;line-height:1.25}
 .opName small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
 .opQty{flex:0 0 auto;font-size:.875rem;font-weight:750}
+.buyLaterPay{flex-wrap:wrap;margin:.25rem 0 .5rem}
+.buyLaterPay input{flex:1 1 7rem}
+.buyLaterPay input.qty{flex:0 0 6rem}
+.buyLaterPay button.ghost{background:rgba(120,120,128,.14);color:var(--ts)}
 .etLogo{display:flex;flex-direction:column;align-items:center;gap:.5rem;margin:.5rem 0 .25rem}
 .etLogoWord{position:relative;font-family:Manrope,-apple-system,"Segoe UI",sans-serif;font-weight:800;font-size:2.75rem;line-height:.9;letter-spacing:-.05em;padding-top:.62em}
 .etLogoEt{color:#0A0F1A}
@@ -5754,10 +5758,48 @@ function toggleBuyLater(positionId){
   render();
 }
 
+/* Купили — одразу питаємо, скільки й де: сума сама лягає у «Витрати». */
+let buyLaterPayFor = "";
+
 function toggleBuyLaterDone(positionId){
   const { project, position } = findCurrentPosition(positionId);
   if(!position) return;
-  position.buyLaterDone = !position.buyLaterDone;
+  if(position.buyLaterDone){
+    position.buyLaterDone = false;
+    if(position.buyLaterExpenseId){
+      project.expenses = moneyList(project, "expense").filter(e => e.id !== position.buyLaterExpenseId);
+      delete position.buyLaterExpenseId;
+      delete position.buyLaterPaid;
+      toast("Витрату за цю позицію прибрано");
+    }
+    buyLaterPayFor = "";
+  }else{
+    position.buyLaterDone = true;
+    buyLaterPayFor = positionId;
+    setTimeout(() => document.getElementById("buyLaterPaid")?.focus(), 60);
+  }
+  touchProject(project);
+  render();
+}
+
+function saveBuyLaterPaid(positionId, skip){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  buyLaterPayFor = "";
+  if(!skip){
+    const amount = Number(String(document.getElementById("buyLaterPaid")?.value || "").replace(/\s/g, "").replace(",", "."));
+    if(!Number.isFinite(amount) || amount <= 0){ toast("Впишіть суму або «Без суми»"); buyLaterPayFor = positionId; return; }
+    const where = cleanText(document.getElementById("buyLaterWhere")?.value);
+    const entry = { id: uid("exp"), date: todayIso(), amount: Math.round(amount * 100) / 100, to: where, note: `${positionShortName(position)} × ${formatQty(positionOrderQty(position))}`, buyLaterId: position.id };
+    moneyList(project, "expense").push(entry);
+    position.buyLaterExpenseId = entry.id;
+    position.buyLaterPaid = entry.amount;
+    position.buyLaterWhere = where;
+    const qty = positionOrderQty(position) || 1;
+    position.purchasePrice = Math.round(entry.amount / qty * 100) / 100;
+    position.purchasePriceState = "confirmed";
+    toast("Записано у «Гроші» → Витрати");
+  }
   touchProject(project);
   render();
 }
@@ -5809,6 +5851,7 @@ function addBuyLaterItem(){
   if(!project) return;
   const name = cleanText(document.getElementById("buyLaterName")?.value);
   const qty = Number(String(document.getElementById("buyLaterQty")?.value || "1").replace(",", "."));
+  const price = Number(String(document.getElementById("buyLaterPrice")?.value || "").replace(/\s/g, "").replace(",", "."));
   if(!name){ toast("Впишіть, що купити"); return; }
   if(!Array.isArray(project.positions)) project.positions = [];
   project.positions.push({
@@ -5819,6 +5862,7 @@ function addBuyLaterItem(){
     unit: "шт",
     qty: Number.isFinite(qty) && qty > 0 ? roundQty(qty) : 1,
     price: 0,
+    purchasePrice: Number.isFinite(price) && price > 0 ? price : null,
     buyLater: true,
     buyLaterOnly: true,
     noDiscount: true
@@ -5840,7 +5884,7 @@ function renderBuyLater(project){
       <div class="buyLaterItem ${position.buyLaterDone ? "done" : ""}">
         <button type="button" class="buyLaterCheck" onclick="toggleBuyLaterDone('${id}')" aria-label="${position.buyLaterDone ? "Не куплено" : "Куплено"}">${position.buyLaterDone ? "✓" : ""}</button>
         <button type="button" class="buyLaterName" onclick="toggleBuyLaterDone('${id}')">${escapeHtml(positionShortName(position))}</button>
-        ${position.buyLaterDone ? `<span class="stockPickMeta" style="margin:0">${formatQty(positionOrderQty(position))} ${unit}</span>` : `
+        ${position.buyLaterDone ? `<span class="stockPickMeta" style="margin:0">${position.buyLaterPaid ? `${money(position.buyLaterPaid)}${position.buyLaterWhere ? " · " + escapeHtml(position.buyLaterWhere) : ""}` : `${formatQty(positionOrderQty(position))} ${unit}`}</span>` : `
         <div class="qtyControl stockPickControl" aria-label="Кількість">
           <button class="qtyBtn" type="button" onclick="changeBuyLaterQty('${id}',-1)" aria-label="Менше">−</button>
           <input class="estimateQtyInput" type="text" inputmode="decimal" value="${formatQty(positionOrderQty(position))}" aria-label="Кількість, ${unit}" onfocus="this.select()" onchange="setBuyLaterQty('${id}',this.value)">
@@ -5848,6 +5892,14 @@ function renderBuyLater(project){
         </div>`}
         <button type="button" class="buyLaterRemove" onclick="removeBuyLater('${id}')" aria-label="Прибрати зі списку">×</button>
       </div>
+      ${buyLaterPayFor === position.id ? `
+        <div class="buyLaterForm buyLaterPay">
+          <input id="buyLaterPaid" class="qty" type="text" inputmode="decimal" placeholder="Сума, ₴" autocomplete="off" onkeydown="if(event.key==='Enter')saveBuyLaterPaid('${id}')">
+          <input id="buyLaterWhere" type="text" list="moneyToList2" placeholder="Де: Епіцентр, ринок…" autocomplete="off" onkeydown="if(event.key==='Enter')saveBuyLaterPaid('${id}')">
+          <datalist id="moneyToList2">${moneyToSuggestions(project).map(n => `<option value="${escapeHtml(n)}"></option>`).join("")}</datalist>
+          <button type="button" onclick="saveBuyLaterPaid('${id}')">Записати</button>
+          <button type="button" class="ghost" onclick="saveBuyLaterPaid('${id}',true)">Без суми</button>
+        </div>` : ""}
     `;
   };
   return `
@@ -5863,6 +5915,7 @@ function renderBuyLater(project){
         <div class="buyLaterForm">
           <input id="buyLaterName" type="text" placeholder="Що купити" autocomplete="off" onkeydown="if(event.key==='Enter')addBuyLaterItem()">
           <input id="buyLaterQty" class="qty" type="text" inputmode="decimal" placeholder="1" autocomplete="off" onkeydown="if(event.key==='Enter')addBuyLaterItem()">
+          <input id="buyLaterPrice" class="qty" type="text" inputmode="decimal" placeholder="Ціна ₴" autocomplete="off" onkeydown="if(event.key==='Enter')addBuyLaterItem()">
           <button type="button" onclick="addBuyLaterItem()">Додати</button>
         </div>` : ""}
     </section>
@@ -7052,6 +7105,16 @@ function openMoneyForm(kind){
   if(moneyFormOpen) setTimeout(() => document.getElementById("moneyAmount")?.focus(), 60);
 }
 
+function moneyToSuggestions(project){
+  const names = new Map();
+  const add = n => { const v = cleanText(n); if(v) names.set(normalizeText(v), v); };
+  projectOrders(project).forEach(order => add(order.supplierName));
+  (project.teamAssignments || []).forEach(a => add(a.name));
+  projects.forEach(pr => moneyList(pr, "expense").forEach(e => add(e.to)));
+  collectAllSupplierNames().forEach(add);
+  return Array.from(names.values()).slice(0, 30);
+}
+
 function addMoneyEntry(kind){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
@@ -7061,6 +7124,7 @@ function addMoneyEntry(kind){
     id: uid(kind === "payment" ? "pay" : "exp"),
     date: document.getElementById("moneyDate")?.value || todayIso(),
     amount: Math.round(amount * 100) / 100,
+    to: kind === "expense" ? cleanText(document.getElementById("moneyTo")?.value) : undefined,
     note: cleanText(document.getElementById("moneyNote")?.value)
   });
   moneyFormOpen = "";
@@ -7092,7 +7156,7 @@ function renderMoneyBlock(project, inTab){
   const sorted = list => list.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const row = (kind, entry) => `
     <div class="moneyRow">
-      <span class="what">${escapeHtml(entry.note || (kind === "payment" ? "Оплата" : "Витрата"))}<small>${shortDate(entry.date)}</small></span>
+      <span class="what">${escapeHtml(entry.to || entry.note || (kind === "payment" ? "Оплата" : "Витрата"))}<small>${shortDate(entry.date)}${entry.to && entry.note ? ` · ${escapeHtml(entry.note)}` : ""}</small></span>
       <span class="sum">${(kind === "payment") === (Number(entry.amount) >= 0) ? "+" : "−"}${money(Math.abs(Number(entry.amount) || 0))}</span>
       <button type="button" class="del" onclick="removeMoneyEntry('${kind}','${escapeHtml(entry.id)}')" aria-label="Видалити">×</button>
     </div>`;
@@ -7100,7 +7164,8 @@ function renderMoneyBlock(project, inTab){
     <div class="moneyForm">
       <input id="moneyAmount" class="amount" type="text" inputmode="decimal" placeholder="Сума, ₴" autocomplete="off">
       <input id="moneyDate" class="date" type="date" value="${todayIso()}">
-      <input id="moneyNote" type="text" placeholder="${kind === "payment" ? "За що: аванс, матеріали, етап…" : "Кому: Енерготрейд, ринок, Laterem…"}" autocomplete="off" onkeydown="if(event.key==='Enter')addMoneyEntry('${kind}')">
+      ${kind === "expense" ? `<input id="moneyTo" type="text" list="moneyToList" placeholder="Кому: Енерготрейд, ринок, Толік…" autocomplete="off" style="flex:1 1 100%"><datalist id="moneyToList">${moneyToSuggestions(project).map(name => `<option value="${escapeHtml(name)}"></option>`).join("")}</datalist>` : ""}
+      <input id="moneyNote" type="text" placeholder="${kind === "payment" ? "За що: аванс, матеріали, етап…" : "Коментар: за що, № рахунку…"}" autocomplete="off" style="flex:1 1 100%" onkeydown="if(event.key==='Enter')addMoneyEntry('${kind}')">
       <button type="button" onclick="addMoneyEntry('${kind}')">Записати</button>
       <div class="formHint" style="margin:0;grid-column:1/-1">${kind === "payment" ? "Повернули клієнту — пишіть суму з мінусом." : "Повернення від постачальника — сума з мінусом, напр. −5268."}</div>
     </div>` : "";
