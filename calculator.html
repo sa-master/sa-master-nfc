@@ -1465,6 +1465,11 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .approvedBannerTitle{font-size:.75rem;font-weight:800;color:#1f7a3c}
 .approvedBannerText{margin-top:.25rem;font-size:.6875rem;line-height:1.35;color:var(--ts)}
 .approvedBannerActions{margin-top:.5rem}
+.revTotals{margin-top:.75rem;padding:.75rem .875rem;border-radius:1rem;background:var(--card);display:flex;flex-direction:column;gap:.375rem}
+.revTotals div{display:flex;justify-content:space-between;font-size:.9375rem;color:var(--tm)}
+.revTotals div b{color:var(--t);font-weight:800}
+.revTotals div.big{font-size:1.0625rem;color:var(--t);font-weight:800}
+.revTotals small{color:var(--tm);font-size:.75rem}
 .approvedBannerActions button{width:100%;padding:.5625rem .75rem;border-radius:.75rem;background:#B76800;color:#fff;font-size:.8125rem;font-weight:800}
 .approvedBannerActions button.soft{background:rgba(183,104,0,.12);color:#B76800}
 .approvedBannerChanges{margin-top:.375rem;font-size:.6875rem;font-weight:700;color:#B76800}
@@ -6666,6 +6671,132 @@ function restoreRemovedPositions(id){
   toast(`Повернуто ${removed.length} поз. · позначено «зі складу»`);
 }
 
+/* ==== Фактичний кошторис ====
+   Майстер обирає, які зміни після погодження показати клієнту. З погодженої версії
+   й обраних змін складаємо новий знімок: його можна надіслати документом і, коли
+   клієнт згоден, зробити новим погодженим. Невідмічені зміни лишаються внутрішніми. */
+let quoteDraft = null;
+let revision = null;
+
+function revisionChanges(project){
+  const approved = getApproved(project);
+  if(!approved) return [];
+  const c = getApprovedChanges(project);
+  const byId = new Map(approved.positions.map(item => [item.id, item]));
+  const out = [];
+  c.added.forEach(pos => out.push({ id:pos.id, kind:"added", name:positionClientName(pos) || pos.name, text:`${formatQty(pos.qty)} ${pos.unit || "шт"} × ${money(Number(pos.price) || 0)}`, delta:(Number(pos.qty) || 0) * (Number(pos.price) || 0) }));
+  c.changed.forEach(pos => {
+    const was = byId.get(pos.id);
+    const qtyText = roundQty(was.qty) !== roundQty(pos.qty) ? `${formatQty(was.qty)} → ${formatQty(pos.qty)} ${pos.unit || "шт"}` : "";
+    const priceText = Number(was.price) !== (Number(pos.price) || 0) ? `ціна ${money(was.price)} → ${money(Number(pos.price) || 0)}` : "";
+    out.push({ id:pos.id, kind:"changed", name:positionClientName(pos) || pos.name, text:[qtyText, priceText].filter(Boolean).join(" · "), delta:(Number(pos.qty) || 0) * (Number(pos.price) || 0) - was.qty * was.price });
+  });
+  c.removed.forEach(item => out.push({ id:item.id, kind:"removed", name:item.clientName, text:`${formatQty(item.qty)} ${item.unit || "шт"} × ${money(item.price)}`, delta:-(item.qty * item.price) }));
+  return out;
+}
+
+function buildRevisionSnapshot(project, selected){
+  const approved = getApproved(project);
+  const current = new Map((project.positions || []).filter(pos => !pos.buyLaterOnly).map(pos => [pos.id, pos]));
+  const merged = [];
+  approved.positions.forEach(item => {
+    const pos = current.get(item.id);
+    if(!pos){
+      if(!selected.has(item.id)) merged.push({ id:item.id, type:item.type, name:item.clientName, fullName:item.clientName, brand:item.brand, qty:item.qty, price:item.price, unit:item.unit, noDiscount:item.noDiscount });
+      return;
+    }
+    merged.push(selected.has(item.id) ? pos : Object.assign({}, pos, { qty:item.qty, price:item.price }));
+  });
+  current.forEach(pos => { if(!approved.positions.some(item => item.id === pos.id) && selected.has(pos.id)) merged.push(pos); });
+  return makeApprovedSnapshot(Object.assign({}, project, { positions:merged }));
+}
+
+function openRevision(id){
+  const project = projects.find(x => x.id === id);
+  if(!project || !getApproved(project)) return;
+  const changes = revisionChanges(project);
+  revision = { projectId:id, selected:new Set(), factual:false };
+  let screen = document.getElementById("revisionScreen");
+  if(!screen){
+    screen = document.createElement("div");
+    screen.id = "revisionScreen";
+    screen.className = "onbScreen";
+    document.body.appendChild(screen);
+  }
+  screen.classList.add("open");
+  renderRevision();
+}
+
+function closeRevision(){
+  revision = null;
+  document.getElementById("revisionScreen")?.classList.remove("open");
+}
+
+function revisionToggle(id){
+  if(!revision) return;
+  revision.selected.has(id) ? revision.selected.delete(id) : revision.selected.add(id);
+  renderRevision();
+}
+
+function renderRevision(){
+  const screen = document.getElementById("revisionScreen");
+  const project = revision && projects.find(x => x.id === revision.projectId);
+  if(!screen || !project) return;
+  const approved = getApproved(project);
+  const changes = revisionChanges(project);
+  const draft = buildRevisionSnapshot(project, revision.selected);
+  const label = { added:"＋ Додано", changed:"✎ Змінено", removed:"− Прибрано" };
+  const groups = ["added", "changed", "removed"].map(kind => {
+    const list = changes.filter(ch => ch.kind === kind);
+    if(!list.length) return "";
+    return `<div class="opGroup">${label[kind]}</div>` + list.map(ch => {
+      const on = revision.selected.has(ch.id);
+      return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="revisionToggle('${escapeHtml(ch.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(ch.name)}<small>${escapeHtml(ch.text)}</small></span><span class="opQty">${ch.delta >= 0 ? "+" : "−"}${money(Math.abs(ch.delta))}</span></button>`;
+    }).join("");
+  }).join("");
+  screen.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeRevision()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Кошторис для клієнта</span></div>
+    ${changes.length ? `<span class="onbNote" style="text-align:left">Ваші зміни після ${formatQuoteDate(approved.at)}. Відмітьте ті, що стосуються клієнта (він щось поміняв, добрав, відмовився). Невідмічене — ваша внутрішня робота, клієнт її не побачить.</span>
+    <div class="opList">${groups}</div>` : `<span class="onbNote" style="text-align:left">Нових змін немає — кошторис для клієнта актуальний.</span>`}
+    <div class="revTotals">
+      <div><span>Зараз у клієнта (${formatQuoteDate(approved.at)})</span><b>${money(approved.total)}</b></div>
+      ${revision.selected.size ? `<div class="big"><span>Стане</span><b>${money(draft.total)}</b></div>` : ""}
+    </div>
+    <div class="opStep"><span class="opLabel">Заголовок документа</span>
+      <div class="opChips"><button type="button" class="opChip ${revision.factual ? "" : "active"}" onclick="revision.factual=false;renderRevision()">Кошторис</button><button type="button" class="opChip ${revision.factual ? "active" : ""}" onclick="revision.factual=true;renderRevision()">Фактичний кошторис</button></div>
+    </div>
+    <div class="onbSpacer"></div>
+    ${revision.selected.size ? `<button type="button" class="onbPrimary" onclick="revisionApprove()">Зберегти в кошторис клієнта · ${revision.selected.size}</button>
+    <button type="button" class="onbLink" onclick="revisionPreview()">Спершу глянути документ</button>` : `<button type="button" class="onbPrimary" onclick="revisionPreview()">Показати / надіслати клієнту</button>`}
+  </div>`;
+}
+
+function revisionPreview(){
+  const project = revision && projects.find(x => x.id === revision.projectId);
+  if(!project) return;
+  quoteDraft = buildRevisionSnapshot(project, revision.selected);
+  quoteDraft.factual = revision.factual;
+  if(!revision.selected.size) quoteDraft.at = getApproved(project).at;
+  quoteMode = "all";
+  document.getElementById("revisionScreen")?.classList.remove("open");
+  renderQuotePreview();
+}
+
+function revisionApprove(){
+  const project = revision && projects.find(x => x.id === revision.projectId);
+  if(!project) return;
+  const before = getClientTotal(project);
+  const draft = buildRevisionSnapshot(project, revision.selected);
+  if(!confirm(`Зберегти зміни в кошторис для клієнта?\n\nБуло: ${money(before)}\nСтане: ${money(draft.total)}\n\nБорг клієнта рахуватиметься від нової суми.`)) return;
+  draft.revised = true;
+  project.approved = draft;
+  touchProject(project);
+  revision.selected = new Set();
+  render();
+  renderRevision();
+  toast("Кошторис для клієнта оновлено");
+}
+
 function reapproveProject(id){
   actionsProjectId = id;
   actionReapprove();
@@ -7502,7 +7633,8 @@ function setQuoteMode(mode){
 }
 
 function quoteModeTitle(){
-  return quoteMode === "works" ? "Кошторис на роботи" : quoteMode === "materials" ? "Кошторис на матеріали" : "Кошторис";
+  const base = quoteMode === "works" ? "Кошторис на роботи" : quoteMode === "materials" ? "Кошторис на матеріали" : "Кошторис";
+  return quoteDraft && quoteDraft.factual ? "Фактичний " + base.charAt(0).toLowerCase() + base.slice(1) : base;
 }
 
 function renderQuotePreview(){
@@ -7514,7 +7646,7 @@ function renderQuotePreview(){
     button.setAttribute("aria-selected", String(active));
   });
 
-  const approvedSnapshot = getApproved(project);
+  const approvedSnapshot = quoteDraft || getApproved(project);
   const positions = approvedSnapshot ? approvedSnapshot.positions : (Array.isArray(project.positions) ? project.positions : []).filter(pos => !pos.buyLaterOnly);
   if(!positions.length){
     toast("Додайте хоча б одну позицію до кошторису");
@@ -7549,7 +7681,7 @@ function renderQuotePreview(){
   if(quoteMode !== "works" && materials.length) xlsxSections.push({ title:"МАТЕРІАЛИ", positions:materials, percent:materialsDiscountPercent, amount:materialsDiscountAmount });
   lastQuoteData = {
     title: quoteModeTitle(),
-    dateLabel: `${approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
+    dateLabel: `${quoteDraft ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
     companyName, companyPhone, objectName, clientName, clientPhone, objectAddress,
     sections: xlsxSections,
     total: documentTotal,
@@ -7580,7 +7712,7 @@ function renderQuotePreview(){
 
     <div class="quoteDocHeading">
       <div class="quoteDocumentTitle">${quoteModeTitle()}</div>
-      <div class="quoteIssuedNote">${approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
+      <div class="quoteIssuedNote">${quoteDraft ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
     </div>
 
     ${quoteMode !== "materials" ? renderQuotePreviewSection("РОБОТИ", works, workDiscountPercent, workDiscountAmount) : ""}
@@ -7597,6 +7729,10 @@ function renderQuotePreview(){
 
 function closeQuotePreview(){
   document.getElementById("quotePreviewScreen").classList.remove("open");
+  if(quoteDraft){
+    quoteDraft = null;
+    if(revision) document.getElementById("revisionScreen")?.classList.add("open");
+  }
 }
 
 function createQuotePdfSource(paper){
@@ -7632,16 +7768,16 @@ function quoteShareMessage(project){
     done: "Завершено",
     closed: "Закрито"
   };
-  const approvalStatus = approvalLabels[project?.customerApprovalStatus]
+  const approvalStatus = quoteDraft && quoteDraft.factual ? "Фактичний" : quoteDraft ? "Оновлений" : approvalLabels[project?.customerApprovalStatus]
     || stageLabels[project?.stage]
     || "Потребує погодження";
 
-  const approvedSnapshot = getApproved(project);
+  const approvedSnapshot = quoteDraft || getApproved(project);
   const sum = quoteMode === "works"
     ? (approvedSnapshot ? approvedSnapshot.works : getCustomerWorksTotal(project))
     : quoteMode === "materials"
       ? (approvedSnapshot ? approvedSnapshot.materials : getCustomerMaterialsTotal(project))
-      : getClientTotal(project);
+      : (quoteDraft ? quoteDraft.total : getClientTotal(project));
   const lines = [
     `📄 ${quoteModeTitle()} · ${objectName}`,
     clientName ? `👤 ${clientName}` : "",
@@ -8592,12 +8728,12 @@ function renderApprovedBanner(project){
   const diff = internalTotal - (Number(approved.total) || 0);
   return `
     <section class="approvedBanner">
-      <div class="approvedBannerTitle">✓ Погоджено з клієнтом ${formatQuoteDate(approved.at)} · ${money(approved.total)}</div>
+      <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис для клієнта оновлено" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}</div>
       ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · за цінами для клієнта це ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
       ${changes.added.length ? `<div class="approvedBannerRemoved">Додано: ${changes.added.map(item => escapeHtml(item.clientName || positionClientName(item) || item.name || "")).join(", ")}</div>` : ""}
       ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>
       <div class="approvedBannerActions"><button type="button" class="soft" onclick="restoreRemovedPositions('${project.id}')">↩ Повернути прибране — взяв зі складу</button></div>` : ""}
-      ${Math.abs(diff) >= 1 ? `<div class="approvedBannerActions"><button type="button" onclick="reapproveProject('${project.id}')">Клієнт погодив — нова сума ${money(internalTotal)}</button></div>` : ""}
+      <div class="approvedBannerActions"><button type="button" class="${parts.length ? "" : "soft"}" onclick="openRevision('${project.id}')">📄 Кошторис для клієнта${parts.length ? " · є зміни" : ""}</button></div>
     </section>
   `;
 }
