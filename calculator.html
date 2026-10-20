@@ -3208,12 +3208,19 @@ body.positionDragging{
 .posEditorActions button.on{background:rgba(52,199,89,.16);color:var(--green)}
 .posEditorDelete{width:100%;height:2.75rem;margin-top:.75rem;border-radius:.75rem;background:rgba(255,59,48,.1);color:var(--red);font-size:.9375rem;font-weight:750}
 
-.floatingPanel.compact{padding:.5rem .5rem .5rem}
-.floatingSummary{display:flex;align-items:center;justify-content:space-between;gap:.5rem;width:100%;padding:.25rem .375rem .5rem;text-align:left}
+.floatingPanel.compact{padding:.375rem .375rem .375rem .5rem;flex-direction:row;flex-wrap:wrap;align-items:center;gap:.375rem}
+.floatingPanel.compact .floatingBreakdown{order:-1;flex:1 1 100%;padding-top:.25rem}
+.floatingPanel.compact .floatingButtons{display:flex;gap:.375rem;flex:0 0 auto}
+.floatingPanel.compact .addButton{height:2.5rem;padding:0 .75rem;font-size:.8125rem;white-space:nowrap}
+.floatingPanel.compact .addButton.round{width:2.5rem;padding:0;border-radius:1.25rem;font-size:1.25rem;font-weight:800}
+.floatingSummary{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex:1 1 auto;min-width:0;padding:.25rem .25rem;text-align:left}
 .floatingSummary .lbl{font-size:.75rem;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--tm)}
 .floatingSummary .val{font-size:1.25rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--t)}
 .floatingSummary .chev{font-size:.875rem;color:var(--tm);margin-left:.25rem}
 .projectStickyHeader .projectTabs{margin:.5rem 0 0}
+.headCollapsed .projectHeaderMeta,.headCollapsed .projectHeaderCard .stagePath{display:none}
+.headCollapsed .projectHeaderCard{padding:.375rem .625rem}
+.headCollapsed .projectStickyHeader .projectTabs{margin-top:.375rem}
 /* ==== Провідник: шлях об'єкта, підказки, знайомство ==== */
 .stagePath{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.25rem;margin-top:.625rem}
 .stagePath span{display:flex;flex-direction:column;align-items:center;gap:.3rem;font-size:.625rem;font-weight:650;color:var(--tm);white-space:nowrap;min-width:0}
@@ -6975,6 +6982,7 @@ function render(){
     const key = `${project.id}:${projectTab}`;
     const oldView = document.querySelector(".projectView");
     const keepScroll = key === lastRenderKey && oldView ? oldView.scrollTop : 0;
+    if(!keepScroll){ headerCollapsed = false; lastViewScrollTop = 0; }
     renderProject(project);
     lastRenderKey = `${project.id}:${projectTab}`;
     if(keepScroll){
@@ -7212,7 +7220,7 @@ function renderProject(p){
   const stageLabel = projectStageLabel(p);
 
   main.innerHTML = `
-    <div class="projectWorkspace">
+    <div class="projectWorkspace ${headerCollapsed ? "headCollapsed" : ""}">
       <div class="projectStickyHeader">
       <div class="projectHeaderCard">
         <div class="projectHeaderTop">
@@ -7490,12 +7498,9 @@ function renderFloatingPanel(p){
       </div>
 
       <div class="floatingButtons">
-        ${projectTab === "money" ? `
-          <button class="addButton" onclick="goMoney('payment')"><span style="font-size:1.125rem;line-height:1">＋</span><span>Оплата</span></button>
-          <button class="addButton" onclick="goMoney('expense')"><span style="font-size:1.125rem;line-height:1">＋</span><span>Витрата</span></button>
-        ` : `
-          <button class="addButton" onclick="openCatalogFor('${projectTab === "materials" ? "material" : "work"}')"><span style="font-size:1.125rem;line-height:1">＋</span><span>${projectTab === "materials" ? "Матеріал" : "Робота"}</span></button>
-          <button class="addButton" onclick="openQuotePreview()"><span style="font-size:1rem;line-height:1">↗</span><span>Кошторис</span></button>
+        ${projectTab === "money" ? "" : `
+          <button class="addButton round" onclick="openCatalogFor('${projectTab === "materials" ? "material" : "work"}')" aria-label="${projectTab === "materials" ? "Додати матеріал" : "Додати роботу"}" title="${projectTab === "materials" ? "Додати матеріал" : "Додати роботу"}">＋</button>
+          <button class="addButton round" onclick="openQuotePreview()" aria-label="Кошторис для клієнта" title="Кошторис для клієнта">↗</button>
         `}
       </div>
     </div>
@@ -10256,6 +10261,7 @@ function cancelCatalogItemTouch(){
 
 function catalogItemTap(catalogId){
   if(Date.now() - catalogSwipeAt < 700) return;
+  if(Date.now() - lastScrollAt < 450) return;
   catalogCounterIncrement(catalogId);
 }
 
@@ -10322,9 +10328,6 @@ function renderCatalogList(){
         <div
           class="catalogItemBody"
           onclick="catalogItemTap('${escapeHtml(item.id)}')"
-          ontouchstart="startCatalogItemTouch('${escapeHtml(item.id)}', event)"
-          ontouchend="endCatalogItemTouch('${escapeHtml(item.id)}', event)"
-          ontouchcancel="cancelCatalogItemTouch()"
         >
           <div class="catalogItemName">${escapeHtml(catalogDisplayName(item))}</div>
           <div class="catalogItemMeta ${item.price > 0 ? '' : 'notSet'}">${item.type === "material" && cleanText(item.manufacturer) ? `<b class="catalogItemBrand">${escapeHtml(cleanText(item.manufacturer))}</b> · ` : ""}${priceText}${supplierText}${statusText}${reviewText}</div>
@@ -10370,6 +10373,7 @@ function openCustomFromSearch(){
 }
 
 function catalogCounterIncrement(catalogId){
+  if(Date.now() - lastScrollAt < 450) return;
   const item = catalog.find(c => c.id === catalogId);
   if(!item) return;
   const project = projects.find(p => p.id === currentProjectId);
@@ -10410,8 +10414,15 @@ function catalogCounterDecrement(catalogId){
   if(!project || !Array.isArray(project.positions)) return;
   const position = project.positions.find(pos => pos.catalogId === catalogId);
   if(!position) return;
+  if(Date.now() - lastScrollAt < 450) return;
 
   if((Number(position.qty) || 1) <= 1){
+    const approved = getApproved(project);
+    if(approved && approved.positions.some(item => item.id === position.id)){
+      toast("Клієнт погодив цю позицію. Відкрийте її в кошторисі: «Беру зі складу» або «Клієнт відмовився»");
+      return;
+    }
+    if(!confirm(`Прибрати «${positionShortName(position)}» з кошторису?`)) return;
     project.positions = project.positions.filter(pos => pos.catalogId !== catalogId);
   }else{
     position.qty = roundQty((Number(position.qty) || 1) - 1);
@@ -11048,7 +11059,25 @@ function deletePosition(projectId, positionId){
 
 /* Запобіжник: дотик, яким гортали список, не відкриває позицію. */
 let lastScrollAt = 0;
-document.addEventListener("scroll", () => { lastScrollAt = Date.now(); }, true);
+/* Шапка об'єкта згортається, коли гортаєте вниз, і розгортається, щойно гортаєте вгору. */
+let headerCollapsed = false;
+let lastViewScrollTop = 0;
+document.addEventListener("scroll", event => {
+  lastScrollAt = Date.now();
+  const view = event.target;
+  if(!view || !view.classList || !view.classList.contains("projectView")) return;
+  const top = view.scrollTop;
+  const delta = top - lastViewScrollTop;
+  lastViewScrollTop = top;
+  let next = headerCollapsed;
+  if(top < 24) next = false;
+  else if(delta > 4 && top > 90) next = true;
+  else if(delta < -14) next = false;
+  if(next !== headerCollapsed){
+    headerCollapsed = next;
+    document.querySelector(".projectWorkspace")?.classList.toggle("headCollapsed", next);
+  }
+}, true);
 function tapPosition(projectId, positionId){
   if(Date.now() - lastScrollAt < 450) return;
   openSinglePriceEditor(projectId, positionId);
@@ -11425,7 +11454,8 @@ function buildProcurementRequestTemplateFile(draft){
     group.positions.forEach(position => {
       rows.push([
         getPositionMaterialArticle(position),
-        position.fullName || position.name || "",
+        /* Постачальнику — повна назва з прайсу, а не скорочена, якою користується майстер. */
+        cleanText((getPositionCatalogItem(position) || {}).name) || position.fullName || position.name || "",
         getPositionMaterialBrand(position),
         positionOrderQty(position) || Number(position.qty) || 1,
         position.unit || "шт",
