@@ -3346,6 +3346,23 @@ body.positionDragging{
 .etLogoApp{color:#1F6BF2}
 .etLogoChain{position:absolute;left:.02em;top:0;width:1.4em;height:.58em;overflow:visible}
 .etLogoSub{font-family:Manrope,-apple-system,"Segoe UI",sans-serif;font-weight:500;font-size:.875rem;color:#3A3F47;letter-spacing:.01em}
+/* Анімація логотипа — лише при першому знайомстві (вхід, «Знайомство»), ~1,3 с */
+.etLogo.play .etLogoEt,.etLogo.play .etLogoApp{display:inline-block}
+.etLogo.play .etLogoEt{animation:etIn .45s cubic-bezier(.2,.8,.2,1) both}
+.etLogo.play .etLogoApp{animation:etAppIn .5s .18s cubic-bezier(.2,.8,.2,1) both}
+.etLogo.play .etLogoChain path{stroke-dasharray:1;stroke-dashoffset:1;animation:etDraw .5s .45s cubic-bezier(.4,0,.2,1) forwards}
+.etLogo.play .etLogoChain circle{transform-box:fill-box;transform-origin:center;transform:scale(0);animation:etPop .32s cubic-bezier(.3,1.6,.5,1) forwards}
+.etLogo.play .etLogoChain circle:nth-of-type(1){animation-delay:.42s}
+.etLogo.play .etLogoChain circle:nth-of-type(2){animation-delay:.6s}
+.etLogo.play .etLogoChain circle:nth-of-type(3){animation:etPop .4s .86s cubic-bezier(.3,1.6,.5,1) forwards,etGlow 1.2s 1.2s ease-out}
+.etLogo.play .etLogoSub{animation:etSubIn .45s .95s ease-out both}
+@keyframes etIn{from{opacity:0;transform:translateY(.25em);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+@keyframes etAppIn{from{opacity:0;transform:translateX(-.35em)}to{opacity:1;transform:none}}
+@keyframes etDraw{to{stroke-dashoffset:0}}
+@keyframes etPop{to{transform:scale(1)}}
+@keyframes etGlow{0%{filter:drop-shadow(0 0 0 rgba(91,194,245,0))}40%{filter:drop-shadow(0 0 7px rgba(91,194,245,.9))}100%{filter:drop-shadow(0 0 0 rgba(91,194,245,0))}}
+@keyframes etSubIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.etLogo.play *{animation:none!important;opacity:1!important;transform:none!important;stroke-dashoffset:0!important}}
 @media (prefers-color-scheme:dark){.etLogoEt{color:#F2F4F8}.etLogoSub{color:#C9CED6}}
 .onbBrandIcon{width:4.75rem;height:4.75rem;border-radius:1.1rem;box-shadow:0 10px 24px rgba(0,102,255,.30);overflow:hidden;line-height:0}
 .onbBrandIcon svg{width:100%;height:100%;display:block}
@@ -4920,6 +4937,14 @@ function authError(text){
   if(box){ box.textContent = text || ""; box.classList.toggle("hidden", !text); }
 }
 
+/* Логотип анімується один раз за відкриття сторінки: при перемальовуванні екрана не повторюємо */
+let etLogoPlayed = false;
+function etLogoPlay(){
+  if(etLogoPlayed) return false;
+  etLogoPlayed = true;
+  return true;
+}
+
 function renderAuthScreen(){
   const screen = document.getElementById("authScreen");
   if(!screen) return;
@@ -4941,8 +4966,8 @@ function renderAuthScreen(){
 
   screen.innerHTML = `<div class="onbInner">
     ${link ? `<div class="onbTop"><button type="button" class="onbBack" onclick="closeAuthScreen();openProfile()" aria-label="Назад">←</button><span>Акаунт</span></div>` : ""}
-    <div class="etLogo">
-      <div class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></div>
+    <div class="etLogo ${!link && etLogoPlay() ? "play" : ""}">
+      <div class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path pathLength="1" d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></div>
       <div class="etLogoSub">Кошторис · Звітність · Аудит</div>
     </div>
     <div>
@@ -16251,8 +16276,8 @@ function renderOnboarding(){
   if(onbStep === 1){
     body = `
       <div class="onbBrand">
-        <div class="etLogo" aria-label="et.app — Кошторис · Звітність · Аудит">
-          <div class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></div>
+        <div class="etLogo ${etLogoPlay() ? "play" : ""}" aria-label="et.app — Кошторис · Звітність · Аудит">
+          <div class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path pathLength="1" d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></div>
           <div class="etLogoSub">Кошторис · Звітність · Аудит</div>
         </div>
         <p class="onbText">Ваші дані будуть у кошторисах і на сторінці для клієнта. Займе хвилину.</p>
