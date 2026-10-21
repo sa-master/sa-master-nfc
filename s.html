@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Прайс</title>
+<meta name="color-scheme" content="light dark">
+<style>
+:root{--bg:#EEF3F8;--card:#fff;--t:#1C1C1E;--tm:#5F6670;--line:#E1E7EE;--p:#0A6CD6;--soft:#E7F0FB;--ok:#1F8A4C;--warn:#B26A00;--red:#C62828;--in:#F7FAFD;--inb:#D3DEE9}
+@media (prefers-color-scheme: dark){:root{--bg:#111418;--card:#1C2026;--t:#F2F4F7;--tm:#A3ACB7;--line:#2B323B;--p:#5AA6FF;--soft:#1E2E44;--ok:#4CC37E;--warn:#F0A848;--red:#F87171;--in:#151A20;--inb:#323B46}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t);font-family:-apple-system,"SF Pro Text","Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.4;min-height:100vh;padding:20px max(14px,env(safe-area-inset-left)) calc(110px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-right))}
+main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-size:22px;font-weight:800;line-height:1.2}
+h2{font-size:16px;font-weight:800}
+.sub{color:var(--tm);font-size:14px}
+.card{background:var(--card);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.hint{color:var(--tm);font-size:13px;line-height:1.45}
+textarea,input,select{font:inherit;color:var(--t);background:var(--in);border:1px solid var(--inb);border-radius:12px;padding:10px 12px;width:100%}
+textarea{min-height:110px;resize:vertical;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--p);outline-offset:1px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--tm)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{height:50px;border-radius:14px;border:0;background:var(--p);color:#fff;font:inherit;font-size:16px;font-weight:750;padding:0 18px;cursor:pointer;width:100%}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.ghost{background:var(--soft);color:var(--p)}
+.filebtn{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:12px;border:1.5px dashed var(--inb);color:var(--p);font-weight:750;cursor:pointer}
+.filebtn input{display:none}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;font-size:12.5px;width:100%}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+th select{font-size:12px;padding:4px 6px;border-radius:8px;min-width:110px}
+tr.skip td{color:var(--tm);text-decoration:line-through}
+.items{display:flex;flex-direction:column}
+.it{display:grid;grid-template-columns:minmax(0,1fr) 84px 84px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.it:last-child{border-bottom:0}
+.it b{font-size:14px;font-weight:650;display:block;overflow-wrap:anywhere}
+.it small{font-size:12px;color:var(--tm)}
+.it input{padding:7px 8px;text-align:right;font-size:14px;border-radius:10px}
+.it input.chg{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--in))}
+.ithead{display:grid;grid-template-columns:minmax(0,1fr) 84px 84px;gap:8px;font-size:11.5px;font-weight:750;color:var(--tm);text-transform:uppercase;letter-spacing:.03em}
+.ithead span:nth-child(n+2){text-align:right}
+.rate{display:grid;grid-template-columns:minmax(0,1fr) 86px 100px;gap:8px;align-items:center}
+.rate b{font-weight:700}
+.rate input{text-align:right}
+.pill{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:8px;font-size:12px;font-weight:750;background:var(--soft);color:var(--p)}
+.pill.ok{background:color-mix(in srgb,var(--ok) 14%,transparent);color:var(--ok)}
+.pill.warn{background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:12px max(14px,env(safe-area-inset-left)) calc(12px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-right))}
+.bar .in{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:6px}
+.bar .sum{font-size:13px;color:var(--tm);text-align:center}
+.err{color:var(--red);font-weight:650}
+.hidden{display:none!important}
+.done{text-align:center;align-items:center;padding:36px 20px}
+.done .big{font-size:48px}
+</style>
+</head>
+<body>
+<main>
+  <div id="loading" class="sub" style="text-align:center;padding:40px 0">Завантажуємо…</div>
+  <div id="error" class="card err hidden"></div>
+
+  <div id="app" class="hidden" style="display:flex;flex-direction:column;gap:14px">
+    <div>
+      <div class="sub" id="who"></div>
+      <h1 id="title">Прайс</h1>
+      <div class="sub" id="lastInfo" style="margin-top:4px"></div>
+    </div>
+
+    <section class="card" id="quick">
+      <h2>Ціни актуальні?</h2>
+      <p class="hint" id="quickInfo"></p>
+      <label class="f">Дійсні до<input type="date" id="quickValid"></label>
+      <button type="button" class="btn" id="quickYes">Так, підтверджую</button>
+      <button type="button" class="btn ghost" id="quickUpdate">Ні, оновити ціни</button>
+    </section>
+
+    <div id="full" style="display:flex;flex-direction:column;gap:14px">
+    <section class="card">
+      <h2>1. Вставте рядки з вашої бази</h2>
+      <p class="hint">Виділіть товари у своїй програмі (1С, BAS, Excel), скопіюйте і вставте сюди. Потрібні обидві ціни за 1 одиницю: <b>роздрібна</b> (для клієнта) і <b>для майстра</b>. Можна вставляти частинами.</p>
+      <textarea id="paste" placeholder="Вставте сюди скопійовані рядки…"></textarea>
+      <label class="filebtn">⬆ Або завантажити файл Excel / CSV<input type="file" id="file" accept=".xlsx,.xls,.xlsm,.csv"></label>
+      <div id="mapBox" class="hidden" style="display:flex;flex-direction:column;gap:10px">
+        <div class="hint" id="mapInfo"></div>
+        <button type="button" id="showMap" class="hidden" style="background:none;border:0;color:var(--p);font:inherit;font-weight:700;text-align:left;cursor:pointer">Перевірити, що в якому стовпці</button>
+        <div class="tbl" id="mapTableBox"><table id="mapTable"></table></div>
+        <label class="f hidden" id="brandAllBox">Бренд для рядків без бренду<input id="brandAll" placeholder="Напр. Geberit" autocomplete="off"></label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn ghost" id="addPasted" style="height:44px">Додати до прайсу</button></div>
+      </div>
+    </section>
+
+    <section class="card" id="itemsCard">
+      <h2>2. Ваші товари у майстра · <span id="itemsCount">0</span></h2>
+      <p class="hint">Можна змінити ціни прямо тут. Змінене підсвічується.</p>
+      <input id="search" placeholder="Пошук за назвою або артикулом" autocomplete="off">
+      <div class="ithead"><span>Товар</span><span>Роздріб</span><span>Майстру</span></div>
+      <div class="items" id="items"></div>
+      <div class="hint" id="moreInfo"></div>
+    </section>
+
+    <section class="card">
+      <h2>3. Курси</h2>
+      <p class="hint">Тільки для брендів із цінами в EUR чи USD.</p>
+      <div id="rates" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button type="button" id="showUah" style="background:none;border:0;color:var(--p);font:inherit;font-weight:700;text-align:left;cursor:pointer"></button>
+      <div id="ratesUah" class="hidden" style="display:flex;flex-direction:column;gap:8px"></div>
+    </section>
+
+    <section class="card">
+      <h2>4. Термін дії і контакт</h2>
+      <div class="row2">
+        <label class="f">Ціни дійсні до<input type="date" id="validUntil"></label>
+        <label class="f">Менеджер<input id="manager" autocomplete="name" placeholder="Ім'я"></label>
+      </div>
+      <label class="f">Телефон<input id="phone" inputmode="tel" autocomplete="tel" placeholder="+380…"></label>
+      <label class="f">Коментар<input id="comment" placeholder="Необов'язково"></label>
+    </section>
+    </div>
+  </div>
+
+  <div id="done" class="card done hidden">
+    <div class="big">✓</div>
+    <h1 id="doneTitle">Прайс надіслано</h1>
+    <p class="sub" id="doneText">Майстер побачить зміни у своєму калькуляторі. Оновити ціни можна за цим самим посиланням у будь-який час.</p>
+    <button type="button" class="btn ghost" style="max-width:280px;margin-top:8px" onclick="location.reload()">Відкрити прайс знову</button>
+  </div>
+</main>
+
+<div class="bar hidden" id="bar"><div class="in">
+  <div class="sum" id="sumLine">Змін ще немає</div>
+  <button type="button" class="btn" id="send" disabled>Надіслати майстру</button>
+</div></div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+/* Сторінка постачальника: оновлює свої ціни й курси для майстра. Нічого в майстра не змінює сама —
+   майстер бачить надіслане і застосовує у своєму калькуляторі. */
+const SERVER = "https://sa-master-api.c6hht469s9.workers.dev";
+const $ = id => document.getElementById(id);
+const id = (new URLSearchParams(location.search).get("id") || location.hash.replace(/^#/, "") || "").trim();
+const MAP_KEY = "sup_map_" + id;
+
+const FIELDS = [["", "— пропустити"], ["article", "Артикул"], ["name", "Назва"], ["brand", "Бренд"], ["unit", "Одиниця"], ["retail", "Роздрібна ціна"], ["master", "Ціна для майстра"], ["currency", "Валюта"]];
+let base = [];          // що вже є в майстра
+let baseRates = [];
+let items = [];         // робоча копія
+let rates = new Map();  // brand(lower) -> {brand,currency,rate}
+let pasted = null;      // {rows, map[], skipFirst}
+
+const norm = v => String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g, " ");
+const keyOf = it => it.article ? "a:" + norm(it.article) : "n:" + norm(it.name);
+function num(v){
+  if(v === null || v === undefined || v === "") return null;
+  if(typeof v === "number") return Number.isFinite(v) ? v : null;
+  let s = String(v).replace(/[\s ₴€$]/g, "").replace(/грн\.?|uah|eur|usd/gi, "");
+  if(/,\d{1,2}$/.test(s) && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
+  else s = s.replace(",", ".");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function money(n){ return n === null || n === undefined || n === "" ? "" : String(Math.round(n * 100) / 100).replace(".", ","); }
+function cur(v){ const c = String(v || "").trim().toUpperCase().replace("ГРН", "UAH").replace("€", "EUR").replace("$", "USD"); return ["UAH", "EUR", "USD"].includes(c) ? c : ""; }
+function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c])); }
+function fail(text){ $("loading").classList.add("hidden"); $("error").textContent = text; $("error").classList.remove("hidden"); }
+
+async function load(){
+  if(!/^[A-Za-z0-9]{6,20}$/.test(id)){ fail("Посилання неповне. Попросіть майстра надіслати його ще раз."); return; }
+  try{
+    const r = await fetch(`${SERVER}/sup/${id}`, { cache:"no-store" });
+    if(!r.ok){ fail("Посилання не знайдено або застаріло. Зверніться до майстра."); return; }
+    const d = await r.json();
+    const master = [d.masterName, d.company].filter(Boolean).join(" · ");
+    $("who").textContent = master ? `${master}${d.masterPhone ? " · " + d.masterPhone : ""}` : "";
+    $("title").textContent = `Прайс ${d.supplierName || ""}`.trim();
+    document.title = `Прайс · ${d.supplierName || ""}`;
+    base = (d.items || []).map(it => ({ ...it }));
+    items = base.map(it => ({ ...it, _orig: { retail:it.retail, master:it.master, currency:it.currency } }));
+    baseRates = d.rates || [];
+    baseRates.forEach(rt => rates.set(norm(rt.brand), { ...rt }));
+    if(d.last){
+      $("lastInfo").textContent = `Останнє оновлення: ${new Date(d.last.at).toLocaleDateString("uk-UA")}${d.last.validUntil ? " · дійсні до " + new Date(d.last.validUntil + "T12:00").toLocaleDateString("uk-UA") : ""}`;
+      $("manager").value = d.last.manager || "";
+      $("phone").value = d.last.phone || "";
+    }else{
+      $("lastInfo").textContent = base.length ? "Перевірте ціни й надішліть актуальні." : "Майстер просить ваш прайс.";
+    }
+    try{ const saved = JSON.parse(localStorage.getItem("sup_contact") || "{}"); if(!$("manager").value) $("manager").value = saved.manager || ""; if(!$("phone").value) $("phone").value = saved.phone || ""; }catch(e){}
+    const v = new Date(); v.setDate(v.getDate() + 14);
+    $("validUntil").value = v.toISOString().slice(0, 10);
+    $("loading").classList.add("hidden");
+    $("app").classList.remove("hidden");
+    $("quickValid").value = $("validUntil").value;
+    if(base.length){
+      $("quickInfo").textContent = `У майстра ${base.length} ваших товарів${d.last ? `, востаннє ви оновлювали ${new Date(d.last.at).toLocaleDateString("uk-UA")}` : ""}. Якщо ціни й курси не змінилися, просто підтвердіть.`;
+      $("full").classList.add("hidden");
+    }else{
+      $("quick").classList.add("hidden");
+      $("itemsCard").classList.add("hidden");
+      $("bar").classList.remove("hidden");
+    }
+    renderItems(); renderRates(); updateSummary();
+  }catch(e){ fail("Немає з'єднання. Перевірте інтернет і оновіть сторінку."); }
+}
+
+/* ---------- Вставка / файл ---------- */
+function parseText(text){
+  const lines = String(text || "").replace(/\r/g, "").split("\n").filter(l => l.trim());
+  if(!lines.length) return [];
+  const sep = lines[0].includes("\t") ? "\t" : (lines[0].split(";").length > lines[0].split(",").length ? ";" : ",");
+  return lines.map(l => l.split(sep).map(c => c.replace(/^"|"$/g, "").trim()));
+}
+
+function guessMap(rows){
+  const width = Math.max(...rows.slice(0, 30).map(r => r.length));
+  let saved = null; try{ saved = JSON.parse(localStorage.getItem(MAP_KEY) || "null"); }catch(e){}
+  if(saved && saved.width === width) return { map:saved.map, skipFirst:saved.skipFirst, sure:true };
+  const head = rows[0].map(norm);
+  const byHead = head.map(h =>
+    /артик|код|sku|article/.test(h) ? "article" :
+    /назв|наймен|товар|name|опис/.test(h) ? "name" :
+    /бренд|виробн|марка|brand|торг/.test(h) ? "brand" :
+    /^од|одиниц|unit|ед\.?/.test(h) ? "unit" :
+    /валют|currency/.test(h) ? "currency" :
+    /майстр|оптов|дилер|закуп|вхідн|спец/.test(h) ? "master" :
+    /роздр|рекоменд|ррц|retail|ціна|price/.test(h) ? "retail" : "");
+  const headerLike = byHead.filter(Boolean).length >= 2;
+  let map = headerLike ? byHead : new Array(width).fill("");
+  if(!headerLike){
+    const sample = rows.slice(0, 20);
+    const stat = c => {
+      const vals = sample.map(r => r[c]).filter(v => v !== undefined && String(v).trim() !== "");
+      const nums = vals.filter(v => num(v) !== null).length;
+      const avgLen = vals.reduce((s, v) => s + String(v).length, 0) / Math.max(1, vals.length);
+      return { vals, numeric: vals.length && nums / vals.length > .8, avgLen };
+    };
+    const cols = [...Array(width).keys()].map(stat);
+    const priceCols = [];
+    cols.forEach((st, c) => {
+      const v0 = st.vals.map(norm);
+      if(v0.length && v0.every(v => /^(uah|eur|usd|грн|€|\$)$/.test(v))) map[c] = "currency";
+      else if(v0.length && v0.every(v => /^(шт|м|м\.|м2|кг|л|компл|уп|пог\.?м|пара)\.?$/.test(v))) map[c] = "unit";
+      else if(st.numeric && st.vals.some(v => /[.,]\d{1,2}$/.test(String(v)) || num(v) > 5)) priceCols.push(c);
+    });
+    let nameCol = -1, best = 0;
+    cols.forEach((st, c) => { if(!map[c] && !st.numeric && st.avgLen > best){ best = st.avgLen; nameCol = c; } });
+    if(nameCol >= 0) map[nameCol] = "name";
+    cols.forEach((st, c) => { if(!map[c] && c !== nameCol && st.vals.length && st.avgLen < 20 && !priceCols.includes(c) && map.indexOf("article") < 0) map[c] = "article"; });
+    if(priceCols.length >= 2){
+      const avg = c => { const v = rows.slice(0, 20).map(r => num(r[c])).filter(x => x !== null); return v.reduce((a, b) => a + b, 0) / Math.max(1, v.length); };
+      const [a, b] = priceCols.slice(-2);
+      map[avg(a) >= avg(b) ? a : b] = "retail";
+      map[avg(a) >= avg(b) ? b : a] = "master";
+    }else if(priceCols.length === 1) map[priceCols[0]] = "retail";
+  }
+  const sure = headerLike && ["name", "retail", "master"].every(f => map.includes(f));
+  return { map, skipFirst: headerLike, sure };
+}
+
+function setPasted(rows){
+  rows = rows.filter(r => r.some(c => String(c).trim() !== ""));
+  if(!rows.length){ $("mapBox").classList.add("hidden"); pasted = null; return; }
+  const g = guessMap(rows);
+  pasted = { rows, map:g.map, skipFirst:g.skipFirst, sure:g.sure };
+  renderMap();
+}
+
+function renderMap(){
+  const { rows, map, skipFirst } = pasted;
+  const width = Math.max(...rows.slice(0, 30).map(r => r.length));
+  while(map.length < width) map.push("");
+  const opts = sel => FIELDS.map(([v, l]) => `<option value="${v}" ${v === sel ? "selected" : ""}>${l}</option>`).join("");
+  const head = `<tr>${map.map((m, c) => `<th><select data-c="${c}">${opts(m)}</select></th>`).join("")}</tr>`;
+  const body = rows.slice(0, 6).map((r, i) => `<tr class="${i === 0 && skipFirst ? "skip" : ""}">${[...Array(width).keys()].map(c => `<td title="${esc(r[c])}">${esc(r[c])}</td>`).join("")}</tr>`).join("");
+  $("mapTable").innerHTML = head + body;
+  $("mapTable").querySelectorAll("select").forEach(s => s.onchange = () => { pasted.map[Number(s.dataset.c)] = s.value; renderMap(); });
+  const data = rows.length - (skipFirst ? 1 : 0);
+  const missing = ["name", "retail", "master"].filter(f => !map.includes(f)).map(f => FIELDS.find(x => x[0] === f)[1]);
+  const showTable = !pasted.sure || pasted.open || missing.length;
+  const found = map.filter(Boolean).map(f => FIELDS.find(x => x[0] === f)[1].toLowerCase());
+  $("mapInfo").innerHTML = showTable
+    ? `Знайдено <b>${data}</b> рядків. Підкажіть, що в якому стовпці.${skipFirst ? " Перший рядок — заголовки, його пропущено." : ""}${missing.length ? `<br><span class="err">Оберіть стовпці: ${missing.join(", ")}</span>` : ""}`
+    : `Розпізнано <b>${data}</b> рядків: ${found.join(", ")}.`;
+  $("mapTableBox").classList.toggle("hidden", !showTable);
+  $("showMap").classList.toggle("hidden", Boolean(showTable));
+  $("brandAllBox").classList.toggle("hidden", map.includes("brand"));
+  $("addPasted").disabled = Boolean(missing.length);
+  $("mapBox").classList.remove("hidden");
+}
+
+function addPasted(){
+  if(!pasted) return;
+  const { rows, map, skipFirst } = pasted;
+  try{ localStorage.setItem(MAP_KEY, JSON.stringify({ width: map.length, map, skipFirst })); }catch(e){}
+  const col = f => map.indexOf(f);
+  const brandAll = $("brandAll").value.trim();
+  let added = 0, updated = 0;
+  rows.slice(skipFirst ? 1 : 0).forEach(r => {
+    const it = {
+      article: col("article") >= 0 ? String(r[col("article")] || "").trim() : "",
+      name: String(r[col("name")] || "").trim(),
+      brand: (col("brand") >= 0 ? String(r[col("brand")] || "").trim() : "") || brandAll,
+      unit: (col("unit") >= 0 ? String(r[col("unit")] || "").trim() : "") || "шт",
+      retail: num(r[col("retail")]),
+      master: num(r[col("master")]),
+      currency: col("currency") >= 0 ? cur(r[col("currency")]) : ""
+    };
+    if(!it.name || (it.retail === null && it.master === null)) return;
+    const k = keyOf(it);
+    const ex = items.find(x => keyOf(x) === k);
+    if(ex){ Object.assign(ex, { retail:it.retail ?? ex.retail, master:it.master ?? ex.master, currency:it.currency || ex.currency, name:it.name || ex.name, brand:it.brand || ex.brand, unit:it.unit || ex.unit }); updated++; }
+    else{ items.push({ ...it, _new:true }); added++; }
+  });
+  $("paste").value = ""; pasted = null; $("mapBox").classList.add("hidden");
+  $("itemsCard").classList.remove("hidden");
+  renderItems(); renderRates(); updateSummary();
+  alertBox(`Додано: ${added} нових, оновлено: ${updated}.`);
+}
+function alertBox(text){ const s = $("sumLine"); s.textContent = text; setTimeout(updateSummary, 2500); }
+
+/* ---------- Список товарів ---------- */
+function isChanged(it){
+  if(it._new) return true;
+  const o = it._orig || {};
+  return it.retail !== o.retail || it.master !== o.master || (it.currency || "") !== (o.currency || "");
+}
+function renderItems(){
+  const q = norm($("search").value);
+  const list = items.filter(it => !q || norm(it.name).includes(q) || norm(it.article).includes(q));
+  const shown = list.slice(0, 80);
+  $("itemsCount").textContent = items.length;
+  $("items").innerHTML = shown.map(it => {
+    const i = items.indexOf(it);
+    const c = isChanged(it);
+    return `<div class="it"><span><b>${esc(it.name)}</b><small>${[it.article && "арт. " + it.article, it.brand, it.unit, it.currency && it.currency !== "UAH" ? it.currency : ""].filter(Boolean).map(esc).join(" · ")}${it._new ? ' · <span class="pill ok">новий</span>' : ""}</small></span>
+      <input inputmode="decimal" class="${c && it.retail !== (it._orig || {}).retail ? "chg" : ""}" value="${money(it.retail)}" data-i="${i}" data-f="retail" aria-label="Роздрібна ціна">
+      <input inputmode="decimal" class="${c && it.master !== (it._orig || {}).master ? "chg" : ""}" value="${money(it.master)}" data-i="${i}" data-f="master" aria-label="Ціна для майстра"></div>`;
+  }).join("") || `<div class="hint" style="padding:10px 0">Нічого не знайдено</div>`;
+  $("moreInfo").textContent = list.length > shown.length ? `Показано ${shown.length} з ${list.length}. Скористайтеся пошуком.` : "";
+  $("items").querySelectorAll("input").forEach(inp => inp.onchange = () => {
+    const it = items[Number(inp.dataset.i)];
+    it[inp.dataset.f] = num(inp.value);
+    setTimeout(() => { renderItems(); updateSummary(); }, 0);
+  });
+}
+
+/* ---------- Курси ---------- */
+function brandsInUse(){
+  const set = new Map();
+  items.forEach(it => { if(it.brand) set.set(norm(it.brand), it.brand); });
+  baseRates.forEach(rt => set.set(norm(rt.brand), rt.brand));
+  return [...set.entries()].sort((a, b) => a[1].localeCompare(b[1], "uk"));
+}
+let showUahOpen = false;
+function renderRates(){
+  const all = brandsInUse();
+  const rateOf = k => rates.get(k) || { currency: (items.find(it => norm(it.brand) === k && it.currency) || {}).currency || "UAH" };
+  const foreign = all.filter(([k]) => rateOf(k).currency !== "UAH");
+  const uah = all.filter(([k]) => rateOf(k).currency === "UAH");
+  $("showUah").textContent = uah.length ? (showUahOpen ? "Сховати гривневі бренди" : `Бренди в гривні: ${uah.length} · змінити валюту`) : "";
+  $("showUah").classList.toggle("hidden", !uah.length);
+  $("ratesUah").classList.toggle("hidden", !showUahOpen);
+  $("ratesUah").innerHTML = rateRows(uah);
+  $("rates").innerHTML = foreign.length ? rateRows(foreign) : `<div class="hint">Валютних брендів немає.</div>`;
+  document.querySelectorAll("#rates select,#rates input,#ratesUah select,#ratesUah input").forEach(el => el.onchange = () => {
+    const rt = rates.get(el.dataset.k);
+    if(el.dataset.f === "currency"){ rt.currency = el.value; if(el.value === "UAH") rt.rate = null; }
+    else rt.rate = num(el.value);
+    setTimeout(() => { renderRates(); updateSummary(); }, 0);
+  });
+}
+function rateRows(brands){
+  return brands.map(([k, name]) => {
+    const rt = rates.get(k) || { brand:name, currency: (items.find(it => norm(it.brand) === k && it.currency) || {}).currency || "UAH", rate:null };
+    rates.set(k, rt);
+    const orig = baseRates.find(x => norm(x.brand) === k);
+    const changed = orig && (orig.currency !== rt.currency || orig.rate !== rt.rate);
+    return `<div class="rate"><b>${esc(name)}${changed ? ' <span class="pill warn">змінено</span>' : ""}</b>
+      <select data-k="${esc(k)}" data-f="currency">${["UAH", "EUR", "USD"].map(c => `<option ${c === rt.currency ? "selected" : ""}>${c}</option>`).join("")}</select>
+      <input inputmode="decimal" data-k="${esc(k)}" data-f="rate" value="${rt.currency === "UAH" ? "" : money(rt.rate)}" placeholder="${rt.currency === "UAH" ? "—" : "курс"}" ${rt.currency === "UAH" ? "disabled" : ""}></div>`;
+  }).join("");
+}
+function changedRateBrands(){
+  return [...rates.entries()].filter(([k, rt]) => {
+    const o = baseRates.find(x => norm(x.brand) === k);
+    return !o || o.currency !== rt.currency || o.rate !== rt.rate;
+  }).map(([k]) => k);
+}
+
+/* ---------- Підсумок і надсилання ---------- */
+function collect(){
+  const rateBrands = new Set(changedRateBrands());
+  const changed = items.filter(it => isChanged(it) || rateBrands.has(norm(it.brand)));
+  const missingRate = [...rates.values()].filter(rt => rt.currency !== "UAH" && !(rt.rate > 0)).map(rt => rt.brand);
+  return { changed, rateBrands, missingRate };
+}
+function updateSummary(){
+  const { changed, rateBrands, missingRate } = collect();
+  const nw = changed.filter(it => it._new).length;
+  const parts = [];
+  if(changed.length - nw) parts.push(`змінено цін: ${changed.length - nw}`);
+  if(nw) parts.push(`нових: ${nw}`);
+  const realRates = [...rateBrands].filter(k => baseRates.some(x => norm(x.brand) === k));
+  if(realRates.length) parts.push(`курсів: ${realRates.length}`);
+  $("sumLine").innerHTML = missingRate.length ? `<span class="err">Вкажіть курс: ${missingRate.map(esc).join(", ")}</span>` : (parts.length ? parts.join(" · ") : "Змін немає — можна підтвердити, що ціни актуальні");
+  $("send").disabled = Boolean(missingRate.length) || !items.length;
+  $("send").textContent = parts.length ? "Надіслати майстру" : "Підтвердити: ціни актуальні";
+}
+
+async function send(){
+  const { changed, missingRate } = collect();
+  if(missingRate.length){
+    if(!$("quick").classList.contains("hidden")){ $("quickUpdate").click(); }
+    updateSummary();
+    return;
+  }
+  const btn = $("send"); btn.disabled = true; btn.textContent = "Надсилаємо…";
+  $("quickYes").disabled = true; $("quickYes").textContent = "Надсилаємо…";
+  const clean = it => {
+    const rt = rates.get(norm(it.brand));
+    return { article:it.article || "", name:it.name, brand:it.brand || "", unit:it.unit || "шт", retail:it.retail, master:it.master, currency: it.currency || (rt && rt.currency) || "UAH" };
+  };
+  const body = {
+    items: items.map(clean),
+    changed: changed.map(keyOf),
+    rates: [...rates.values()].map(rt => ({ brand:rt.brand, currency:rt.currency, rate:rt.currency === "UAH" ? null : rt.rate })),
+    validUntil: $("validUntil").value,
+    manager: $("manager").value.trim(),
+    phone: $("phone").value.trim(),
+    comment: $("comment").value.trim()
+  };
+  try{ localStorage.setItem("sup_contact", JSON.stringify({ manager:body.manager, phone:body.phone })); }catch(e){}
+  try{
+    const r = await fetch(`${SERVER}/sup/${id}/submit`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) });
+    const d = await r.json().catch(() => ({}));
+    if(!r.ok) throw new Error(d.error || "Не вдалося надіслати");
+    if(!changed.length){ $("doneTitle").textContent = "Ціни підтверджено"; $("doneText").textContent = `Майстер бачить, що ваші ціни актуальні до ${new Date(body.validUntil + "T12:00").toLocaleDateString("uk-UA")}. Коли щось зміниться, відкрийте це посилання знову.`; }
+    $("app").classList.add("hidden"); $("bar").classList.add("hidden"); $("done").classList.remove("hidden");
+    window.scrollTo(0, 0);
+  }catch(e){
+    btn.disabled = false; updateSummary();
+    $("quickYes").disabled = false; $("quickYes").textContent = "Так, підтверджую";
+    if(!$("quick").classList.contains("hidden")){ $("quickInfo").innerHTML = `<span class="err">${esc(e.message === "Failed to fetch" ? "Немає з'єднання. Спробуйте ще раз." : e.message)}</span>`; }
+    $("sumLine").innerHTML = `<span class="err">${esc(e.message === "Failed to fetch" ? "Немає з'єднання. Спробуйте ще раз." : e.message)}</span>`;
+  }
+}
+
+$("paste").addEventListener("input", () => setPasted(parseText($("paste").value)));
+$("file").addEventListener("change", async e => {
+  const f = e.target.files && e.target.files[0]; e.target.value = "";
+  if(!f) return;
+  try{
+    let rows;
+    if(/\.csv$/i.test(f.name)) rows = parseText(await f.text());
+    else{
+      if(typeof XLSX === "undefined") throw new Error("xlsx");
+      const wb = XLSX.read(await f.arrayBuffer(), { type:"array" });
+      let best = [];
+      wb.SheetNames.forEach(n => { const r = XLSX.utils.sheet_to_json(wb.Sheets[n], { header:1, raw:false, defval:"" }); if(r.length > best.length) best = r; });
+      rows = best;
+    }
+    /* Пропускаємо шапку документа до рядка заголовків таблиці */
+    const hi = rows.findIndex(r => r.filter(c => /артик|назв|наймен|ціна|price/i.test(String(c))).length >= 2);
+    setPasted(hi > 0 ? rows.slice(hi) : rows);
+  }catch(err){ $("mapInfo").innerHTML = '<span class="err">Не вдалося прочитати файл. Скопіюйте рядки й вставте вище.</span>'; $("mapBox").classList.remove("hidden"); }
+});
+$("addPasted").onclick = addPasted;
+$("showMap").onclick = () => { if(pasted){ pasted.open = true; renderMap(); } };
+$("showUah").onclick = () => { showUahOpen = !showUahOpen; renderRates(); };
+$("quickUpdate").onclick = () => { $("quick").classList.add("hidden"); $("full").classList.remove("hidden"); $("bar").classList.remove("hidden"); $("validUntil").value = $("quickValid").value; window.scrollTo(0, 0); };
+$("quickYes").onclick = () => { $("validUntil").value = $("quickValid").value; send(); };
+$("search").addEventListener("input", renderItems);
+$("send").onclick = send;
+load();
+</script>
+</body>
+</html>
