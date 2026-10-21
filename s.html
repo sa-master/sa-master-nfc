@@ -97,6 +97,7 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
     <section class="card">
       <h2>1. Вставте рядки з вашої бази</h2>
       <p class="hint">Виділіть товари у своїй програмі (1С, BAS, Excel), скопіюйте і вставте сюди. Потрібні обидві ціни за 1 одиницю: <b>роздрібна</b> (для клієнта) і <b>для майстра</b>. Можна вставляти частинами.</p>
+      <button type="button" class="btn ghost" id="tplBtn" style="height:44px;font-size:15px">⬇ Скачати шаблон Excel — заповнити й завантажити</button>
       <textarea id="paste" placeholder="Вставте сюди скопійовані рядки…"></textarea>
       <label class="filebtn">⬆ Або завантажити файл Excel / CSV<input type="file" id="file" accept=".xlsx,.xls,.xlsm,.csv"></label>
       <div id="mapBox" class="hidden" style="display:flex;flex-direction:column;gap:10px">
@@ -147,8 +148,9 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
 
 <div class="check hidden" id="check"><div class="box">
   <h2 id="checkTitle" style="margin:0">Перевірте, будь ласка</h2>
-  <p class="hint" style="margin:0">Деякі ціни виглядають незвично. Можливо, це помилка при копіюванні.</p>
+  <p class="hint" style="margin:0">Деякі дані виглядають незвично. Можливо, це помилка при копіюванні.</p>
   <div class="list" id="checkList"></div>
+  <button type="button" class="btn ghost hidden" id="checkTpl" style="height:44px;font-size:15px">⬇ Скачати шаблон</button>
   <button type="button" class="btn" id="checkFix">Виправити</button>
   <button type="button" class="btn ghost" id="checkOk">Все правильно, надіслати</button>
 </div></div>
@@ -404,6 +406,12 @@ function findIssues(){
   const list = [];
   [...rates.values()].forEach(rt => { const t = rateIssueOf(rt); if(t) list.push({ name: rt.brand, text: t, rate: true }); });
   items.forEach(it => { if(!isChanged(it)) return; const t = issueOf(it); if(t.length) list.push({ name: it.name, text: t.join(" · "), it }); });
+  const changedItems = items.filter(isChanged);
+  const rows = n => n % 10 === 1 && n % 100 !== 11 ? "рядок" : [2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100) ? "рядки" : "рядків";
+  const noArticle = changedItems.filter(it => !String(it.article || "").trim()).length;
+  const noBrand = changedItems.filter(it => !String(it.brand || "").trim()).length;
+  if(noArticle) list.unshift({ name: `Без артикула: ${noArticle} ${rows(noArticle)}`, text: "Майстру буде важко впізнати ці товари — можуть з'явитися дублі. Додайте стовпець з артикулом або скористайтесь шаблоном.", soft: true });
+  if(noBrand) list.unshift({ name: `Без бренду: ${noBrand} ${rows(noBrand)}`, text: "Курс валюти прив'язується до бренду. Додайте стовпець з брендом (або впишіть бренд, коли вставляєте рядки).", soft: true });
   return list;
 }
 let checkedOk = false;
@@ -411,8 +419,10 @@ function showCheck(list){
   const shown = list.slice(0, 30);
   $("checkTitle").textContent = `Перевірте, будь ласка: ${list.length}`;
   $("checkList").innerHTML = shown.map(x => `<div class="row"><b>${esc(x.name)}</b><span>${esc(x.text)}</span></div>`).join("") + (list.length > shown.length ? `<div class="row hint">і ще ${list.length - shown.length}</div>` : "");
+  $("checkTpl").classList.toggle("hidden", !list.some(x => x.soft));
   $("check").classList.remove("hidden");
 }
+$("checkTpl").onclick = downloadTemplate;
 $("checkFix").onclick = () => {
   const list = findIssues();
   $("check").classList.add("hidden");
@@ -423,9 +433,11 @@ $("checkFix").onclick = () => {
     onlyIssues = list.filter(x => x.it).length > 1;
     renderItems();
     setTimeout(() => $("itemsCard").scrollIntoView({ behavior:"smooth" }), 50);
-  }else{
+  }else if(first && first.rate){
     renderRates();
     setTimeout(() => $("rates").scrollIntoView({ behavior:"smooth", block:"center" }), 50);
+  }else{
+    setTimeout(() => $("paste").scrollIntoView({ behavior:"smooth", block:"center" }), 50);
   }
 };
 $("checkOk").onclick = () => { $("check").classList.add("hidden"); checkedOk = true; send(); };
@@ -590,7 +602,8 @@ $("quickYes").onclick = () => {
   $("validUntil").value = $("quickValid").value; send();
 };
 $("quickView").onclick = () => { $("quickUpdate").click(); setTimeout(() => $("itemsCard").scrollIntoView({ behavior:"smooth" }), 50); };
-$("quickXlsx").onclick = () => {
+/* Наш формат: його сторінка розпізнає завжди. З цінами, які вже є в майстра, — менеджеру лишається оновити. */
+function downloadTemplate(){
   const rows = [["Артикул", "Назва", "Бренд", "Одиниця", "Роздрібна ціна", "Ціна для майстра", "Валюта"]].concat(
     base.map(it => [it.article || "", it.name || "", it.brand || "", it.unit || "", it.retail ?? "", it.master ?? "", it.currency || "UAH"]));
   try{
@@ -603,7 +616,9 @@ $("quickXlsx").onclick = () => {
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n");
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type:"text/csv" })); a.download = "ціни-у-майстра.csv"; a.click();
   }
-};
+}
+$("quickXlsx").onclick = downloadTemplate;
+$("tplBtn").onclick = downloadTemplate;
 $("search").addEventListener("input", renderItems);
 $("send").onclick = send;
 load();
