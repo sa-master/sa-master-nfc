@@ -14929,6 +14929,8 @@ function confirmImport(){
     return;
   }
 
+  const importCreated = [];
+  const importTouched = new Set();
   prepared.forEach(({ imported, brand, system, category, pricePair, existing }) => {
     const target = existing || findExistingCatalogItem({
       article: imported.article,
@@ -14957,6 +14959,7 @@ function confirmImport(){
         else if(!target.price && pricePair.master) target.price = pricePair.master.priceUAH;
       }
       if(!target.availabilityStatus) target.availabilityStatus = "draft";
+      importTouched.add(target.id);
 
       updated++;
     }else{
@@ -14983,6 +14986,7 @@ function confirmImport(){
 
       upsertSupplierOffer(newItem, pricePair, importedAt, imported.supplierArticle || imported.article);
       catalog.push(newItem);
+      importCreated.push(newItem);
       created++;
     }
   });
@@ -15020,6 +15024,10 @@ function confirmImport(){
     ), 400);
   }
 
+  /* Постачальник міг змінити артикул: схожий товар того ж бренду вже є — пропонуємо об'єднати */
+  const mergePairs = findMergeCandidates(importCreated, importTouched, importSupplierName);
+  if(mergePairs.length) setTimeout(() => openMergeScreen(mergePairs, importSupplierName), withoutMaster ? 900 : 500);
+
   // Показуємо нові та оновлені товари одразу, без повторного відкриття каталогу.
   renderCatalogChips();
   renderCatalogBrandChips();
@@ -15027,6 +15035,111 @@ function confirmImport(){
   renderCatalogSupplierChips();
   renderCatalogStatusChips();
   renderCatalogList();
+}
+
+/* ---------- Схожі товари після імпорту ---------- */
+function mergeTokens(name, brand){
+  const b = ntext(brand);
+  return ntext(name).replace(/[«»"'()]/g, " ").split(/[^0-9a-zа-яіїєґ/.,x×*]+/i).map(t => t.replace(/[.,]$/, "")).filter(t => t && t !== b && t.length > 1 || /\d/.test(t));
+}
+function mergeNumbers(tokens){
+  return tokens.filter(t => /\d/.test(t)).map(t => t.replace(",", ".").replace(/[×*]/g, "x")).sort().join("|");
+}
+function findMergeCandidates(created, touched, supplierName){
+  if(!created.length) return [];
+  const key = normalizeText(supplierName);
+  const pool = catalog.filter(item => item.type === "material" && !touched.has(item.id) && !created.includes(item) &&
+    getCatalogSupplierOffers(item).some(o => normalizeText(o && o.supplierName) === key));
+  if(!pool.length) return [];
+  const prep = item => { const t = mergeTokens(item.name, item.manufacturer); return { item, set: new Set(t), nums: mergeNumbers(t), brand: ntext(item.manufacturer), unit: normalizeUnit(item.unit) }; };
+  const old = pool.map(prep);
+  const used = new Set();
+  const pairs = [];
+  created.forEach(n => {
+    const a = prep(n);
+    if(!a.brand || !a.set.size) return;
+    let best = null, bestScore = 0;
+    old.forEach(o => {
+      if(used.has(o.item.id) || o.brand !== a.brand || o.unit !== a.unit || o.nums !== a.nums) return;
+      let common = 0; a.set.forEach(t => { if(o.set.has(t)) common++; });
+      const score = 2 * common / (a.set.size + o.set.size);
+      if(score > bestScore){ bestScore = score; best = o; }
+    });
+    if(best && bestScore >= 0.75){ used.add(best.item.id); pairs.push({ fresh: n, old: best.item, score: bestScore }); }
+  });
+  return pairs;
+}
+let mergeState = null;
+function openMergeScreen(pairs, supplierName){
+  mergeState = { pairs, supplierName, selected: new Set(pairs.map((_, i) => i)) };
+  let screen = document.getElementById("mergeScreen");
+  if(!screen){
+    screen = document.createElement("div");
+    screen.id = "mergeScreen";
+    screen.className = "onbScreen";
+    document.body.appendChild(screen);
+  }
+  screen.classList.add("open");
+  renderMergeScreen();
+}
+function mergeToggle(i){
+  if(!mergeState) return;
+  mergeState.selected.has(i) ? mergeState.selected.delete(i) : mergeState.selected.add(i);
+  const sc = document.getElementById("mergeScreen"); const top = sc ? sc.scrollTop : 0;
+  renderMergeScreen();
+  if(sc) sc.scrollTop = top;
+}
+function renderMergeScreen(){
+  const screen = document.getElementById("mergeScreen");
+  if(!screen || !mergeState) return;
+  const { pairs, supplierName, selected } = mergeState;
+  const art = item => { const o = getCatalogSupplierOffers(item).find(x => normalizeText(x && x.supplierName) === normalizeText(supplierName)); return cleanText((o && o.supplierArticle) || item.article); };
+  const n = selected.size;
+  screen.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeMergeScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Схожі товари</span></div>
+    <span class="onbNote" style="text-align:left">У прайсі ${escapeHtml(supplierName)} є нові артикули, дуже схожі на товари, які вже є у вас. Можливо, постачальник просто змінив код. Об'єднаний товар збереже вашу назву, а ціни й артикул візьме нові.</span>
+    <div class="opList">${pairs.map((p, i) => {
+      const on = selected.has(i);
+      return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="mergeToggle(${i})"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(catalogDisplayName(p.old))}<small>було: арт. ${escapeHtml(art(p.old) || "—")} · ${escapeHtml(p.old.name)}</small><small>стало: <b>арт. ${escapeHtml(art(p.fresh) || "—")}</b> · ${escapeHtml(p.fresh.name)}</small></span></button>`;
+    }).join("")}</div>
+    <div class="onbSpacer"></div>
+    <div class="supReviewFoot">
+      <button type="button" class="onbLink" onclick="closeMergeScreen()">Це різні товари</button>
+      <button type="button" class="onbPrimary" ${n ? "" : "disabled style=\"opacity:.45\""} onclick="applyMerge()">Об'єднати · ${n}</button>
+    </div>
+  </div>`;
+}
+function closeMergeScreen(){
+  document.getElementById("mergeScreen")?.classList.remove("open");
+  mergeState = null;
+}
+function applyMerge(){
+  if(!mergeState) return;
+  const { pairs, supplierName, selected } = mergeState;
+  const key = normalizeText(supplierName);
+  let merged = 0;
+  pairs.forEach((p, i) => {
+    if(!selected.has(i)) return;
+    const freshOffer = getCatalogSupplierOffers(p.fresh).find(o => normalizeText(o && o.supplierName) === key);
+    if(!freshOffer) return;
+    const oldOffer = getCatalogSupplierOffers(p.old).find(o => normalizeText(o && o.supplierName) === key);
+    const oldArticle = cleanText(oldOffer && oldOffer.supplierArticle);
+    p.old.supplierOffers = (p.old.supplierOffers || []).filter(o => normalizeText(o && o.supplierName) !== key).concat([freshOffer]);
+    if(!p.old.article || cleanText(p.old.article) === oldArticle) p.old.article = p.fresh.article || p.old.article;
+    p.old.name = p.fresh.name || p.old.name;
+    if(!p.old.preferredSupplierName || normalizeText(p.old.preferredSupplierName) === key){
+      p.old.preferredSupplierName = supplierName;
+      p.old.retailPriceUAH = p.fresh.retailPriceUAH; p.old.purchasePriceUAH = p.fresh.purchasePriceUAH;
+      if(p.fresh.price) p.old.price = p.fresh.price;
+    }
+    catalog = catalog.filter(item => item !== p.fresh);
+    merged++;
+  });
+  saveCatalog();
+  closeMergeScreen();
+  if(document.getElementById("catalogSheet")?.classList.contains("open")) renderCatalogList();
+  render();
+  toast(`Об'єднано: ${merged}`);
 }
 
 function openActions(id){
