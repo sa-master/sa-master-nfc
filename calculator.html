@@ -1478,6 +1478,13 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .guideStep b{display:block;font-size:.9375rem;font-weight:800;color:var(--t);margin-bottom:.1875rem}
 .guideStep p{margin:0;font-size:.8125rem;line-height:1.45;color:var(--ts)}
 .guideNum{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:.875rem;background:rgba(10,132,255,.12);color:var(--p);font-weight:850;font-size:.875rem;display:flex;align-items:center;justify-content:center}
+.admField{display:flex;flex-direction:column;gap:.25rem;font-size:.75rem;font-weight:700;color:var(--tm)}
+.admField input{height:2.5rem;border-radius:.625rem;border:1px solid rgba(120,120,128,.25);background:var(--bg);padding:0 .625rem;font-size:.9375rem;color:var(--t);min-width:0}
+.admBtn{height:2rem;padding:0 .625rem;border-radius:.5rem;background:var(--p);color:#fff;font-size:.75rem;font-weight:750;white-space:nowrap}
+.admBtn.ghost{background:rgba(120,120,128,.14);color:var(--t)}
+.accessBanner{display:flex;flex-direction:column;gap:.125rem;background:rgba(10,132,255,.1);border:1px solid rgba(10,132,255,.22);border-radius:1rem;padding:.625rem .75rem;margin:0 0 .625rem;font-size:.8125rem;color:var(--ts)}
+.accessBanner b{font-size:.9375rem;color:var(--t)}
+.accessBanner.off{background:rgba(255,59,48,.08);border-color:rgba(255,59,48,.25)}
 .supUpdate{display:flex;align-items:center;gap:.5rem;background:rgba(178,106,0,.12);border:1px solid rgba(178,106,0,.25);border-radius:1rem;padding:.625rem .75rem;margin:0 0 .625rem}
 .supUpdate>div{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:.125rem}
 .supUpdate b{font-size:.9375rem;color:var(--t)}
@@ -4697,6 +4704,9 @@ async function cloudPush(force){
       return;
     }else if(status === 401){
       cloudUnauthorized();
+    }else if(status === 402){
+      cloudLastError = "Тестовий період завершився — зміни не зберігаються в хмарі";
+      refreshAccess();
     }else{
       cloudLastError = "Хмара не відповідає — збережу пізніше";
       clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 30000);
@@ -4846,8 +4856,18 @@ let authMode = "login";
 let authBusy = false;
 
 function authNeeded(){
-  return !cloudSession() && !cloudGet(CLOUD_SKIP_KEY);
+  return !cloudSession();
 }
+
+/* Код запрошення: з посилання виду calculator.html#invite=КОД або введений вручну */
+let authInvite = (() => {
+  try{
+    const m = (location.hash + "&" + location.search).match(/invite=([A-Za-z0-9-]{3,32})/);
+    if(m){ sessionStorage.setItem("sa_invite", m[1].toUpperCase()); history.replaceState(null, "", location.pathname); }
+    return sessionStorage.getItem("sa_invite") || "";
+  }catch(e){ return ""; }
+})();
+let authNeedInvite = false;
 
 async function authPost(path, payload){
   const headers = { "Content-Type": "application/json", "X-Device": encodeURIComponent(cloudDeviceName()) };
@@ -4915,9 +4935,14 @@ function renderAuthScreen(){
     </div>
     ${showTg ? `<div id="tgLoginBox" class="authTg"></div>${showEmail ? `<div class="authOr"><span>або поштою</span></div>` : ""}` : ""}
     ${showEmail ? emailBlock : ""}
+    ${!link && showEmail ? `<div class="onbCard" ${authInvite || authNeedInvite ? "" : 'style="display:none"'} id="authInviteBox">
+        <label>Код запрошення<input id="authInviteInput" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="Напр. TEST-OLEG" value="${escapeHtml(authInvite)}" oninput="authInvite=this.value.trim().toUpperCase()"></label>
+        <span class="onbNote" style="text-align:left">Потрібен лише для першого входу. Код дає майстер, який вас запросив.</span>
+      </div>
+      ${authInvite || authNeedInvite ? "" : `<button type="button" class="onbLink" onclick="document.getElementById('authInviteBox').style.display='';this.remove()">У мене є код запрошення</button>`}` : ""}
     <div id="authError" class="authError hidden"></div>
     <div class="onbSpacer"></div>
-    ${link ? "" : `<button type="button" class="onbLink" onclick="authSkip()">Продовжити без входу</button><span class="onbNote">Без входу дані зберігаються лише на цьому пристрої</span>`}
+    ${link ? "" : `<span class="onbNote">Калькулятор працює за запрошенням. Якщо ви вже маєте акаунт — просто увійдіть поштою.</span>`}
   </div>`;
 
   if(showTg){
@@ -4963,8 +4988,19 @@ async function authVerifyCode(){
   authBusy = true;
   authError("");
   try{
-    const { status, body } = await authPost("/auth/email/verify", { email: authEmail, code });
-    if(status !== 200){ authError(body.error || "Не вдалося увійти"); return; }
+    const inviteInput = document.getElementById("authInviteInput");
+    if(inviteInput) authInvite = inviteInput.value.trim().toUpperCase();
+    const { status, body } = await authPost("/auth/email/verify", { email: authEmail, code, invite: authInvite });
+    if(status !== 200){
+      if(body.needInvite && !authNeedInvite){
+        authNeedInvite = true;
+        renderAuthScreen();
+        const ci = document.getElementById("authCodeInput"); if(ci) ci.value = code;
+        document.getElementById("authInviteInput")?.focus();
+      }
+      authError(body.error === "Потрібен код запрошення" ? "Ви ще не маєте акаунта. Введіть код запрошення від майстра, який вас запросив, і натисніть «Увійти»." : (body.error || "Не вдалося увійти"));
+      return;
+    }
     await authComplete(body);
   }catch(e){
     authError("Немає зв’язку — перевірте інтернет");
@@ -4977,7 +5013,7 @@ async function authTelegram(user){
   if(!user) return;
   authError("");
   try{
-    const { status, body } = await authPost("/auth/telegram", user);
+    const { status, body } = await authPost("/auth/telegram", { ...user, invite: authInvite });
     if(status !== 200){ authError(body.error || "Не вдалося увійти через Telegram"); return; }
     await authComplete(body);
   }catch(e){
@@ -5016,12 +5052,51 @@ async function authComplete(result){
     cloudDel(CLOUD_AT_KEY);
   }
 
+  try{ sessionStorage.removeItem("sa_invite"); }catch(e){}
+  authInvite = ""; authNeedInvite = false;
   closeAuthScreen();
   toast(result.created ? "Акаунт створено ✓" : "Ви увійшли ✓");
   cloudStarting = true;
   await cloudCheckRemote(true);
   render();
   if(shouldShowOnboarding()) setTimeout(openOnboarding, 250);
+}
+
+/* ==== Доступ: тестовий період ==== */
+const OWNER_CONTACT = "Сергій · 097 911 18 71";
+function accessInfoLocal(){
+  const s = cloudSession();
+  return s && s.user && s.user.access ? s.user.access : null;
+}
+function accessExpired(){
+  const a = accessInfoLocal();
+  return Boolean(a && a.active === false);
+}
+function requireAccess(){
+  if(!accessExpired()) return true;
+  alert(`Тестовий період завершився.\n\nВаші об’єкти доступні для перегляду, але змінювати їх і надсилати документи вже не можна.\n\nЩоб продовжити: ${OWNER_CONTACT}`);
+  return false;
+}
+async function refreshAccess(){
+  const s = cloudSession();
+  if(!s || !cloudEnabled()) return;
+  try{
+    const { status, body } = await cloudFetch("/auth/me");
+    if(status === 200 && body && body.user){
+      const before = JSON.stringify((s.user || {}).access || null);
+      s.user = body.user;
+      cloudSet(CLOUD_SESSION_KEY, JSON.stringify(s));
+      if(JSON.stringify(body.user.access || null) !== before) render();
+    }
+  }catch(e){}
+}
+function renderAccessBanner(){
+  const a = accessInfoLocal();
+  if(!a || a.unlimited) return "";
+  if(a.active === false) return `<section class="accessBanner off"><b>Тестовий період завершився</b><span>Об’єкти доступні для перегляду. Щоб продовжити роботу: ${escapeHtml(OWNER_CONTACT)}</span></section>`;
+  const left = Math.ceil((Date.parse(a.until) - Date.now()) / 86400000);
+  if(left <= 7) return `<section class="accessBanner"><b>Тестовий період: ще ${left} дн.</b><span>До ${formatQuoteDate(a.until)}. Щоб продовжити: ${escapeHtml(OWNER_CONTACT)}</span></section>`;
+  return "";
 }
 
 function authSkip(){
@@ -5064,15 +5139,115 @@ function renderAccountBox(){
   const tg = user.tg ? (user.tg.username ? "@" + user.tg.username : user.tg.name || "прив’язано") : "";
   box.innerHTML = `
     <div class="accountRow"><span>Пошта</span>${user.email ? `<b>${escapeHtml(user.email)}</b>` : `<button type="button" onclick="openAuthScreen('link')">Прив’язати</button>`}</div>
-    ${TG_LOGIN_BOT || tg ? `<div class="accountRow"><span>Telegram</span>${tg ? `<b>${escapeHtml(tg)}</b>` : `<button type="button" onclick="openAuthScreen('link')">Прив’язати</button>`}</div>` : ""}`;
+    ${TG_LOGIN_BOT || tg ? `<div class="accountRow"><span>Telegram</span>${tg ? `<b>${escapeHtml(tg)}</b>` : `<button type="button" onclick="openAuthScreen('link')">Прив’язати</button>`}</div>` : ""}
+    ${user.access && !user.access.unlimited ? `<div class="accountRow"><span>Доступ</span><b style="color:${user.access.active ? "inherit" : "var(--red)"}">${user.access.active ? "до " + formatQuoteDate(user.access.until) : "завершився"}</b></div>` : ""}
+    ${user.access && user.access.admin ? `<button type="button" class="addPersonButton" style="margin-top:.5rem" onclick="openAdmin()">Запрошення і доступи</button>` : ""}`;
+}
+
+/* ==== Власник: запрошення і доступи ==== */
+let adminData = { invites: [], users: [] };
+async function openAdmin(){
+  let screen = document.getElementById("adminScreen");
+  if(!screen){
+    screen = document.createElement("div");
+    screen.id = "adminScreen";
+    screen.className = "onbScreen";
+    document.body.appendChild(screen);
+  }
+  document.getElementById("profileScreen")?.classList.remove("open");
+  screen.classList.add("open");
+  screen.innerHTML = `<div class="onbInner"><div class="onbTop"><button type="button" class="onbBack" onclick="closeAdmin()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Запрошення і доступи</span></div><span class="onbNote">Завантаження…</span></div>`;
+  await loadAdmin();
+}
+function closeAdmin(){
+  document.getElementById("adminScreen")?.classList.remove("open");
+  openProfile();
+}
+async function loadAdmin(){
+  try{
+    const [inv, usr] = await Promise.all([cloudFetch("/admin/invites"), cloudFetch("/admin/users")]);
+    if(inv.status !== 200 || usr.status !== 200) throw new Error((inv.body && inv.body.error) || (usr.body && usr.body.error) || "server");
+    adminData = { invites: inv.body.invites || [], users: usr.body.users || [] };
+  }catch(e){
+    const screen = document.getElementById("adminScreen");
+    if(screen) screen.querySelector(".onbNote").textContent = "Не вдалося завантажити: " + e.message + ". Перевірте інтернет і чи оновлено сервер.";
+    return;
+  }
+  renderAdmin();
+}
+function adminInviteLink(code){ return `https://sa-master.pro/calculator.html#invite=${encodeURIComponent(code)}`; }
+function adminInviteText(inv){
+  return `Привіт! Даю тобі доступ до калькулятора et.app — кошториси, закупівля і гроші по об’єктах.\n\n` +
+    `Відкрий посилання на телефоні й увійди своєю поштою:\n${adminInviteLink(inv.code)}\n\n` +
+    `Код запрошення: ${inv.code} (діє ${inv.days} дн.)\n` +
+    `Порада: «Поділитися» → «На екран „Додому“» — відкриватиметься як застосунок.`;
+}
+async function adminShare(code){
+  const inv = adminData.invites.find(i => i.code === code);
+  if(!inv) return;
+  const text = adminInviteText(inv);
+  if(navigator.share){ try{ await navigator.share({ text }); return; }catch(e){ if(e && e.name === "AbortError") return; } }
+  try{ await copyText(text); toast("Текст запрошення скопійовано"); }catch(e){ toast("Не вдалося скопіювати"); }
+}
+async function adminCreate(){
+  const val = id => (document.getElementById(id)?.value || "").trim();
+  const body = { code: val("admCode"), days: Number(val("admDays")) || 60, maxUses: Number(val("admUses")) || 1, note: val("admNote") };
+  const { status, body: res } = await cloudFetch("/admin/invites", { method:"POST", body: JSON.stringify(body) });
+  if(status !== 200){ toast((res && res.error) || "Не вдалося створити код"); return; }
+  toast(`Код ${res.invite.code} створено`);
+  await loadAdmin();
+  adminShare(res.invite.code);
+}
+async function adminUser(id, payload, label){
+  if(payload.stop && !confirm("Зупинити доступ цьому користувачу? Він зможе лише переглядати свої об’єкти.")) return;
+  const { status, body } = await cloudFetch(`/admin/users/${id}`, { method:"POST", body: JSON.stringify(payload) });
+  if(status !== 200){ toast((body && body.error) || "Не вдалося"); return; }
+  toast(label);
+  await loadAdmin();
+}
+async function adminToggleInvite(code){
+  const inv = adminData.invites.find(i => i.code === code);
+  if(!inv) return;
+  await cloudFetch("/admin/invites", { method:"POST", body: JSON.stringify({ ...inv, update:true, disabled:!inv.disabled }) });
+  await loadAdmin();
+}
+function renderAdmin(){
+  const screen = document.getElementById("adminScreen");
+  if(!screen) return;
+  const { invites, users } = adminData;
+  const others = users.filter(u => !(u.access && u.access.admin));
+  screen.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeAdmin()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Запрошення і доступи</span></div>
+    <span class="onbNote" style="text-align:left">Новий майстер може зареєструватися лише з кодом. Код задає, на скільки днів доступ. Потім — лише перегляд, доки ви не продовжите.</span>
+    <div class="opStep"><span class="opLabel">Новий код</span>
+      <div class="guideList" style="padding:.75rem .875rem;gap:.625rem">
+        <label class="admField">Кому (нотатка)<input id="admNote" placeholder="Напр. Олег, плиточник" autocomplete="off"></label>
+        <label class="admField">Код (можна не вписувати — створиться сам)<input id="admCode" placeholder="Напр. OLEG" autocapitalize="characters" autocomplete="off"></label>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.5rem">
+          <label class="admField">Днів доступу<input id="admDays" inputmode="numeric" value="60"></label>
+          <label class="admField">Скільки людей<input id="admUses" inputmode="numeric" value="1"></label>
+        </div>
+        <button type="button" class="onbPrimary" style="margin:0" onclick="adminCreate()">Створити і надіслати</button>
+      </div>
+    </div>
+    <div class="opStep"><span class="opLabel">Коди · ${invites.length}</span>
+      <div class="guideList">${invites.map(inv => `<div class="guideStep plain" style="align-items:center"><div style="flex:1 1 auto;min-width:0"><b>${escapeHtml(inv.code)}${inv.disabled ? " · вимкнено" : ""}</b><p>${escapeHtml(inv.note || "")}${inv.note ? " · " : ""}${inv.days} дн. · використано ${inv.uses || 0}${inv.maxUses ? " з " + inv.maxUses : ""}${(inv.users || []).length ? " · " + inv.users.map(u => escapeHtml(u.email || u.id)).join(", ") : ""}</p></div>
+        <div style="display:flex;flex-direction:column;gap:.25rem"><button type="button" class="admBtn" onclick="adminShare('${escapeHtml(inv.code)}')">Надіслати</button><button type="button" class="admBtn ghost" onclick="adminToggleInvite('${escapeHtml(inv.code)}')">${inv.disabled ? "Увімкнути" : "Вимкнути"}</button></div></div>`).join("") || `<div class="guideStep plain"><p>Кодів ще немає</p></div>`}</div>
+    </div>
+    <div class="opStep"><span class="opLabel">Майстри · ${others.length}</span>
+      <div class="guideList">${others.map(u => `<div class="guideStep plain" style="align-items:center"><div style="flex:1 1 auto;min-width:0"><b>${escapeHtml(u.email || u.tg || u.id)}</b><p style="color:${u.access.active ? "inherit" : "var(--red)"}">${u.access.active ? "доступ до " + formatQuoteDate(u.access.until) : "доступ завершився " + formatQuoteDate(u.access.until)}${u.access.invite ? " · код " + escapeHtml(u.access.invite) : ""}</p></div>
+        <div style="display:flex;flex-direction:column;gap:.25rem"><button type="button" class="admBtn" onclick="adminUser('${escapeHtml(u.id)}',{addDays:30},'Продовжено на 30 днів')">+30 днів</button>${u.access.active ? `<button type="button" class="admBtn ghost" onclick="adminUser('${escapeHtml(u.id)}',{stop:true},'Доступ зупинено')">Зупинити</button>` : ""}</div></div>`).join("") || `<div class="guideStep plain"><p>Ще ніхто не зареєструвався</p></div>`}</div>
+    </div>
+  </div>`;
 }
 
 document.addEventListener("visibilitychange", () => {
-  if(document.visibilityState === "visible"){ cloudCheckRemote(); setTimeout(checkSupplierUpdates, 1500); }
+  if(document.visibilityState === "visible"){ cloudCheckRemote(); setTimeout(checkSupplierUpdates, 1500); setTimeout(refreshAccess, 800); }
   else if(cloudGet(CLOUD_DIRTY_KEY)) cloudPush();
 });
 setTimeout(() => { if(cloudEnabled()) cloudCheckRemote(); else cloudStarting = false; }, 1200);
 setTimeout(() => { try{ checkSupplierUpdates(); }catch(e){} }, 3000);
+setTimeout(() => { try{ refreshAccess(); }catch(e){} }, 2000);
 
 const PROJECTS_KEY = "sa_projects";
 const PROFILE_KEY = "sa_profile";
@@ -6767,6 +6942,7 @@ function buildRevisionSnapshot(project, selected){
 }
 
 function openRevision(id){
+  if(!requireAccess()) return;
   const project = projects.find(x => x.id === id);
   if(!project || !getApproved(project)) return;
   const changes = revisionChanges(project);
@@ -7074,11 +7250,11 @@ function renderHome(){
   const main = document.getElementById("main");
 
   if(!projects.length){
-    main.innerHTML = renderEmptyState();
+    main.innerHTML = renderAccessBanner() + renderEmptyState();
     return;
   }
 
-  main.innerHTML = renderSupplierUpdates() + renderProjectList();
+  main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + renderProjectList();
 }
 
 function renderEmptyState(){
@@ -7319,6 +7495,7 @@ function toggleMoneyBlock(){
 }
 
 function openMoneyForm(kind){
+  if(!requireAccess()) return;
   moneyExpanded = true;
   moneyEditId = "";
   moneyFormOpen = moneyFormOpen === kind ? "" : kind;
@@ -7611,6 +7788,7 @@ function renderQuotePreviewSection(title, positions, discountPercent, discountAm
 }
 
 function openQuotePreview(){
+  if(!requireAccess()) return;
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
   quoteMode = "all";
@@ -8262,6 +8440,12 @@ function getNextSteps(p){
   if(!positions.length){
     steps.push({ text:"Додайте роботи й матеріали", sub:"Кошторис поки порожній", label:"＋ Робота", action:"openCatalogFor('work')", primary:true });
     return steps;
+  }
+
+  /* Застарілі ціни постачальника — лише поки кошторис не надіслано або йде закупівля */
+  if((stage === "estimate" && !p.quoteSentAt) || stage === "procurement"){
+    const stale = staleSupplierFor(p);
+    if(stale) steps.push(stale);
   }
 
   if(stage === "estimate"){
@@ -9127,6 +9311,7 @@ function promptCustomDiscount(type){
 }
 
 function openNewProject(){
+  if(!requireAccess()) return;
   editingProjectId = null;
   document.getElementById("projectSheetTitle").textContent = "Новий об'єкт";
   document.getElementById("projectSheetSaveBtn").textContent = "Створити";
@@ -9462,6 +9647,7 @@ function toggleCatalogMore(event){
 }
 
 function openCatalogFor(type){
+  if(!requireAccess()) return;
   if(!currentProjectId) return;
   setCatalogMode(type);
   document.getElementById("catalogSheet").classList.add("open");
@@ -11120,6 +11306,7 @@ function tapPosition(projectId, positionId){
 }
 
 function openSinglePriceEditor(projectId, positionId){
+  if(!requireAccess()) return;
   const project = projects.find(p => p.id === projectId);
   if(!project) return;
   const pos = project.positions.find(p => p.id === positionId);
@@ -11338,8 +11525,9 @@ function refreshSupplierRequestPreview(){
   preview.textContent = supplierLinkText(input.value, link ? SUPPLIER_LINK_BASE + link.id : SUPPLIER_LINK_BASE + "…");
   const trustRow = document.getElementById("srTrustRow");
   if(trustRow){
-    trustRow.classList.toggle("hidden", !(link && link.trusted));
-    trustRow.innerHTML = link && link.trusted ? `✓ Оновлення від ${escapeHtml(link.supplierName)} застосовуються автоматично. <button type="button" style="background:none;color:var(--p);font-weight:700" onclick="updateSupplierLink(document.getElementById('srSupplierName').value,{trusted:false});refreshSupplierRequestPreview()">Вимкнути</button>` : "";
+    trustRow.classList.toggle("hidden", !(link && link.id));
+    trustRow.style.color = "inherit";
+    trustRow.innerHTML = link && link.id ? `<label class="noDiscountToggle" style="margin:0"><input type="checkbox" ${link.trusted ? "checked" : ""} onchange="updateSupplierLink(document.getElementById('srSupplierName').value,{trusted:this.checked,trustAsked:true})"><span>Приймати оновлення від ${escapeHtml(link.supplierName)} автоматично<small>Зміни понад 15% все одно на перевірку</small></span></label>` : "";
   }
 }
 
@@ -11490,8 +11678,16 @@ async function supplierApi(path, options = {}){
   return data;
 }
 
-async function publishSupplierLink(name){
-  const link = supplierLinkFor(name);
+async function publishSupplierLink(name, handledAt){
+  let link = supplierLinkFor(name);
+  if(!link || !link.id){
+    /* Не створюємо друге посилання тому самому постачальнику — шукаємо вже наявне на сервері */
+    try{
+      const mine = await supplierApi("/sup/mine");
+      const found = (mine.links || []).find(l => normalizeText(l.supplierName) === normalizeText(name));
+      if(found) link = updateSupplierLink(name, { id: found.id });
+    }catch(e){}
+  }
   const current = supplierCurrentPrice(name);
   const data = await supplierApi("/sup", { method:"POST", body: JSON.stringify({
     id: link && link.id,
@@ -11501,13 +11697,15 @@ async function publishSupplierLink(name){
     company: String(profile.company || ""),
     items: current.items,
     rates: current.rates,
-    pricesFrom: current.pricesFrom
+    pricesFrom: current.pricesFrom,
+    handledAt: handledAt || (supplierLinkFor(name) || {}).handledAt || ""
   }) });
-  updateSupplierLink(name, { id: data.id, publishedAt: new Date().toISOString() });
+  updateSupplierLink(name, { id: data.id, publishedAt: new Date().toISOString(), pricesFrom: current.pricesFrom || "" });
   return data.id;
 }
 
 async function shareSupplierLink(){
+  if(!requireAccess()) return;
   const name = rememberSupplierFromRequest(document.getElementById("srSupplierName").value);
   if(!name) return;
   let id;
@@ -11529,10 +11727,14 @@ async function shareSupplierLink(){
 /* Чи надіслав хтось із постачальників новий прайс */
 async function checkSupplierUpdates(){
   if(!cloudEnabled() || !cloudSession()) return;
-  const known = loadSupplierLinks();
-  if(!Object.values(known).some(link => link && link.id)) return;
   let data;
   try{ data = await supplierApi("/sup/mine"); }catch(e){ return; }
+  /* Посилання могло «загубитись» локально (інший пристрій, конфлікт версій) — відновлюємо з сервера */
+  (data.links || []).forEach(remote => {
+    const local = supplierLinkFor(remote.supplierName);
+    if(remote.supplierName && (!local || !local.id)) updateSupplierLink(remote.supplierName, { id: remote.id });
+  });
+  const known = loadSupplierLinks();
   const byId = new Map(Object.values(known).filter(l => l && l.id).map(l => [l.id, l]));
   const fresh = [];
   (data.links || []).forEach(remote => {
@@ -11552,7 +11754,7 @@ function renderSupplierUpdates(){
   if(!supplierUpdates.length) return "";
   return supplierUpdates.map(u => `
     <section class="supUpdate">
-      <div><b>${escapeHtml(u.supplierName)} надіслав прайс</b><small>${new Date(u.lastSubmitAt).toLocaleDateString("uk-UA")}${u.validUntil ? ` · ціни дійсні до ${formatQuoteDate(u.validUntil)}` : ""}</small></div>
+      <div><b>${escapeHtml(u.supplierName)} надіслав прайс</b><small>${u.big ? "є зміни понад 15% — перевірте · " : ""}${new Date(u.lastSubmitAt).toLocaleDateString("uk-UA")}${u.validUntil ? ` · ціни дійсні до ${formatQuoteDate(u.validUntil)}` : ""}</small></div>
       <button type="button" onclick="reviewSupplierUpdate('${escapeHtml(u.id)}')">Переглянути</button>
       <button type="button" class="x" onclick="dismissSupplierUpdate('${escapeHtml(u.id)}')" aria-label="Сховати">×</button>
     </section>`).join("");
@@ -11560,7 +11762,10 @@ function renderSupplierUpdates(){
 
 function dismissSupplierUpdate(id){
   const u = supplierUpdates.find(x => x.id === id);
-  if(u) updateSupplierLink(u.supplierName, { handledAt: u.lastSubmitAt });
+  if(u){
+    updateSupplierLink(u.supplierName, { handledAt: u.lastSubmitAt });
+    publishSupplierLink(u.supplierName, u.lastSubmitAt).catch(() => {});
+  }
   supplierUpdates = supplierUpdates.filter(x => x.id !== id);
   render();
 }
@@ -11610,29 +11815,48 @@ async function reviewSupplierUpdate(id, auto){
   }
   if(!parsed.items.length){
     updateSupplierLink(link.supplierName, { ...patch, handledAt: sub.at });
+    publishSupplierLink(link.supplierName, sub.at).catch(() => {});
     supplierUpdates = supplierUpdates.filter(x => x.id !== id);
     if(!auto) toast(parsed.importErrors.length ? parsed.importErrors[0] : `${link.supplierName}: ціни без змін${sub.validUntil ? `, дійсні до ${formatQuoteDate(sub.validUntil)}` : ""}`);
     render();
     return;
   }
   supplierImportContext = { id, supplierName: link.supplierName, at: sub.at, patch };
-  if(auto){ applySupplierItems(link.supplierName, parsed, parsed.items); return; }
+  if(auto){
+    const diff = supplierDiff(link, sub, parsed);
+    if(!diff.big){ applySupplierItems(link.supplierName, parsed, parsed.items); return; }
+    supplierImportContext = null;
+    if(!supplierUpdates.some(u => u.id === id)) supplierUpdates.push({ id, supplierName: link.supplierName, lastSubmitAt: sub.at, validUntil: sub.validUntil || "", big: true });
+    if(!currentProjectId) render();
+    return;
+  }
   openSupplierReview(link, sub, parsed);
 }
 
 /* Простий екран змін: було → стало, курси, нові товари */
 let supReview = null;
-function openSupplierReview(link, sub, parsed){
+/* Порівняння надісланого з тим, що вже в каталозі. «Велика» зміна — понад 15%: такі завжди на перевірку. */
+const SUP_BIG_CHANGE = 0.15;
+function supplierDiff(link, sub, parsed){
   const key = normalizeText(link.supplierName);
   const oldRates = new Map(supplierCurrentPrice(link.supplierName).rates.map(r => [normalizeText(r.brand), r]));
+  const jump = (a, b) => Number(a) > 0 && Number(b) > 0 && Math.abs(Number(b) - Number(a)) / Number(a) > SUP_BIG_CHANGE;
   const rateChanges = (sub.rates || []).filter(r => r.currency !== "UAH").map(r => ({ r, old: oldRates.get(normalizeText(r.brand)) }))
-    .filter(x => !x.old || x.old.currency !== x.r.currency || Number(x.old.rate) !== Number(x.r.rate));
+    .filter(x => !x.old || x.old.currency !== x.r.currency || Number(x.old.rate) !== Number(x.r.rate))
+    .map(x => ({ ...x, big: Boolean(x.old && x.old.rate && (x.old.currency !== x.r.currency || jump(x.old.rate, x.r.rate))) }));
   const rows = parsed.items.map((it, index) => {
     const existing = findExistingCatalogItem({ article: it.article, supplierArticle: it.supplierArticle, name: it.name, unit: it.unit, manufacturer: it.manufacturer }, link.supplierName);
     const offer = existing && getCatalogSupplierOffers(existing).find(o => normalizeText(o && o.supplierName) === key);
-    return { index, it, existing, old: offer ? { retail: offer.retail && offer.retail.sourcePrice, master: offer.master && offer.master.sourcePrice, currency: (offer.master || offer.retail || {}).sourceCurrency || "UAH" } : null };
+    const old = offer ? { retail: offer.retail && offer.retail.sourcePrice, master: offer.master && offer.master.sourcePrice, currency: (offer.master || offer.retail || {}).sourceCurrency || "UAH" } : null;
+    const big = Boolean(old && (old.currency !== it.currency || jump(old.retail, it.retailPrice) || jump(old.master, it.masterPrice)));
+    return { index, it, existing, old, big };
   });
-  supReview = { link, sub, parsed, rows, rateChanges, selected: new Set(rows.map(r => r.index)) };
+  return { rows, rateChanges, big: rows.some(r => r.big) || rateChanges.some(x => x.big) };
+}
+
+function openSupplierReview(link, sub, parsed){
+  const { rows, rateChanges } = supplierDiff(link, sub, parsed);
+  supReview = { link, sub, parsed, rows, rateChanges, selected: new Set(rows.map(r => r.index)), trust: Boolean(link.trusted) };
   let screen = document.getElementById("supReviewScreen");
   if(!screen){
     screen = document.createElement("div");
@@ -11663,17 +11887,21 @@ function renderSupplierReview(){
     const it = r.it;
     const name = r.existing ? catalogDisplayName(r.existing) : it.name;
     const line = (label, oldV, newV) => oldV === newV ? "" : `<span>${label}: ${r.old ? `${fmt(oldV, r.old.currency)} → ` : ""}<b>${fmt(newV, it.currency)}</b></span>`;
-    return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="supReviewToggle(${r.index})"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(name)}<small>${[line("роздріб", r.old && r.old.retail, it.retailPrice), line("вам", r.old && r.old.master, it.masterPrice)].filter(Boolean).join(" · ") || "ціни без змін, оновлено курс"}</small></span></button>`;
+    return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="supReviewToggle(${r.index})"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(name)}${r.big ? ' <span style="color:var(--orange);font-weight:800">· понад 15%</span>' : ""}<small>${[line("роздріб", r.old && r.old.retail, it.retailPrice), line("вам", r.old && r.old.master, it.masterPrice)].filter(Boolean).join(" · ") || "ціни без змін, оновлено курс"}</small></span></button>`;
   };
   const n = selected.size;
   screen.innerHTML = `<div class="onbInner">
     <div class="onbTop"><button type="button" class="onbBack" onclick="closeSupplierReview()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${escapeHtml(link.supplierName)} оновив прайс</span></div>
     <span class="onbNote" style="text-align:left">${[changedRows.length ? `змінено цін: ${changedRows.length}` : "", newRows.length ? `нових товарів: ${newRows.length}` : "", rateChanges.length ? `курсів: ${rateChanges.length}` : ""].filter(Boolean).join(" · ")}${sub.validUntil ? ` · дійсні до ${formatQuoteDate(sub.validUntil)}` : ""}${sub.manager ? ` · ${escapeHtml(sub.manager)}` : ""}</span>
     ${sub.comment ? `<div class="formHint" style="margin:0">💬 ${escapeHtml(sub.comment)}</div>` : ""}
-    ${rateChanges.length ? `<div class="opStep"><span class="opLabel">Курси</span><div class="opList">${rateChanges.map(x => `<div class="opItem" style="cursor:default"><span class="opName">${escapeHtml(x.r.brand)}<small>${x.old && x.old.rate ? `${x.old.currency} ${moneyWithCents(x.old.rate).replace(/\s*₴$/, "")} → ` : ""}<b>${x.r.currency} ${moneyWithCents(x.r.rate).replace(/\s*₴$/, "")}</b></small></span></div>`).join("")}</div></div>` : ""}
+    ${rateChanges.length ? `<div class="opStep"><span class="opLabel">Курси</span><div class="opList">${rateChanges.map(x => `<div class="opItem" style="cursor:default"><span class="opName">${escapeHtml(x.r.brand)}${x.big ? ' <span style="color:var(--orange);font-weight:800">· понад 15%</span>' : ""}<small>${x.old && x.old.rate ? `${x.old.currency} ${moneyWithCents(x.old.rate).replace(/\s*₴$/, "")} → ` : ""}<b>${x.r.currency} ${moneyWithCents(x.r.rate).replace(/\s*₴$/, "")}</b></small></span></div>`).join("")}</div></div>` : ""}
     ${changedRows.length ? `<div class="opStep"><span class="opLabel">Змінені ціни · ${changedRows.length}</span><div class="opList">${changedRows.map(item).join("")}</div></div>` : ""}
     ${newRows.length ? `<div class="opStep"><span class="opLabel">Нові товари · ${newRows.length}</span><div class="opList">${newRows.map(item).join("")}</div></div>` : ""}
     ${parsed.importErrors.length ? `<div class="formHint" style="margin:0;color:var(--orange)">Без курсу пропущено: ${parsed.importErrors.length} поз.</div>` : ""}
+    <label class="noDiscountToggle" style="margin:0">
+      <input type="checkbox" ${supReview.trust ? "checked" : ""} onchange="supReview.trust=this.checked">
+      <span>Надалі приймати від ${escapeHtml(link.supplierName)} автоматично<small>Зміни понад 15% все одно покажемо вам на перевірку. Погоджені з клієнтами суми не змінюються.</small></span>
+    </label>
     <div class="onbSpacer"></div>
     <button type="button" class="onbPrimary" ${n ? "" : "disabled style=\"opacity:.45\""} onclick="acceptSupplierReview()">Прийняти · ${n}</button>
     <button type="button" class="onbLink" onclick="rejectSupplierReview()">Не приймати</button>
@@ -11696,6 +11924,7 @@ function acceptSupplierReview(){
   const r = supReview;
   if(!r) return;
   const items = r.rows.filter(x => r.selected.has(x.index)).map(x => x.it);
+  updateSupplierLink(r.link.supplierName, { trusted: Boolean(r.trust), trustAsked: true });
   document.getElementById("supReviewScreen")?.classList.remove("open");
   supReview = null;
   applySupplierItems(r.link.supplierName, r.parsed, items);
@@ -11722,7 +11951,7 @@ function afterSupplierLinkImport(){
   const count = (Number(before.appliedCount) || 0) + 1;
   const link = updateSupplierLink(ctx.supplierName, { ...ctx.patch, handledAt: ctx.at, appliedAt: new Date().toISOString(), appliedCount: count });
   supplierUpdates = supplierUpdates.filter(x => x.id !== ctx.id);
-  publishSupplierLink(ctx.supplierName).catch(() => {});
+  publishSupplierLink(ctx.supplierName, ctx.at).catch(() => {});
   render();
   /* Після кількох спокійних оновлень пропонуємо не перевіряти кожне вручну */
   if(count >= 3 && !link.trusted && !link.trustAsked){
@@ -11734,6 +11963,44 @@ function afterSupplierLinkImport(){
       }
     }, 900);
   }
+}
+
+/* Ціни постачальника застаріли: минула дата «дійсні до», яку він сам поставив, або 30 днів від останнього оновлення.
+   Показуємо одну підказку в «Що далі» з кнопкою попросити оновлення. */
+const SUP_STALE_DAYS = 30;
+function supplierStaleInfo(link){
+  if(!link || !link.id) return null;
+  const today = todayIso();
+  if(link.askedAt && Date.now() - Date.parse(link.askedAt) < 3 * 86400000) return null;
+  if(link.validUntil) return link.validUntil < today ? { sub:`дійсні були до ${formatQuoteDate(link.validUntil)}` } : null;
+  const fresh = String(link.handledAt || link.pricesFrom || link.publishedAt || "").slice(0, 10);
+  if(!fresh) return null;
+  return Date.now() - Date.parse(fresh + "T12:00:00") > SUP_STALE_DAYS * 86400000 ? { sub:`останнє оновлення ${formatQuoteDate(fresh)}` } : null;
+}
+function staleSupplierFor(project){
+  const links = loadSupplierLinks();
+  const names = new Map();
+  (project.positions || []).forEach(pos => {
+    if(pos.type !== "material") return;
+    const planned = cleanText(getPositionPlannedSupplier(pos));
+    if(planned) names.set(normalizeText(planned), planned);
+    getCatalogSupplierOffers(getPositionCatalogItem(pos)).forEach(o => { const n = cleanText(o && o.supplierName); if(n) names.set(normalizeText(n), n); });
+  });
+  for(const [key, name] of names){
+    const link = links[key];
+    const info = supplierStaleInfo(link);
+    if(info) return { text:`Ціни ${escapeHtml(link.supplierName || name)} застаріли`, sub:info.sub, label:"Попросити оновити", action:`askSupplierRefresh(decodeURIComponent('${encodeURIComponent(link.supplierName || name).replace(/'/g, "%27")}'))` };
+  }
+  return null;
+}
+async function askSupplierRefresh(name){
+  const link = supplierLinkFor(name);
+  if(!link || !link.id) return;
+  const text = `Доброго дня! Підтвердіть, будь ласка, актуальність цін — одне натискання за посиланням:\n${SUPPLIER_LINK_BASE + link.id}\nДякую!`;
+  updateSupplierLink(name, { askedAt: new Date().toISOString() });
+  render();
+  if(navigator.share){ try{ await navigator.share({ text }); return; }catch(e){ if(e && e.name === "AbortError") return; } }
+  try{ await copyText(text); toast("Текст із посиланням скопійовано — надішліть постачальнику"); }catch(e){ toast("Не вдалося скопіювати"); }
 }
 
 /* ==== ЗВІРКА КОНКРЕТНОЇ ЗАКУПІВЛІ ==== */
@@ -15201,6 +15468,7 @@ function mySupplierNames(project){
 let orderPick = null;
 
 function openOrderPick(){
+  if(!requireAccess()) return;
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
   const toBuy = positionsToBuy(project);
