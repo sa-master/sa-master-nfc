@@ -3328,6 +3328,15 @@ body.positionDragging{
 .opName small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
 .opQty{flex:0 0 auto;font-size:.875rem;font-weight:750}
 .buyLaterPay{flex-wrap:wrap;margin:.25rem 0 .5rem}
+.buyLaterOrderBtn{width:100%;margin-top:.625rem;height:2.625rem;border-radius:.75rem;background:var(--card);color:var(--p);font-weight:750;font-size:.875rem;border:1px solid rgba(0,122,255,.25)}
+.matCollapsed{width:100%;display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:1rem;border-radius:1rem;background:var(--card);text-align:left;margin-top:.5rem}
+.matCollapsed b{display:block;font-size:1rem;font-weight:800;color:var(--t)}
+.matCollapsed small{display:block;font-size:.8125rem;color:var(--tm);margin-top:.125rem}
+.matCollapsedGo{flex:0 0 auto;color:var(--p);font-weight:750;font-size:.875rem}
+.matCollapse{display:block;margin:.25rem 0 .5rem auto;color:var(--p);font-weight:750;font-size:.875rem;padding:.375rem .25rem}
+.returnBox{border-color:rgba(198,40,40,.35)!important;background:rgba(198,40,40,.05)!important}
+.returnBox .buyLaterTitle{color:#B42318}
+.returnBox .buyLaterItem{border-top-color:rgba(198,40,40,.15)}
 .buyLaterPay input{flex:1 1 7rem}
 .buyLaterPay input.qty{flex:0 0 6rem}
 .buyLaterPay button.ghost{background:rgba(120,120,128,.14);color:var(--ts)}
@@ -6083,6 +6092,18 @@ function removeBuyLater(positionId){
 
 let buyLaterFormOpen = false;
 
+/* З «Докупити самому» → у «Дозамовити»: позицію замовлять у постачальника через «Замовити» */
+function moveBuyLaterToOrder(positionId){
+  const project = projects.find(item => item.id === currentProjectId);
+  const position = project && (project.positions || []).find(item => item.id === positionId);
+  if(!position) return;
+  position.buyLater = false;
+  if(position.buyLaterOnly) position.toOrder = true;
+  touchProject(project);
+  render();
+  toast(`${positionShortName(position)} → «Дозамовити»`);
+}
+
 function openBuyLaterForm(){
   buyLaterFormOpen = !buyLaterFormOpen;
   render();
@@ -6116,44 +6137,69 @@ function addBuyLaterItem(){
 }
 
 function renderBuyLater(project){
-  const items = (project.positions || []).filter(isBuyLater);
-  if(!items.length && !buyLaterFormOpen) return "";
-  const pending = items.filter(position => !position.buyLaterDone);
-  const done = items.filter(position => position.buyLaterDone);
+  const pending = extrasPending(project);
+  const done = extrasDone(project);
+  const returns = returnsPending(project);
+  if(!pending.length && !done.length && !returns.length && !buyLaterFormOpen) return "";
   const row = position => {
     const id = escapeHtml(position.id);
     const unit = escapeHtml(position.unit || "шт");
-    return `
-      <div class="buyLaterItem ${position.buyLaterDone ? "done" : ""}">
-        <button type="button" class="buyLaterCheck" onclick="toggleBuyLaterDone('${id}')" aria-label="${position.buyLaterDone ? "Не куплено" : "Куплено"}">${position.buyLaterDone ? "✓" : ""}</button>
-        <button type="button" class="buyLaterName" onclick="toggleBuyLaterDone('${id}')">${escapeHtml(positionShortName(position))}</button>
-        ${position.buyLaterDone ? `<span class="stockPickMeta" style="margin:0">${position.buyLaterPaid ? `${money(position.buyLaterPaid)}${position.buyLaterWhere ? " · " + escapeHtml(position.buyLaterWhere) : ""}` : `${formatQty(positionOrderQty(position))} ${unit}`}</span>` : `
-        <div class="qtyControl stockPickControl" aria-label="Кількість">
+    const manual = Boolean(position.buyLaterOnly);
+    const isDone = manual ? position.buyLaterDone : positionToBuyQty(project, position) <= 0;
+    const need = positionToBuyQty(project, position);
+    const partly = !manual && (positionOrderedQty(project, position) > 0 || positionSelfQty(position) > 0);
+    const paid = manual ? position.buyLaterPaid : (position.selfBuys || []).reduce((a, b) => a + (Number(b.amount) || 0), 0);
+    const where = manual ? position.buyLaterWhere : ((position.selfBuys || []).slice(-1)[0] || {}).where;
+    const qtyBox = manual
+      ? `<div class="qtyControl stockPickControl" aria-label="Кількість">
           <button class="qtyBtn" type="button" onclick="changeBuyLaterQty('${id}',-1)" aria-label="Менше">−</button>
           <input class="estimateQtyInput" type="text" inputmode="decimal" value="${formatQty(positionOrderQty(position))}" aria-label="Кількість, ${unit}" onfocus="this.select()" onchange="setBuyLaterQty('${id}',this.value)">
           <button class="qtyBtn" type="button" onclick="changeBuyLaterQty('${id}',1)" aria-label="Більше">＋</button>
-        </div>`}
-        <button type="button" class="buyLaterRemove" onclick="removeBuyLater('${id}')" aria-label="Прибрати зі списку">×</button>
+        </div>`
+      : `<span class="stockPickMeta" style="margin:0;white-space:nowrap">${partly ? "+" : ""}${formatQty(need)} ${unit}</span>`;
+    return `
+      <div class="buyLaterItem ${isDone ? "done" : ""}">
+        <button type="button" class="buyLaterCheck" onclick="toggleExtraDone('${id}')" aria-label="${isDone ? "Не куплено" : "Куплено"}">${isDone ? "✓" : ""}</button>
+        <button type="button" class="buyLaterName" onclick="toggleExtraDone('${id}')">${escapeHtml(positionShortName(position))}${manual ? "" : `<small style="display:block;font-weight:600;color:var(--tm)">з кошторису</small>`}</button>
+        ${isDone ? `<span class="stockPickMeta" style="margin:0">${paid ? `${money(paid)}${where ? " · " + escapeHtml(where) : ""}` : "куплено"}</span>` : qtyBox}
+        ${manual ? `<button type="button" class="buyLaterRemove" onclick="removeBuyLater('${id}')" aria-label="Прибрати зі списку">×</button>` : ""}
       </div>
       ${buyLaterPayFor === position.id ? `
         <div class="buyLaterForm buyLaterPay">
-          <input id="buyLaterPaid" class="qty" type="text" inputmode="decimal" placeholder="Сума, ₴" autocomplete="off" onkeydown="if(event.key==='Enter')saveBuyLaterPaid('${id}')">
-          <input id="buyLaterWhere" type="text" list="moneyToList2" placeholder="Де: Епіцентр, ринок…" autocomplete="off" onkeydown="if(event.key==='Enter')saveBuyLaterPaid('${id}')">
+          <input id="buyLaterPaid" class="qty" type="text" inputmode="decimal" placeholder="Сума, ₴" autocomplete="off" onkeydown="if(event.key==='Enter')saveExtraPaid('${id}')">
+          <input id="buyLaterWhere" type="text" list="moneyToList2" placeholder="Де: Епіцентр, ринок…" autocomplete="off" onkeydown="if(event.key==='Enter')saveExtraPaid('${id}')">
           <datalist id="moneyToList2">${moneyToSuggestions(project).map(n => `<option value="${escapeHtml(n)}"></option>`).join("")}</datalist>
-          <button type="button" onclick="saveBuyLaterPaid('${id}')">Записати</button>
-          <button type="button" class="ghost" onclick="saveBuyLaterPaid('${id}',true)">Без суми</button>
+          <button type="button" onclick="saveExtraPaid('${id}')">Записати</button>
+          <button type="button" class="ghost" onclick="saveExtraPaid('${id}',true)">Без суми</button>
         </div>` : ""}
     `;
   };
+  const retRow = r => {
+    const pid = escapeHtml(r.positionId);
+    return `
+      <div class="buyLaterItem">
+        <span class="buyLaterName" style="cursor:default">${escapeHtml(r.name)}<small style="display:block;font-weight:600;color:var(--tm)">${formatQty(r.qty)} ${escapeHtml(r.unit)} · ${escapeHtml(r.supplierName)}</small></span>
+        <button type="button" class="buyLaterAdd" onclick="openReturnForm('${pid}')">Повернув</button>
+        <button type="button" class="buyLaterAdd" style="color:var(--tm)" onclick="keepReturn('${pid}')">Залишаю</button>
+      </div>
+      ${returnFormFor === r.positionId ? `
+        <div class="buyLaterForm buyLaterPay">
+          <input id="returnAmount" class="qty" type="text" inputmode="decimal" placeholder="Повернули, ₴" value="${r.price ? String(Math.round(r.price * r.qty * 100) / 100).replace(".", ",") : ""}" autocomplete="off" onkeydown="if(event.key==='Enter')saveReturn('${pid}')">
+          <button type="button" onclick="saveReturn('${pid}')">Записати</button>
+          <button type="button" class="ghost" onclick="saveReturn('${pid}',true)">Гроші вже враховано</button>
+        </div>` : ""}`;
+  };
   return `
+    ${pending.length || done.length || buyLaterFormOpen ? `
     <section class="buyLater">
       <div class="buyLaterHead">
-        <span class="buyLaterTitle">🛒 Купити пізніше${pending.length ? ` · ${pending.length}` : ""}</span>
+        <span class="buyLaterTitle">🛒 Докупити${pending.length ? ` · ${pending.length}` : ""}</span>
         <button type="button" class="buyLaterAdd" onclick="openBuyLaterForm()">${buyLaterFormOpen ? "Готово" : "＋ Додати"}</button>
       </div>
-      ${items.length ? "" : `<div class="buyLaterHint">Що докупити самому (магазин, за потреби). Постачальнику не йде. Позиції з кошторису позначайте «Пізніше» на екрані «Що є на складі?».</div>`}
+      ${pending.length ? `<div class="buyLaterHint">Купили — поставте галочку й суму, вона піде у «Гроші».</div>` : (done.length ? "" : `<div class="buyLaterHint">Що треба докупити: розхідники, дрібниці. Нове з кошторису після замовлення з'являється тут саме.</div>`)}
       ${pending.map(row).join("")}
       ${done.map(row).join("")}
+      ${pending.length ? `<button type="button" class="buyLaterOrderBtn" onclick="openOrderPick(true)">📦 Дозамовити в постачальника</button>` : ""}
       ${buyLaterFormOpen ? `
         <div class="buyLaterForm">
           <input id="buyLaterName" type="text" placeholder="Що купити" autocomplete="off" onkeydown="if(event.key==='Enter')addBuyLaterItem()">
@@ -6161,8 +6207,113 @@ function renderBuyLater(project){
           <input id="buyLaterPrice" class="qty" type="text" inputmode="decimal" placeholder="Ціна ₴" autocomplete="off" onkeydown="if(event.key==='Enter')addBuyLaterItem()">
           <button type="button" onclick="addBuyLaterItem()">Додати</button>
         </div>` : ""}
-    </section>
+    </section>` : ""}
+    ${returns.length ? `
+    <section class="buyLater returnBox">
+      <div class="buyLaterHead"><span class="buyLaterTitle">↩ Повернути · ${returns.length}</span></div>
+      <div class="buyLaterHint">Замовлено більше, ніж тепер треба за кошторисом.</div>
+      ${returns.map(retRow).join("")}
+    </section>` : ""}
   `;
+}
+
+/* Галочка в «Докупити»: купили самі. Для позицій з кошторису запам'ятовуємо, скільки саме куплено. */
+function toggleExtraDone(positionId){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  if(position.buyLaterOnly) return toggleBuyLaterDone(positionId);
+  if(positionToBuyQty(project, position) <= 0){
+    const ids = new Set((position.selfBuys || []).map(b => b.expenseId).filter(Boolean));
+    project.expenses = moneyList(project, "expense").filter(e => !ids.has(e.id));
+    position.selfBuys = [];
+    position.buyLaterDone = false;
+    buyLaterPayFor = "";
+    toast(ids.size ? "Витрату за цю позицію прибрано" : "Знову в списку «Докупити»");
+  }else{
+    buyLaterPayFor = buyLaterPayFor === positionId ? "" : positionId;
+    setTimeout(() => document.getElementById("buyLaterPaid")?.focus(), 60);
+  }
+  touchProject(project);
+  render();
+}
+
+function saveExtraPaid(positionId, skip){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  if(position.buyLaterOnly) return saveBuyLaterPaid(positionId, skip);
+  const qty = positionToBuyQty(project, position);
+  let amount = 0, where = "";
+  if(!skip){
+    amount = Number(String(document.getElementById("buyLaterPaid")?.value || "").replace(/\s/g, "").replace(",", "."));
+    if(!Number.isFinite(amount) || amount <= 0){ toast("Впишіть суму або «Без суми»"); return; }
+    where = cleanText(document.getElementById("buyLaterWhere")?.value);
+  }
+  buyLaterPayFor = "";
+  const buy = { qty, amount: Math.round(amount * 100) / 100, where, at: new Date().toISOString() };
+  if(amount > 0){
+    const entry = { id: uid("exp"), date: todayIso(), amount: buy.amount, to: where, note: `${positionShortName(position)} × ${formatQty(qty)}`, buyLaterId: position.id };
+    moneyList(project, "expense").push(entry);
+    buy.expenseId = entry.id;
+    position.purchasePrice = Math.round(amount / (qty || 1) * 100) / 100;
+    position.purchasePriceState = "confirmed";
+  }
+  if(!Array.isArray(position.selfBuys)) position.selfBuys = [];
+  position.selfBuys.push(buy);
+  touchProject(project);
+  render();
+  toast(amount > 0 ? "Записано у «Гроші» → Витрати" : "Позначено як куплене");
+}
+
+/* Повернення зайвого постачальнику */
+let returnFormFor = "";
+function openReturnForm(positionId){
+  returnFormFor = returnFormFor === positionId ? "" : positionId;
+  render();
+  setTimeout(() => document.getElementById("returnAmount")?.focus(), 60);
+}
+function applyReturnQty(project, positionId, field){
+  const r = returnsPending(project).find(x => x.positionId === positionId);
+  if(!r) return null;
+  let left = r.qty;
+  r.refs.slice().reverse().forEach(({ order, line }) => {
+    if(left <= 0) return;
+    const free = (Number(line.qty) || 0) - (Number(line.kept) || 0);
+    const take = Math.min(free, left);
+    if(take <= 0) return;
+    if(field === "kept") line.kept = roundQty((Number(line.kept) || 0) + take);
+    else line.qty = roundQty((Number(line.qty) || 0) - take);
+    left = roundQty(left - take);
+  });
+  projectOrders(project).forEach(order => { order.lines = (order.lines || []).filter(line => (Number(line.qty) || 0) > 0); });
+  return r;
+}
+function saveReturn(positionId, skip){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  let amount = 0;
+  if(!skip){
+    amount = parseMoneyInput(document.getElementById("returnAmount")?.value || "") || 0;
+    if(amount < 0) amount = -amount;
+  }
+  const r = applyReturnQty(project, positionId, "qty");
+  returnFormFor = "";
+  if(!r) return render();
+  const order = r.refs[0].order;
+  if(amount > 0) moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:-Math.round(amount * 100) / 100, note:`Повернення: ${r.name} — ${r.supplierName}`, orderId:order.id });
+  orderEvent(order, `Повернення ${formatQty(r.qty)} ${r.unit} «${r.name}»${amount > 0 ? ` (${moneyWithCents(amount)})` : ""}`);
+  touchProject(project);
+  render();
+  toast(amount > 0 ? "Повернення записано у «Гроші»" : "Повернення записано");
+}
+function keepReturn(positionId){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  const r = applyReturnQty(project, positionId, "kept");
+  if(!r) return;
+  orderEvent(r.refs[0].order, `Залишено собі: ${formatQty(r.qty)} ${r.unit} «${r.name}»`);
+  touchProject(project);
+  render();
+  toast("Залишаєте собі — у повернення не потрапить");
 }
 
 function positionOrderQty(position){
@@ -6265,7 +6416,7 @@ function renderStockPick(){
             >
             <button class="qtyBtn" type="button" onclick="changePositionStockQty('${escapeHtml(position.id)}',1)" aria-label="Більше">＋</button>
           </div>
-          ${order > 0 ? `<button type="button" class="stockLaterBtn" onclick="toggleBuyLater('${escapeHtml(position.id)}')">Пізніше</button>` : ""}
+          ${order > 0 ? `<button type="button" class="stockLaterBtn" onclick="toggleBuyLater('${escapeHtml(position.id)}')">Куплю сам</button>` : ""}
         </div>
       `;
     }).join("")}
@@ -6461,7 +6612,7 @@ function renderProcurementPlan(){
     <section class="procurementGroup">
       <div class="procurementGroupHead">
         <div class="procurementGroupTitle">
-          <div class="procurementGroupName">${group.later ? "🛒 Купити пізніше" : group.stock ? "Зі складу" : group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</div>
+          <div class="procurementGroupName">${group.later ? "🛒 Докупити самому" : group.stock ? "Зі складу" : group.supplier ? escapeHtml(group.supplier) : "Не розподілено"}</div>
           <div class="procurementGroupMeta">${group.later ? `${group.positions.length} поз. · постачальнику не йдуть` : group.stock ? `${group.positions.length} поз. · не замовляються` : escapeHtml(getProcurementGroupMeta(group.positions))}</div>
           ${group.supplier && !group.stock && !group.later ? renderSupplierContactLine(group.supplier) : ""}
         </div>
@@ -8414,7 +8565,18 @@ function defaultProjectTab(project){
   return "works";
 }
 
+/* Під час робіт закуплений кошторис згорнутий: на виду лише «Докупити», «Повернути» й замовлення */
+let materialsOpenFor = "";
+function materialsCollapsed(p){
+  return Boolean(p) && ["work", "done", "closed"].includes(p.stage) && projectOrders(p).length > 0 && materialsOpenFor !== p.id;
+}
+function toggleMaterialsList(id, open){
+  materialsOpenFor = open ? id : "";
+  render();
+  if(!open) window.scrollTo({ top:0, behavior:"smooth" });
+}
 function setProjectTab(tab){
+  materialsOpenFor = "";
   projectTab = ["works", "materials", "money"].includes(tab) ? tab : "works";
   render();
   window.scrollTo({ top:0, behavior:"smooth" });
@@ -8477,15 +8639,19 @@ function getNextSteps(p){
       const missing = order.lines.filter(l => l.received === false).length;
       if(order.status !== "received" || missing){ allReceived = false; steps.push({ text:`Чекаємо ${escapeHtml(order.supplierName)}`, sub:missing ? `Не довезли ${missing} поз.` : (orderDeliveryText(order) || "Замовлення надіслано"), label:missing ? "Довезли" : "Привезли", action:`orderMarkReceived('${order.id}')` }); }
     });
-    const later = (p.positions || []).filter(isBuyLaterPending).length;
-    if(later) steps.push({ text:`Купити пізніше: ${later} поз.`, sub:"Магазин або за потреби", label:"Список", action:"setProjectTab('materials')" });
+    const later = extrasPending(p).length;
+    if(later) steps.push({ text:`Докупити: ${later} поз.`, sub:"Купите самі або дозамовите", label:"Список", action:"setProjectTab('materials')" });
+    const rets = returnsPending(p).length;
+    if(rets) steps.push({ text:`Повернути: ${rets} поз.`, sub:"Замовлено більше, ніж треба", label:"Список", action:"setProjectTab('materials')" });
     if(allReceived && steps.length < 3) steps.push({ text:"Усе отримано", sub:"Переходимо до робіт", label:"Почати роботи", action:`advanceProjectStage('${id}')`, primary:!unassigned });
   }
 
   if(stage === "work"){
     if(debt > 0.5) steps.push({ text:`Клієнт винен ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
-    const later = (p.positions || []).filter(isBuyLaterPending).length;
-    if(later) steps.push({ text:`Купити пізніше: ${later} поз.`, sub:"Не забудьте докупити", label:"Список", action:"setProjectTab('materials')" });
+    const later = extrasPending(p).length;
+    if(later) steps.push({ text:`Докупити: ${later} поз.`, sub:"Купите самі або дозамовите", label:"Список", action:"setProjectTab('materials')" });
+    const rets = returnsPending(p).length;
+    if(rets) steps.push({ text:`Повернути: ${rets} поз.`, sub:"Замовлено більше, ніж треба", label:"Список", action:"setProjectTab('materials')" });
     steps.push({ text:"Роботи завершено?", sub:"Далі — здача клієнту", label:"Завершено", action:`advanceProjectStage('${id}')`, primary:steps.length === 0 });
   }
 
@@ -8606,10 +8772,18 @@ function orderEvent(order, text){
 function orderMarkSent(project, supplierName, positionIds){
   let order = findOrder(project, supplierName);
   let lines;
+  let extra = false;
   if(Array.isArray(positionIds)){
     const ids = new Set(positionIds);
     const keep = order ? order.lines.filter(line => !ids.has(line.positionId)) : [];
-    lines = keep.concat((project.positions || []).filter(pos => ids.has(pos.id)).map(orderLineFromPosition));
+    extra = Boolean(order && order.lines.length);
+    lines = keep.concat((project.positions || []).filter(pos => ids.has(pos.id)).map(pos => {
+      const line = orderLineFromPosition(pos);
+      const prev = order ? order.lines.find(l => l.positionId === pos.id) : null;
+      line.qty = roundQty((prev ? Number(prev.qty) || 0 : 0) + positionToBuyQty(project, pos));
+      if(prev && prev.kept) line.kept = prev.kept;
+      return line;
+    }).filter(line => line.qty > 0));
   }else{
     lines = liveOrderPositions(project, supplierName).map(orderLineFromPosition);
   }
@@ -8618,11 +8792,20 @@ function orderMarkSent(project, supplierName, positionIds){
     order = { id:uid("ord"), supplierName, status:"sent", createdAt:new Date().toISOString(), lines:[], events:[] };
     projectOrders(project).push(order);
   }
+  /* Позиції зі списку «Купити пізніше» після замовлення з нього зникають — тепер вони в замовленні */
+  if(Array.isArray(positionIds)) (project.positions || []).forEach(pos => {
+    if(positionIds.includes(pos.id) && pos.buyLater && !pos.buyLaterDone){ pos.buyLater = false; if(pos.buyLaterOnly) pos.toOrder = true; }
+  });
+  const before = orderTotal(order);
   order.lines = lines;
   order.sentAt = new Date().toISOString();
   order.delivery = { ...delivery };
   if(!order.status || order.status === "draft") order.status = "sent";
-  orderEvent(order, `Надіслано замовлення: ${lines.length} поз. на ${money(orderTotal(order))}`);
+  if(extra){
+    /* Добираємо до вже наявного замовлення: воно знову чекає оплати й доставки */
+    order.status = "sent";
+    orderEvent(order, `Дозамовлення: ${positionIds.length} поз. на ${money(orderTotal(order) - before)}`);
+  }else orderEvent(order, `Надіслано замовлення: ${lines.length} поз. на ${money(orderTotal(order))}`);
 }
 
 function orderStepIndex(order){
@@ -8661,7 +8844,7 @@ function renderOrderCard(project, supplierName){
     buttons = `<button type="button" class="primary" onclick="openProcurementRequest(decodeURIComponent('${enc}'))">Надіслати замовлення</button>`;
   }else{
     buttons = `
-      <button type="button" class="${paid ? "" : "primary"}" onclick="orderAskPaid('${order.id}')">${paid ? `✓ Оплачено ${money(paid)}` : "Оплатив"}</button>
+      <button type="button" class="${paid && paid >= total - 0.5 ? "" : "primary"}" onclick="orderAskPaid('${order.id}')">${paid && paid < total - 0.5 ? `Доплатити ${money(total - paid)}` : paid ? `✓ Оплачено ${money(paid)}` : "Оплатив"}</button>
       <button type="button" class="${received && !missing ? "" : "primary"}" onclick="orderMarkReceived('${order.id}')">${received && !missing ? "✓ Привезли" : missing ? "Довезли" : "Привезли"}</button>
       <button type="button" class="more" onclick="openOrderSheet('${order.id}','lines')" aria-label="Позиції, повернення, історія">⋯</button>`;
   }
@@ -8716,7 +8899,21 @@ function orderAskPaid(orderId){
   const { project, order } = getOrderById(orderId);
   if(!order) return;
   const already = orderMoney(project, order).net;
-  const suggested = already ? already : orderTotal(order);
+  const total = orderTotal(order);
+  if(already > 0 && already < total - 0.5){
+    const rawTop = prompt(`Доплата «${order.supplierName}» за дозамовлення, ₴:`, String(Math.round((total - already) * 100) / 100).replace(".", ","));
+    if(rawTop === null) return;
+    const top = parseMoneyInput(rawTop);
+    if(!(top > 0)){ toast("Впишіть суму"); return; }
+    moneyList(project, "expense").push({ id:uid("exp"), date:todayIso(), amount:top, note:`${order.supplierName} — дозамовлення`, orderId:order.id, kind:"orderTopUp" });
+    order.paidAt = new Date().toISOString();
+    orderEvent(order, `Доплачено ${moneyWithCents(top)}`);
+    touchProject(project);
+    render();
+    toast("Доплату записано у «Гроші»");
+    return;
+  }
+  const suggested = already ? already : total;
   const raw = prompt(already
     ? `Оплачено «${order.supplierName}», ₴. Виправте, якщо сума інша:`
     : `Скільки заплатили «${order.supplierName}», ₴?\nЯкщо рахунок відрізняється — виправте суму.`, String(Math.round(suggested * 100) / 100).replace(".", ","));
@@ -8955,7 +9152,7 @@ function renderMaterialsTab(p){
   return `
     ${showBuy ? `
       <section class="buyCard">
-        <span class="buyCardText"><b>${toBuy.length ? `Треба купити: ${toBuy.length} поз.` : "Усе замовлено ✓"}</b>${sub ? `<small>${sub}</small>` : ""}</span>
+        <span class="buyCardText"><b>${toBuy.length ? `Треба купити: ${toBuy.length} поз.` : extrasPending(p).length ? `Докупити: ${extrasPending(p).length} поз.` : "Усе замовлено ✓"}</b>${sub || returnsPending(p).length ? `<small>${[sub, returnsPending(p).length ? `повернути ${returnsPending(p).length}` : ""].filter(Boolean).join(" · ")}</small>` : ""}</span>
         ${toBuy.length ? `<button type="button" onclick="openOrderPick()">Замовити</button>` : ""}
       </section>
       <div class="buyLinks">
@@ -8966,7 +9163,12 @@ function renderMaterialsTab(p){
     ${renderOrdersBlock(p)}
     <div class="estimateBlock">
       ${renderBuyLater(p)}
-      ${materials.length ? `
+      ${materials.length && materialsCollapsed(p) ? `
+        <button type="button" class="matCollapsed" onclick="toggleMaterialsList('${escapeHtml(p.id)}', true)">
+          <span><b>Кошторис · ${materials.length} поз.</b><small>${extrasPending(p).length || returnsPending(p).length ? "зміни — у «Докупити» і «Повернути» вище" : "усе закуплено"}</small></span>
+          <span class="matCollapsedGo">Показати / правити</span>
+        </button>` : materials.length ? `
+        ${["work", "done", "closed"].includes(p.stage) && projectOrders(p).length ? `<button type="button" class="matCollapse" onclick="toggleMaterialsList('${escapeHtml(p.id)}', false)">Згорнути кошторис ↑</button>` : ""}
         ${groupMaterialPositions(materials).map(group => renderEstimateSection(group.label, group.positions, p.id, percent)).join("")}
         ${renderDiscountControl("material", percent)}
       ` : `<div class="emptyEstimate">Ще немає матеріалів.<br>Додайте кнопкою «＋ Матеріал» внизу</div>`}
@@ -9253,10 +9455,11 @@ function renderPosition(projectId, pos){
   const brand = positionBrand(pos);
   const tags = [];
   if(positionStockQty(pos) > 0) tags.push(`<span class="posTag stock">${isPositionFullyFromStock(pos) ? "зі складу" : "склад " + formatQty(positionStockQty(pos))}</span>`);
-  if(isBuyLater(pos)) tags.push(`<span class="posTag warn">докупити</span>`);
-  else if(pos.type === "material" && rowProject && (rowProject.stage || "estimate") !== "estimate" && positionOrderQty(pos) > 0){
+  if(pos.type === "material" && rowProject && ((rowProject.stage || "estimate") !== "estimate" || pos.buyLater) && positionOrderQty(pos) > 0){
     const ord = positionOrderedIn(rowProject, pos);
-    tags.push(ord ? `<span class="posTag">замовлено · ${escapeHtml(ord.supplierName)}</span>` : `<span class="posTag buy">купую</span>`);
+    const more = positionToBuyQty(rowProject, pos);
+    const extra = more > 0 && (projectOrders(rowProject).length || pos.buyLater);
+    tags.push(extra ? `<span class="posTag warn">докупити ${ord || positionSelfQty(pos) ? "+" : ""}${formatQty(more)}</span>` : more > 0 ? `<span class="posTag buy">купую</span>` : ord ? `<span class="posTag">замовлено · ${escapeHtml(ord.supplierName)}</span>` : positionSelfQty(pos) ? `<span class="posTag">куплено</span>` : "");
   }
   if(pos.noDiscount) tags.push(`<span class="posTag">без знижки</span>`);
   if(pos.clientPriceCheck) tags.push(`<span class="posTag warn">перевірте ціну</span>`);
@@ -12393,7 +12596,7 @@ function buildProcurementOrderFile(draft){
     group.positions.forEach(position => {
       const item = getPositionCatalogItem(position);
       const fullName = cleanText((item && item.name) || position.fullName || position.name);
-      rows.push([++n, getPositionMaterialArticle(position), fullName, positionOrderQty(position), position.unit || "шт"]);
+      rows.push([++n, getPositionMaterialArticle(position), fullName, positionToBuyQty(project, position), position.unit || "шт"]);
     });
   });
   rows.push([]);
@@ -12496,7 +12699,7 @@ function procurementOrderText(draft){
       const name = article
         ? positionClientName(position)
         : cleanText((item && item.name) || position.fullName || position.name).replace(/\s*\(\s*упак[^)]*\)/gi, "");
-      return `• ${article ? article + " · " : ""}${name} — ${formatQty(positionOrderQty(position))} ${position.unit || "шт"}`;
+      return `• ${article ? article + " · " : ""}${name} — ${formatQty(positionToBuyQty(project, position))} ${position.unit || "шт"}`;
     });
     return `${group.label}\n${lines.join("\n")}`;
   });
@@ -15540,9 +15743,73 @@ function positionOrderedIn(project, position){
   return projectOrders(project).find(order => (order.lines || []).some(line => line.positionId === position.id)) || null;
 }
 
+/* Скільки цієї позиції вже замовлено (в усіх постачальників) і скільки ще треба добрати */
+function positionOrderedQty(project, position, exceptOrder){
+  let qty = 0;
+  projectOrders(project).forEach(order => {
+    if(order === exceptOrder) return;
+    (order.lines || []).forEach(line => { if(line.positionId === position.id) qty += Number(line.qty) || 0; });
+  });
+  return roundQty(qty);
+}
+/* Скільки купили самі (у магазині тощо). Старі позначки «куплено» з «Купити пізніше» теж рахуються. */
+function positionSelfQty(position){
+  if(!position) return 0;
+  const list = Array.isArray(position.selfBuys) ? position.selfBuys : [];
+  const sum = list.reduce((acc, b) => acc + (Number(b.qty) || 0), 0);
+  if(!list.length && position.buyLater && position.buyLaterDone) return positionOrderQty(position);
+  return roundQty(sum);
+}
+function positionToBuyQty(project, position){
+  return roundQty(Math.max(0, positionOrderQty(position) - positionOrderedQty(project, position) - positionSelfQty(position)));
+}
+/* До першого замовлення — «Треба купити» (велике замовлення). Після — усе нове йде в «Докупити». */
 function positionsToBuy(project){
+  if(projectOrders(project).length) return [];
   return (project.positions || []).filter(pos =>
-    pos.type === "material" && !pos.buyLaterOnly && positionOrderQty(pos) > 0 && !isBuyLater(pos) && !positionOrderedIn(project, pos));
+    pos.type === "material" && !pos.buyLaterOnly && !pos.buyLater && positionToBuyQty(project, pos) > 0);
+}
+/* «Докупити»: ручні записи + те, що додалось у кошторис після замовлення. За замовчуванням купуєте самі. */
+function extrasPending(project){
+  const hasOrders = projectOrders(project).length > 0;
+  return (project.positions || []).filter(pos => {
+    if(pos.type !== "material") return false;
+    if(pos.buyLaterOnly) return pos.buyLater && !pos.buyLaterDone && positionToBuyQty(project, pos) > 0;
+    return (hasOrders || pos.buyLater) && positionToBuyQty(project, pos) > 0;
+  });
+}
+function extrasDone(project){
+  return (project.positions || []).filter(pos => pos.type === "material" && (
+    (pos.buyLaterOnly && pos.buyLater && pos.buyLaterDone) ||
+    (!pos.buyLaterOnly && Array.isArray(pos.selfBuys) && pos.selfBuys.length && positionToBuyQty(project, pos) <= 0)));
+}
+/* «Повернути»: замовили більше, ніж тепер треба (клієнт відмовився, кількість зменшили) */
+function returnsPending(project){
+  const byPos = new Map();
+  projectOrders(project).forEach(order => (order.lines || []).forEach(line => {
+    if(!line.positionId) return;
+    const cur = byPos.get(line.positionId) || { ordered:0, kept:0, refs:[] };
+    cur.ordered += Number(line.qty) || 0;
+    cur.kept += Number(line.kept) || 0;
+    cur.refs.push({ order, line });
+    byPos.set(line.positionId, cur);
+  }));
+  const out = [];
+  byPos.forEach((cur, positionId) => {
+    const pos = (project.positions || []).find(x => x.id === positionId);
+    const need = pos ? Math.max(0, positionOrderQty(pos) - positionSelfQty(pos)) : 0;
+    const excess = roundQty(cur.ordered - cur.kept - need);
+    if(excess <= 0.0001) return;
+    const main = cur.refs.slice().sort((a, b) => (Number(b.line.qty) || 0) - (Number(a.line.qty) || 0))[0];
+    out.push({ positionId, qty: excess, name: pos ? positionShortName(pos) : main.line.name, unit: main.line.unit || "шт", price: Number(main.line.price) || 0, supplierName: main.order.supplierName, refs: cur.refs });
+  });
+  return out;
+}
+
+/* Що показувати на екрані «Замовити»: звичайне «Треба купити» або список «Купити пізніше» */
+function orderPickSource(project){
+  if(orderPick && orderPick.later) return extrasPending(project);
+  return positionsToBuy(project);
 }
 
 function mySupplierNames(project){
@@ -15556,14 +15823,15 @@ function mySupplierNames(project){
 
 let orderPick = null;
 
-function openOrderPick(){
+function openOrderPick(later){
   if(!requireAccess()) return;
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
-  const toBuy = positionsToBuy(project);
-  if(!toBuy.length){ toast("Усе вже замовлено"); return; }
+  orderPick = { later: Boolean(later) };
+  const toBuy = orderPickSource(project);
+  if(!toBuy.length){ orderPick = null; toast(later ? "У списку нічого замовляти" : "Усе вже замовлено"); return; }
   const suppliers = mySupplierNames(project);
-  orderPick = { supplier: suppliers[0] || "", checked: new Set(), when: "", date: "", pickup: false, touched: false };
+  orderPick = { later: Boolean(later), supplier: suppliers[0] || "", checked: new Set(), when: "", date: "", pickup: false, touched: false };
   orderPickPreselect(project);
   let screen = document.getElementById("orderPickScreen");
   if(!screen){
@@ -15583,7 +15851,7 @@ function closeOrderPick(){
 
 /* За замовчуванням відмічаємо те, що в прайсі цього постачальника; якщо такого немає — усе. */
 function orderPickPreselect(project){
-  const toBuy = positionsToBuy(project);
+  const toBuy = orderPickSource(project);
   const key = normalizeText(orderPick.supplier);
   const his = toBuy.filter(pos => key && normalizeText(getPositionPlannedSupplier(pos)) === key);
   orderPick.checked = new Set((his.length ? his : toBuy).map(pos => pos.id));
@@ -15609,7 +15877,7 @@ function orderPickToggle(id){
 function orderPickAll(on){
   const project = projects.find(item => item.id === currentProjectId);
   orderPick.touched = true;
-  orderPick.checked = new Set(on ? positionsToBuy(project).map(pos => pos.id) : []);
+  orderPick.checked = new Set(on ? orderPickSource(project).map(pos => pos.id) : []);
   renderOrderPick();
 }
 
@@ -15635,7 +15903,7 @@ function renderOrderPick(){
   const screen = document.getElementById("orderPickScreen");
   const project = projects.find(item => item.id === currentProjectId);
   if(!screen || !project || !orderPick) return;
-  const toBuy = positionsToBuy(project);
+  const toBuy = orderPickSource(project);
   const suppliers = mySupplierNames(project);
   if(orderPick.supplier && !suppliers.some(n => normalizeText(n) === normalizeText(orderPick.supplier))) suppliers.unshift(orderPick.supplier);
   const n = toBuy.filter(pos => orderPick.checked.has(pos.id)).length;
@@ -15643,7 +15911,7 @@ function renderOrderPick(){
   const enc = name => `decodeURIComponent('${encodeURIComponent(name).replace(/'/g, "%27")}')`;
   const groups = groupMaterialPositions(toBuy);
   screen.innerHTML = `<div class="onbInner">
-    <div class="onbTop"><button type="button" class="onbBack" onclick="closeOrderPick()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Замовити</span></div>
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeOrderPick()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${orderPick.later ? "Замовити докупку" : "Замовити"}</span></div>
     <div class="opStep"><span class="opLabel">1. У кого?</span>
       <div class="opChips">${suppliers.map(name => chip(name, normalizeText(name) === normalizeText(orderPick.supplier), `orderPickSupplier(${enc(name)})`)).join("")}${chip("＋ Інший", false, "orderPickSupplier('__new__')")}</div>
     </div>
@@ -15652,9 +15920,9 @@ function renderOrderPick(){
         const on = orderPick.checked.has(pos.id);
         const planned = cleanText(getPositionPlannedSupplier(pos));
         const hint = planned && normalizeText(planned) !== normalizeText(orderPick.supplier) ? `<small>в прайсі: ${escapeHtml(planned)}</small>` : "";
-        return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="orderPickToggle('${escapeHtml(pos.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(positionShortName(pos))}${hint}</span><span class="opQty">${formatQty(positionOrderQty(pos))} ${escapeHtml(pos.unit || "шт")}</span></button>`;
+        return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="orderPickToggle('${escapeHtml(pos.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(positionShortName(pos))}${hint}</span><span class="opQty">${positionOrderedIn(project, pos) ? "ще " : ""}${formatQty(positionToBuyQty(project, pos))} ${escapeHtml(pos.unit || "шт")}</span></button>`;
       }).join("")).join("")}</div>
-      <span class="onbNote" style="text-align:left">Невідмічене лишиться в «Треба купити» — замовите в іншого.</span>
+      <span class="onbNote" style="text-align:left">Невідмічене лишиться в «${orderPick.later ? "Докупити самому" : "Дозамовити"}» — замовите в іншого.</span>
     </div>
     <div class="opStep"><span class="opLabel">3. Коли?</span>
       <div class="opChips">${chip("Завтра", orderPick.when === "tomorrow", "orderPickWhen('tomorrow')")}${chip("Післязавтра", orderPick.when === "after", "orderPickWhen('after')")}${chip("Заберу сам", orderPick.pickup, "orderPickWhen('pickup')")}<input type="date" class="opDate ${orderPick.when === "date" ? "active" : ""}" value="${orderPick.when === "date" ? escapeHtml(orderPick.date) : ""}" onchange="orderPickDate(this.value)"></div>
@@ -15668,7 +15936,7 @@ function renderOrderPick(){
 async function orderPickSend(silent){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project || !orderPick || !orderPick.supplier) return;
-  const ids = positionsToBuy(project).filter(pos => orderPick.checked.has(pos.id)).map(pos => pos.id);
+  const ids = orderPickSource(project).filter(pos => orderPick.checked.has(pos.id)).map(pos => pos.id);
   if(!ids.length){ toast("Відмітьте, що замовити"); return; }
   const supplierName = orderPick.supplier;
   ids.forEach(id => {
@@ -15699,7 +15967,7 @@ async function orderPickSend(silent){
 }
 
 function renderSectionNav(p){
-  if(projectTab !== "materials") return "";
+  if(projectTab !== "materials" || materialsCollapsed(p)) return "";
   const materials = (p.positions || []).filter(x => x.type === "material" && !x.buyLaterOnly);
   const groups = groupMaterialPositions(materials);
   if(groups.length < 2) return "";
