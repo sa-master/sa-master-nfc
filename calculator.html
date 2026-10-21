@@ -3360,6 +3360,9 @@ body.positionDragging{
 .onbNote{font-size:.8125rem;color:var(--tm);text-align:center}
 .quotePayBox{margin:0 1.125rem 1.25rem;padding:.75rem .875rem;border:1px solid #D7E2EC;border-radius:.75rem;font-size:.8125rem;line-height:1.5;color:#1c1c1e}
 .quotePayBox b{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#55595F;margin-bottom:.25rem}
+.quoteMadeWith{margin:0 1.125rem 1.25rem;padding-top:.625rem;border-top:1px solid #E6EAEF;text-align:center;font-size:.6875rem;color:#8A9099}
+.quoteMadeWith b{font-weight:800;color:#0A0F1A}.quoteMadeWith b span{color:#1F6BF2}
+.quotePdfExport .quoteMadeWith{margin-left:2.5rem;margin-right:2.5rem;font-size:.8125rem}
 .quotePdfExport .quotePayBox{margin-left:2.5rem;margin-right:2.5rem;font-size:.9375rem}
 </style>
 </head>
@@ -7845,6 +7848,7 @@ function renderQuotePreview(){
       <span>${received > 0.5 && documentTotal - received < 0.5 ? "✓" : money(Math.max(0, documentTotal - received))}</span>
     </div>
     ${lastQuoteData.pay ? `<div class="quotePayBox"><b>Реквізити для оплати</b>${lastQuoteData.pay.map(([k, v]) => `<div>${escapeHtml(k)}: <strong>${escapeHtml(v)}</strong></div>`).join("")}</div>` : ""}
+    <div class="quoteMadeWith">Складено в <b>et<span>.app</span></b></div>
   `;
 
   document.getElementById("quotePreviewScreen").classList.add("open");
@@ -8002,6 +8006,7 @@ function quoteXlsxRows(data){
   }
   rows.push([]);
   rows.push(["", `Діючий кошторис — PDF від ${String(data.dateLabel || "").replace(/^[^:]*:\s*/, "")}. Excel — копія для зручності.`]);
+  rows.push(["", "Складено в et.app"]);
   return { rows, formulas };
 }
 
