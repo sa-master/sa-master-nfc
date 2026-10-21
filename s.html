@@ -80,8 +80,9 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
 
     <section class="card" id="quick">
       <h2>Ціни у майстра</h2>
+      <div id="staleBox" class="hidden" style="border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--warn) 14%,transparent);color:var(--warn);font-weight:700;font-size:14px"></div>
+      <div id="quickRates"></div>
       <p class="hint" id="quickInfo"></p>
-      <div id="quickRates" class="hint"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button type="button" class="btn ghost" id="quickView" style="flex:1 1 140px;height:44px;font-size:15px">Переглянути</button>
         <button type="button" class="btn ghost" id="quickXlsx" style="flex:1 1 140px;height:44px;font-size:15px">⬇ Скачати Excel</button>
@@ -173,6 +174,7 @@ let items = [];         // робоча копія
 let rates = new Map();  // brand(lower) -> {brand,currency,rate}
 let pasted = null;      // {rows, map[], skipFirst}
 let pendingAt = "";
+let ageDays = 0, freshLabel = "";
 
 const norm = v => String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g, " ");
 const keyOf = it => it.article ? "a:" + norm(it.article) : "n:" + norm(it.name);
@@ -228,7 +230,20 @@ async function load(){
       if(pendingAt) $("lastInfo").innerHTML = `<span style="color:var(--warn);font-weight:700">Ваші зміни від ${new Date(pendingAt).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })} надіслано — чекають підтвердження майстра.</span> Нижче — саме ваші надіслані ціни й курси.`;
       $("quickInfo").innerHTML = `<b>${base.length}</b> ваших товарів${from ? `, ціни з вашого прайсу від <b>${from}</b>` : ""}${d.last ? `. Востаннє ви підтверджували ${new Date(d.last.at).toLocaleDateString("uk-UA")}` : ""}.`;
       const foreign = baseRates.filter(r => r.currency && r.currency !== "UAH" && r.rate);
-      $("quickRates").innerHTML = foreign.length ? "Курси: " + foreign.map(r => `<b>${esc(r.brand)}</b> ${r.currency} ${money(r.rate)}`).join(" · ") : "Усі ціни в гривнях.";
+      /* Коли ціни востаннє оновлювались або підтверджувались */
+      const freshAt = pendingAt || (d.last && d.last.at) || (d.pricesFrom ? d.pricesFrom + "T12:00" : "");
+      ageDays = freshAt ? Math.floor((Date.now() - Date.parse(freshAt)) / 86400000) : 0;
+      freshLabel = freshAt ? new Date(freshAt).toLocaleDateString("uk-UA") : "";
+      const expired = d.last && d.last.validUntil && d.last.validUntil < new Date().toISOString().slice(0, 10);
+      if(!pendingAt && (ageDays > 30 || expired)){
+        $("staleBox").textContent = expired
+          ? `Ваші ціни були дійсні до ${new Date(d.last.validUntil + "T12:00").toLocaleDateString("uk-UA")}. Перевірте, будь ласка, курси й ціни.`
+          : `Ці ціни ви надсилали ${freshLabel} (${ageDays} дн. тому). Перевірте, будь ласка, курси й ціни.`;
+        $("staleBox").classList.remove("hidden");
+      }
+      $("quickRates").innerHTML = foreign.length
+        ? `<div style="font-size:13px;font-weight:750;color:var(--tm);margin-bottom:6px">Курси${freshLabel ? ` · вказані ${freshLabel}` : ""}</div><div style="display:flex;flex-wrap:wrap;gap:6px">${foreign.map(r => `<span class="pill" style="height:30px;font-size:14px">${esc(r.brand)} · ${r.currency} ${money(r.rate)}</span>`).join("")}</div>`
+        : `<div class="hint">Усі ціни в гривнях.</div>`;
       $("full").classList.add("hidden");
     }else{
       $("quick").classList.add("hidden");
@@ -570,7 +585,10 @@ $("addPasted").onclick = addPasted;
 $("showMap").onclick = () => { if(pasted){ pasted.open = true; renderMap(); } };
 $("showUah").onclick = () => { showUahOpen = !showUahOpen; renderRates(); };
 $("quickUpdate").onclick = () => { $("quick").classList.add("hidden"); $("full").classList.remove("hidden"); $("bar").classList.remove("hidden"); $("validUntil").value = $("quickValid").value; window.scrollTo(0, 0); };
-$("quickYes").onclick = () => { $("validUntil").value = $("quickValid").value; send(); };
+$("quickYes").onclick = () => {
+  if(ageDays > 60 && !confirm(`Ціни не змінювались з ${freshLabel} (${ageDays} дн.).\n\nТочно всі ціни й курси актуальні?`)) return;
+  $("validUntil").value = $("quickValid").value; send();
+};
 $("quickView").onclick = () => { $("quickUpdate").click(); setTimeout(() => $("itemsCard").scrollIntoView({ behavior:"smooth" }), 50); };
 $("quickXlsx").onclick = () => {
   const rows = [["Артикул", "Назва", "Бренд", "Одиниця", "Роздрібна ціна", "Ціна для майстра", "Валюта"]].concat(
