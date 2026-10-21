@@ -1468,6 +1468,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .approvedBannerTitle{font-size:.75rem;font-weight:800;color:#1f7a3c}
 .approvedBannerText{margin-top:.25rem;font-size:.6875rem;line-height:1.35;color:var(--ts)}
 .approvedBannerActions{margin-top:.5rem}
+.supUpdate{display:flex;align-items:center;gap:.5rem;background:rgba(178,106,0,.12);border:1px solid rgba(178,106,0,.25);border-radius:1rem;padding:.625rem .75rem;margin:0 0 .625rem}
+.supUpdate>div{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:.125rem}
+.supUpdate b{font-size:.9375rem;color:var(--t)}
+.supUpdate small{font-size:.75rem;color:var(--tm)}
+.supUpdate button{flex:0 0 auto;height:2.25rem;padding:0 .75rem;border-radius:.75rem;background:#B26A00;color:#fff;font-size:.8125rem;font-weight:750}
+.supUpdate button.x{background:transparent;color:var(--tm);width:2rem;padding:0;font-size:1.125rem}
 .revTotals{margin-top:.75rem;padding:.75rem .875rem;border-radius:1rem;background:var(--card);display:flex;flex-direction:column;gap:.375rem}
 .revTotals div{display:flex;justify-content:space-between;font-size:.9375rem;color:var(--tm)}
 .revTotals div b{color:var(--t);font-weight:800}
@@ -3668,15 +3674,17 @@ body.positionDragging{
       </div>
 
       <div class="formHint" style="margin-bottom:.875rem">
-        Постачальник збережеться у вашому каталозі. Додаток підготує текст і Excel-шаблон. Канал та одержувача ви оберете самі.
+        Постачальник відкриє посилання, вставить ціни зі своєї бази й надішле. Тим самим посиланням він потім оновлює ціни. Ви побачите зміни тут, у калькуляторі.
       </div>
 
+      <div class="formHint hidden" id="srTrustRow" style="margin-bottom:.875rem;color:var(--green)"></div>
+
       <div class="originalNameCard" id="srRequestPreview"></div>
+      <button type="button" class="linkButton" style="margin-top:.75rem;background:none;color:var(--p);font-weight:700;font-size:.875rem" onclick="shareSupplierRequest()">Інший спосіб: надіслати Excel-шаблон</button>
     </div>
 
     <div class="panelFooter">
-      <button class="btnGhost" onclick="copySupplierRequest()">Скопіювати текст</button>
-      <button class="btnPrimary" onclick="shareSupplierRequest()">Текст і шаблон</button>
+      <button class="btnPrimary" style="flex:1 1 100%" onclick="shareSupplierLink()">Надіслати посилання</button>
     </div>
   </div>
 </div>
@@ -5039,10 +5047,11 @@ function renderAccountBox(){
 }
 
 document.addEventListener("visibilitychange", () => {
-  if(document.visibilityState === "visible") cloudCheckRemote();
+  if(document.visibilityState === "visible"){ cloudCheckRemote(); setTimeout(checkSupplierUpdates, 1500); }
   else if(cloudGet(CLOUD_DIRTY_KEY)) cloudPush();
 });
 setTimeout(() => { if(cloudEnabled()) cloudCheckRemote(); else cloudStarting = false; }, 1200);
+setTimeout(() => { try{ checkSupplierUpdates(); }catch(e){} }, 3000);
 
 const PROJECTS_KEY = "sa_projects";
 const PROFILE_KEY = "sa_profile";
@@ -7047,7 +7056,7 @@ function renderHome(){
     return;
   }
 
-  main.innerHTML = renderProjectList();
+  main.innerHTML = renderSupplierUpdates() + renderProjectList();
 }
 
 function renderEmptyState(){
@@ -11298,7 +11307,13 @@ function refreshSupplierRequestPreview(){
   const input = document.getElementById("srSupplierName");
   const preview = document.getElementById("srRequestPreview");
   if(!input || !preview) return;
-  preview.textContent = supplierPriceRequestText(input.value);
+  const link = supplierLinkFor(input.value);
+  preview.textContent = supplierLinkText(input.value, link ? SUPPLIER_LINK_BASE + link.id : SUPPLIER_LINK_BASE + "…");
+  const trustRow = document.getElementById("srTrustRow");
+  if(trustRow){
+    trustRow.classList.toggle("hidden", !(link && link.trusted));
+    trustRow.innerHTML = link && link.trusted ? `✓ Оновлення від ${escapeHtml(link.supplierName)} застосовуються автоматично. <button type="button" style="background:none;color:var(--p);font-weight:700" onclick="updateSupplierLink(document.getElementById('srSupplierName').value,{trusted:false});refreshSupplierRequestPreview()">Вимкнути</button>` : "";
+  }
 }
 
 function openSupplierRequest(){
@@ -11309,6 +11324,7 @@ function openSupplierRequest(){
     .map(name => `<option value="${escapeHtml(name)}"></option>`)
     .join("");
   input.value = "";
+  input.oninput = refreshSupplierRequestPreview;
   refreshSupplierRequestPreview();
   document.getElementById("supplierRequestSheet").classList.add("open");
   setTimeout(() => input.focus(), 200);
@@ -11376,6 +11392,318 @@ async function shareSupplierRequest(){
     toast("Шаблон завантажено, текст скопійовано");
   }catch(e){
     toast("Не вдалося підготувати запит");
+  }
+}
+
+/* ==== ПРАЙС ПОСТАЧАЛЬНИКА ЗА ПОСИЛАННЯМ ====
+   Майстер надсилає постачальнику постійне посилання (s.html). Постачальник вставляє рядки
+   зі своєї бази або файл, ставить обидві ціни, курси й термін дії. Калькулятор бачить, що
+   прийшло нове, і показує зміни через звичайний імпорт (або застосовує сам, якщо «Довіряю»). */
+const SUPPLIER_LINKS_KEY = "sa_supplierLinks";
+const SUPPLIER_LINK_BASE = "https://sa-master.pro/s.html#";
+let supplierUpdates = [];
+let supplierImportContext = null;
+
+function loadSupplierLinks(){
+  try{ const v = JSON.parse(localStorage.getItem(SUPPLIER_LINKS_KEY) || "{}"); return v && typeof v === "object" ? v : {}; }catch(e){ return {}; }
+}
+function saveSupplierLinks(links){ localStorage.setItem(SUPPLIER_LINKS_KEY, JSON.stringify(links)); }
+function supplierLinkFor(name){ const n = normalizeText(name); return n ? loadSupplierLinks()[n] || null : null; }
+function updateSupplierLink(name, patch){
+  const links = loadSupplierLinks();
+  const key = normalizeText(name);
+  links[key] = { ...(links[key] || {}), supplierName: cleanText(name), ...patch };
+  saveSupplierLinks(links);
+  return links[key];
+}
+
+function supplierLinkText(name, url){
+  const who = [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" ");
+  return `Доброго дня!\n\n` +
+    `Це ${who || profileCompanyName()}${profile.company && who ? ` (${profile.company})` : ""}. Прошу актуальний прайс${cleanText(name) ? ` ${cleanText(name)}` : ""}.\n\n` +
+    `За посиланням можна просто вставити рядки з вашої бази (1С, BAS, Excel) або завантажити файл. Потрібні обидві ціни за 1 од.: роздрібна і для майстра, а для валютних брендів — курс.\n\n` +
+    `${url}\n\n` +
+    `Тим самим посиланням ви зможете оновлювати ціни й курс, коли вони змінюються. Дякую!`;
+}
+
+/* Що зараз є в каталозі від цього постачальника — постачальник побачить це на своїй сторінці */
+function supplierCurrentPrice(name){
+  const key = normalizeText(name);
+  const items = [];
+  const rates = new Map();
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    const offer = getCatalogSupplierOffers(item).find(o => normalizeText(o && o.supplierName) === key);
+    if(!offer) return;
+    const retail = offer.retail || null, master = offer.master || null;
+    const currency = (master && master.sourceCurrency) || (retail && retail.sourceCurrency) || "UAH";
+    const rate = (master && master.sourceRate) || (retail && retail.sourceRate) || null;
+    const brand = cleanText(item.manufacturer);
+    items.push({
+      article: cleanText(offer.supplierArticle || item.article),
+      name: cleanText(item.name) || catalogDisplayName(item),
+      brand, unit: item.unit || "шт",
+      retail: retail ? retail.sourcePrice : null,
+      master: master ? master.sourcePrice : null,
+      currency
+    });
+    if(brand && !rates.has(normalizeText(brand))) rates.set(normalizeText(brand), { brand, currency, rate: currency === "UAH" ? null : rate });
+  });
+  return { items, rates: Array.from(rates.values()) };
+}
+
+async function supplierApi(path, options = {}){
+  if(!cloudEnabled() || !cloudSession()) throw new Error("login");
+  const cfg = cloudConfig();
+  const response = await fetch(cfg.server + path, { ...options, headers:{ "Content-Type":"application/json", ...cloudAuthHeaders(), ...(options.headers || {}) } });
+  if(response.status === 401){ throw new Error("login"); }
+  const data = await response.json().catch(() => ({}));
+  if(!response.ok) throw new Error(data.error || "server");
+  return data;
+}
+
+async function publishSupplierLink(name){
+  const link = supplierLinkFor(name);
+  const current = supplierCurrentPrice(name);
+  const data = await supplierApi("/sup", { method:"POST", body: JSON.stringify({
+    id: link && link.id,
+    supplierName: cleanText(name),
+    masterName: [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" "),
+    masterPhone: String(profile.phone || ""),
+    company: String(profile.company || ""),
+    items: current.items,
+    rates: current.rates
+  }) });
+  updateSupplierLink(name, { id: data.id, publishedAt: new Date().toISOString() });
+  return data.id;
+}
+
+async function shareSupplierLink(){
+  const name = rememberSupplierFromRequest(document.getElementById("srSupplierName").value);
+  if(!name) return;
+  let id;
+  try{ id = await publishSupplierLink(name); }
+  catch(e){
+    toast(e.message === "login" ? "Щоб надсилати посилання, увійдіть в акаунт (Профіль → Акаунт і хмара)" : "Не вдалося створити посилання. Перевірте інтернет");
+    return;
+  }
+  const text = supplierLinkText(name, SUPPLIER_LINK_BASE + id);
+  refreshSupplierRequestPreview();
+  if(navigator.share){
+    try{ await navigator.share({ title:"Прайс", text }); toast("Посилання готове до надсилання"); closeSupplierRequest(); return; }
+    catch(e){ if(e && e.name === "AbortError") return; }
+  }
+  try{ await copyText(text); toast("Текст із посиланням скопійовано"); closeSupplierRequest(); }
+  catch(e){ toast("Не вдалося скопіювати"); }
+}
+
+/* Чи надіслав хтось із постачальників новий прайс */
+async function checkSupplierUpdates(){
+  if(!cloudEnabled() || !cloudSession()) return;
+  const known = loadSupplierLinks();
+  if(!Object.values(known).some(link => link && link.id)) return;
+  let data;
+  try{ data = await supplierApi("/sup/mine"); }catch(e){ return; }
+  const byId = new Map(Object.values(known).filter(l => l && l.id).map(l => [l.id, l]));
+  const fresh = [];
+  (data.links || []).forEach(remote => {
+    const local = byId.get(remote.id);
+    if(!local) return;
+    if(remote.validUntil !== local.validUntil) updateSupplierLink(local.supplierName, { validUntil: remote.validUntil });
+    if(remote.lastSubmitAt && remote.lastSubmitAt > (local.handledAt || "")) fresh.push({ ...remote, supplierName: local.supplierName, trusted: local.trusted });
+  });
+  supplierUpdates = fresh.filter(u => !u.trusted);
+  for(const update of fresh.filter(u => u.trusted)){
+    try{ await reviewSupplierUpdate(update.id, true); }catch(e){}
+  }
+  if(!currentProjectId) render();
+}
+
+function renderSupplierUpdates(){
+  if(!supplierUpdates.length) return "";
+  return supplierUpdates.map(u => `
+    <section class="supUpdate">
+      <div><b>${escapeHtml(u.supplierName)} надіслав прайс</b><small>${new Date(u.lastSubmitAt).toLocaleDateString("uk-UA")}${u.validUntil ? ` · ціни дійсні до ${formatQuoteDate(u.validUntil)}` : ""}</small></div>
+      <button type="button" onclick="reviewSupplierUpdate('${escapeHtml(u.id)}')">Переглянути</button>
+      <button type="button" class="x" onclick="dismissSupplierUpdate('${escapeHtml(u.id)}')" aria-label="Сховати">×</button>
+    </section>`).join("");
+}
+
+function dismissSupplierUpdate(id){
+  const u = supplierUpdates.find(x => x.id === id);
+  if(u) updateSupplierLink(u.supplierName, { handledAt: u.lastSubmitAt });
+  supplierUpdates = supplierUpdates.filter(x => x.id !== id);
+  render();
+}
+
+/* Надісланий прайс → у формат звичайного імпорту; беремо лише змінене й нове */
+function supplierSubmissionToParsed(sub){
+  const keyOf = it => it.article ? "a:" + String(it.article).trim().toLowerCase().replace(/\s+/g, " ") : "n:" + String(it.name || "").trim().toLowerCase().replace(/\s+/g, " ");
+  const changed = new Set(sub.changed || []);
+  const rates = new Map((sub.rates || []).map(r => [normalizeText(r.brand), r]));
+  const errors = [];
+  const items = [];
+  (sub.items || []).forEach((it, index) => {
+    if(Array.isArray(sub.changed) && !changed.has(keyOf(it))) return;
+    const brandRate = rates.get(normalizeText(it.brand));
+    const currency = cleanText(it.currency || (brandRate && brandRate.currency) || "UAH").toUpperCase();
+    const rate = currency === "UAH" ? null : Number(brandRate && brandRate.currency === currency ? brandRate.rate : 0);
+    if(currency !== "UAH" && !(rate > 0)){ errors.push(`${it.name}: немає курсу ${currency} для бренду «${it.brand || "без бренду"}»`); return; }
+    const retail = Number.isFinite(it.retail) ? it.retail : null;
+    const master = Number.isFinite(it.master) ? it.master : null;
+    if(retail === null && master === null) return;
+    items.push({
+      rowIndex: index + 1, name: it.name, article: it.article || "", supplierArticle: it.article || "",
+      qty: null, unit: it.unit || "шт",
+      price: retail !== null ? retail : master, retailPrice: retail, masterPrice: master,
+      manufacturer: it.brand || "", system: detectSystem(it.name), category: detectCategory(it.name, it.brand || "", ""),
+      currency, rate
+    });
+  });
+  return { items, currency:"BRAND_RATES", detectedRate:null, supplierFullName:"", profile:"supplier-link", usesBrandRates:true, importErrors:errors };
+}
+
+async function reviewSupplierUpdate(id, auto){
+  const link = Object.values(loadSupplierLinks()).find(l => l && l.id === id);
+  if(!link) return;
+  let sub;
+  try{ sub = await supplierApi(`/sup/${id}/latest`); }
+  catch(e){ if(!auto) toast("Не вдалося завантажити прайс. Перевірте інтернет"); return; }
+  const parsed = supplierSubmissionToParsed(sub);
+  const patch = { validUntil: sub.validUntil || "", manager: sub.manager || "", phone: sub.phone || "" };
+  if(sub.manager || sub.phone){
+    try{
+      const contacts = loadSupplierContacts();
+      const key = normalizeText(link.supplierName);
+      contacts[key] = { ...(contacts[key] || {}), name: sub.manager || (contacts[key] || {}).name || "", phone: sub.phone || (contacts[key] || {}).phone || "" };
+      localStorage.setItem(SUPPLIER_CONTACTS_KEY, JSON.stringify(contacts));
+    }catch(e){}
+  }
+  if(!parsed.items.length){
+    updateSupplierLink(link.supplierName, { ...patch, handledAt: sub.at });
+    supplierUpdates = supplierUpdates.filter(x => x.id !== id);
+    if(!auto) toast(parsed.importErrors.length ? parsed.importErrors[0] : `${link.supplierName}: ціни без змін${sub.validUntil ? `, дійсні до ${formatQuoteDate(sub.validUntil)}` : ""}`);
+    render();
+    return;
+  }
+  supplierImportContext = { id, supplierName: link.supplierName, at: sub.at, patch };
+  if(auto){ applySupplierItems(link.supplierName, parsed, parsed.items); return; }
+  openSupplierReview(link, sub, parsed);
+}
+
+/* Простий екран змін: було → стало, курси, нові товари */
+let supReview = null;
+function openSupplierReview(link, sub, parsed){
+  const key = normalizeText(link.supplierName);
+  const oldRates = new Map(supplierCurrentPrice(link.supplierName).rates.map(r => [normalizeText(r.brand), r]));
+  const rateChanges = (sub.rates || []).filter(r => r.currency !== "UAH").map(r => ({ r, old: oldRates.get(normalizeText(r.brand)) }))
+    .filter(x => !x.old || x.old.currency !== x.r.currency || Number(x.old.rate) !== Number(x.r.rate));
+  const rows = parsed.items.map((it, index) => {
+    const existing = findExistingCatalogItem({ article: it.article, supplierArticle: it.supplierArticle, name: it.name, unit: it.unit, manufacturer: it.manufacturer }, link.supplierName);
+    const offer = existing && getCatalogSupplierOffers(existing).find(o => normalizeText(o && o.supplierName) === key);
+    return { index, it, existing, old: offer ? { retail: offer.retail && offer.retail.sourcePrice, master: offer.master && offer.master.sourcePrice, currency: (offer.master || offer.retail || {}).sourceCurrency || "UAH" } : null };
+  });
+  supReview = { link, sub, parsed, rows, rateChanges, selected: new Set(rows.map(r => r.index)) };
+  let screen = document.getElementById("supReviewScreen");
+  if(!screen){
+    screen = document.createElement("div");
+    screen.id = "supReviewScreen";
+    screen.className = "onbScreen";
+    document.body.appendChild(screen);
+  }
+  screen.classList.add("open");
+  renderSupplierReview();
+}
+
+function supReviewToggle(index){
+  if(!supReview) return;
+  supReview.selected.has(index) ? supReview.selected.delete(index) : supReview.selected.add(index);
+  renderSupplierReview();
+}
+
+function renderSupplierReview(){
+  const screen = document.getElementById("supReviewScreen");
+  if(!screen || !supReview) return;
+  const { link, sub, parsed, rows, rateChanges, selected } = supReview;
+  const sym = c => c === "EUR" ? "€" : c === "USD" ? "$" : "₴";
+  const fmt = (v, c) => v === null || v === undefined || v === "" ? "—" : `${moneyWithCents(Number(v)).replace(/\s*₴$/, "")} ${sym(c)}`;
+  const changedRows = rows.filter(r => r.old);
+  const newRows = rows.filter(r => !r.old);
+  const item = r => {
+    const on = selected.has(r.index);
+    const it = r.it;
+    const name = r.existing ? catalogDisplayName(r.existing) : it.name;
+    const line = (label, oldV, newV) => oldV === newV ? "" : `<span>${label}: ${r.old ? `${fmt(oldV, r.old.currency)} → ` : ""}<b>${fmt(newV, it.currency)}</b></span>`;
+    return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="supReviewToggle(${r.index})"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(name)}<small>${[line("роздріб", r.old && r.old.retail, it.retailPrice), line("вам", r.old && r.old.master, it.masterPrice)].filter(Boolean).join(" · ") || "ціни без змін, оновлено курс"}</small></span></button>`;
+  };
+  const n = selected.size;
+  screen.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeSupplierReview()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${escapeHtml(link.supplierName)} оновив прайс</span></div>
+    <span class="onbNote" style="text-align:left">${[changedRows.length ? `змінено цін: ${changedRows.length}` : "", newRows.length ? `нових товарів: ${newRows.length}` : "", rateChanges.length ? `курсів: ${rateChanges.length}` : ""].filter(Boolean).join(" · ")}${sub.validUntil ? ` · дійсні до ${formatQuoteDate(sub.validUntil)}` : ""}${sub.manager ? ` · ${escapeHtml(sub.manager)}` : ""}</span>
+    ${sub.comment ? `<div class="formHint" style="margin:0">💬 ${escapeHtml(sub.comment)}</div>` : ""}
+    ${rateChanges.length ? `<div class="opStep"><span class="opLabel">Курси</span><div class="opList">${rateChanges.map(x => `<div class="opItem" style="cursor:default"><span class="opName">${escapeHtml(x.r.brand)}<small>${x.old && x.old.rate ? `${x.old.currency} ${moneyWithCents(x.old.rate).replace(/\s*₴$/, "")} → ` : ""}<b>${x.r.currency} ${moneyWithCents(x.r.rate).replace(/\s*₴$/, "")}</b></small></span></div>`).join("")}</div></div>` : ""}
+    ${changedRows.length ? `<div class="opStep"><span class="opLabel">Змінені ціни · ${changedRows.length}</span><div class="opList">${changedRows.map(item).join("")}</div></div>` : ""}
+    ${newRows.length ? `<div class="opStep"><span class="opLabel">Нові товари · ${newRows.length}</span><div class="opList">${newRows.map(item).join("")}</div></div>` : ""}
+    ${parsed.importErrors.length ? `<div class="formHint" style="margin:0;color:var(--orange)">Без курсу пропущено: ${parsed.importErrors.length} поз.</div>` : ""}
+    <div class="onbSpacer"></div>
+    <button type="button" class="onbPrimary" ${n ? "" : "disabled style=\"opacity:.45\""} onclick="acceptSupplierReview()">Прийняти · ${n}</button>
+    <button type="button" class="onbLink" onclick="rejectSupplierReview()">Не приймати</button>
+  </div>`;
+}
+
+function closeSupplierReview(){
+  document.getElementById("supReviewScreen")?.classList.remove("open");
+  supReview = null;
+  supplierImportContext = null;
+}
+
+function rejectSupplierReview(){
+  const r = supReview;
+  closeSupplierReview();
+  if(r) dismissSupplierUpdate(r.link.id);
+}
+
+function acceptSupplierReview(){
+  const r = supReview;
+  if(!r) return;
+  const items = r.rows.filter(x => r.selected.has(x.index)).map(x => x.it);
+  document.getElementById("supReviewScreen")?.classList.remove("open");
+  supReview = null;
+  applySupplierItems(r.link.supplierName, r.parsed, items);
+}
+
+/* Застосовуємо через звичайний імпорт, щоб ціни, курси й закупівельні ціни в кошторисах оновились однаково */
+function applySupplierItems(supplierName, parsed, items){
+  const data = { ...parsed, items };
+  pendingImportFile = { name: `Прайс за посиланням · ${supplierName}` };
+  pendingImportData = data;
+  autoDetectedCurrency = "";
+  autoDetectedRate = null;
+  openImportSheet(data, pendingImportFile);
+  document.getElementById("impSupplierName").value = supplierName;
+  confirmImport();
+}
+
+/* Після імпорту з посилання: позначаємо оброблене й оновлюємо список, який бачить постачальник */
+function afterSupplierLinkImport(){
+  const ctx = supplierImportContext;
+  supplierImportContext = null;
+  if(!ctx) return;
+  const before = supplierLinkFor(ctx.supplierName) || {};
+  const count = (Number(before.appliedCount) || 0) + 1;
+  const link = updateSupplierLink(ctx.supplierName, { ...ctx.patch, handledAt: ctx.at, appliedAt: new Date().toISOString(), appliedCount: count });
+  supplierUpdates = supplierUpdates.filter(x => x.id !== ctx.id);
+  publishSupplierLink(ctx.supplierName).catch(() => {});
+  render();
+  /* Після кількох спокійних оновлень пропонуємо не перевіряти кожне вручну */
+  if(count >= 3 && !link.trusted && !link.trustAsked){
+    updateSupplierLink(ctx.supplierName, { trustAsked: true });
+    setTimeout(() => {
+      if(confirm(`${ctx.supplierName} оновлював прайс уже ${count} рази.\n\nЗастосовувати його оновлення автоматично, без перевірки?\nПогоджені з клієнтами суми не зміняться. Вимкнути можна в «Запросити прайс».`)){
+        updateSupplierLink(ctx.supplierName, { trusted: true });
+        toast("Оновлення застосовуватимуться автоматично");
+      }
+    }, 900);
   }
 }
 
@@ -13675,6 +14003,7 @@ function updateImportRateField(){
 
 function closeImportSheet(){
   document.getElementById("importSheet").classList.remove("open");
+  setTimeout(() => { if(!document.getElementById("importSheet").classList.contains("open")) supplierImportContext = null; }, 0);
   pendingImportFile = null;
   pendingImportData = null;
   pendingImportSelection = new Set();
@@ -14092,6 +14421,7 @@ function confirmImport(){
   saveSupplierNames(names);
 
   closeImportSheet();
+  afterSupplierLinkImport();
 
   const withoutMaster = prepared.filter(entry => entry && entry.pricePair && !entry.pricePair.master).length;
   toast(`Імпортовано: ${created} нових, ${updated} оновлено${restoredPurchasePrices ? `, додано ${restoredPurchasePrices} закупівельних цін у кошториси` : ""}`);
