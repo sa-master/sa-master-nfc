@@ -3361,6 +3361,9 @@ body.positionDragging{
 .onbPriceRow span small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
 .onbPriceRow input{flex:0 0 6.5rem;width:6.5rem;height:2.5rem;text-align:right}
 .onbSpacer{flex:1 1 auto}
+.supReviewFoot{position:sticky;bottom:calc(-1 * (var(--sab) + 1.5rem));margin:0 -1.25rem calc(-1 * (var(--sab) + 1.5rem));padding:.75rem 1.25rem calc(var(--sab) + .75rem);background:var(--bg);box-shadow:0 -1px 0 var(--line, rgba(0,0,0,.08)),0 -8px 16px -8px rgba(0,0,0,.08);display:flex;gap:.75rem;align-items:center;z-index:2}
+.supReviewFoot .onbPrimary{flex:1 1 auto}
+.supReviewFoot .onbLink{flex:0 0 auto;padding:0 .5rem;white-space:nowrap}
 .onbPrimary{height:3.375rem;border-radius:1rem;background:var(--p-action);color:#fff;font-size:1.0625rem;font-weight:750;width:100%}
 .onbSecondary{height:3rem;border-radius:1rem;background:rgba(10,132,255,.12);color:var(--p);font-size:.9375rem;font-weight:750;width:100%}
 .onbLink{background:none;color:var(--tm);font-size:.9375rem;font-weight:650;height:2.5rem}
@@ -11798,11 +11801,21 @@ function supplierSubmissionToParsed(sub){
 }
 
 async function reviewSupplierUpdate(id, auto){
-  const link = Object.values(loadSupplierLinks()).find(l => l && l.id === id);
-  if(!link) return;
+  try{ await reviewSupplierUpdateInner(id, auto); }
+  catch(e){ if(!auto) toast("Не вдалося відкрити прайс: " + (e && e.message || e)); }
+}
+async function reviewSupplierUpdateInner(id, auto){
+  let link = Object.values(loadSupplierLinks()).find(l => l && l.id === id);
+  if(!link){
+    const u = supplierUpdates.find(x => x.id === id);
+    if(u) link = updateSupplierLink(u.supplierName, { id });
+  }
+  if(!link){ if(!auto) toast("Посилання цього постачальника не знайдено"); return; }
+  if(!auto) toast("Завантажую прайс…");
   let sub;
   try{ sub = await supplierApi(`/sup/${id}/latest`); }
   catch(e){ if(!auto) toast("Не вдалося завантажити прайс. Перевірте інтернет"); return; }
+  await new Promise(r => setTimeout(r, 30));
   const parsed = supplierSubmissionToParsed(sub);
   const patch = { validUntil: sub.validUntil || "", manager: sub.manager || "", phone: sub.phone || "" };
   if(sub.manager || sub.phone){
@@ -11849,14 +11862,16 @@ function supplierDiff(link, sub, parsed){
     const offer = existing && getCatalogSupplierOffers(existing).find(o => normalizeText(o && o.supplierName) === key);
     const old = offer ? { retail: offer.retail && offer.retail.sourcePrice, master: offer.master && offer.master.sourcePrice, currency: (offer.master || offer.retail || {}).sourceCurrency || "UAH" } : null;
     const big = Boolean(old && (old.currency !== it.currency || jump(old.retail, it.retailPrice) || jump(old.master, it.masterPrice)));
-    return { index, it, existing, old, big };
+    const same = (a, b) => (a === null || a === undefined || a === "" ? null : Number(a)) === (b === null || b === undefined || b === "" ? null : Number(b));
+    const rateOnly = Boolean(old && !big && old.currency === it.currency && same(old.retail, it.retailPrice) && same(old.master, it.masterPrice));
+    return { index, it, existing, old, big, rateOnly };
   });
   return { rows, rateChanges, big: rows.some(r => r.big) || rateChanges.some(x => x.big) };
 }
 
 function openSupplierReview(link, sub, parsed){
   const { rows, rateChanges } = supplierDiff(link, sub, parsed);
-  supReview = { link, sub, parsed, rows, rateChanges, selected: new Set(rows.map(r => r.index)), trust: Boolean(link.trusted) };
+  supReview = { link, sub, parsed, rows, rateChanges, selected: new Set(rows.map(r => r.index)), trust: Boolean(link.trusted), showAll: {} };
   let screen = document.getElementById("supReviewScreen");
   if(!screen){
     screen = document.createElement("div");
@@ -11868,10 +11883,26 @@ function openSupplierReview(link, sub, parsed){
   renderSupplierReview();
 }
 
+function supReviewToggleGroup(on){
+  if(!supReview) return;
+  supReview.rows.filter(r => r.rateOnly).forEach(r => on ? supReview.selected.add(r.index) : supReview.selected.delete(r.index));
+  renderSupplierReview();
+}
+function supReviewShowAll(group){
+  if(!supReview) return;
+  const scroller = document.getElementById("supReviewScreen");
+  const top = scroller ? scroller.scrollTop : 0;
+  supReview.showAll[group] = true;
+  renderSupplierReview();
+  if(scroller) scroller.scrollTop = top;
+}
 function supReviewToggle(index){
   if(!supReview) return;
   supReview.selected.has(index) ? supReview.selected.delete(index) : supReview.selected.add(index);
+  const scroller = document.getElementById("supReviewScreen");
+  const top = scroller ? scroller.scrollTop : 0;
   renderSupplierReview();
+  if(scroller) scroller.scrollTop = top;
 }
 
 function renderSupplierReview(){
@@ -11880,8 +11911,17 @@ function renderSupplierReview(){
   const { link, sub, parsed, rows, rateChanges, selected } = supReview;
   const sym = c => c === "EUR" ? "€" : c === "USD" ? "$" : "₴";
   const fmt = (v, c) => v === null || v === undefined || v === "" ? "—" : `${moneyWithCents(Number(v)).replace(/\s*₴$/, "")} ${sym(c)}`;
-  const changedRows = rows.filter(r => r.old);
+  const changedRows = rows.filter(r => r.old && !r.rateOnly);
+  const rateRows = rows.filter(r => r.rateOnly);
   const newRows = rows.filter(r => !r.old);
+  const LIMIT = 30;
+  const list = (group, arr) => {
+    const shown = supReview.showAll[group] ? arr : arr.slice(0, LIMIT);
+    const rest = arr.length - shown.length;
+    return shown.map(item).join("") + (rest > 0 ? `<button type="button" class="onbLink" style="padding:.75rem" onclick="supReviewShowAll('${group}')">Показати ще ${rest}</button>` : "");
+  };
+  const rateOn = rateRows.filter(r => selected.has(r.index)).length;
+  const rateBrands = [...new Set(rateRows.map(r => r.it.manufacturer).filter(Boolean))].join(", ");
   const item = r => {
     const on = selected.has(r.index);
     const it = r.it;
@@ -11894,17 +11934,20 @@ function renderSupplierReview(){
     <div class="onbTop"><button type="button" class="onbBack" onclick="closeSupplierReview()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${escapeHtml(link.supplierName)} оновив прайс</span></div>
     <span class="onbNote" style="text-align:left">${[changedRows.length ? `змінено цін: ${changedRows.length}` : "", newRows.length ? `нових товарів: ${newRows.length}` : "", rateChanges.length ? `курсів: ${rateChanges.length}` : ""].filter(Boolean).join(" · ")}${sub.validUntil ? ` · дійсні до ${formatQuoteDate(sub.validUntil)}` : ""}${sub.manager ? ` · ${escapeHtml(sub.manager)}` : ""}</span>
     ${sub.comment ? `<div class="formHint" style="margin:0">💬 ${escapeHtml(sub.comment)}</div>` : ""}
-    ${rateChanges.length ? `<div class="opStep"><span class="opLabel">Курси</span><div class="opList">${rateChanges.map(x => `<div class="opItem" style="cursor:default"><span class="opName">${escapeHtml(x.r.brand)}${x.big ? ' <span style="color:var(--orange);font-weight:800">· понад 15%</span>' : ""}<small>${x.old && x.old.rate ? `${x.old.currency} ${moneyWithCents(x.old.rate).replace(/\s*₴$/, "")} → ` : ""}<b>${x.r.currency} ${moneyWithCents(x.r.rate).replace(/\s*₴$/, "")}</b></small></span></div>`).join("")}</div></div>` : ""}
-    ${changedRows.length ? `<div class="opStep"><span class="opLabel">Змінені ціни · ${changedRows.length}</span><div class="opList">${changedRows.map(item).join("")}</div></div>` : ""}
-    ${newRows.length ? `<div class="opStep"><span class="opLabel">Нові товари · ${newRows.length}</span><div class="opList">${newRows.map(item).join("")}</div></div>` : ""}
-    ${parsed.importErrors.length ? `<div class="formHint" style="margin:0;color:var(--orange)">Без курсу пропущено: ${parsed.importErrors.length} поз.</div>` : ""}
     <label class="noDiscountToggle" style="margin:0">
       <input type="checkbox" ${supReview.trust ? "checked" : ""} onchange="supReview.trust=this.checked">
       <span>Надалі приймати від ${escapeHtml(link.supplierName)} автоматично<small>Зміни понад 15% все одно покажемо вам на перевірку. Погоджені з клієнтами суми не змінюються.</small></span>
     </label>
+    ${rateChanges.length ? `<div class="opStep"><span class="opLabel">Курси</span><div class="opList">${(supReview.showAll.rates ? rateChanges : rateChanges.slice(0, 4)).map(x => `<div class="opItem" style="cursor:default"><span class="opName">${escapeHtml(x.r.brand)}${x.big ? ' <span style="color:var(--orange);font-weight:800">· понад 15%</span>' : ""}<small>${x.old && x.old.rate ? `${x.old.currency} ${moneyWithCents(x.old.rate).replace(/\s*₴$/, "")} → ` : ""}<b>${x.r.currency} ${moneyWithCents(x.r.rate).replace(/\s*₴$/, "")}</b></small></span></div>`).join("")}${!supReview.showAll.rates && rateChanges.length > 4 ? `<button type="button" class="onbLink" style="padding:.75rem" onclick="supReviewShowAll('rates')">Показати ще ${rateChanges.length - 4}</button>` : ""}</div></div>` : ""}
+    ${rateRows.length ? `<div class="opList"><button type="button" class="opItem ${rateOn ? "on" : ""}" onclick="supReviewToggleGroup(${rateOn ? "false" : "true"})"><span class="opBox">${rateOn ? "✓" : ""}</span><span class="opName">Перерахувати за новим курсом · ${rateRows.length} поз.<small>ціни у валюті ті самі — зміниться лише сума в гривнях</small></span></button></div>` : ""}
+    ${changedRows.length ? `<div class="opStep"><span class="opLabel">Змінені ціни · ${changedRows.length}</span><div class="opList">${list("changed", changedRows)}</div></div>` : ""}
+    ${newRows.length ? `<div class="opStep"><span class="opLabel">Нові товари · ${newRows.length}</span><div class="opList">${list("new", newRows)}</div></div>` : ""}
+    ${parsed.importErrors.length ? `<div class="formHint" style="margin:0;color:var(--orange)">Без курсу пропущено: ${parsed.importErrors.length} поз.</div>` : ""}
     <div class="onbSpacer"></div>
-    <button type="button" class="onbPrimary" ${n ? "" : "disabled style=\"opacity:.45\""} onclick="acceptSupplierReview()">Прийняти · ${n}</button>
-    <button type="button" class="onbLink" onclick="rejectSupplierReview()">Не приймати</button>
+    <div class="supReviewFoot">
+      <button type="button" class="onbLink" onclick="rejectSupplierReview()">Не приймати</button>
+      <button type="button" class="onbPrimary" ${n ? "" : "disabled style=\"opacity:.45\""} onclick="acceptSupplierReview()">Прийняти · ${n}</button>
+    </div>
   </div>`;
 }
 
@@ -13817,7 +13860,16 @@ function cleanText(v){
     .trim();
 }
 
+const ntextCache = new Map();
 function ntext(v){
+  if(typeof v === "string"){
+    const hit = ntextCache.get(v);
+    if(hit !== undefined) return hit;
+    const out = cleanText(v).toLowerCase();
+    if(ntextCache.size > 20000) ntextCache.clear();
+    ntextCache.set(v, out);
+    return out;
+  }
   return cleanText(v).toLowerCase();
 }
 
