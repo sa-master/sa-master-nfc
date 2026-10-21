@@ -14100,9 +14100,10 @@ function cleanText(v){
     .trim();
 }
 
-const ntextCache = new Map();
+/* Кеш на самій функції: ntext викликається ще під час старту, до решти оголошень */
 function ntext(v){
   if(typeof v === "string"){
+    const ntextCache = ntext.cache || (ntext.cache = new Map());
     const hit = ntextCache.get(v);
     if(hit !== undefined) return hit;
     const out = cleanText(v).toLowerCase();
