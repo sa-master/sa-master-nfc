@@ -267,6 +267,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   letter-spacing:.1px;
 }
 
+.heroAction.heroHelp{font-size:1rem;font-weight:850;margin-right:.375rem}
 .heroAction{
   flex:0 0 auto;
   width:2rem;
@@ -1471,6 +1472,12 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .approvedBannerTitle{font-size:.75rem;font-weight:800;color:#1f7a3c}
 .approvedBannerText{margin-top:.25rem;font-size:.6875rem;line-height:1.35;color:var(--ts)}
 .approvedBannerActions{margin-top:.5rem}
+.guideList{display:flex;flex-direction:column;background:var(--card);border-radius:1rem;padding:.25rem .875rem}
+.guideStep{display:flex;gap:.75rem;padding:.75rem 0;border-bottom:1px solid rgba(120,120,128,.14)}
+.guideStep:last-child{border-bottom:0}
+.guideStep b{display:block;font-size:.9375rem;font-weight:800;color:var(--t);margin-bottom:.1875rem}
+.guideStep p{margin:0;font-size:.8125rem;line-height:1.45;color:var(--ts)}
+.guideNum{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:.875rem;background:rgba(10,132,255,.12);color:var(--p);font-weight:850;font-size:.875rem;display:flex;align-items:center;justify-content:center}
 .supUpdate{display:flex;align-items:center;gap:.5rem;background:rgba(178,106,0,.12);border:1px solid rgba(178,106,0,.25);border-radius:1rem;padding:.625rem .75rem;margin:0 0 .625rem}
 .supUpdate>div{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:.125rem}
 .supUpdate b{font-size:.9375rem;color:var(--t)}
@@ -3221,6 +3228,10 @@ body.positionDragging{
 .floatingPanel.compact .floatingBreakdown{order:-1;flex:1 1 100%;padding-top:.25rem}
 .floatingPanel.compact .floatingButtons{display:flex;gap:.375rem;flex:0 0 auto}
 .floatingPanel.compact .addButton{height:2.5rem;padding:0 .75rem;font-size:.8125rem;white-space:nowrap}
+.floatingSummary.stack{flex-direction:column;align-items:flex-start;gap:0;justify-content:center}
+.floatingSummary.stack .lbl{font-size:.6875rem}
+.floatingSummary.stack .val{font-size:1.125rem}
+.floatingPanel.compact .addButton.primary{background:var(--p-action,#0A84FF);color:#fff}
 .floatingPanel.compact .addButton.round{width:2.5rem;padding:0;border-radius:1.25rem;font-size:1.25rem;font-weight:800}
 .floatingSummary{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex:1 1 auto;min-width:0;padding:.25rem .25rem;text-align:left}
 .floatingSummary .lbl{font-size:.75rem;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--tm)}
@@ -7037,10 +7048,11 @@ function renderHero(){
         ${profileLogoMarkup(profile.logoData, companyName)}
       </div>
       <div class="heroDivider"></div>
-      <div class="heroText">
+      <div class="heroText" onclick="openGuide()" style="cursor:pointer">
         <div class="heroTitle">${escapeHtml(companyName)}</div>
         <div class="heroSub">Кошторис. Звітність. Аудит.</div>
       </div>
+      <button class="heroAction heroHelp" onclick="openGuide()" aria-label="Як працює калькулятор" title="Як працює калькулятор">?</button>
       <button class="heroAction" onclick="openProfile()" aria-label="Профіль">
         <svg viewBox="0 0 24 24">
           <circle cx="12" cy="8" r="4"/>
@@ -7264,7 +7276,7 @@ function renderProject(p){
       </div>
     </div>
 
-    ${projectTab === "money" ? "" : renderFloatingPanel(p)}
+    ${renderFloatingPanel(p)}
   `;
 
 }
@@ -7304,7 +7316,10 @@ function openMoneyForm(kind){
   moneyEditId = "";
   moneyFormOpen = moneyFormOpen === kind ? "" : kind;
   render();
-  if(moneyFormOpen) setTimeout(() => document.getElementById("moneyAmount")?.focus(), 60);
+  if(moneyFormOpen) setTimeout(() => {
+    document.querySelector(".moneyForm")?.scrollIntoView({ block:"center", behavior:"smooth" });
+    document.getElementById("moneyAmount")?.focus();
+  }, 60);
 }
 
 function moneyToSuggestions(project){
@@ -7485,11 +7500,12 @@ function renderFloatingPanel(p){
   const worksLabel = workDiscountPercent > 0 ? `Роботи −${workDiscountPercent}%` : "Роботи";
   const materialsLabel = materialsDiscountPercent > 0 ? `Матеріали −${materialsDiscountPercent}%` : "Матеріали";
 
+  const moneyTabDebt = projectTab === "money" ? total - moneySum(moneyList(p, "payment")) : null;
   return `
     <div class="floatingPanel compact">
-      <button type="button" class="floatingSummary" onclick="toggleFloatingDetails()" aria-expanded="${floatingDetailsOpen}">
-        <span class="lbl">${approvedSnapshot ? "Погоджено" : "До сплати"}</span>
-        <span><span class="val">${money(total)}</span><span class="chev">${floatingDetailsOpen ? "▾" : "▸"}</span></span>
+      <button type="button" class="floatingSummary ${moneyTabDebt !== null ? "stack" : ""}" onclick="toggleFloatingDetails()" aria-expanded="${floatingDetailsOpen}">
+        <span class="lbl">${moneyTabDebt !== null ? (moneyTabDebt > 0.5 ? "Клієнт винен" : "Розрахувався") : approvedSnapshot ? "Погоджено" : "До сплати"}</span>
+        <span><span class="val" ${moneyTabDebt > 0.5 ? 'style="color:var(--red)"' : ""}>${moneyTabDebt !== null ? (moneyTabDebt > 0.5 ? money(moneyTabDebt) : "✓") : money(total)}</span><span class="chev">${floatingDetailsOpen ? "▾" : "▸"}</span></span>
       </button>
 
       <div class="floatingBreakdown ${floatingDetailsOpen ? "" : "hidden"}">
@@ -7510,7 +7526,10 @@ function renderFloatingPanel(p){
       </div>
 
       <div class="floatingButtons">
-        ${projectTab === "money" ? "" : `
+        ${projectTab === "money" ? `
+          <button class="addButton primary" onclick="openMoneyForm('payment')" aria-label="Додати оплату від клієнта">＋ Оплата</button>
+          <button class="addButton" onclick="openMoneyForm('expense')" aria-label="Додати витрату">＋ Витрата</button>
+        ` : `
           <button class="addButton round" onclick="openCatalogFor('${projectTab === "materials" ? "material" : "work"}')" aria-label="${projectTab === "materials" ? "Додати матеріал" : "Додати роботу"}" title="${projectTab === "materials" ? "Додати матеріал" : "Додати роботу"}">＋</button>
           <button class="addButton round" onclick="openQuotePreview()" aria-label="Кошторис для клієнта" title="Кошторис для клієнта">↗</button>
         `}
@@ -8775,10 +8794,6 @@ function renderMoneyTab(p){
       <div class="mSumProfit"><span>Заробіток зараз</span><b class="${now < 0 ? "neg" : "pos"}">${money(now)}</b></div>
       ${debt > 0.5 ? `<small>Після повної оплати клієнтом: ${money(full)}</small>` : ""}
     </section>
-    <div class="mSumButtons">
-      <button type="button" class="primary" onclick="openMoneyForm('payment')">＋ Від клієнта</button>
-      <button type="button" onclick="openMoneyForm('expense')">＋ Витрата</button>
-    </div>
     ${renderMoneyBlock(p, true)}
   `;
 }
@@ -15333,8 +15348,8 @@ const PATH_STEPS = ["Кошторис", "Погодж.", "Закупівля", "
 const STAGE_HINTS = [
   ["Кошторис", "Додайте роботи й матеріали кнопками внизу. Матеріали шукайте в каталозі; якщо потрібного немає, кнопка «Додати» з’явиться сама. Коли все готово — «Надіслати клієнту»."],
   ["Погодження", "Клієнт отримав кошторис. Погодив — натисніть «Так, погодив»: сума для клієнта зафіксується. Потрібні зміни — виправте позиції й надішліть ще раз."],
-  ["Закупівля", "На вкладці «Матеріали» відмітьте, що берете зі складу, і надішліть замовлення постачальникам. Далі по кожному замовленню: «Оплатив» → «Привезли»."],
-  ["Роботи", "Записуйте оплати від клієнта (＋ Оплата) і витрати. Що треба докупити — у списку «Купити пізніше». Закінчили — «Роботи завершено»."],
+  ["Закупівля", "На вкладці «Матеріали»: що є на складі — «Беру зі складу». Решта — «Замовити»: оберіть постачальника, відмітьте позиції й надішліть. Привезли — «Привезли»."],
+  ["Роботи", "Записуйте оплати від клієнта і витрати внизу на вкладці «Гроші». Клієнт щось змінив — внесіть у кошторис і збережіть у «Кошторис для клієнта». Закінчили — «Роботи завершено»."],
   ["Здача", "Покажіть клієнту результат. Коли прийняв — «Так, здали»."],
   ["Розрахунок", "Отримайте решту грошей від клієнта й розрахуйтесь з командою. Коли все сплачено — «Закрити об’єкт»."]
 ];
@@ -15601,6 +15616,47 @@ function createDemoProject(){
   currentProjectId = project.id;
   render();
   toast("Це приклад — пробуйте сміливо, потім просто видаліть його", 3200);
+}
+
+/* ==== «Як це працює» — довідка з головного екрана ==== */
+const GUIDE_STEPS = [
+  ["Кошторис", "Додайте роботи й матеріали з каталогу кнопкою «＋». Поставте знижку для клієнта. Кнопка «↗» — надіслати кошторис клієнту: PDF, Excel або посилання."],
+  ["Погодження", "Клієнт погодив — «Так, погодив». Сума для клієнта фіксується, і від неї рахується, скільки він винен. Ваші подальші правки — внутрішні, клієнт їх не бачить."],
+  ["Закупівля", "«Треба купити» → «Замовити»: обираєте постачальника, відмічаєте позиції, надсилаєте. Що є на складі — «Беру зі складу». Дрібниці з магазину — «Докупити»."],
+  ["Роботи", "Оплати від клієнта й витрати — на вкладці «Гроші». Клієнт щось поміняв — змініть кошторис і збережіть ці зміни в «Кошторис для клієнта»."],
+  ["Здача", "«Роботи завершено» → документ для клієнта стає «Фактичним кошторисом»: роботи, матеріали, прилади, отримано і до сплати."],
+  ["Розрахунок", "Нагорі «Грошей» видно, скільки клієнт ще винен і ваш заробіток. Усе сплачено — закриваєте об’єкт."]
+];
+const GUIDE_MORE = [
+  ["Що далі", "На кожному об’єкті калькулятор сам підказує наступний крок. Кнопка «?» поруч із назвою об’єкта пояснює поточний етап."],
+  ["Каталог і прайси", "Каталог → «Запросити прайс» → «Надіслати посилання». Постачальник сам вставляє ціни зі своєї бази й оновлює їх. Ви бачите зміни й приймаєте."],
+  ["Гроші", "У витратах вказуйте «Кому». Записи можна виправити, натиснувши на них. Заробіток = отримано − витрачено − команді."],
+  ["Ваші дані", "Увійдіть в акаунт (іконка профілю) — об’єкти будуть на всіх ваших пристроях. Додайте калькулятор на екран «Додому» — відкриватиметься на весь екран."]
+];
+
+function openGuide(){
+  let screen = document.getElementById("guideScreen");
+  if(!screen){
+    screen = document.createElement("div");
+    screen.id = "guideScreen";
+    screen.className = "onbScreen";
+    document.body.appendChild(screen);
+  }
+  screen.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeGuide()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Як працює калькулятор</span></div>
+    <span class="onbNote" style="text-align:left">Один об’єкт — від кошторису до розрахунку. Смужка етапів угорі об’єкта показує, де ви зараз.</span>
+    <div class="guideList">${GUIDE_STEPS.map(([title, text], i) => `<div class="guideStep"><span class="guideNum">${i + 1}</span><div><b>${title}</b><p>${text}</p></div></div>`).join("")}</div>
+    <div class="guideList">${GUIDE_MORE.map(([title, text]) => `<div class="guideStep plain"><div><b>${title}</b><p>${text}</p></div></div>`).join("")}</div>
+    <div class="onbSpacer"></div>
+    <button type="button" class="onbPrimary" onclick="closeGuide();createDemoProject()">Спробувати на прикладі</button>
+    <button type="button" class="onbLink" onclick="closeGuide();openOnboarding()">Пройти знайомство ще раз</button>
+  </div>`;
+  screen.classList.add("open");
+  screen.scrollTop = 0;
+}
+
+function closeGuide(){
+  document.getElementById("guideScreen")?.classList.remove("open");
 }
 
 function shouldShowOnboarding(){
