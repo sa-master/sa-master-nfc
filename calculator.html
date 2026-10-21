@@ -4393,6 +4393,10 @@ body.positionDragging{
           <label class="formLabel">IBAN</label>
           <input class="formInput" id="pfIban" placeholder="UA00 0000 0000 0000 0000 0000 000" autocomplete="off" autocapitalize="characters" spellcheck="false">
         </div>
+        <label class="noDiscountToggle" style="margin-top:.875rem">
+          <input type="checkbox" id="pfMadeWith">
+          <span>Показувати «Складено в et.app»<small>Дрібний підпис унизу кошторису для клієнта: у PDF, Excel і на сторінці за посиланням</small></span>
+        </label>
       </div>
     </div>
 
@@ -7848,7 +7852,7 @@ function renderQuotePreview(){
       <span>${received > 0.5 && documentTotal - received < 0.5 ? "✓" : money(Math.max(0, documentTotal - received))}</span>
     </div>
     ${lastQuoteData.pay ? `<div class="quotePayBox"><b>Реквізити для оплати</b>${lastQuoteData.pay.map(([k, v]) => `<div>${escapeHtml(k)}: <strong>${escapeHtml(v)}</strong></div>`).join("")}</div>` : ""}
-    <div class="quoteMadeWith">Складено в <b>et<span>.app</span></b></div>
+    ${profile.hideMadeWith ? "" : `<div class="quoteMadeWith">Складено в <b>et<span>.app</span></b></div>`}
   `;
 
   document.getElementById("quotePreviewScreen").classList.add("open");
@@ -8006,7 +8010,7 @@ function quoteXlsxRows(data){
   }
   rows.push([]);
   rows.push(["", `Діючий кошторис — PDF від ${String(data.dateLabel || "").replace(/^[^:]*:\s*/, "")}. Excel — копія для зручності.`]);
-  rows.push(["", "Складено в et.app"]);
+  if(!profile.hideMadeWith) rows.push(["", "Складено в et.app"]);
   return { rows, formulas };
 }
 
@@ -8042,7 +8046,7 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
   if(xlsxFile) form.append("xlsx", xlsxFile, xlsxFile.name);
   const data = lastQuoteData || {};
   form.append("meta", JSON.stringify({
-    title: data.title, dateLabel: data.dateLabel, total: data.total, received: data.received || 0,
+    title: data.title, dateLabel: data.dateLabel, total: data.total, received: data.received || 0, madeWith: !profile.hideMadeWith,
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone
   }));
   const cfg = cloudConfig();
@@ -11452,11 +11456,14 @@ function supplierCurrentPrice(name){
   const key = normalizeText(name);
   const items = [];
   const rates = new Map();
+  let pricesFrom = "";
   catalog.forEach(item => {
     if(item.type !== "material") return;
     const offer = getCatalogSupplierOffers(item).find(o => normalizeText(o && o.supplierName) === key);
     if(!offer) return;
     const retail = offer.retail || null, master = offer.master || null;
+    const at = String((master && master.importedAt) || (retail && retail.importedAt) || offer.updatedAt || "").slice(0, 10);
+    if(at > pricesFrom) pricesFrom = at;
     const currency = (master && master.sourceCurrency) || (retail && retail.sourceCurrency) || "UAH";
     const rate = (master && master.sourceRate) || (retail && retail.sourceRate) || null;
     const brand = cleanText(item.manufacturer);
@@ -11470,7 +11477,7 @@ function supplierCurrentPrice(name){
     });
     if(brand && !rates.has(normalizeText(brand))) rates.set(normalizeText(brand), { brand, currency, rate: currency === "UAH" ? null : rate });
   });
-  return { items, rates: Array.from(rates.values()) };
+  return { items, rates: Array.from(rates.values()), pricesFrom };
 }
 
 async function supplierApi(path, options = {}){
@@ -11493,7 +11500,8 @@ async function publishSupplierLink(name){
     masterPhone: String(profile.phone || ""),
     company: String(profile.company || ""),
     items: current.items,
-    rates: current.rates
+    rates: current.rates,
+    pricesFrom: current.pricesFrom
   }) });
   updateSupplierLink(name, { id: data.id, publishedAt: new Date().toISOString() });
   return data.id;
@@ -14602,6 +14610,7 @@ function openProfile(){
   document.getElementById("pfPayee").value = profile.payee || "";
   document.getElementById("pfTaxId").value = profile.taxId || "";
   document.getElementById("pfIban").value = profile.iban || "";
+  document.getElementById("pfMadeWith").checked = !profile.hideMadeWith;
   const cloudCfg = cloudConfig();
   document.getElementById("pfLinkServer").value = cloudRawConfig().server || "";
   document.getElementById("pfLinkKey").value = cloudCfg.key || profile.linkKey || "";
@@ -14859,6 +14868,7 @@ function saveProfile(){
   profile.payee = document.getElementById("pfPayee").value.trim();
   profile.taxId = document.getElementById("pfTaxId").value.trim();
   profile.iban = document.getElementById("pfIban").value.trim().replace(/\s+/g, " ").toUpperCase();
+  profile.hideMadeWith = !document.getElementById("pfMadeWith").checked;
   const newCloud = {
     server: document.getElementById("pfLinkServer").value.trim().replace(/\/+$/, ""),
     key: document.getElementById("pfLinkKey").value.trim()
