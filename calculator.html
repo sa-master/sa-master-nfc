@@ -11530,7 +11530,7 @@ function refreshSupplierRequestPreview(){
   if(trustRow){
     trustRow.classList.toggle("hidden", !(link && link.id));
     trustRow.style.color = "inherit";
-    trustRow.innerHTML = link && link.id ? `<label class="noDiscountToggle" style="margin:0"><input type="checkbox" ${link.trusted ? "checked" : ""} onchange="updateSupplierLink(document.getElementById('srSupplierName').value,{trusted:this.checked,trustAsked:true})"><span>Приймати оновлення від ${escapeHtml(link.supplierName)} автоматично<small>Зміни понад 15% все одно на перевірку</small></span></label>` : "";
+    trustRow.innerHTML = link && link.id ? `<label class="noDiscountToggle" style="margin:0"><input type="checkbox" ${supplierAutoAccept(link) ? "checked" : ""} onchange="updateSupplierLink(document.getElementById('srSupplierName').value,{manualReview:!this.checked})"><span>Приймати оновлення від ${escapeHtml(link.supplierName)} автоматично<small>Зміни понад 15% все одно на перевірку</small></span></label>` : "";
   }
 }
 
@@ -11744,7 +11744,7 @@ async function checkSupplierUpdates(){
     const local = byId.get(remote.id);
     if(!local) return;
     if(remote.validUntil !== local.validUntil) updateSupplierLink(local.supplierName, { validUntil: remote.validUntil });
-    if(remote.lastSubmitAt && remote.lastSubmitAt > (local.handledAt || "")) fresh.push({ ...remote, supplierName: local.supplierName, trusted: local.trusted });
+    if(remote.lastSubmitAt && remote.lastSubmitAt > (local.handledAt || "")) fresh.push({ ...remote, supplierName: local.supplierName, trusted: supplierAutoAccept(local) });
   });
   supplierUpdates = fresh.filter(u => !u.trusted);
   for(const update of fresh.filter(u => u.trusted)){
@@ -11800,6 +11800,10 @@ function supplierSubmissionToParsed(sub){
   return { items, currency:"BRAND_RATES", detectedRate:null, supplierFullName:"", profile:"supplier-link", usesBrandRates:true, importErrors:errors };
 }
 
+/* Автоприйом увімкнено за замовчуванням; майстер може вимкнути (manualReview) */
+function supplierAutoAccept(link){
+  return Boolean(link) && !link.manualReview;
+}
 async function reviewSupplierUpdate(id, auto){
   try{ await reviewSupplierUpdateInner(id, auto); }
   catch(e){ if(!auto) toast("Не вдалося відкрити прайс: " + (e && e.message || e)); }
@@ -11837,7 +11841,7 @@ async function reviewSupplierUpdateInner(id, auto){
   supplierImportContext = { id, supplierName: link.supplierName, at: sub.at, patch };
   if(auto){
     const diff = supplierDiff(link, sub, parsed);
-    if(!diff.big){ applySupplierItems(link.supplierName, parsed, parsed.items); return; }
+    if(!diff.big){ supplierImportContext.auto = parsed.items.length; applySupplierItems(link.supplierName, parsed, parsed.items); return; }
     supplierImportContext = null;
     if(!supplierUpdates.some(u => u.id === id)) supplierUpdates.push({ id, supplierName: link.supplierName, lastSubmitAt: sub.at, validUntil: sub.validUntil || "", big: true });
     if(!currentProjectId) render();
@@ -11871,7 +11875,7 @@ function supplierDiff(link, sub, parsed){
 
 function openSupplierReview(link, sub, parsed){
   const { rows, rateChanges } = supplierDiff(link, sub, parsed);
-  supReview = { link, sub, parsed, rows, rateChanges, selected: new Set(rows.map(r => r.index)), trust: Boolean(link.trusted), showAll: {} };
+  supReview = { link, sub, parsed, rows, rateChanges, selected: new Set(rows.map(r => r.index)), trust: supplierAutoAccept(link), showAll: {} };
   let screen = document.getElementById("supReviewScreen");
   if(!screen){
     screen = document.createElement("div");
@@ -11967,7 +11971,7 @@ function acceptSupplierReview(){
   const r = supReview;
   if(!r) return;
   const items = r.rows.filter(x => r.selected.has(x.index)).map(x => x.it);
-  updateSupplierLink(r.link.supplierName, { trusted: Boolean(r.trust), trustAsked: true });
+  updateSupplierLink(r.link.supplierName, { manualReview: !r.trust });
   document.getElementById("supReviewScreen")?.classList.remove("open");
   supReview = null;
   applySupplierItems(r.link.supplierName, r.parsed, items);
@@ -11996,16 +12000,8 @@ function afterSupplierLinkImport(){
   supplierUpdates = supplierUpdates.filter(x => x.id !== ctx.id);
   publishSupplierLink(ctx.supplierName, ctx.at).catch(() => {});
   render();
-  /* Після кількох спокійних оновлень пропонуємо не перевіряти кожне вручну */
-  if(count >= 3 && !link.trusted && !link.trustAsked){
-    updateSupplierLink(ctx.supplierName, { trustAsked: true });
-    setTimeout(() => {
-      if(confirm(`${ctx.supplierName} оновлював прайс уже ${count} рази.\n\nЗастосовувати його оновлення автоматично, без перевірки?\nПогоджені з клієнтами суми не зміняться. Вимкнути можна в «Запросити прайс».`)){
-        updateSupplierLink(ctx.supplierName, { trusted: true });
-        toast("Оновлення застосовуватимуться автоматично");
-      }
-    }, 900);
-  }
+  if(ctx.auto) setTimeout(() => toast(`${ctx.supplierName} оновив ціни — застосовано автоматично (${ctx.auto} поз.)`), 300);
+
 }
 
 /* Ціни постачальника застаріли: минула дата «дійсні до», яку він сам поставив, або 30 днів від останнього оновлення.
