@@ -10527,6 +10527,7 @@ function renderCatalogList(){
     return;
   }
 
+  const supLinks = loadSupplierLinks();
   list.innerHTML = items.map(item => {
     const position = positions.find(pos => pos.catalogId === item.id);
     const qty = Number(position && position.qty) || 0;
@@ -10538,7 +10539,7 @@ function renderCatalogList(){
 
     const selectedOffer = item.type === "material" ? getSelectedCatalogSupplierOffer(item) : null;
     const supplierText = selectedOffer && selectedOffer.supplierName
-      ? ` · ${escapeHtml(selectedOffer.supplierName)}`
+      ? ` · ${escapeHtml(selectedOffer.supplierName)}${offerIsOld(selectedOffer, supLinks) ? ` <span class="catalogReviewMark">· ціни від ${escapeHtml(formatQuoteDate(offerConfirmedAt(selectedOffer, supLinks)))}</span>` : ""}`
       : "";
     const statusText = item.type === "material"
       ? ` · ${escapeHtml(catalogItemStatusLabel(item))}`
@@ -10737,7 +10738,8 @@ function renderCatalogSupplierOfferOptions(item){
   select.innerHTML = `<option value="">Вручну — не змінювати ціни</option>` + offers.map(offer => {
     const retail = supplierOfferPrice(offer, "retail");
     const purchase = supplierOfferPrice(offer, "master");
-    const text = `${offer.supplierName || "Постачальник"}: клієнт ${retail ? moneyWithCents(retail) : "—"}, закупка ${purchase ? moneyWithCents(purchase) : "—"}`;
+    const at = offerConfirmedAt(offer);
+    const text = `${offer.supplierName || "Постачальник"}: клієнт ${retail ? moneyWithCents(retail) : "—"}, закупка ${purchase ? moneyWithCents(purchase) : "—"}${at ? ` · ціни від ${formatQuoteDate(at)}` : ""}`;
     return `<option value="${escapeHtml(offer.supplierName || "")}" ${normalizeText(offer.supplierName) === current ? "selected" : ""}>${escapeHtml(text)}</option>`;
   }).join("");
   hint.textContent = "Вибрана пропозиція стане основною для нових позицій кошторису.";
@@ -12007,6 +12009,19 @@ function afterSupplierLinkImport(){
 /* Ціни постачальника застаріли: минула дата «дійсні до», яку він сам поставив, або 30 днів від останнього оновлення.
    Показуємо одну підказку в «Що далі» з кнопкою попросити оновлення. */
 const SUP_STALE_DAYS = 30;
+/* Коли ціни цього постачальника востаннє оновлено або підтверджено (за посиланням «ціни актуальні» теж) */
+function offerConfirmedAt(offer, links){
+  if(!offer) return "";
+  const snap = offer.master || offer.retail || {};
+  let at = String(snap.importedAt || offer.updatedAt || "");
+  const link = (links || loadSupplierLinks())[normalizeText(offer.supplierName)];
+  if(link && link.handledAt && String(link.handledAt) > at) at = String(link.handledAt);
+  return at.slice(0, 10);
+}
+function offerIsOld(offer, links){
+  const at = offerConfirmedAt(offer, links);
+  return Boolean(at) && Date.now() - Date.parse(at + "T12:00:00") > SUP_STALE_DAYS * 86400000;
+}
 function supplierStaleInfo(link){
   if(!link || !link.id) return null;
   const today = todayIso();
