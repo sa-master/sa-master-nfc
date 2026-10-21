@@ -54,6 +54,15 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
 .err{color:var(--red);font-weight:650}
 .hidden{display:none!important}
 .done{text-align:center;align-items:center;padding:36px 20px}
+.it input.bad,.rate input.bad{border-color:var(--red);background:color-mix(in srgb,var(--red) 9%,var(--in))}
+.warnline{display:block;color:var(--warn);font-weight:700;font-size:12px;margin-top:2px}
+.check{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.check .box{background:var(--card);width:100%;max-width:640px;max-height:88vh;border-radius:20px 20px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.check .list{overflow-y:auto;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px}
+.check .row{padding:9px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
+.check .row:last-child{border-bottom:0}
+.check .row b{display:block;font-weight:650;overflow-wrap:anywhere}
+.check .row span{color:var(--warn);font-weight:700}
 .done .big{font-size:48px}
 </style>
 </head>
@@ -135,6 +144,14 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
   </div>
 </main>
 
+<div class="check hidden" id="check"><div class="box">
+  <h2 id="checkTitle" style="margin:0">Перевірте, будь ласка</h2>
+  <p class="hint" style="margin:0">Деякі ціни виглядають незвично. Можливо, це помилка при копіюванні.</p>
+  <div class="list" id="checkList"></div>
+  <button type="button" class="btn" id="checkFix">Виправити</button>
+  <button type="button" class="btn ghost" id="checkOk">Все правильно, надіслати</button>
+</div></div>
+
 <div class="bar hidden" id="bar"><div class="in">
   <div class="sum" id="sumLine">Змін ще немає</div>
   <button type="button" class="btn" id="send" disabled>Надіслати майстру</button>
@@ -155,6 +172,7 @@ let baseRates = [];
 let items = [];         // робоча копія
 let rates = new Map();  // brand(lower) -> {brand,currency,rate}
 let pasted = null;      // {rows, map[], skipFirst}
+let pendingAt = "";
 
 const norm = v => String(v == null ? "" : v).trim().toLowerCase().replace(/\s+/g, " ");
 const keyOf = it => it.article ? "a:" + norm(it.article) : "n:" + norm(it.name);
@@ -183,8 +201,14 @@ async function load(){
     $("title").textContent = `Прайс ${d.supplierName || ""}`.trim();
     document.title = `Прайс · ${d.supplierName || ""}`;
     base = (d.items || []).map(it => ({ ...it }));
-    items = base.map(it => ({ ...it, _orig: { retail:it.retail, master:it.master, currency:it.currency } }));
     baseRates = d.rates || [];
+    /* Якщо постачальник уже надіслав зміни, а майстер ще не прийняв — показуємо його надіслане */
+    pendingAt = d.pending ? d.pending.at : "";
+    if(d.pending){
+      base = (d.pending.items || []).map(it => ({ ...it }));
+      baseRates = d.pending.rates || baseRates;
+    }
+    items = base.map(it => ({ ...it, _orig: { retail:it.retail, master:it.master, currency:it.currency } }));
     baseRates.forEach(rt => rates.set(norm(rt.brand), { ...rt }));
     if(d.last){
       $("lastInfo").textContent = `Останнє оновлення: ${new Date(d.last.at).toLocaleDateString("uk-UA")}${d.last.validUntil ? " · дійсні до " + new Date(d.last.validUntil + "T12:00").toLocaleDateString("uk-UA") : ""}`;
@@ -201,6 +225,7 @@ async function load(){
     $("quickValid").value = $("validUntil").value;
     if(base.length){
       const from = d.pricesFrom ? new Date(d.pricesFrom + "T12:00").toLocaleDateString("uk-UA") : "";
+      if(pendingAt) $("lastInfo").innerHTML = `<span style="color:var(--warn);font-weight:700">Ваші зміни від ${new Date(pendingAt).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })} надіслано — чекають підтвердження майстра.</span> Нижче — саме ваші надіслані ціни й курси.`;
       $("quickInfo").innerHTML = `<b>${base.length}</b> ваших товарів${from ? `, ціни з вашого прайсу від <b>${from}</b>` : ""}${d.last ? `. Востаннє ви підтверджували ${new Date(d.last.at).toLocaleDateString("uk-UA")}` : ""}.`;
       const foreign = baseRates.filter(r => r.currency && r.currency !== "UAH" && r.rate);
       $("quickRates").innerHTML = foreign.length ? "Курси: " + foreign.map(r => `<b>${esc(r.brand)}</b> ${r.currency} ${money(r.rate)}`).join(" · ") : "Усі ціни в гривнях.";
@@ -335,19 +360,79 @@ function isChanged(it){
   const o = it._orig || {};
   return it.retail !== o.retail || it.master !== o.master || (it.currency || "") !== (o.currency || "");
 }
+/* ---------- Перевірка на помилки ---------- */
+const JUMP = 0.15;
+const pct = (a, b) => Math.round((b - a) / a * 100);
+const jumped = (a, b) => a > 0 && b > 0 && Math.abs(b - a) / a > JUMP;
+const lost = (a, b) => a > 0 && !(b > 0);
+function issueOf(it){
+  const o = it._orig || {};
+  const out = [];
+  if(!it._new){
+    if(lost(o.retail, it.retail) || lost(o.master, it.master)) out.push("ціна зникла");
+    if(jumped(o.retail, it.retail)) out.push(`роздріб ${pct(o.retail, it.retail) > 0 ? "+" : ""}${pct(o.retail, it.retail)}%`);
+    if(jumped(o.master, it.master)) out.push(`майстру ${pct(o.master, it.master) > 0 ? "+" : ""}${pct(o.master, it.master)}%`);
+    if(o.currency && it.currency && o.currency !== it.currency) out.push(`валюта ${o.currency} → ${it.currency}`);
+  }else if(it.retail === 0 || it.master === 0) out.push("ціна 0");
+  if(it.retail > 0 && it.master > 0 && it.master > it.retail) out.push("ціна майстру вища за роздріб");
+  return out;
+}
+function rateIssueOf(rt){
+  if(!rt || rt.currency === "UAH" || !(rt.rate > 0)) return "";
+  const o = baseRates.find(x => norm(x.brand) === norm(rt.brand));
+  const range = rt.currency === "EUR" ? [30, 90] : [25, 80];
+  if((!o || o.rate !== rt.rate) && (rt.rate < range[0] || rt.rate > range[1])) return `курс ${rt.currency} ${money(rt.rate)} — схоже на помилку`;
+  if(o && o.currency === rt.currency && jumped(o.rate, rt.rate)) return `курс ${money(o.rate)} → ${money(rt.rate)} (${pct(o.rate, rt.rate) > 0 ? "+" : ""}${pct(o.rate, rt.rate)}%)`;
+  return "";
+}
+function findIssues(){
+  const list = [];
+  [...rates.values()].forEach(rt => { const t = rateIssueOf(rt); if(t) list.push({ name: rt.brand, text: t, rate: true }); });
+  items.forEach(it => { if(!isChanged(it)) return; const t = issueOf(it); if(t.length) list.push({ name: it.name, text: t.join(" · "), it }); });
+  return list;
+}
+let checkedOk = false;
+function showCheck(list){
+  const shown = list.slice(0, 30);
+  $("checkTitle").textContent = `Перевірте, будь ласка: ${list.length}`;
+  $("checkList").innerHTML = shown.map(x => `<div class="row"><b>${esc(x.name)}</b><span>${esc(x.text)}</span></div>`).join("") + (list.length > shown.length ? `<div class="row hint">і ще ${list.length - shown.length}</div>` : "");
+  $("check").classList.remove("hidden");
+}
+$("checkFix").onclick = () => {
+  const list = findIssues();
+  $("check").classList.add("hidden");
+  if(!$("quick").classList.contains("hidden")) $("quickUpdate").click();
+  const first = list.find(x => x.it) || list[0];
+  if(first && first.it){
+    $("search").value = list.filter(x => x.it).length === 1 ? (first.it.article || first.it.name) : "";
+    onlyIssues = list.filter(x => x.it).length > 1;
+    renderItems();
+    setTimeout(() => $("itemsCard").scrollIntoView({ behavior:"smooth" }), 50);
+  }else{
+    renderRates();
+    setTimeout(() => $("rates").scrollIntoView({ behavior:"smooth", block:"center" }), 50);
+  }
+};
+$("checkOk").onclick = () => { $("check").classList.add("hidden"); checkedOk = true; send(); };
+let onlyIssues = false;
+
 function renderItems(){
   const q = norm($("search").value);
-  const list = items.filter(it => !q || norm(it.name).includes(q) || norm(it.article).includes(q));
+  const list = items.filter(it => (!q || norm(it.name).includes(q) || norm(it.article).includes(q)) && (!onlyIssues || (isChanged(it) && issueOf(it).length)));
   const shown = list.slice(0, 80);
   $("itemsCount").textContent = items.length;
   $("items").innerHTML = shown.map(it => {
     const i = items.indexOf(it);
     const c = isChanged(it);
-    return `<div class="it"><span><b>${esc(it.name)}</b><small>${[it.article && "арт. " + it.article, it.brand, it.unit, it.currency && it.currency !== "UAH" ? it.currency : ""].filter(Boolean).map(esc).join(" · ")}${it._new ? ' · <span class="pill ok">новий</span>' : ""}</small></span>
-      <input inputmode="decimal" class="${c && it.retail !== (it._orig || {}).retail ? "chg" : ""}" value="${money(it.retail)}" data-i="${i}" data-f="retail" aria-label="Роздрібна ціна">
-      <input inputmode="decimal" class="${c && it.master !== (it._orig || {}).master ? "chg" : ""}" value="${money(it.master)}" data-i="${i}" data-f="master" aria-label="Ціна для майстра"></div>`;
+    const iss = c ? issueOf(it) : [];
+    const o = it._orig || {};
+    const cls = f => iss.length && (it[f] !== o[f] || /вища/.test(iss.join())) ? "bad" : (c && it[f] !== o[f] ? "chg" : "");
+    return `<div class="it"><span><b>${esc(it.name)}</b><small>${[it.article && "арт. " + it.article, it.brand, it.unit, it.currency && it.currency !== "UAH" ? it.currency : ""].filter(Boolean).map(esc).join(" · ")}${it._new ? ' · <span class="pill ok">новий</span>' : ""}${c && !it._new && (it.retail !== o.retail || it.master !== o.master) ? `<br>було: ${money(o.retail) || "—"} / ${money(o.master) || "—"}` : ""}</small>${iss.length ? `<span class="warnline">⚠ ${esc(iss.join(" · "))}</span>` : ""}</span>
+      <input inputmode="decimal" class="${cls("retail")}" value="${money(it.retail)}" data-i="${i}" data-f="retail" aria-label="Роздрібна ціна">
+      <input inputmode="decimal" class="${cls("master")}" value="${money(it.master)}" data-i="${i}" data-f="master" aria-label="Ціна для майстра"></div>`;
   }).join("") || `<div class="hint" style="padding:10px 0">Нічого не знайдено</div>`;
-  $("moreInfo").textContent = list.length > shown.length ? `Показано ${shown.length} з ${list.length}. Скористайтеся пошуком.` : "";
+  $("moreInfo").innerHTML = (onlyIssues ? `Показано лише ціни, які варто перевірити. <button type="button" id="allItems" style="background:none;border:0;color:var(--p);font:inherit;font-weight:700;cursor:pointer;padding:0">Показати всі</button> ` : "") + (list.length > shown.length ? `Показано ${shown.length} з ${list.length}. Скористайтеся пошуком.` : "");
+  if($("allItems")) $("allItems").onclick = () => { onlyIssues = false; renderItems(); };
   $("items").querySelectorAll("input").forEach(inp => inp.onchange = () => {
     const it = items[Number(inp.dataset.i)];
     it[inp.dataset.f] = num(inp.value);
@@ -386,9 +471,10 @@ function rateRows(brands){
     rates.set(k, rt);
     const orig = baseRates.find(x => norm(x.brand) === k);
     const changed = orig && (orig.currency !== rt.currency || orig.rate !== rt.rate);
-    return `<div class="rate"><b>${esc(name)}${changed ? ' <span class="pill warn">змінено</span>' : ""}</b>
+    const rIss = rateIssueOf(rt);
+    return `<div class="rate"><b>${esc(name)}${changed ? ' <span class="pill warn">змінено</span>' : ""}${rIss ? `<span class="warnline">⚠ ${esc(rIss)}</span>` : ""}</b>
       <select data-k="${esc(k)}" data-f="currency">${["UAH", "EUR", "USD"].map(c => `<option ${c === rt.currency ? "selected" : ""}>${c}</option>`).join("")}</select>
-      <input inputmode="decimal" data-k="${esc(k)}" data-f="rate" value="${rt.currency === "UAH" ? "" : money(rt.rate)}" placeholder="${rt.currency === "UAH" ? "—" : "курс"}" ${rt.currency === "UAH" ? "disabled" : ""}></div>`;
+      <input inputmode="decimal" class="${rIss ? "bad" : ""}" data-k="${esc(k)}" data-f="rate" value="${rt.currency === "UAH" ? "" : money(rt.rate)}" placeholder="${rt.currency === "UAH" ? "—" : "курс"}" ${rt.currency === "UAH" ? "disabled" : ""}></div>`;
   }).join("");
 }
 function changedRateBrands(){
@@ -425,6 +511,11 @@ async function send(){
     updateSummary();
     return;
   }
+  if(!checkedOk){
+    const issues = findIssues();
+    if(issues.length){ showCheck(issues); return; }
+  }
+  checkedOk = false;
   const btn = $("send"); btn.disabled = true; btn.textContent = "Надсилаємо…";
   $("quickYes").disabled = true; $("quickYes").textContent = "Надсилаємо…";
   const clean = it => {
