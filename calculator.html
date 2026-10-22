@@ -3321,6 +3321,29 @@ body.positionDragging{
 .byOpt.sel .opBox{background:var(--p-action);border-color:transparent}
 .byOpt.sel .opName{color:var(--p)}
 .byTitle small{text-transform:none;letter-spacing:0;font-weight:600;margin-left:.375rem}
+.addMenu{position:fixed;inset:0;z-index:305;background:rgba(0,0,0,.28);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .15s}
+.addMenu.open{opacity:1;pointer-events:auto}
+.amSheet{width:100%;max-width:30rem;background:var(--bg);border-radius:1.25rem 1.25rem 0 0;padding:1rem 1rem calc(var(--sab) + 1rem);display:flex;flex-direction:column;gap:.5rem}
+.amHead{display:flex;align-items:center;justify-content:space-between;padding:0 .25rem .25rem}
+.amHead b{font-size:1.125rem;font-weight:800;color:var(--t)}
+.amClose{width:2.25rem;height:2.25rem;border-radius:50%;background:var(--card);color:var(--tm);font-size:1rem}
+.amItem{display:flex;align-items:center;gap:.875rem;width:100%;text-align:left;background:var(--card);border-radius:1rem;padding:.875rem 1rem}
+.amIcon{font-size:1.375rem;width:1.75rem;text-align:center}
+.amText b{display:block;font-size:1rem;font-weight:750;color:var(--t)}
+.amText small{display:block;font-size:.8125rem;color:var(--tm);font-weight:600;margin-top:.125rem}
+.ptNoteForm button.ghost{background:rgba(120,120,128,.14);color:var(--ts);padding:0 .75rem}
+.byAddRow{display:flex;align-items:center;gap:.625rem;padding:.375rem 0}
+.byPlus{flex:0 0 1.375rem;text-align:center;color:var(--p);font-weight:800;font-size:1.125rem}
+.byAddRow input{flex:1 1 auto;min-width:0;height:2.375rem;border:0;border-bottom:1px solid rgba(120,120,128,.25);background:none;color:var(--t);font-size:.9375rem;font-weight:600;padding:0;border-radius:0;outline:none}
+.byAddRow input:focus{border-bottom-color:var(--p)}
+.byAddRow input::placeholder{color:var(--tm);font-weight:600}
+.bySug{display:flex;flex-direction:column;margin:0 0 .5rem 2rem;background:var(--bgs);border-radius:.75rem;overflow:hidden}
+.bySug button{display:block;text-align:left;background:none;padding:.5rem .75rem;border-bottom:1px solid rgba(120,120,128,.12)}
+.bySug b{display:block;font-size:.875rem;font-weight:700;color:var(--t)}
+.bySug small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
+.bySug .own{color:var(--p);font-weight:750;font-size:.875rem}
+.buyList .byTitle{border-top:1px solid rgba(120,120,128,.14);margin-top:.25rem;padding-top:.625rem}
+.buyList .ptHead+.byTitle{border-top:0;margin-top:0}
 .planTodo{margin:0 0 .75rem;padding:.75rem .875rem .5rem;border-radius:1rem;background:var(--card);box-shadow:0 6px 18px rgba(40,80,120,.10)}
 .ptHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.125rem}
 .ptHead span{font-size:.75rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--p)}
@@ -8056,7 +8079,7 @@ function renderFloatingPanel(p){
           <button class="addButton primary" onclick="openMoneyForm('payment')" aria-label="Додати оплату від клієнта">＋ Оплата</button>
           <button class="addButton" onclick="openMoneyForm('expense')" aria-label="Додати витрату">＋ Витрата</button>
         ` : `
-          <button class="addButton round" onclick="openCatalogFor('${projectTab === "materials" ? "material" : "work"}')" aria-label="${projectTab === "materials" ? "Додати матеріал" : "Додати роботу"}" title="${projectTab === "materials" ? "Додати матеріал" : "Додати роботу"}">＋</button>
+          <button class="addButton round" onclick="${buyOn(p) ? "openAddMenu()" : `openCatalogFor('${projectTab === "materials" ? "material" : "work"}')`}" aria-label="${projectTab === "materials" ? "Додати матеріал" : "Додати роботу"}" title="${projectTab === "materials" ? "Додати матеріал" : "Додати роботу"}">＋</button>
           <button class="addButton round" onclick="openQuotePreview()" aria-label="Кошторис для клієнта" title="Кошторис для клієнта">↗</button>
         `}
       </div>
@@ -10083,10 +10106,19 @@ function toggleCatalogMore(event){
   }
 }
 
-function openCatalogFor(type){
+let catalogDest = "estimate";
+/* Позиція цього товару там, куди зараз додаємо: у кошторис клієнта чи в блокнот (для себе) */
+function catalogPosFor(list, catalogId){
+  const item = catalog.find(c => c.id === catalogId);
+  const nb = catalogDest === "notebook" && (!item || item.type === "material");
+  return (list || []).find(pos => pos.catalogId === catalogId && Boolean(pos.buyLaterOnly) === nb);
+}
+function openCatalogFor(type, dest){
   if(!requireAccess()) return;
   if(!currentProjectId) return;
+  catalogDest = dest === "notebook" ? "notebook" : "estimate";
   setCatalogMode(type);
+  if(catalogDest === "notebook") document.getElementById("catalogTitle").textContent = "Каталог · у блокнот";
   document.getElementById("catalogSheet").classList.add("open");
   setTimeout(() => document.getElementById("catalogSearch").focus(), 200);
 }
@@ -10136,6 +10168,7 @@ function closeCatalog(){
   document.getElementById("catalogRequestButton").classList.add("hidden");
   document.getElementById("catalogRatesButton").classList.add("hidden");
   editingCatalogItemId = null;
+  catalogDest = "estimate";
 }
 
 function supplierRateKey(supplierName, brand, currency){
@@ -10963,7 +10996,7 @@ function renderCatalogList(){
 
   const supLinks = loadSupplierLinks();
   list.innerHTML = items.map(item => {
-    const position = positions.find(pos => pos.catalogId === item.id);
+    const position = catalogPosFor(positions, item.id);
     const qty = Number(position && position.qty) || 0;
     const selected = qty > 0;
 
@@ -11041,10 +11074,12 @@ function catalogCounterIncrement(catalogId){
   if(!project) return;
 
   if(!Array.isArray(project.positions)) project.positions = [];
-  const existing = project.positions.find(pos => pos.catalogId === catalogId);
+  const existing = catalogPosFor(project.positions, catalogId);
 
   if(existing){
     existing.qty = roundQty((Number(existing.qty) || 0) + 1);
+  }else if(catalogDest === "notebook" && item.type === "material"){
+    project.positions.push(notebookPosFromItem(item, 1));
   }else{
     project.positions.push({
       id: uid("pos"),
@@ -11073,7 +11108,7 @@ function catalogCounterIncrement(catalogId){
 function catalogCounterDecrement(catalogId){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project || !Array.isArray(project.positions)) return;
-  const position = project.positions.find(pos => pos.catalogId === catalogId);
+  const position = catalogPosFor(project.positions, catalogId);
   if(!position) return;
   if(Date.now() - lastScrollAt < 450) return;
 
@@ -11083,8 +11118,8 @@ function catalogCounterDecrement(catalogId){
       toast("Клієнт погодив цю позицію. Відкрийте її в кошторисі: «Беру зі складу» або «Клієнт відмовився»");
       return;
     }
-    if(!confirm(`Прибрати «${positionShortName(position)}» з кошторису?`)) return;
-    project.positions = project.positions.filter(pos => pos.catalogId !== catalogId);
+    if(!confirm(`Прибрати «${positionShortName(position)}» ${position.buyLaterOnly ? "з блокнота" : "з кошторису"}?`)) return;
+    project.positions = project.positions.filter(pos => pos !== position);
   }else{
     position.qty = roundQty((Number(position.qty) || 1) - 1);
   }
@@ -11099,7 +11134,7 @@ function setCatalogItemQty(catalogId, rawValue){
   const project = projects.find(p => p.id === currentProjectId);
   if(!project || !Array.isArray(project.positions)) return;
 
-  const position = project.positions.find(pos => pos.catalogId === catalogId);
+  const position = catalogPosFor(project.positions, catalogId);
   if(!position) return;
 
   const parsed = Number(String(rawValue || "").replace(",", "."));
@@ -11454,7 +11489,9 @@ function saveCustom(){
   const project = projects.find(p => p.id === currentProjectId);
   if(project){
     if(!Array.isArray(project.positions)) project.positions = [];
-    project.positions.push({
+    if(catalogDest === "notebook" && newItem.type === "material"){
+      project.positions.push(notebookPosFromItem(newItem, Number(String(document.getElementById("csQty").value).replace(",", ".")) > 0 ? roundQty(Number(String(document.getElementById("csQty").value).replace(",", "."))) : 1));
+    }else project.positions.push({
       id: uid("pos"),
       catalogId: newItem.id,
       type: newItem.type,
@@ -16625,10 +16662,12 @@ function planNoteAdd(){
   if(!text){ planNoteOpen = false; render(); return; }
   if(!Array.isArray(p.todo)) p.todo = [];
   p.todo.push({ id: uid("todo"), text, done:false, at: new Date().toISOString() });
+  planNoteOpen = false;
   touchProject(p);
   render();
-  setTimeout(() => document.getElementById("planNoteInput")?.focus(), 60);
+  toast("Нотатку додано");
 }
+function planNoteCancel(){ planNoteOpen = false; render(); }
 function planNoteToggle(todoId){
   const p = planCurrent();
   const t = p && (p.todo || []).find(x => x.id === todoId);
@@ -17597,15 +17636,14 @@ function renderBuyList(p){
   const doneCount = doneList.length + doneNotes.length;
   return `
     <section class="planTodo buyList">
-      <div class="ptHead"><span>Що далі</span></div>
-      ${groups.length ? `<div class="byTitle">Купити<small>натисніть товар — змінити, де берете</small></div>${groups.map(groupHtml).join("")}` : `<div class="ptEmpty">✓ Усе куплено</div>`}
-      ${notes || planNoteOpen ? `<div class="byGroup"><div class="byHead"><span>Замітки</span></div>${notes}${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off"><button type="submit">Додати</button></form>` : ""}</div>` : ""}
+      <div class="ptHead"><span>Блокнот</span></div>
+      <div class="byTitle">Купити${groups.length ? `<small>натисніть товар — змінити, де берете</small>` : ""}</div>
+      ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}
+      ${notes || planNoteOpen ? `<div class="byTitle">Нотатки</div>${notes}` : ""}
+      ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off" enterkeyhint="done"><button type="submit">Додати</button><button type="button" class="ghost" onclick="planNoteCancel()" aria-label="Скасувати">✕</button></form>` : ""}
       ${steps.length ? `<div class="byGroup">${steps.map(step => `<div class="ptRow"><span class="ptText">${step.text}${step.sub ? `<small>${step.sub}</small>` : ""}</span><button type="button" class="ptBtn ${step.primary ? "primary" : ""}" onclick="${step.action}">${step.label}</button></div>`).join("")}</div>` : ""}
       ${done}
-      <div class="ptFoot">
-        <span style="display:flex;gap:1.125rem"><button type="button" class="ptLink" onclick="openBuyAdd()">＋ Додати</button><button type="button" class="ptLink" onclick="planNoteOpen=true;render();setTimeout(()=>document.getElementById('planNoteInput')?.focus(),60)">＋ Замітка</button></span>
-        ${doneCount ? `<button type="button" class="ptLink muted" onclick="buyDoneOpen=!buyDoneOpen;render()">${buyDoneOpen ? "Сховати куплене" : `Куплено ${doneCount}`}</button>` : ""}
-      </div>
+      ${doneCount ? `<div class="ptFoot"><span class="ptHint">Додати — кнопка ＋ внизу</span><button type="button" class="ptLink muted" onclick="buyDoneOpen=!buyDoneOpen;render()">${buyDoneOpen ? "Сховати куплене" : `Куплено ${doneCount}`}</button></div>` : ""}
     </section>`;
 }
 
@@ -17714,7 +17752,7 @@ function renderBuyScreen(){
   }).join("");
   buyScreen().innerHTML = `<div class="onbInner">
     <div class="onbTop"><button type="button" class="onbBack" onclick="closeBuyScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Де беру</span></div>
-    <div class="psHead"><b>${escapeHtml(positionShortName(pos))}</b><small>${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")}${pos.buyLaterOnly ? " · не йде клієнту" : ""}</small></div>
+    <div class="psHead"><b>${escapeHtml(positionShortName(pos))}</b><small>${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")}${pos.buyLaterOnly ? " · у блокноті, клієнту не йде" : " · у кошторисі клієнта"}</small></div>
     <div class="opList">
       ${sups}
       ${opt("self", "", "Куплю сам", "магазин, базар")}
@@ -17726,6 +17764,9 @@ function renderBuyScreen(){
     ${pos.replacedFrom ? `<div class="onbNote" style="text-align:left">Замінено: було «${escapeHtml(pos.replacedFrom)}»</div>` : ""}
     <div class="planAdd"><span class="opLabel">Кількість${pos.buyLaterOnly ? "" : " · зміниться й у кошторисі клієнта"}</span>
       <div class="psStep byQty"><button type="button" onclick="buyQtyStep(-1)" aria-label="Менше">−</button><input id="buyQtyEdit" inputmode="decimal" value="${formatQty(pos.qty)}" onchange="buyQtyEdit(this.value)"><span>${escapeHtml(pos.unit || "шт")}</span><button type="button" onclick="buyQtyStep(1)" aria-label="Більше">＋</button></div></div>
+    ${pos.buyLaterOnly ? `<div class="planAdd"><span class="opLabel">Ціна закупівлі за 1 ${escapeHtml(pos.unit || "шт")} · можна потім</span><div class="planAddRow"><input id="buyPriceEdit" inputmode="decimal" value="${Number(pos.purchasePrice) > 0 ? String(pos.purchasePrice).replace(".", ",") : ""}" placeholder="₴" onchange="buyPriceEdit(this.value)"></div></div>
+    <button type="button" class="psReplace" onclick="buyMoveToEstimate()">→ Перенести в кошторис клієнта</button>`
+      : `<button type="button" class="psReplace" onclick="buyOpenPrices()">Ціни (клієнту й закупівля)</button>`}
     <button type="button" class="byDel" onclick="buyDelete()">${pos.buyLaterOnly ? "Видалити" : "Видалити з кошторису"}</button>
   </div>`;
 }
@@ -17733,6 +17774,11 @@ function buyChoose(k, s){
   const { p, pos } = buyPos(buyUi.posId);
   if(!pos) return;
   buySetWhere(pos, k, s);
+  if(k === "sup" && pos.purchasePriceState !== "confirmed"){
+    const offer = getCatalogSupplierOffers(getPositionCatalogItem(pos)).find(o => normalizeText(o && o.supplierName) === normalizeText(s));
+    const price = supplierOfferPrice(offer, "master");
+    if(price > 0){ pos.purchasePrice = price; pos.purchasePriceState = "estimated"; }
+  }
   if(k === "skip"){ pos.got = true; pos.gotAt = new Date().toISOString(); }
   touchProject(p);
   closeBuyScreen();
@@ -17887,6 +17933,128 @@ function buyAddText(){
   const name = cleanText(buyUi.q || "");
   if(name) buyAddCreate({ name, fullName:name }, buyUi.sup || "");
 }
+
+
+
+/* ---- Поля прямо в списку: «Що ще купити…» і «Замітка…» ---- */
+let buyInlineList = [];
+function buyInlineInput(v){
+  const box = document.getElementById("buyInlineSug");
+  if(!box) return;
+  const q = cleanText(v);
+  if(q.length < 2){ box.innerHTML = ""; buyInlineList = []; return; }
+  buyInlineList = buySearch(q, "").slice(0, 6);
+  box.innerHTML = `<div class="bySug">${buyInlineList.map((item, i) => {
+    const offer = getSelectedCatalogSupplierOffer(item);
+    const price = supplierOfferPrice(offer, "master");
+    return `<button type="button" onmousedown="event.preventDefault()" onclick="buyInlineAdd(${i})"><b>${escapeHtml(catalogDisplayName(item))}</b><small>${price > 0 && offer ? `${escapeHtml(offer.supplierName)} · ${moneyWithCents(price)}` : "немає в прайсі · сам"}</small></button>`;
+  }).join("")}<button type="button" class="own" onmousedown="event.preventDefault()" onclick="buyInlineAdd(-1)">＋ «${escapeHtml(q)}» своєю назвою · сам</button></div>`;
+}
+function buyInlineEnter(){
+  const q = cleanText(document.getElementById("buyInlineQ")?.value);
+  if(!q) return;
+  buyInlineAdd(-1);
+}
+function buyInlineAdd(i){
+  const p = buyCur();
+  const q = cleanText(document.getElementById("buyInlineQ")?.value);
+  if(!p || (!q && i < 0)) return;
+  const item = i >= 0 ? buyInlineList[i] : null;
+  if(!Array.isArray(p.positions)) p.positions = [];
+  const pos = { id: uid("pos"), type:"material", unit:"шт", qty:1, price:0, purchasePrice:null, buyLater:true, buyLaterOnly:true, noDiscount:true, got:false };
+  let supplier = "";
+  if(item){
+    const offer = getSelectedCatalogSupplierOffer(item);
+    const price = supplierOfferPrice(offer, "master");
+    Object.assign(pos, { catalogId:item.id, name:catalogDisplayName(item), fullName:item.name });
+    if(item.unit) pos.unit = item.unit;
+    if(price > 0 && offer){ pos.purchasePrice = price; pos.purchasePriceState = "estimated"; supplier = cleanText(offer.supplierName); }
+  }else{
+    pos.name = q; pos.fullName = q;
+  }
+  buySetWhere(pos, supplier ? "sup" : "self", supplier);
+  p.positions.push(pos);
+  buyInlineList = [];
+  touchProject(p);
+  render();
+  toast(`Додано в «${buyLabel(pos)}» · 1 ${pos.unit}`, 2200);
+  setTimeout(() => document.getElementById("buyInlineQ")?.focus(), 60);
+}
+function noteInlineEnter(onBlur){
+  const p = buyCur();
+  const input = document.getElementById("noteInlineQ");
+  const text = cleanText(input && input.value);
+  if(!p || !text) return;
+  if(!Array.isArray(p.todo)) p.todo = [];
+  p.todo.push({ id: uid("todo"), text, done:false, at: new Date().toISOString() });
+  touchProject(p);
+  render();
+  if(!onBlur) setTimeout(() => document.getElementById("noteInlineQ")?.focus(), 60);
+}
+
+
+/* Позиція «для себе» в блокноті з товару каталогу */
+function notebookPosFromItem(item, qty){
+  /* Де брати — не вгадуємо: запис стає в «Де брати?», майстер вибирає сам */
+  const purchase = Number(item.purchasePriceUAH) > 0 ? Number(item.purchasePriceUAH) : null;
+  return { id: uid("pos"), type:"material", catalogId:item.id, name:catalogDisplayName(item), fullName:item.name || catalogDisplayName(item), unit:item.unit || "шт", qty:qty || 1,
+    price: Number(item.price) || 0, purchasePrice: purchase, purchasePriceState: purchase ? "estimated" : "", buyLater:true, buyLaterOnly:true, noDiscount:true, got:false };
+}
+function buyPriceEdit(raw){
+  const { p, pos } = buyPos(buyUi.posId);
+  if(!pos) return;
+  const v = parseMoneyInput(raw || "0");
+  pos.purchasePrice = v > 0 ? v : null;
+  pos.purchasePriceState = v > 0 ? "confirmed" : "";
+  touchProject(p);
+}
+/* З блокнота в кошторис клієнта: позиція та сама (де беру, галочка лишаються), з'являється ціна для клієнта */
+function buyMoveToEstimate(){
+  const { p, pos } = buyPos(buyUi.posId);
+  if(!pos || !pos.buyLaterOnly) return;
+  const item = getPositionCatalogItem(pos);
+  const suggest = Number(pos.price) > 0 ? pos.price : (item && Number(item.price) > 0 ? item.price : (Number(pos.purchasePrice) || 0));
+  const raw = prompt(`Перенести «${positionShortName(pos)}» у кошторис клієнта.\n\nЦіна для клієнта за 1 ${pos.unit || "шт"}, ₴:`, suggest ? String(suggest).replace(".", ",") : "");
+  if(raw === null) return;
+  const price = parseMoneyInput(raw || "0");
+  pos.price = price > 0 ? price : 0;
+  delete pos.buyLaterOnly;
+  pos.buyLater = false;
+  delete pos.noDiscount;
+  touchProject(p);
+  closeBuyScreen();
+  toast("Перенесено в кошторис. Клієнту — через «Кошторис для клієнта»", 3600);
+}
+function buyOpenPrices(){
+  const { p, pos } = buyPos(buyUi.posId);
+  if(!pos) return;
+  buyScreen().classList.remove("open");
+  buyUi = null;
+  openSinglePriceEditor(p.id, pos.id);
+}
+
+/* ---- Одна кнопка «＋»: що додаємо ---- */
+function openAddMenu(){
+  let el = document.getElementById("addMenu");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "addMenu";
+    el.className = "addMenu";
+    el.onclick = e => { if(e.target === el) closeAddMenu(); };
+    document.body.appendChild(el);
+  }
+  const item = (icon, title, sub, action) => `<button type="button" class="amItem" onclick="closeAddMenu();${action}"><span class="amIcon">${icon}</span><span class="amText"><b>${title}</b><small>${sub}</small></span></button>`;
+  const p = buyCur();
+  const approved = Boolean(p && getApproved(p));
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Що додати">
+    <div class="amHead"><b>Що додати?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    ${item("🛠", "Роботу", "у кошторис клієнта", "openCatalogFor('work')")}
+    ${item("📦", "Матеріал", "у блокнот; клієнту — перенесете звідти, якщо треба", "openCatalogFor('material','notebook')")}
+    ${item("📝", "Нотатку", "у блокнот, з галочкою", "planNoteOpen=true;render();setTimeout(()=>{const i=document.getElementById('planNoteInput');if(i){i.scrollIntoView({block:'center'});i.focus();}},80)")}
+  </div>`;
+  requestAnimationFrame(() => el.classList.add("open"));
+}
+function closeAddMenu(){ document.getElementById("addMenu")?.classList.remove("open"); }
 
 /* ==== Провідник: шлях об'єкта ==== */
 const PATH_STEPS = ["Кошторис", "Погодж.", "Закупівля", "Роботи", "Здача", "Розрахунок"];
