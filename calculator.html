@@ -4508,7 +4508,6 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
   <div class="quotePreviewBody">
     <div class="quotePreviewNav">
       <strong>Перегляд для замовника</strong>
-      <button type="button" class="qdGear hidden" id="quoteDiscGear" onclick="toggleQuoteDisc()" aria-label="Додатково">⚙</button>
       <button class="close" onclick="closeQuotePreview()" aria-label="Закрити">×</button>
     </div>
 
@@ -8443,13 +8442,11 @@ let quoteDiscOpen = false;
 function toggleQuoteDisc(){ quoteDiscOpen = !quoteDiscOpen; renderQuoteDisc(); }
 function renderQuoteDisc(){
   const project = projects.find(item => item.id === currentProjectId);
-  const gear = document.getElementById("quoteDiscGear");
   const box = document.getElementById("quoteDiscBox");
-  if(!project || !gear || !box) return;
+  if(!project || !box) return;
   const can = !getApproved(project) && !quoteDraft;
-  gear.classList.toggle("hidden", !can);
-  box.classList.toggle("hidden", !can || !quoteDiscOpen);
-  if(!can || !quoteDiscOpen){ box.innerHTML = ""; return; }
+  box.classList.toggle("hidden", !can);
+  if(!can){ box.innerHTML = ""; return; }
   const has = type => (project.positions || []).some(x => x.type === type && !x.buyLaterOnly);
   const row = (type, label, cur) => `<div class="qdRow"><span>${label}</span><div class="qdChips">${[0,5,10,15].map(v => `<button type="button" class="${cur === v ? "on" : ""}" onclick="quoteSetDisc('${type}',${v})">${v ? v + "%" : "—"}</button>`).join("")}<button type="button" class="${cur && ![0,5,10,15].includes(cur) ? "on" : ""}" onclick="quoteCustomDisc('${type}')">${cur && ![0,5,10,15].includes(cur) ? cur + "%" : "інша"}</button></div></div>`;
   box.innerHTML = `<div class="qdTitle">Знижка для цього клієнта</div>
