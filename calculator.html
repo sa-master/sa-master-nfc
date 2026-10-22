@@ -3312,6 +3312,7 @@ body.positionDragging{
 .byName{flex:1 1 auto;min-width:0;text-align:left;background:none;padding:0;font-size:.875rem;font-weight:650;color:var(--t);line-height:1.3}
 .byName small{display:block;font-size:.6875rem;color:var(--tm);font-weight:600}
 .byGroup.done .byName{color:var(--tm)}
+.byDel{width:100%;height:2.75rem;border-radius:.875rem;background:rgba(255,59,48,.1);color:var(--red);font-weight:750;font-size:.9375rem}
 .byOpt{color:var(--t)}
 .byOpt .opBox{border-radius:50%}
 .byOpt.sel .opBox{background:var(--p-action);border-color:transparent}
@@ -17500,7 +17501,7 @@ function buyItems(p){ return (p.positions || []).filter(x => x && x.type === "ma
 function buyCur(){ return projects.find(item => item.id === currentProjectId); }
 function buyPos(id){ const p = buyCur(); return { p, pos: p && (p.positions || []).find(x => x.id === id) }; }
 function buyKey(pos){ return !pos.whereK ? "?" : pos.whereK === "sup" ? "sup:" + normalizeText(pos.whereS) : pos.whereK; }
-function buyLabel(pos){ return !pos.whereK ? "Де брати?" : pos.whereK === "sup" ? pos.whereS : pos.whereK === "stock" ? "Склад" : "Сам"; }
+function buyLabel(pos){ return !pos.whereK ? "Де брати?" : pos.whereK === "sup" ? pos.whereS : pos.whereK === "stock" ? "Склад" : pos.whereK === "skip" ? "Не купую" : "Сам"; }
 function buyEnc(v){ return `decodeURIComponent('${encodeURIComponent(v).replace(/'/g, "%27")}')`; }
 
 function buySetWhere(pos, k, s){
@@ -17715,17 +17716,20 @@ function renderBuyScreen(){
       ${sups}
       ${opt("self", "", "Куплю сам", "магазин, базар")}
       ${opt("stock", "", "Зі складу", "вже є у вас")}
+      ${opt("skip", "", "Не купую", "не потрібно або дає клієнт")}
       <button type="button" class="psNew" onclick="buyChooseNew()">＋ Інший постачальник</button>
     </div>
     <button type="button" class="psReplace" onclick="buyUi.mode='replace';buyUi.q='';renderBuyScreen();setTimeout(()=>document.getElementById('buyQ')?.focus(),60)">⇄ Замінити на інший товар</button>
     ${pos.replacedFrom ? `<div class="onbNote" style="text-align:left">Замінено: було «${escapeHtml(pos.replacedFrom)}»</div>` : ""}
-    ${pos.buyLaterOnly ? `<div class="planAdd"><span class="opLabel">Кількість</span><div class="planAddRow"><input id="buyQtyEdit" inputmode="decimal" value="${formatQty(pos.qty)}" onchange="buyQtyEdit(this.value)"><button type="button" class="ghost" onclick="buyDelete()">Видалити</button></div></div>` : ""}
+    ${pos.buyLaterOnly ? `<div class="planAdd"><span class="opLabel">Кількість</span><div class="planAddRow"><input id="buyQtyEdit" inputmode="decimal" value="${formatQty(pos.qty)}" onchange="buyQtyEdit(this.value)"><button type="button" class="ghost" onclick="buyDelete()">Видалити</button></div></div>`
+      : `<button type="button" class="byDel" onclick="buyDelete()">Видалити з кошторису</button>`}
   </div>`;
 }
 function buyChoose(k, s){
   const { p, pos } = buyPos(buyUi.posId);
   if(!pos) return;
   buySetWhere(pos, k, s);
+  if(k === "skip"){ pos.got = true; pos.gotAt = new Date().toISOString(); }
   touchProject(p);
   closeBuyScreen();
   toast(`${positionShortName(pos)} → ${buyLabel(pos)}`);
@@ -17743,8 +17747,10 @@ function buyQtyEdit(raw){
 }
 function buyDelete(){
   const { p, pos } = buyPos(buyUi.posId);
-  if(!pos || !pos.buyLaterOnly) return;
-  if(!confirm(`Видалити «${positionShortName(pos)}»?`)) return;
+  if(!pos) return;
+  const msg = pos.buyLaterOnly ? `Видалити «${positionShortName(pos)}»?`
+    : `Видалити «${positionShortName(pos)}» з кошторису?\n\nПозиція зникне з кошторису для клієнта. Погоджена сума зміниться, лише коли надішлете клієнту оновлений кошторис.\n\nЯкщо просто не треба купувати — виберіть «Не купую».`;
+  if(!confirm(msg)) return;
   p.positions = p.positions.filter(x => x !== pos);
   touchProject(p);
   closeBuyScreen();
