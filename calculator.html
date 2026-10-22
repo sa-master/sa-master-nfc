@@ -3285,6 +3285,20 @@ body.positionDragging{
 .accountLogout button{flex:1 1 0;height:2.5rem;border-radius:.75rem;background:rgba(255,59,48,.1);color:var(--red);font-size:.8125rem;font-weight:750}
 .pfDevDetails{margin-top:.875rem;font-size:.8125rem;color:var(--tm)}
 .pfDevDetails summary{cursor:pointer;font-weight:650;margin-bottom:.5rem}
+.ptGroup{border-top:1px solid rgba(120,120,128,.14);padding:.375rem 0}
+.ptGroup .ptRow{border-top:0;padding:.375rem 0}
+.ptGroup.warn .ptText{color:#B76800}
+.ptGHead{font-size:.9375rem;font-weight:800;color:var(--t);padding:.25rem 0 0}
+.ptChecks{display:flex;flex-direction:column}
+.ptCheck{display:flex;align-items:center;gap:.625rem;padding:.3125rem 0;font-size:.875rem;font-weight:650;color:var(--t)}
+.ptCheck .ptBox{width:1.375rem;height:1.375rem}
+.ptCheck .ptName{flex:1 1 auto;min-width:0;text-align:left}
+.ptCheck.done .ptName{color:var(--tm);text-decoration:line-through}
+.ptQ{flex:0 0 auto;color:var(--tm);font-weight:700;font-size:.8125rem}
+.pcSup .orderActions{display:flex;flex-wrap:wrap;gap:.375rem}
+.pcSup .orderActions button{flex:1 1 auto;width:auto;min-width:0;padding:0 .75rem;white-space:nowrap}
+.pcSup .orderActions button.more{flex:0 0 2.75rem}
+.pcChips button.warn{background:rgba(255,149,0,.16);color:#B76800}
 .planTodo{margin:0 0 .75rem;padding:.75rem .875rem .5rem;border-radius:1rem;background:var(--card);box-shadow:0 6px 18px rgba(40,80,120,.10)}
 .ptHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:.125rem}
 .ptHead span{font-size:.75rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--p)}
@@ -7759,7 +7773,7 @@ function renderProject(p){
       <div class="projectView">
       ${renderStageHint(p)}
       ${renderNextSteps(p)}
-      ${renderPlanTodo(p)}
+      ${planOn(p) && projectTab === "materials" ? "" : renderPlanTodo(p)}
       ${renderApprovedBanner(p)}
       ${projectTab === "materials" ? renderMaterialsTab(p) : projectTab === "money" ? renderMoneyTab(p) : renderWorksTab(p)}
       </div>
@@ -8782,11 +8796,9 @@ function getNextSteps(p){
     const o = planOverview(p);
     let allReceived = !o.undecided.length && !o.shopLeft.length && o.suppliers.every(s => !s.toOrder.length);
     projectOrders(p).forEach(order => {
-      const missing = order.lines.filter(l => l.received === false).length;
-      if(order.status !== "received" || missing){ allReceived = false; steps.push({ text:`Чекаємо ${escapeHtml(order.supplierName)}`, sub:missing ? `Не довезли ${missing} поз.` : (orderDeliveryText(order) || "Замовлення надіслано"), label:missing ? "Довезли" : "Привезли", action:`orderMarkReceived('${order.id}')` }); }
+      if(order.status !== "received" || order.lines.some(l => l.received === false)) allReceived = false;
     });
     if(allReceived) steps.push({ text:"Усе закуплено за планом", sub:"Переходимо до робіт", label:"Почати роботи", action:`advanceProjectStage('${id}')`, primary:true });
-    else if(!steps.length) steps.push({ text:"Закупівля", sub:"Що зробити — у списку нижче", label:"План", action:"openPlanScreen()" });
   }else if(stage === "procurement"){
     migrateSentOrders(p);
     const toBuy = positionsToBuy(p).length;
@@ -8806,10 +8818,6 @@ function getNextSteps(p){
 
   if(stage === "work" && planOn(p)){
     if(debt > 0.5) steps.push({ text:`Клієнт винен ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
-    projectOrders(p).forEach(order => {
-      const missing = order.lines.filter(l => l.received === false).length;
-      if(order.status !== "received" || missing) steps.push({ text:`Чекаємо ${escapeHtml(order.supplierName)}`, sub:missing ? `Не довезли ${missing} поз.` : (orderDeliveryText(order) || "Замовлення надіслано"), label:missing ? "Довезли" : "Привезли", action:`orderMarkReceived('${order.id}')` });
-    });
     steps.push({ text:"Роботи завершено?", sub:"Далі — здача клієнту", label:"Завершено", action:`advanceProjectStage('${id}')`, primary:steps.length === 0 });
   }else if(stage === "work"){
     if(debt > 0.5) steps.push({ text:`Клієнт винен ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
@@ -8837,6 +8845,7 @@ function getNextSteps(p){
 }
 
 function renderNextSteps(p){
+  if(planOn(p)) return "";
   /* На вкладці «Матеріали» картка «Треба купити» вже є — не дублюємо. */
   const steps = getNextSteps(p).filter(step => !(projectTab === "materials" && /^Треба купити/.test(step.text)));
   if(!steps.length) return "";
@@ -8923,7 +8932,8 @@ function orderTotal(order){
 }
 
 function orderMoney(project, order){
-  const entries = moneyList(project, "expense").filter(entry => entry.orderId === order.id);
+  const key = normalizeText(order.supplierName);
+  const entries = moneyList(project, "expense").filter(entry => entry.orderId === order.id || (!entry.orderId && !entry.buyLaterId && key && normalizeText(entry.to) === key));
   const paid = entries.filter(entry => Number(entry.amount) > 0).reduce((s, e) => s + Number(e.amount), 0);
   const refunded = entries.filter(entry => Number(entry.amount) < 0).reduce((s, e) => s - Number(e.amount), 0);
   return { paid, refunded, net: paid - refunded };
@@ -9317,7 +9327,6 @@ function renderMaterialsTab(p){
   const sub = [fromStock ? `${fromStock} зі складу` : "", ordered ? `${ordered} замовлено` : ""].filter(Boolean).join(" · ");
   if(planOn(p)) return `
     ${renderPlanCard(p)}
-    ${renderOrdersBlock(p)}
     <div class="estimateBlock">
       ${materials.length && materialsCollapsed(p) ? `
         <button type="button" class="matCollapsed" onclick="toggleMaterialsList('${escapeHtml(p.id)}', true)">
@@ -16505,63 +16514,55 @@ function renderPlanTodo(p){
     </section>`;
   }
   if(!planOn(p)) return "";
+  /* Один блок «Що далі»: постачальники (замовити / чекаємо / звірити / доплатити), купити самому, замітки, решта кроків */
   const o = planOverview(p);
-  const id = escapeHtml(p.id);
-  const rows = [];
-  const row = (cls, check, text, sub, btn) => rows.push(`
-    <div class="ptRow ${cls || ""}">
-      ${check || `<span class="ptDot"></span>`}
-      <span class="ptText">${text}${sub ? `<small>${sub}</small>` : ""}</span>
-      ${btn || ""}
-    </div>`);
   const encName = name => `decodeURIComponent('${encodeURIComponent(name).replace(/'/g, "%27")}')`;
+  const parts = [];
+  const row = (text, sub, btn, cls) => `<div class="ptRow ${cls || ""}"><span class="ptText">${text}${sub ? `<small>${sub}</small>` : ""}</span>${btn || ""}</div>`;
+  const btn = (label, action, primary) => `<button type="button" class="ptBtn ${primary ? "primary" : ""}" onclick="${action}">${label}</button>`;
 
-  if(o.undecided.length) row("warn", `<span class="ptDot warn">?</span>`, `Не вирішено, звідки брати: ${o.undecided.length}`, escapeHtml(planNamesText(o.undecided)), `<button type="button" class="ptBtn primary" onclick="openPlanScreen('undecided')">Розподілити</button>`);
+  if(o.undecided.length) parts.push(`<div class="ptGroup warn">${row(`Не вирішено, звідки брати: ${o.undecided.length}`, planNameLinks(o.undecided), btn("Розподілити", "openPlanScreen('undecided')", true))}</div>`);
+
   o.suppliers.forEach(s => {
-    if(s.toOrder.length){
-      const word = s.order ? "Дозамовити" : "Замовити";
-      row("", `<button type="button" class="ptBox" onclick="openOrderPick(false, ${encName(s.name)})" aria-label="${word}"></button>`,
-        `${word} в ${escapeHtml(s.name)}`, planNameLinks(s.toOrder) + `<span class="ptHint">натисніть назву, щоб змінити, звідки беремо</span>`,
-        `<button type="button" class="ptBtn primary" onclick="openOrderPick(false, ${encName(s.name)})">${word}</button>`);
+    const rows = [];
+    const order = s.order;
+    if(s.toOrder.length) rows.push(row(order ? "Дозамовити" : "Замовити", planNameLinks(s.toOrder), btn(order ? "Дозамовити" : "Замовити", `openOrderPick(false, ${encName(s.name)})`, true)));
+    if(order){
+      const missing = order.lines.filter(l => l.received === false).length;
+      if(order.status !== "received" || missing) rows.push(row(missing ? `Не довезли ${missing} поз.` : "Чекаємо", escapeHtml(orderDeliveryText(order) || "замовлення надіслано"), btn(missing ? "Довезли" : "Привезли", `orderMarkReceived('${order.id}')`)));
     }
-    if(s.over.length){
-      const minus = s.over.reduce((a, x) => a + x.q * x.price, 0);
-      row("warn", `<span class="ptDot warn">!</span>`, `${escapeHtml(s.name)}: у замовленні більше, ніж за планом`,
-        `${s.over.length} поз.${minus > 0.5 ? ` · на ${money(minus)}` : ""} — ${escapeHtml(planNamesText(s.over, 2))}`,
-        `<button type="button" class="ptBtn" onclick="openPlanReconcile(${encName(s.name)})">Звірити</button>`);
-    }
-    if(s.order && s.order.status === "received" && !s.over.length && !s.toOrder.length && s.paid > 0 && s.orderTotal - s.paid > 0.5){
-      row("", `<span class="ptDot"></span>`, `${escapeHtml(s.name)}: доплатити ${money(s.orderTotal - s.paid)}`, `у замовленні ${money(s.orderTotal)} · оплачено ${money(s.paid)}`,
-        `<button type="button" class="ptBtn" onclick="orderAskPaid('${s.order.id}')">Оплатив</button>`);
-    }
-  });
-  o.shopLeft.forEach(pos => {
-    row("", `<button type="button" class="ptBox" onclick="planShopToggle('${escapeHtml(pos.id)}')" aria-label="Купив"></button>`,
-      `<button type="button" class="ptName" onclick="planOpenPos('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}</button> · ${formatQty(planShopLeft(pos))} ${escapeHtml(pos.unit || "шт")}`, "купити самому", "");
-  });
-  const todo = Array.isArray(p.todo) ? p.todo : [];
-  todo.filter(t => !t.done).forEach(t => {
-    row("", `<button type="button" class="ptBox" onclick="planNoteToggle('${escapeHtml(t.id)}')" aria-label="Виконано"></button>`,
-      escapeHtml(t.text), "", `<button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button>`);
+    if(s.over.length) rows.push(row("У замовленні більше, ніж треба", planNameLinks(s.over.map(x => ({ pos:x.pos, q:x.q }))), btn("Звірити", `openPlanReconcile(${encName(s.name)})`)));
+    if(order && order.status === "received" && !s.toOrder.length && !s.over.length && s.paid > 0 && s.orderTotal - s.paid > 0.5) rows.push(row(`Доплатити ${money(s.orderTotal - s.paid)}`, `замовлення ${money(s.orderTotal)} · оплачено ${money(s.paid)}`, btn("Оплатив", `orderAskPaid('${order.id}')`)));
+    if(rows.length) parts.push(`<div class="ptGroup"><div class="ptGHead">${escapeHtml(s.name)}</div>${rows.join("")}</div>`);
   });
 
-  const doneShop = o.mats.filter(pos => planSum(pos, e => e.k === "shop" && e.done) > 0 && pos.plan.some(e => e.k === "shop" && e.done && e.at));
+  if(o.shopLeft.length) parts.push(`<div class="ptGroup"><div class="ptGHead">Купити самому</div><div class="ptChecks">${o.shopLeft.map(pos => `
+    <div class="ptCheck"><button type="button" class="ptBox" onclick="planShopToggle('${escapeHtml(pos.id)}')" aria-label="Купив"></button><button type="button" class="ptName" onclick="planOpenPos('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}</button><span class="ptQ">${formatQty(planShopLeft(pos))} ${escapeHtml(pos.unit || "шт")}</span></div>`).join("")}</div></div>`);
+
+  const todo = Array.isArray(p.todo) ? p.todo : [];
+  const open = todo.filter(t => !t.done);
+  if(open.length || planNoteOpen) parts.push(`<div class="ptGroup"><div class="ptGHead">Замітки</div><div class="ptChecks">${open.map(t => `
+    <div class="ptCheck"><button type="button" class="ptBox" onclick="planNoteToggle('${escapeHtml(t.id)}')" aria-label="Виконано"></button><span class="ptName">${escapeHtml(t.text)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`).join("")}
+    ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off"><button type="submit">Додати</button></form>` : ""}</div></div>`);
+
+  const steps = getNextSteps(p);
+  if(steps.length) parts.push(`<div class="ptGroup">${steps.map(step => row(step.text, step.sub, btn(step.label, step.action, step.primary))).join("")}</div>`);
+
+  const doneShop = o.mats.filter(pos => pos.plan.some(e => e.k === "shop" && e.done && e.at) && planShopLeft(pos) <= 0);
   const doneNotes = todo.filter(t => t.done);
   const doneCount = doneShop.length + doneNotes.length;
-  const doneHtml = planDoneOpen && doneCount ? [
-    ...doneShop.map(pos => `<div class="ptRow done"><button type="button" class="ptBox on" onclick="planShopToggle('${escapeHtml(pos.id)}')">✓</button><span class="ptText">${escapeHtml(positionShortName(pos))}<small>куплено${(pos.plan.find(e => e.k === "shop" && e.done && e.paid) || {}).paid ? " · " + money(pos.plan.find(e => e.k === "shop" && e.done && e.paid).paid) : ""}</small></span></div>`),
-    ...doneNotes.map(t => `<div class="ptRow done"><button type="button" class="ptBox on" onclick="planNoteToggle('${escapeHtml(t.id)}')">✓</button><span class="ptText">${escapeHtml(t.text)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`)
-  ].join("") : "";
+  const doneHtml = planDoneOpen && doneCount ? `<div class="ptGroup"><div class="ptGHead">Виконано</div><div class="ptChecks">${[
+    ...doneShop.map(pos => { const paid = (pos.plan.find(e => e.k === "shop" && e.done && e.paid) || {}).paid; return `<div class="ptCheck done"><button type="button" class="ptBox on" onclick="planShopToggle('${escapeHtml(pos.id)}')">✓</button><span class="ptName">${escapeHtml(positionShortName(pos))}</span><span class="ptQ">${paid ? money(paid) : "куплено"}</span></div>`; }),
+    ...doneNotes.map(t => `<div class="ptCheck done"><button type="button" class="ptBox on" onclick="planNoteToggle('${escapeHtml(t.id)}')">✓</button><span class="ptName">${escapeHtml(t.text)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`)
+  ].join("")}</div></div>` : "";
 
-  const empty = !rows.length;
   return `
     <section class="planTodo">
-      <div class="ptHead"><span>Закупівля — що зробити</span><button type="button" class="ptLink" onclick="openPlanScreen()">План ›</button></div>
-      ${empty ? `<div class="ptEmpty">✓ Усе за планом${o.mats.length ? ` · ${o.mats.length} поз.` : ""}</div>` : rows.join("")}
+      <div class="ptHead"><span>Що далі</span><button type="button" class="ptLink" onclick="openPlanScreen()">План закупівлі ›</button></div>
+      ${parts.join("") || `<div class="ptEmpty">✓ Зараз нічого робити не треба</div>`}
       ${doneHtml}
       <div class="ptFoot">
-        ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off"><button type="submit">Додати</button></form>`
-          : `<span style="display:flex;gap:1rem"><button type="button" class="ptLink" onclick="openPlanAdd()">＋ Докупити</button><button type="button" class="ptLink" onclick="planNoteOpen=true;render();setTimeout(()=>document.getElementById('planNoteInput')?.focus(),60)">＋ Замітка</button></span>`}
+        <span style="display:flex;gap:1.125rem"><button type="button" class="ptLink" onclick="openPlanAdd()">＋ Докупити</button><button type="button" class="ptLink" onclick="planNoteOpen=true;render();setTimeout(()=>document.getElementById('planNoteInput')?.focus(),60)">＋ Замітка</button></span>
         ${doneCount ? `<button type="button" class="ptLink muted" onclick="planDoneOpen=!planDoneOpen;render()">${planDoneOpen ? "Сховати виконане" : `Виконано ${doneCount}`}</button>` : ""}
       </div>
     </section>`;
@@ -16638,29 +16639,55 @@ function planShopToggle(posId){
 
 /* ---- Картка плану на вкладці «Матеріали» ---- */
 function renderPlanCard(p){
+  /* Вкладка «Матеріали»: одна картка на кожного постачальника (план + замовлення + оплата разом) */
   const o = planOverview(p);
   const encName = name => `decodeURIComponent('${encodeURIComponent(name).replace(/'/g, "%27")}')`;
-  const line = (label, sub, btn, cls) => `<div class="pcRow ${cls || ""}"><span class="pcText"><b>${label}</b>${sub ? `<small>${sub}</small>` : ""}</span>${btn || ""}</div>`;
-  const rows = [];
-  if(o.undecided.length) rows.push(line(`Не вирішено: ${o.undecided.length} поз.`, escapeHtml(planNamesText(o.undecided)), `<button type="button" onclick="openPlanScreen('undecided')">Список</button>`, "warn"));
-  if(o.stock.length) rows.push(line(`Зі складу · ${o.stock.length} поз.`, "", `<button type="button" onclick="openPlanScreen('stock')">Список</button>`));
-  o.suppliers.forEach(s => {
-    const sub = [`за планом ${money(s.planTotal)}`];
-    if(s.order) sub.push(`у замовленні ${money(s.orderTotal)}`);
-    if(s.paid > 0) sub.push(`оплачено ${money(s.paid)}`);
-    if(s.toOrder.length) sub.push(`ще замовити ${s.toOrder.length}`);
-    if(s.over.length) sub.push(`у замовленні зайве ${s.over.length}`);
-    const btn = `<button type="button" onclick="openPlanScreen(${encName("sup:" + s.name)})">Список</button>`;
-    rows.push(line(`${escapeHtml(s.name)} · ${s.count} поз.${!s.toOrder.length && !s.over.length && s.order ? " ✓" : ""}`, sub.join(" · "), btn, s.over.length || s.toOrder.length ? "warn" : ""));
-  });
-  if(o.shopAll.length) rows.push(line(`Купую сам · ${o.shopAll.length} поз.`, o.shopLeft.length ? `ще купити ${o.shopLeft.length}` : "усе куплено ✓", `<button type="button" onclick="openPlanScreen('shop')">Список</button>`));
-  if(o.skip.length) rows.push(line(`Не купую · ${o.skip.length} поз.`, "вже є, дає клієнт тощо", `<button type="button" onclick="openPlanScreen('skip')">Список</button>`));
+  const cards = o.suppliers.map(s => {
+    const order = s.order;
+    const total = order ? s.orderTotal : s.planTotal;
+    const status = [];
+    if(!order) status.push("ще не замовлено");
+    else{
+      const missing = order.lines.filter(l => l.received === false).length;
+      status.push(order.status === "received" && !missing ? "привезли ✓" : missing ? `не довезли ${missing}` : (orderDeliveryText(order) ? "чекаємо · " + orderDeliveryText(order) : "чекаємо"));
+      if(s.paid > 0) status.push(`оплачено ${money(s.paid)}`);
+    }
+    if(order && s.toOrder.length) status.push(`ще замовити ${s.toOrder.length}`);
+    if(s.over.length) status.push(`зайве в замовленні ${s.over.length}`);
+    /* Лише те, що треба зробити (максимум дві кнопки). Готове видно в тексті; решта — у «⋯». */
+    const b = [];
+    if(s.toOrder.length) b.push(`<button type="button" onclick="openOrderPick(false, ${encName(s.name)})">${order ? "Дозамовити" : `Замовити ${s.toOrder.length} поз.`}</button>`);
+    if(s.over.length) b.push(`<button type="button" onclick="openPlanReconcile(${encName(s.name)})">Звірити</button>`);
+    if(order){
+      const missing = order.lines.filter(l => l.received === false).length;
+      if(order.status !== "received" || missing) b.push(`<button type="button" onclick="orderMarkReceived('${order.id}')">${missing ? "Довезли" : "Привезли"}</button>`);
+      if(!s.over.length && s.paid < s.orderTotal - 0.5) b.push(`<button type="button" onclick="orderAskPaid('${order.id}')">${s.paid > 0 ? `Доплатити ${money(s.orderTotal - s.paid)}` : "Оплатив"}</button>`);
+    }
+    b.splice(2);
+    if(b.length) b[0] = b[0].replace('<button type="button"', '<button type="button" class="primary"');
+    if(order) b.push(`<button type="button" class="more" onclick="openOrderSheet('${order.id}','lines')" aria-label="Позиції, повернення, історія">⋯</button>`);
+    return `
+      <section class="orderCard pcSup">
+        <button type="button" class="orderTop" style="background:none;padding:0;text-align:left;width:100%" onclick="openPlanScreen(${encName("sup:" + s.name)})">
+          <span><span class="orderName">${escapeHtml(s.name)}</span><span class="orderMeta" style="display:block">${s.count} поз. · ${escapeHtml(status.join(" · "))}</span></span>
+          <span class="orderSum">${money(total)}</span>
+        </button>
+        ${b.length ? `<div class="orderActions">${b.join("")}</div>` : ""}
+      </section>`;
+  }).join("");
+  const chip = (label, f, warn) => `<button type="button" class="${warn ? "warn" : ""}" onclick="openPlanScreen('${f}')">${label}</button>`;
+  const chips = [
+    o.undecided.length ? chip(`Не вирішено ${o.undecided.length}`, "undecided", true) : "",
+    o.stock.length ? chip(`Зі складу ${o.stock.length}`, "stock") : "",
+    o.shopAll.length ? chip(`Купую сам ${o.shopAll.length}${o.shopLeft.length ? ` · ще ${o.shopLeft.length}` : " ✓"}`, "shop") : "",
+    o.skip.length ? chip(`Не купую ${o.skip.length}`, "skip") : ""
+  ].join("");
   return `
-    <section class="planCard">
-      <div class="pcHead"><span>План закупівлі</span><button type="button" onclick="openPlanScreen()">Відкрити план ›</button></div>
-      <div class="pcNote">Звідки що беремо. Сума для клієнта від плану не змінюється</div>
-      ${rows.join("") || `<div class="pcNote">Матеріалів немає</div>`}
-    </section>`;
+    <div class="ordersBlock">
+      <div class="pcHead" style="padding:0 .25rem"><span class="ordersTitle" style="margin:0">Закупівля</span><button type="button" onclick="openPlanScreen()">План закупівлі ›</button></div>
+      ${cards}
+      ${chips ? `<div class="buyLinks pcChips">${chips}</div>` : ""}
+    </div>`;
 }
 
 /* ---- Екран плану ---- */
