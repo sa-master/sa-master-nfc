@@ -3301,6 +3301,9 @@ body.positionDragging{
 .ptText small{display:block;font-size:.75rem;font-weight:600;color:var(--tm);margin-top:.125rem;text-decoration:none}
 .ptBtn{flex:0 0 auto;height:2.125rem;padding:0 .75rem;border-radius:.6875rem;background:rgba(10,132,255,.12);color:var(--p);font-size:.8125rem;font-weight:750;white-space:nowrap}
 .ptBtn.primary{background:var(--p);color:#fff}
+.ptName{background:none;padding:0;font:inherit;color:inherit;text-align:left}
+.ptText small .ptName{color:var(--p);text-decoration:none;font-weight:700}
+.ptHint{display:block;font-size:.6875rem;color:var(--tm);font-weight:600;margin-top:.125rem}
 .ptDel{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:50%;background:none;color:var(--tm);font-size:1.125rem}
 .ptEmpty{padding:.5rem 0;font-size:.875rem;font-weight:700;color:var(--green);border-top:1px solid rgba(120,120,128,.14)}
 .ptFoot{display:flex;align-items:center;justify-content:space-between;gap:.5rem;border-top:1px solid rgba(120,120,128,.14);padding-top:.25rem}
@@ -3344,6 +3347,7 @@ body.positionDragging{
 .psStep{flex:0 0 auto;display:flex;align-items:center;gap:.25rem}
 .psStep button{width:2.125rem;height:2.125rem;border-radius:.625rem;background:rgba(10,132,255,.12);color:var(--p);font-size:1.125rem;font-weight:800}
 .psStep input{width:3.5rem;height:2.125rem;border-radius:.625rem;border:1px solid rgba(120,120,128,.25);background:var(--bgs);color:var(--t);text-align:center;font-size:.9375rem;font-weight:750}
+.psReplace{width:100%;height:2.75rem;border-radius:.875rem;background:var(--card);color:var(--p);font-weight:750;font-size:.9375rem;border:1px solid rgba(10,132,255,.25)}
 .psNew{width:100%;text-align:left;background:none;color:var(--p);font-weight:750;font-size:.875rem;padding:.75rem 0}
 .recSum{background:var(--card);border-radius:1rem;padding:.25rem .875rem}
 .recSum div{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid rgba(120,120,128,.14);font-size:.9375rem}
@@ -16475,6 +16479,9 @@ function planOverview(p){
   return { mats, undecided, overfull, stock, shopLeft, shopAll, skip, suppliers };
 }
 
+function planNameLinks(list){
+  return list.slice(0, 6).map(x => { const pos = x.pos || x; return `<button type="button" class="ptName" onclick="planOpenPos('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}</button>`; }).join(", ") + (list.length > 6 ? ` і ще ${list.length - 6}` : "");
+}
 function planNamesText(list, max){
   const names = list.slice(0, max || 3).map(x => positionShortName(x.pos || x));
   return names.join(", ") + (list.length > (max || 3) ? ` і ще ${list.length - (max || 3)}` : "");
@@ -16512,7 +16519,7 @@ function renderPlanTodo(p){
     if(s.toOrder.length){
       const word = s.order ? "Дозамовити" : "Замовити";
       row("", `<button type="button" class="ptBox" onclick="openOrderPick(false, ${encName(s.name)})" aria-label="${word}"></button>`,
-        `${word} в ${escapeHtml(s.name)}: ${s.toOrder.length} поз.`, escapeHtml(planNamesText(s.toOrder)),
+        `${word} в ${escapeHtml(s.name)}: ${s.toOrder.length} поз.`, planNameLinks(s.toOrder) + `<span class="ptHint">натисніть назву, щоб змінити, звідки беремо</span>`,
         `<button type="button" class="ptBtn primary" onclick="openOrderPick(false, ${encName(s.name)})">${word}</button>`);
     }
     if(s.over.length){
@@ -16528,7 +16535,7 @@ function renderPlanTodo(p){
   });
   o.shopLeft.forEach(pos => {
     row("", `<button type="button" class="ptBox" onclick="planShopToggle('${escapeHtml(pos.id)}')" aria-label="Купив"></button>`,
-      `${escapeHtml(positionShortName(pos))} · ${formatQty(planShopLeft(pos))} ${escapeHtml(pos.unit || "шт")}`, "купити самому", "");
+      `<button type="button" class="ptName" onclick="planOpenPos('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}</button> · ${formatQty(planShopLeft(pos))} ${escapeHtml(pos.unit || "шт")}`, "купити самому", "");
   });
   const todo = Array.isArray(p.todo) ? p.todo : [];
   todo.filter(t => !t.done).forEach(t => {
@@ -16710,6 +16717,7 @@ function renderPlanScreen(){
   const screen = planScreenEl();
   if(!p || !planUi){ return; }
   if(planUi.mode === "source") return renderPlanSource(p, screen);
+  if(planUi.mode === "replace") return renderPlanReplace(p, screen);
   if(planUi.mode === "reconcile") return renderPlanReconcile(p, screen);
   const o = planOverview(p);
   const encF = f => `decodeURIComponent('${encodeURIComponent(f).replace(/'/g, "%27")}')`;
@@ -16833,6 +16841,12 @@ function planAddMine(){
 }
 
 /* ---- «Звідки беремо» для однієї позиції ---- */
+/* З екрана об'єкта одразу в «Звідки беремо» для однієї позиції */
+function planOpenPos(posId){
+  openPlanScreen("all");
+  planUi.fromObject = true;
+  openPlanSource(posId);
+}
 function openPlanSource(posId){
   planUi.back = planUi.filter;
   planUi.mode = "source";
@@ -16841,6 +16855,7 @@ function openPlanSource(posId){
   planScreenEl().scrollTop = 0;
 }
 function closePlanSource(){
+  if(planUi && planUi.fromObject){ closePlanScreen(); return; }
   planUi.mode = "list";
   planUi.posId = "";
   renderPlanScreen();
@@ -16889,6 +16904,8 @@ function renderPlanSource(p, screen){
       <button type="button" class="psNew" onclick="planSourceNew()">＋ Інший постачальник</button>
     </div>
     <div class="onbNote" style="text-align:left">Натисніть на назву — уся кількість звідти. Або розподіліть кількість, наприклад 18 зі складу і 8 у постачальника.</div>
+    <button type="button" class="psReplace" onclick="openPlanReplace()">⇄ Замінити на інший товар</button>
+    ${pos.replacedFrom ? `<div class="onbNote" style="text-align:left">Замінено: було «${escapeHtml(pos.replacedFrom)}»</div>` : ""}
     ${pos.buyLaterOnly ? `<div class="planAdd"><span class="opLabel">Кількість</span><div class="planAddRow"><input inputmode="decimal" value="${formatQty(pos.qty)}" onchange="planMineQty(this.value)"><button type="button" class="ghost" onclick="planMineDelete()">Видалити позицію</button></div></div>` : ""}
     <div class="onbSpacer"></div>
     <button type="button" class="onbPrimary" onclick="closePlanSource()">Готово</button>
@@ -16952,6 +16969,97 @@ function planMineDelete(){
   p.positions = p.positions.filter(x => x !== pos);
   touchProject(p);
   closePlanSource();
+}
+
+
+/* ---- Замінити товар у позиції (інша модель, бренд) ----
+   Сума для клієнта не змінюється (вона зафіксована при погодженні); змінюється, що купуємо й за скільки. */
+function openPlanReplace(){
+  planUi.mode = "replace";
+  planUi.q = "";
+  renderPlanScreen();
+  setTimeout(() => document.getElementById("planReplaceQ")?.focus(), 60);
+}
+function planReplaceResults(pos){
+  const words = normalizeText(planUi.q || "").split(" ").filter(w => w.length > 1);
+  if(!words.length) return [];
+  return catalog.filter(item => item && item.type !== "work" && item.id !== pos.catalogId && (() => {
+    const hay = normalizeText([item.name, item.nameMaster, item.article, item.manufacturer].filter(Boolean).join(" "));
+    return words.every(w => hay.includes(w));
+  })()).slice(0, 40);
+}
+function renderPlanReplace(p, screen){
+  const pos = (p.positions || []).find(x => x.id === planUi.posId);
+  if(!pos){ closePlanSource(); return; }
+  const list = planReplaceResults(pos);
+  const ordered = projectOrders(p).some(o => orderLineQty(o, pos.id) > 0);
+  const row = item => {
+    const offer = getSelectedCatalogSupplierOffer(item);
+    const price = supplierOfferPrice(offer, "master");
+    const sub = [item.article ? "арт. " + item.article : "", price > 0 ? `${moneyWithCents(price)}${offer && offer.supplierName ? " · " + offer.supplierName : ""}` : ""].filter(Boolean).join(" · ");
+    return `<button type="button" class="opItem on" onclick="planReplaceWith('${escapeHtml(item.id)}')"><span class="opName">${escapeHtml(catalogDisplayName(item))}<small>${escapeHtml(sub || cleanText(item.name))}</small></span><span class="planGo">›</span></button>`;
+  };
+  screen.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="planUi.mode='source';renderPlanScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Замінити товар</span></div>
+    <div class="psHead"><b>${escapeHtml(positionShortName(pos))}</b><small>${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")} · кількість і план лишаються</small></div>
+    <form class="npForm" onsubmit="event.preventDefault()"><input id="planReplaceQ" value="${escapeHtml(planUi.q || "")}" placeholder="Пошук у каталозі: назва, бренд, артикул" autocomplete="off" oninput="planUi.q=this.value;planReplaceRefresh()"></form>
+    <div id="planReplaceList">${planReplaceListHtml(pos, list, row)}</div>
+    ${ordered ? `<div class="onbNote" style="text-align:left;color:#B76800">Цю позицію вже записано в замовленні. Якщо постачальник привіз старий товар — обміняйте його в замовленні («⋯» → «Обміняти»).</div>` : ""}
+    <div class="onbNote" style="text-align:left">Сума для клієнта не зміниться. Нова назва з’явиться в кошторисі, коли надішлете його клієнту ще раз.</div>
+  </div>`;
+}
+function planReplaceListHtml(pos, list, row){
+  const q = cleanText(planUi.q || "");
+  if(!q) return `<div class="onbNote">Почніть вводити — покажу схожі товари з каталогу</div>`;
+  return `${list.length ? `<div class="opList">${list.map(row).join("")}</div>` : `<div class="onbNote">У каталозі не знайдено</div>`}
+    <button type="button" class="psReplace" style="margin-top:.75rem" onclick="planReplaceText()">＋ Записати як «${escapeHtml(q)}» (без каталогу)</button>`;
+}
+function planReplaceRefresh(){
+  const p = planCurrent();
+  const pos = p && (p.positions || []).find(x => x.id === planUi.posId);
+  const box = document.getElementById("planReplaceList");
+  if(!pos || !box) return;
+  const row = item => {
+    const offer = getSelectedCatalogSupplierOffer(item);
+    const price = supplierOfferPrice(offer, "master");
+    const sub = [item.article ? "арт. " + item.article : "", price > 0 ? `${moneyWithCents(price)}${offer && offer.supplierName ? " · " + offer.supplierName : ""}` : ""].filter(Boolean).join(" · ");
+    return `<button type="button" class="opItem on" onclick="planReplaceWith('${escapeHtml(item.id)}')"><span class="opName">${escapeHtml(catalogDisplayName(item))}<small>${escapeHtml(sub || cleanText(item.name))}</small></span><span class="planGo">›</span></button>`;
+  };
+  box.innerHTML = planReplaceListHtml(pos, planReplaceResults(pos), row);
+}
+function planReplaceApply(pos, fields){
+  const p = planCurrent();
+  const before = positionShortName(pos);
+  if(!pos.replacedFrom) pos.replacedFrom = before;
+  Object.assign(pos, fields);
+  delete pos.supplierConfirmedAt;
+  touchProject(p);
+  planUi.mode = "source";
+  renderPlanScreen();
+  toast(`Замінено: ${before} → ${positionShortName(pos)}`, 3200);
+}
+function planReplaceWith(itemId){
+  const p = planCurrent();
+  const pos = p && (p.positions || []).find(x => x.id === planUi.posId);
+  const item = catalog.find(x => x.id === itemId);
+  if(!pos || !item) return;
+  const sup = planList(pos).filter(e => e.k === "sup").sort((a, b) => b.q - a.q)[0];
+  const offers = getCatalogSupplierOffers(item);
+  const offer = (sup && offers.find(o => normalizeText(o && o.supplierName) === normalizeText(sup.s))) || getSelectedCatalogSupplierOffer(item);
+  const price = supplierOfferPrice(offer, "master");
+  const fields = { catalogId: item.id, name: catalogDisplayName(item), fullName: item.name };
+  if(item.unit) fields.unit = item.unit;
+  if(price > 0){ fields.purchasePrice = price; fields.purchasePriceState = "estimated"; }
+  else{ fields.purchasePrice = null; delete pos.purchasePriceState; }
+  planReplaceApply(pos, fields);
+}
+function planReplaceText(){
+  const p = planCurrent();
+  const pos = p && (p.positions || []).find(x => x.id === planUi.posId);
+  const name = cleanText(planUi.q || "");
+  if(!pos || !name) return;
+  delete pos.catalogId;
+  planReplaceApply(pos, { name, fullName: name, purchasePrice: null });
 }
 
 /* ---- Звірка замовлення з планом ----
