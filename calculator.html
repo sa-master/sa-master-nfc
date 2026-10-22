@@ -3334,6 +3334,8 @@ body.positionDragging{
 .matCollapsed small{display:block;font-size:.8125rem;color:var(--tm);margin-top:.125rem}
 .matCollapsedGo{flex:0 0 auto;color:var(--p);font-weight:750;font-size:.875rem}
 .matCollapse{display:block;margin:.25rem 0 .5rem auto;color:var(--p);font-weight:750;font-size:.875rem;padding:.375rem .25rem}
+.retActions{display:flex;flex-wrap:wrap;gap:.375rem;width:100%;margin-top:.375rem;padding-left:0}
+.retActions button{height:2rem;padding:0 .625rem;border-radius:.625rem;background:var(--card);color:var(--p);font-weight:750;font-size:.8125rem;border:1px solid rgba(0,122,255,.2)}
 .returnBox{border-color:rgba(198,40,40,.35)!important;background:rgba(198,40,40,.05)!important}
 .returnBox .buyLaterTitle{color:#B42318}
 .returnBox .buyLaterItem{border-top-color:rgba(198,40,40,.15)}
@@ -6202,10 +6204,14 @@ function renderBuyLater(project){
   const retRow = r => {
     const pid = escapeHtml(r.positionId);
     return `
-      <div class="buyLaterItem">
-        <span class="buyLaterName" style="cursor:default">${escapeHtml(r.name)}<small style="display:block;font-weight:600;color:var(--tm)">${formatQty(r.qty)} ${escapeHtml(r.unit)} · ${escapeHtml(r.supplierName)}</small></span>
-        <button type="button" class="buyLaterAdd" onclick="openReturnForm('${pid}')">Повернув</button>
-        <button type="button" class="buyLaterAdd" style="color:var(--tm)" onclick="keepReturn('${pid}')">Залишаю</button>
+      <div class="buyLaterItem" style="flex-wrap:wrap">
+        <span class="buyLaterName" style="cursor:default">${escapeHtml(r.name)}<small style="display:block;font-weight:600;color:var(--tm)">${formatQty(r.qty)} ${escapeHtml(r.unit)} · ${escapeHtml(r.supplierName)} · ${escapeHtml(r.reason)}</small></span>
+        <span class="retActions">
+          <button type="button" onclick="openReturnForm('${pid}')">Повернув</button>
+          <button type="button" onclick="keepReturn('${pid}')">Не повертаю</button>
+          <button type="button" onclick="notOrderedReturn('${pid}')">Не замовляв</button>
+          ${r.stock ? `<button type="button" onclick="notFromStock('${pid}')">Брав тут, не зі складу</button>` : ""}
+        </span>
       </div>
       ${returnFormFor === r.positionId ? `
         <div class="buyLaterForm buyLaterPay">
@@ -6236,7 +6242,7 @@ function renderBuyLater(project){
     ${returns.length ? `
     <section class="buyLater returnBox">
       <div class="buyLaterHead"><span class="buyLaterTitle">↩ Повернути · ${returns.length}</span></div>
-      <div class="buyLaterHint">Замовлено більше, ніж тепер треба за кошторисом.</div>
+      <div class="buyLaterHint">За записом замовлено більше, ніж тепер треба за кошторисом. Повернули — «Повернув». Купили й лишаєте — «Не повертаю». Насправді не брали — «Не замовляв».</div>
       ${returns.map(retRow).join("")}
     </section>` : ""}
   `;
@@ -6330,6 +6336,28 @@ function saveReturn(positionId, skip){
   render();
   toast(amount > 0 ? "Повернення записано у «Гроші»" : "Повернення записано");
 }
+/* «Не замовляв»: у записі замовлення помилково була позиція — прибираємо, без грошей */
+function notOrderedReturn(positionId){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  const r = applyReturnQty(project, positionId, "qty");
+  if(!r) return;
+  orderEvent(r.refs[0].order, `Прибрано із замовлення (не замовляли): ${formatQty(r.qty)} ${r.unit} «${r.name}»`);
+  touchProject(project);
+  render();
+  toast("Прибрано із замовлення — сума замовлення зменшилась");
+}
+/* «Брав тут, не зі складу»: знімаємо позначку складу, бо товар насправді купили в цього постачальника */
+function notFromStock(positionId){
+  const { project, position } = findCurrentPosition(positionId);
+  if(!position) return;
+  const r = returnsPending(project).find(x => x.positionId === positionId);
+  if(!r) return;
+  position.fromStockQty = roundQty(Math.max(0, positionStockQty(position) - r.qty));
+  touchProject(project);
+  render();
+  toast("Позначку «зі складу» знято");
+}
 function keepReturn(positionId){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
@@ -6338,7 +6366,7 @@ function keepReturn(positionId){
   orderEvent(r.refs[0].order, `Залишено собі: ${formatQty(r.qty)} ${r.unit} «${r.name}»`);
   touchProject(project);
   render();
-  toast("Залишаєте собі — у повернення не потрапить");
+  toast("Записано: не повертаєте");
 }
 
 function positionOrderQty(position){
@@ -15940,7 +15968,9 @@ function returnsPending(project){
     const excess = roundQty(cur.ordered - cur.kept - need);
     if(excess <= 0.0001) return;
     const main = cur.refs.slice().sort((a, b) => (Number(b.line.qty) || 0) - (Number(a.line.qty) || 0))[0];
-    out.push({ positionId, qty: excess, name: pos ? positionShortName(pos) : main.line.name, unit: main.line.unit || "шт", price: Number(main.line.price) || 0, supplierName: main.order.supplierName, refs: cur.refs });
+    const stock = pos ? positionStockQty(pos) : 0;
+    const reason = !pos ? "прибрано з кошторису" : stock > 0 ? "у кошторисі «зі складу»" : "у кошторисі менше";
+    out.push({ positionId, qty: excess, name: pos ? positionShortName(pos) : main.line.name, unit: main.line.unit || "шт", price: Number(main.line.price) || 0, supplierName: main.order.supplierName, refs: cur.refs, stock, reason });
   });
   return out;
 }
