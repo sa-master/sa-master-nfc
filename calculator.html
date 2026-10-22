@@ -3303,6 +3303,7 @@ body.positionDragging{
 .ptBtn.primary{background:var(--p);color:#fff}
 .ptName{background:none;padding:0;font:inherit;color:inherit;text-align:left}
 .ptText small .ptName{color:var(--p);text-decoration:none;font-weight:700}
+.ptLine{display:block;color:var(--t);font-size:.8125rem;font-weight:650;margin-top:.125rem}
 .ptHint{display:block;font-size:.6875rem;color:var(--tm);font-weight:600;margin-top:.125rem}
 .ptDel{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:50%;background:none;color:var(--tm);font-size:1.125rem}
 .ptEmpty{padding:.5rem 0;font-size:.875rem;font-weight:700;color:var(--green);border-top:1px solid rgba(120,120,128,.14)}
@@ -16238,6 +16239,7 @@ function renderOrderPick(){
         const hint = planned && normalizeText(planned) !== normalizeText(orderPick.supplier) ? `<small>в прайсі: ${escapeHtml(planned)}</small>` : "";
         return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="orderPickToggle('${escapeHtml(pos.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(positionShortName(pos))}${hint}</span><span class="opQty">${(orderPick.plan ? orderLineQty(findOrder(project, orderPick.plan), pos.id) > 0 : positionOrderedIn(project, pos)) ? "ще " : ""}${formatQty(orderPickQty(project, pos))} ${escapeHtml(pos.unit || "шт")}</span></button>`;
       }).join("")).join("")}</div>
+      ${orderPick.plan ? `<button type="button" class="psReplace" onclick="openPlanAdd(orderPick.plan)">＋ Додати товар з каталогу</button>` : ""}
       <span class="onbNote" style="text-align:left">${orderPick.plan ? "Невідмічене лишиться в плані — замовите пізніше." : `Невідмічене лишиться в «${orderPick.later ? "Докупити самому" : "Дозамовити"}» — замовите в іншого.`}</span>
     </div>
     <div class="opStep"><span class="opLabel">${orderPick.plan ? "Коли й куди?" : "3. Коли?"}</span>
@@ -16480,7 +16482,7 @@ function planOverview(p){
 }
 
 function planNameLinks(list){
-  return list.slice(0, 6).map(x => { const pos = x.pos || x; return `<button type="button" class="ptName" onclick="planOpenPos('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}</button>`; }).join(", ") + (list.length > 6 ? ` і ще ${list.length - 6}` : "");
+  return list.slice(0, 6).map(x => { const pos = x.pos || x; const q = x.pos ? ` · ${formatQty(x.q)} ${escapeHtml(pos.unit || "шт")}` : ""; return `<span class="ptLine"><button type="button" class="ptName" onclick="planOpenPos('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}</button>${q}</span>`; }).join("") + (list.length > 6 ? `<span class="ptLine">і ще ${list.length - 6} поз.</span>` : "");
 }
 function planNamesText(list, max){
   const names = list.slice(0, max || 3).map(x => positionShortName(x.pos || x));
@@ -16519,7 +16521,7 @@ function renderPlanTodo(p){
     if(s.toOrder.length){
       const word = s.order ? "Дозамовити" : "Замовити";
       row("", `<button type="button" class="ptBox" onclick="openOrderPick(false, ${encName(s.name)})" aria-label="${word}"></button>`,
-        `${word} в ${escapeHtml(s.name)}: ${s.toOrder.length} поз.`, planNameLinks(s.toOrder) + `<span class="ptHint">натисніть назву, щоб змінити, звідки беремо</span>`,
+        `${word} в ${escapeHtml(s.name)}`, planNameLinks(s.toOrder) + `<span class="ptHint">натисніть назву, щоб змінити, звідки беремо</span>`,
         `<button type="button" class="ptBtn primary" onclick="openOrderPick(false, ${encName(s.name)})">${word}</button>`);
     }
     if(s.over.length){
@@ -16559,7 +16561,7 @@ function renderPlanTodo(p){
       ${doneHtml}
       <div class="ptFoot">
         ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off"><button type="submit">Додати</button></form>`
-          : `<button type="button" class="ptLink" onclick="planNoteOpen=true;render();setTimeout(()=>document.getElementById('planNoteInput')?.focus(),60)">＋ Замітка</button>`}
+          : `<span style="display:flex;gap:1rem"><button type="button" class="ptLink" onclick="openPlanAdd()">＋ Докупити</button><button type="button" class="ptLink" onclick="planNoteOpen=true;render();setTimeout(()=>document.getElementById('planNoteInput')?.focus(),60)">＋ Замітка</button></span>`}
         ${doneCount ? `<button type="button" class="ptLink muted" onclick="planDoneOpen=!planDoneOpen;render()">${planDoneOpen ? "Сховати виконане" : `Виконано ${doneCount}`}</button>` : ""}
       </div>
     </section>`;
@@ -16688,6 +16690,7 @@ function openPlanScreen(filter){
 
 function closePlanScreen(){
   planScreenEl().classList.remove("open");
+  planScreenEl().style.zIndex = "";
   planUi = null;
   render();
 }
@@ -16718,6 +16721,7 @@ function renderPlanScreen(){
   if(!p || !planUi){ return; }
   if(planUi.mode === "source") return renderPlanSource(p, screen);
   if(planUi.mode === "replace") return renderPlanReplace(p, screen);
+  if(planUi.mode === "add") return renderPlanAdd(p, screen);
   if(planUi.mode === "reconcile") return renderPlanReconcile(p, screen);
   const o = planOverview(p);
   const encF = f => `decodeURIComponent('${encodeURIComponent(f).replace(/'/g, "%27")}')`;
@@ -16757,10 +16761,8 @@ function renderPlanScreen(){
     <div class="onbNote" style="text-align:left;margin-top:-.5rem">Звідки берете кожну позицію. Сума для клієнта від плану не змінюється.</div>
     <div class="opChips planChips">${chips}</div>
     <div class="opList">${groups.length ? groups.map(g => `<div class="opGroup">${escapeHtml(g.label)}</div>` + g.positions.map(item).join("")).join("") : `<div class="onbNote" style="padding:1rem 0">${planUi.filter === "undecided" ? "✓ Усе розподілено" : "Порожньо"}</div>`}</div>
-    ${sel ? "" : `<form class="planAdd" onsubmit="event.preventDefault();planAddMine()">
-      <span class="opLabel">＋ Своя позиція (розхідники тощо — не йде клієнту)</span>
-      <div class="planAddRow"><input id="planMineName" placeholder="Що купити" autocomplete="off"><input id="planMineQty" inputmode="decimal" placeholder="К-сть" value="1"><button type="submit">Додати</button></div>
-    </form>`}
+    ${sel ? "" : `<button type="button" class="psReplace" onclick="openPlanAdd()">＋ Докупити / дозамовити товар</button>
+    <div class="onbNote" style="text-align:left;margin-top:-.75rem">Розхідники, забуте тощо — з каталогу або своєю назвою. Клієнту не йде.</div>`}
     ${sel ? "" : `<button type="button" class="onbLink" style="font-size:.8125rem" onclick="planDisable()">Вимкнути план для цього об’єкта</button>`}
     <div class="onbSpacer"></div>
     ${sel ? `<div class="planBulk"><span class="opLabel">${selCount ? `Відмічено ${selCount} — повністю брати:` : "Відмітьте позиції"}</span>
@@ -17060,6 +17062,112 @@ function planReplaceText(){
   if(!pos || !name) return;
   delete pos.catalogId;
   planReplaceApply(pos, { name, fullName: name, purchasePrice: null });
+}
+
+
+/* ---- Докупити / дозамовити: товар з каталогу (або своєю назвою), не йде клієнту ----
+   Є в прайсі постачальника → у план до нього («Дозамовити»). Немає → «Купую сам». */
+function openPlanAdd(supplier){
+  const p = planCurrent();
+  if(!p) return;
+  if(!planOn(p)){ p.planOff = false; planMigrate(p); touchProject(p); }
+  const fromObject = !planUi;
+  if(!planUi) planUi = { mode:"list", filter:"mine", select:null, posId:"" };
+  planUi.mode = "add";
+  planUi.addSup = supplier || "";
+  planUi.addFromObject = fromObject;
+  planUi.addFromOrder = Boolean(supplier && orderPick);
+  planUi.q = "";
+  const screen = planScreenEl();
+  screen.style.zIndex = "310";
+  screen.classList.add("open");
+  renderPlanScreen();
+  screen.scrollTop = 0;
+  setTimeout(() => document.getElementById("planAddQ")?.focus(), 60);
+}
+function planAddBack(){
+  if(planUi.addFromOrder){ planScreenEl().classList.remove("open"); planUi = null; renderOrderPick(); return; }
+  if(planUi.addFromObject){ closePlanScreen(); return; }
+  planUi.mode = "list";
+  renderPlanScreen();
+}
+function planAddRow(item){
+  const offers = getCatalogSupplierOffers(item);
+  const offer = (planUi.addSup && offers.find(o => normalizeText(o && o.supplierName) === normalizeText(planUi.addSup))) || getSelectedCatalogSupplierOffer(item);
+  const price = supplierOfferPrice(offer, "master");
+  const sub = [item.article ? "арт. " + item.article : "", price > 0 ? `${moneyWithCents(price)}${offer && offer.supplierName ? " · " + offer.supplierName : ""}` : "немає в прайсі"].filter(Boolean).join(" · ");
+  return `<button type="button" class="opItem on" onclick="planAddItem('${escapeHtml(item.id)}')"><span class="opName">${escapeHtml(catalogDisplayName(item))}<small>${escapeHtml(sub)}</small></span><span class="planGo">＋</span></button>`;
+}
+function planAddResults(){
+  const words = normalizeText(planUi.q || "").split(" ").filter(w => w.length > 1);
+  if(!words.length) return [];
+  const sup = normalizeText(planUi.addSup || "");
+  const hits = catalog.filter(item => item && item.type !== "work" && words.every(w => normalizeText([item.name, item.nameMaster, item.article, item.manufacturer].filter(Boolean).join(" ")).includes(w)));
+  if(sup) hits.sort((a, b) => (getCatalogSupplierOffers(b).some(o => normalizeText(o && o.supplierName) === sup) ? 1 : 0) - (getCatalogSupplierOffers(a).some(o => normalizeText(o && o.supplierName) === sup) ? 1 : 0));
+  return hits.slice(0, 40);
+}
+function planAddListHtml(){
+  const q = cleanText(planUi.q || "");
+  if(!q) return `<div class="onbNote">Почніть вводити — покажу товари з каталогу</div>`;
+  const list = planAddResults();
+  return `${list.length ? `<div class="opList">${list.map(planAddRow).join("")}</div>` : `<div class="onbNote">У каталозі не знайдено</div>`}
+    <button type="button" class="psReplace" style="margin-top:.75rem" onclick="planAddText()">＋ Додати «${escapeHtml(q)}» своєю назвою</button>`;
+}
+function planAddRefresh(){
+  const box = document.getElementById("planAddList");
+  if(box) box.innerHTML = planAddListHtml();
+}
+function renderPlanAdd(p, screen){
+  const mine = planMaterials(p).filter(x => x.buyLaterOnly).slice(-5).reverse();
+  screen.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="planAddBack()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${planUi.addSup ? `Дозамовити · ${escapeHtml(planUi.addSup)}` : "Докупити / дозамовити"}</span></div>
+    <div class="planAddRow"><input id="planAddQ" value="${escapeHtml(planUi.q || "")}" placeholder="Пошук: назва, бренд, артикул" autocomplete="off" oninput="planUi.q=this.value;planAddRefresh()"><input id="planAddQty" inputmode="decimal" value="${escapeHtml(planUi.qty || "1")}" oninput="planUi.qty=this.value" aria-label="Кількість"></div>
+    <div id="planAddList">${planAddListHtml()}</div>
+    ${mine.length ? `<div class="opLabel">Нещодавно додані</div><div class="opList">${mine.map(pos => `<button type="button" class="opItem on" onclick="openPlanSource('${escapeHtml(pos.id)}')"><span class="opName">${escapeHtml(positionShortName(pos))}<small>${planSummaryText(pos)}</small></span><span class="opQty">${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")}</span></button>`).join("")}</div>` : ""}
+    <div class="onbNote" style="text-align:left">${planUi.addSup ? `Додане піде в замовлення ${escapeHtml(planUi.addSup)}.` : "Є в прайсі постачальника — піде в «Дозамовити» у нього. Немає — у «Купую сам». Змінити можна, натиснувши на позицію."} Клієнту не йде.</div>
+  </div>`;
+}
+function planAddQty(){
+  const q = Number(String(planUi.qty || document.getElementById("planAddQty")?.value || "1").replace(",", "."));
+  return Number.isFinite(q) && q > 0 ? roundQty(q) : 1;
+}
+function planAddCreate(fields, supplier){
+  const p = planCurrent();
+  if(!p) return;
+  if(!Array.isArray(p.positions)) p.positions = [];
+  const qty = planAddQty();
+  const pos = { id: uid("pos"), type:"material", unit:"шт", qty, price:0, purchasePrice:null, buyLater:true, buyLaterOnly:true, noDiscount:true, ...fields };
+  if(supplier) planAdd(pos, "sup", supplier, qty); else planAdd(pos, "shop", "", qty);
+  planSync(pos);
+  p.positions.push(pos);
+  touchProject(p);
+  toast(`Додано: ${positionShortName(pos)} · ${formatQty(qty)} ${pos.unit || "шт"} → ${supplier || "купую сам"}`, 3000);
+  if(planUi.addFromOrder){
+    planScreenEl().classList.remove("open");
+    planUi = null;
+    if(orderPick){ orderPick.checked.add(pos.id); orderPick.touched = true; renderOrderPick(); }
+    return;
+  }
+  planUi.q = ""; planUi.qty = "1";
+  renderPlanScreen();
+  setTimeout(() => document.getElementById("planAddQ")?.focus(), 60);
+}
+function planAddItem(itemId){
+  const item = catalog.find(x => x.id === itemId);
+  if(!item) return;
+  const offers = getCatalogSupplierOffers(item);
+  const offer = (planUi.addSup && offers.find(o => normalizeText(o && o.supplierName) === normalizeText(planUi.addSup))) || getSelectedCatalogSupplierOffer(item);
+  const supplier = planUi.addSup || (offer && supplierOfferPrice(offer, "master") > 0 ? cleanText(offer.supplierName) : "");
+  const price = supplierOfferPrice(offer, "master");
+  const fields = { catalogId:item.id, name:catalogDisplayName(item), fullName:item.name };
+  if(item.unit) fields.unit = item.unit;
+  if(price > 0){ fields.purchasePrice = price; fields.purchasePriceState = "estimated"; }
+  planAddCreate(fields, supplier);
+}
+function planAddText(){
+  const name = cleanText(planUi.q || "");
+  if(!name) return;
+  planAddCreate({ name, fullName:name }, planUi.addSup || "");
 }
 
 /* ---- Звірка замовлення з планом ----
