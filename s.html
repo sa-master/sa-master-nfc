@@ -246,8 +246,12 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
 const SERVER = "https://sa-master-api.c6hht469s9.workers.dev";
 const $ = id => document.getElementById(id);
 const HASH = location.hash.replace(/^#/, "").trim();
-const CAB_FROM_URL = /^c=([A-Za-z0-9]{6,20})$/.test(HASH) ? HASH.slice(2) : "";
-const id = CAB_FROM_URL ? "" : (new URLSearchParams(location.search).get("id") || HASH || "").trim();
+/* Адреса виду #c=<кабінет>&m=<майстер>: у цій самій вкладці — сторінка майстра, а з іконки на екрані (нова вкладка) — кабінет з усіма майстрами */
+const hashPart = k => (HASH.match(new RegExp("(?:^|&)" + k + "=([A-Za-z0-9]{6,20})(?:&|$)")) || [])[1] || "";
+const HASH_M = hashPart("m");
+let sameTabM = ""; try{ sameTabM = sessionStorage.getItem("sup_m") || ""; }catch(e){}
+const CAB_FROM_URL = hashPart("c") && !(HASH_M && HASH_M === sameTabM) ? hashPart("c") : "";
+const id = CAB_FROM_URL ? "" : (HASH_M || new URLSearchParams(location.search).get("id") || HASH || "").trim();
 window.addEventListener("hashchange", () => location.reload());
 const MAP_KEY = "sup_map_" + id;
 
@@ -890,6 +894,7 @@ async function cabRegister(){
     const r = await fetch(`${SERVER}/cab`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ id, cab:cabGet() }) });
     if(!r.ok) return;
     const d = await r.json(); cabSet(d.cab);
+    try{ sessionStorage.setItem("sup_m", id); history.replaceState(null, "", "#c=" + d.cab + "&m=" + id); }catch(e){}
     const masters = await cabFetch(d.cab);
     if(masters.length < 2) return;
     const others = masters.filter(m => m.id !== id);
