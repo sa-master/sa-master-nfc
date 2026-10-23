@@ -3410,24 +3410,24 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .scName b{display:block;font-size:.9375rem;font-weight:750;color:var(--t)}
 .scName small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
 .scOk{color:var(--green);font-weight:750}
-.scAns{color:var(--orange);font-weight:750}
+.scAns{color:var(--p);font-weight:750}
 .scLinks{display:flex;gap:1rem;flex-wrap:wrap;padding-top:.5rem;border-top:1px solid rgba(120,120,128,.14)}
 .scLinks button{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.25rem 0}
 .supLine{display:block;width:100%;text-align:left;background:var(--card);border-radius:1rem;padding:.75rem .875rem;margin:0 0 .75rem;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .slTop{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
 .slTop b{font-size:.9375rem;font-weight:800;color:var(--t)}
 .slTop span{font-size:.8125rem;font-weight:750;color:var(--tm);white-space:nowrap}
-.slTop span.ans{color:var(--orange)}
-.slTop span.done{color:var(--green)}
+.slTop span.ans{color:var(--p)}
+.slTop span.done{color:var(--p)}
 .slBar{display:flex;gap:.25rem;margin:.5rem 0 .4rem}
 .slBar i{flex:1;height:.5rem;border-radius:.25rem;background:rgba(120,120,128,.2)}
 .slBar i.ok{background:var(--p)}
 .slBar i.wait{background:repeating-linear-gradient(-45deg,rgba(10,132,255,.45) 0 4px,rgba(10,132,255,.18) 4px 8px)}
-.slBar i.ans{background:var(--orange)}
+.slBar i.ans{background:rgba(10,132,255,.55)}
 .slLeg{display:flex;flex-wrap:wrap;gap:.25rem .75rem;font-size:.75rem;font-weight:650;color:var(--tm)}
 .slLeg em{font-style:normal;display:inline-flex;align-items:center;gap:.3rem}
 .slLeg em:before{content:"";width:.5rem;height:.5rem;border-radius:.15rem;background:currentColor}
-.slLeg .ok{color:var(--p)}.slLeg .ans{color:var(--orange)}.slLeg .wait{color:rgba(10,132,255,.5)}.slLeg .none{color:rgba(120,120,128,.45)}
+.slLeg .ok{color:var(--p)}.slLeg .ans{color:rgba(10,132,255,.55)}.slLeg .wait{color:rgba(10,132,255,.5)}.slLeg .none{color:rgba(120,120,128,.45)}
 .slLeg em span{color:var(--tm)}
 .scBtn{flex:0 0 auto;height:2.25rem;padding:0 .875rem;border-radius:.75rem;background:rgba(10,132,255,.12);color:var(--p);font-weight:750;font-size:.875rem}
 .scBtn.primary{background:var(--p-action);color:#fff}
@@ -8511,7 +8511,7 @@ function openSendChoice(){
   const enc = v => `decodeURIComponent('${encodeURIComponent(v).replace(/'/g, "%27")}')`;
   const rows = supGroups(p).map(g => {
     const c = supChk(p, g.key) || {};
-    const status = g.state === "ok" ? `<span class="scOk">✓ звірено${c.answerFrom ? " · " + escapeHtml(c.answerFrom) : ""}</span>`
+    const status = g.state === "ok" ? `<span class="scAns">✓ звірено${c.answerFrom ? " · " + escapeHtml(c.answerFrom) : ""}</span>`
       : g.state === "ans" ? `<span class="scAns">відповів — є зміни</span>`
       : g.state === "wait" ? `надіслано ${formatQuoteDate(c.at)} · чекаємо відповідь`
       : "ще не звіряли";
