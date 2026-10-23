@@ -3427,6 +3427,7 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .csPill.new{background:var(--p-action);color:#fff;box-shadow:0 0 0 3px rgba(10,132,255,.25)}
 .csLink{background:none;color:var(--p);font-weight:700;font-size:.75rem;padding:0;text-decoration:underline}
 .csBtn{flex:0 0 auto;height:2.25rem;padding:0 .75rem;border-radius:.75rem;background:var(--p-action);color:#fff;font-weight:750;font-size:.8125rem}
+.csDone{font-size:.75rem;font-weight:700;color:var(--p);padding-top:.375rem;border-top:1px solid rgba(120,120,128,.14)}
 .csMore{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.375rem 0 0}
 .supLine{display:block;width:100%;text-align:left;background:var(--card);border-radius:1rem;padding:.75rem .875rem;margin:0 0 .75rem;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .slTop{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
@@ -8190,6 +8191,18 @@ function toggleFloatingDetails(){
 }
 
 function renderFloatingPanel(p){
+  /* Одна й та сама панель на всіх вкладках: сума для замовника, «Додати», «Надіслати» */
+  if(!clientView){
+    const add = projectTab === "works" ? "openCatalogFor('work')" : projectTab === "materials" ? "openCatalogFor('material')" : "openAddMenu()";
+    return `
+    <div class="floatingPanel compact estPanel">
+      <div class="estTotal"><span class="lbl">Для замовника</span><b>${money(getApproved(p) ? getClientTotal(p) : getEstimateTotal(p))}</b></div>
+      <div class="floatingButtons">
+        <button class="addButton" onclick="${add}">＋ Додати</button>
+        <button class="addButton primary sendBtn" onclick="openSendChoice()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.4 11.2 20.2 4.1c.7-.3 1.4.4 1.1 1.1l-7.1 16.8c-.3.8-1.4.7-1.6-.1l-1.8-6.4c-.1-.3-.3-.5-.6-.6l-6.4-1.8c-.8-.2-.9-1.3-.1-1.6Z"/></svg>Надіслати</button>
+      </div>
+    </div>`;
+  }
   if(projectTab === "works" || projectTab === "materials"){
     return `
     <div class="floatingPanel compact estPanel">
@@ -9127,19 +9140,22 @@ function renderClientSends(p){
   const list = clientSends(p);
   if(!list.length || clientView) return "";
   const open = clientSendsOpen(p);
-  if(projectTab === "notebook" && !open.length) return "";
   if(open.length) pollClientSends(p);
-  const shown = list.slice().reverse();
-  const rows = (clientSendsAll ? shown : shown.slice(0, 4)).map(s => {
-    const sub = s.kind === "changes"
-      ? `${s.lines ? s.lines.length + " зм. · " : ""}${money(s.prevTotal)} → ${money(s.total)}`
-      : money(s.total);
+  /* Нічого не чекаємо — блок не показуємо; історія відкривається з зеленого/синього банера */
+  if(!open.length && !clientSendsAll) return "";
+  if(projectTab === "notebook" && !open.length) return "";
+  const row = s => {
     const title = s.kind === "changes" ? `Зміни №${s.n}` : SEND_KIND_LABEL[s.kind] || "Кошторис";
-    const manual = sendOpen(p, s) && !s.clientApprovedAt ? `<button type="button" class="csLink" onclick="clientSendApprove('${escapeHtml(s.id)}')">погодив усно</button>` : "";
-    return `<div class="csRow"><span class="csName"><b>${title} · ${formatQuoteDate(s.at).slice(0, 5)}</b><small>${sub}${s.how === "клієнт" && s.approvedAt ? " · погодив сам на сторінці" : s.how === "вручну" ? " · позначено вручну" : ""}${manual ? " · " + manual : ""}</small></span>${sendMarker(p, s)}</div>`;
-  }).join("");
-  return `<section class="csBox"><div class="csHead">Погодження з клієнтом</div>${rows}
-    ${list.length > 4 ? `<button type="button" class="csMore" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "Згорнути" : `Усі надсилання (${list.length})`}</button>` : ""}</section>`;
+    const sub = s.kind === "changes" ? `${money(s.prevTotal)} → ${money(s.total)}` : money(s.total);
+    const manual = sendOpen(p, s) && !s.clientApprovedAt ? ` · <button type="button" class="csLink" onclick="clientSendApprove('${escapeHtml(s.id)}')">погодив усно</button>` : "";
+    return `<div class="csRow"><span class="csName"><b>${title}</b><small>${sub}${manual}</small></span>${sendMarker(p, s)}</div>`;
+  };
+  if(clientSendsAll){
+    return `<section class="csBox"><div class="csHead">Історія погоджень<button type="button" class="csMore" style="float:right;padding:0" onclick="clientSendsAll=false;render()">Згорнути</button></div>${list.slice().reverse().map(row).join("")}</section>`;
+  }
+  const pa = partsApproved(p);
+  const done = !getApproved(p) ? ["works", "materials"].filter(k => pa[k]).map(k => `${k === "works" ? "Роботи" : "Матеріали"} ✓ ${formatQuoteDate(pa[k].at).slice(0, 5)}`).join(" · ") : "";
+  return `<section class="csBox"><div class="csHead">Чекаємо погодження клієнта</div>${open.map(row).join("")}${done ? `<div class="csDone">${done}</div>` : ""}</section>`;
 }
 
 function quoteShareMessage(project){
@@ -9585,6 +9601,7 @@ function getNextSteps(p){
       return steps;
     }
     const pend = clientSendPending(p);
+    if(pend) return steps; /* блок «Чекаємо погодження клієнта» вже показує, що робити */
     const pa = partsApproved(p);
     const half = pa.works ? "materials" : pa.materials ? "works" : "";
     if(half){
@@ -10292,7 +10309,7 @@ function renderApprovedBanner(project){
   const diff = internalTotal - (Number(approved.total) || 0);
   return `
     <section class="approvedBanner">
-      <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис для клієнта оновлено" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}</div>
+      <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис для клієнта оновлено" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}${clientSends(project).length ? ` <button type="button" class="csLink" style="float:right" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "сховати історію" : "історія"}</button>` : ""}</div>
       ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · за цінами для клієнта це ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
       ${changes.added.length ? `<div class="approvedBannerRemoved">Додано: ${changes.added.map(item => escapeHtml(item.clientName || positionClientName(item) || item.name || "")).join(", ")}</div>` : ""}
       ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>` : ""}
@@ -19161,7 +19178,11 @@ function openAddMenu(){
   const item = (icon, title, sub, action) => `<button type="button" class="amItem" onclick="closeAddMenu();${action}"><span class="amIcon">${icon}</span><span class="amText"><b>${title}</b><small>${sub}</small></span></button>`;
   const p = buyCur();
   const approved = Boolean(p && getApproved(p));
-  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Що додати">
+  el.innerHTML = projectTab === "money" ? `<div class="amSheet" role="dialog" aria-label="Що додати">
+    <div class="amHead"><b>Що додати?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    ${item("💰", "Оплату від клієнта", "гроші, які клієнт заплатив вам", "openMoneyForm('payment')")}
+    ${item("🧾", "Витрату", "купили матеріали, доставка, інше", "openMoneyForm('expense')")}
+  </div>` : `<div class="amSheet" role="dialog" aria-label="Що додати">
     <div class="amHead"><b>Що додати?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
     ${item("📦", "Матеріал", "що докупити — клієнту не йде; перенесете в кошторис, якщо треба", "openCatalogFor('material','notebook')")}
     ${item("📝", "Нотатку", "у блокнот, з галочкою", "planNoteOpen=true;render();setTimeout(()=>{const i=document.getElementById('planNoteInput');if(i){i.scrollIntoView({block:'center'});i.focus();}},80)")}
