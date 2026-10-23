@@ -1468,10 +1468,10 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   margin:-.125rem 0 .75rem;
   padding:.625rem .75rem;
   border-radius:.875rem;
-  border:1px solid rgba(52,199,89,.28);
-  background:rgba(52,199,89,.08);
+  border:1px solid rgba(10,132,255,.22);
+  background:rgba(10,132,255,.07);
 }
-.approvedBannerTitle{font-size:.75rem;font-weight:800;color:#1f7a3c}
+.approvedBannerTitle{font-size:.75rem;font-weight:800;color:var(--p)}
 .approvedBannerText{margin-top:.25rem;font-size:.6875rem;line-height:1.35;color:var(--ts)}
 .approvedBannerActions{margin-top:.5rem}
 .guideList{display:flex;flex-direction:column;background:var(--card);border-radius:1rem;padding:.25rem .875rem}
@@ -1498,9 +1498,9 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 .revTotals div b{color:var(--t);font-weight:800}
 .revTotals div.big{font-size:1.0625rem;color:var(--t);font-weight:800}
 .revTotals small{color:var(--tm);font-size:.75rem}
-.approvedBannerActions button{width:100%;padding:.5625rem .75rem;border-radius:.75rem;background:#B76800;color:#fff;font-size:.8125rem;font-weight:800}
-.approvedBannerActions button.soft{background:rgba(183,104,0,.12);color:#B76800}
-.approvedBannerChanges{margin-top:.375rem;font-size:.6875rem;font-weight:700;color:#B76800}
+.approvedBannerActions button{width:100%;padding:.5625rem .75rem;border-radius:.75rem;background:var(--p-action);color:#fff;font-size:.8125rem;font-weight:800}
+.approvedBannerActions button.soft{background:rgba(10,132,255,.12);color:var(--p)}
+.approvedBannerChanges{margin-top:.375rem;font-size:.6875rem;font-weight:700;color:var(--t)}
 .approvedBannerRemoved{margin-top:.25rem;font-size:.6875rem;color:var(--tm);overflow-wrap:anywhere}
 .positionApprovedNote{display:block;margin-top:.125rem;font-size:.625rem;font-weight:750;color:#B76800}
 .stockPickButton{background:rgba(52,199,89,.14) !important;color:#1f7a3c !important}
@@ -3413,6 +3413,21 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .scAns{color:var(--p);font-weight:750}
 .scLinks{display:flex;gap:1rem;flex-wrap:wrap;padding-top:.5rem;border-top:1px solid rgba(120,120,128,.14)}
 .scLinks button{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.25rem 0}
+.csBox{background:var(--card);border-radius:1rem;padding:.75rem .875rem;margin:0 0 .75rem;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.csHead{font-size:.75rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--p);padding-bottom:.375rem}
+.csRow{display:flex;align-items:center;gap:.625rem;padding:.5rem 0;border-top:1px solid rgba(120,120,128,.14)}
+.csName{flex:1 1 auto;min-width:0}
+.csName b{display:block;font-size:.9375rem;font-weight:750;color:var(--t)}
+.csName small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
+.csPill{flex:0 0 auto;font-size:.75rem;font-weight:800;border-radius:.5rem;padding:.3rem .55rem;white-space:nowrap}
+.csPill.ok{background:var(--p);color:#fff}
+.csPill.old{background:rgba(120,120,128,.14);color:var(--tm);text-decoration:line-through}
+.csPill.wait{background:var(--card);color:var(--p);border:1.5px solid var(--p)}
+.csPill.pre{background:var(--card);color:var(--p);border:1.5px dashed var(--p)}
+.csPill.new{background:var(--p-action);color:#fff;box-shadow:0 0 0 3px rgba(10,132,255,.25)}
+.csLink{background:none;color:var(--p);font-weight:700;font-size:.75rem;padding:0;text-decoration:underline}
+.csBtn{flex:0 0 auto;height:2.25rem;padding:0 .75rem;border-radius:.75rem;background:var(--p-action);color:#fff;font-weight:750;font-size:.8125rem}
+.csMore{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.375rem 0 0}
 .supLine{display:block;width:100%;text-align:left;background:var(--card);border-radius:1rem;padding:.75rem .875rem;margin:0 0 .75rem;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .slTop{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
 .slTop b{font-size:.9375rem;font-weight:800;color:var(--t)}
@@ -7493,8 +7508,8 @@ function renderRevision(){
       ${revision.selected.size ? `<div class="big"><span>Стане</span><b>${money(draft.total)}</b></div>` : ""}
     </div>
     <div class="onbSpacer"></div>
-    ${revision.selected.size ? `<button type="button" class="onbPrimary" onclick="revisionApprove()">Зберегти в кошторис клієнта · ${revision.selected.size}</button>
-    <button type="button" class="onbLink" onclick="revisionPreview()">Спершу глянути документ</button>` : `<button type="button" class="onbPrimary" onclick="revisionPreview()">Показати / надіслати клієнту</button>`}
+    ${revision.selected.size ? `<button type="button" class="onbPrimary" onclick="revisionPreview()">Надіслати клієнту на погодження · ${revision.selected.size}</button>
+    <button type="button" class="onbLink" onclick="revisionApprove()">Клієнт уже погодив — зберегти без надсилання</button>` : `<button type="button" class="onbPrimary" onclick="revisionPreview()">Показати / надіслати клієнту</button>`}
   </div>`;
 }
 
@@ -7517,6 +7532,8 @@ function revisionApprove(){
   if(!confirm(`Зберегти зміни в кошторис для клієнта?\n\nБуло: ${money(before)}\nСтане: ${money(draft.total)}\n\nБорг клієнта рахуватиметься від нової суми.`)) return;
   draft.revised = true;
   project.approved = draft;
+  const pend = clientSendPending(project);
+  if(pend && pend.kind === "changes" && (pend.selected || []).slice().sort().join() === Array.from(revision.selected).sort().join()) pend.approvedAt = new Date().toISOString();
   touchProject(project);
   revision.selected = new Set();
   render();
@@ -7956,7 +7973,7 @@ function renderProject(p){
       <div class="projectView">
       ${renderStageHint(p)}
       ${buyOn(p) ? (projectTab === "notebook" ? renderBuyList(p) : "") : renderNextSteps(p) + (planOn(p) && projectTab === "materials" ? "" : renderPlanTodo(p))}
-      ${projectTab === "works" || projectTab === "materials" ? renderApprovedBanner(p) + renderSupLine(p) : ""}
+      ${projectTab === "works" || projectTab === "materials" ? renderApprovedBanner(p) + renderClientSends(p) + renderSupLine(p) : projectTab === "notebook" ? renderClientSends(p) : ""}
       ${projectTab === "notebook" ? "" : projectTab === "materials" ? renderMaterialsTab(p) : projectTab === "money" ? renderMoneyTab(p) : renderWorksTab(p)}
       </div>
     </div>
@@ -8842,7 +8859,8 @@ function renderQuotePreview(){
     sections: xlsxSections,
     total: documentTotal,
     received: quoteMode === "all" ? moneySum(moneyList(project, "payment")) : 0,
-    pay: quotePayInfo(objectName)
+    pay: quotePayInfo(objectName),
+    parts: { works: worksPart, materials: materialsPart, fixtures: fixturesPart, discount: (Number(workDiscountAmount) || 0) + (Number(materialsDiscountAmount) || 0), matDiscount: Number(materialsDiscountAmount) || 0 }
   };
   const received = lastQuoteData.received;
   const showParts = quoteMode === "all" && [works.length, materials.length, fixtures.length].filter(Boolean).length >= 2;
@@ -8920,6 +8938,208 @@ function createQuotePdfSource(paper){
   host.appendChild(source);
   document.body.appendChild(host);
   return { host, source };
+}
+
+
+/* ==== Погодження з клієнтом: кожне надсилання — окреме повідомлення з описом ====
+   p.clientSends = [{ id, kind:"quote"|"works"|"materials"|"changes", n, title, at, total, prevTotal, lines, selected, link,
+                      approvedAt, how, clientApprovedAt, superseded, prelim }]
+   p.partsApproved = { works:{at,total}, materials:{at,total} } — коли роботи й матеріали погоджують окремо.
+   Клієнт тисне «Погоджую» на сторінці (k.html) або погоджує словами — тоді «✓ Клієнт погодив» тисне майстер. */
+let pendingClientSend = null;
+const SEND_KIND_LABEL = { quote:"Кошторис", works:"Роботи", materials:"Матеріали", changes:"Зміни" };
+function clientSends(p){ return Array.isArray(p && p.clientSends) ? p.clientSends : []; }
+function partsApproved(p){ return p && p.partsApproved && typeof p.partsApproved === "object" ? p.partsApproved : {}; }
+function projectHasType(p, type){ return (p.positions || []).some(x => x && x.type === type && !x.buyLaterOnly); }
+function clientSendDraft(p){
+  const d = lastQuoteData || {};
+  const pr = d.parts || {};
+  const obj = projectTitlePlain(p);
+  const date = formatQuoteDate(new Date());
+  const head = title => `${title} · ${obj} · ${date}\n\n`;
+  const sel = quoteDraft && revision && revision.projectId === p.id ? Array.from(revision.selected) : [];
+  if(quoteDraft && sel.length && getApproved(p)){
+    const n = clientSends(p).filter(x => x.kind === "changes").length + 2;
+    const ch = revisionChanges(p).filter(c => sel.includes(c.id));
+    const sign = { added:"＋", removed:"−", changed:"✎" };
+    const lines = ch.map(c => ({ sign: sign[c.kind], name: c.name + (c.kind === "changed" && c.text ? `: ${c.text}` : ""), delta: Math.round(c.delta) }));
+    const prevTotal = getApproved(p).total;
+    const title = `Зміни до кошторису №${n}`;
+    const disc = (Number(pr.discount) || 0) > 0.5;
+    const text = head(title) + lines.map(l => `${l.sign} ${l.name} — ${l.delta >= 0 ? "+" : "−"}${money(Math.abs(l.delta))}`).join("\n") +
+      `\n\nБуло ${money(prevTotal)} → стане ${money(d.total)}${disc ? " (зі знижкою)" : ""}`;
+    return { kind:"changes", n, title, text, total: d.total, prevTotal, lines, selected: sel };
+  }
+  if(getApproved(p) || quoteDraft) return { kind:"doc", text:"" };
+  const pa = partsApproved(p);
+  const tail = quotePreliminary ? "\n\nЦе попередній розрахунок — ціни матеріалів уточню після звірки з постачальниками." : "";
+  if(quoteMode === "works"){
+    const title = quotePreliminary ? "Попередній кошторис робіт" : "Кошторис робіт";
+    const text = head(title) + `Разом за роботи: ${money(d.total)}` + (!pa.materials ? "\n\nМатеріали надішлю окремо." : "") + tail;
+    return { kind:"works", n:1, title, text, total: d.total, prelim: quotePreliminary || undefined };
+  }
+  if(quoteMode === "materials"){
+    const title = quotePreliminary ? "Попередній кошторис матеріалів" : "Кошторис матеріалів";
+    const works = pa.works ? Math.round(pa.works.total) : 0;
+    const text = head(title) + [
+      pr.materials > 0.5 ? `Матеріали — ${money(pr.materials)}` : "",
+      pr.fixtures > 0.5 ? `Сантехприлади — ${money(pr.fixtures)}` : "",
+      pr.matDiscount > 0.5 ? `Знижка — −${money(pr.matDiscount)} (уже врахована)` : "",
+      `Разом за матеріали: ${money(d.total)}`,
+      works ? `\nРоботи (погоджено ${formatQuoteDate(pa.works.at).slice(0, 5)}) — ${money(works)}\nРазом з роботами: ${money(works + d.total)}` : ""].filter(Boolean).join("\n") + tail;
+    return { kind:"materials", n:1, title, text, total: d.total, prelim: quotePreliminary || undefined, worksApproved: pa.works ? { at: pa.works.at, total: works } : undefined };
+  }
+  const title = quotePreliminary ? "Попередній кошторис" : "Кошторис";
+  const text = head(title) + [
+    pr.works > 0.5 ? `Роботи — ${money(pr.works)}` : "",
+    pr.materials > 0.5 ? `Матеріали — ${money(pr.materials)}` : "",
+    pr.fixtures > 0.5 ? `Сантехприлади — ${money(pr.fixtures)}` : "",
+    pr.discount > 0.5 ? `Знижка — −${money(pr.discount)} (уже врахована)` : "",
+    `Разом: ${money(d.total)}`].filter(Boolean).join("\n") + tail;
+  return { kind:"quote", n:1, title, text, total: d.total, prelim: quotePreliminary || undefined };
+}
+/* Яке старе непогоджене надсилання стає неактуальним після нового */
+function sendReplaces(newKind, oldKind){
+  if(newKind === "changes") return oldKind === "changes";
+  if(oldKind === "changes") return false;
+  return newKind === "quote" || oldKind === "quote" || newKind === oldKind;
+}
+function clientSendRecord(p, link){
+  const s = pendingClientSend;
+  pendingClientSend = null;
+  if(!p || !s || s.kind === "doc") return;
+  if(!Array.isArray(p.clientSends)) p.clientSends = [];
+  const newId = sendLinkId(link);
+  p.clientSends.forEach(old => {
+    if(old.approvedAt || old.superseded || !sendReplaces(s.kind, old.kind)) return;
+    old.superseded = true;
+    const oid = sendLinkId(old.link);
+    if(oid && newId) supplierApi(`/q/${oid}/supersede`, { method:"POST", body: JSON.stringify({ by: newId }) }).catch(() => {});
+  });
+  p.clientSends.push({ id: uid("snd"), kind: s.kind, n: s.n, title: s.title, at: new Date().toISOString(), total: Math.round(Number(s.total) || 0), prevTotal: s.prevTotal !== undefined ? Math.round(s.prevTotal) : undefined, lines: s.lines, selected: s.selected, prelim: s.prelim, link: link || "" });
+  touchProject(p);
+}
+/* Чи ще можна погодити це надсилання */
+function sendOpen(p, s){
+  if(!s || s.approvedAt || s.superseded || s.prelim) return false;
+  if(s.kind === "changes") return Boolean(getApproved(p));
+  if(getApproved(p)) return false;
+  if(s.kind === "works" || s.kind === "materials") return !partsApproved(p)[s.kind];
+  return true;
+}
+function clientSendsOpen(p){ return clientSends(p).filter(s => sendOpen(p, s)); }
+function clientSendPending(p){ const list = clientSendsOpen(p); return list[list.length - 1] || null; }
+/* Сума, яку зараз дає кошторис для цього надсилання — щоб перевірити, що клієнт погодив те, що є */
+function sendCurrentTotal(p, s){
+  if(s.kind === "works") return Math.round(getCustomerWorksTotal(p));
+  if(s.kind === "materials") return Math.round(getCustomerMaterialsTotal(p));
+  if(s.kind === "changes") return Math.round(buildRevisionSnapshot(p, new Set(s.selected || [])).total);
+  return Math.round(getEstimateTotal(p));
+}
+/* Записати погодження. Повертає текст для підказки. */
+function sendApply(p, s, at, how){
+  s.approvedAt = at; s.how = how;
+  if(s.kind === "changes"){
+    const draft = buildRevisionSnapshot(p, new Set(s.selected || []));
+    draft.revised = true;
+    p.approved = draft;
+    return `Зміни №${s.n} погоджено · для клієнта ${money(getClientTotal(p))}`;
+  }
+  let full = s.kind === "quote";
+  if(s.kind === "works" || s.kind === "materials"){
+    if(!p.partsApproved || typeof p.partsApproved !== "object") p.partsApproved = {};
+    p.partsApproved[s.kind] = { at, total: s.total };
+    const other = s.kind === "works" ? "materials" : "works";
+    full = Boolean(p.partsApproved[other]) || !projectHasType(p, other === "works" ? "work" : "material");
+    if(!full) return `${SEND_KIND_LABEL[s.kind]} погоджено · чекаємо ${other === "works" ? "роботи" : "матеріали"}`;
+  }
+  approveProject(p);
+  if((p.stage || "estimate") === "estimate") p.stage = "procurement";
+  return `Кошторис погоджено (${money(getClientTotal(p))}). Далі — закупівля`;
+}
+/* Погодили по телефону — сторінка клієнта теж показує «Погоджено», щоб він не тиснув удруге */
+function clientSendTellServer(s){
+  const lid = sendLinkId(s && s.link);
+  if(!lid || s.clientApprovedAt || !cloudEnabled()) return;
+  fetch(`${cloudConfig().server}/q/${lid}/approve`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ by:"master" }) }).catch(() => {});
+}
+function sendLinkId(link){ const m = String(link || "").match(/#([A-Za-z0-9]{6,20})$/); return m ? m[1] : ""; }
+/* Клієнт натиснув «Погоджую»: якщо суми збігаються — записуємо одразу, інакше просимо майстра глянути */
+function clientSendApplySilent(p, s, at){
+  s.clientApprovedAt = at;
+  const label = s.kind === "changes" ? "зміни №" + s.n : (SEND_KIND_LABEL[s.kind] || "кошторис").toLowerCase();
+  if(Math.abs(sendCurrentTotal(p, s) - s.total) <= 1){
+    sendApply(p, s, at, "клієнт");
+    touchProject(p);
+    if(currentProjectId === p.id) render();
+    const wait = (s.kind === "works" || s.kind === "materials") && !getApproved(p);
+    toast(`Клієнт погодив ${label} ✓ · ${wait ? "чекаємо " + (s.kind === "works" ? "матеріали" : "роботи") : "для клієнта " + money(getClientTotal(p))}`, 3600);
+    return;
+  }
+  touchProject(p);
+  if(currentProjectId === p.id) render();
+  toast(`Клієнт погодив ${label}, але кошторис уже змінено — гляньте`, 3600);
+}
+const clientPollAt = {};
+function pollClientSends(p){
+  if(!cloudEnabled() || Date.now() - (clientPollAt[p.id] || 0) < 60000) return;
+  const list = clientSendsOpen(p).filter(s => !s.clientApprovedAt && sendLinkId(s.link));
+  if(!list.length) return;
+  clientPollAt[p.id] = Date.now();
+  list.forEach(s => {
+    fetch(`${cloudConfig().server}/q/${sendLinkId(s.link)}`, { cache:"no-store" }).then(r => r.ok ? r.json() : null).then(d => {
+      if(d && d.approvedAt && d.approvedBy !== "master" && sendOpen(p, s) && !s.clientApprovedAt) clientSendApplySilent(p, s, d.approvedAt);
+    }).catch(() => {});
+  });
+}
+window.addEventListener("focus", () => { const p = projects.find(x => x.id === currentProjectId); if(p){ clientPollAt[p.id] = 0; pollClientSends(p); } });
+function clientSendApprove(id){
+  const p = projects.find(x => x.id === currentProjectId);
+  const s = p && clientSends(p).find(x => x.id === id);
+  if(!s || !sendOpen(p, s)) return;
+  const now = sendCurrentTotal(p, s);
+  const what = s.kind === "changes" ? `зміни №${s.n}` : s.kind === "works" ? "кошторис робіт" : s.kind === "materials" ? "кошторис матеріалів" : "кошторис";
+  const msg = Math.abs(now - s.total) > 1
+    ? `Клієнт погодив ${what}?\n\nНадсилали: ${money(s.total)}\nЗараз у кошторисі: ${money(now)}\n\nПісля надсилання ви щось змінили. Погодити поточний варіант (${money(now)})? Якщо клієнт погоджував іншу суму — краще спершу надіслати йому актуальний.`
+    : `Клієнт погодив ${what} на ${money(s.total)}?`;
+  if(!confirm(msg)) return;
+  s.total = now;
+  const res = sendApply(p, s, new Date().toISOString(), s.clientApprovedAt ? "клієнт" : "вручну");
+  clientSendTellServer(s);
+  touchProject(p);
+  render();
+  toast(res, 3200);
+}
+let clientSendsAll = false;
+function sendMarker(p, s){
+  if(s.approvedAt) return `<span class="csPill ok">✓ Погоджено ${formatQuoteDate(s.approvedAt).slice(0, 5)}</span>`;
+  if(s.superseded) return `<span class="csPill old">↻ Замінено</span>`;
+  if(s.prelim) return `<span class="csPill pre">~ Попередній</span>`;
+  if(!sendOpen(p, s)){
+    /* Старі записи: кошторис уже погоджено іншим шляхом */
+    if(s.kind !== "changes" && getApproved(p)) return `<span class="csPill ok">✓ Погоджено</span>`;
+    return `<span class="csPill old">↻ Неактуально</span>`;
+  }
+  if(s.clientApprovedAt) return `<button type="button" class="csPill new" onclick="clientSendApprove('${escapeHtml(s.id)}')">● Погодив — глянути</button>`;
+  return `<span class="csPill wait">◷ Чекаємо</span>`;
+}
+function renderClientSends(p){
+  const list = clientSends(p);
+  if(!list.length || clientView) return "";
+  const open = clientSendsOpen(p);
+  if(projectTab === "notebook" && !open.length) return "";
+  if(open.length) pollClientSends(p);
+  const shown = list.slice().reverse();
+  const rows = (clientSendsAll ? shown : shown.slice(0, 4)).map(s => {
+    const sub = s.kind === "changes"
+      ? `${s.lines ? s.lines.length + " зм. · " : ""}${money(s.prevTotal)} → ${money(s.total)}`
+      : money(s.total);
+    const title = s.kind === "changes" ? `Зміни №${s.n}` : SEND_KIND_LABEL[s.kind] || "Кошторис";
+    const manual = sendOpen(p, s) && !s.clientApprovedAt ? `<button type="button" class="csLink" onclick="clientSendApprove('${escapeHtml(s.id)}')">погодив усно</button>` : "";
+    return `<div class="csRow"><span class="csName"><b>${title} · ${formatQuoteDate(s.at).slice(0, 5)}</b><small>${sub}${s.how === "клієнт" && s.approvedAt ? " · погодив сам на сторінці" : s.how === "вручну" ? " · позначено вручну" : ""}${manual ? " · " + manual : ""}</small></span>${sendMarker(p, s)}</div>`;
+  }).join("");
+  return `<section class="csBox"><div class="csHead">Погодження з клієнтом</div>${rows}
+    ${list.length > 4 ? `<button type="button" class="csMore" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "Згорнути" : `Усі надсилання (${list.length})`}</button>` : ""}</section>`;
 }
 
 function quoteShareMessage(project){
@@ -9106,13 +9326,15 @@ function clientLinksEnabled(){
 async function uploadQuoteForLink(project, pdfFile, xlsxFile){
   if(!project.quoteLinks || typeof project.quoteLinks !== "object") project.quoteLinks = {};
   const form = new FormData();
-  const existingId = project.quoteLinks[quoteMode];
-  if(existingId) form.append("id", existingId);
+  /* Кожне надсилання — своє посилання: у переписці кожна версія лежить окремо */
   form.append("pdf", pdfFile, pdfFile.name);
   if(xlsxFile) form.append("xlsx", xlsxFile, xlsxFile.name);
   const data = lastQuoteData || {};
   form.append("meta", JSON.stringify({
-    title: data.title, dateLabel: data.dateLabel, total: data.total, received: data.received || 0, madeWith: !profile.hideMadeWith,
+    title: (pendingClientSend && pendingClientSend.title) || data.title, kind: pendingClientSend ? pendingClientSend.kind : "doc", prevTotal: pendingClientSend && pendingClientSend.kind === "changes" ? pendingClientSend.prevTotal : undefined,
+    lines: pendingClientSend && pendingClientSend.lines, parts: pendingClientSend && ["quote", "materials"].includes(pendingClientSend.kind) ? data.parts : undefined, prelim: pendingClientSend && pendingClientSend.prelim,
+    worksApproved: pendingClientSend && pendingClientSend.worksApproved,
+    dateLabel: data.dateLabel, total: data.total, received: data.received || 0, madeWith: !profile.hideMadeWith,
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone
   }));
   const cfg = cloudConfig();
@@ -9212,9 +9434,11 @@ async function printQuotePreview(){
     let xlsxFile = null;
     try{ xlsxFile = buildQuoteXlsxFile(lastQuoteData, baseName); }catch(e){ console.error("XLSX export error:", e); }
     const files = xlsxFile ? [file, xlsxFile] : [file];
-    const shareMessage = quoteShareMessage(project);
+    pendingClientSend = project ? clientSendDraft(project) : null;
+    const shareMessage = pendingClientSend && pendingClientSend.text ? pendingClientSend.text : quoteShareMessage(project);
     if(project){ project.quoteSentAt = new Date().toISOString(); saveProjects(); }
 
+    /* Клієнту — текст з описом і посилання на сторінку: там суми, PDF/Excel і кнопка «Погоджую» */
     if(clientLinksEnabled() && project){
       let link = "";
       if(button) button.textContent = "Готуємо посилання…";
@@ -9227,16 +9451,17 @@ async function printQuotePreview(){
           : "Сервер недоступний. Надсилаю файлами.");
       }
       if(link){
-        const text = `${shareMessage}\n\n${link}`;
+        const text = `${shareMessage}\n\n${pendingClientSend && pendingClientSend.kind !== "doc" && !pendingClientSend.prelim ? "Погодити або переглянути PDF / Excel:" : "PDF / Excel:"}\n${link}`;
         if(navigator.share){
-          try{ await navigator.share({ text }); }
+          try{ await navigator.share({ text }); clientSendRecord(project, link); }
           catch(e){
             if(e && e.name === "AbortError"){}
-            else prompt("Скопіюйте посилання і надішліть клієнту", link);
+            else{ prompt("Скопіюйте і надішліть клієнту", text); clientSendRecord(project, link); }
           }
         }else{
-          try{ await navigator.clipboard.writeText(text); toast("Посилання скопійовано"); }
-          catch(e){ prompt("Скопіюйте посилання", link); }
+          try{ await navigator.clipboard.writeText(text); toast("Текст із посиланням скопійовано"); }
+          catch(e){ prompt("Скопіюйте і надішліть клієнту", text); }
+          clientSendRecord(project, link);
         }
         return;
       }
@@ -9248,12 +9473,15 @@ async function printQuotePreview(){
     if(shareFiles){
       try{
         await navigator.share({ title:shareMessage, text:shareMessage, files:shareFiles });
+        clientSendRecord(project, "");
       }catch(e){
         if(e && e.name !== "AbortError") throw e;
       }
     }else{
       files.forEach((item, index) => setTimeout(() => downloadFile(item), index * 400));
-      toast(xlsxFile ? "PDF і Excel завантажено" : "PDF завантажено");
+      try{ await copyText(shareMessage); }catch(e){}
+      clientSendRecord(project, "");
+      toast(xlsxFile ? "PDF і Excel завантажено, текст скопійовано" : "PDF завантажено, текст скопійовано");
     }
   }catch(e){
     console.error("PDF export error:", e);
@@ -9356,7 +9584,18 @@ function getNextSteps(p){
       steps.push({ text:"Кошторис готовий?", sub:"Клієнт отримає PDF і Excel — роботи, матеріали або все разом", label:"Надіслати", action:"openSendChoice()", primary:true });
       return steps;
     }
-    steps.push({ text:"Клієнт погодив кошторис?", sub:`Надіслано ${formatQuoteDate(p.quoteSentAt)} · ${money(getClientTotal(p))}. Сума зафіксується`, label:"Так, погодив", action:`advanceProjectStage('${id}')`, primary:true });
+    const pend = clientSendPending(p);
+    const pa = partsApproved(p);
+    const half = pa.works ? "materials" : pa.materials ? "works" : "";
+    if(half){
+      const hp = clientSendsOpen(p).filter(x => x.kind === half).pop();
+      const name = half === "works" ? "роботи" : "матеріали";
+      steps.push(hp
+        ? { text:`Чекаємо погодження: ${name}`, sub:`${half === "works" ? "Матеріали" : "Роботи"} вже погоджено. Коли клієнт погодить ${name} — кошторис зафіксується, далі закупівля`, label:"Клієнт погодив", action:`clientSendApprove('${escapeHtml(hp.id)}')` }
+        : { text:`${half === "works" ? "Матеріали" : "Роботи"} погоджено`, sub:`Надішліть клієнту ${half === "works" ? "кошторис робіт" : "кошторис матеріалів"} (у перегляді — вкладка «${half === "works" ? "Роботи" : "Матеріали"}»)`, label:"Надіслати", action:"openSendChoice()", primary:true });
+      return steps;
+    }
+    steps.push({ text:"Клієнт погодив кошторис?", sub:`Надіслано ${formatQuoteDate(p.quoteSentAt)} · ${money(getClientTotal(p))}. Сума зафіксується`, label:"Так, погодив", action: pend && pend.kind !== "changes" ? `clientSendApprove('${escapeHtml(pend.id)}')` : `advanceProjectStage('${id}')`, primary:true });
     steps.push({ text:"Потрібні зміни?", sub:"Виправте кошторис і надішліть ще раз", label:"Надіслати ще раз", action:"openSendChoice()" });
     return steps;
   }
@@ -10057,7 +10296,9 @@ function renderApprovedBanner(project){
       ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · за цінами для клієнта це ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
       ${changes.added.length ? `<div class="approvedBannerRemoved">Додано: ${changes.added.map(item => escapeHtml(item.clientName || positionClientName(item) || item.name || "")).join(", ")}</div>` : ""}
       ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>` : ""}
-      <div class="approvedBannerActions"><button type="button" class="${parts.length ? "" : "soft"}" onclick="openRevision('${project.id}')">📄 Кошторис для клієнта${parts.length ? " · є зміни" : ""}</button></div>
+      ${(() => { const pend = clientSendPending(project); return pend && pend.kind === "changes"
+        ? `<div class="approvedBannerActions"><button type="button" class="soft" onclick="openRevision('${project.id}')">📄 Кошторис для клієнта</button></div>`
+        : `<div class="approvedBannerActions"><button type="button" class="${parts.length ? "" : "soft"}" onclick="openRevision('${project.id}')">📄 Кошторис для клієнта${parts.length ? " · є зміни" : ""}</button></div>`; })()}
     </section>
   `;
 }
@@ -18933,7 +19174,7 @@ function closeAddMenu(){ document.getElementById("addMenu")?.classList.remove("o
 const PATH_STEPS = ["Кошторис", "Погодж.", "Закупівля", "Роботи", "Здача", "Розрахунок"];
 const STAGE_HINTS = [
   ["Кошторис", "Додайте роботи й матеріали кнопками внизу. Матеріали шукайте в каталозі; якщо потрібного немає, кнопка «Додати» з’явиться сама. Коли все готово — «Надіслати» внизу: погодите матеріали з постачальниками або одразу надішлете клієнту попередній кошторис."],
-  ["Погодження", "Клієнт отримав кошторис. Погодив — натисніть «Так, погодив»: сума для клієнта зафіксується. Потрібні зміни — виправте позиції й надішліть ще раз."],
+  ["Погодження", "Клієнт отримав кошторис. Коли він натисне «Погоджую» за посиланням — сума зафіксується сама. Погодив словами — натисніть «погодив усно». Потрібні зміни — виправте й надішліть ще раз."],
   ["Закупівля", "На вкладці «Матеріали»: що є на складі — «Беру зі складу». Решта — «Замовити»: оберіть постачальника, відмітьте позиції й надішліть. Привезли — «Привезли»."],
   ["Роботи", "Оплати й витрати — на вкладці «Гроші». Клієнт щось змінив — правте кошторис: нове з’явиться в «Докупити», зайве — в «Повернути». Клієнту — через «Кошторис для клієнта», якщо вирішите. Закінчили — «Роботи завершено»."],
   ["Здача", "Покажіть клієнту результат. Коли прийняв — «Так, здали»."],
