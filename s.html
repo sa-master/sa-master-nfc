@@ -64,6 +64,43 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
 .check .row b{display:block;font-weight:650;overflow-wrap:anywhere}
 .check .row span{color:var(--warn);font-weight:700}
 .done .big{font-size:48px}
+.req{border:2px solid var(--p)}
+.reqTop{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{background:var(--p);color:#fff;border-radius:8px;font-size:12px;font-weight:800;padding:3px 8px}
+.tlinks{display:flex;gap:14px;flex-wrap:wrap}
+.tlinks button,.tlinks label{background:none;border:0;color:var(--p);font:inherit;font-weight:700;font-size:14px;cursor:pointer;padding:0}
+.tlinks input{display:none}
+.ci{padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.ci:last-child{border-bottom:0}
+.ciTop{display:flex;justify-content:space-between;gap:8px}
+.ciTop b{font-size:14px;font-weight:650;overflow-wrap:anywhere}
+.ciTop small{display:block;font-size:12px;color:var(--tm)}
+.ciQ{font-weight:800;white-space:nowrap}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{height:36px;border-radius:10px;border:1px solid var(--inb);background:var(--in);font:inherit;font-size:13px;font-weight:700;color:var(--t);cursor:pointer}
+.seg button.on{background:var(--p);border-color:var(--p);color:#fff}
+.seg button.no.on{background:var(--red);border-color:var(--red)}
+.pr{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pr label{font-size:11.5px;font-weight:700;color:var(--tm);display:flex;flex-direction:column;gap:3px}
+.pr input{padding:7px 8px;text-align:right;font-size:14px;border-radius:10px}
+.pr input.chg{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--in))}
+.days{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tm)}
+.days input{width:70px;padding:5px 8px}
+.repl{background:color-mix(in srgb,var(--warn) 9%,var(--in));border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.repl .t{font-size:12.5px;font-weight:750;color:var(--warn)}
+.lnk{color:var(--p);font-weight:700;font-size:13px;background:none;border:0;text-align:left;padding:0;cursor:pointer;font-family:inherit}
+.mlist{display:flex;flex-direction:column}
+.mrow{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--t)}
+.mrow:last-child{border-bottom:0}
+.mrow .mn{flex:1;min-width:0}
+.mrow .mn b{display:block;font-size:15.5px}
+.mrow .mn small{display:block;font-size:12.5px;color:var(--tm);overflow-wrap:anywhere}
+.mrow .go{color:var(--tm);font-size:20px}
+.mrow.cur{opacity:.55}
+.cabNav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px}
+.cabNav a{color:var(--p);font-weight:700;text-decoration:none}
+.back{background:none;border:0;color:var(--p);font:inherit;font-weight:700;font-size:14px;padding:0;cursor:pointer;text-align:left}
+
 </style>
 </head>
 <body>
@@ -71,12 +108,25 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
   <div id="loading" class="sub" style="text-align:center;padding:40px 0">Завантажуємо…</div>
   <div id="error" class="card err hidden"></div>
 
+  <div id="cabView" class="hidden" style="display:flex;flex-direction:column;gap:14px">
+    <div><div class="sub" id="cabWho"></div><h1>Запити від майстрів</h1><div class="sub">Нові запити — зверху. Натисніть на майстра, щоб відповісти.</div></div>
+    <section class="card"><div class="mlist" id="cabList"></div></section>
+    <section class="card">
+      <h2>📌 Збережіть це посилання</h2>
+      <p class="hint">Тут збираються запити від усіх майстрів, чиї посилання ви відкривали. Додайте сторінку в закладки або на головний екран телефону — і відкривайте її, коли майстер пише, що надіслав запит.</p>
+      <button type="button" class="btn ghost" id="cabShare" style="height:44px;font-size:15px">Скопіювати посилання на кабінет</button>
+    </section>
+  </div>
+
   <div id="app" class="hidden" style="display:flex;flex-direction:column;gap:14px">
     <div>
+      <div class="cabNav hidden" id="cabNav"></div>
       <div class="sub" id="who"></div>
       <h1 id="title">Прайс</h1>
       <div class="sub" id="lastInfo" style="margin-top:4px"></div>
     </div>
+
+    <div id="checksBox" style="display:flex;flex-direction:column;gap:14px"></div>
 
     <section class="card" id="quick">
       <h2>Ціни у майстра</h2>
@@ -138,6 +188,24 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
     </div>
   </div>
 
+  <div id="checkView" class="hidden" style="display:flex;flex-direction:column;gap:14px">
+    <div>
+      <button type="button" class="back" onclick="closeCheck()">← Назад</button>
+      <h1 id="cvTitle" style="margin-top:6px">Звірка</h1>
+      <div class="sub" id="cvSub"></div>
+    </div>
+    <div id="cvNote" class="card hidden" style="background:color-mix(in srgb,var(--p) 10%,var(--card))"></div>
+    <section class="card"><div class="items" id="cvItems"></div></section>
+    <section class="card">
+      <label class="f">Коментар майстру<input id="cvComment" placeholder="Необов'язково"></label>
+      <div class="row2">
+        <label class="f">Менеджер<input id="cvManager" autocomplete="name" placeholder="Ім'я"></label>
+        <label class="f">Телефон<input id="cvPhone" inputmode="tel" autocomplete="tel" placeholder="+380…"></label>
+      </div>
+      <div class="tlinks"><button type="button" onclick="downloadCheck()">⬇ Скачати таблицю</button><label>⬆ Завантажити заповнену<input type="file" accept=".xlsx,.xls,.xlsm,.csv" onchange="uploadCheck(this)"></label></div>
+    </section>
+  </div>
+
   <div id="done" class="card done hidden">
     <div class="big">✓</div>
     <h1 id="doneTitle">Прайс надіслано</h1>
@@ -155,6 +223,11 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
   <button type="button" class="btn ghost" id="checkOk">Все правильно, надіслати</button>
 </div></div>
 
+<div class="bar hidden" id="cbar"><div class="in">
+  <div class="sum" id="cvSum"></div>
+  <button type="button" class="btn" id="cvSend" onclick="sendCheck()">Надіслати майстру</button>
+</div></div>
+
 <div class="bar hidden" id="bar"><div class="in">
   <div class="sum" id="sumLine">Змін ще немає</div>
   <button type="button" class="btn" id="send" disabled>Надіслати майстру</button>
@@ -166,7 +239,10 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
    майстер бачить надіслане і застосовує у своєму калькуляторі. */
 const SERVER = "https://sa-master-api.c6hht469s9.workers.dev";
 const $ = id => document.getElementById(id);
-const id = (new URLSearchParams(location.search).get("id") || location.hash.replace(/^#/, "") || "").trim();
+const HASH = location.hash.replace(/^#/, "").trim();
+const CAB_FROM_URL = /^c=([A-Za-z0-9]{6,20})$/.test(HASH) ? HASH.slice(2) : "";
+const id = CAB_FROM_URL ? "" : (new URLSearchParams(location.search).get("id") || HASH || "").trim();
+window.addEventListener("hashchange", () => location.reload());
 const MAP_KEY = "sup_map_" + id;
 
 const FIELDS = [["", "— пропустити"], ["article", "Артикул"], ["name", "Назва"], ["brand", "Бренд"], ["unit", "Одиниця"], ["retail", "Роздрібна ціна"], ["master", "Ціна для майстра"], ["currency", "Валюта"]];
@@ -206,6 +282,7 @@ async function load(){
     document.title = `Прайс · ${d.supplierName || ""}`;
     base = (d.items || []).map(it => ({ ...it }));
     baseRates = d.rates || [];
+    checks = Array.isArray(d.checks) ? d.checks : [];
     /* Якщо постачальник уже надіслав зміни, а майстер ще не прийняв — показуємо його надіслане */
     pendingAt = d.pending ? d.pending.at : "";
     if(d.pending){
@@ -253,6 +330,9 @@ async function load(){
       $("bar").classList.remove("hidden");
     }
     renderItems(); renderRates(); updateSummary();
+    renderChecks();
+    cabRegister();
+    if(checks.some(c => !c.answeredAt || c.sentAt > c.answeredAt)) $("bar").classList.add("hidden");
   }catch(e){ fail("Немає з'єднання. Перевірте інтернет і оновіть сторінку."); }
 }
 
@@ -617,11 +697,222 @@ function downloadTemplate(){
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type:"text/csv" })); a.download = "ціни-у-майстра.csv"; a.click();
   }
 }
+
+/* ==== Звірка кошторису: майстер просить перевірити наявність і ціни по конкретному об'єкту ==== */
+let checks = [];
+let chk = null; // { rec, rows: Map(k -> {avail, days, retail, master, repl}) }
+const fmtDate = iso => iso ? new Date(iso).toLocaleDateString("uk-UA") : "";
+const fmtWhen = iso => { if(!iso) return ""; const d = new Date(iso); return new Date().toDateString() === d.toDateString() ? "сьогодні о " + d.toLocaleTimeString("uk-UA", { hour:"2-digit", minute:"2-digit" }) : d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); };
+function renderChecks(){
+  const box = $("checksBox");
+  if(!checks.length){ box.innerHTML = ""; return; }
+  box.innerHTML = checks.map(c => {
+    const open = !c.answeredAt || c.sentAt > c.answeredAt;
+    if(open) return `<section class="card req">
+      <div class="reqTop"><span class="badge">НОВЕ</span><h2>Звірка: «${esc(c.title || "об’єкт")}»</h2></div>
+      <div class="hint">${c.count} поз. · надіслано ${fmtWhen(c.sentAt)}<br>Перевірте наявність і ціни — майстер чекає, щоб надіслати кошторис клієнту.</div>
+      <button type="button" class="btn" onclick="checkAllOk('${c.id}')">✓ Усе є, ціни вірні</button>
+      <button type="button" class="btn ghost" onclick="openCheck('${c.id}')">Переглянути позиції</button>
+      <div class="tlinks"><button type="button" onclick="openCheck('${c.id}').then(downloadCheck)">⬇ Скачати таблицю</button><label>⬆ Завантажити заповнену<input type="file" accept=".xlsx,.xls,.xlsm,.csv" onchange="openCheck('${c.id}').then(() => uploadCheck(this))"></label></div>
+    </section>`;
+    return `<section class="card">
+      <div class="reqTop"><h2>Звірка: «${esc(c.title || "об’єкт")}»</h2><span class="pill ok" style="margin-left:auto">відповіли ${fmtDate(c.answeredAt)}</span></div>
+      <button type="button" class="btn ghost" style="height:40px;font-size:14px" onclick="openCheck('${c.id}')">Переглянути / виправити</button>
+    </section>`;
+  }).join("");
+}
+async function fetchCheck(cid){
+  const r = await fetch(`${SERVER}/sup/${id}/checks/${cid}`, { cache:"no-store" });
+  if(!r.ok) throw new Error("Звірку не знайдено");
+  return r.json();
+}
+async function openCheck(cid){
+  let rec;
+  try{ rec = await fetchCheck(cid); }catch(e){ alert(e.message || "Немає з'єднання"); return; }
+  const prev = new Map(((rec.answer && rec.answer.items) || []).map(a => [a.k, a]));
+  chk = { rec, rows: new Map(rec.items.map(i => { const a = prev.get(i.k); return [i.k, a ? { ...a } : { k:i.k, avail:"yes", days:null, retail:i.retail, master:i.master, repl:null }]; })) };
+  $("cvTitle").textContent = `Звірка: «${rec.title || "об’єкт"}»`;
+  $("cvSub").textContent = `${rec.items.length} поз. · ціни з вашого прайсу${rec.answer ? " · ви відповідали " + fmtWhen(rec.answer.at) : ""}`;
+  $("cvComment").value = (rec.answer && rec.answer.comment) || "";
+  try{ const saved = JSON.parse(localStorage.getItem("sup_contact") || "{}"); $("cvManager").value = (rec.answer && rec.answer.manager) || saved.manager || $("manager").value || ""; $("cvPhone").value = (rec.answer && rec.answer.phone) || saved.phone || $("phone").value || ""; }catch(e){}
+  $("cvNote").classList.add("hidden");
+  $("app").classList.add("hidden"); $("bar").classList.add("hidden");
+  $("checkView").classList.remove("hidden"); $("cbar").classList.remove("hidden");
+  renderCheck();
+  window.scrollTo(0, 0);
+}
+function closeCheck(){
+  chk = null;
+  $("checkView").classList.add("hidden"); $("cbar").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  if(!$("full").classList.contains("hidden") || $("quick").classList.contains("hidden")) $("bar").classList.remove("hidden");
+}
+function setRow(k, field, value){
+  const r = chk.rows.get(k); if(!r) return;
+  if(field === "avail"){ r.avail = value; if(value !== "no") r.repl = r.repl && (r.repl.name || r.repl.article) ? r.repl : null; renderCheck(); return; }
+  if(field === "days" || field === "retail" || field === "master"){ r[field] = num(value); updateCheckSum(); return; }
+  if(field.startsWith("repl.")){ r.repl = r.repl || { name:"", article:"", retail:null, master:null }; const f = field.slice(5); r.repl[f] = f === "name" || f === "article" ? String(value || "").trim() : num(value); updateCheckSum(); }
+}
+function renderCheck(){
+  if(!chk) return;
+  $("cvItems").innerHTML = chk.rec.items.map(i => {
+    const r = chk.rows.get(i.k);
+    const b = (v, l, c) => `<button type="button" class="${c || ""} ${r.avail === v ? "on" : ""}" onclick="setRow('${esc(i.k)}','avail','${v}')">${l}</button>`;
+    const chg = (v, o) => v !== null && o !== null && Math.abs(v - o) > 0.009 ? "chg" : "";
+    return `<div class="ci">
+      <div class="ciTop"><span><b>${esc(i.name)}</b><small>${[i.article ? "арт. " + esc(i.article) : "", esc(i.brand || "")].filter(Boolean).join(" · ")}</small></span><span class="ciQ">${String(i.qty ?? "").replace(".", ",")} ${esc(i.unit || "шт")}</span></div>
+      <div class="seg">${b("yes", "Є")}${b("order", "Під замовл.")}${b("no", "Немає", "no")}</div>
+      ${r.avail === "order" ? `<div class="days">Строк: <input inputmode="numeric" value="${r.days ?? ""}" placeholder="3" oninput="setRow('${esc(i.k)}','days',this.value)"> днів</div>` : ""}
+      ${r.avail === "no" ? `<div class="repl"><span class="t">Заміна (якщо є)</span>
+        <input placeholder="Назва замінника" value="${esc((r.repl && r.repl.name) || "")}" oninput="setRow('${esc(i.k)}','repl.name',this.value)">
+        <div class="pr"><label>Артикул<input style="text-align:left" value="${esc((r.repl && r.repl.article) || "")}" oninput="setRow('${esc(i.k)}','repl.article',this.value)"></label><label>Роздріб, ₴<input inputmode="decimal" value="${money(r.repl && r.repl.retail)}" oninput="setRow('${esc(i.k)}','repl.retail',this.value)"></label></div>
+        <div class="pr"><label></label><label>Майстру, ₴<input inputmode="decimal" value="${money(r.repl && r.repl.master)}" oninput="setRow('${esc(i.k)}','repl.master',this.value)"></label></div></div>`
+      : `<div class="pr"><label>Роздріб, ₴<input inputmode="decimal" class="${chg(r.retail, i.retail)}" value="${money(r.retail)}" oninput="setRow('${esc(i.k)}','retail',this.value);this.classList.toggle('chg',num(this.value)!==${i.retail ?? "null"})"></label><label>Майстру, ₴<input inputmode="decimal" class="${chg(r.master, i.master)}" value="${money(r.master)}" oninput="setRow('${esc(i.k)}','master',this.value);this.classList.toggle('chg',num(this.value)!==${i.master ?? "null"})"></label></div>`}
+    </div>`;
+  }).join("");
+  updateCheckSum();
+}
+function checkStats(){
+  let yes = 0, order = 0, no = 0, repl = 0, prices = 0;
+  chk.rec.items.forEach(i => { const r = chk.rows.get(i.k); if(r.avail === "yes") yes++; else if(r.avail === "order") order++; else { no++; if(r.repl && (r.repl.name || r.repl.article)) repl++; }
+    if(r.avail !== "no" && ((r.retail !== null && i.retail !== null && Math.abs(r.retail - i.retail) > 0.009) || (r.master !== null && i.master !== null && Math.abs(r.master - i.master) > 0.009))) prices++; });
+  return { yes, order, no, repl, prices };
+}
+function updateCheckSum(){
+  if(!chk) return;
+  const s = checkStats();
+  $("cvSum").textContent = [`Є ${s.yes}`, s.order ? `під замовлення ${s.order}` : "", s.no ? `немає ${s.no}${s.repl ? ` (заміна ${s.repl})` : ""}` : "", s.prices ? `змінено цін ${s.prices}` : ""].filter(Boolean).join(" · ");
+}
+async function postAnswer(cid, body){
+  const r = await fetch(`${SERVER}/sup/${id}/checks/${cid}/answer`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) });
+  const d = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(d.error || "Не вдалося надіслати");
+  return d;
+}
+function checkDone(title){
+  $("app").classList.add("hidden"); $("bar").classList.add("hidden");
+  $("checkView").classList.add("hidden"); $("cbar").classList.add("hidden");
+  $("doneTitle").textContent = "Відповідь надіслано";
+  $("doneText").textContent = `Майстер отримав вашу звірку по «${title || "об’єкту"}». Виправити відповідь можна за цим самим посиланням.`;
+  $("done").classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+async function checkAllOk(cid){
+  const c = checks.find(x => x.id === cid);
+  if(!confirm(`Усі ${c ? c.count : ""} позицій є в наявності, ціни такі, як у майстра?`)) return;
+  try{ await postAnswer(cid, { all:true, manager: $("manager").value || "", phone: $("phone").value || "" }); }
+  catch(e){ alert(e.message || "Немає з'єднання"); return; }
+  checkDone(c && c.title);
+}
+async function sendCheck(){
+  if(!chk) return;
+  const btn = $("cvSend"); btn.disabled = true; btn.textContent = "Надсилаємо…";
+  const items = chk.rec.items.map(i => chk.rows.get(i.k));
+  try{
+    try{ localStorage.setItem("sup_contact", JSON.stringify({ manager: $("cvManager").value.trim(), phone: $("cvPhone").value.trim() })); }catch(e){}
+    await postAnswer(chk.rec.id, { items, comment: $("cvComment").value.trim(), manager: $("cvManager").value.trim(), phone: $("cvPhone").value.trim() });
+    checkDone(chk.rec.title);
+  }catch(e){ alert(e.message || "Немає з'єднання"); }
+  btn.disabled = false; btn.textContent = "Надіслати майстру";
+}
+const CHK_HEAD = ["ID", "Артикул", "Назва", "К-сть", "Од.", "Наявність (є / немає / замовлення)", "Строк, днів", "Роздріб, ₴", "Майстру, ₴", "Заміна: назва", "Заміна: артикул", "Заміна: роздріб, ₴", "Заміна: майстру, ₴"];
+function downloadCheck(){
+  if(!chk) return;
+  const availText = { yes:"є", order:"замовлення", no:"немає" };
+  const rows = [CHK_HEAD].concat(chk.rec.items.map(i => { const r = chk.rows.get(i.k); return [i.k, i.article || "", i.name, i.qty ?? "", i.unit || "шт", availText[r.avail], r.days ?? "", r.retail ?? "", r.master ?? "", (r.repl && r.repl.name) || "", (r.repl && r.repl.article) || "", (r.repl && r.repl.retail) ?? "", (r.repl && r.repl.master) ?? ""]; }));
+  const name = `Звірка — ${chk.rec.title || "об’єкт"}`.replace(/[\\/:*?"<>|]+/g, " ");
+  try{
+    if(typeof XLSX === "undefined") throw new Error("no xlsx");
+    const wb = XLSX.utils.book_new(); const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [{ wch:6 }, { wch:14 }, { wch:50 }, { wch:7 }, { wch:6 }, { wch:16 }, { wch:9 }, { wch:11 }, { wch:11 }, { wch:30 }, { wch:14 }, { wch:12 }, { wch:12 }];
+    XLSX.utils.book_append_sheet(wb, ws, "Звірка");
+    XLSX.writeFile(wb, name + ".xlsx");
+  }catch(e){
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type:"text/csv" })); a.download = name + ".csv"; a.click();
+  }
+}
+async function uploadCheck(input){
+  const file = input.files && input.files[0];
+  input.value = "";
+  if(!file || !chk) return;
+  let rows = [];
+  try{
+    if(/\.csv$/i.test(file.name)) rows = parseText(await file.text());
+    else{ const wb = XLSX.read(await file.arrayBuffer(), { type:"array" }); rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:true, defval:"" }); }
+  }catch(e){ alert("Не вдалося прочитати файл. Збережіть його як Excel (.xlsx) і спробуйте ще раз."); return; }
+  const h = rows.findIndex(r => r.some(c => norm(c) === "id") && r.some(c => /наявн/i.test(String(c))));
+  if(h < 0){ alert("Це не таблиця звірки. Скачайте таблицю кнопкою «Скачати таблицю», заповніть її і завантажте."); return; }
+  const head = rows[h].map(c => norm(c));
+  const col = test => head.findIndex(test);
+  const c = { id: col(x => x === "id"), avail: col(x => x.includes("наявн")), days: col(x => x.includes("строк")), retail: col(x => x.startsWith("роздріб")), master: col(x => x.startsWith("майстру")),
+    rname: col(x => x.includes("заміна") && x.includes("назва")), rart: col(x => x.includes("заміна") && x.includes("артикул")), rret: col(x => x.includes("заміна") && x.includes("роздріб")), rmas: col(x => x.includes("заміна") && x.includes("майстру")) };
+  let n = 0;
+  rows.slice(h + 1).forEach(r => {
+    const k = String(r[c.id] ?? "").trim(); const row = chk.rows.get(k); if(!row) return;
+    n++;
+    const a = norm(r[c.avail]);
+    row.avail = /нема|ні\b|no/.test(a) ? "no" : /замов|order/.test(a) ? "order" : "yes";
+    row.days = c.days >= 0 ? num(r[c.days]) : null;
+    if(c.retail >= 0 && num(r[c.retail]) !== null) row.retail = num(r[c.retail]);
+    if(c.master >= 0 && num(r[c.master]) !== null) row.master = num(r[c.master]);
+    const rn = c.rname >= 0 ? String(r[c.rname] || "").trim() : "", ra = c.rart >= 0 ? String(r[c.rart] || "").trim() : "";
+    row.repl = row.avail === "no" && (rn || ra) ? { name: rn, article: ra, retail: c.rret >= 0 ? num(r[c.rret]) : null, master: c.rmas >= 0 ? num(r[c.rmas]) : null } : null;
+  });
+  if(!n){ alert("У файлі не знайдено позицій цієї звірки."); return; }
+  renderCheck();
+  const s = checkStats();
+  $("cvNote").innerHTML = `<b>Таблицю розпізнано: ${n} поз.</b><div class="hint">Є ${s.yes}${s.order ? ` · під замовлення ${s.order}` : ""}${s.no ? ` · немає ${s.no}` : ""}${s.prices ? ` · змінено цін ${s.prices}` : ""}. Перевірте нижче і натисніть «Надіслати майстру».</div>`;
+  $("cvNote").classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+
+/* ==== Кабінет постачальника: усі майстри й запити в одному місці ==== */
+const CAB_KEY = "sup_cab";
+function cabGet(){ try{ return localStorage.getItem(CAB_KEY) || ""; }catch(e){ return ""; } }
+function cabSet(v){ try{ localStorage.setItem(CAB_KEY, v); }catch(e){} }
+const cabUrl = c => location.origin + location.pathname + "#c=" + c;
+async function cabFetch(c){ const r = await fetch(`${SERVER}/cab/${c}`, { cache:"no-store" }); if(!r.ok) throw new Error("cab"); return (await r.json()).masters || []; }
+function masterLine(m){ return [m.masterName, m.company].filter(Boolean).join(" · ") || "Майстер"; }
+function cabRow(m, current){
+  const sub = m.open ? `<span style="color:var(--p);font-weight:750">${m.open === 1 ? "Новий запит" : m.open + " нових запити"}: ${m.openTitles.map(t => "«" + esc(t || "об’єкт") + "»").join(", ")}</span>` : `відповіді надіслано${m.masterPhone ? " · " + esc(m.masterPhone) : ""}`;
+  return `<a class="mrow ${current ? "cur" : ""}" href="#${esc(m.id)}"><span class="mn"><b>${esc(masterLine(m))}</b><small>${sub}</small></span>${m.open ? `<span class="badge">${m.open}</span>` : ""}<span class="go">›</span></a>`;
+}
+/* Відкрили посилання майстра: додаємо його в кабінет, показуємо інших майстрів зверху */
+async function cabRegister(){
+  try{
+    const r = await fetch(`${SERVER}/cab`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ id, cab:cabGet() }) });
+    if(!r.ok) return;
+    const d = await r.json(); cabSet(d.cab);
+    const masters = await cabFetch(d.cab);
+    if(masters.length < 2) return;
+    const others = masters.filter(m => m.id !== id);
+    const newCount = others.reduce((s, m) => s + m.open, 0);
+    $("cabNav").innerHTML = `<a href="#c=${esc(d.cab)}">← Усі майстри (${masters.length})</a>${newCount ? `<span class="badge">ще ${newCount} нов. від інших</span>` : ""}`;
+    $("cabNav").classList.remove("hidden");
+  }catch(e){}
+}
+async function loadCabinet(c){
+  cabSet(c);
+  let masters;
+  try{ masters = await cabFetch(c); }catch(e){ fail("Кабінет не знайдено. Відкрийте посилання від майстра — кабінет створиться заново."); return; }
+  $("loading").classList.add("hidden");
+  $("cabWho").textContent = [...new Set(masters.map(m => m.supplierName).filter(Boolean))].join(" · ");
+  $("cabList").innerHTML = masters.length ? masters.map(m => cabRow(m, false)).join("") : `<p class="hint">Поки порожньо.</p>`;
+  const n = masters.reduce((s, m) => s + m.open, 0);
+  document.title = n ? `(${n}) Запити від майстрів` : "Запити від майстрів";
+  $("cabShare").onclick = async () => {
+    const url = cabUrl(c);
+    try{ if(navigator.share){ await navigator.share({ title:"Запити від майстрів", url }); return; } }catch(e){ return; }
+    try{ await navigator.clipboard.writeText(url); $("cabShare").textContent = "Скопійовано ✓"; }catch(e){ prompt("Скопіюйте посилання:", url); }
+  };
+  $("cabView").classList.remove("hidden");
+}
 $("quickXlsx").onclick = downloadTemplate;
 $("tplBtn").onclick = downloadTemplate;
 $("search").addEventListener("input", renderItems);
 $("send").onclick = send;
-load();
+if(CAB_FROM_URL) loadCabinet(CAB_FROM_URL); else load();
 </script>
 </body>
 </html>
