@@ -30,6 +30,7 @@ h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .bal b{font-size:34px;font-weight:850;letter-spacing:-.02em;line-height:1.15}
 .bal .sub{font-size:13px;color:var(--tm);font-weight:600}
 .who{display:block;font-size:14px;font-weight:650;color:var(--tm);margin-top:2px}
+.grp{font-size:20px;font-weight:850;padding:8px 4px 0}
 .lnk{color:var(--p);font-weight:750;font-size:14px;padding:0;text-align:left}
 .obj h2{font-size:19px;font-weight:850;line-height:1.2}
 .stage{display:inline-block;font-size:12px;font-weight:750;color:var(--p);background:var(--soft);border-radius:8px;padding:2px 8px;margin-left:6px;vertical-align:3px}
@@ -92,6 +93,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 const money = v => (Math.round(Number(v) || 0)).toLocaleString("uk-UA").replace(/,/g, " ") + " ₴";
 const day = d => { const x = new Date(d); return isNaN(x) ? "" : x.toLocaleDateString("uk-UA", { day:"2-digit", month:"2-digit" }); };
+const startDay = d => { const x = new Date(d + "T12:00:00"); return isNaN(x) ? esc(d) : x.toLocaleDateString("uk-UA", { day:"numeric", month:"long" }); };
 function toast(t){ const el = document.createElement("div"); el.className = "toast"; el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
 
 async function load(){
@@ -136,10 +138,10 @@ function render(){
     const reqs = (o.requests || []).slice().reverse().slice(0, 8), bought = (o.bought || []).slice().reverse().slice(0, 8);
     const more = openMore[o.pid];
     return `<section class="card obj">
-      <h2>${esc(o.title)}${o.stage ? `<span class="stage">${esc(o.stage)}</span>` : ""}</h2>
+      <h2>${esc(o.title)}${o.phase === "plan" ? `<span class="stage">${o.start ? "з " + startDay(o.start) : "дата ще не відома"}</span>` : o.stage ? `<span class="stage">${esc(o.stage)}</span>` : ""}</h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
       ${(o.crew || []).length ? `<div class="crew">На об’єкті також: ${o.crew.map(c => { const t = String(c.phone || "").replace(/[^\d+]/g, ""); return t ? `<a href="tel:${esc(t)}">${esc(c.name)}</a>` : esc(c.name); }).join(", ")}</div>` : ""}
-      ${o.earned !== null && o.earned !== undefined ? `<div class="earn"><span>Ваш заробіток тут${o.earnedNote ? `<br><small>${esc(o.earnedNote)}</small>` : ""}</span><b>${money(o.earned)}</b></div>` : ""}
+      ${o.earned ? `<div class="earn"><span>Ваш заробіток тут${o.earnedNote ? `<br><small>${esc(o.earnedNote)}</small>` : ""}</span><b>${money(o.earned)}</b></div>` : ""}
       ${open.length ? `<div class="sec">Зробити</div>${open.map(n => note(o, n)).join("")}` : (o.notes || []).length ? `<div class="sec">Нотатки</div><div class="note"><span class="tx" style="color:var(--tm)">✓ Усе зроблено</span></div>` : ""}
       ${done.length ? `<button class="lnk" onclick="openMore['${esc(o.pid)}']=!openMore['${esc(o.pid)}'];render()">${more ? "Сховати зроблене" : `Зроблено ${done.length}`}</button>${more ? done.map(n => note(o, n)).join("") : ""}` : ""}
       ${(o.files || []).length ? `<div class="sec">Проєкт і фото</div><div class="files">${o.files.map(f => f.type === "application/pdf" ? `<a class="fi" href="${SERVER}/f/${esc(f.id)}" target="_blank" rel="noopener"><b>PDF</b><span>${esc(f.name)}</span></a>` : `<a class="fi" href="${SERVER}/f/${esc(f.id)}" target="_blank" rel="noopener" style="background-image:url('${SERVER}/f/${esc(f.id)}')"></a>`).join("")}</div>` : ""}
@@ -151,7 +153,12 @@ function render(){
   $("app").innerHTML = `
     <div class="top">${(() => { const br = st.brand || {}; const nm = br.company || D.masterName || ""; return nm || br.logo ? `<span class="firm">${br.logo ? `<img src="${esc(br.logo)}" alt="">` : ""}<b>${esc(nm)}</b></span>` : `<span class="brand">et<i>.app</i></span>`; })()}${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="Подзвонити майстру" title="Подзвонити майстру"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>` : ""}</div>
     <h1>Мої об’єкти</h1>
-    ${objs.length ? objs.map(obj).join("") : `<div class="card empty">Поки що об’єктів немає. Коли майстер призначить вас на об’єкт — він з’явиться тут.</div>`}
+    ${(() => {
+      if(!objs.length) return `<div class="card empty">Поки що об’єктів немає. Коли майстер призначить вас на об’єкт — він з’явиться тут.</div>`;
+      const now = objs.filter(o => o.phase !== "plan"), plan = objs.filter(o => o.phase === "plan").sort((a, b) => String(a.start || "9999").localeCompare(String(b.start || "9999")));
+      return (now.length ? now.map(obj).join("") : `<div class="card empty" style="padding:18px">Зараз в роботі нічого немає</div>`)
+        + (plan.length ? `<h2 class="grp">Заплановані</h2>${plan.map(obj).join("")}` : "");
+    })()}
     <section class="card bal">
       <small>Мій розрахунок · ${b.balance >= 0 ? "ще належить" : "видано наперед"}</small><b>${money(Math.abs(b.balance))}</b>
       <div class="sub">нараховано ${money(b.earned)}${b.bought ? ` · ваші покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div>
