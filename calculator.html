@@ -8438,6 +8438,8 @@ function crewState(per){
     return {
       pid: p.id, title: crewObjTitle(p), address: cleanText((p.client || {}).address || ""),
       stage: PATH_STEPS[projectPathIndex(p)] || "",
+      start: String(p.workStartDate || ""),
+      phase: ["work", "done"].includes(p.stage) || (p.stage === "procurement" && p.workStartDate && p.workStartDate <= todayIso()) ? "now" : "plan",
       earned: earned === null ? null : Math.round(earned),
       earnedNote: /percent_of_work/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від робіт` : /percent_of_income/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від суми` : a.payType === "fixed_per_object" ? "фіксовано за об’єкт" : "",
       notes: (p.todo || []).filter(t => !t.priv && (!t.to || t.to === per.id)).map(t => ({ id:t.id, text:t.text, done:Boolean(t.done), doneAt:t.doneAt || "", doneBy:t.doneBy || "", mine: t.to === per.id })),
