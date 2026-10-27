@@ -22,12 +22,14 @@ main{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 4px}
 .brand{font-size:22px;font-weight:900;letter-spacing:-.02em}.brand i{font-style:normal;color:var(--p)}
-.call{color:var(--p);font-weight:700;font-size:13.5px;text-decoration:none;text-align:right}
+.firm{display:flex;align-items:center;gap:10px;min-width:0}.firm img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:var(--card)}.firm b{font-size:17px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.call{width:40px;height:40px;border-radius:50%;background:var(--soft);color:var(--p);display:flex;align-items:center;justify-content:center}
 h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .card{background:var(--card);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .bal small{display:block;font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--p)}
 .bal b{font-size:34px;font-weight:850;letter-spacing:-.02em;line-height:1.15}
 .bal .sub{font-size:13px;color:var(--tm);font-weight:600}
+.who{display:block;font-size:14px;font-weight:650;color:var(--tm);margin-top:2px}
 .lnk{color:var(--p);font-weight:750;font-size:14px;padding:0;text-align:left}
 .obj h2{font-size:19px;font-weight:850;line-height:1.2}
 .stage{display:inline-block;font-size:12px;font-weight:750;color:var(--p);background:var(--soft);border-radius:8px;padding:2px 8px;margin-left:6px;vertical-align:3px}
@@ -135,7 +137,7 @@ function render(){
     const more = openMore[o.pid];
     return `<section class="card obj">
       <h2>${esc(o.title)}${o.stage ? `<span class="stage">${esc(o.stage)}</span>` : ""}</h2>
-      ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Маршрут</button></div>` : ""}
+      ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
       ${(o.crew || []).length ? `<div class="crew">На об’єкті також: ${o.crew.map(c => { const t = String(c.phone || "").replace(/[^\d+]/g, ""); return t ? `<a href="tel:${esc(t)}">${esc(c.name)}</a>` : esc(c.name); }).join(", ")}</div>` : ""}
       ${o.earned !== null && o.earned !== undefined ? `<div class="earn"><span>Ваш заробіток тут${o.earnedNote ? `<br><small>${esc(o.earnedNote)}</small>` : ""}</span><b>${money(o.earned)}</b></div>` : ""}
       ${open.length ? `<div class="sec">Зробити</div>${open.map(n => note(o, n)).join("")}` : (o.notes || []).length ? `<div class="sec">Нотатки</div><div class="note"><span class="tx" style="color:var(--tm)">✓ Усе зроблено</span></div>` : ""}
@@ -147,15 +149,15 @@ function render(){
     </section>`;
   };
   $("app").innerHTML = `
-    <div class="top"><span class="brand">et<i>.app</i></span>${tel ? `<a class="call" href="tel:${esc(tel)}">${esc(D.masterName || "Майстер")}<br>подзвонити</a>` : `<span class="call" style="color:var(--tm)">${esc(D.masterName || "")}</span>`}</div>
-    <h1>${name ? `Привіт, ${esc(name)}` : "Мої об’єкти"}</h1>
+    <div class="top">${(() => { const br = st.brand || {}; const nm = br.company || D.masterName || ""; return nm || br.logo ? `<span class="firm">${br.logo ? `<img src="${esc(br.logo)}" alt="">` : ""}<b>${esc(nm)}</b></span>` : `<span class="brand">et<i>.app</i></span>`; })()}${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="Подзвонити майстру" title="Подзвонити майстру"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>` : ""}</div>
+    <h1>Мої об’єкти</h1>
+    ${objs.length ? objs.map(obj).join("") : `<div class="card empty">Поки що об’єктів немає. Коли майстер призначить вас на об’єкт — він з’явиться тут.</div>`}
     <section class="card bal">
-      <small>${b.balance >= 0 ? "Вам ще належить" : "Видано наперед"}</small><b>${money(Math.abs(b.balance))}</b>
+      <small>Мій розрахунок · ${b.balance >= 0 ? "ще належить" : "видано наперед"}</small><b>${money(Math.abs(b.balance))}</b>
       <div class="sub">нараховано ${money(b.earned)}${b.bought ? ` · ваші покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div>
       <button class="lnk" onclick="openBalance()">Детальніше</button>
     </section>
-    ${objs.length ? objs.map(obj).join("") : `<div class="card empty">Поки що об’єктів немає. Коли майстер призначить вас на об’єкт — він з’явиться тут.</div>`}
-    <div class="foot">Оновлено ${st.at ? new Date(st.at).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—"} · <button onclick="load()">оновити</button>${navApp() ? ` · <button onclick="route('', true)">навігатор: ${esc(NAV[navApp()].name)}</button>` : ""}</div>`;
+    <div class="foot">Оновлено ${st.at ? new Date(st.at).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—"} · <button onclick="load()">оновити</button>${navApp() ? ` · <button onclick="route('', true)">як добиратись: ${esc(NAV[navApp()].name)}</button>` : ""}</div>`;
 }
 
 /* ---- Дії ---- */
@@ -244,7 +246,8 @@ function openBalance(){
 const NAV = {
   google:{ name:"Google Maps", url:a => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}` },
   apple:{ name:"Apple Карти", url:a => `https://maps.apple.com/?q=${encodeURIComponent(a)}` },
-  waze:{ name:"Waze", url:a => `https://waze.com/ul?q=${encodeURIComponent(a)}&navigate=yes` }
+  waze:{ name:"Waze", url:a => `https://waze.com/ul?q=${encodeURIComponent(a)}&navigate=yes` },
+  transit:{ name:"🚌 Громадським транспортом", url:a => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a)}&travelmode=transit` }
 };
 function navApp(){ try{ const v = localStorage.getItem("et_nav") || ""; return NAV[v] ? v : ""; }catch(e){ return ""; } }
 let navAddr = "";
@@ -253,7 +256,7 @@ function route(addr, choose){
   if(addr) navAddr = addr;
   const app = navApp();
   if(app && !choose && navAddr){ navGo(app, navAddr); return; }
-  sheet(`<div class="hd"><h3>Чим прокласти маршрут?</h3><button class="x" onclick="closeSheet()">✕</button></div>
+  sheet(`<div class="hd"><h3>Як добратись?</h3><button class="x" onclick="closeSheet()">✕</button></div>
     <div class="nav" style="display:flex;flex-direction:column;gap:8px">${Object.keys(NAV).map(k => `<button onclick="navPick('${k}')">${NAV[k].name}${k === app ? " ✓" : ""}</button>`).join("")}</div>
     <div style="color:var(--tm);font-size:13px">Запам’ятаємо вибір. Змінити — внизу сторінки.</div>`);
 }
@@ -262,7 +265,7 @@ function navGo(app, addr){
   const a = NAV[app], q = encodeURIComponent(addr);
   const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const android = /Android/i.test(navigator.userAgent);
-  const scheme = app === "waze" ? `waze://?q=${q}&navigate=yes` : app === "apple" ? (ios ? `maps://?daddr=${q}` : "") : ios ? `comgooglemaps://?daddr=${q}&directionsmode=driving` : android ? `google.navigation:q=${q}` : "";
+  const scheme = app === "waze" ? `waze://?q=${q}&navigate=yes` : app === "transit" ? (ios ? `comgooglemaps://?daddr=${q}&directionsmode=transit` : "") : app === "apple" ? (ios ? `maps://?daddr=${q}` : "") : ios ? `comgooglemaps://?daddr=${q}&directionsmode=driving` : android ? `google.navigation:q=${q}` : "";
   if(!scheme){ window.open(a.url(addr), "_blank"); return; }
   let left = false;
   const onHide = () => { if(document.visibilityState === "hidden") left = true; };
