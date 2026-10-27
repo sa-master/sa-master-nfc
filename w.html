@@ -34,6 +34,7 @@ h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .addr{display:flex;align-items:center;gap:10px;justify-content:space-between}
 .addr span{color:var(--tm);font-size:14.5px}
 .route{flex:0 0 auto;background:var(--soft);color:var(--p);font-weight:800;font-size:14px;border-radius:12px;padding:8px 12px}
+.crew{font-size:14px;color:var(--tm);font-weight:600}.crew a{color:var(--p);font-weight:750;text-decoration:none}.mine{color:var(--p);font-weight:800}
 .earn{display:flex;justify-content:space-between;align-items:baseline;gap:10px;background:var(--soft);border-radius:12px;padding:10px 12px}
 .earn span{font-size:13.5px;color:var(--tm);font-weight:650}.earn b{font-size:17px;color:var(--p)}
 .sec{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--p);margin-top:4px}
@@ -127,7 +128,7 @@ function render(){
   const tel = String(D.masterPhone || "").replace(/[^\d+]/g, "");
   document.title = name ? `${name} · et.app` : "et.app";
   const stTag = s => s === "sent" ? `<span class="st wait">надіслано</span>` : s === "new" || s === "wait" ? `<span class="st wait">майстер бачить</span>` : s === "buy" ? `<span class="st">купуємо</span>` : s === "done" ? `<span class="st">✓ зроблено</span>` : s === "ok" ? `<span class="st">✓ прийнято</span>` : s === "no" ? `<span class="st no">не прийнято</span>` : "";
-  const note = (o, n) => `<div class="note ${n.done ? "done" : ""}"><button class="box ${n.done ? "on" : ""}" onclick="tick('${esc(o.pid)}','${esc(n.id)}',${n.done ? "false" : "true"})" aria-label="${n.done ? "Зняти галочку" : "Зроблено"}">${n.done ? "✓" : ""}</button><span class="tx">${esc(n.text)}${n.done && n.doneBy ? `<small class="by">✓ ${esc(n.doneBy)}, ${day(n.doneAt)}</small>` : ""}</span></div>`;
+  const note = (o, n) => `<div class="note ${n.done ? "done" : ""}"><button class="box ${n.done ? "on" : ""}" onclick="tick('${esc(o.pid)}','${esc(n.id)}',${n.done ? "false" : "true"})" aria-label="${n.done ? "Зняти галочку" : "Зроблено"}">${n.done ? "✓" : ""}</button><span class="tx">${n.mine ? `<b class="mine">Вам:</b> ` : ""}${esc(n.text)}${n.done && n.doneBy ? `<small class="by">✓ ${esc(n.doneBy)}, ${day(n.doneAt)}</small>` : ""}</span></div>`;
   const obj = o => {
     const open = (o.notes || []).filter(n => !n.done), done = (o.notes || []).filter(n => n.done);
     const reqs = (o.requests || []).slice().reverse().slice(0, 8), bought = (o.bought || []).slice().reverse().slice(0, 8);
@@ -135,6 +136,7 @@ function render(){
     return `<section class="card obj">
       <h2>${esc(o.title)}${o.stage ? `<span class="stage">${esc(o.stage)}</span>` : ""}</h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Маршрут</button></div>` : ""}
+      ${(o.crew || []).length ? `<div class="crew">На об’єкті також: ${o.crew.map(c => { const t = String(c.phone || "").replace(/[^\d+]/g, ""); return t ? `<a href="tel:${esc(t)}">${esc(c.name)}</a>` : esc(c.name); }).join(", ")}</div>` : ""}
       ${o.earned !== null && o.earned !== undefined ? `<div class="earn"><span>Ваш заробіток тут${o.earnedNote ? `<br><small>${esc(o.earnedNote)}</small>` : ""}</span><b>${money(o.earned)}</b></div>` : ""}
       ${open.length ? `<div class="sec">Зробити</div>${open.map(n => note(o, n)).join("")}` : (o.notes || []).length ? `<div class="sec">Нотатки</div><div class="note"><span class="tx" style="color:var(--tm)">✓ Усе зроблено</span></div>` : ""}
       ${done.length ? `<button class="lnk" onclick="openMore['${esc(o.pid)}']=!openMore['${esc(o.pid)}'];render()">${more ? "Сховати зроблене" : `Зроблено ${done.length}`}</button>${more ? done.map(n => note(o, n)).join("") : ""}` : ""}
