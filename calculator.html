@@ -3511,6 +3511,7 @@ body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .jobWho{display:flex;flex-direction:column;gap:.5rem}.jobWho>span{font-size:.8125rem;font-weight:700;color:var(--tm)}
 .jobBtns{display:flex;gap:.5rem;margin:.75rem 0}.jobBtns .hBtn{flex:1}.jobHint{color:var(--tm);font-size:.75rem}
 .peAmt{display:flex;align-items:center;gap:.25rem;flex:0 0 auto}.peAmt b{white-space:nowrap}
+.jobPaid{flex-direction:row !important;align-items:center;gap:.5rem !important;color:var(--t) !important;font-weight:650 !important}.jobPaid input{width:1.25rem !important;height:1.25rem;flex:0 0 auto;padding:0 !important}
 .personSum{font-size:.8125rem;color:var(--tm);font-weight:600;margin-top:.25rem}
 #jobScreen .msBox,#personScreen .msBox{margin-top:.75rem}
 .crewInfo{font-size:.8125rem;color:var(--tm);font-weight:600;line-height:1.4}
@@ -8162,8 +8163,10 @@ function renderFinanceHtml(){
   const led = ledgerList();
   const workerBought = new Set(led.filter(e => e.kind === "expense" && e.expenseId).map(e => e.expenseId));
   const workerBoughtSum = act.reduce((s, p) => s + moneyList(p, "expense").filter(e => workerBought.has(e.id) && inP(e)).reduce((a, e) => a + (Number(e.amount) || 0), 0), 0);
-  const paidTeam = led.filter(e => e.kind === "pay" && inFinPeriod(e.date)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  const owed = team.reduce((s, t) => s + Math.max(0, personBalance(t.id).balance), 0);
+  /* видано команді: записи «Видав гроші» + частки за разові роботи, віддані одразу */
+  const paidTeam = led.filter(e => e.kind === "pay" && inFinPeriod(e.date)).reduce((s, e) => s + (Number(e.amount) || 0), 0)
+    + jobs.reduce((s, j) => s + (j.people || []).filter(x => x.paid !== false).reduce((a, x) => a + (Number(x.amount) || 0), 0), 0);
+  const owed = team.reduce((s, t) => { const b = personBalance(t.id); return s + Math.max(0, b.balance + b.pending); }, 0);
   const left = act.filter(p => projectDebt(p) > 0.5 && !projectOverdue(p)).reduce((s, p) => s + projectDebt(p), 0);
   const overdue = act.filter(projectOverdue).reduce((s, p) => s + projectDebt(p), 0);
   const onHand = rec - (spent - workerBoughtSum) - paidTeam;
@@ -8186,9 +8189,9 @@ function renderFinanceHtml(){
       ${finPeriod === "all" && overdue > 0.5 ? row("Клієнти винні", money(overdue), "neg", "роботи здано, а оплати ще немає") : ""}
       ${finPeriod === "all" && left > 0.5 ? row("Залишок до оплати", money(left), "", "по об’єктах, які ще в роботі") : ""}
       ${row("Отримано від клієнтів", money(rec))}
+      ${jobRec ? row("у т. ч. разові роботи", money(jobRec), "", `${jobs.length} ${jobs.length === 1 ? "запис" : jobs.length < 5 ? "записи" : "записів"}`) : ""}
       ${row("Витрати", money(finPeriod === "all" ? spent - workerBoughtSum : spent))}
       ${finPeriod === "all" ? (paidTeam ? row("Видано команді", money(paidTeam)) : "") + (owed > 0.5 ? row("Команді ще належить", money(owed)) : "") : jobTeam ? row("Команді", money(jobTeam)) : ""}
-      ${jobRec ? row("З них разові роботи", money(jobRec), "", `${jobs.length} ${jobs.length === 1 ? "запис" : jobs.length < 5 ? "записи" : "записів"}`) : ""}
       ${finPeriod === "all" && matIncome ? row("Дохід з матеріалів", money(matIncome), "", "кошторис мінус закупівля за планом") : ""}
     </div>
     <div class="msBox"><div class="finHead">За об’єктами${finPeriod === "all" ? `<small class="finHeadSub">ваш заробіток після розрахунку</small>` : ""}</div>
@@ -8269,6 +8272,7 @@ function jobPersonAmount(pid, v){
   x.amount = parseMoneyInput(v || "0"); x.manual = true;
   renderJobTotals();
 }
+function jobPersonPaid(pid, on){ const x = jobDraft && jobDraft.people.find(p => p.personId === pid); if(x) x.paid = Boolean(on); }
 function renderJobTotals(){
   const box = document.getElementById("jobTotals");
   if(!box || !jobDraft) return;
@@ -8293,7 +8297,7 @@ function renderJobForm(){
       <label>Де / клієнт <small>необов’язково</small><input value="${v(j.place)}" placeholder="ЖК Оболонь, кв. 34, Ігор" oninput="jobSet('place',this.value)"></label>
       <div class="jobRow"><label>Дата<input type="date" value="${v(j.date)}" onchange="jobSet('date',this.value)"></label><label>Витрати, ₴ <small>якщо були</small><input inputmode="decimal" value="${v(j.expense)}" placeholder="0" oninput="jobSet('expense',this.value)"></label></div>
       ${team.length ? `<div class="jobWho"><span>Хто робив</span><div class="hChips" style="margin:0;flex-wrap:wrap">${team.map(t => `<button type="button" class="hChip ${j.people.some(x => x.personId === t.id) ? "on" : ""}" onclick="jobTogglePerson('${escapeHtml(t.id)}')">${escapeHtml(t.name)}</button>`).join("")}</div>
-        ${j.people.map(x => `<label class="jobShare">${escapeHtml(x.name)} отримує, ₴<input inputmode="decimal" value="${x.amount ? v(x.amount) : ""}" oninput="jobPersonAmount('${escapeHtml(x.personId)}',this.value)"></label>`).join("")}</div>` : ""}
+        ${j.people.map(x => `<label class="jobShare">${escapeHtml(x.name)} отримує, ₴<input inputmode="decimal" value="${x.amount ? v(x.amount) : ""}" oninput="jobPersonAmount('${escapeHtml(x.personId)}',this.value)"></label><label class="jobPaid"><input type="checkbox" ${x.paid !== false ? "checked" : ""} onchange="jobPersonPaid('${escapeHtml(x.personId)}',this.checked)"> ${escapeHtml(x.name)} уже отримав свою частку</label>`).join("")}</div>` : ""}
     </div>
     <div class="msBox" id="jobTotals"></div>
     <div class="onbSpacer"></div>
@@ -8332,19 +8336,24 @@ function personBalance(pid){
   projects.forEach(p => (p.teamAssignments || []).forEach(a => {
     if(a.personId !== pid) return;
     const v = getProjectAssignmentEarning(p, a);
-    objects.push({ p, a, amount: v });
+    /* об’єкт зароблено, коли роботи завершено; поки йдуть — це «буде» */
+    objects.push({ p, a, amount: v, done: ["done", "closed"].includes(p.stage) || p.status === "archived" });
   }));
-  const jobs = jobsList().filter(j => (j.people || []).some(x => x.personId === pid)).map(j => ({ j, amount: Number((j.people.find(x => x.personId === pid) || {}).amount) || 0 }));
+  /* разова робота: частку зазвичай віддають одразу (x.paid !== false) */
+  const jobs = jobsList().filter(j => (j.people || []).some(x => x.personId === pid)).map(j => { const x = j.people.find(y => y.personId === pid) || {}; return { j, amount: Number(x.amount) || 0, paid: x.paid !== false }; });
   const led = ledgerList().filter(e => e.personId === pid);
-  const earned = objects.reduce((s, o) => s + (Number(o.amount) || 0), 0) + jobs.reduce((s, x) => s + x.amount, 0);
+  const pending = objects.filter(o => !o.done).reduce((s, o) => s + (Number(o.amount) || 0), 0);
+  const earned = objects.filter(o => o.done).reduce((s, o) => s + (Number(o.amount) || 0), 0) + jobs.reduce((s, x) => s + x.amount, 0);
+  const jobsPaid = jobs.filter(x => x.paid).reduce((s, x) => s + x.amount, 0);
   /* витрати в обліку об’єкта з «Кому: Толік» — теж видані йому гроші */
   const nm = String(per ? per.name : "").trim().toLowerCase();
   if(nm) projects.forEach(p => moneyList(p, "expense").forEach(x => {
     if(String(x.to || "").trim().toLowerCase() === nm && !led.some(e => e.expenseId === x.id)) led.push({ id:"", kind:"pay", amount:Number(x.amount) || 0, date:x.date, note:x.note || "", projectId:p.id, fromObject:true });
   }));
-  const paid = led.filter(e => e.kind === "pay").reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const paid = led.filter(e => e.kind === "pay").reduce((s, e) => s + (Number(e.amount) || 0), 0) + jobsPaid;
   const bought = led.filter(e => e.kind === "expense").reduce((s, e) => s + (Number(e.amount) || 0), 0);
-  return { per, objects, jobs, led, earned, paid, bought, balance: earned + bought - paid };
+  /* balance — до виплати зараз (за завершене); pending — ще буде за об’єктами в роботі */
+  return { per, objects, jobs, led, earned, pending, paid, bought, balance: earned + bought - paid };
 }
 let personUi = null;
 function openPersonLedger(pid){
@@ -8366,8 +8375,9 @@ function renderPersonLedger(){
   const row = (a, s, amt, cls, del) => `<div class="msRow ${cls || ""}"><span>${a}${s ? `<small>${s}</small>` : ""}</span><span class="peAmt"><b>${amt}</b>${del ? `<button type="button" class="ptDel" onclick="${del}" aria-label="Прибрати">×</button>` : ""}</span></div>`;
   el.innerHTML = `<div class="onbInner">
     <div class="onbTop"><button type="button" class="onbBack" onclick="closePersonLedger()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${name}</span></div>
-    <div class="msBox finBig"><small>${b.balance >= 0 ? "Ще належить" : "Видано більше, ніж нараховано, на"}</small><b class="${b.balance < 0 ? "neg" : ""}" style="color:${b.balance >= 0 ? "var(--t)" : ""}">${money(Math.abs(b.balance))}</b>
-      <div class="personSum">нараховано ${money(b.earned)}${b.bought ? ` · його покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div></div>
+    <div class="msBox finBig"><small>${b.balance >= -0.5 ? "До виплати" : "Видано наперед"}</small><b style="color:var(--t)">${money(Math.abs(b.balance))}</b>
+      ${b.pending ? `<div class="personSum">ще буде за об’єктами в роботі: <b>${money(b.pending)}</b></div>` : ""}
+      <div class="personSum">зароблено ${money(b.earned)}${b.bought ? ` · його покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div></div>
     <div class="jobBtns"><button type="button" class="hBtn pr" onclick="personUi.form='pay';renderPersonLedger()">＋ Видав гроші</button><button type="button" class="hBtn" onclick="personUi.form='expense';renderPersonLedger()">＋ Купив за свої</button></div>
     ${f ? `<form class="msBox jobForm" onsubmit="event.preventDefault();savePersonEntry()">
       <b style="font-size:.9375rem">${f === "pay" ? "Видали аванс чи зарплату" : `${name} купив за свої — ви повернете`}</b>
@@ -8376,9 +8386,9 @@ function renderPersonLedger(){
       ${f === "expense" && act.length ? `<label>На який об’єкт<select id="peProject"><option value="">— без об’єкта</option>${act.map(p => `<option value="${escapeHtml(p.id)}">${projectTitle(p)}</option>`).join("")}</select></label><small class="jobHint">Покупка піде також у витрати об’єкта.</small>` : ""}
       <div class="jobBtns"><button type="submit" class="hBtn pr">Записати</button><button type="button" class="hBtn" onclick="personUi.form='';renderPersonLedger()">Скасувати</button></div>
     </form>` : ""}
-    <div class="msBox"><div class="finHead">Нараховано</div>
-      ${b.objects.map(o => row(projectTitle(o.p), `${/percent/.test(o.a.payType || "") ? (Number(o.a.payValue) || 0) + "% від робіт · " : ""}етап «${escapeHtml(PATH_STEPS[projectPathIndex(o.p)] || "")}»`, o.amount === null ? "уточнити" : money(o.amount))).join("")}
-      ${b.jobs.map(x => row(escapeHtml(x.j.title), `${formatQuoteDate(x.j.date).slice(0, 5)}${x.j.place ? " · " + escapeHtml(x.j.place) : ""} · разова`, money(x.amount))).join("")}
+    <div class="msBox"><div class="finHead">Заробіток</div>
+      ${b.objects.filter(o => o.amount === null || Number(o.amount) > 0.5).map(o => row(projectTitle(o.p), `${/percent/.test(o.a.payType || "") ? (Number(o.a.payValue) || 0) + "% від робіт · " : ""}${o.done ? "завершено" : "буде після завершення"}`, o.amount === null ? "уточнити" : money(o.amount))).join("")}
+      ${b.jobs.map(x => row(escapeHtml(x.j.title), `${formatQuoteDate(x.j.date).slice(0, 5)}${x.j.place ? " · " + escapeHtml(x.j.place) : ""} · разова${x.paid ? " · отримав одразу" : ""}`, money(x.amount))).join("")}
       ${!b.objects.length && !b.jobs.length ? `<div class="msRow"><span>Ще нічого</span></div>` : ""}
     </div>
     ${renderCrewLinkBox(b.per)}
@@ -8440,7 +8450,7 @@ function crewState(per){
       stage: PATH_STEPS[projectPathIndex(p)] || "",
       start: String(p.workStartDate || ""),
       phase: ["work", "done"].includes(p.stage) || (p.stage === "procurement" && p.workStartDate && p.workStartDate <= todayIso()) ? "now" : "plan",
-      earned: earned === null ? null : Math.round(earned),
+      earned: earned === null ? null : Math.round(earned), done: ["done", "closed"].includes(p.stage),
       earnedNote: /percent_of_work/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від робіт` : /percent_of_income/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від суми` : a.payType === "fixed_per_object" ? "фіксовано за об’єкт" : "",
       notes: (p.todo || []).filter(t => !t.priv && (!t.to || t.to === per.id)).map(t => ({ id:t.id, text:t.text, done:Boolean(t.done), doneAt:t.doneAt || "", doneBy:t.doneBy || "", mine: t.to === per.id })),
       crew: (p.teamAssignments || []).filter(x => x.personId && x.personId !== per.id).map(x => { const m = team.find(t => t.id === x.personId); return { name: (m && m.name) || x.name || "", phone: String((m && m.phone) || "") }; }),
@@ -8451,8 +8461,8 @@ function crewState(per){
   });
   return {
     objects,
-    balance: { earned:Math.round(b.earned), paid:Math.round(b.paid), bought:Math.round(b.bought), balance:Math.round(b.balance) },
-    jobs: b.jobs.map(x => ({ title:x.j.title, date:x.j.date, place:x.j.place || "", amount:x.amount })),
+    balance: { earned:Math.round(b.earned), pending:Math.round(b.pending), paid:Math.round(b.paid), bought:Math.round(b.bought), balance:Math.round(b.balance) },
+    jobs: b.jobs.map(x => ({ title:x.j.title, date:x.j.date, place:x.j.place || "", amount:x.amount, paid:x.paid })),
     money: b.led.map(e => ({ kind:e.kind, date:e.date, amount:e.amount, note:e.note || "" }))
   };
 }
@@ -8563,7 +8573,7 @@ async function crewRevoke(pid){
 }
 function renderCrewLinkBox(per){
   const n = crewProjectsFor(per.id).length;
-  return `<div class="msBox"><div class="finHead">Посилання для ${escapeHtml(per.name)}</div>
+  return `<div class="msBox"><div class="finHead">Його сторінка</div>
     <div class="crewInfo">${per.wLink ? `Він бачить ${n} ${n === 1 ? "об’єкт" : n > 1 && n < 5 ? "об’єкти" : "об’єктів"}: адресу, нотатки (крім 🔒), файли й свій розрахунок. Кошторису, цін і сум клієнта — ні.` : `Його об’єкти (де ви його призначили): адреса й маршрут, ваші нотатки з галочками, проєкт і фото, його заробіток. Він зможе написати, що потрібно на об’єкт, і записати «купив за свої» з фото чека.`}</div>
     <div class="jobBtns" style="margin-bottom:0"><button type="button" class="hBtn pr" onclick="crewShare('${escapeHtml(per.id)}')">${per.wLink ? "Надіслати ще раз" : "Створити й надіслати"}</button>${per.wLink ? `<button type="button" class="hBtn" onclick="crewRevoke('${escapeHtml(per.id)}')">Вимкнути</button>` : ""}</div></div>`;
 }
@@ -17732,7 +17742,7 @@ function renderTeamList(){
         <div class="personAvatar">${escapeHtml(personInitial(p.name))}</div>
         <button class="personBody" type="button" onclick="openPersonLedger('${escapeHtml(p.id)}')" style="text-align:left">
           <div class="personName">${escapeHtml(p.name)}</div>
-          <div class="personMeta">${(() => { const b = personBalance(p.id); return b.balance > 0.5 ? `ще належить <b style="color:var(--p)">${money(b.balance)}</b>` : b.balance < -0.5 ? `видано більше на ${money(-b.balance)}` : "розраховані"; })()} · ${Number(p.payValue) || 0}${payValueUnit(p.payType)}</div>
+          <div class="personMeta">${(() => { const b = personBalance(p.id); return b.balance > 0.5 ? `до виплати <b style="color:var(--p)">${money(b.balance)}</b>` : b.balance < -0.5 ? `видано наперед ${money(-b.balance)}` : b.pending ? `буде ${money(b.pending)}` : "розраховані"; })()} · ${Number(p.payValue) || 0}${payValueUnit(p.payType)}</div>
         </button>
         <button class="personEdit" type="button" onclick="openEditPerson('${escapeHtml(p.id)}')" aria-label="Налаштування ${escapeHtml(p.name)}">✎</button>
         <button class="personDelete" type="button" onclick="deletePerson('${escapeHtml(p.id)}')" aria-label="Видалити ${escapeHtml(p.name)}">×</button>
