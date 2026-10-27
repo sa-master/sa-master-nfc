@@ -160,8 +160,9 @@ function render(){
         + (plan.length ? `<h2 class="grp">Заплановані</h2>${plan.map(obj).join("")}` : "");
     })()}
     <section class="card bal">
-      <small>Мій розрахунок · ${b.balance >= 0 ? "ще належить" : "видано наперед"}</small><b>${money(Math.abs(b.balance))}</b>
-      <div class="sub">нараховано ${money(b.earned)}${b.bought ? ` · ваші покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div>
+      <small>Мій розрахунок · ${b.balance >= -0.5 ? "до виплати" : "видано наперед"}</small><b>${money(Math.abs(b.balance))}</b>
+      ${b.pending ? `<div class="sub">ще буде за об’єктами в роботі: <b style="color:var(--t)">${money(b.pending)}</b></div>` : ""}
+      <div class="sub">зароблено ${money(b.earned)}${b.bought ? ` · ваші покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div>
       <button class="lnk" onclick="openBalance()">Детальніше</button>
     </section>
     <div class="foot">Оновлено ${st.at ? new Date(st.at).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—"} · <button onclick="load()">оновити</button>${navApp() ? ` · <button onclick="route('', true)">як добиратись: ${esc(NAV[navApp()].name)}</button>` : ""}</div>`;
@@ -239,14 +240,14 @@ async function boughtSend(pid){
 function openBalance(){
   const st = D.state || {}, b = st.balance || {};
   const rows = [
-    ...(st.objects || []).filter(o => o.earned !== null && o.earned !== undefined).map(o => `<div class="row"><span>${esc(o.title)}<small>${esc(o.earnedNote || "")}${o.stage ? ` · етап «${esc(o.stage)}»` : ""}</small></span><b>${money(o.earned)}</b></div>`),
-    ...(st.jobs || []).map(j => `<div class="row"><span>${esc(j.title)}<small>${day(j.date)}${j.place ? " · " + esc(j.place) : ""}</small></span><b>${money(j.amount)}</b></div>`)
+    ...(st.objects || []).filter(o => o.earned).map(o => `<div class="row"><span>${esc(o.title)}<small>${esc(o.earnedNote || "")}${o.done ? " · завершено" : " · буде після завершення"}</small></span><b>${money(o.earned)}</b></div>`),
+    ...(st.jobs || []).map(j => `<div class="row"><span>${esc(j.title)}<small>${day(j.date)}${j.place ? " · " + esc(j.place) : ""}${j.paid ? " · отримано одразу" : ""}</small></span><b>${money(j.amount)}</b></div>`)
   ];
   const mon = (st.money || []).slice().sort((x, y) => String(y.date).localeCompare(String(x.date)));
   sheet(`<div class="hd"><h3>Мій розрахунок</h3><button class="x" onclick="closeSheet()">✕</button></div>
-    <div class="sec">Нараховано · ${money(b.earned)}</div>${rows.join("") || `<div class="row"><span>Ще нічого</span></div>`}
+    <div class="sec">Заробіток</div>${rows.join("") || `<div class="row"><span>Ще нічого</span></div>`}
     ${mon.length ? `<div class="sec">Видано й покупки</div>${mon.map(m => `<div class="row"><span>${m.kind === "pay" ? "Видано" : "Купив за свої"}<small>${day(m.date)}${m.note ? " · " + esc(m.note) : ""}</small></span><b>${m.kind === "pay" ? "−" : "+"}${money(m.amount)}</b></div>`).join("")}` : ""}
-    <div class="row" style="font-weight:800"><span>${(b.balance || 0) >= 0 ? "Ще належить" : "Видано наперед"}</span><b>${money(Math.abs(b.balance || 0))}</b></div>`);
+    <div class="row" style="font-weight:800"><span>${(b.balance || 0) >= -0.5 ? "До виплати зараз" : "Видано наперед"}</span><b>${money(Math.abs(b.balance || 0))}</b></div>`);
 }
 
 /* ---- Навігатор: вибір запам’ятовується ---- */
