@@ -183,7 +183,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   flex:0 0 auto;
   width:3.25rem;
   height:3.25rem;
-  border-radius:.875rem;
+  border-radius:50%;
   overflow:hidden;
   display:flex;
   align-items:center;
@@ -7929,7 +7929,8 @@ function renderHomeList(){
 function setHomeFilter(f){ homeFilter = f; render(); }
 function onHomeSearch(v){ homeSearch = v; const box = document.getElementById("hList"); if(box) box.innerHTML = renderHomeList(); }
 function renderHomeNav(active){
-  const it = (k, icon, label, act) => `<button type="button" class="${k === active ? "on" : ""} ${k === "new" ? "plus" : ""}" onclick="${act}"><span>${icon}</span>${label}</button>`;
+  /* Спершу ховаємо екран «Фінанси» — інакше він лишається поверх відкритого вікна і здається, що все зависло */
+  const it = (k, icon, label, act) => `<button type="button" class="${k === active ? "on" : ""} ${k === "new" ? "plus" : ""}" onclick="document.getElementById('finScreen')?.classList.remove('open');${act}"><span>${icon}</span>${label}</button>`;
   return `<nav class="homeNav" aria-label="Меню">
     ${it("home", "▦", "Об’єкти", "closeHomeScreens()")}
     ${it("cat", "☰", "Каталог", "openCatalogBrowse()")}
