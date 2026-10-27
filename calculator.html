@@ -3479,17 +3479,17 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .hBtn.pr{background:var(--p-action);color:#fff}
 .hEmpty{text-align:center;color:var(--tm);padding:2rem 1rem;font-size:.9375rem}
 body.withHomeNav .main{padding-bottom:calc(5.5rem + var(--sab, 0px))}
-.homeNav{position:fixed;left:0;right:0;bottom:0;z-index:120;display:flex;justify-content:space-around;background:rgba(255,255,255,.95);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid rgba(120,120,128,.14);padding:.375rem 0 calc(.5rem + var(--sab, 0px))}
+.homeNav{position:fixed;left:0;right:0;bottom:0;z-index:120;display:flex;justify-content:space-around;background:rgba(255,255,255,.95);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid rgba(120,120,128,.14);padding:.375rem 0 calc(.25rem + var(--sab, 0px))}
 .homeNav button{display:flex;flex-direction:column;align-items:center;gap:.125rem;background:none;font-size:.6875rem;font-weight:700;color:var(--tm);min-width:3.75rem}
 .homeNav button span{font-size:1.25rem;line-height:1.375rem}
 .homeNav button.on{color:var(--p)}
-.homeNav button.plus span{width:2.75rem;height:2.75rem;border-radius:.875rem;background:var(--p-action);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.625rem;margin-top:-1rem;box-shadow:0 .25rem .75rem rgba(10,132,255,.35)}
+.homeNav button.plus span{width:2.75rem;height:2.75rem;border-radius:.875rem;background:var(--p-action);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.625rem;margin-top:-1.375rem;box-shadow:0 .25rem .75rem rgba(10,132,255,.35)}
 @media (prefers-color-scheme: dark){.homeNav{background:rgba(28,28,30,.95)}}
 .finScreen{padding-bottom:calc(6rem + var(--sab, 0px))}
 body:not(.withHomeNav) #homeNavHost{display:none}
 body.inSec .homeNav{z-index:245}
 body.inSec #catalogSheet{z-index:240}
-body.inSec #catalogSheet .panel{padding-bottom:calc(4.75rem + var(--sab, 0px))}
+body.inSec #catalogSheet .panelBody{padding-bottom:0 !important}body.inSec #catalogSheet .catalogList{padding-bottom:calc(5rem + var(--sab, 0px))}
 body.inSec #profileScreen .fsHead .close,body.inSec #profileScreen .fsFooter,body.inSec #catalogSheet button.close{display:none}
 body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .finInner{display:flex;flex-direction:column;gap:.75rem}.finInner .hTitle{margin-bottom:0}
@@ -3513,8 +3513,9 @@ body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .crewBtns{display:flex;gap:.375rem;flex:0 0 auto}
 .ptPriv{flex:0 0 auto;border-radius:.625rem;padding:0 .5rem;background:rgba(120,120,128,.12);color:var(--tm);font-weight:700;font-size:.75rem;white-space:nowrap}.ptPriv.on{background:var(--p);color:#fff}
 form.ptNoteForm{flex-wrap:wrap}form.ptNoteForm input{flex:1 1 100%}
-.ptNoteForm button.ptPriv{background:rgba(120,120,128,.14);color:var(--tm);padding:0 .625rem;margin-right:auto}.ptNoteForm button.ptPriv.on{background:var(--p);color:#fff}
+.ptNoteForm button.ptPriv{background:rgba(120,120,128,.14);color:var(--tm);padding:0 .625rem}.ptNoteForm button.ptPriv.on{background:var(--p);color:#fff}
 .crewBox a{color:var(--p);font-weight:700;text-decoration:none}
+.ptFor{display:flex;flex-wrap:wrap;gap:.375rem;flex:1 1 100%}.ptNoteForm .ptFor+button{margin-left:auto}.noteFor{color:var(--p);font-weight:800}
 .noteBy{display:block;font-size:.75rem;color:var(--p);font-weight:700}
 .fGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(5.25rem,1fr));gap:.5rem;padding:.5rem 0}
 .fItem{aspect-ratio:1;border-radius:.75rem;background:rgba(120,120,128,.12) center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;text-decoration:none;color:var(--p);overflow:hidden;padding:.375rem;font-size:.6875rem;font-weight:700;text-align:center}
@@ -8414,7 +8415,8 @@ function crewState(per){
       stage: PATH_STEPS[projectPathIndex(p)] || "",
       earned: earned === null ? null : Math.round(earned),
       earnedNote: /percent_of_work/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від робіт` : /percent_of_income/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від суми` : a.payType === "fixed_per_object" ? "фіксовано за об’єкт" : "",
-      notes: (p.todo || []).filter(t => !t.priv).map(t => ({ id:t.id, text:t.text, done:Boolean(t.done), doneAt:t.doneAt || "", doneBy:t.doneBy || "" })),
+      notes: (p.todo || []).filter(t => !t.priv && (!t.to || t.to === per.id)).map(t => ({ id:t.id, text:t.text, done:Boolean(t.done), doneAt:t.doneAt || "", doneBy:t.doneBy || "", mine: t.to === per.id })),
+      crew: (p.teamAssignments || []).filter(x => x.personId && x.personId !== per.id).map(x => { const m = team.find(t => t.id === x.personId); return { name: (m && m.name) || x.name || "", phone: String((m && m.phone) || "") }; }),
       files: (p.files || []).map(f => ({ id:f.id, name:f.name, type:f.type })),
       requests: (p.crewReq || []).filter(r => r.personId === per.id).slice(-30).map(r => ({ id:r.id, text:r.text, at:r.at, status:r.status })),
       bought: (p.crewBought || []).filter(r => r.personId === per.id).slice(-30).map(r => ({ id:r.id, text:r.text, amount:r.amount, date:r.date, status:r.status }))
@@ -8452,7 +8454,7 @@ function crewApply(per, events){
     const p = projects.find(x => x.id === ev.pid);
     if(!p || !(p.teamAssignments || []).some(a => a.personId === per.id)) return;
     if(ev.type === "done" || ev.type === "undone"){
-      const t = (p.todo || []).find(x => x.id === ev.noteId && !x.priv);
+      const t = (p.todo || []).find(x => x.id === ev.noteId && !x.priv && (!x.to || x.to === per.id));
       if(!t) return;
       t.done = ev.type === "done"; t.doneAt = t.done ? ev.at : ""; t.doneBy = t.done ? per.name : "";
     }else if(ev.type === "request"){
@@ -18533,10 +18535,23 @@ function planNamesText(list, max){
 
 /* ---- Блок «Закупівля — що зробити» на екрані об'єкта ---- */
 let planNoteOpen = false;
-let planNotePriv = false;
+let planNotePriv = false, planNoteFor = "";
 function noteHasCrew(p){ return Boolean(p && (p.teamAssignments || []).length); }
-function notePrivBtn(p){ return noteHasCrew(p) ? `<button type="button" class="ptPriv ${planNotePriv ? "on" : ""}" onclick="planNotePriv=!planNotePriv;this.classList.toggle('on')" title="Лише для мене — працівник не побачить">🔒 лише я</button>` : ""; }
-function noteText(t){ return `${t.priv ? "🔒 " : ""}${escapeHtml(t.text)}${t.done && t.doneBy ? `<small class="noteBy">✓ ${escapeHtml(t.doneBy)}, ${formatQuoteDate(t.doneAt).slice(0, 5)}</small>` : ""}`; }
+/* Кому нотатка: усім на об’єкті, одній людині (якщо їх кілька) або лише мені (🔒) */
+function notePrivBtn(p){
+  if(!noteHasCrew(p)) return "";
+  const crew = (p.teamAssignments || []).filter(a => a.personId);
+  const chip = (k, label) => `<button type="button" class="ptPriv ${(k === "me" ? planNotePriv : !planNotePriv && planNoteFor === k) ? "on" : ""}" onclick="noteForPick('${escapeHtml(k)}',this)">${label}</button>`;
+  return `<span class="ptFor">${crew.length > 1 ? chip("", "Усім") + crew.map(a => chip(a.personId, escapeHtml(a.name || "Майстер"))).join("") : ""}${chip("me", "🔒 лише я")}</span>`;
+}
+function noteForPick(k, el){
+  if(k === "me"){ planNotePriv = !planNotePriv; if(planNotePriv) planNoteFor = ""; }
+  else { planNotePriv = false; planNoteFor = k; }
+  const box = el.parentElement, p = planCurrent();
+  if(box && p) box.outerHTML = notePrivBtn(p);
+}
+function noteForName(t){ const per = t.to && team.find(x => x.id === t.to); return per ? per.name : ""; }
+function noteText(t){ return `${t.priv ? "🔒 " : ""}${noteForName(t) ? `<b class="noteFor">${escapeHtml(noteForName(t))}:</b> ` : ""}${escapeHtml(t.text)}${t.done && t.doneBy ? `<small class="noteBy">✓ ${escapeHtml(t.doneBy)}, ${formatQuoteDate(t.doneAt).slice(0, 5)}</small>` : ""}`; }
 let planOfferHiddenFor = "";
 let planDoneOpen = false;
 
@@ -18613,8 +18628,8 @@ function planNoteAdd(){
   if(!p) return;
   if(!text){ planNoteOpen = false; render(); return; }
   if(!Array.isArray(p.todo)) p.todo = [];
-  p.todo.push({ id: uid("todo"), text, done:false, at: new Date().toISOString(), ...(planNotePriv && noteHasCrew(p) ? { priv:true } : {}) });
-  planNoteOpen = false; planNotePriv = false;
+  p.todo.push({ id: uid("todo"), text, done:false, at: new Date().toISOString(), ...(planNotePriv && noteHasCrew(p) ? { priv:true } : planNoteFor && (p.teamAssignments || []).some(a => a.personId === planNoteFor) ? { to:planNoteFor } : {}) });
+  planNoteOpen = false; planNotePriv = false; planNoteFor = "";
   touchProject(p);
   render();
   toast("Нотатку додано");
