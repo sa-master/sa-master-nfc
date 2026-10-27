@@ -3466,6 +3466,10 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .hAddr i{font-style:normal;color:var(--p);font-weight:800}
 .hAddr span{text-decoration:underline dotted rgba(10,132,255,.55);text-underline-offset:.2em}
 .hAddr.inHead{display:inline-flex;margin:0;font-size:inherit;color:inherit}
+.hAddrRow{display:flex;align-items:center;gap:.75rem;margin-top:.375rem}
+.hAddrTx{flex:1;min-width:0;font-size:.875rem;color:var(--t);cursor:pointer}
+.hRoute{flex:0 0 auto;display:flex;align-items:center;gap:.25rem;height:1.875rem;padding:0 .625rem;border-radius:.625rem;background:rgba(10,132,255,.1);color:var(--p);font-weight:750;font-size:.8125rem}
+.hRoute i{font-style:normal;font-weight:800}
 .hWho{font-size:.875rem;color:var(--tm);margin-top:.2rem}.hWho a{color:var(--p);font-weight:650;text-decoration:none}
 .hBar{display:flex;gap:.25rem;margin:.75rem 0 0;cursor:pointer}.hBar i{flex:1;height:.3125rem;border-radius:.2rem;background:rgba(120,120,128,.16)}.hBar i.on{background:var(--p)}
 .hNext{display:flex;align-items:center;gap:.75rem;margin-top:.75rem;padding-top:.75rem;border-top:1px solid rgba(120,120,128,.14)}
@@ -3494,6 +3498,27 @@ body.secNav #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .finBars div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:.25rem}
 .finBars i{display:block;border-radius:.5rem .5rem .25rem .25rem;background:rgba(10,132,255,.14)}.finBars i.cur{background:var(--p)}.finBars i.neg{background:rgba(255,59,48,.35)}
 .finBars span{font-size:.6875rem;color:var(--tm);font-weight:700;text-align:center}
+.finHeadRow{display:flex;justify-content:space-between;align-items:center}.finAdd{background:none;color:var(--p);font-weight:800;font-size:.8125rem;text-transform:none;letter-spacing:0}
+.personEdit{flex:0 0 auto;width:2rem;height:2rem;border-radius:50%;background:none;color:var(--tm);font-size:1rem}
+.jobForm{display:flex;flex-direction:column;gap:.75rem}.jobForm label{display:flex;flex-direction:column;gap:.3rem;font-size:.8125rem;font-weight:700;color:var(--tm);flex:1 1 0;min-width:0}
+.jobForm label small{font-weight:600;opacity:.75}.jobForm input,.jobForm select{font:inherit;font-size:1rem;font-weight:600;color:var(--t);background:var(--card);border:1px solid rgba(120,120,128,.2);border-radius:.75rem;padding:.7rem .8rem;width:100%;box-sizing:border-box}
+.jobRow{display:flex;gap:.625rem;align-items:flex-end}.jobX{padding-bottom:.75rem;color:var(--tm);font-weight:800}
+.jobWho{display:flex;flex-direction:column;gap:.5rem}.jobWho>span{font-size:.8125rem;font-weight:700;color:var(--tm)}
+.jobBtns{display:flex;gap:.5rem;margin:.75rem 0}.jobBtns .hBtn{flex:1}.jobHint{color:var(--tm);font-size:.75rem}
+.peAmt{display:flex;align-items:center;gap:.25rem;flex:0 0 auto}.peAmt b{white-space:nowrap}
+.personSum{font-size:.8125rem;color:var(--tm);font-weight:600;margin-top:.25rem}
+#jobScreen .msBox,#personScreen .msBox{margin-top:.75rem}
+.crewInfo{font-size:.8125rem;color:var(--tm);font-weight:600;line-height:1.4}
+.crewBtns{display:flex;gap:.375rem;flex:0 0 auto}
+.ptPriv{flex:0 0 auto;border-radius:.625rem;padding:0 .5rem;background:rgba(120,120,128,.12);color:var(--tm);font-weight:700;font-size:.75rem;white-space:nowrap}.ptPriv.on{background:var(--p);color:#fff}
+form.ptNoteForm{flex-wrap:wrap}form.ptNoteForm input{flex:1 1 100%}
+.ptNoteForm button.ptPriv{background:rgba(120,120,128,.14);color:var(--tm);padding:0 .625rem;margin-right:auto}.ptNoteForm button.ptPriv.on{background:var(--p);color:#fff}
+.crewBox a{color:var(--p);font-weight:700;text-decoration:none}
+.noteBy{display:block;font-size:.75rem;color:var(--p);font-weight:700}
+.fGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(5.25rem,1fr));gap:.5rem;padding:.5rem 0}
+.fItem{aspect-ratio:1;border-radius:.75rem;background:rgba(120,120,128,.12) center/cover no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;text-decoration:none;color:var(--p);overflow:hidden;padding:.375rem;font-size:.6875rem;font-weight:700;text-align:center}
+.fItem.pdf b{font-size:1rem}.fItem.pdf span{color:var(--tm);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.fItem.busy{color:var(--tm)}
 .finHead{font-size:.75rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--p);padding:.5rem 0 .25rem}
 .finObj{width:100%;background:none;text-align:left}
 .msRow small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}.msRow b.pos{color:var(--green)}.msRow b.neg{color:var(--red)}
@@ -6355,6 +6380,7 @@ function findCurrentPosition(positionId){
 function touchProject(project){
   project.updatedAt = new Date().toISOString();
   saveProjects();
+  if(typeof crewSoon === "function") crewSoon();
 }
 
 function toggleBuyLater(positionId){
@@ -7830,7 +7856,6 @@ function renderHero(){
     <div class="etHome">
       <div class="etBrand" onclick="openGuide()"><b>et<span>.app</span></b><small>Кошторис · Облік · Аудит</small></div>
       <button class="heroAction heroHelp" onclick="openGuide()" aria-label="Як працює калькулятор" title="Як працює калькулятор">?</button>
-      <button class="etAvatar" onclick="openProfile()" aria-label="Профіль">${escapeHtml(ini)}</button>
     </div>
     <div class="heroRow" style="display:none">
       <div class="heroLogo">
@@ -7922,7 +7947,7 @@ function homeCard(p){
   return `<article class="hCard">
     <div class="hTop" onclick="openProject('${id}')"><b>${p.urgent ? "🔥 " : ""}${projectTitle(p)}</b><span>${escapeHtml(PATH_STEPS[idx] || "")}</span>
       <button type="button" class="hMenu" onclick="event.stopPropagation();openActions('${id}')" aria-label="Дії">⋯</button></div>
-    ${c.address ? `<button type="button" class="hAddr" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>⌖</i><span>${escapeHtml(c.address)}</span></button>` : ""}
+    ${c.address ? `<div class="hAddrRow"><span class="hAddrTx" onclick="openProject('${id}')">${escapeHtml(c.address)}</span><button type="button" class="hRoute" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>⌖</i>Маршрут</button></div>` : ""}
     ${c.name || c.phone ? `<div class="hWho">${escapeHtml(c.name || "")}${c.name && c.phone ? " · " : ""}${c.phone ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(c.phone)}</a>` : ""}</div>` : ""}
     <div class="hBar" onclick="openProject('${id}')">${PATH_STEPS.map((s, i) => `<i class="${i <= idx ? "on" : ""}"></i>`).join("")}</div>
     <div class="hNext"><div class="hTx" onclick="openProject('${id}')"><b class="${n.cls || ""}">${escapeHtml(n.text)}</b>${n.sub ? `<small>${escapeHtml(n.sub)}</small>` : ""}</div>
@@ -7956,7 +7981,7 @@ function setNavSection(k){
 }
 function navSection(k){
   const sec = document.body.dataset.sec || "";
-  if(k === "new"){ openNewProject(); return; }
+  if(k === "new"){ openCreateChoice(); return; }
   if(k === sec) return;
   /* залишаємо Профіль — зберігаємо зміни, як «Готово» */
   if(sec === "prof" && document.getElementById("profileScreen")?.classList.contains("open")){ navLeaving = true; try{ saveProfile(); }catch(e){ closeProfile(); } navLeaving = false; }
@@ -8084,6 +8109,7 @@ function renderProfileExtras(){
 /* ==== Каталог із нижнього меню: перегляд і правка без об’єкта ==== */
 function openCatalogBrowse(){
   if(!requireAccess()) return;
+  if(!currentProjectId && document.body.dataset.sec !== "cat") setNavSection("cat");
   catalogDest = "browse";
   setCatalogMode("material");
   document.getElementById("catalogTitle").textContent = "Каталог";
@@ -8114,10 +8140,13 @@ function renderFinanceHtml(){
     }
     if(r || sp || finPeriod === "all") rows.push({ p, earn: finPeriod === "all" ? m.now : r - sp, debt: projectDebt(p) });
   });
-  const earn = finPeriod === "all" ? rec - spent - team : rec - spent;
+  const jobs = jobsList().filter(j => inFinPeriod(j.date)).sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  const jobRec = jobs.reduce((s, j) => s + (Number(j.amount) || 0), 0), jobExp = jobs.reduce((s, j) => s + (Number(j.expense) || 0), 0), jobTeam = jobs.reduce((s, j) => s + jobTeamSum(j), 0);
+  rec += jobRec; spent += jobExp;
+  const earn = (finPeriod === "all" ? rec - spent - team : rec - spent) - jobTeam;
   /* стовпчики: різниця «отримано − витрати» за останні 4 місяці */
   const months = [3, 2, 1, 0].map(k => { const d = new Date(now.getFullYear(), now.getMonth() - k, 15); return { key: finMonthKey(d), label: d.toLocaleDateString("uk-UA", { month:"short" }).replace(".", "") }; });
-  months.forEach(mo => { mo.v = 0; projects.forEach(p => { moneyList(p, "payment").forEach(e => { if(finMonthKey(e.date || e.at) === mo.key) mo.v += Number(e.amount) || 0; }); moneyList(p, "expense").forEach(e => { if(finMonthKey(e.date || e.at) === mo.key) mo.v -= Number(e.amount) || 0; }); }); });
+  months.forEach(mo => { mo.v = 0; projects.forEach(p => { moneyList(p, "payment").forEach(e => { if(finMonthKey(e.date || e.at) === mo.key) mo.v += Number(e.amount) || 0; }); moneyList(p, "expense").forEach(e => { if(finMonthKey(e.date || e.at) === mo.key) mo.v -= Number(e.amount) || 0; }); }); jobsList().forEach(j => { if(finMonthKey(j.date) === mo.key) mo.v += jobEarn(j); }); });
   const max = Math.max(1, ...months.map(m => Math.abs(m.v)));
   const chip = (k, l) => `<button type="button" class="hChip ${finPeriod === k ? "on" : ""}" onclick="finPeriod='${k}';renderFinance()">${l}</button>`;
   const row = (a, b, cls, sub) => `<div class="msRow ${cls || ""}"><span>${a}${sub ? `<small>${sub}</small>` : ""}</span><b>${b}</b></div>`;
@@ -8131,13 +8160,493 @@ function renderFinanceHtml(){
       ${finPeriod === "all" ? row("Клієнти винні", money(debt), debt > 0.5 ? "neg" : "") : ""}
       ${row("Отримано від клієнтів", money(rec))}
       ${row("Витрати", money(spent))}
-      ${finPeriod === "all" ? row("Команді", money(team)) : ""}
+      ${finPeriod === "all" || jobTeam ? row("Команді", money((finPeriod === "all" ? team : 0) + jobTeam)) : ""}
+      ${jobRec ? row("З них разові роботи", money(jobRec), "", `${jobs.length} ${jobs.length === 1 ? "запис" : jobs.length < 5 ? "записи" : "записів"}`) : ""}
       ${finPeriod === "all" && matIncome ? row("Дохід з матеріалів", money(matIncome), "", "кошторис мінус закупівля за планом") : ""}
     </div>
     <div class="msBox"><div class="finHead">За об’єктами</div>
       ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}<small>${r.debt > 0.5 ? "винен " + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
     </div>
+    <div class="msBox"><div class="finHead finHeadRow">Разові роботи<button type="button" class="finAdd" onclick="openJobForm()">＋ Додати</button></div>
+      ${jobs.length ? jobs.map(j => `<button type="button" class="msRow finObj" onclick="openJobForm('${escapeHtml(j.id)}')"><span>${escapeHtml(j.title)}${Number(j.qty) > 1 && Number(j.price) ? ` · ${escapeHtml(String(j.qty))} × ${money(j.price)}` : ""}<small>${formatQuoteDate(j.date).slice(0, 5)}${j.place ? " · " + escapeHtml(j.place) : ""}${(j.people || []).length ? " · " + j.people.map(x => escapeHtml(x.name)).join(", ") : ""}</small></span><b class="pos">${money(jobEarn(j))}</b></button>`).join("") : `<div class="msRow"><span>Дрібні роботи без кошторису: радіатори, умивальник…<small>Записуйте їх тут — вони підуть у заробіток.</small></span></div>`}
+    </div>
   </div>`;
+}
+
+
+/* ==== Разові роботи й розрахунки з командою ====
+   sa_jobs = [{ id, date, title, qty, price, amount, place, expense, people:[{ personId, name, amount }] }]
+   sa_teamLedger = [{ id, personId, date, kind:"pay"|"expense", amount, note, projectId, expenseId }]
+   pay — видали аванс/зарплату; expense — працівник купив за свої (ми винні йому). */
+const JOBS_KEY = "sa_jobs", LEDGER_KEY = "sa_teamLedger";
+function lsList(k){ try{ const v = JSON.parse(localStorage.getItem(k) || "[]"); return Array.isArray(v) ? v : []; }catch(e){ return []; } }
+function lsSave(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} if(typeof crewSoon === "function") crewSoon(); }
+const jobsList = () => lsList(JOBS_KEY);
+const ledgerList = () => lsList(LEDGER_KEY);
+function jobTeamSum(j){ return (j.people || []).reduce((s, x) => s + (Number(x.amount) || 0), 0); }
+function jobEarn(j){ return (Number(j.amount) || 0) - (Number(j.expense) || 0) - jobTeamSum(j); }
+function inFinPeriod(date){
+  if(finPeriod === "all") return true;
+  const now = new Date();
+  const key = finPeriod === "cur" ? finMonthKey(now) : finMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 15));
+  return finMonthKey(date) === key;
+}
+
+/* «＋ Створити»: об’єкт чи разова робота */
+function openCreateChoice(){
+  let el = document.getElementById("addMenu");
+  if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
+  const item = (icon, title, sub, action) => `<button type="button" class="amItem" onclick="closeAddMenu();${action}"><span class="amIcon">${icon}</span><span class="amText"><b>${title}</b><small>${sub}</small></span></button>`;
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Створити">
+    <div class="amHead"><b>Створити</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    ${item("🏠", "Новий об’єкт", "кошторис, закупівля, облік — повний шлях", "openNewProject()")}
+    ${item("🔧", "Разова робота", "дрібна робота без кошторису: радіатори, умивальник…", "openJobForm()")}
+  </div>`;
+  requestAnimationFrame(() => el.classList.add("open"));
+}
+
+/* ---- Форма разової роботи ---- */
+let jobDraft = null;
+function openJobForm(id){
+  const j = id ? jobsList().find(x => x.id === id) : null;
+  jobDraft = j ? JSON.parse(JSON.stringify(j)) : { id:"", date: todayIso(), title:"", qty:"", price:"", amount:0, place:"", expense:"", people:[] };
+  let el = document.getElementById("jobScreen");
+  if(!el){ el = document.createElement("div"); el.id = "jobScreen"; el.className = "onbScreen"; el.style.zIndex = "310"; document.body.appendChild(el); }
+  renderJobForm();
+  el.classList.add("open");
+  if(!j) setTimeout(() => document.getElementById("jobTitle")?.focus(), 120);
+}
+function closeJobForm(){ document.getElementById("jobScreen")?.classList.remove("open"); jobDraft = null; }
+function jobSet(field, value){
+  if(!jobDraft) return;
+  jobDraft[field] = value;
+  const qty = parseMoneyInput(jobDraft.qty || ""), price = parseMoneyInput(jobDraft.price || "");
+  if((field === "qty" || field === "price") && qty > 0 && price > 0) jobDraft.amount = Math.round(qty * price);
+  if(field === "amount") jobDraft.amount = parseMoneyInput(value || "0");
+  /* частка працівника за відсотком — перераховуємо, поки її не правили руками */
+  jobDraft.people.forEach(x => { if(!x.manual){ const per = team.find(t => t.id === x.personId); if(per && /percent/.test(per.payType || "")) x.amount = Math.round((Number(jobDraft.amount) || 0) * (Number(per.payValue) || 0) / 100); } });
+  if(field === "qty" || field === "price"){ const a = document.getElementById("jobAmount"); if(a) a.value = jobDraft.amount ? String(jobDraft.amount) : ""; }
+  if(field !== "title" && field !== "place") renderJobTotals();
+}
+function jobTogglePerson(pid){
+  const per = team.find(t => t.id === pid);
+  if(!per || !jobDraft) return;
+  const ix = jobDraft.people.findIndex(x => x.personId === pid);
+  if(ix >= 0) jobDraft.people.splice(ix, 1);
+  else jobDraft.people.push({ personId: pid, name: per.name, amount: /percent/.test(per.payType || "") ? Math.round((Number(jobDraft.amount) || 0) * (Number(per.payValue) || 0) / 100) : 0 });
+  renderJobForm();
+}
+function jobPersonAmount(pid, v){
+  const x = jobDraft && jobDraft.people.find(p => p.personId === pid);
+  if(!x) return;
+  x.amount = parseMoneyInput(v || "0"); x.manual = true;
+  renderJobTotals();
+}
+function renderJobTotals(){
+  const box = document.getElementById("jobTotals");
+  if(!box || !jobDraft) return;
+  const exp = parseMoneyInput(jobDraft.expense || "0");
+  const earn = (Number(jobDraft.amount) || 0) - exp - jobTeamSum(jobDraft);
+  box.innerHTML = `<div class="msRow"><span>Отримано</span><b>${money(jobDraft.amount || 0)}</b></div>
+    ${exp ? `<div class="msRow"><span>Витрати</span><b>−${money(exp)}</b></div>` : ""}
+    ${jobDraft.people.map(x => `<div class="msRow"><span>${escapeHtml(x.name)}</span><b>−${money(x.amount || 0)}</b></div>`).join("")}
+    <div class="msRow big ${earn < 0 ? "neg" : "pos"}"><span>Ваш заробіток</span><b>${money(earn)}</b></div>`;
+}
+function renderJobForm(){
+  const el = document.getElementById("jobScreen");
+  if(!el || !jobDraft) return;
+  const j = jobDraft;
+  const v = x => escapeHtml(x === undefined || x === null ? "" : String(x));
+  el.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeJobForm()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${j.id ? "Разова робота" : "Нова разова робота"}</span></div>
+    <div class="jobForm">
+      <label>Що зробили<input id="jobTitle" value="${v(j.title)}" placeholder="Монтаж радіаторів" oninput="jobSet('title',this.value)"></label>
+      <div class="jobRow"><label>Кількість<input inputmode="decimal" value="${v(j.qty)}" placeholder="12" oninput="jobSet('qty',this.value)"></label><span class="jobX">×</span><label>Ціна, ₴<input inputmode="decimal" value="${v(j.price)}" placeholder="1 250" oninput="jobSet('price',this.value)"></label></div>
+      <label>Сума, ₴<input id="jobAmount" inputmode="decimal" value="${j.amount ? v(j.amount) : ""}" placeholder="або одразу сума: 3 500" oninput="jobSet('amount',this.value)"></label>
+      <label>Де / клієнт <small>необов’язково</small><input value="${v(j.place)}" placeholder="ЖК Оболонь, кв. 34, Ігор" oninput="jobSet('place',this.value)"></label>
+      <div class="jobRow"><label>Дата<input type="date" value="${v(j.date)}" onchange="jobSet('date',this.value)"></label><label>Витрати, ₴ <small>якщо були</small><input inputmode="decimal" value="${v(j.expense)}" placeholder="0" oninput="jobSet('expense',this.value)"></label></div>
+      ${team.length ? `<div class="jobWho"><span>Хто робив</span><div class="hChips" style="margin:0;flex-wrap:wrap">${team.map(t => `<button type="button" class="hChip ${j.people.some(x => x.personId === t.id) ? "on" : ""}" onclick="jobTogglePerson('${escapeHtml(t.id)}')">${escapeHtml(t.name)}</button>`).join("")}</div>
+        ${j.people.map(x => `<label class="jobShare">${escapeHtml(x.name)} отримує, ₴<input inputmode="decimal" value="${x.amount ? v(x.amount) : ""}" oninput="jobPersonAmount('${escapeHtml(x.personId)}',this.value)"></label>`).join("")}</div>` : ""}
+    </div>
+    <div class="msBox" id="jobTotals"></div>
+    <div class="onbSpacer"></div>
+    <button type="button" class="onbPrimary" onclick="saveJob()">Зберегти</button>
+    ${j.id ? `<button type="button" class="onbLink" style="color:var(--red)" onclick="deleteJob('${escapeHtml(j.id)}')">Видалити запис</button>` : ""}
+  </div>`;
+  renderJobTotals();
+}
+function saveJob(){
+  const j = jobDraft;
+  if(!j) return;
+  j.title = cleanText(j.title);
+  j.amount = Number(j.amount) || 0;
+  if(!j.title){ toast("Впишіть, що зробили"); return; }
+  if(!(j.amount > 0)){ toast("Впишіть суму"); return; }
+  j.expense = parseMoneyInput(j.expense || "0");
+  const list = jobsList();
+  if(j.id){ const ix = list.findIndex(x => x.id === j.id); if(ix >= 0) list[ix] = j; }
+  else{ j.id = uid("job"); list.push(j); }
+  lsSave(JOBS_KEY, list);
+  closeJobForm();
+  render();
+  toast(`Записано: ${j.title} · ${money(j.amount)}`);
+}
+function deleteJob(id){
+  if(!confirm("Видалити цей запис?")) return;
+  lsSave(JOBS_KEY, jobsList().filter(x => x.id !== id));
+  closeJobForm();
+  render();
+}
+
+/* ---- Розрахунки з працівником ---- */
+function personBalance(pid){
+  const per = team.find(t => t.id === pid);
+  const objects = [];
+  projects.forEach(p => (p.teamAssignments || []).forEach(a => {
+    if(a.personId !== pid) return;
+    const v = getProjectAssignmentEarning(p, a);
+    objects.push({ p, a, amount: v });
+  }));
+  const jobs = jobsList().filter(j => (j.people || []).some(x => x.personId === pid)).map(j => ({ j, amount: Number((j.people.find(x => x.personId === pid) || {}).amount) || 0 }));
+  const led = ledgerList().filter(e => e.personId === pid);
+  const earned = objects.reduce((s, o) => s + (Number(o.amount) || 0), 0) + jobs.reduce((s, x) => s + x.amount, 0);
+  /* витрати в обліку об’єкта з «Кому: Толік» — теж видані йому гроші */
+  const nm = String(per ? per.name : "").trim().toLowerCase();
+  if(nm) projects.forEach(p => moneyList(p, "expense").forEach(x => {
+    if(String(x.to || "").trim().toLowerCase() === nm && !led.some(e => e.expenseId === x.id)) led.push({ id:"", kind:"pay", amount:Number(x.amount) || 0, date:x.date, note:x.note || "", projectId:p.id, fromObject:true });
+  }));
+  const paid = led.filter(e => e.kind === "pay").reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const bought = led.filter(e => e.kind === "expense").reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  return { per, objects, jobs, led, earned, paid, bought, balance: earned + bought - paid };
+}
+let personUi = null;
+function openPersonLedger(pid){
+  personUi = { pid, form: "" };
+  let el = document.getElementById("personScreen");
+  if(!el){ el = document.createElement("div"); el.id = "personScreen"; el.className = "onbScreen"; el.style.zIndex = "310"; document.body.appendChild(el); }
+  renderPersonLedger();
+  el.classList.add("open");
+}
+function closePersonLedger(){ document.getElementById("personScreen")?.classList.remove("open"); personUi = null; renderTeamList(); }
+function renderPersonLedger(){
+  const el = document.getElementById("personScreen");
+  if(!el || !personUi) return;
+  const b = personBalance(personUi.pid);
+  if(!b.per){ closePersonLedger(); return; }
+  const name = escapeHtml(b.per.name);
+  const act = projects.filter(p => (p.status || "active") !== "archived");
+  const f = personUi.form;
+  const row = (a, s, amt, cls, del) => `<div class="msRow ${cls || ""}"><span>${a}${s ? `<small>${s}</small>` : ""}</span><span class="peAmt"><b>${amt}</b>${del ? `<button type="button" class="ptDel" onclick="${del}" aria-label="Прибрати">×</button>` : ""}</span></div>`;
+  el.innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closePersonLedger()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${name}</span></div>
+    <div class="msBox finBig"><small>${b.balance >= 0 ? "Ще належить" : "Видано більше, ніж нараховано, на"}</small><b class="${b.balance < 0 ? "neg" : ""}" style="color:${b.balance >= 0 ? "var(--t)" : ""}">${money(Math.abs(b.balance))}</b>
+      <div class="personSum">нараховано ${money(b.earned)}${b.bought ? ` · його покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div></div>
+    <div class="jobBtns"><button type="button" class="hBtn pr" onclick="personUi.form='pay';renderPersonLedger()">＋ Видав гроші</button><button type="button" class="hBtn" onclick="personUi.form='expense';renderPersonLedger()">＋ Купив за свої</button></div>
+    ${f ? `<form class="msBox jobForm" onsubmit="event.preventDefault();savePersonEntry()">
+      <b style="font-size:.9375rem">${f === "pay" ? "Видали аванс чи зарплату" : `${name} купив за свої — ви повернете`}</b>
+      <div class="jobRow"><label>Сума, ₴<input id="peAmount" inputmode="decimal" placeholder="5 000"></label><label>Дата<input id="peDate" type="date" value="${todayIso()}"></label></div>
+      <label>${f === "pay" ? "Коментар" : "Що купив"}<input id="peNote" placeholder="${f === "pay" ? "аванс за Діброву" : "3 коліна, герметик"}"></label>
+      ${f === "expense" && act.length ? `<label>На який об’єкт<select id="peProject"><option value="">— без об’єкта</option>${act.map(p => `<option value="${escapeHtml(p.id)}">${projectTitle(p)}</option>`).join("")}</select></label><small class="jobHint">Покупка піде також у витрати об’єкта.</small>` : ""}
+      <div class="jobBtns"><button type="submit" class="hBtn pr">Записати</button><button type="button" class="hBtn" onclick="personUi.form='';renderPersonLedger()">Скасувати</button></div>
+    </form>` : ""}
+    <div class="msBox"><div class="finHead">Нараховано</div>
+      ${b.objects.map(o => row(projectTitle(o.p), `${/percent/.test(o.a.payType || "") ? (Number(o.a.payValue) || 0) + "% від робіт · " : ""}етап «${escapeHtml(PATH_STEPS[projectPathIndex(o.p)] || "")}»`, o.amount === null ? "уточнити" : money(o.amount))).join("")}
+      ${b.jobs.map(x => row(escapeHtml(x.j.title), `${formatQuoteDate(x.j.date).slice(0, 5)}${x.j.place ? " · " + escapeHtml(x.j.place) : ""} · разова`, money(x.amount))).join("")}
+      ${!b.objects.length && !b.jobs.length ? `<div class="msRow"><span>Ще нічого</span></div>` : ""}
+    </div>
+    ${renderCrewLinkBox(b.per)}
+    ${b.led.length ? `<div class="msBox"><div class="finHead">Видано й покупки</div>
+      ${b.led.slice().sort((x, y) => String(y.date).localeCompare(String(x.date))).map(e => row(e.kind === "pay" ? "Видано" : "Купив за свої", `${formatQuoteDate(e.date).slice(0, 5)}${e.note ? " · " + escapeHtml(e.note) : ""}${e.projectId ? " · " + escapeHtml(projectTitlePlain(projects.find(p => p.id === e.projectId) || {})) : ""}`, (e.kind === "pay" ? "−" : "+") + money(e.amount), "", e.fromObject ? "" : `deletePersonEntry('${escapeHtml(e.id)}')`)).join("")}</div>` : ""}
+    <div class="onbSpacer"></div>
+  </div>`;
+}
+function savePersonEntry(){
+  if(!personUi || !personUi.form) return;
+  const amount = parseMoneyInput(document.getElementById("peAmount")?.value || "0");
+  if(!(amount > 0)){ toast("Впишіть суму"); return; }
+  const e = { id: uid("led"), personId: personUi.pid, kind: personUi.form, amount, date: document.getElementById("peDate")?.value || todayIso(), note: cleanText(document.getElementById("peNote")?.value || "") };
+  const pid = document.getElementById("peProject")?.value || "";
+  if(e.kind === "expense" && pid){
+    const p = projects.find(x => x.id === pid);
+    if(p){
+      const per = team.find(t => t.id === personUi.pid);
+      const exp = { id: uid("exp"), date: e.date, amount, to: per ? per.name : "", note: `${per ? per.name + " купив" : "Купив працівник"}${e.note ? ": " + e.note : ""}` };
+      moneyList(p, "expense").push(exp);
+      e.projectId = pid; e.expenseId = exp.id;
+      touchProject(p);
+    }
+  }
+  const list = ledgerList(); list.push(e); lsSave(LEDGER_KEY, list);
+  personUi.form = "";
+  renderPersonLedger();
+  toast(e.kind === "pay" ? `Видано ${money(amount)}` : `Записано: купив за свої ${money(amount)}`);
+}
+function deletePersonEntry(id){
+  const e = ledgerList().find(x => x.id === id);
+  if(!e || !confirm("Прибрати цей запис?")) return;
+  if(e.projectId && e.expenseId){
+    const p = projects.find(x => x.id === e.projectId);
+    if(p){ const l = moneyList(p, "expense"); const ix = l.findIndex(x => x.id === e.expenseId); if(ix >= 0){ l.splice(ix, 1); touchProject(p); } }
+  }
+  lsSave(LEDGER_KEY, ledgerList().filter(x => x.id !== id));
+  renderPersonLedger();
+}
+
+
+/* ==== Посилання для працівника (w.html) і файли об’єкта ====
+   person.wLink — id посилання. Працівник бачить лише об’єкти, де його призначено:
+   назву (без імені клієнта), адресу, нотатки (крім 🔒), файли, свій заробіток і розрахунок.
+   Його дії (галочка, прохання, «купив за свої») приходять подіями й застосовуються тут. */
+const WORKER_LINK_BASE = "https://sa-master.pro/w.html#";
+const CREW_SEEN_KEY = "sa_crewSeen";
+let crewTimer = null, crewBusy = false, crewPollAt = 0;
+function crewPeople(){ return team.filter(t => t.wLink); }
+function crewProjectsFor(pid){ return projects.filter(p => (p.status || "active") !== "archived" && (p.teamAssignments || []).some(a => a.personId === pid)); }
+function crewObjTitle(p){ return cleanText(p.title || "") || cleanText((p.client || {}).address || "") || "Об’єкт"; }
+function crewState(per){
+  const b = personBalance(per.id);
+  const objects = crewProjectsFor(per.id).map(p => {
+    const a = (p.teamAssignments || []).find(x => x.personId === per.id);
+    const earned = getProjectAssignmentEarning(p, a);
+    return {
+      pid: p.id, title: crewObjTitle(p), address: cleanText((p.client || {}).address || ""),
+      stage: PATH_STEPS[projectPathIndex(p)] || "",
+      earned: earned === null ? null : Math.round(earned),
+      earnedNote: /percent_of_work/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від робіт` : /percent_of_income/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від суми` : a.payType === "fixed_per_object" ? "фіксовано за об’єкт" : "",
+      notes: (p.todo || []).filter(t => !t.priv).map(t => ({ id:t.id, text:t.text, done:Boolean(t.done), doneAt:t.doneAt || "", doneBy:t.doneBy || "" })),
+      files: (p.files || []).map(f => ({ id:f.id, name:f.name, type:f.type })),
+      requests: (p.crewReq || []).filter(r => r.personId === per.id).slice(-30).map(r => ({ id:r.id, text:r.text, at:r.at, status:r.status })),
+      bought: (p.crewBought || []).filter(r => r.personId === per.id).slice(-30).map(r => ({ id:r.id, text:r.text, amount:r.amount, date:r.date, status:r.status }))
+    };
+  });
+  return {
+    objects,
+    balance: { earned:Math.round(b.earned), paid:Math.round(b.paid), bought:Math.round(b.bought), balance:Math.round(b.balance) },
+    jobs: b.jobs.map(x => ({ title:x.j.title, date:x.j.date, place:x.j.place || "", amount:x.amount })),
+    money: b.led.map(e => ({ kind:e.kind, date:e.date, amount:e.amount, note:e.note || "" }))
+  };
+}
+function crewSoon(){ if(!crewPeople().length) return; clearTimeout(crewTimer); crewTimer = setTimeout(crewSync, 2500); }
+function crewSeen(){ try{ return JSON.parse(localStorage.getItem(CREW_SEEN_KEY) || "{}") || {}; }catch(e){ return {}; } }
+async function crewPublish(per){
+  const state = crewState(per);
+  const sig = JSON.stringify(state);
+  if(per._wSig === sig) return;
+  const data = await supplierApi("/w", { method:"POST", body: JSON.stringify({
+    id: per.wLink || "", personId: per.id, personName: per.name,
+    masterName: [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" "),
+    masterPhone: String(profile.phone || ""), state }) });
+  per.wLink = data.id;
+  Object.defineProperty(per, "_wSig", { value:sig, writable:true, enumerable:false, configurable:true });
+  return data.id;
+}
+/* Події працівника: застосовуємо один раз (id запам’ятовуємо) */
+function crewApply(per, events){
+  const seen = crewSeen();
+  const mine = new Set(seen[per.wLink] || []);
+  let changed = false, news = 0;
+  events.forEach(ev => {
+    if(mine.has(ev.id)) return;
+    mine.add(ev.id);
+    const p = projects.find(x => x.id === ev.pid);
+    if(!p || !(p.teamAssignments || []).some(a => a.personId === per.id)) return;
+    if(ev.type === "done" || ev.type === "undone"){
+      const t = (p.todo || []).find(x => x.id === ev.noteId && !x.priv);
+      if(!t) return;
+      t.done = ev.type === "done"; t.doneAt = t.done ? ev.at : ""; t.doneBy = t.done ? per.name : "";
+    }else if(ev.type === "request"){
+      if(!Array.isArray(p.crewReq)) p.crewReq = [];
+      p.crewReq.push({ id:ev.id, personId:per.id, name:per.name, text:ev.text, at:ev.at, status:"new" }); news++;
+    }else if(ev.type === "bought"){
+      if(!Array.isArray(p.crewBought)) p.crewBought = [];
+      p.crewBought.push({ id:ev.id, personId:per.id, name:per.name, text:ev.text || "", amount:Number(ev.amount) || 0, date:ev.date || ev.at.slice(0, 10), photo:ev.photo || "", at:ev.at, status:"wait" }); news++;
+    }else return;
+    p.updatedAt = new Date().toISOString(); changed = true;
+  });
+  seen[per.wLink] = Array.from(mine).slice(-600);
+  try{ localStorage.setItem(CREW_SEEN_KEY, JSON.stringify(seen)); }catch(e){}
+  if(changed){ saveProjects(); }
+  return { changed, news };
+}
+async function crewSync(){
+  if(crewBusy || !cloudEnabled() || !cloudSession()) return;
+  crewBusy = true; crewPollAt = Date.now();
+  let changed = false, news = 0;
+  try{
+    for(const per of crewPeople()){
+      try{
+        const r = await fetch(`${cloudConfig().server}/w/${per.wLink}`, { cache:"no-store" });
+        if(r.ok){ const d = await r.json(); const res = crewApply(per, d.events || []); changed = changed || res.changed; news += res.news; }
+        await crewPublish(per);
+      }catch(e){}
+    }
+  }finally{ crewBusy = false; }
+  if(changed) render();
+  if(news) toast(news === 1 ? "Нове від працівника — у «Аудит»" : `Нового від працівників: ${news} — у «Аудит»`);
+}
+window.addEventListener("focus", () => { if(Date.now() - crewPollAt > 20000) crewSync(); });
+setInterval(() => { if(document.visibilityState === "visible") crewSync(); }, 60000);
+setTimeout(crewSync, 4000);
+
+function crewLinkText(per, id){
+  return `${per.name}, це твоє посилання на об’єкти: адреси, нотатки з галочками, файли й твій розрахунок.\n${WORKER_LINK_BASE}${id}\n\nПорада: «Поділитися» → «На екран „Додому“» — відкриватиметься як застосунок.`;
+}
+async function crewShare(pid){
+  const per = team.find(t => t.id === pid);
+  if(!per) return;
+  if(!cloudEnabled() || !cloudSession()){ toast("Спершу увійдіть у профілі — посилання працює через хмару"); return; }
+  if(!crewProjectsFor(pid).length && !confirm(`${per.name} ще не призначений на жоден об’єкт. Створити посилання все одно?`)) return;
+  let id;
+  try{ id = await crewPublish(per); }catch(e){ toast(e.message === "login" ? "Увійдіть у профілі" : "Не вдалося створити посилання"); return; }
+  id = id || per.wLink;
+  saveTeamData(); renderPersonLedger();
+  const text = crewLinkText(per, id);
+  if(navigator.share){ try{ await navigator.share({ text }); return; }catch(e){ if(e && e.name === "AbortError") return; } }
+  try{ await copyText(text); toast("Посилання скопійовано"); }catch(e){ toast("Не вдалося скопіювати"); }
+}
+async function crewRevoke(pid){
+  const per = team.find(t => t.id === pid);
+  if(!per || !per.wLink || !confirm(`Вимкнути посилання ${per.name}? Він більше не бачитиме об’єктів. Нове посилання можна створити будь-коли.`)) return;
+  try{ await supplierApi(`/w/${per.wLink}/revoke`, { method:"POST", body:"{}" }); }catch(e){}
+  delete per.wLink; saveTeamData(); renderPersonLedger(); toast("Посилання вимкнено");
+}
+function renderCrewLinkBox(per){
+  const n = crewProjectsFor(per.id).length;
+  return `<div class="msBox"><div class="finHead">Посилання для ${escapeHtml(per.name)}</div>
+    <div class="crewInfo">${per.wLink ? `Він бачить ${n} ${n === 1 ? "об’єкт" : n > 1 && n < 5 ? "об’єкти" : "об’єктів"}: адресу, нотатки (крім 🔒), файли й свій розрахунок. Кошторису, цін і сум клієнта — ні.` : `Його об’єкти (де ви його призначили): адреса й маршрут, ваші нотатки з галочками, проєкт і фото, його заробіток. Він зможе написати, що потрібно на об’єкт, і записати «купив за свої» з фото чека.`}</div>
+    <div class="jobBtns" style="margin-bottom:0"><button type="button" class="hBtn pr" onclick="crewShare('${escapeHtml(per.id)}')">${per.wLink ? "Надіслати ще раз" : "Створити й надіслати"}</button>${per.wLink ? `<button type="button" class="hBtn" onclick="crewRevoke('${escapeHtml(per.id)}')">Вимкнути</button>` : ""}</div></div>`;
+}
+
+/* ---- Від працівника: прохання і покупки за свої (у вкладці «Аудит») ---- */
+function crewPending(p){
+  return { req:(p.crewReq || []).filter(r => r.status === "new"), bought:(p.crewBought || []).filter(r => r.status === "wait") };
+}
+function crewFileUrl(id){ return `${cloudConfig().server}/f/${id}`; }
+function renderCrewBox(p){
+  const { req, bought } = crewPending(p);
+  if(!req.length && !bought.length) return "";
+  const when = at => { const d = new Date(at); return isNaN(d) ? "" : d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); };
+  return `<section class="planTodo crewBox"><div class="ptHead"><span>Від працівника</span></div>
+    ${req.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.text)}<small>від ${escapeHtml(r.name)} · ${when(r.at)}</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewReqBuy('${escapeHtml(r.id)}')">→ Купити</button><button type="button" class="ptBtn" onclick="crewReqDone('${escapeHtml(r.id)}')">✓ Зроблено</button></span></div>`).join("")}
+    ${bought.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)} купив за свої: ${money(r.amount)}<small>${r.text ? escapeHtml(r.text) + " · " : ""}${formatQuoteDate(r.date).slice(0, 5)}${r.photo ? ` · <a href="${crewFileUrl(r.photo)}" target="_blank" rel="noopener">фото чека</a>` : ""}</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewBoughtOk('${escapeHtml(r.id)}')">✓ Підтвердити</button><button type="button" class="ptBtn" onclick="crewBoughtNo('${escapeHtml(r.id)}')" aria-label="Відхилити">✕</button></span></div>`).join("")}
+  </section>`;
+}
+function crewReqDone(id){
+  const p = planCurrent(); const r = p && (p.crewReq || []).find(x => x.id === id);
+  if(!r) return;
+  r.status = "done"; r.doneAt = new Date().toISOString();
+  touchProject(p); render();
+}
+function crewReqBuy(id){
+  const p = planCurrent(); const r = p && (p.crewReq || []).find(x => x.id === id);
+  if(!r) return;
+  r.status = "buy"; r.doneAt = new Date().toISOString();
+  touchProject(p); render();
+  openPlanAdd();
+  if(planUi){ planUi.q = r.text; renderPlanScreen(); const i = document.getElementById("planAddQ"); if(i){ i.value = r.text; i.dispatchEvent(new Event("input")); } }
+}
+/* Записати покупку працівника: у його розрахунок і у витрати об’єкта */
+function crewRecordExpense(p, personId, amount, date, note, extra){
+  const per = team.find(t => t.id === personId);
+  const e = { id: uid("led"), personId, kind:"expense", amount, date: date || todayIso(), note: note || "", ...(extra || {}) };
+  if(p){
+    const exp = { id: uid("exp"), date: e.date, amount, to: per ? per.name : "", note: `${per ? per.name + " купив" : "Купив працівник"}${note ? ": " + note : ""}` };
+    moneyList(p, "expense").push(exp);
+    e.projectId = p.id; e.expenseId = exp.id;
+  }
+  const list = ledgerList(); list.push(e); lsSave(LEDGER_KEY, list);
+  return e;
+}
+function crewBoughtOk(id){
+  const p = planCurrent(); const r = p && (p.crewBought || []).find(x => x.id === id);
+  if(!r) return;
+  crewRecordExpense(p, r.personId, r.amount, r.date, r.text, r.photo ? { photo:r.photo } : null);
+  r.status = "ok"; r.okAt = new Date().toISOString();
+  touchProject(p); render();
+  toast(`Записано: ${money(r.amount)} — у витрати об’єкта й розрахунок ${r.name}`);
+}
+function crewBoughtNo(id){
+  const p = planCurrent(); const r = p && (p.crewBought || []).find(x => x.id === id);
+  if(!r || !confirm("Не записувати цю покупку? Працівник побачить «не прийнято».")) return;
+  r.status = "no";
+  touchProject(p); render();
+}
+
+/* ---- Файли об’єкта: проєкт (PDF) і фото ---- */
+function renderFilesBox(p){
+  const files = p.files || [];
+  if(!files.length && !filesUploading) return "";
+  return `<section class="planTodo filesBox"><div class="ptHead"><span>Проєкт і фото</span><label class="ptLink">＋ Додати<input type="file" accept="image/*,application/pdf" multiple hidden onchange="filesAdd(this.files);this.value=''"></label></div>
+    <div class="fGrid">${files.map(f => f.type === "application/pdf"
+      ? `<a class="fItem pdf" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener"><b>PDF</b><span>${escapeHtml(f.name)}</span></a>`
+      : `<a class="fItem" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener" style="background-image:url('${crewFileUrl(f.id)}')"></a>`).join("")}
+      ${filesUploading ? `<div class="fItem busy">${filesUploading}…</div>` : ""}</div>
+    ${files.length ? `<div class="ptFoot"><span class="crewInfo">Бачите ви й працівники об’єкта</span><button type="button" class="ptLink muted" onclick="filesManage()">Видалити…</button></div>` : ""}
+  </section>`;
+}
+let filesUploading = 0;
+function filesPick(){
+  const i = document.createElement("input");
+  i.type = "file"; i.accept = "image/*,application/pdf"; i.multiple = true;
+  i.onchange = () => filesAdd(i.files);
+  i.click();
+}
+/* Фото стискаємо на телефоні (до ~1600 px, JPEG) — виходить 200–400 КБ */
+function filesShrink(file){
+  return new Promise(resolve => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => resolve(b ? new File([b], (file.name || "foto").replace(/\.\w+$/, "") + ".jpg", { type:"image/jpeg" }) : file), "image/jpeg", 0.72);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+async function filesAdd(list){
+  const p = planCurrent();
+  if(!p || !list || !list.length) return;
+  if(!cloudEnabled() || !cloudSession()){ toast("Увійдіть у профілі — файли зберігаються в хмарі"); return; }
+  const arr = Array.from(list).slice(0, 20);
+  for(const f0 of arr){
+    const isPdf = f0.type === "application/pdf";
+    if(!isPdf && !/^image\//.test(f0.type)){ toast("Лише фото або PDF"); continue; }
+    if(isPdf && f0.size > 20 * 1024 * 1024){ toast(`${f0.name}: більше 20 МБ`); continue; }
+    filesUploading++; render();
+    try{
+      const f = isPdf ? f0 : await filesShrink(f0);
+      const fd = new FormData(); fd.append("file", f, f.name);
+      const r = await fetch(`${cloudConfig().server}/f`, { method:"POST", headers: cloudAuthHeaders(), body: fd });
+      const d = await r.json().catch(() => ({}));
+      if(!r.ok) throw new Error(d.error || "server");
+      if(!Array.isArray(p.files)) p.files = [];
+      p.files.push({ id:d.id, name:d.name, type:d.type, size:d.size, at:d.at });
+      touchProject(p);
+    }catch(e){ toast("Не вдалося завантажити: " + (e.message || "")); }
+    filesUploading--; render();
+  }
+}
+function filesManage(){
+  const p = planCurrent();
+  if(!p) return;
+  let el = document.getElementById("addMenu");
+  if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Файли"><div class="amHead"><b>Видалити файл</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    ${(p.files || []).map(f => `<button type="button" class="amItem" onclick="filesDel('${escapeHtml(f.id)}')"><span class="amIcon">${f.type === "application/pdf" ? "📄" : "🖼"}</span><span class="amText"><b>${escapeHtml(f.name)}</b><small>${Math.max(1, Math.round((f.size || 0) / 1024))} КБ · натисніть, щоб видалити</small></span></button>`).join("")}</div>`;
+  requestAnimationFrame(() => el.classList.add("open"));
+}
+async function filesDel(id){
+  const p = planCurrent();
+  const f = p && (p.files || []).find(x => x.id === id);
+  if(!f || !confirm(`Видалити «${f.name}»?`)) return;
+  try{ await supplierApi(`/f/${id}/del`, { method:"POST", body:"{}" }); }catch(e){}
+  p.files = p.files.filter(x => x.id !== id);
+  touchProject(p); closeAddMenu(); render();
 }
 
 function renderEmptyState(){
@@ -8338,8 +8847,10 @@ function renderProject(p){
 
       <div class="projectView">
       ${renderStageHint(p)}
+      ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderCrewBox(p) : ""}
       ${buyOn(p) ? (projectTab === "notebook" ? renderBuyList(p) : "") : renderNextSteps(p) + (planOn(p) && projectTab === "estimate" ? "" : renderPlanTodo(p))}
       ${projectTab === "estimate" ? renderApprovedBanner(p) + renderClientSends(p) + renderSupLine(p) : projectTab === "notebook" ? renderClientSends(p) : ""}
+      ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderFilesBox(p) : ""}
       ${projectTab === "notebook" ? "" : projectTab === "money" ? renderMoneyTab(p) : `<div id="estMaterials">${renderMaterialsTab(p)}</div><div id="estWorks">${renderWorksTab(p)}</div>`}
       </div>
     </div>
@@ -16936,6 +17447,11 @@ function openProfile(){
   renderBackupStatus();
   renderProfileExtras();
 
+  /* З головного екрана (аватар угорі чи меню) Профіль — розділ з меню внизу */
+  if(!currentProjectId && document.body.dataset.sec !== "prof"){
+    if(document.body.dataset.sec === "cat" && document.getElementById("catalogSheet")?.classList.contains("open")){ navLeaving = true; closeCatalog(); navLeaving = false; }
+    setNavSection("prof");
+  }
   document.getElementById("profileScreen").classList.add("open");
 }
 
@@ -17161,10 +17677,11 @@ function renderTeamList(){
     <div class="fsCard" style="padding:.75rem .875rem">
       <div class="personRow">
         <div class="personAvatar">${escapeHtml(personInitial(p.name))}</div>
-        <button class="personBody" type="button" onclick="openEditPerson('${escapeHtml(p.id)}')" style="text-align:left">
+        <button class="personBody" type="button" onclick="openPersonLedger('${escapeHtml(p.id)}')" style="text-align:left">
           <div class="personName">${escapeHtml(p.name)}</div>
-          <div class="personMeta">${Number(p.payValue) || 0}${payValueUnit(p.payType)} · ${escapeHtml(payTypeLabel(p.payType))}</div>
+          <div class="personMeta">${(() => { const b = personBalance(p.id); return b.balance > 0.5 ? `ще належить <b style="color:var(--p)">${money(b.balance)}</b>` : b.balance < -0.5 ? `видано більше на ${money(-b.balance)}` : "розраховані"; })()} · ${Number(p.payValue) || 0}${payValueUnit(p.payType)}</div>
         </button>
+        <button class="personEdit" type="button" onclick="openEditPerson('${escapeHtml(p.id)}')" aria-label="Налаштування ${escapeHtml(p.name)}">✎</button>
         <button class="personDelete" type="button" onclick="deletePerson('${escapeHtml(p.id)}')" aria-label="Видалити ${escapeHtml(p.name)}">×</button>
       </div>
     </div>
@@ -18005,6 +18522,10 @@ function planNamesText(list, max){
 
 /* ---- Блок «Закупівля — що зробити» на екрані об'єкта ---- */
 let planNoteOpen = false;
+let planNotePriv = false;
+function noteHasCrew(p){ return Boolean(p && (p.teamAssignments || []).length); }
+function notePrivBtn(p){ return noteHasCrew(p) ? `<button type="button" class="ptPriv ${planNotePriv ? "on" : ""}" onclick="planNotePriv=!planNotePriv;this.classList.toggle('on')" title="Лише для мене — працівник не побачить">🔒 лише я</button>` : ""; }
+function noteText(t){ return `${t.priv ? "🔒 " : ""}${escapeHtml(t.text)}${t.done && t.doneBy ? `<small class="noteBy">✓ ${escapeHtml(t.doneBy)}, ${formatQuoteDate(t.doneAt).slice(0, 5)}</small>` : ""}`; }
 let planOfferHiddenFor = "";
 let planDoneOpen = false;
 
@@ -18047,8 +18568,8 @@ function renderPlanTodo(p){
   const todo = Array.isArray(p.todo) ? p.todo : [];
   const open = todo.filter(t => !t.done);
   if(open.length || planNoteOpen) parts.push(`<div class="ptGroup"><div class="ptGHead">Замітки</div><div class="ptChecks">${open.map(t => `
-    <div class="ptCheck"><button type="button" class="ptBox" onclick="planNoteToggle('${escapeHtml(t.id)}')" aria-label="Виконано"></button><span class="ptName">${escapeHtml(t.text)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`).join("")}
-    ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off"><button type="submit">Додати</button></form>` : ""}</div></div>`);
+    <div class="ptCheck"><button type="button" class="ptBox" onclick="planNoteToggle('${escapeHtml(t.id)}')" aria-label="Виконано"></button><span class="ptName">${noteText(t)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`).join("")}
+    ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off">${notePrivBtn(p)}<button type="submit">Додати</button></form>` : ""}</div></div>`);
 
   const steps = getNextSteps(p);
   if(steps.length) parts.push(`<div class="ptGroup">${steps.map(step => row(step.text, step.sub, btn(step.label, step.action, step.primary))).join("")}</div>`);
@@ -18058,7 +18579,7 @@ function renderPlanTodo(p){
   const doneCount = doneShop.length + doneNotes.length;
   const doneHtml = planDoneOpen && doneCount ? `<div class="ptGroup"><div class="ptGHead">Виконано</div><div class="ptChecks">${[
     ...doneShop.map(pos => { const paid = (pos.plan.find(e => e.k === "shop" && e.done && e.paid) || {}).paid; return `<div class="ptCheck done"><button type="button" class="ptBox on" onclick="planShopToggle('${escapeHtml(pos.id)}')">✓</button><span class="ptName">${escapeHtml(positionShortName(pos))}</span><span class="ptQ">${paid ? money(paid) : "куплено"}</span></div>`; }),
-    ...doneNotes.map(t => `<div class="ptCheck done"><button type="button" class="ptBox on" onclick="planNoteToggle('${escapeHtml(t.id)}')">✓</button><span class="ptName">${escapeHtml(t.text)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`)
+    ...doneNotes.map(t => `<div class="ptCheck done"><button type="button" class="ptBox on" onclick="planNoteToggle('${escapeHtml(t.id)}')">✓</button><span class="ptName">${noteText(t)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`)
   ].join("")}</div></div>` : "";
 
   return `
@@ -18081,8 +18602,8 @@ function planNoteAdd(){
   if(!p) return;
   if(!text){ planNoteOpen = false; render(); return; }
   if(!Array.isArray(p.todo)) p.todo = [];
-  p.todo.push({ id: uid("todo"), text, done:false, at: new Date().toISOString() });
-  planNoteOpen = false;
+  p.todo.push({ id: uid("todo"), text, done:false, at: new Date().toISOString(), ...(planNotePriv && noteHasCrew(p) ? { priv:true } : {}) });
+  planNoteOpen = false; planNotePriv = false;
   touchProject(p);
   render();
   toast("Нотатку додано");
@@ -18094,6 +18615,7 @@ function planNoteToggle(todoId){
   if(!t) return;
   t.done = !t.done;
   t.doneAt = t.done ? new Date().toISOString() : "";
+  t.doneBy = "";
   touchProject(p);
   render();
 }
@@ -19058,10 +19580,10 @@ function renderBuyList(p){
   const todo = Array.isArray(p.todo) ? p.todo : [];
   const openNotes = todo.filter(t => !t.done);
   const doneNotes = todo.filter(t => t.done);
-  const notes = openNotes.map(t => `<div class="byItem"><button type="button" class="ptBox" onclick="planNoteToggle('${escapeHtml(t.id)}')" aria-label="Виконано"></button><span class="byName">${escapeHtml(t.text)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`).join("");
+  const notes = openNotes.map(t => `<div class="byItem"><button type="button" class="ptBox" onclick="planNoteToggle('${escapeHtml(t.id)}')" aria-label="Виконано"></button><span class="byName">${noteText(t)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`).join("");
   const stg = p.stage || "estimate";
   const steps = getNextSteps(p).filter(st => !(stg === "work" && /^Клієнт винен/.test(st.text)) && !/^Без закупівельн/.test(st.text) && !(/^Роботи завершено/.test(st.text) && groups.length));
-  const done = buyDoneOpen ? `<div class="byGroup done"><div class="byHead"><span>Куплено / є</span></div>${doneList.map(pos => `<div class="byItem"><button type="button" class="ptBox on" onclick="buyToggle('${escapeHtml(pos.id)}')">✓</button><button type="button" class="byName" onclick="openBuySrc('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}<small>${escapeHtml(buyLabel(pos))}</small></button><span class="ptQ">${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")}</span></div>`).join("")}${doneNotes.map(t => `<div class="byItem"><button type="button" class="ptBox on" onclick="planNoteToggle('${escapeHtml(t.id)}')">✓</button><span class="byName">${escapeHtml(t.text)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')">×</button></div>`).join("")}</div>` : "";
+  const done = buyDoneOpen ? `<div class="byGroup done"><div class="byHead"><span>Куплено / є</span></div>${doneList.map(pos => `<div class="byItem"><button type="button" class="ptBox on" onclick="buyToggle('${escapeHtml(pos.id)}')">✓</button><button type="button" class="byName" onclick="openBuySrc('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}<small>${escapeHtml(buyLabel(pos))}</small></button><span class="ptQ">${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")}</span></div>`).join("")}${doneNotes.map(t => `<div class="byItem"><button type="button" class="ptBox on" onclick="planNoteToggle('${escapeHtml(t.id)}')">✓</button><span class="byName">${noteText(t)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')">×</button></div>`).join("")}</div>` : "";
   const doneCount = doneList.length + doneNotes.length;
   return `
     <section class="planTodo buyList">
@@ -19070,7 +19592,7 @@ function renderBuyList(p){
       ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}
       ${(() => { const left = buyLeftovers(p); return left.length ? `<div class="byTitle byLeft">Залишки<small>після змін у кошторисі</small></div>${left.map(x => `<div class="byItem byLeftItem"><span class="byName">${escapeHtml(x.l.n)}<small>${formatQty(x.q)} ${escapeHtml(x.l.u)}${x.l.s ? " · " + escapeHtml(x.l.s) : x.l.w ? " · " + escapeHtml(x.l.w) : ""}${x.gone ? " · прибрано з кошторису" : ""}</small></span><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','return')">Повернув</button><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','stock')">На склад</button></div>`).join("")}` : ""; })()}
       ${notes || planNoteOpen ? `<div class="byTitle">Нотатки</div>${notes}` : ""}
-      ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off" enterkeyhint="done"><button type="submit">Додати</button><button type="button" class="ghost" onclick="planNoteCancel()" aria-label="Скасувати">✕</button></form>` : ""}
+      ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off" enterkeyhint="done">${notePrivBtn(p)}<button type="submit">Додати</button><button type="button" class="ghost" onclick="planNoteCancel()" aria-label="Скасувати">✕</button></form>` : ""}
       ${steps.length ? `<div class="byGroup">${steps.map(step => `<div class="ptRow"><span class="ptText">${step.text}${step.sub ? `<small>${step.sub}</small>` : ""}</span><button type="button" class="ptBtn ${step.primary ? "primary" : ""}" onclick="${step.action}">${step.label}</button></div>`).join("")}</div>` : ""}
       ${done}
       ${buyDoneOpen && doneCount ? `<div class="ptFoot"><span></span><button type="button" class="ptLink muted" onclick="buyDoneOpen=false;render()">Сховати куплене</button></div>` : ""}
@@ -19695,6 +20217,7 @@ function openAddMenu(){
     <div class="amHead"><b>Що додати в кошторис?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
     ${item("📦", "Матеріал", "з каталогу матеріалів", "openCatalogFor('material')")}
     ${item("🔧", "Роботу", "з каталогу робіт", "openCatalogFor('work')")}
+    ${item("📎", "Проєкт чи фото", "PDF проєкту, фото прихованих комунікацій", "filesPick()")}
   </div>` : projectTab === "money" ? `<div class="amSheet" role="dialog" aria-label="Що додати">
     <div class="amHead"><b>Що додати?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
     ${item("💰", "Оплату від клієнта", "гроші, які клієнт заплатив вам", "openMoneyForm('payment')")}
@@ -19702,6 +20225,7 @@ function openAddMenu(){
   </div>` : `<div class="amSheet" role="dialog" aria-label="Що додати">
     <div class="amHead"><b>Що додати?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
     ${item("📦", "Матеріал", "що докупити — клієнту не йде; перенесете в кошторис, якщо треба", "openCatalogFor('material','notebook')")}
+    ${item("📎", "Проєкт чи фото", "PDF проєкту, фото прихованих комунікацій", "filesPick()")}
     ${item("📝", "Нотатку", "в «Аудит», з галочкою", "planNoteOpen=true;render();setTimeout(()=>{const i=document.getElementById('planNoteInput');if(i){i.scrollIntoView({block:'center'});i.focus();}},80)")}
   </div>`;
   requestAnimationFrame(() => el.classList.add("open"));
