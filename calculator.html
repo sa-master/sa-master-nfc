@@ -3500,6 +3500,9 @@ body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .finBars div{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:.25rem}
 .finBars i{display:block;border-radius:.5rem .5rem .25rem .25rem;background:rgba(10,132,255,.14)}.finBars i.cur{background:var(--p)}.finBars i.neg{background:rgba(255,59,48,.35)}
 .finBars span{font-size:.6875rem;color:var(--tm);font-weight:700;text-align:center}
+.finAfter{margin-top:.25rem;font-size:.875rem;font-weight:650;color:var(--tm)}.finAfter b{color:var(--t);font-weight:800}.finBig .finAfter small{display:block;font-size:.75rem;font-weight:600;color:var(--tm);text-transform:none;letter-spacing:0}
+#moneySheet .msRow b{white-space:nowrap}
+.finHeadSub{display:block;text-transform:none;letter-spacing:0;color:var(--tm);font-weight:600;font-size:.75rem}
 .finHeadRow{display:flex;justify-content:space-between;align-items:center}.finAdd{background:none;color:var(--p);font-weight:800;font-size:.8125rem;text-transform:none;letter-spacing:0}
 .personEdit{flex:0 0 auto;width:2rem;height:2rem;border-radius:50%;background:none;color:var(--tm);font-size:1rem}
 .jobForm{display:flex;flex-direction:column;gap:.75rem}.jobForm label{display:flex;flex-direction:column;gap:.3rem;font-size:.8125rem;font-weight:700;color:var(--tm);flex:1 1 0;min-width:0}
@@ -7899,6 +7902,9 @@ let homeSearch = "";
 let homeView = "objects"; /* "objects" | "fin" — розділ головного екрана */
 let homeFilter = "all";
 function projectDebt(p){ return getApproved(p) ? getClientTotal(p) - moneySum(moneyList(p, "payment")) : 0; }
+/* «Клієнт винен» — лише після здачі робіт; поки роботи йдуть — «Залишок до оплати» */
+function projectOverdue(p){ return projectDebt(p) > 0.5 && ((p.stage === "done" && p.handedOverAt) || p.stage === "closed"); }
+function debtWord(p){ return p && ((p.stage === "done" && p.handedOverAt) || p.stage === "closed") ? "Клієнт винен" : "Залишок до оплати"; }
 function projectWaiting(p){
   if(getApproved(p)) return clientSendsOpen(p).length > 0;
   return Boolean(p.quoteSentAt) || clientSendsOpen(p).length > 0 || (typeof supGroups === "function" && supGroups(p).some(g => g.state === "wait" || g.state === "ans"));
@@ -7913,7 +7919,7 @@ function homeMatches(p){
   const archived = (p.status || "active") === "archived";
   if(homeFilter === "archive") return archived;
   if(archived) return false;
-  if(homeFilter === "debt") return projectDebt(p) > 0.5;
+  if(homeFilter === "debt") return projectOverdue(p);
   if(homeFilter === "wait") return projectWaiting(p);
   return true;
 }
@@ -7927,7 +7933,8 @@ function homeNext(p){
   if(!positions.length) return { text:"Кошторис порожній", sub:"додайте матеріали й роботи", label:"Відкрити", action:`openProject('${id}')`, primary:true };
   const debt = projectDebt(p);
   const stage = p.stage || "estimate";
-  if(debt > 0.5 && (stage === "work" || stage === "done")) return { text:`Клієнт винен ${money(debt)}`, cls:"neg", sub:`з ${money(total)}`, label:"＋ Оплата", action: open("goMoney('payment')") };
+  if(debt > 0.5 && (stage === "work" || stage === "done")) return projectOverdue(p) ? { text:`Клієнт винен ${money(debt)}`, cls:"neg", sub:`з ${money(total)}`, label:"＋ Оплата", action: open("goMoney('payment')") }
+    : { text:`Залишок ${money(debt)}`, cls:"", sub:`до оплати · з ${money(total)}`, label:"＋ Оплата", action: open("goMoney('payment')") };
   const opened = clientSendsOpen(p);
   if(opened.length){
     const s = opened[opened.length - 1];
@@ -8019,7 +8026,7 @@ function renderHomeNew(){
     return;
   }
   const act = projects.filter(p => (p.status || "active") !== "archived");
-  const cnt = { all: act.length, debt: act.filter(p => projectDebt(p) > 0.5).length, wait: act.filter(projectWaiting).length, archive: projects.length - act.length };
+  const cnt = { all: act.length, debt: act.filter(projectOverdue).length, wait: act.filter(projectWaiting).length, archive: projects.length - act.length };
   const chip = (k, label) => (k === "all" || cnt[k]) ? `<button type="button" class="hChip ${homeFilter === k ? "on" : ""}" onclick="setHomeFilter('${k}')">${label}<small>${cnt[k]}</small></button>` : "";
   main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + `
     <h1 class="hTitle">Мої об’єкти</h1>
@@ -8134,7 +8141,7 @@ function renderFinanceHtml(){
   const now = new Date();
   const cur = finMonthKey(now), prev = finMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 15));
   const inP = e => finPeriod === "all" || finMonthKey(e.date || e.at) === (finPeriod === "cur" ? cur : prev);
-  let rec = 0, spent = 0, team = 0, debt = 0, matIncome = 0;
+  let rec = 0, spent = 0, teamAll = 0, debt = 0, matIncome = 0;
   const rows = [];
   act.forEach(p => {
     const r = moneyList(p, "payment").filter(inP).reduce((s, e) => s + (Number(e.amount) || 0), 0);
@@ -8142,16 +8149,26 @@ function renderFinanceHtml(){
     const m = moneySummary(p);
     rec += r; spent += sp;
     if(finPeriod === "all"){
-      team += m.teamSum; debt += Math.max(0, projectDebt(p));
+      teamAll += m.teamSum; debt += Math.max(0, projectDebt(p));
       const plan = (p.positions || []).filter(x => x.type === "material" && !x.buyLaterOnly && x.whereK !== "skip").reduce((s, x) => s + (Number(x.purchasePrice) || 0) * (Number(x.qty) || 0), 0);
       if(plan > 0) matIncome += getClientMaterialsTotal(p) - plan;
     }
-    if(r || sp || finPeriod === "all") rows.push({ p, earn: finPeriod === "all" ? m.now : r - sp, debt: projectDebt(p) });
+    if(r || sp || finPeriod === "all") rows.push({ p, earn: finPeriod === "all" ? m.full : r - sp, debt: projectDebt(p) });
   });
   const jobs = jobsList().filter(j => inFinPeriod(j.date)).sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const jobRec = jobs.reduce((s, j) => s + (Number(j.amount) || 0), 0), jobExp = jobs.reduce((s, j) => s + (Number(j.expense) || 0), 0), jobTeam = jobs.reduce((s, j) => s + jobTeamSum(j), 0);
   rec += jobRec; spent += jobExp;
-  const earn = (finPeriod === "all" ? rec - spent - team : rec - spent) - jobTeam;
+  /* «На руках»: отримано − витрати − реально видано команді. Покупки працівника за свої — це ще не наші гроші, їх рахуємо, коли видамо. */
+  const led = ledgerList();
+  const workerBought = new Set(led.filter(e => e.kind === "expense" && e.expenseId).map(e => e.expenseId));
+  const workerBoughtSum = act.reduce((s, p) => s + moneyList(p, "expense").filter(e => workerBought.has(e.id) && inP(e)).reduce((a, e) => a + (Number(e.amount) || 0), 0), 0);
+  const paidTeam = led.filter(e => e.kind === "pay" && inFinPeriod(e.date)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const owed = team.reduce((s, t) => s + Math.max(0, personBalance(t.id).balance), 0);
+  const left = act.filter(p => projectDebt(p) > 0.5 && !projectOverdue(p)).reduce((s, p) => s + projectDebt(p), 0);
+  const overdue = act.filter(projectOverdue).reduce((s, p) => s + projectDebt(p), 0);
+  const onHand = rec - (spent - workerBoughtSum) - paidTeam;
+  const after = onHand + left + overdue - owed;
+  const earn = finPeriod === "all" ? onHand : rec - spent - jobTeam;
   /* стовпчики: різниця «отримано − витрати» за останні 4 місяці */
   const months = [3, 2, 1, 0].map(k => { const d = new Date(now.getFullYear(), now.getMonth() - k, 15); return { key: finMonthKey(d), label: d.toLocaleDateString("uk-UA", { month:"short" }).replace(".", "") }; });
   months.forEach(mo => { mo.v = 0; projects.forEach(p => { moneyList(p, "payment").forEach(e => { if(finMonthKey(e.date || e.at) === mo.key) mo.v += Number(e.amount) || 0; }); moneyList(p, "expense").forEach(e => { if(finMonthKey(e.date || e.at) === mo.key) mo.v -= Number(e.amount) || 0; }); }); jobsList().forEach(j => { if(finMonthKey(j.date) === mo.key) mo.v += jobEarn(j); }); });
@@ -8162,18 +8179,20 @@ function renderFinanceHtml(){
   return `<div class="finInner">
     <h1 class="hTitle">Фінанси</h1>
     <div class="hChips" style="margin:0">${chip("all", "Усі об’єкти")}${chip("cur", monthName(now))}${chip("prev", monthName(new Date(now.getFullYear(), now.getMonth() - 1, 15)))}</div>
-    <div class="msBox finBig"><small>${finPeriod === "all" ? "Заробіток зараз" : "Отримано мінус витрати"}</small><b class="${earn < 0 ? "neg" : "pos"}">${money(earn)}</b>
+    <div class="msBox finBig"><small>${finPeriod === "all" ? "Зараз на руках" : "Отримано мінус витрати"}</small><b class="${earn < 0 ? "neg" : "pos"}">${money(earn)}</b>
+      ${finPeriod === "all" ? `<div class="finAfter">Після розрахунку <b>${money(after)}</b><small>коли клієнти доплатять залишок, а ви розрахуєтесь з командою</small></div>` : ""}
       <div class="finBars">${months.map(m => `<div><i style="height:${Math.max(4, Math.round(Math.abs(m.v) / max * 100))}%" class="${m.key === cur ? "cur" : ""} ${m.v < 0 ? "neg" : ""}"></i><span>${m.label}</span></div>`).join("")}</div></div>
     <div class="msBox">
-      ${finPeriod === "all" ? row("Клієнти винні", money(debt), debt > 0.5 ? "neg" : "") : ""}
+      ${finPeriod === "all" && overdue > 0.5 ? row("Клієнти винні", money(overdue), "neg", "роботи здано, а оплати ще немає") : ""}
+      ${finPeriod === "all" && left > 0.5 ? row("Залишок до оплати", money(left), "", "по об’єктах, які ще в роботі") : ""}
       ${row("Отримано від клієнтів", money(rec))}
-      ${row("Витрати", money(spent))}
-      ${finPeriod === "all" || jobTeam ? row("Команді", money((finPeriod === "all" ? team : 0) + jobTeam)) : ""}
+      ${row("Витрати", money(finPeriod === "all" ? spent - workerBoughtSum : spent))}
+      ${finPeriod === "all" ? (paidTeam ? row("Видано команді", money(paidTeam)) : "") + (owed > 0.5 ? row("Команді ще належить", money(owed)) : "") : jobTeam ? row("Команді", money(jobTeam)) : ""}
       ${jobRec ? row("З них разові роботи", money(jobRec), "", `${jobs.length} ${jobs.length === 1 ? "запис" : jobs.length < 5 ? "записи" : "записів"}`) : ""}
       ${finPeriod === "all" && matIncome ? row("Дохід з матеріалів", money(matIncome), "", "кошторис мінус закупівля за планом") : ""}
     </div>
-    <div class="msBox"><div class="finHead">За об’єктами</div>
-      ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}<small>${r.debt > 0.5 ? "винен " + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
+    <div class="msBox"><div class="finHead">За об’єктами${finPeriod === "all" ? `<small class="finHeadSub">ваш заробіток після розрахунку</small>` : ""}</div>
+      ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}<small>${r.debt > 0.5 ? (projectOverdue(r.p) ? "винен " : "залишок ") + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
     </div>
     <div class="msBox"><div class="finHead finHeadRow">Разові роботи<button type="button" class="finAdd" onclick="openJobForm()">＋ Додати</button></div>
       ${jobs.length ? jobs.map(j => `<button type="button" class="msRow finObj" onclick="openJobForm('${escapeHtml(j.id)}')"><span>${escapeHtml(j.title)}${Number(j.qty) > 1 && Number(j.price) ? ` · ${escapeHtml(String(j.qty))} × ${money(j.price)}` : ""}<small>${formatQuoteDate(j.date).slice(0, 5)}${j.place ? " · " + escapeHtml(j.place) : ""}${(j.people || []).length ? " · " + j.people.map(x => escapeHtml(x.name)).join(", ") : ""}</small></span><b class="pos">${money(jobEarn(j))}</b></button>`).join("") : `<div class="msRow"><span>Дрібні роботи без кошторису: радіатори, умивальник…<small>Записуйте їх тут — вони підуть у заробіток.</small></span></div>`}
@@ -8437,8 +8456,29 @@ function crewState(per){
 }
 function crewSoon(){ if(!crewPeople().length) return; clearTimeout(crewTimer); crewTimer = setTimeout(crewSync, 2500); }
 function crewSeen(){ try{ return JSON.parse(localStorage.getItem(CREW_SEEN_KEY) || "{}") || {}; }catch(e){ return {}; } }
+/* Логотип майстра для сторінки працівника — зменшений до 96 px, щоб не роздувати дані */
+let crewLogoCache = { src:null, out:"" };
+function crewLogo(){
+  const src = profile.logoData || "";
+  if(!src) return Promise.resolve("");
+  if(crewLogoCache.src === src) return Promise.resolve(crewLogoCache.out);
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 96 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      let out = ""; try{ out = c.toDataURL("image/png"); }catch(e){}
+      if(out.length > 60000) out = "";
+      crewLogoCache = { src, out }; resolve(out);
+    };
+    img.onerror = () => { crewLogoCache = { src, out:"" }; resolve(""); };
+    img.src = src;
+  });
+}
 async function crewPublish(per){
   const state = crewState(per);
+  state.brand = { company: profileCompanyName(), logo: await crewLogo() };
   const sig = JSON.stringify(state);
   if(per._wSig === sig) return;
   const data = await supplierApi("/w", { method:"POST", body: JSON.stringify({
@@ -9020,7 +9060,7 @@ function renderMoneyBlock(project, inTab){
       <div class="moneyStats" ${inTab ? 'style="display:none"' : ""}>
         <div class="moneyStat"><span>Отримано</span><b>${money(received)}</b></div>
         <div class="moneyStat"><span>Витрачено</span><b>${money(spent)}</b></div>
-        <div class="moneyStat ${debt > 0.5 ? "debt" : "ok"}"><span>${debt > 0.5 ? "Клієнт винен" : "Сплачено"}</span><b>${debt > 0.5 ? money(debt) : "✓"}</b></div>
+        <div class="moneyStat ${debt > 0.5 ? "debt" : "ok"}"><span>${debt > 0.5 ? debtWord(project) : "Сплачено"}</span><b>${debt > 0.5 ? money(debt) : "✓"}</b></div>
       </div>
       ${moneyExpanded ? `
         ${inTab ? "" : `<div class="formHint" style="margin:.5rem 0 0">На руках з цього об'єкта: <b>${money(onHand)}</b> (отримано мінус витрачено)</div>`}
@@ -9088,7 +9128,7 @@ function renderPanelInfo(p){
   }
   if(projectTab === "money"){
     const m = moneySummary(p);
-    return `<button type="button" class="estTotal estBtn" onclick="openMoneySheet()"><span class="lbl">${m.debt > 0.5 ? "Клієнт винен ›" : "Клієнт розрахувався ›"}</span><b class="${m.debt > 0.5 ? "neg" : ""}">${m.debt > 0.5 ? money(m.debt) : "✓"}</b><span class="estSub">заробіток <b class="${m.now < 0 ? "neg" : "pos"}">${money(m.now)}</b></span></button>`;
+    return `<button type="button" class="estTotal estBtn" onclick="openMoneySheet()"><span class="lbl">${m.debt > 0.5 ? debtWord(p) + " ›" : "Клієнт розрахувався ›"}</span><b class="${m.debt > 0.5 && projectOverdue(p) ? "neg" : ""}">${m.debt > 0.5 ? money(m.debt) : "✓"}</b><span class="estSub">заробіток <b class="${m.full < 0 ? "neg" : "pos"}">${money(m.full)}</b></span></button>`;
   }
   return `<div class="estTotal"><span class="lbl">Кошторис</span><b>${money(ap ? getClientTotal(p) : getEstimateTotal(p))}</b></div>`;
 }
@@ -9118,11 +9158,11 @@ function openMoneySheet(){
     <div class="msBox">
       ${row("Кошторис для клієнта", money(m.total))}
       ${row("Клієнт заплатив", money(m.received))}
-      ${m.debt > 0.5 ? row("Клієнт ще винен", money(m.debt), "neg") : row("Клієнт розрахувався", "✓")}
+      ${m.debt > 0.5 ? row(debtWord(p), money(m.debt), projectOverdue(p) ? "neg" : "") : row("Клієнт розрахувався", "✓")}
       ${row("Витрачено", money(m.spent))}
-      ${m.teamSum ? row("Команді", money(m.teamSum)) : ""}
-      ${row("Заробіток зараз", money(m.now), m.now < 0 ? "big neg" : "big pos")}
-      ${m.debt > 0.5 ? row("Після повної оплати", money(m.full)) : ""}
+      ${row("Отримано мінус витрати", money(m.received - m.spent))}
+      ${m.teamSum ? row("Частка команди", money(m.teamSum)) : ""}
+      ${row(m.debt > 0.5 ? "Ваш заробіток після розрахунку" : "Ваш заробіток", money(m.full), m.full < 0 ? "big neg" : "big pos")}
     </div>
   </div>`;
   requestAnimationFrame(() => el.classList.add("open"));
@@ -9180,7 +9220,7 @@ function renderFloatingPanel(p){
   return `
     <div class="floatingPanel compact">
       <button type="button" class="floatingSummary ${moneyTabDebt !== null ? "stack" : ""}" onclick="toggleFloatingDetails()" aria-expanded="${floatingDetailsOpen}">
-        <span class="lbl">${moneyTabDebt !== null ? (moneyTabDebt > 0.5 ? "Клієнт винен" : "Розрахувався") : approvedSnapshot ? "Погоджено" : "До сплати"}</span>
+        <span class="lbl">${moneyTabDebt !== null ? (moneyTabDebt > 0.5 ? debtWord(p) : "Розрахувався") : approvedSnapshot ? "Погоджено" : "До сплати"}</span>
         <span><span class="val" ${moneyTabDebt > 0.5 ? 'style="color:var(--red)"' : ""}>${moneyTabDebt !== null ? (moneyTabDebt > 0.5 ? money(moneyTabDebt) : "✓") : money(total)}</span><span class="chev">${floatingDetailsOpen ? "▾" : "▸"}</span></span>
       </button>
 
@@ -10626,10 +10666,10 @@ function getNextSteps(p){
   }
 
   if(stage === "work" && (planOn(p) || buyOn(p))){
-    if(debt > 0.5) steps.push({ text:`Клієнт винен ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
+    if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
     steps.push({ text:"Роботи завершено?", sub:"Далі — здача клієнту", label:"Завершено", action:`advanceProjectStage('${id}')`, primary:steps.length === 0 });
   }else if(stage === "work"){
-    if(debt > 0.5) steps.push({ text:`Клієнт винен ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
+    if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
     const later = extrasPending(p).length;
     if(later) steps.push({ text:`Докупити: ${later} поз.`, sub:"Купите самі або дозамовите", label:"Список", action:"setProjectTab('materials')" });
     const rets = returnsPending(p).length;
@@ -19616,7 +19656,7 @@ function renderBuyList(p){
   const doneNotes = todo.filter(t => t.done);
   const notes = openNotes.map(t => `<div class="byItem"><button type="button" class="ptBox" onclick="planNoteToggle('${escapeHtml(t.id)}')" aria-label="Виконано"></button><span class="byName">${noteText(t)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')" aria-label="Видалити">×</button></div>`).join("");
   const stg = p.stage || "estimate";
-  const steps = getNextSteps(p).filter(st => !(stg === "work" && /^Клієнт винен/.test(st.text)) && !/^Без закупівельн/.test(st.text) && !(/^Роботи завершено/.test(st.text) && groups.length));
+  const steps = getNextSteps(p).filter(st => !(stg === "work" && /^(Клієнт винен|Залишок до оплати)/.test(st.text)) && !/^Без закупівельн/.test(st.text) && !(/^Роботи завершено/.test(st.text) && groups.length));
   const done = buyDoneOpen ? `<div class="byGroup done"><div class="byHead"><span>Куплено / є</span></div>${doneList.map(pos => `<div class="byItem"><button type="button" class="ptBox on" onclick="buyToggle('${escapeHtml(pos.id)}')">✓</button><button type="button" class="byName" onclick="openBuySrc('${escapeHtml(pos.id)}')">${escapeHtml(positionShortName(pos))}<small>${escapeHtml(buyLabel(pos))}</small></button><span class="ptQ">${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")}</span></div>`).join("")}${doneNotes.map(t => `<div class="byItem"><button type="button" class="ptBox on" onclick="planNoteToggle('${escapeHtml(t.id)}')">✓</button><span class="byName">${noteText(t)}</span><button type="button" class="ptDel" onclick="planNoteDel('${escapeHtml(t.id)}')">×</button></div>`).join("")}</div>` : "";
   const doneCount = doneList.length + doneNotes.length;
   return `
