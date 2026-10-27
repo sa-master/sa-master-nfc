@@ -7836,8 +7836,10 @@ function profileCompanyName(){
   return String(profile.company || "").trim() || [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" ") || "et.app";
 }
 
+/* Стандартний логотип — іконка et.app (та сама, що на екрані «Додому») */
+function etLogoSrc(){ return document.querySelector('link[rel="apple-touch-icon"]')?.href || "logo.png"; }
 function profileLogoMarkup(logoData, companyName){
-  const source = logoData || "logo.png";
+  const source = logoData || etLogoSrc();
   return `<img src="${escapeHtml(source)}" alt="${escapeHtml(companyName)}" onerror="this.style.display='none';this.parentNode.innerHTML='<span class=\\'heroLogoFallback\\'>S</span>'">`;
 }
 
@@ -7950,7 +7952,7 @@ function homeCard(p){
   return `<article class="hCard">
     <div class="hTop" onclick="openProject('${id}')"><b>${p.urgent ? "🔥 " : ""}${projectTitle(p)}</b><span>${escapeHtml(PATH_STEPS[idx] || "")}</span>
       <button type="button" class="hMenu" onclick="event.stopPropagation();openActions('${id}')" aria-label="Дії">⋯</button></div>
-    ${c.address ? `<div class="hAddrRow"><span class="hAddrTx" onclick="openProject('${id}')">${escapeHtml(c.address)}</span><button type="button" class="hRoute" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>⌖</i>Маршрут</button></div>` : ""}
+    ${c.address ? `<div class="hAddrRow"><span class="hAddrTx" onclick="openProject('${id}')">${escapeHtml(c.address)}</span><button type="button" class="hRoute" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>⌖</i>Як добратись</button></div>` : ""}
     ${c.name || c.phone ? `<div class="hWho">${escapeHtml(c.name || "")}${c.name && c.phone ? " · " : ""}${c.phone ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(c.phone)}</a>` : ""}</div>` : ""}
     <div class="hBar" onclick="openProject('${id}')">${PATH_STEPS.map((s, i) => `<i class="${i <= idx ? "on" : ""}"></i>`).join("")}</div>
     <div class="hNext"><div class="hTx" onclick="openProject('${id}')"><b class="${n.cls || ""}">${escapeHtml(n.text)}</b>${n.sub ? `<small>${escapeHtml(n.sub)}</small>` : ""}</div>
@@ -8038,7 +8040,8 @@ const NAV_KEY = "sa_navApp";
 const NAV_APPS = {
   google: { name:"Google Maps", url: a => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}` },
   apple: { name:"Apple Карти", url: a => `https://maps.apple.com/?q=${encodeURIComponent(a)}` },
-  waze: { name:"Waze", url: a => `https://waze.com/ul?q=${encodeURIComponent(a)}&navigate=yes` }
+  waze: { name:"Waze", url: a => `https://waze.com/ul?q=${encodeURIComponent(a)}&navigate=yes` },
+  transit: { name:"Громадським транспортом", url: a => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a)}&travelmode=transit` }
 };
 function navApp(){ try{ const v = localStorage.getItem(NAV_KEY) || ""; return NAV_APPS[v] ? v : ""; }catch(e){ return ""; } }
 /* Відкриваємо сам застосунок через його схему (без порожньої вкладки браузера).
@@ -8050,6 +8053,7 @@ function navGo(app, addr){
   const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const android = /Android/i.test(navigator.userAgent);
   const scheme = app === "waze" ? `waze://?q=${q}&navigate=yes`
+    : app === "transit" ? (ios ? `comgooglemaps://?daddr=${q}&directionsmode=transit` : "")
     : app === "apple" ? (ios ? `maps://?daddr=${q}` : "")
     : ios ? `comgooglemaps://?daddr=${q}&directionsmode=driving`
     : android ? `google.navigation:q=${q}` : "";
@@ -8077,12 +8081,12 @@ function openNav(addr, forceChoose){
     document.body.appendChild(el);
   }
   const enc = encodeURIComponent(addr).replace(/'/g, "%27");
-  const item = (k) => `<button type="button" class="amItem" onclick="navPick('${k}', decodeURIComponent('${enc}'))"><span class="amIcon">${k === "google" ? "🗺" : k === "apple" ? "🧭" : "🚗"}</span><span class="amText"><b>${NAV_APPS[k].name}</b>${navApp() === k ? "<small>зараз за замовчуванням</small>" : ""}</span></button>`;
+  const item = (k) => `<button type="button" class="amItem" onclick="navPick('${k}', decodeURIComponent('${enc}'))"><span class="amIcon">${k === "google" ? "🗺" : k === "apple" ? "🧭" : k === "transit" ? "🚌" : "🚗"}</span><span class="amText"><b>${NAV_APPS[k].name}</b>${k === "transit" ? "<small>метро, автобус, трамвай — маршрут у Google Maps</small>" : ""}${navApp() === k ? "<small>зараз за замовчуванням</small>" : ""}</span></button>`;
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Відкрити в навігаторі">
-    <div class="amHead"><b>Прокласти маршрут</b><button type="button" class="amClose" onclick="document.getElementById('navSheet').classList.remove('open')" aria-label="Закрити">✕</button></div>
+    <div class="amHead"><b>Як добратись</b><button type="button" class="amClose" onclick="document.getElementById('navSheet').classList.remove('open')" aria-label="Закрити">✕</button></div>
     <div class="navAddr">${escapeHtml(addr)}</div>
-    ${item("google")}${/iPhone|iPad|Mac/i.test(navigator.userAgent) ? item("apple") : ""}${item("waze")}
-    <label class="navRemember"><input type="checkbox" id="navRemember" checked> Запам’ятати вибір — далі відкривати одразу <small>(змінити: Профіль → Навігатор)</small></label>
+    ${item("google")}${/iPhone|iPad|Mac/i.test(navigator.userAgent) ? item("apple") : ""}${item("waze")}${item("transit")}
+    <label class="navRemember"><input type="checkbox" id="navRemember" checked> Запам’ятати вибір — далі відкривати одразу <small>(змінити: Профіль → Як добиратись)</small></label>
     <button type="button" class="navCopy" onclick="copyText(decodeURIComponent('${enc}')).then(()=>toast('Адресу скопійовано'));document.getElementById('navSheet').classList.remove('open')">Скопіювати адресу</button>
   </div>`;
   requestAnimationFrame(() => el.classList.add("open"));
@@ -8097,8 +8101,8 @@ function chooseNavApp(){
   if(!el){ el = document.createElement("div"); el.id = "navSheet"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) el.classList.remove("open"); }; document.body.appendChild(el); }
   const cur = navApp();
   const item = (k) => `<button type="button" class="amItem" onclick="try{localStorage.setItem('${NAV_KEY}','${k}')}catch(e){};document.getElementById('navSheet').classList.remove('open');renderProfileExtras();toast('Навігатор: ${NAV_APPS[k].name}')"><span class="amIcon">${cur === k ? "✓" : ""}</span><span class="amText"><b>${NAV_APPS[k].name}</b></span></button>`;
-  el.innerHTML = `<div class="amSheet"><div class="amHead"><b>Навігатор за замовчуванням</b><button type="button" class="amClose" onclick="document.getElementById('navSheet').classList.remove('open')">✕</button></div>
-    ${item("google")}${item("apple")}${item("waze")}
+  el.innerHTML = `<div class="amSheet"><div class="amHead"><b>Як добиратись за замовчуванням</b><button type="button" class="amClose" onclick="document.getElementById('navSheet').classList.remove('open')">✕</button></div>
+    ${item("google")}${item("apple")}${item("waze")}${item("transit")}
     <button type="button" class="amItem" onclick="try{localStorage.removeItem('${NAV_KEY}')}catch(e){};document.getElementById('navSheet').classList.remove('open');renderProfileExtras();toast('Щоразу питати')"><span class="amIcon">${cur ? "" : "✓"}</span><span class="amText"><b>Щоразу питати</b></span></button></div>`;
   requestAnimationFrame(() => el.classList.add("open"));
 }
@@ -8107,7 +8111,7 @@ function renderProfileExtras(){
   if(!box) return;
   const app = navApp();
   box.innerHTML = `<button type="button" class="pfRow" onclick="closeProfile();setTimeout(openStockScreen,150)"><span><b>Склад</b><small>${stockList().length ? stockList().length + " поз. — залишки з об’єктів" : "залишки з об’єктів"}</small></span><i>›</i></button>
-    <button type="button" class="pfRow" onclick="chooseNavApp()"><span><b>Навігатор</b><small>${app ? NAV_APPS[app].name + " — відкривається одразу" : "щоразу питати"}</small></span><i>›</i></button>`;
+    <button type="button" class="pfRow" onclick="chooseNavApp()"><span><b>Як добиратись</b><small>${app ? NAV_APPS[app].name + " — відкривається одразу" : "щоразу питати"}</small></span><i>›</i></button>`;
 }
 
 /* ==== Каталог із нижнього меню: перегляд і правка без об’єкта ==== */
@@ -9789,7 +9793,7 @@ function renderQuotePreview(){
   const fixturesPart = sectionNet(fixtures);
   const materialsPart = materialsAllPart - fixturesPart;
   const documentTotal = quoteMode === "works" ? worksPart : quoteMode === "materials" ? materialsAllPart : (approvedSnapshot ? approvedSnapshot.total : getEstimateTotal(project));
-  const logoSource = profile.logoData || "logo.png";
+  const logoSource = profile.logoData || etLogoSrc();
   const quoteDocument = document.getElementById("quotePreviewDocument");
 
   /* Ті самі дані йдуть і в Excel-копію, щоб файли не розходились. */
@@ -17618,6 +17622,8 @@ function openProfileLogoPicker(){
 function resetProfileLogo(){
   profileLogoDraft = "";
   renderProfileLogoPreview();
+  profileAutoSave();
+  toast("Стандартний логотип et.app");
 }
 
 function handleProfileLogoChange(event){
@@ -17645,7 +17651,7 @@ function handleProfileLogoChange(event){
         toast("Логотип завеликий — оберіть простіше зображення");
         return;
       }
-      profileLogoDraft = data;
+      profileLogoDraft = data; setTimeout(profileAutoSave, 0);
       renderProfileLogoPreview();
     };
     image.src = String(reader.result || "");
