@@ -3482,6 +3482,11 @@ body.withHomeNav .main{padding-bottom:calc(5.5rem + var(--sab, 0px))}
 .homeNav button.plus span{width:2.75rem;height:2.75rem;border-radius:.875rem;background:var(--p-action);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.625rem;margin-top:-1rem;box-shadow:0 .25rem .75rem rgba(10,132,255,.35)}
 @media (prefers-color-scheme: dark){.homeNav{background:rgba(28,28,30,.95)}}
 .finScreen{padding-bottom:calc(6rem + var(--sab, 0px))}
+body:not(.withHomeNav) #homeNavHost{display:none}
+body.secNav .homeNav{z-index:245}
+body.secNav #catalogSheet{z-index:240}
+body.secNav #catalogSheet .panel{padding-bottom:calc(4.75rem + var(--sab, 0px))}
+body.secNav #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .finInner{display:flex;flex-direction:column;gap:.75rem}.finInner .hTitle{margin-bottom:0}
 .finBig{padding:.875rem}.finBig small{display:block;font-size:.75rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--p)}
 .finBig>b{display:block;font-size:2rem;font-weight:850;margin-top:.25rem}.finBig>b.pos{color:var(--green)}.finBig>b.neg{color:var(--red)}
@@ -7932,15 +7937,36 @@ function setHomeFilter(f){ homeFilter = f; render(); }
 function onHomeSearch(v){ homeSearch = v; const box = document.getElementById("hList"); if(box) box.innerHTML = renderHomeList(); }
 function renderHomeNav(active){
   /* Спершу ховаємо екран «Фінанси» — інакше він лишається поверх відкритого вікна і здається, що все зависло */
-  const it = (k, icon, label, act) => `<button type="button" class="${k === active ? "on" : ""} ${k === "new" ? "plus" : ""}" onclick="${act}"><span>${icon}</span>${label}</button>`;
+  const sec = document.body.dataset.sec || "";
+  const it = (k, icon, label) => `<button type="button" data-k="${k}" class="${k === (sec || active) ? "on" : ""} ${k === "new" ? "plus" : ""}" onclick="navSection('${k}')"><span>${icon}</span>${label}</button>`;
   return `<nav class="homeNav" aria-label="Меню">
-    ${it("home", "▦", "Об’єкти", "showHome('objects')")}
-    ${it("cat", "☰", "Каталог", "openCatalogBrowse()")}
-    ${it("new", "＋", "Створити", "openNewProject()")}
-    ${it("fin", "◫", "Фінанси", "showHome('fin')")}
-    ${it("prof", "◎", "Профіль", "openProfile()")}
+    ${it("home", "▦", "Об’єкти")}
+    ${it("cat", "☰", "Каталог")}
+    ${it("new", "＋", "Створити")}
+    ${it("fin", "◫", "Фінанси")}
+    ${it("prof", "◎", "Профіль")}
   </nav>`;
 }
+/* Нижнє меню: Каталог і Профіль — такі самі розділи, як Об’єкти й Фінанси; меню лишається видимим */
+function setNavSection(k){
+  if(k) document.body.dataset.sec = k; else delete document.body.dataset.sec;
+  document.body.classList.toggle("secNav", Boolean(k));
+  const cur = k || (homeView === "fin" ? "fin" : "home");
+  document.querySelectorAll(".homeNav button[data-k]").forEach(b => b.classList.toggle("on", b.dataset.k === cur));
+}
+function navSection(k){
+  const sec = document.body.dataset.sec || "";
+  if(k === "new"){ openNewProject(); return; }
+  if(k === sec) return;
+  /* залишаємо Профіль — зберігаємо зміни, як «Готово» */
+  if(sec === "prof" && document.getElementById("profileScreen")?.classList.contains("open")){ navLeaving = true; try{ saveProfile(); }catch(e){ closeProfile(); } navLeaving = false; }
+  if(sec === "cat" && document.getElementById("catalogSheet")?.classList.contains("open")){ navLeaving = true; closeCatalog(); navLeaving = false; }
+  if(k === "cat"){ setNavSection("cat"); openCatalogBrowse(); return; }
+  if(k === "prof"){ setNavSection("prof"); openProfile(); return; }
+  setNavSection("");
+  showHome(k === "fin" ? "fin" : "objects");
+}
+let navLeaving = false;
 function showHome(v){
   homeView = v;
   currentProjectId = null;
@@ -7955,9 +7981,10 @@ function closeHomeScreens(){
 function renderHomeNew(){
   const main = document.getElementById("main");
   document.body.classList.add("withHomeNav");
-  if(homeView === "fin"){ main.innerHTML = renderFinanceHtml() + renderHomeNav("fin"); return; }
+  if(homeView === "fin"){ main.innerHTML = renderFinanceHtml(); mountHomeNav("fin"); return; }
   if(!projects.length){
-    main.innerHTML = renderAccessBanner() + renderEmptyState() + renderHomeNav("home");
+    main.innerHTML = renderAccessBanner() + renderEmptyState();
+    mountHomeNav("home");
     return;
   }
   const act = projects.filter(p => (p.status || "active") !== "archived");
@@ -7967,7 +7994,14 @@ function renderHomeNew(){
     <h1 class="hTitle">Мої об’єкти</h1>
     ${act.length > 3 || homeSearch ? `<input class="hSearch" type="search" placeholder="Адреса, ЖК або клієнт" value="${escapeHtml(homeSearch)}" oninput="onHomeSearch(this.value)">` : ""}
     <div class="hChips">${chip("all", "Усі")}${chip("debt", "Борг")}${chip("wait", "Чекають")}${chip("archive", "Архів")}</div>
-    <div id="hList">${renderHomeList()}</div>` + renderHomeNav("home");
+    <div id="hList">${renderHomeList()}</div>`;
+  mountHomeNav("home");
+}
+/* Меню живе прямо в <body>, а не в #main — щоб бути над вікнами Каталогу й Профілю */
+function mountHomeNav(active){
+  let host = document.getElementById("homeNavHost");
+  if(!host){ host = document.createElement("div"); host.id = "homeNavHost"; document.body.appendChild(host); }
+  host.innerHTML = renderHomeNav(active);
 }
 
 /* ==== Навігатор: при першому натисканні — вибір застосунку, далі — одразу обраний ==== */
@@ -11463,6 +11497,7 @@ function closeCatalog(){
   document.getElementById("catalogRatesButton").classList.add("hidden");
   editingCatalogItemId = null;
   catalogDest = "estimate";
+  if(!navLeaving && document.body.dataset.sec === "cat") setNavSection("");
 }
 
 function supplierRateKey(supplierName, brand, currency){
@@ -17042,6 +17077,7 @@ function handleBackupFile(event){
 
 function closeProfile(){
   document.getElementById("profileScreen").classList.remove("open");
+  if(!navLeaving && document.body.dataset.sec === "prof") setNavSection("");
 }
 
 function renderProfileLogoPreview(){
