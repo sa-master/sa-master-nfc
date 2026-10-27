@@ -7968,7 +7968,28 @@ const NAV_APPS = {
   waze: { name:"Waze", url: a => `https://waze.com/ul?q=${encodeURIComponent(a)}&navigate=yes` }
 };
 function navApp(){ try{ const v = localStorage.getItem(NAV_KEY) || ""; return NAV_APPS[v] ? v : ""; }catch(e){ return ""; } }
-function navGo(app, addr){ const a = NAV_APPS[app]; if(!a) return; const w = window.open(a.url(addr), "_blank"); if(!w) location.href = a.url(addr); }
+/* Відкриваємо сам застосунок через його схему (без порожньої вкладки браузера).
+   Якщо застосунку немає — за мить відкриваємо веб-карту. */
+function navGo(app, addr){
+  const a = NAV_APPS[app];
+  if(!a) return;
+  const q = encodeURIComponent(addr);
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const android = /Android/i.test(navigator.userAgent);
+  const scheme = app === "waze" ? `waze://?q=${q}&navigate=yes`
+    : app === "apple" ? (ios ? `maps://?daddr=${q}` : "")
+    : ios ? `comgooglemaps://?daddr=${q}&directionsmode=driving`
+    : android ? `google.navigation:q=${q}` : "";
+  if(!scheme){ window.open(a.url(addr), "_blank"); return; }
+  let left = false;
+  const onHide = () => { if(document.visibilityState === "hidden") left = true; };
+  document.addEventListener("visibilitychange", onHide);
+  location.href = scheme;
+  setTimeout(() => {
+    document.removeEventListener("visibilitychange", onHide);
+    if(!left && document.visibilityState === "visible" && !document.hidden) window.open(a.url(addr), "_blank");
+  }, 1600);
+}
 function openNav(addr, forceChoose){
   addr = cleanText(addr);
   if(!addr) return;
