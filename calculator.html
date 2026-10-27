@@ -3487,10 +3487,11 @@ body.withHomeNav .main{padding-bottom:calc(5.5rem + var(--sab, 0px))}
 @media (prefers-color-scheme: dark){.homeNav{background:rgba(28,28,30,.95)}}
 .finScreen{padding-bottom:calc(6rem + var(--sab, 0px))}
 body:not(.withHomeNav) #homeNavHost{display:none}
-body.secNav .homeNav{z-index:245}
-body.secNav #catalogSheet{z-index:240}
-body.secNav #catalogSheet .panel{padding-bottom:calc(4.75rem + var(--sab, 0px))}
-body.secNav #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
+body.inSec .homeNav{z-index:245}
+body.inSec #catalogSheet{z-index:240}
+body.inSec #catalogSheet .panel{padding-bottom:calc(4.75rem + var(--sab, 0px))}
+body.inSec #profileScreen .fsHead .close,body.inSec #profileScreen .fsFooter,body.inSec #catalogSheet button.close{display:none}
+body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .finInner{display:flex;flex-direction:column;gap:.75rem}.finInner .hTitle{margin-bottom:0}
 .finBig{padding:.875rem}.finBig small{display:block;font-size:.75rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--p)}
 .finBig>b{display:block;font-size:2rem;font-weight:850;margin-top:.25rem}.finBig>b.pos{color:var(--green)}.finBig>b.neg{color:var(--red)}
@@ -7975,7 +7976,7 @@ function renderHomeNav(active){
 /* Нижнє меню: Каталог і Профіль — такі самі розділи, як Об’єкти й Фінанси; меню лишається видимим */
 function setNavSection(k){
   if(k) document.body.dataset.sec = k; else delete document.body.dataset.sec;
-  document.body.classList.toggle("secNav", Boolean(k));
+  document.body.classList.toggle("inSec", Boolean(k));
   const cur = k || (homeView === "fin" ? "fin" : "home");
   document.querySelectorAll(".homeNav button[data-k]").forEach(b => b.classList.toggle("on", b.dataset.k === cur));
 }
@@ -17713,9 +17714,19 @@ function saveProfile(){
   profile.logoData = profileLogoDraft;
 
   saveProfileData();
+  if(profileQuiet) return;
   closeProfile();
   render();
 }
+/* Профіль як розділ меню: кнопки «Готово» немає — зберігаємо зміни одразу */
+let profileQuiet = false, profileAutoTimer = null;
+function profileAutoSave(){
+  if(!document.body.classList.contains("inSec")) return;
+  clearTimeout(profileAutoTimer);
+  profileAutoTimer = setTimeout(() => { profileQuiet = true; try{ saveProfile(); }catch(e){} profileQuiet = false; }, 700);
+}
+document.addEventListener("input", e => { if(e.target.closest && e.target.closest("#profileScreen")) profileAutoSave(); });
+document.addEventListener("change", e => { if(e.target.closest && e.target.closest("#profileScreen")) profileAutoSave(); });
 
 function openAddPerson(){
   editingPersonId = null;
