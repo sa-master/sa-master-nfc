@@ -3482,6 +3482,7 @@ body.withHomeNav .main{padding-bottom:calc(5.5rem + var(--sab, 0px))}
 .homeNav button.plus span{width:2.75rem;height:2.75rem;border-radius:.875rem;background:var(--p-action);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.625rem;margin-top:-1rem;box-shadow:0 .25rem .75rem rgba(10,132,255,.35)}
 @media (prefers-color-scheme: dark){.homeNav{background:rgba(28,28,30,.95)}}
 .finScreen{padding-bottom:calc(6rem + var(--sab, 0px))}
+.finInner{display:flex;flex-direction:column;gap:.75rem}.finInner .hTitle{margin-bottom:0}
 .finBig{padding:.875rem}.finBig small{display:block;font-size:.75rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--p)}
 .finBig>b{display:block;font-size:2rem;font-weight:850;margin-top:.25rem}.finBig>b.pos{color:var(--green)}.finBig>b.neg{color:var(--red)}
 .finBars{display:flex;gap:.625rem;height:6rem;margin-top:.75rem;align-items:flex-end}
@@ -7860,6 +7861,7 @@ function renderHome(){
 
 /* ==== Головний екран: картки з наступною дією, пошук, фільтри, нижнє меню ==== */
 let homeSearch = "";
+let homeView = "objects"; /* "objects" | "fin" — розділ головного екрана */
 let homeFilter = "all";
 function projectDebt(p){ return getApproved(p) ? getClientTotal(p) - moneySum(moneyList(p, "payment")) : 0; }
 function projectWaiting(p){
@@ -7930,14 +7932,20 @@ function setHomeFilter(f){ homeFilter = f; render(); }
 function onHomeSearch(v){ homeSearch = v; const box = document.getElementById("hList"); if(box) box.innerHTML = renderHomeList(); }
 function renderHomeNav(active){
   /* Спершу ховаємо екран «Фінанси» — інакше він лишається поверх відкритого вікна і здається, що все зависло */
-  const it = (k, icon, label, act) => `<button type="button" class="${k === active ? "on" : ""} ${k === "new" ? "plus" : ""}" onclick="document.getElementById('finScreen')?.classList.remove('open');${act}"><span>${icon}</span>${label}</button>`;
+  const it = (k, icon, label, act) => `<button type="button" class="${k === active ? "on" : ""} ${k === "new" ? "plus" : ""}" onclick="${act}"><span>${icon}</span>${label}</button>`;
   return `<nav class="homeNav" aria-label="Меню">
-    ${it("home", "▦", "Об’єкти", "closeHomeScreens()")}
+    ${it("home", "▦", "Об’єкти", "showHome('objects')")}
     ${it("cat", "☰", "Каталог", "openCatalogBrowse()")}
     ${it("new", "＋", "Створити", "openNewProject()")}
-    ${it("fin", "◫", "Фінанси", "openFinance()")}
+    ${it("fin", "◫", "Фінанси", "showHome('fin')")}
     ${it("prof", "◎", "Профіль", "openProfile()")}
   </nav>`;
+}
+function showHome(v){
+  homeView = v;
+  currentProjectId = null;
+  render();
+  window.scrollTo({ top:0 });
 }
 function closeHomeScreens(){
   document.getElementById("finScreen")?.classList.remove("open");
@@ -7947,6 +7955,7 @@ function closeHomeScreens(){
 function renderHomeNew(){
   const main = document.getElementById("main");
   document.body.classList.add("withHomeNav");
+  if(homeView === "fin"){ main.innerHTML = renderFinanceHtml() + renderHomeNav("fin"); return; }
   if(!projects.length){
     main.innerHTML = renderAccessBanner() + renderEmptyState() + renderHomeNav("home");
     return;
@@ -8050,15 +8059,9 @@ function openCatalogBrowse(){
 /* ==== Фінанси: гроші за всіма об’єктами ==== */
 let finPeriod = "all";
 function finMonthKey(d){ const x = new Date(d); return isNaN(x) ? "" : x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0"); }
-function openFinance(){
-  let el = document.getElementById("finScreen");
-  if(!el){ el = document.createElement("div"); el.id = "finScreen"; el.className = "onbScreen finScreen"; document.body.appendChild(el); }
-  renderFinance();
-  el.classList.add("open");
-}
-function renderFinance(){
-  const el = document.getElementById("finScreen");
-  if(!el) return;
+function openFinance(){ showHome("fin"); }
+function renderFinance(){ render(); }
+function renderFinanceHtml(){
   const act = projects.filter(p => (p.status || "active") !== "archived" || finPeriod !== "all");
   const now = new Date();
   const cur = finMonthKey(now), prev = finMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 15));
@@ -8085,8 +8088,8 @@ function renderFinance(){
   const chip = (k, l) => `<button type="button" class="hChip ${finPeriod === k ? "on" : ""}" onclick="finPeriod='${k}';renderFinance()">${l}</button>`;
   const row = (a, b, cls, sub) => `<div class="msRow ${cls || ""}"><span>${a}${sub ? `<small>${sub}</small>` : ""}</span><b>${b}</b></div>`;
   const monthName = d => { const m = d.toLocaleDateString("uk-UA", { month:"long" }); return m.charAt(0).toUpperCase() + m.slice(1); };
-  el.innerHTML = `<div class="onbInner finInner">
-    <div class="onbTop"><span style="font-size:1.75rem;font-weight:850;color:var(--t)">Фінанси</span></div>
+  return `<div class="finInner">
+    <h1 class="hTitle">Фінанси</h1>
     <div class="hChips" style="margin:0">${chip("all", "Усі об’єкти")}${chip("cur", monthName(now))}${chip("prev", monthName(new Date(now.getFullYear(), now.getMonth() - 1, 15)))}</div>
     <div class="msBox finBig"><small>${finPeriod === "all" ? "Заробіток зараз" : "Отримано мінус витрати"}</small><b class="${earn < 0 ? "neg" : "pos"}">${money(earn)}</b>
       <div class="finBars">${months.map(m => `<div><i style="height:${Math.max(4, Math.round(Math.abs(m.v) / max * 100))}%" class="${m.key === cur ? "cur" : ""} ${m.v < 0 ? "neg" : ""}"></i><span>${m.label}</span></div>`).join("")}</div></div>
@@ -8098,10 +8101,9 @@ function renderFinance(){
       ${finPeriod === "all" && matIncome ? row("Дохід з матеріалів", money(matIncome), "", "кошторис мінус закупівля за планом") : ""}
     </div>
     <div class="msBox"><div class="finHead">За об’єктами</div>
-      ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="document.getElementById('finScreen').classList.remove('open');openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}<small>${r.debt > 0.5 ? "винен " + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
+      ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}<small>${r.debt > 0.5 ? "винен " + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
     </div>
-    <div class="onbSpacer"></div>
-  </div>` + renderHomeNav("fin");
+  </div>`;
 }
 
 function renderEmptyState(){
