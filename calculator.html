@@ -8494,7 +8494,7 @@ function crewState(per){
       earnedNote: /percent_of_work/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від робіт` : /percent_of_income/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від суми` : a.payType === "fixed_per_object" ? "фіксовано за об’єкт" : "",
       notes: (p.todo || []).filter(t => !t.priv && (!t.to || t.to === per.id)).map(t => ({ id:t.id, text:t.text, done:Boolean(t.done), doneAt:t.doneAt || "", doneBy:t.doneBy || "", mine: t.to === per.id })),
       crew: (p.teamAssignments || []).filter(x => x.personId && x.personId !== per.id).map(x => { const m = team.find(t => t.id === x.personId); return { name: (m && m.name) || x.name || "", phone: String((m && m.phone) || "") }; }),
-      files: (p.files || []).map(f => ({ id:f.id, name:f.name, type:f.type })),
+      files: (p.files || []).map(f => ({ id:f.id, name:f.name, type:f.type, ...(f.type === "link" ? { url:f.url } : {}) })),
       requests: (p.crewReq || []).filter(r => r.personId === per.id).slice(-30).map(r => ({ id:r.id, text:r.text, at:r.at, status:r.status })),
       bought: (p.crewBought || []).filter(r => r.personId === per.id).slice(-30).map(r => ({ id:r.id, text:r.text, amount:r.amount, date:r.date, status:r.status }))
     };
@@ -8678,8 +8678,10 @@ function crewBoughtNo(id){
 function renderFilesBox(p){
   const files = p.files || [];
   if(!files.length && !filesUploading) return "";
-  return `<section class="planTodo filesBox"><div class="ptHead"><span>Проєкт і фото</span><label class="ptLink">＋ Додати<input type="file" accept="image/*,application/pdf" multiple hidden onchange="filesAdd(this.files);this.value=''"></label></div>
-    <div class="fGrid">${files.map(f => f.type === "application/pdf"
+  return `<section class="planTodo filesBox"><div class="ptHead"><span>Проєкт і фото</span><button type="button" class="ptLink" onclick="filesPick()">＋ Додати</button></div>
+    <div class="fGrid">${files.map(f => f.type === "link"
+      ? `<a class="fItem pdf" href="${escapeHtml(f.url)}" target="_blank" rel="noopener"><b>🔗</b><span>${escapeHtml(f.name)}</span></a>`
+      : f.type === "application/pdf"
       ? `<a class="fItem pdf" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener"><b>PDF</b><span>${escapeHtml(f.name)}</span></a>`
       : `<a class="fItem" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener" style="background-image:url('${crewFileUrl(f.id)}')"></a>`).join("")}
       ${filesUploading ? `<div class="fItem busy">${filesUploading}…</div>` : ""}</div>
@@ -8687,7 +8689,41 @@ function renderFilesBox(p){
   </section>`;
 }
 let filesUploading = 0;
+/* Додати: файл з телефону або посилання (Telegram, Google Диск…) */
 function filesPick(){
+  let el = document.getElementById("addMenu");
+  if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Проєкт чи фото"><div class="amHead"><b>Проєкт чи фото</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    <button type="button" class="amItem" onclick="closeAddMenu();filesPickFile()"><span class="amIcon">📷</span><span class="amText"><b>Фото чи PDF з телефону</b><small>фото прихованих комунікацій, PDF проєкту</small></span></button>
+    <button type="button" class="amItem" onclick="filesLinkForm()"><span class="amIcon">🔗</span><span class="amText"><b>Посилання</b><small>на повідомлення в Telegram, Google Диск тощо</small></span></button></div>`;
+  requestAnimationFrame(() => el.classList.add("open"));
+}
+function filesLinkForm(){
+  const el = document.getElementById("addMenu");
+  if(!el) return;
+  el.querySelector(".amSheet").innerHTML = `<div class="amHead"><b>Посилання на проєкт</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    <form class="jobForm" onsubmit="event.preventDefault();filesLinkSave()">
+      <label>Посилання<input id="flUrl" inputmode="url" autocomplete="off" placeholder="https://t.me/c/…"></label>
+      <label>Назва <small>необов’язково</small><input id="flName" autocomplete="off" placeholder="Проєкт сантехніки"></label>
+      <small class="jobHint">Посилання на закритий чат Telegram відкриється лише в тих, хто є в цьому чаті.</small>
+      <button type="submit" class="hBtn pr" style="height:2.75rem">Додати</button>
+    </form>`;
+  setTimeout(() => document.getElementById("flUrl")?.focus(), 80);
+}
+function filesLinkSave(){
+  const p = planCurrent();
+  let url = cleanText(document.getElementById("flUrl")?.value || "");
+  if(!p) return;
+  if(!url){ toast("Вставте посилання"); return; }
+  if(!/^https?:\/\//i.test(url)) url = "https://" + url;
+  if(!/^https?:\/\/[^\s]+\.[^\s]+/i.test(url)){ toast("Це не схоже на посилання"); return; }
+  const name = cleanText(document.getElementById("flName")?.value || "") || (/t\.me\//i.test(url) ? "Проєкт у Telegram" : "Посилання");
+  if(!Array.isArray(p.files)) p.files = [];
+  p.files.push({ id: uid("lnk"), name, type:"link", url, at:new Date().toISOString() });
+  touchProject(p); closeAddMenu(); render();
+  toast("Посилання додано");
+}
+function filesPickFile(){
   const i = document.createElement("input");
   i.type = "file"; i.accept = "image/*,application/pdf"; i.multiple = true;
   i.onchange = () => filesAdd(i.files);
@@ -8739,14 +8775,14 @@ function filesManage(){
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Файли"><div class="amHead"><b>Видалити файл</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
-    ${(p.files || []).map(f => `<button type="button" class="amItem" onclick="filesDel('${escapeHtml(f.id)}')"><span class="amIcon">${f.type === "application/pdf" ? "📄" : "🖼"}</span><span class="amText"><b>${escapeHtml(f.name)}</b><small>${Math.max(1, Math.round((f.size || 0) / 1024))} КБ · натисніть, щоб видалити</small></span></button>`).join("")}</div>`;
+    ${(p.files || []).map(f => `<button type="button" class="amItem" onclick="filesDel('${escapeHtml(f.id)}')"><span class="amIcon">${f.type === "link" ? "🔗" : f.type === "application/pdf" ? "📄" : "🖼"}</span><span class="amText"><b>${escapeHtml(f.name)}</b><small>${f.type === "link" ? "посилання" : Math.max(1, Math.round((f.size || 0) / 1024)) + " КБ"} · натисніть, щоб видалити</small></span></button>`).join("")}</div>`;
   requestAnimationFrame(() => el.classList.add("open"));
 }
 async function filesDel(id){
   const p = planCurrent();
   const f = p && (p.files || []).find(x => x.id === id);
   if(!f || !confirm(`Видалити «${f.name}»?`)) return;
-  try{ await supplierApi(`/f/${id}/del`, { method:"POST", body:"{}" }); }catch(e){}
+  if(f.type !== "link"){ try{ await supplierApi(`/f/${id}/del`, { method:"POST", body:"{}" }); }catch(e){} }
   p.files = p.files.filter(x => x.id !== id);
   touchProject(p); closeAddMenu(); render();
 }
