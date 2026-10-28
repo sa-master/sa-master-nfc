@@ -3871,6 +3871,11 @@ body{font-variant-numeric:tabular-nums}
 .fChip{display:inline-flex;align-items:center;gap:.375rem;max-width:100%;height:2.25rem;padding:0 .75rem;border-radius:.5rem;background:rgba(10,132,255,.1);color:var(--p);font-weight:750;font-size:.875rem;text-decoration:none}
 .fChip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fChip.busy{color:var(--tm)}
 .byItem,.ptRow,.msRow,.hNext{border-top-width:1px!important}
+.arrHint{font-size:.8125rem;color:var(--tm);font-weight:600;margin:.25rem .25rem 0}
+.arrList{display:flex;flex-direction:column;gap:.375rem;max-height:50vh;overflow-y:auto}
+.arrRow{display:flex;align-items:center;gap:.75rem;padding:.375rem 0;border-top:1px dashed var(--bpa,rgba(120,120,128,.2))}
+.arrRow span{flex:1;min-width:0;font-weight:650;font-size:.9375rem;color:var(--t)}.arrRow small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
+.arrRow input{width:5rem;height:2.5rem;border-radius:.5rem;border:1px solid rgba(120,120,128,.3);background:var(--bg);color:var(--t);text-align:center;font-size:1rem;font-weight:700}
 </style>
 </head>
 
@@ -4969,7 +4974,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 28.10.2026 23:20</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 29.10.2026 00:35</div>
   </div>
 
   <div class="fsFooter">
@@ -5044,6 +5049,11 @@ let cloudLastError = "";
 /* Поки йде перша перевірка хмари, службові записи при запуску (міграції, стандартні роботи) не вважаються змінами. */
 let cloudStarting = true;
 let cloudStartupWrites = false;
+/* DATA-01: якщо людина вже щось змінила, поки йде перша перевірка хмари, — це її зміна, а не службова.
+   Тоді не перезаписуємо мовчки новішою хмарною версією, а питаємо (як при звичайному конфлікті). */
+let cloudUserActed = false;
+let cloudStartupUserWrites = false;
+["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, () => { cloudUserActed = true; }, { capture:true, passive:true }));
 
 function cloudIsDataKey(key){
   return typeof key === "string" && (key.startsWith("sa_") || key.startsWith("plumber_")) && key !== "sa_lastBackupAt";
@@ -5141,7 +5151,7 @@ Storage.prototype.removeItem = function(key){
 
 function cloudMarkDirty(){
   if(!cloudEnabled()) return;
-  if(cloudStarting){ cloudStartupWrites = true; return; }
+  if(cloudStarting){ cloudStartupWrites = true; if(cloudUserActed) cloudStartupUserWrites = true; return; }
   cloudSet(CLOUD_DIRTY_KEY, String(Date.now()));
   clearTimeout(cloudTimer);
   cloudTimer = setTimeout(cloudPush, 3000);
@@ -5281,6 +5291,7 @@ async function cloudCheckRemote(firstConnect){
     if(status === 401){ cloudUnauthorized(); return; }
     if(status !== 200 || !body) throw new Error("meta");
     cloudLastError = "";
+    if(cloudStartupUserWrites && Number(cloudGet(CLOUD_REV_KEY) || 0) > 0) cloudSet(CLOUD_DIRTY_KEY, String(Date.now()));
     const remoteRev = Number(body.rev || 0);
     const localRev = Number(cloudGet(CLOUD_REV_KEY) || 0);
     const dirty = Boolean(cloudGet(CLOUD_DIRTY_KEY));
@@ -5311,6 +5322,7 @@ async function cloudCheckRemote(firstConnect){
     const hadStartupWrites = cloudStartupWrites && !pulled;
     cloudStarting = false;
     cloudStartupWrites = false;
+    cloudStartupUserWrites = false;
     if(hadStartupWrites && Number(cloudGet(CLOUD_REV_KEY) || 0) > 0 && cloudHash(cloudCollect()) !== cloudGet(CLOUD_HASH_KEY)) cloudMarkDirty();
     renderCloudStatus();
   }
@@ -5331,12 +5343,18 @@ async function cloudShowHistory(){
   try{
     const { status, body } = await cloudFetch("/sync/history");
     if(status !== 200) throw new Error();
-    const items = (body.items || []).slice(0, 30);
+    const items = (body.items || []).slice(0, 60);
     if(!items.length){ box.innerHTML = `<div class="formHint">Копій ще немає.</div>`; return; }
     const label = id => {
-      const m = id.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2})-(\d{2}))?/);
-      const date = m ? `${m[3]}.${m[2]}.${m[1]}${m[4] ? ` ${m[4]}:${m[5]} UTC` : ""}` : id;
-      return id.includes("conflict") ? `${date} · відкладена версія` : `${date} · копія дня`;
+      const save = id.startsWith("s-");
+      const raw = id.replace(/^s-/, "");
+      const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2})-(\d{2}))?/);
+      let date = m ? `${m[3]}.${m[2]}.${m[1]}` : raw;
+      if(m && m[4]){ const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5])); date = d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" }); }
+      if(save) return `${date} · збереження`;
+      if(raw.includes("conflict")) return `${date} · відкладена версія`;
+      if(raw.includes("before-restore")) return `${date} · перед відновленням`;
+      return `${date} · копія дня`;
     };
     box.innerHTML = `<div class="formHint">Оберіть копію. Поточні дані перед цим теж збережуться окремо.</div>` +
       items.map(item => `<button type="button" class="addPersonButton" style="background:rgba(120,120,128,.08);color:var(--t);justify-content:flex-start" onclick="cloudRestore('${escapeHtml(item.id)}')">${escapeHtml(label(item.id))}</button>`).join("");
@@ -7655,8 +7673,21 @@ function getClientTotal(project){
   return approved ? Number(approved.total) || 0 : getEstimateTotal(project);
 }
 
-function approveProject(project){
+/* DOC-01: журнал погоджень — було → стало, коли, як і хто */
+function approvalWho(){
+  try{ const u = cloudSession() && cloudSession().user; if(u && (u.email || u.tg)) return u.email || (u.tg.username ? "@" + u.tg.username : u.tg.name || ""); }catch(e){}
+  try{ return cloudDeviceName(); }catch(e){ return ""; }
+}
+function logApproval(project, prevTotal, how){
+  if(!Array.isArray(project.approvalLog)) project.approvalLog = [];
+  const total = Math.round(Number(getClientTotal(project)) || 0);
+  project.approvalLog.push({ at: new Date().toISOString(), prev: prevTotal === null || prevTotal === undefined ? null : Math.round(prevTotal), total, how: how || "вручну", by: approvalWho() });
+}
+function approveProject(project, how){
+  const prevTotal = getApproved(project) ? getClientTotal(project) : null;
   project.approved = makeApprovedSnapshot(project);
+  if(how) project.approved.how = how;
+  logApproval(project, prevTotal, how);
   project.updatedAt = new Date().toISOString();
   saveProjects();
 }
@@ -7798,7 +7829,9 @@ function revisionApprove(){
   const draft = buildRevisionSnapshot(project, revision.selected);
   if(!confirm(`Зберегти зміни в кошторис для клієнта?\n\nБуло: ${money(before)}\nСтане: ${money(draft.total)}\n\nБорг клієнта рахуватиметься від нової суми.`)) return;
   draft.revised = true;
+  const prevTotalLog = getClientTotal(project);
   project.approved = draft;
+  logApproval(project, prevTotalLog, "оновлено вручну (фактичний кошторис)");
   const pend = clientSendPending(project);
   if(pend && pend.kind === "changes" && (pend.selected || []).slice().sort().join() === Array.from(revision.selected).sort().join()) pend.approvedAt = new Date().toISOString();
   touchProject(project);
@@ -7829,7 +7862,7 @@ function actionReapprove(){
     `Оновити погоджений кошторис?\n\nБуло для клієнта: ${money(before)}\nСтане: ${money(after)}\n\n` +
     "Робіть це, лише якщо клієнт погодив нову версію (наприклад, додаткові роботи)."
   )) return;
-  approveProject(p);
+  approveProject(p, "оновлено вручну (меню «⋯»)");
   closeActionsSheet();
   render();
   toast("Погоджений кошторис оновлено");
@@ -7889,7 +7922,15 @@ function getMaterialsProfit(project){
     if(pos.purchasePriceState !== "confirmed") result.confirmed = false;
   });
 
-  if(result.hasUnknownPrice) return result;
+  /* FIN-03: позиції без закупівельної ціни не рахуємо як «безкоштовні»: рахуємо лише відомі, кількість невідомих — окремо */
+  if(result.hasUnknownPrice){
+    const known = project.positions.filter(pos => pos.type === "material" && !pos.buyLaterOnly && pos.whereK !== "skip" && Number(pos.purchasePrice) > 0);
+    const all = project.positions.filter(pos => pos.type === "material" && !pos.buyLaterOnly && pos.whereK !== "skip");
+    const sell = list => list.reduce((sum, pos) => sum + (Number(pos.price) || 0) * (Number(pos.qty) || 0), 0);
+    const share = sell(all) > 0 ? sell(known) / sell(all) : 0;
+    result.partial = getClientMaterialsTotal(project) * share - purchaseTotal;
+    return result;
+  }
   result.value = getClientMaterialsTotal(project) - purchaseTotal;
   return result;
 }
@@ -8321,7 +8362,7 @@ function renderFinanceHtml(){
   const now = new Date();
   const cur = finMonthKey(now), prev = finMonthKey(new Date(now.getFullYear(), now.getMonth() - 1, 15));
   const inP = e => finPeriod === "all" || finMonthKey(e.date || e.at) === (finPeriod === "cur" ? cur : prev);
-  let rec = 0, spent = 0, teamAll = 0, debt = 0, matIncome = 0;
+  let rec = 0, spent = 0, teamAll = 0, debt = 0, matIncome = 0, matUnknown = 0;
   const rows = [];
   act.forEach(p => {
     const r = moneyList(p, "payment").filter(inP).reduce((s, e) => s + (Number(e.amount) || 0), 0);
@@ -8330,8 +8371,8 @@ function renderFinanceHtml(){
     rec += r; spent += sp;
     if(finPeriod === "all"){
       teamAll += m.teamSum; debt += Math.max(0, projectDebt(p));
-      const plan = (p.positions || []).filter(x => x.type === "material" && !x.buyLaterOnly && x.whereK !== "skip").reduce((s, x) => s + (Number(x.purchasePrice) || 0) * (Number(x.qty) || 0), 0);
-      if(plan > 0) matIncome += getClientMaterialsTotal(p) - plan;
+      const mp = getMaterialsProfit(p);
+      if(mp.hasMaterials){ if(mp.hasUnknownPrice){ matUnknown += mp.unknownCount; if(mp.partial !== undefined) matIncome += mp.partial; } else matIncome += mp.value; }
     }
     if(r || sp || finPeriod === "all") rows.push({ p, earn: finPeriod === "all" ? m.full : r - sp, debt: projectDebt(p) });
   });
@@ -8372,7 +8413,7 @@ function renderFinanceHtml(){
       ${jobRec ? row("у т. ч. разові роботи", money(jobRec), "", `${jobs.length} ${jobs.length === 1 ? "запис" : jobs.length < 5 ? "записи" : "записів"}`) : ""}
       ${row("Витрати", money(finPeriod === "all" ? spent - workerBoughtSum : spent))}
       ${finPeriod === "all" ? (paidTeam ? row("Видано команді", money(paidTeam)) : "") + (owed > 0.5 ? row("Команді ще належить", money(owed)) : "") : jobTeam ? row("Команді", money(jobTeam)) : ""}
-      ${finPeriod === "all" && matIncome ? row("Дохід з матеріалів", money(matIncome), "", "кошторис мінус закупівля за планом") : ""}
+      ${finPeriod === "all" && matIncome ? row(matUnknown ? "≈ Дохід з матеріалів" : "Дохід з матеріалів", money(matIncome), "", matUnknown ? `за планом · без закупівельної ціни: ${matUnknown} поз.` : "кошторис мінус закупівля за планом") : ""}
     </div>
     <div class="msBox"><div class="finHead">За об’єктами${finPeriod === "all" ? `<small class="finHeadSub">ваш заробіток після розрахунку</small>` : ""}</div>
       ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}<small>${r.debt > 0.5 ? (projectOverdue(r.p) ? "винен " : "залишок ") + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
@@ -9429,13 +9470,23 @@ function renderPanelInfo(p){
   }
   return `<div class="estTotal"><span class="lbl">Кошторис</span><b>${money(ap ? getClientTotal(p) : getEstimateTotal(p))}</b></div>`;
 }
+/* FIN-04: виплата людині з команди, записана витратою («Кому: Толік»), уже входить у частку команди —
+   не віднімаємо її вдруге. Покупки працівника за свої (з його розрахунку) — це матеріали, вони лишаються витратами. */
+function teamPayoutsInExpenses(p){
+  const names = new Set((p.teamAssignments || []).map(a => { const m = team.find(t => t.id === a.personId); return String((m && m.name) || a.name || "").trim().toLowerCase(); }).filter(Boolean));
+  if(!names.size) return 0;
+  const bought = new Set(ledgerList().filter(e => e.kind === "expense" && e.expenseId).map(e => e.expenseId));
+  return moneyList(p, "expense").filter(e => names.has(String(e.to || "").trim().toLowerCase()) && !bought.has(e.id)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+}
 function moneySummary(p){
   const received = moneySum(moneyList(p, "payment"));
   const spent = moneySum(moneyList(p, "expense"));
   const total = getClientTotal(p);
   const team = getProjectTeamSummary(p);
   const teamSum = team && team.total !== null ? team.total : 0;
-  return { received, spent, total, teamSum, debt: total - received, now: received - spent - teamSum, full: total - spent - teamSum };
+  const teamPaid = Math.min(teamSum, teamPayoutsInExpenses(p));
+  const cost = spent - teamPaid;
+  return { received, spent, total, teamSum, teamPaid, debt: total - received, now: received - cost - teamSum, full: total - cost - teamSum };
 }
 function openMoneySheet(){
   const p = projects.find(x => x.id === currentProjectId);
@@ -9509,7 +9560,7 @@ function renderFloatingPanel(p){
   const workDiscountPercent = getWorksDiscountPercent(p);
   const materialsDiscountPercent = getMaterialsDiscountPercent(p);
   const profitLabel = profit.confirmed ? "Прибуток" : "≈ Прибуток";
-  const profitValue = profit.hasUnknownPrice ? "—" : money(profit.value);
+  const profitValue = profit.hasUnknownPrice ? (profit.partial !== undefined ? `≈ ${money(profit.partial)} · без ${profit.unknownCount} поз.` : "—") : money(profit.value);
   const worksLabel = workDiscountPercent > 0 ? `Роботи −${workDiscountPercent}%` : "Роботи";
   const materialsLabel = materialsDiscountPercent > 0 ? `Матеріали −${materialsDiscountPercent}%` : "Матеріали";
 
@@ -10329,7 +10380,9 @@ function sendApply(p, s, at, how){
   if(s.kind === "changes"){
     const draft = buildRevisionSnapshot(p, new Set(s.selected || []));
     draft.revised = true;
+    const prevTotalLog = getClientTotal(p);
     p.approved = draft;
+    logApproval(p, prevTotalLog, how === "клієнт" ? `клієнт за посиланням · зміни №${s.n}` : `вручну майстром · зміни №${s.n}`);
     return `Зміни №${s.n} погоджено · для клієнта ${money(getClientTotal(p))}`;
   }
   let full = s.kind === "quote";
@@ -10340,7 +10393,7 @@ function sendApply(p, s, at, how){
     full = Boolean(p.partsApproved[other]) || !projectHasType(p, other === "works" ? "work" : "material");
     if(!full) return `${SEND_KIND_LABEL[s.kind]} погоджено · чекаємо ${other === "works" ? "роботи" : "матеріали"}`;
   }
-  approveProject(p);
+  approveProject(p, how === "клієнт" ? "клієнт за посиланням" : "вручну майстром");
   if((p.stage || "estimate") === "estimate") p.stage = "procurement";
   return `Кошторис погоджено (${money(getClientTotal(p))}). Далі — закупівля`;
 }
@@ -10348,7 +10401,7 @@ function sendApply(p, s, at, how){
 function clientSendTellServer(s){
   const lid = sendLinkId(s && s.link);
   if(!lid || s.clientApprovedAt || !cloudEnabled()) return;
-  fetch(`${cloudConfig().server}/q/${lid}/approve`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ by:"master" }) }).catch(() => {});
+  fetch(`${cloudConfig().server}/q/${lid}/approve`, { method:"POST", headers:{ "Content-Type":"application/json", ...cloudAuthHeaders() }, body: JSON.stringify({ by:"master" }) }).catch(() => {});
 }
 function sendLinkId(link){ const m = String(link || "").match(/#([A-Za-z0-9]{6,20})$/); return m ? m[1] : ""; }
 /* Клієнт натиснув «Погоджую»: якщо суми збігаються — записуємо одразу, інакше просимо майстра глянути */
@@ -10410,9 +10463,15 @@ function sendMarker(p, s){
   if(s.clientApprovedAt) return `<button type="button" class="csPill new" onclick="clientSendApprove('${escapeHtml(s.id)}')">● Погодив — глянути</button>`;
   return `<span class="csPill wait">◷ Чекаємо</span>`;
 }
+function renderApprovalLog(p){
+  const log = Array.isArray(p.approvalLog) ? p.approvalLog : [];
+  if(!log.length) return "";
+  return `<div class="csHead" style="margin-top:.75rem">Журнал погодженої суми</div>${log.slice().reverse().map(e => `<div class="csRow"><span class="csName"><b>${e.prev === null ? money(e.total) : `${money(e.prev)} → ${money(e.total)}`}</b><small>${formatQuoteDate(e.at).slice(0, 10)} ${new Date(e.at).toLocaleTimeString("uk-UA", { hour:"2-digit", minute:"2-digit" })} · ${escapeHtml(e.how || "")}${e.by ? " · " + escapeHtml(e.by) : ""}</small></span></div>`).join("")}`;
+}
 function renderClientSends(p){
   const list = clientSends(p);
-  if(!list.length || clientView) return "";
+  if(clientView) return "";
+  if(!list.length){ return clientSendsAll && (p.approvalLog || []).length ? `<section class="csBox"><div class="csHead">Історія погоджень<button type="button" class="csMore" style="float:right;padding:0" onclick="clientSendsAll=false;render()">Згорнути</button></div>${renderApprovalLog(p)}</section>` : ""; }
   const open = clientSendsOpen(p);
   if(open.length) pollClientSends(p);
   /* Нічого не чекаємо — блок не показуємо; історія відкривається з зеленого/синього банера */
@@ -10425,7 +10484,7 @@ function renderClientSends(p){
     return `<div class="csRow"><span class="csName"><b>${title}</b><small>${sub}${manual}</small></span>${sendMarker(p, s)}</div>`;
   };
   if(clientSendsAll){
-    return `<section class="csBox"><div class="csHead">Історія погоджень<button type="button" class="csMore" style="float:right;padding:0" onclick="clientSendsAll=false;render()">Згорнути</button></div>${list.slice().reverse().map(row).join("")}</section>`;
+    return `<section class="csBox"><div class="csHead">Історія погоджень<button type="button" class="csMore" style="float:right;padding:0" onclick="clientSendsAll=false;render()">Згорнути</button></div>${list.slice().reverse().map(row).join("")}${renderApprovalLog(p)}</section>`;
   }
   const pa = partsApproved(p);
   const done = !getApproved(p) ? ["works", "materials"].filter(k => pa[k]).map(k => `${k === "works" ? "Роботи" : "Матеріали"} ✓ ${formatQuoteDate(pa[k].at).slice(0, 5)}`).join(" · ") : "";
@@ -11618,7 +11677,7 @@ function renderApprovedBanner(project){
   const diff = internalTotal - (Number(approved.total) || 0);
   return `
     <section class="approvedBanner">
-      <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис для клієнта оновлено" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}${clientSends(project).length ? ` <button type="button" class="csLink" style="float:right" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "сховати історію" : "історія"}</button>` : ""}</div>
+      <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис для клієнта оновлено" : approved.how && !/клієнт/.test(approved.how) ? "Погоджено (зафіксовано вручну)" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}${clientSends(project).length || (project.approvalLog || []).length ? ` <button type="button" class="csLink" style="float:right" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "сховати історію" : "історія"}</button>` : ""}</div>
       ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · за цінами для клієнта це ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
       ${changes.added.length ? `<div class="approvedBannerRemoved">Додано: ${changes.added.map(item => escapeHtml(item.clientName || positionClientName(item) || item.name || "")).join(", ")}</div>` : ""}
       ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>` : ""}
@@ -11924,7 +11983,7 @@ function setDiscountPercent(type, value){
   const current = type === "work" ? getWorksDiscountPercent(project) : getMaterialsDiscountPercent(project);
   if(num === current) return;
   if(!confirm(`Змінити знижку на ${type === "work" ? "роботи" : "матеріали"}: ${current}% → ${num}%?`)) return;
-  project[key] = (num > 0 && num < 100) ? num : 0;
+  project[key] = (num > 0 && num <= 100) ? num : 0;
   project.updatedAt = new Date().toISOString();
   saveProjects();
   render();
@@ -17687,7 +17746,7 @@ function actionAdvanceStage(){
   const next = nextStages[previousStage];
   if(!next) return;
   if(previousStage === "estimate" && next === "procurement"){
-    if(!getApproved(p)) approveProject(p);
+    if(!getApproved(p)) approveProject(p, "вручну (перехід до закупівлі)");
   }
   if(next === "estimate" && getApproved(p)){
     if(confirm("Повернути до прорахунку і зняти погодження?\n\nСума для клієнта знову рахуватиметься з поточного кошторису.")) delete p.approved;
@@ -19961,7 +20020,7 @@ function renderBuyList(p){
     if(g.k === "sup"){
       const unsent = g.items.filter(x => !buySent(x)).length;
       btn = unsent ? `<button type="button" class="ptBtn primary" onclick="openBuySend(${buyEnc(g.s)})">Надіслати список</button>`
-        : `<button type="button" class="ptBtn" onclick="buyArrived(${buyEnc(g.s)})">Привезли</button>`;
+        : `<button type="button" class="ptBtn" onclick="openArrived(${buyEnc(g.s)})">Привезли</button>`;
     }
     const head = g.k === "?" ? `<span class="byWarn">Де брати?</span><small>натисніть на товар і виберіть</small>` : `${escapeHtml(g.label)} <small>${g.items.length}</small>`;
     return `<div class="byGroup"><div class="byHead"><span>${head}</span>${btn}</div>${g.items.map(item).join("")}</div>`;
@@ -19989,20 +20048,32 @@ function renderBuyList(p){
 }
 
 /* Галочка. Купили самі — можна вписати суму, вона піде у «Гроші → Витрати». */
+/* FIN-01: кожна покупка «сам» — окрема витрата, усі прив’язані до товару (gotExpenseIds).
+   Закупівельна ціна при докупівлі — середньозважена; зняття галочки прибирає всі витрати й повертає попередню ціну. */
+function buyExpenseIds(pos){
+  const ids = Array.isArray(pos.gotExpenseIds) ? pos.gotExpenseIds.slice() : [];
+  if(pos.gotExpenseId && !ids.includes(pos.gotExpenseId)) ids.unshift(pos.gotExpenseId);
+  return ids;
+}
 function buyToggle(posId){
   const { p, pos } = buyPos(posId);
   if(!pos) return;
   const need = buyNeed(p, pos);
   if(!pos.got || need > 0){
+    const prevQ = pos.got ? roundQty(Number((buyLog(p)[pos.id] || {}).q) || 0) : 0;
     if(pos.whereK === "self"){
       const raw = prompt(`«${positionShortName(pos)}» · ${formatQty(need)} ${pos.unit || "шт"} — куплено.\n\nСкільки заплатили, ₴? (можна залишити пустим)`, "");
       if(raw === null) return;
       const amount = parseMoneyInput(raw || "0");
       if(amount > 0){
+        if(!pos.got && pos.gotPriceBefore === undefined) pos.gotPriceBefore = { price: pos.purchasePrice ?? null, state: pos.purchasePriceState || "" };
         const exp = { id: uid("exp"), date: todayIso(), amount, to: "", note: `${positionShortName(pos)} × ${formatQty(need)}`, buyLaterId: pos.id };
         moneyList(p, "expense").push(exp);
-        if(!pos.got) pos.gotExpenseId = exp.id;
-        pos.purchasePrice = Math.round(amount / (need || 1) * 100) / 100;
+        pos.gotExpenseIds = buyExpenseIds(pos).concat(exp.id);
+        delete pos.gotExpenseId;
+        const prevPrice = Number(pos.purchasePrice) || 0;
+        const unit = amount / (need || 1);
+        pos.purchasePrice = Math.round((prevQ > 0 && prevPrice > 0 && pos.purchasePriceState === "confirmed" ? (prevPrice * prevQ + amount) / (prevQ + need) : unit) * 100) / 100;
         pos.purchasePriceState = "confirmed";
       }
       if(pos.buyLaterOnly) pos.buyLaterDone = true;
@@ -20011,8 +20082,16 @@ function buyToggle(posId){
     pos.gotAt = new Date().toISOString();
     buyLogSet(p, pos);
   }else{
+    const ids = buyExpenseIds(pos);
+    if(ids.length) undoArm(`«${positionShortName(pos)}» знову треба купити · витрати прибрано`);
     delete buyLog(p)[pos.id];
-    if(pos.gotExpenseId){ p.expenses = moneyList(p, "expense").filter(e => e.id !== pos.gotExpenseId); delete pos.gotExpenseId; toast("Знову треба купити · витрату прибрано"); }
+    if(ids.length){
+      p.expenses = moneyList(p, "expense").filter(e => !ids.includes(e.id));
+      delete pos.gotExpenseId; delete pos.gotExpenseIds;
+      if(pos.gotPriceBefore){ if(pos.gotPriceBefore.price === null || pos.gotPriceBefore.price === undefined) delete pos.purchasePrice; else pos.purchasePrice = pos.gotPriceBefore.price; pos.purchasePriceState = pos.gotPriceBefore.state || ""; }
+    }
+    delete pos.gotPriceBefore;
+    delete pos.gotQty;
     pos.got = false;
     delete pos.gotAt;
     if(pos.buyLaterOnly) pos.buyLaterDone = false;
@@ -20021,14 +20100,60 @@ function buyToggle(posId){
   render();
 }
 
+/* FIN-02: «Привезли» — за замовчуванням усе; можна вписати, скільки привезли насправді.
+   Недовезене лишається в «Що купити» («ще N»), наступне «Привезли» додає залишок. */
+function buyArrivedList(p, supplier){ return buyItems(p).filter(pos => buyNeed(p, pos) > 0 && pos.whereK === "sup" && normalizeText(pos.whereS) === normalizeText(supplier) && buySent(pos)); }
+function buyReceive(p, pos, q){
+  q = roundQty(Math.max(0, Math.min(Number(q) || 0, buyNeed(p, pos))));
+  if(q <= 0) return false;
+  const prevQ = pos.got ? roundQty(Number((buyLog(p)[pos.id] || {}).q) || 0) : 0;
+  pos.got = true; pos.gotAt = new Date().toISOString();
+  buyLogSet(p, pos);
+  buyLog(p)[pos.id].q = roundQty(prevQ + q);
+  return true;
+}
 function buyArrived(supplier){
   const p = buyCur();
   if(!p) return;
-  const list = buyItems(p).filter(pos => buyNeed(p, pos) > 0 && pos.whereK === "sup" && normalizeText(pos.whereS) === normalizeText(supplier) && buySent(pos));
-  list.forEach(pos => { pos.got = true; pos.gotAt = new Date().toISOString(); buyLogSet(p, pos); });
+  const list = buyArrivedList(p, supplier);
+  list.forEach(pos => buyReceive(p, pos, buyNeed(p, pos)));
+  closeAddMenu();
   touchProject(p);
   render();
-  toast(`Привезли ✓ ${list.length} поз. Якщо чогось немає — зніміть галочку з цього товару`, 3600);
+  toast(`Привезли ✓ ${list.length} поз.`, 2600);
+}
+function openArrived(supplier){
+  const p = buyCur();
+  if(!p) return;
+  const list = buyArrivedList(p, supplier);
+  if(!list.length) return;
+  let el = document.getElementById("addMenu");
+  if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Привезли"><div class="amHead"><b>Привезли · ${escapeHtml(supplier)}</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    <button type="button" class="onbPrimary" style="margin:0" onclick="buyArrived(${buyEnc(supplier)})">Усе привезли (${list.length} поз.)</button>
+    <div class="arrHint">Чогось не довезли? Виправте кількість і натисніть «Записати».</div>
+    <form class="arrList" onsubmit="event.preventDefault();buyArrivedPartial(${buyEnc(supplier)})">
+      ${list.map(pos => `<label class="arrRow"><span>${escapeHtml(positionShortName(pos))}<small>треба ${formatQty(buyNeed(p, pos))} ${escapeHtml(pos.unit || "шт")}</small></span><input inputmode="decimal" data-arr="${escapeHtml(pos.id)}" value="${formatQty(buyNeed(p, pos))}"></label>`).join("")}
+      <button type="submit" class="hBtn" style="height:2.75rem;width:100%">Записати</button>
+    </form></div>`;
+  requestAnimationFrame(() => el.classList.add("open"));
+}
+function buyArrivedPartial(supplier){
+  const p = buyCur();
+  if(!p) return;
+  let full = 0, part = 0;
+  document.querySelectorAll("#addMenu [data-arr]").forEach(inp => {
+    const pos = (p.positions || []).find(x => x.id === inp.dataset.arr);
+    if(!pos) return;
+    const need = buyNeed(p, pos);
+    const q = parseMoneyInput(String(inp.value || "0").replace(",", "."));
+    if(!buyReceive(p, pos, q)) return;
+    if(q >= need) full++; else part++;
+  });
+  closeAddMenu();
+  touchProject(p);
+  render();
+  toast(part ? `Записано: ${full} повністю, ${part} частково — решта лишилась у «Що купити»` : `Привезли ✓ ${full} поз.`, 3200);
 }
 
 /* ---- Надіслати список постачальнику (той самий файл і Нова пошта, що й раніше) ---- */
