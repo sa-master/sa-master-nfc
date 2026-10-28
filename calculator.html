@@ -3518,6 +3518,7 @@ body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .jobBtns{display:flex;gap:.5rem;margin:.75rem 0}.jobBtns .hBtn{flex:1}.jobHint{color:var(--tm);font-size:.75rem}
 .peAmt{display:flex;align-items:center;gap:.25rem;flex:0 0 auto}.peAmt b{white-space:nowrap}
 .jobPaid{flex-direction:row !important;align-items:center;gap:.5rem !important;color:var(--t) !important;font-weight:650 !important}.jobPaid input{width:1.25rem !important;height:1.25rem;flex:0 0 auto;padding:0 !important}
+.finAvg{margin-top:.625rem;font-size:.875rem;font-weight:650;color:var(--tm)}.finAvg b{color:var(--t);font-weight:800}.finBig .finAvg small{display:block;font-size:.75rem;font-weight:600;color:var(--tm);text-transform:none;letter-spacing:0}
 .personDue{display:flex;gap:1.25rem;flex-wrap:wrap;margin-top:.75rem;padding-top:.625rem;border-top:1px solid rgba(120,120,128,.14);font-size:.875rem;color:var(--tm);font-weight:650}.personDue b{display:block;font-size:1.125rem;color:var(--t);font-weight:800}.personDue small{display:block;font-size:.6875rem;color:var(--tm);font-weight:600;text-transform:none;letter-spacing:0}
 .personSum{font-size:.8125rem;color:var(--tm);font-weight:600;margin-top:.25rem}
 #jobScreen .msBox,#personScreen .msBox{margin-top:.75rem}
@@ -8149,6 +8150,27 @@ let finPeriod = "all";
 function finMonthKey(d){ const x = new Date(d); return isNaN(x) ? "" : x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0"); }
 function openFinance(){ showHome("fin"); }
 function renderFinance(){ render(); }
+/* Середній заробіток за місяць: останні 12 місяців (з першого місяця, де є записи) до поточного включно */
+function avgOverMonths(map){
+  const now = new Date();
+  const keys = Array.from({ length:12 }, (_, k) => finMonthKey(new Date(now.getFullYear(), now.getMonth() - 11 + k, 15)));
+  const first = keys.findIndex(k => Math.abs(map[k] || 0) > 0.5);
+  if(first < 0 || first > 10) return null; /* середнє має сенс від двох місяців */
+  const used = keys.slice(first);
+  return { v: used.reduce((s, k) => s + (map[k] || 0), 0) / used.length, n: used.length };
+}
+function finMonthAvg(){
+  const m = {};
+  const add = (d, v) => { const k = finMonthKey(d); if(k) m[k] = (m[k] || 0) + (Number(v) || 0); };
+  const workerBought = new Set(ledgerList().filter(e => e.kind === "expense" && e.expenseId).map(e => e.expenseId));
+  projects.forEach(p => {
+    moneyList(p, "payment").forEach(e => add(e.date || e.at, e.amount));
+    moneyList(p, "expense").forEach(e => { if(!workerBought.has(e.id)) add(e.date || e.at, -(Number(e.amount) || 0)); });
+  });
+  jobsList().forEach(j => { add(j.date, (Number(j.amount) || 0) - (Number(j.expense) || 0) - (j.people || []).filter(x => x.paid !== false).reduce((s, x) => s + (Number(x.amount) || 0), 0)); });
+  ledgerList().filter(e => e.kind === "pay").forEach(e => add(e.date, -(Number(e.amount) || 0)));
+  return avgOverMonths(m);
+}
 function renderFinanceHtml(){
   const act = projects.filter(p => (p.status || "active") !== "archived" || finPeriod !== "all");
   const now = new Date();
@@ -8185,6 +8207,7 @@ function renderFinanceHtml(){
   const after = onHand + left + overdue - owed;
   const earn = finPeriod === "all" ? onHand : rec - spent - jobTeam;
   /* стовпчики: різниця «отримано − витрати» за останні 4 місяці */
+  const avg = finMonthAvg();
   const months = [3, 2, 1, 0].map(k => { const d = new Date(now.getFullYear(), now.getMonth() - k, 15); return { key: finMonthKey(d), label: d.toLocaleDateString("uk-UA", { month:"short" }).replace(".", "") }; });
   months.forEach(mo => { mo.v = 0; projects.forEach(p => { moneyList(p, "payment").forEach(e => { if(finMonthKey(e.date || e.at) === mo.key) mo.v += Number(e.amount) || 0; }); moneyList(p, "expense").forEach(e => { if(finMonthKey(e.date || e.at) === mo.key) mo.v -= Number(e.amount) || 0; }); }); jobsList().forEach(j => { if(finMonthKey(j.date) === mo.key) mo.v += jobEarn(j); }); });
   const max = Math.max(1, ...months.map(m => Math.abs(m.v)));
@@ -8196,7 +8219,7 @@ function renderFinanceHtml(){
     <div class="hChips" style="margin:0">${chip("all", "Усі об’єкти")}${chip("cur", monthName(now))}${chip("prev", monthName(new Date(now.getFullYear(), now.getMonth() - 1, 15)))}</div>
     <div class="msBox finBig"><small>${finPeriod === "all" ? "Зараз на руках" : "Отримано мінус витрати"}</small><b class="${earn < 0 ? "neg" : "pos"}">${money(earn)}</b>
       ${finPeriod === "all" ? `<div class="finAfter">Після розрахунку <b>${money(after)}</b><small>коли клієнти доплатять залишок, а ви розрахуєтесь з командою</small></div>` : ""}
-      <div class="finBars">${months.map(m => `<div><i style="height:${Math.max(4, Math.round(Math.abs(m.v) / max * 100))}%" class="${m.key === cur ? "cur" : ""} ${m.v < 0 ? "neg" : ""}"></i><span>${m.label}</span></div>`).join("")}</div></div>
+      <div class="finBars">${months.map(m => `<div><i style="height:${Math.max(4, Math.round(Math.abs(m.v) / max * 100))}%" class="${m.key === cur ? "cur" : ""} ${m.v < 0 ? "neg" : ""}"></i><span>${m.label}</span></div>`).join("")}</div>${avg ? `<div class="finAvg">Середнє за місяць <b>${money(avg.v)}</b><small>за ${avg.n} ${avg.n === 1 ? "місяць" : avg.n < 5 ? "місяці" : "місяців"}: отримано мінус витрати й виплати команді</small></div>` : ""}</div>
     <div class="msBox">
       ${finPeriod === "all" && overdue > 0.5 ? row("Клієнти винні", money(overdue), "neg", "роботи здано, а оплати ще немає") : ""}
       ${finPeriod === "all" && left > 0.5 ? row("Залишок до оплати", money(left), "", "по об’єктах, які ще в роботі") : ""}
@@ -8416,6 +8439,7 @@ function renderPersonLedger(){
       return `<div class="hChips" style="margin:0 0 .5rem">${chip("cur", cap(monthLabel(cur, true)))}${chip("prev", cap(monthLabel(prev, true)))}${chip("all", "Усього")}</div>
       <div class="msBox finBig"><small>${lbl}</small><b class="pos">${money(val)}</b>
       <div class="finBars">${keys.map(k => `<div><i style="height:${Math.max(4, Math.round((em[k] || 0) / max * 100))}%" class="${k === cur ? "cur" : ""}"></i><span>${monthLabel(k)}</span></div>`).join("")}</div>
+      ${(() => { const a = avgOverMonths(em); return a ? `<div class="finAvg">Середнє за місяць <b>${money(a.v)}</b><small>за ${a.n} ${a.n === 1 ? "місяць" : a.n < 5 ? "місяці" : "місяців"}</small></div>` : ""; })()}
       <div class="personDue"><span>${b.balance >= -0.5 ? "До виплати" : "Видано наперед"} <b>${money(Math.abs(b.balance))}</b></span>${b.pending ? `<span>Ще буде <b>${money(b.pending)}</b><small>за об’єктами в роботі</small></span>` : ""}</div></div>`;
     })()}
     <div class="jobBtns"><button type="button" class="hBtn pr" onclick="personUi.form='pay';renderPersonLedger()">＋ Видав гроші</button><button type="button" class="hBtn" onclick="personUi.form='expense';renderPersonLedger()">＋ Купив за свої</button></div>
