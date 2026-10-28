@@ -847,9 +847,14 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .formRow{
   display:grid;
-  grid-template-columns:1fr 1fr;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   gap:.5rem;
 }
+.formRow > *{min-width:0}
+/* iPhone: поле дати має свою ширину й вилазить за колонку — стискаємо */
+input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;width:100%;box-sizing:border-box;display:block}
+input[type=date]::-webkit-date-and-time-value{text-align:left}
+.estimateBlock:not(:has(*)){display:none}
 
 .formHint{
   margin:.25rem .25rem 0;
@@ -1229,6 +1234,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
   color:var(--ts);
 }
 
+.estimateBlock:not(:has(*)){display:none}
 .estimateBlock{
   background:var(--gb);
   backdrop-filter:blur(1.5rem) saturate(200%);
@@ -7996,15 +8002,20 @@ function navSection(k){
   const sec = document.body.dataset.sec || "";
   if(k === "new"){ openCreateChoice(); return; }
   if(k === sec) return;
-  /* залишаємо Профіль — зберігаємо зміни, як «Готово» */
-  if(sec === "prof" && document.getElementById("profileScreen")?.classList.contains("open")){ navLeaving = true; try{ saveProfile(); }catch(e){ closeProfile(); } navLeaving = false; }
-  if(sec === "cat" && document.getElementById("catalogSheet")?.classList.contains("open")){ navLeaving = true; closeCatalog(); navLeaving = false; }
+  navLeaveSection();
   if(k === "cat"){ setNavSection("cat"); openCatalogBrowse(); return; }
   if(k === "prof"){ setNavSection("prof"); openProfile(); return; }
   setNavSection("");
   showHome(k === "fin" ? "fin" : "objects");
 }
 let navLeaving = false;
+/* Вийти з розділу Профіль/Каталог (зберегти профіль), щоб він не лишився поверх об’єкта */
+function navLeaveSection(){
+  const sec = document.body.dataset.sec || "";
+  if(sec === "prof" && document.getElementById("profileScreen")?.classList.contains("open")){ navLeaving = true; try{ profileQuiet = true; saveProfile(); }catch(e){} profileQuiet = false; closeProfile(); navLeaving = false; }
+  if(sec === "cat" && document.getElementById("catalogSheet")?.classList.contains("open")){ navLeaving = true; closeCatalog(); navLeaving = false; }
+  if(sec) setNavSection("");
+}
 function showHome(v){
   homeView = v;
   currentProjectId = null;
@@ -8226,7 +8237,7 @@ function inFinPeriod(date){
 function openCreateChoice(){
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
-  const item = (icon, title, sub, action) => `<button type="button" class="amItem" onclick="closeAddMenu();${action}"><span class="amIcon">${icon}</span><span class="amText"><b>${title}</b><small>${sub}</small></span></button>`;
+  const item = (icon, title, sub, action) => `<button type="button" class="amItem" onclick="closeAddMenu();navLeaveSection();${action}"><span class="amIcon">${icon}</span><span class="amText"><b>${title}</b><small>${sub}</small></span></button>`;
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Створити">
     <div class="amHead"><b>Створити</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
     ${item("🏠", "Новий об’єкт", "кошторис, закупівля, облік — повний шлях", "openNewProject()")}
@@ -17900,6 +17911,7 @@ function openProject(id){
   const p = projects.find(x => x.id === id);
   if(!p) return;
   if((p.status || "active") === "archived") return;
+  navLeaveSection();
   currentProjectId = id;
   render();
 }
