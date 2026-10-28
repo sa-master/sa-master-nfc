@@ -35,12 +35,13 @@ h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .avg{font-size:13.5px;color:var(--tm);font-weight:650}.avg b{color:var(--t);font-weight:800;font-size:15px;letter-spacing:0;display:inline}.avg span{font-size:12px}
 .due{display:flex;gap:22px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;font-size:13px;color:var(--tm);font-weight:650}.due b{display:block;font-size:18px;color:var(--t);font-weight:800}.bal .due small{display:block;font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--tm)}.bal .due b{display:block;font-size:18px;color:var(--t);font-weight:800;letter-spacing:0}
 #list{display:flex;flex-direction:column;gap:14px}
-.statbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;align-items:center;gap:18px;background:var(--card);border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-right));text-align:left;box-shadow:0 -6px 18px rgba(0,0,0,.06)}
+.statbar{position:fixed;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:calc(12px + env(safe-area-inset-bottom));z-index:40;max-width:616px;margin:0 auto;display:flex;align-items:center;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px 16px;text-align:left;box-shadow:0 8px 24px rgba(16,40,80,.14)}
 .statbar span{display:flex;flex-direction:column;min-width:0}.statbar small{font-size:11.5px;color:var(--tm);font-weight:700}.statbar b{font-size:17px;font-weight:850;color:var(--t);white-space:nowrap}.statbar span:first-child b{color:var(--p)}.statbar i{margin-left:auto;font-style:normal;font-size:22px;color:var(--tm)}
 .search{font-size:16px}
 .fold{margin-left:8px;color:var(--tm);font-size:15px;vertical-align:2px}
 .card.obj.fin h2{color:var(--tm)}
 .sheet .bal{display:flex;flex-direction:column;gap:10px;background:var(--in);border-radius:14px;padding:12px}
+.toggle{display:flex;align-items:center;justify-content:space-between;width:100%;border-top:1px solid var(--line);padding:10px 0 0;margin-top:2px;color:var(--p);font-weight:750;font-size:15px}.toggle svg{flex:0 0 auto}.toggle.up svg{transform:rotate(180deg)}
 .lnk{color:var(--p);font-weight:750;font-size:14px;padding:0;text-align:left}
 .obj h2{font-size:18px;font-weight:850;line-height:1.2}.card.obj{gap:8px;padding:14px}
 .stage{display:inline-block;font-size:12px;font-weight:750;color:var(--p);background:var(--soft);border-radius:8px;padding:2px 8px;margin-left:6px;vertical-align:3px}
@@ -153,10 +154,10 @@ function render(){
     if(folded) return `<section class="card obj ${o.phase === "done" ? "fin" : ""}">
       <h2>${esc(o.title)}<span class="stage">${esc(tag)}</span></h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
-      ${(o.notes || []).length || (o.files || []).length ? `<button class="lnk" onclick="openMore['p_${esc(o.pid)}']=true;render()">${o.phase === "done" ? "Деталі" : "Проєкт і нотатки"}${(o.files || []).length ? ` · ${o.files.length}` : ""} ▾</button>` : ""}
+      ${(o.notes || []).length || (o.files || []).length ? `<button class="toggle" onclick="openMore['p_${esc(o.pid)}']=true;render()"><span>${o.phase === "done" ? "Деталі" : "Проєкт і нотатки"}${(o.files || []).length ? ` · ${o.files.length}` : ""}</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>` : ""}
     </section>`;
     return `<section class="card obj">
-      <h2>${esc(o.title)}${tag ? `<span class="stage">${esc(tag)}</span>` : ""}${o.phase !== "now" ? `<button class="fold" onclick="openMore['p_${esc(o.pid)}']=false;render()" aria-label="Згорнути">▴</button>` : ""}</h2>
+      <h2>${esc(o.title)}${tag ? `<span class="stage">${esc(tag)}</span>` : ""}</h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
       ${(o.crew || []).length ? `<div class="crew">На об’єкті також: ${o.crew.map(c => { const t = String(c.phone || "").replace(/[^\d+]/g, ""); return t ? `<a href="tel:${esc(t)}">${esc(c.name)}</a>` : esc(c.name); }).join(", ")}</div>` : ""}
       ${o.earned ? `<div class="earn">Ваш заробіток <b>${money(o.earned)}</b>${o.earnedNote ? ` · ${esc(o.earnedNote)}` : ""}</div>` : ""}
@@ -166,6 +167,7 @@ function render(){
       ${reqs.length ? `<div class="sec">Що потрібно</div>${reqs.map(r => `<div class="row"><span>${esc(r.text)}<small>${day(r.at)}</small></span>${stTag(r.status)}</div>`).join("")}` : ""}
       ${bought.length ? `<div class="sec">Купив за свої</div>${bought.map(r => `<div class="row"><span>${money(r.amount)}${r.text ? ` · ${esc(r.text)}` : ""}<small>${day(r.date)}</small></span>${stTag(r.status)}</div>`).join("")}` : ""}
       ${o.phase === "done" ? "" : `<div class="acts"><button class="btn ghost" onclick="askForm('${esc(o.pid)}')">＋ Потрібно</button><button class="btn ghost" onclick="boughtForm('${esc(o.pid)}')">＋ Купив за свої</button></div>`}
+      ${o.phase !== "now" ? `<button class="toggle up" onclick="openMore['p_${esc(o.pid)}']=false;render()"><span>Згорнути</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>` : ""}
     </section>`;
   };
   $("app").innerHTML = `
