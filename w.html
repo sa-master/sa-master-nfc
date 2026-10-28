@@ -31,6 +31,8 @@ h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .bal .sub{font-size:13px;color:var(--tm);font-weight:600}
 .who{display:block;font-size:14px;font-weight:650;color:var(--tm);margin-top:2px}
 .grp{font-size:20px;font-weight:850;padding:8px 4px 0}
+.bars{display:flex;gap:6px;align-items:flex-end;height:70px;margin-top:4px}.bars div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}.bars i{display:block;width:100%;border-radius:6px;background:var(--soft)}.bars i.cur{background:var(--p)}.bars span{font-size:11px;color:var(--tm);font-weight:650}
+.due{display:flex;gap:22px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;font-size:13px;color:var(--tm);font-weight:650}.due b{display:block;font-size:18px;color:var(--t);font-weight:800}.bal .due small{display:block;font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--tm)}.bal .due b{display:block;font-size:18px;color:var(--t);font-weight:800;letter-spacing:0}
 .lnk{color:var(--p);font-weight:750;font-size:14px;padding:0;text-align:left}
 .obj h2{font-size:19px;font-weight:850;line-height:1.2}
 .stage{display:inline-block;font-size:12px;font-weight:750;color:var(--p);background:var(--soft);border-radius:8px;padding:2px 8px;margin-left:6px;vertical-align:3px}
@@ -159,12 +161,18 @@ function render(){
       return (now.length ? now.map(obj).join("") : `<div class="card empty" style="padding:18px">Зараз в роботі нічого немає</div>`)
         + (plan.length ? `<h2 class="grp">Заплановані</h2>${plan.map(obj).join("")}` : "");
     })()}
-    <section class="card bal">
-      <small>Мій розрахунок · ${b.balance >= -0.5 ? "до виплати" : "видано наперед"}</small><b>${money(Math.abs(b.balance))}</b>
-      ${b.pending ? `<div class="sub">ще буде за об’єктами в роботі: <b style="color:var(--t)">${money(b.pending)}</b></div>` : ""}
-      <div class="sub">зароблено ${money(b.earned)}${b.bought ? ` · ваші покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div>
-      <button class="lnk" onclick="openBalance()">Детальніше</button>
-    </section>
+    <section class="card bal">${(() => {
+      const em = st.months || {}, now = new Date();
+      const key = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+      const keys = [5, 4, 3, 2, 1, 0].map(k => key(new Date(now.getFullYear(), now.getMonth() - k, 15)));
+      const cur = keys[5], max = Math.max(1, ...keys.map(k => em[k] || 0));
+      const IN = ["січні", "лютому", "березні", "квітні", "травні", "червні", "липні", "серпні", "вересні", "жовтні", "листопаді", "грудні"];
+      const short = k => new Date(Number(k.slice(0, 4)), Number(k.slice(5)) - 1, 15).toLocaleDateString("uk-UA", { month:"short" }).replace(".", "");
+      return `<small>Заробив у ${IN[now.getMonth()]}</small><b>${money(em[cur] || 0)}</b>
+      <div class="bars">${keys.map(k => `<div><i style="height:${Math.max(4, Math.round((em[k] || 0) / max * 100))}%" class="${k === cur ? "cur" : ""}"></i><span>${short(k)}</span></div>`).join("")}</div>
+      <div class="due"><span>${b.balance >= -0.5 ? "До виплати" : "Видано наперед"}<b>${money(Math.abs(b.balance))}</b></span>${b.pending ? `<span>Ще буде<b>${money(b.pending)}</b><small>за об’єктами в роботі</small></span>` : ""}</div>
+      <button class="lnk" onclick="openBalance()">Детальніше</button>`;
+    })()}</section>
     <div class="foot">Оновлено ${st.at ? new Date(st.at).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—"} · <button onclick="load()">оновити</button>${navApp() ? ` · <button onclick="route('', true)">як добиратись: ${esc(NAV[navApp()].name)}</button>` : ""}</div>`;
 }
 
