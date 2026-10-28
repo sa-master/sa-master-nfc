@@ -3518,6 +3518,7 @@ body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .jobBtns{display:flex;gap:.5rem;margin:.75rem 0}.jobBtns .hBtn{flex:1}.jobHint{color:var(--tm);font-size:.75rem}
 .peAmt{display:flex;align-items:center;gap:.25rem;flex:0 0 auto}.peAmt b{white-space:nowrap}
 .jobPaid{flex-direction:row !important;align-items:center;gap:.5rem !important;color:var(--t) !important;font-weight:650 !important}.jobPaid input{width:1.25rem !important;height:1.25rem;flex:0 0 auto;padding:0 !important}
+.personDue{display:flex;gap:1.25rem;flex-wrap:wrap;margin-top:.75rem;padding-top:.625rem;border-top:1px solid rgba(120,120,128,.14);font-size:.875rem;color:var(--tm);font-weight:650}.personDue b{display:block;font-size:1.125rem;color:var(--t);font-weight:800}.personDue small{display:block;font-size:.6875rem;color:var(--tm);font-weight:600;text-transform:none;letter-spacing:0}
 .personSum{font-size:.8125rem;color:var(--tm);font-weight:600;margin-top:.25rem}
 #jobScreen .msBox,#personScreen .msBox{margin-top:.75rem}
 .crewInfo{font-size:.8125rem;color:var(--tm);font-weight:600;line-height:1.4}
@@ -8366,6 +8367,23 @@ function personBalance(pid){
   /* balance — до виплати зараз (за завершене); pending — ще буде за об’єктами в роботі */
   return { per, objects, jobs, led, earned, pending, paid, bought, balance: earned + bought - paid };
 }
+/* Заробіток по місяцях: об’єкт — у місяці завершення, разова робота — у місяці роботи */
+function personEarnMonths(b){
+  const m = {};
+  const add = (d, v) => { const k = finMonthKey(d); if(k) m[k] = (m[k] || 0) + (Number(v) || 0); };
+  b.objects.filter(o => o.done).forEach(o => add(o.p.doneAt || o.p.handedOverAt || o.p.updatedAt, o.amount));
+  b.jobs.forEach(x => add(x.j.date, x.amount));
+  return m;
+}
+function monthLabel(key, long){
+  const [y, mo] = String(key).split("-").map(Number);
+  const d = new Date(y, (mo || 1) - 1, 15);
+  const t = d.toLocaleDateString("uk-UA", { month: long ? "long" : "short" }).replace(".", "");
+  return long ? t : t;
+}
+const MONTH_IN = ["січні", "лютому", "березні", "квітні", "травні", "червні", "липні", "серпні", "вересні", "жовтні", "листопаді", "грудні"];
+function monthIn(key){ return MONTH_IN[(Number(String(key).split("-")[1]) || 1) - 1]; }
+let personPeriod = "cur";
 let personUi = null;
 function openPersonLedger(pid){
   personUi = { pid, form: "" };
@@ -8386,9 +8404,20 @@ function renderPersonLedger(){
   const row = (a, s, amt, cls, del) => `<div class="msRow ${cls || ""}"><span>${a}${s ? `<small>${s}</small>` : ""}</span><span class="peAmt"><b>${amt}</b>${del ? `<button type="button" class="ptDel" onclick="${del}" aria-label="Прибрати">×</button>` : ""}</span></div>`;
   el.innerHTML = `<div class="onbInner">
     <div class="onbTop"><button type="button" class="onbBack" onclick="closePersonLedger()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">${name}</span></div>
-    <div class="msBox finBig"><small>${b.balance >= -0.5 ? "До виплати" : "Видано наперед"}</small><b style="color:var(--t)">${money(Math.abs(b.balance))}</b>
-      ${b.pending ? `<div class="personSum">ще буде за об’єктами в роботі: <b>${money(b.pending)}</b></div>` : ""}
-      <div class="personSum">зароблено ${money(b.earned)}${b.bought ? ` · його покупки ${money(b.bought)}` : ""} · видано ${money(b.paid)}</div></div>
+    ${(() => {
+      const em = personEarnMonths(b), now = new Date();
+      const keys = [5, 4, 3, 2, 1, 0].map(k => finMonthKey(new Date(now.getFullYear(), now.getMonth() - k, 15)));
+      const cur = keys[5], prev = keys[4];
+      const val = personPeriod === "all" ? b.earned : em[personPeriod === "prev" ? prev : cur] || 0;
+      const lbl = personPeriod === "all" ? "Заробив усього" : `Заробив у ${monthIn(personPeriod === "prev" ? prev : cur)}`;
+      const max = Math.max(1, ...keys.map(k => em[k] || 0));
+      const chip = (k, l) => `<button type="button" class="hChip ${personPeriod === k ? "on" : ""}" onclick="personPeriod='${k}';renderPersonLedger()">${l}</button>`;
+      const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+      return `<div class="hChips" style="margin:0 0 .5rem">${chip("cur", cap(monthLabel(cur, true)))}${chip("prev", cap(monthLabel(prev, true)))}${chip("all", "Усього")}</div>
+      <div class="msBox finBig"><small>${lbl}</small><b class="pos">${money(val)}</b>
+      <div class="finBars">${keys.map(k => `<div><i style="height:${Math.max(4, Math.round((em[k] || 0) / max * 100))}%" class="${k === cur ? "cur" : ""}"></i><span>${monthLabel(k)}</span></div>`).join("")}</div>
+      <div class="personDue"><span>${b.balance >= -0.5 ? "До виплати" : "Видано наперед"} <b>${money(Math.abs(b.balance))}</b></span>${b.pending ? `<span>Ще буде <b>${money(b.pending)}</b><small>за об’єктами в роботі</small></span>` : ""}</div></div>`;
+    })()}
     <div class="jobBtns"><button type="button" class="hBtn pr" onclick="personUi.form='pay';renderPersonLedger()">＋ Видав гроші</button><button type="button" class="hBtn" onclick="personUi.form='expense';renderPersonLedger()">＋ Купив за свої</button></div>
     ${f ? `<form class="msBox jobForm" onsubmit="event.preventDefault();savePersonEntry()">
       <b style="font-size:.9375rem">${f === "pay" ? "Видали аванс чи зарплату" : `${name} купив за свої — ви повернете`}</b>
@@ -8473,6 +8502,7 @@ function crewState(per){
   return {
     objects,
     balance: { earned:Math.round(b.earned), pending:Math.round(b.pending), paid:Math.round(b.paid), bought:Math.round(b.bought), balance:Math.round(b.balance) },
+    months: personEarnMonths(b),
     jobs: b.jobs.map(x => ({ title:x.j.title, date:x.j.date, place:x.j.place || "", amount:x.amount, paid:x.paid })),
     money: b.led.map(e => ({ kind:e.kind, date:e.date, amount:e.amount, note:e.note || "" }))
   };
@@ -17420,6 +17450,8 @@ function actionAdvanceStage(){
   }
   p.stage = next;
   p.updatedAt = new Date().toISOString();
+  if(next === "done" && !p.doneAt) p.doneAt = p.updatedAt;
+  if(next === "estimate") delete p.doneAt;
   saveProjects();
   closeActionsSheet();
   render();
