@@ -32,6 +32,7 @@ h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .who{display:block;font-size:14px;font-weight:650;color:var(--tm);margin-top:2px}
 .grp{font-size:20px;font-weight:850;padding:8px 4px 0}
 .bars{display:flex;gap:6px;align-items:flex-end;height:70px;margin-top:4px}.bars div{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}.bars i{display:block;width:100%;border-radius:6px;background:var(--soft)}.bars i.cur{background:var(--p)}.bars span{font-size:11px;color:var(--tm);font-weight:650}
+.avg{font-size:13.5px;color:var(--tm);font-weight:650}.avg b{color:var(--t);font-weight:800;font-size:15px;letter-spacing:0;display:inline}.avg span{font-size:12px}
 .due{display:flex;gap:22px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px;font-size:13px;color:var(--tm);font-weight:650}.due b{display:block;font-size:18px;color:var(--t);font-weight:800}.bal .due small{display:block;font-size:11px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--tm)}.bal .due b{display:block;font-size:18px;color:var(--t);font-weight:800;letter-spacing:0}
 .lnk{color:var(--p);font-weight:750;font-size:14px;padding:0;text-align:left}
 .obj h2{font-size:19px;font-weight:850;line-height:1.2}
@@ -59,6 +60,8 @@ h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .fi b{font-size:16px}.fi span{color:var(--tm);font-weight:650;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .acts{display:flex;gap:8px;margin-top:4px}
 .btn{flex:1;height:46px;border-radius:13px;background:var(--p);color:#fff;font-weight:800;font-size:15px}
+.sheet .btn{flex:0 0 auto;width:100%;min-height:48px}
+.sheet .in>*{flex-shrink:0}
 .btn.ghost{background:var(--soft);color:var(--p)}
 .btn[disabled]{opacity:.5}
 .empty{color:var(--tm);text-align:center;padding:30px 16px}
@@ -170,6 +173,7 @@ function render(){
       const short = k => new Date(Number(k.slice(0, 4)), Number(k.slice(5)) - 1, 15).toLocaleDateString("uk-UA", { month:"short" }).replace(".", "");
       return `<small>Заробив у ${IN[now.getMonth()]}</small><b>${money(em[cur] || 0)}</b>
       <div class="bars">${keys.map(k => `<div><i style="height:${Math.max(4, Math.round((em[k] || 0) / max * 100))}%" class="${k === cur ? "cur" : ""}"></i><span>${short(k)}</span></div>`).join("")}</div>
+      ${(() => { const ks = Array.from({ length:12 }, (_, i) => key(new Date(now.getFullYear(), now.getMonth() - 11 + i, 15))); const f = ks.findIndex(k => (em[k] || 0) > 0.5); if(f < 0 || f > 10) return ""; const u = ks.slice(f); const v = u.reduce((s2, k) => s2 + (em[k] || 0), 0) / u.length; return `<div class="avg">Середнє за місяць <b>${money(v)}</b> <span>за ${u.length} ${u.length === 1 ? "місяць" : u.length < 5 ? "місяці" : "місяців"}</span></div>`; })()}
       <div class="due"><span>${b.balance >= -0.5 ? "До виплати" : "Видано наперед"}<b>${money(Math.abs(b.balance))}</b></span>${b.pending ? `<span>Ще буде<b>${money(b.pending)}</b><small>за об’єктами в роботі</small></span>` : ""}</div>
       <button class="lnk" onclick="openBalance()">Детальніше</button>`;
     })()}</section>
