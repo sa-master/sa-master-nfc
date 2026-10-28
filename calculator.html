@@ -3862,6 +3862,15 @@ body{font-variant-numeric:tabular-nums}
 .fsCard .formInput,.fsCard .formTextarea,.jobForm input,.jobForm select{background:var(--bg)!important}
 .etLogoHome{align-items:flex-start;margin:0}.etLogoHome .etLogoWord{font-size:1.75rem}
 @media (prefers-color-scheme: dark){.etLogoEt{color:#F2F5FA}.etLogoSub{color:#B8C2D0}}
+.hTitleRow{display:flex;align-items:flex-end;gap:.75rem;position:relative}
+.hTitleRow .hTitle{flex:1;min-width:0}
+.etLogoBtn{background:none;padding:0 0 .875rem;margin:0 .25rem .75rem 0;cursor:pointer;flex:0 0 auto}
+.etLogoBtn .etLogoWord{font-size:1.25rem;display:block}
+.fRow{display:flex;flex-wrap:wrap;gap:.5rem;padding:.5rem 0 .25rem}
+.fThumb{width:3.5rem;height:3.5rem;border-radius:.5rem;background:rgba(120,120,128,.12) center/cover no-repeat;flex:0 0 auto}
+.fChip{display:inline-flex;align-items:center;gap:.375rem;max-width:100%;height:2.25rem;padding:0 .75rem;border-radius:.5rem;background:rgba(10,132,255,.1);color:var(--p);font-weight:750;font-size:.875rem;text-decoration:none}
+.fChip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fChip.busy{color:var(--tm)}
+.byItem,.ptRow,.msRow,.hNext{border-top-width:1px!important}
 </style>
 </head>
 
@@ -4947,6 +4956,7 @@ body{font-variant-numeric:tabular-nums}
 
     <div class="fsSection" data-pf="me">
       <button type="button" class="addPersonButton" style="background:rgba(120,120,128,.12);color:var(--ts)" onclick="closeProfile();setTimeout(openOnboarding,200)">Пройти знайомство ще раз</button>
+      <button type="button" class="addPersonButton" style="background:rgba(120,120,128,.12);color:var(--ts);margin-top:.5rem" onclick="closeProfile();setTimeout(openGuide,200)">Як працює et.app</button>
     </div>
 
     <div class="fsSection" data-pf="me" id="pfBackupSection">
@@ -4959,7 +4969,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 28.10.2026 22:40</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 28.10.2026 23:10</div>
   </div>
 
   <div class="fsFooter">
@@ -7999,7 +8009,7 @@ function renderHero(){
     return;
   }
 
-  hero.style.display = "";
+  hero.style.display = "none"; /* логотип — у рядку заголовка «Мої об’єкти» */
   hero.classList.add("heroCompact");
 
   const companyName = profileCompanyName();
@@ -8007,7 +8017,7 @@ function renderHero(){
   const ini = ([profile.firstName, profile.lastName].map(x => String(x || "").trim().charAt(0)).join("") || "◎").toUpperCase();
   hero.innerHTML = `
     <div class="etHome compact">
-      <div class="etBrand" onclick="openGuide()"><div class="etLogo etLogoHome" aria-label="et.app"><div class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></div></div></div>
+      <div class="etBrand" style="cursor:default"><div class="etLogo etLogoHome" aria-label="et.app"><div class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></div></div></div>
       <button class="heroAction heroHelp" onclick="openGuide()" aria-label="Як працює et.app" title="Як працює et.app">?</button>
     </div>
     <div class="heroRow" style="display:none">
@@ -8179,7 +8189,7 @@ function renderHomeNew(){
   const cnt = { all: act.length, debt: act.filter(projectOverdue).length, wait: act.filter(projectWaiting).length, archive: projects.length - act.length };
   const chip = (k, label) => (k === "all" || cnt[k]) ? `<button type="button" class="hChip ${homeFilter === k ? "on" : ""}" onclick="setHomeFilter('${k}')">${label}<small>${cnt[k]}</small></button>` : "";
   main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + `
-    <h1 class="hTitle">Мої об’єкти</h1>
+    <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button></div>
     ${act.length > 3 || homeSearch ? `<input class="hSearch" type="search" placeholder="Адреса, ЖК або клієнт" value="${escapeHtml(homeSearch)}" oninput="onHomeSearch(this.value)">` : ""}
     <div class="hChips">${chip("all", "Усі")}${chip("debt", "Борг")}${chip("wait", "Чекають")}${chip("archive", "Архів")}</div>
     <div id="hList">${renderHomeList()}</div>`;
@@ -8841,12 +8851,7 @@ function renderFilesBox(p){
   const files = p.files || [];
   if(!files.length && !filesUploading) return "";
   return `<section class="planTodo filesBox"><div class="ptHead"><span>Проєкт і фото</span><button type="button" class="ptLink" onclick="filesPick()">＋ Додати</button></div>
-    <div class="fGrid">${files.map(f => f.type === "link"
-      ? `<a class="fItem pdf" href="${escapeHtml(f.url)}" target="_blank" rel="noopener"><b>${ic("link", 26)}</b><span>${escapeHtml(f.name)}</span></a>`
-      : f.type === "application/pdf"
-      ? `<a class="fItem pdf" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener"><b>PDF</b><span>${escapeHtml(f.name)}</span></a>`
-      : `<a class="fItem" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener" style="background-image:url('${crewFileUrl(f.id)}')"></a>`).join("")}
-      ${filesUploading ? `<div class="fItem busy">${filesUploading}…</div>` : ""}</div>
+    <div class="fRow">${files.filter(f => f.type !== "link" && f.type !== "application/pdf").map(f => `<a class="fThumb" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener" style="background-image:url('${crewFileUrl(f.id)}')"></a>`).join("")}${files.filter(f => f.type === "link" || f.type === "application/pdf").map(f => `<a class="fChip" href="${f.type === "link" ? escapeHtml(f.url) : crewFileUrl(f.id)}" target="_blank" rel="noopener">${ic(f.type === "link" ? "link" : "doc", 16)}<span>${escapeHtml(f.name)}</span></a>`).join("")}${filesUploading ? `<span class="fChip busy">Завантажую ${filesUploading}…</span>` : ""}</div>
     ${files.length ? `<div class="ptFoot"><span class="crewInfo">Бачите ви й працівники об’єкта</span><button type="button" class="ptLink muted" onclick="filesManage()">Видалити…</button></div>` : ""}
   </section>`;
 }
