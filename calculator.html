@@ -8503,7 +8503,8 @@ const WORKER_LINK_BASE = "https://sa-master.pro/w.html#";
 const CREW_SEEN_KEY = "sa_crewSeen";
 let crewTimer = null, crewBusy = false, crewPollAt = 0;
 function crewPeople(){ return team.filter(t => t.wLink); }
-function crewProjectsFor(pid){ return projects.filter(p => (p.status || "active") !== "archived" && (p.teamAssignments || []).some(a => a.personId === pid)); }
+/* Працівник бачить свої об’єкти: в роботі, заплановані й завершені (згорнуті — на випадок переробок) */
+function crewProjectsFor(pid){ return projects.filter(p => (p.teamAssignments || []).some(a => a.personId === pid)); }
 function crewObjTitle(p){ return cleanText(p.title || "") || cleanText((p.client || {}).address || "") || "Об’єкт"; }
 function crewState(per){
   const b = personBalance(per.id);
@@ -8514,7 +8515,7 @@ function crewState(per){
       pid: p.id, title: crewObjTitle(p), address: cleanText((p.client || {}).address || ""),
       stage: PATH_STEPS[projectPathIndex(p)] || "",
       start: String(p.workStartDate || ""),
-      phase: ["work", "done"].includes(p.stage) || (p.stage === "procurement" && p.workStartDate && p.workStartDate <= todayIso()) ? "now" : "plan",
+      phase: (p.stage === "done" && p.handedOverAt) || p.stage === "closed" || p.status === "archived" ? "done" : ["work", "done"].includes(p.stage) || (p.stage === "procurement" && p.workStartDate && p.workStartDate <= todayIso()) ? "now" : "plan",
       earned: earned === null ? null : Math.round(earned), done: ["done", "closed"].includes(p.stage),
       earnedNote: /percent_of_work/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від робіт` : /percent_of_income/.test(a.payType || "") ? `${Number(a.payValue) || 0}% від суми` : a.payType === "fixed_per_object" ? "фіксовано за об’єкт" : "",
       notes: (p.todo || []).filter(t => !t.priv && (!t.to || t.to === per.id)).map(t => ({ id:t.id, text:t.text, done:Boolean(t.done), doneAt:t.doneAt || "", doneBy:t.doneBy || "", mine: t.to === per.id })),
@@ -8528,6 +8529,7 @@ function crewState(per){
     objects,
     balance: { earned:Math.round(b.earned), pending:Math.round(b.pending), paid:Math.round(b.paid), bought:Math.round(b.bought), balance:Math.round(b.balance) },
     months: personEarnMonths(b),
+    earnings: b.objects.filter(o => Number(o.amount) > 0.5).map(o => ({ title: crewObjTitle(o.p), amount: Math.round(o.amount), done: o.done, note: /percent_of_work/.test(o.a.payType || "") ? `${Number(o.a.payValue) || 0}% від робіт` : "" })),
     jobs: b.jobs.map(x => ({ title:x.j.title, date:x.j.date, place:x.j.place || "", amount:x.amount, paid:x.paid })),
     money: b.led.map(e => ({ kind:e.kind, date:e.date, amount:e.amount, note:e.note || "" }))
   };
