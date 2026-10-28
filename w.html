@@ -160,7 +160,7 @@ function render(){
       <h2>${esc(o.title)}${tag ? `<span class="stage">${esc(tag)}</span>` : ""}</h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
       ${(o.crew || []).length ? `<div class="crew">На об’єкті також: ${o.crew.map(c => { const t = String(c.phone || "").replace(/[^\d+]/g, ""); return t ? `<a href="tel:${esc(t)}">${esc(c.name)}</a>` : esc(c.name); }).join(", ")}</div>` : ""}
-      ${o.earned ? `<div class="earn">Ваш заробіток <b>${money(o.earned)}</b>${o.earnedNote ? ` · ${esc(o.earnedNote)}` : ""}</div>` : ""}
+      ${o.earned ? `<div class="earn">Ваш заробіток <b>${money(o.earned)}</b></div>` : ""}
       ${open.length ? `<div class="sec">Зробити</div>${open.map(n => note(o, n)).join("")}` : (o.notes || []).length ? `<div class="sec">Нотатки</div><div class="note"><span class="tx" style="color:var(--tm)">✓ Усе зроблено</span></div>` : ""}
       ${done.length ? `<button class="lnk" onclick="openMore['${esc(o.pid)}']=!openMore['${esc(o.pid)}'];render()">${more ? "Сховати зроблене" : `Зроблено ${done.length}`}</button>${more ? done.map(n => note(o, n)).join("") : ""}` : ""}
       ${(o.files || []).length ? `<div class="sec">Проєкт і фото</div><div class="files">${o.files.filter(f => f.type !== "link" && f.type !== "application/pdf").map(f => `<a class="th" href="${SERVER}/f/${esc(f.id)}" target="_blank" rel="noopener" style="background-image:url('${SERVER}/f/${esc(f.id)}')"></a>`).join("")}${o.files.filter(f => f.type === "link" || f.type === "application/pdf").map(f => `<a class="chip" href="${f.type === "link" ? esc(f.url) : `${SERVER}/f/${esc(f.id)}`}" target="_blank" rel="noopener">${f.type === "link" ? "🔗" : "📄"} ${esc(f.name)}</a>`).join("")}</div>` : ""}
@@ -284,7 +284,7 @@ async function boughtSend(pid){
 function openBalance(){
   const st = D.state || {}, b = st.balance || {};
   const rows = [
-    ...(st.earnings || (st.objects || []).filter(o => o.earned).map(o => ({ title:o.title, amount:o.earned, note:o.earnedNote, done:o.done }))).map(o => `<div class="row"><span>${esc(o.title)}<small>${o.note ? esc(o.note) + " · " : ""}${o.done ? "завершено" : "буде після завершення"}</small></span><b>${money(o.amount)}</b></div>`),
+    ...(st.earnings || (st.objects || []).filter(o => o.earned).map(o => ({ title:o.title, amount:o.earned, note:o.earnedNote, done:o.done }))).map(o => `<div class="row"><span>${esc(o.title)}<small>${o.done ? "завершено" : "буде після завершення"}</small></span><b>${money(o.amount)}</b></div>`),
     ...(st.jobs || []).map(j => `<div class="row"><span>${esc(j.title)}<small>${day(j.date)}${j.place ? " · " + esc(j.place) : ""}${j.paid ? " · отримано одразу" : ""}</small></span><b>${money(j.amount)}</b></div>`)
   ];
   const mon = (st.money || []).slice().sort((x, y) => String(y.date).localeCompare(String(x.date)));
