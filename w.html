@@ -91,6 +91,22 @@ input:focus,textarea:focus{outline:2px solid var(--p);outline-offset:1px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1C1C1E;color:#fff;border-radius:14px;padding:11px 16px;font-weight:650;font-size:14px;z-index:60;max-width:90vw;text-align:center}
 .foot{text-align:center;color:var(--tm);font-size:12.5px}
 .foot button{color:var(--p);font-weight:700;font-size:12.5px}
+/* ==== Стиль «Креслення» (як у калькуляторі) ==== */
+:root{--bg:#F2F4F7;--bp:#1F6BF2;--grid:rgba(31,107,242,.06);--gridM:rgba(31,107,242,.11);--bpa:rgba(31,107,242,.28);--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;--tm:#5A616B}
+@media (prefers-color-scheme: dark){:root{--bg:#0C1828;--card:#12233A;--grid:rgba(120,180,255,.07);--gridM:rgba(120,180,255,.13);--bpa:rgba(120,180,255,.3);--tm:#9FB3CC;--line:rgba(140,190,255,.14);--in:#0F1E33;--inb:rgba(140,190,255,.22);--soft:#173257}}
+html,body{background-color:var(--bg)!important}
+body{background-image:linear-gradient(var(--gridM) 1px,transparent 1px),linear-gradient(90deg,var(--gridM) 1px,transparent 1px),linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:96px 96px,96px 96px,12px 12px,12px 12px;background-attachment:fixed;font-variant-numeric:tabular-nums}
+.card,.statbar{border-radius:8px!important;border:0!important;box-shadow:0 0 0 1px var(--bpa)!important;background-color:var(--card)!important;
+ background-image:linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp));background-repeat:no-repeat;
+ background-size:12px 2px,2px 12px,12px 2px,2px 12px,12px 2px,2px 12px,12px 2px,2px 12px;
+ background-position:-1px -1px,-1px -1px,calc(100% + 1px) -1px,calc(100% + 1px) -1px,-1px calc(100% + 1px),-1px calc(100% + 1px),calc(100% + 1px) calc(100% + 1px),calc(100% + 1px) calc(100% + 1px)}
+.sec,.kind,.bal small,.statbar small,.sub,.ithead,label.f,.total span{font-family:var(--mono)!important;letter-spacing:.06em}
+.stage,.st,.pill,.badge{font-family:var(--mono)!important;letter-spacing:.05em;border-radius:4px!important}
+.stage{background:none!important;border:1px solid var(--bp);color:var(--bp)!important;text-transform:uppercase;font-size:11px!important}
+.note,.row{border-top-style:dashed!important;border-top-color:var(--bpa)!important}
+.btn,.route,.search,.chip,.toggle,button.btn,.filebtn,.photo,input,textarea,select,.call,.x{border-radius:8px!important}
+.th,.fi{border-radius:6px!important}
+h1{letter-spacing:-.02em}
 </style>
 </head>
 <body>
@@ -186,7 +202,7 @@ function render(){
         + (fin.length ? `<h2 class="grp">Завершені</h2>${fin.map(obj).join("")}` : "");
     })()}
     </div>
-    <div class="foot">Оновлено ${st.at ? new Date(st.at).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—"} · <button onclick="load()">оновити</button>${navApp() ? ` · <button onclick="route('', true)">як добиратись: ${esc(NAV[navApp()].name)}</button>` : ""}</div>
+    <div class="foot">Оновлено ${st.at ? new Date(st.at).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }) : "—"} · <button onclick="load()">оновити</button> · <span style="opacity:.7">в. 28.10 22:50</span>${navApp() ? ` · <button onclick="route('', true)">як добиратись: ${esc(NAV[navApp()].name)}</button>` : ""}</div>
     ${statBar(st, b)}`;
 }
 function renderList(){ render(); const i = document.querySelector(".search"); if(i){ i.focus(); const n = i.value.length; try{ i.setSelectionRange(n, n); }catch(e){} } }
