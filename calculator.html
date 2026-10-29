@@ -4974,7 +4974,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 29.10.2026 00:35</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 29.10.2026 02:00</div>
   </div>
 
   <div class="fsFooter">
@@ -5230,7 +5230,7 @@ async function cloudPush(force){
       cloudLastError = "Тестовий період завершився — зміни не зберігаються в хмарі";
       refreshAccess();
     }else{
-      cloudLastError = "Хмара не відповідає — збережу пізніше";
+      cloudLastError = (status === 503 && body && body.error) || "Хмара не відповідає — збережу пізніше";
       clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 30000);
     }
   }catch(e){
@@ -5891,6 +5891,23 @@ try{
   const parsed = raw ? JSON.parse(raw) : [];
   if(Array.isArray(parsed)) team = parsed;
 }catch(e){ team = []; }
+
+/* FIN-04: витрата «Кому: <людина з команди>» прив’язується до працівника за ID (toPersonId), а не за іменем.
+   Старі записи: ID дописуємо лише коли ім’я однозначно збігається з ОДНІЄЮ людиною в команді.
+   Якщо однакових імен кілька або збігу немає — нічого не об’єднуємо (витрата лишається звичайною). */
+function teamByName(name){
+  const key = normalizeText(cleanText(name || ""));
+  return key ? team.filter(t => t && t.id && normalizeText(t.name || "") === key) : [];
+}
+try{
+  let changed = false;
+  projects.forEach(p => (Array.isArray(p.expenses) ? p.expenses : []).forEach(e => {
+    if(!e || e.toPersonId || !e.to) return;
+    const m = teamByName(e.to);
+    if(m.length === 1){ e.toPersonId = m[0].id; changed = true; }
+  }));
+  if(changed) localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+}catch(e){}
 
 try{
   const raw = localStorage.getItem(CATALOG_KEY);
@@ -9299,16 +9316,40 @@ function moneyToSuggestions(project){
   return Array.from(names.values()).slice(0, 30);
 }
 
+let moneyPickedPerson;
+function moneyPickPerson(list, kind){
+  let el = document.getElementById("addMenu");
+  if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
+  const pick = id => `moneyPickedPerson=${JSON.stringify(id).replace(/"/g, "&quot;")};closeAddMenu();addMoneyEntry('${kind}')`;
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Кому саме"><div class="amHead"><b>Кому саме?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    <div class="arrHint">У команді кілька людей з таким іменем.</div>
+    ${list.map(t => `<button type="button" class="amItem" onclick="${pick(t.id)}"><span class="amIcon">${ic("profile")}</span><span class="amText"><b>${escapeHtml(t.name || "")}</b>${t.phone || t.role ? `<small>${escapeHtml([t.role, t.phone].filter(Boolean).join(" · "))}</small>` : ""}</span></button>`).join("")}
+    <button type="button" class="amItem" onclick="${pick("")}"><span class="amIcon">${ic("receipt")}</span><span class="amText"><b>Не з команди</b><small>звичайна витрата</small></span></button></div>`;
+  requestAnimationFrame(() => el.classList.add("open"));
+}
 function addMoneyEntry(kind){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
   const amount = Number(String(document.getElementById("moneyAmount")?.value || "").replace(/\s/g, "").replace(",", "."));
   if(!Number.isFinite(amount) || amount === 0){ toast("Впишіть суму"); return; }
   const editing = moneyEditId && moneyList(project, kind).find(e => e.id === moneyEditId);
+  /* FIN-04: «Кому» — людина з команди? Однозначно — прив’язуємо; кілька з таким іменем — питаємо, кому саме */
+  const toText = kind === "expense" ? cleanText(document.getElementById("moneyTo")?.value) : "";
+  let personId;
+  if(kind === "expense" && toText){
+    const m = teamByName(toText);
+    if(editing && editing.toPersonId && m.some(t => t.id === editing.toPersonId)) personId = editing.toPersonId;
+    else if(m.length === 1) personId = m[0].id;
+    else if(m.length > 1){
+      if(moneyPickedPerson === undefined){ moneyPickPerson(m, kind); return; }
+      personId = moneyPickedPerson || undefined;
+    }
+  }
+  moneyPickedPerson = undefined;
   if(editing){
     editing.date = document.getElementById("moneyDate")?.value || editing.date;
     editing.amount = Math.round(amount * 100) / 100;
-    if(kind === "expense") editing.to = cleanText(document.getElementById("moneyTo")?.value) || undefined;
+    if(kind === "expense"){ editing.to = toText || undefined; if(personId) editing.toPersonId = personId; else delete editing.toPersonId; }
     editing.note = cleanText(document.getElementById("moneyNote")?.value);
     moneyEditId = "";
     moneyFormOpen = "";
@@ -9321,7 +9362,8 @@ function addMoneyEntry(kind){
     id: uid(kind === "payment" ? "pay" : "exp"),
     date: document.getElementById("moneyDate")?.value || todayIso(),
     amount: Math.round(amount * 100) / 100,
-    to: kind === "expense" ? cleanText(document.getElementById("moneyTo")?.value) : undefined,
+    to: kind === "expense" ? toText : undefined,
+    ...(personId ? { toPersonId: personId } : {}),
     note: cleanText(document.getElementById("moneyNote")?.value)
   });
   moneyFormOpen = "";
@@ -9473,10 +9515,15 @@ function renderPanelInfo(p){
 /* FIN-04: виплата людині з команди, записана витратою («Кому: Толік»), уже входить у частку команди —
    не віднімаємо її вдруге. Покупки працівника за свої (з його розрахунку) — це матеріали, вони лишаються витратами. */
 function teamPayoutsInExpenses(p){
-  const names = new Set((p.teamAssignments || []).map(a => { const m = team.find(t => t.id === a.personId); return String((m && m.name) || a.name || "").trim().toLowerCase(); }).filter(Boolean));
-  if(!names.size) return 0;
+  const assigned = new Set((p.teamAssignments || []).map(a => a.personId).filter(Boolean));
+  if(!assigned.size) return 0;
   const bought = new Set(ledgerList().filter(e => e.kind === "expense" && e.expenseId).map(e => e.expenseId));
-  return moneyList(p, "expense").filter(e => names.has(String(e.to || "").trim().toLowerCase()) && !bought.has(e.id)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const personOf = e => {
+    if(e.toPersonId) return e.toPersonId;
+    const m = teamByName(e.to);
+    return m.length === 1 ? m[0].id : "";      /* неоднозначне або чуже ім’я — не вважаємо виплатою команді */
+  };
+  return moneyList(p, "expense").filter(e => !bought.has(e.id) && assigned.has(personOf(e))).reduce((s, e) => s + (Number(e.amount) || 0), 0);
 }
 function moneySummary(p){
   const received = moneySum(moneyList(p, "payment"));
