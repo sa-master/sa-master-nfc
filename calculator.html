@@ -3877,6 +3877,24 @@ body{font-variant-numeric:tabular-nums}
 .arrRow{display:flex;align-items:center;gap:.75rem;padding:.375rem 0;border-top:1px dashed var(--bpa,rgba(120,120,128,.2))}
 .arrRow span{flex:1;min-width:0;font-weight:650;font-size:.9375rem;color:var(--t)}.arrRow small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
 .arrRow input{width:5rem;height:2.5rem;border-radius:.5rem;border:1px solid rgba(120,120,128,.3);background:var(--bg);color:var(--t);text-align:center;font-size:1rem;font-weight:700}
+.hAlso{display:flex;flex-wrap:wrap;gap:.25rem .5rem;align-items:baseline;margin:.125rem 0 .25rem;font-size:.8125rem;color:var(--tm);font-weight:600;cursor:pointer}
+.hAlsoDebt{font-style:normal;color:var(--attn,#C2410C);font-weight:750}
+.hAlso b{color:var(--t);font-weight:750}
+.ordTag{display:block;font-size:.75rem;font-weight:700;color:var(--tm);margin-top:.125rem;letter-spacing:.01em}
+.grpBox{background:var(--card);border:1px solid var(--line2,rgba(120,120,128,.2));border-radius:.875rem;padding:.75rem .875rem;margin:0 0 .75rem;display:flex;flex-direction:column}
+.grpHead{font-family:var(--mono,ui-monospace,monospace);font-size:.6875rem;letter-spacing:.08em;text-transform:uppercase;color:var(--bp,#1F6BF2);margin-bottom:.25rem}
+.grpRow{display:flex;align-items:center;gap:.5rem;width:100%;background:none;border:0;border-top:1px dashed var(--line2,rgba(120,120,128,.2));padding:.625rem 0;text-align:left;color:var(--t);font:inherit;cursor:pointer}
+.grpRow:first-of-type{border-top:0}
+.grpName{flex:1;min-width:0;display:flex;flex-direction:column}
+.grpName b{font-size:.9375rem;font-weight:750}.grpName small{font-size:.75rem;color:var(--tm);font-weight:600}
+.grpArrow{color:var(--tm);font-size:.875rem}
+.grpBody{display:flex;flex-direction:column;gap:.375rem;padding:0 0 .625rem}
+.grpSub{font-size:.75rem;font-weight:750;color:var(--tm);margin-top:.375rem}
+.grpLine{display:flex;justify-content:space-between;gap:.5rem;font-size:.875rem;color:var(--t)}
+.grpLink{font-size:.875rem;font-weight:650;color:var(--p,#1F6BF2);text-decoration:none}
+.grpNone{font-size:.8125rem;color:var(--tm)}
+.grpOpen{margin-top:.5rem;align-self:flex-start;background:none;border:0;padding:0;color:var(--p,#1F6BF2);font:inherit;font-size:.875rem;font-weight:700;cursor:pointer}
+.grpBox .csHead{font-size:.75rem;font-weight:750;color:var(--tm);margin-top:.375rem}
 </style>
 </head>
 
@@ -4635,6 +4653,11 @@ body{font-variant-numeric:tabular-nums}
         <div class="actionSheetText">Редагувати</div>
       </div>
 
+      <div class="actionSheetRow" id="actionNewStageRow" onclick="actionNewStage()">
+        <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div class="actionSheetText">Новий етап на цьому об’єкті</div>
+      </div>
+
       <div class="actionSheetRow" id="actionStageRow" onclick="actionAdvanceStage()">
         <div class="actionSheetIcon" id="actionStageIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
         <div class="actionSheetText" id="actionStageText">Наступний етап</div>
@@ -4975,7 +4998,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 29.10.2026 02:25</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 29.10.2026 11:30</div>
   </div>
 
   <div class="fsFooter">
@@ -8175,13 +8198,28 @@ function homeCard(p){
       <button type="button" class="hMenu" onclick="event.stopPropagation();openActions('${id}')" aria-label="Дії">⋯</button></div>
     ${c.address ? `<div class="hAddrRow"><span class="hAddrTx" onclick="openProject('${id}')">${escapeHtml(c.address)}</span><button type="button" class="hRoute" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>${ic("pin", 16)}</i>Як добратись</button></div>` : ""}
     ${c.name || c.phone ? `<div class="hWho">${escapeHtml(c.name || "")}${c.name && c.phone ? " · " : ""}${c.phone ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(c.phone)}</a>` : ""}</div>` : ""}
+    ${(() => { const sib = groupOrders(p).filter(x => x !== p).sort((a, b) => orderTime(a).localeCompare(orderTime(b))); return sib.length ? `<div class="hAlso" onclick="openProject('${id}')"><b>${escapeHtml(orderLabel(p))}</b><span>також: ${sib.map(x => escapeHtml(orderLabel(x)) + (!orderIsActive(x) ? ((x.status || "active") === "archived" ? " (архів)" : " ✓") : "") + (projectOverdue(x) ? ` <em class="hAlsoDebt">винен ${money(moneySummary(x).debt)}</em>` : "")).join(" · ")}</span></div>` : ""; })()}
     <div class="hBar" onclick="openProject('${id}')">${PATH_STEPS.map((s, i) => `<i class="${i <= idx ? "on" : ""}"></i>`).join("")}</div>
     <div class="hNext"><div class="hTx" onclick="openProject('${id}')"><b class="${n.cls || ""}">${escapeHtml(n.text)}</b>${n.sub ? `<small>${escapeHtml(n.sub)}</small>` : ""}</div>
       <button type="button" class="hBtn ${n.primary ? "pr" : ""}" onclick="${n.action}">${escapeHtml(n.label || "Відкрити")}</button></div>
   </article>`;
 }
+/* ==== Етапи на одному об’єкті ====
+   Кожен етап (чорновий, чистовий, сервіс…) — звичайний окремий запис зі своїми кошторисом, грошима й погодженнями.
+   Етапи одного об’єкта мають спільний groupId; у старого запису без groupId група — це він сам (міграція не потрібна).
+   На екрані — одна картка; інші етапи показуються компактним блоком, нічого не видаляється. */
+function groupKey(p){ return (p && (p.groupId || p.id)) || ""; }
+function groupOrders(p){ const k = groupKey(p); return k ? projects.filter(x => groupKey(x) === k) : [p]; }
+function orderLabel(p){ return cleanText((p && p.details && p.details.workType) || "") || "Замовлення"; }
+function orderSuffix(p){ return groupOrders(p).length > 1 ? " · " + orderLabel(p) : ""; }
+function orderTime(p){ return String((p && (p.createdAt || p.updatedAt)) || ""); }
+function orderIsActive(p){ return (p.status || "active") !== "archived" && !["done", "closed"].includes(p.stage || "estimate"); }
+function groupRep(list){ const act = list.filter(orderIsActive); return (act.length ? act : list).slice().sort(sortProjects)[0]; }
+function groupsCount(list){ return new Set(list.map(groupKey)).size; }
 function renderHomeList(){
-  const list = projects.filter(homeMatches).slice().sort(sortProjects);
+  const groups = new Map();
+  projects.filter(homeMatches).forEach(p => { const k = groupKey(p); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(p); });
+  const list = Array.from(groups.values()).map(groupRep).sort(sortProjects);
   return list.length ? list.map(homeCard).join("") : `<div class="hEmpty">${homeSearch ? "Нічого не знайдено" : homeFilter === "debt" ? "Ніхто не винен ✓" : homeFilter === "wait" ? "Нічого не чекає відповіді" : homeFilter === "archive" ? "Архів порожній" : "Об’єктів ще немає"}</div>`;
 }
 function setHomeFilter(f){ homeFilter = f; render(); }
@@ -8245,7 +8283,7 @@ function renderHomeNew(){
     return;
   }
   const act = projects.filter(p => (p.status || "active") !== "archived");
-  const cnt = { all: act.length, debt: act.filter(projectOverdue).length, wait: act.filter(projectWaiting).length, archive: projects.length - act.length };
+  const cnt = { all: groupsCount(act), debt: groupsCount(act.filter(projectOverdue)), wait: groupsCount(act.filter(projectWaiting)), archive: groupsCount(projects.filter(p => (p.status || "active") === "archived")) };
   const chip = (k, label) => (k === "all" || cnt[k]) ? `<button type="button" class="hChip ${homeFilter === k ? "on" : ""}" onclick="setHomeFilter('${k}')">${label}<small>${cnt[k]}</small></button>` : "";
   main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + `
     <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button></div>
@@ -8434,7 +8472,7 @@ function renderFinanceHtml(){
       ${finPeriod === "all" && matIncome ? row(matUnknown ? "≈ Дохід з матеріалів" : "Дохід з матеріалів", money(matIncome), "", matUnknown ? `за планом · без закупівельної ціни: ${matUnknown} поз.` : "кошторис мінус закупівля за планом") : ""}
     </div>
     <div class="msBox"><div class="finHead">За об’єктами${finPeriod === "all" ? `<small class="finHeadSub">ваш заробіток після розрахунку</small>` : ""}</div>
-      ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}<small>${r.debt > 0.5 ? (projectOverdue(r.p) ? "винен " : "залишок ") + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
+      ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}${escapeHtml(orderSuffix(r.p))}<small>${r.debt > 0.5 ? (projectOverdue(r.p) ? "винен " : "залишок ") + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
     </div>
     <div class="msBox"><div class="finHead finHeadRow">Разові роботи<button type="button" class="finAdd" onclick="openJobForm()">＋ Додати</button></div>
       ${jobs.length ? jobs.map(j => `<button type="button" class="msRow finObj" onclick="openJobForm('${escapeHtml(j.id)}')"><span>${escapeHtml(j.title)}${Number(j.qty) > 1 && Number(j.price) ? ` · ${escapeHtml(String(j.qty))} × ${money(j.price)}` : ""}<small>${formatQuoteDate(j.date).slice(0, 5)}${j.place ? " · " + escapeHtml(j.place) : ""}${(j.people || []).length ? " · " + j.people.map(x => escapeHtml(x.name)).join(", ") : ""}</small></span><b class="pos">${money(jobEarn(j))}</b></button>`).join("") : `<div class="msRow"><span>Дрібні роботи без кошторису: радіатори, умивальник…<small>Записуйте їх тут — вони підуть у заробіток.</small></span></div>`}
@@ -8709,7 +8747,7 @@ let crewTimer = null, crewBusy = false, crewPollAt = 0;
 function crewPeople(){ return team.filter(t => t.wLink); }
 /* Працівник бачить свої об’єкти: в роботі, заплановані й завершені (згорнуті — на випадок переробок) */
 function crewProjectsFor(pid){ return projects.filter(p => (p.teamAssignments || []).some(a => a.personId === pid)); }
-function crewObjTitle(p){ return cleanText(p.title || "") || cleanText((p.client || {}).address || "") || "Об’єкт"; }
+function crewObjTitle(p){ return (cleanText(p.title || "") || cleanText((p.client || {}).address || "") || "Об’єкт") + orderSuffix(p); }
 function crewState(per){
   const b = personBalance(per.id);
   const objects = crewProjectsFor(per.id).map(p => {
@@ -9231,7 +9269,7 @@ function renderProject(p){
       <div class="projectHeaderCard">
         <div class="projectHeaderTop">
           <button class="projectHeaderBack" onclick="backToList()" aria-label="Назад">←</button>
-          <div class="projectHeaderTitle">${title}</div>
+          <div class="projectHeaderTitle">${title}${!clientView && groupOrders(p).length > 1 ? `<small class="ordTag">${escapeHtml(orderLabel(p))}</small>` : ""}</div>
           <div class="projectHeaderRight">
             ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
             ${clientView ? "" : `<button class="projectHelpButton" onclick="toggleStageHint()" aria-label="Підказка">?</button>`}
@@ -9252,6 +9290,7 @@ function renderProject(p){
 
       <div class="projectView">
       ${renderStageHint(p)}
+      ${clientView ? "" : renderGroupStages(p)}
       ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderCrewBox(p) : ""}
       ${buyOn(p) ? (projectTab === "notebook" ? renderBuyList(p) : "") : renderNextSteps(p) + (planOn(p) && projectTab === "estimate" ? "" : renderPlanTodo(p))}
       ${projectTab === "estimate" ? renderApprovedBanner(p) + renderClientSends(p) + renderSupLine(p) : projectTab === "notebook" ? renderClientSends(p) : ""}
@@ -17817,6 +17856,93 @@ function actionAdvanceStage(){
     return;
   }
   toast(message, 3200);
+}
+
+let grpOpen = {};
+function grpToggle(id){ grpOpen[id] = !grpOpen[id]; render(); }
+function renderGroupStages(p){
+  const sib = groupOrders(p).filter(x => x !== p).sort((a, b) => orderTime(a).localeCompare(orderTime(b)));
+  if(!sib.length) return "";
+  return `<section class="grpBox"><div class="grpHead">Інші етапи цього об’єкта</div>${sib.map(grpRow).join("")}</section>`;
+}
+function grpRow(x){
+  const id = escapeHtml(x.id);
+  const ap = getApproved(x);
+  const ms = moneySummary(x);
+  const stage = PATH_STEPS[projectPathIndex(x)] || "";
+  const archived = (x.status || "active") === "archived";
+  const sum = ap ? money(getClientTotal(x)) : "кошторис не погоджено";
+  const debt = ap && ms.debt > 0.5 ? ` · залишок ${money(ms.debt)}` : "";
+  const head = `<button type="button" class="grpRow" onclick="grpToggle('${id}')" aria-expanded="${grpOpen[x.id] ? "true" : "false"}"><span class="grpName"><b>${escapeHtml(orderLabel(x))}</b><small>${escapeHtml(archived ? "в архіві" : stage)} · ${sum}${debt}</small></span><span class="grpArrow">${grpOpen[x.id] ? "▴" : "▾"}</span></button>`;
+  if(!grpOpen[x.id]) return head;
+  const files = Array.isArray(x.files) ? x.files : [];
+  const filesHtml = files.length ? `<div class="fRow">${files.filter(f => f.type !== "link" && f.type !== "application/pdf").map(f => `<a class="fThumb" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener" style="background-image:url('${crewFileUrl(f.id)}')"></a>`).join("")}${files.filter(f => f.type === "link" || f.type === "application/pdf").map(f => `<a class="fChip" href="${f.type === "link" ? escapeHtml(f.url) : crewFileUrl(f.id)}" target="_blank" rel="noopener">${ic(f.type === "link" ? "link" : "doc", 16)}<span>${escapeHtml(f.name)}</span></a>`).join("")}</div>` : `<div class="grpNone">Файлів немає</div>`;
+  const sends = clientSends(x).filter(s => s.link).slice(-3).reverse();
+  const sendsHtml = sends.length ? sends.map(s => `<a class="grpLink" href="${escapeHtml(s.link)}" target="_blank" rel="noopener">${escapeHtml(s.kind === "changes" ? `Зміни №${s.n}` : SEND_KIND_LABEL[s.kind] || "Кошторис")} · ${money(s.total)}${s.clientApprovedAt || s.approvedAt ? " · погоджено ✓" : ""}</a>`).join("") : `<div class="grpNone">Документи клієнту не надсилались з калькулятора</div>`;
+  const teamHtml = (x.teamAssignments || []).length ? (x.teamAssignments || []).map(a => { const m = team.find(t => t.id === a.personId); const e = getProjectAssignmentEarning(x, a); return `<div class="grpLine"><span>${escapeHtml((m && m.name) || a.name || "")}</span><span>${e === null ? "—" : money(e)}</span></div>`; }).join("") : `<div class="grpNone">Сам</div>`;
+  return head + `<div class="grpBody">
+    <div class="grpSub">Проєкт і фото</div>${filesHtml}
+    <div class="grpSub">Кошторис для клієнта</div><div class="grpLine"><span>${ap ? "Погоджено " + formatQuoteDate(ap.at || "").slice(0, 10) : "Не погоджено"}</span><b>${ap ? money(getClientTotal(x)) : ""}</b></div>${sendsHtml}
+    ${(x.approvalLog || []).length ? renderApprovalLog(x) : ""}
+    <div class="grpSub">Хто виконував</div>${teamHtml}
+    <button type="button" class="grpOpen" onclick="openProject('${id}')">Відкрити етап повністю ›</button>
+  </div>`;
+}
+const STAGE_TYPES = ["Чорновий монтаж", "Чистовий монтаж"];
+function actionNewStage(){
+  const base = projects.find(x => x.id === actionsProjectId);
+  closeActionsSheet();
+  if(!base) return;
+  let el = document.getElementById("addMenu");
+  if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
+  const item = (t, label) => `<button type="button" class="amItem" onclick="createStage('${escapeHtml(base.id)}', ${t === null ? "null" : `decodeURIComponent('${encodeURIComponent(t).replace(/'/g, "%27")}')`})"><span class="amIcon">${ic("plus")}</span><span class="amText"><b>${escapeHtml(label)}</b></span></button>`;
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Новий етап"><div class="amHead"><b>Новий етап · ${escapeHtml(projectTitlePlain(base))}</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    <div class="arrHint">Новий порожній кошторис. Адреса й клієнт — з цього об’єкта. Попередній етап лишається як є.</div>
+    ${STAGE_TYPES.map(t => item(t, t)).join("")}${item(null, "Інший…")}</div>`;
+  requestAnimationFrame(() => el.classList.add("open"));
+}
+function createStage(baseId, type){
+  const base = projects.find(x => x.id === baseId);
+  if(!base) return;
+  if(type === null){
+    const raw = prompt("Назва етапу, наприклад «Заміна бойлера»:", "");
+    if(raw === null) return;
+    type = cleanText(raw);
+    if(!type){ toast("Вкажіть назву етапу"); return; }
+  }
+  const people = profile.isSolo === true ? [] : (base.teamAssignments || []).filter(a => a.personId);
+  const copyTeam = people.length && confirm(`Скопіювати команду з попереднього етапу?\n\n${people.map(a => { const m = team.find(t => t.id === a.personId); return (m && m.name) || a.name || ""; }).join(", ")}\n\nЛише людей — ставки й виплати встановите заново.`);
+  const now = new Date().toISOString();
+  const project = {
+    id: uid("proj"),
+    groupId: groupKey(base),
+    title: base.title || "",
+    client: { ...(base.client || {}) },
+    status: "active",
+    stage: "estimate",
+    urgent: false,
+    positions: [],
+    stages: [],
+    workDiscount: 0,
+    materialDiscount: 0,
+    wholeUAH: 1,
+    payments: [],
+    expenses: [],
+    salaries: [],
+    workStartDate: "",
+    workEndDate: "",
+    teamAssignments: copyTeam ? people.map(a => ({ personId: a.personId, name: a.name || "", payType: a.payType, payValue: 0 })) : [],
+    details: { ...(base.details || {}), workType: type },
+    createdAt: now,
+    updatedAt: now
+  };
+  projects.push(project);
+  saveProjects();
+  closeAddMenu();
+  currentProjectId = project.id;
+  projectTab = "estimate";
+  render();
+  toast(`Етап «${type}» створено`);
 }
 
 function closeActionsSheet(){
