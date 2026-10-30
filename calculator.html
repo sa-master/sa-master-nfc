@@ -1513,6 +1513,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .revTotals div b{color:var(--t);font-weight:800}
 .revTotals div.big{font-size:1.0625rem;color:var(--t);font-weight:800}
 .revTotals small{color:var(--tm);font-size:.75rem}
+#revDiscBox .chip:not(.active){background:rgba(120,120,128,.12);border-color:transparent;color:var(--t)}
+#revDiscBox .chips{gap:.375rem;justify-content:flex-start}
+#revDiscBox .formInput{background:rgba(120,120,128,.12);border:0;border-radius:.75rem;padding:0 .75rem;color:var(--t);font-size:1rem;height:2.75rem}
 .approvedBannerActions button{width:100%;padding:.5625rem .75rem;border-radius:.75rem;background:var(--p-action);color:#fff;font-size:.8125rem;font-weight:800}
 .approvedBannerActions button.soft{background:rgba(10,132,255,.12);color:var(--p)}
 .approvedBannerChanges{margin-top:.375rem;font-size:.6875rem;font-weight:700;color:var(--t)}
@@ -7775,7 +7778,48 @@ function revisionChanges(project){
     out.push({ id:pos.id, kind:"changed", name:positionClientName(pos) || pos.name, text:[qtyText, priceText].filter(Boolean).join(" · "), delta:(Number(pos.qty) || 0) * (Number(pos.price) || 0) - was.qty * was.price });
   });
   c.removed.forEach(item => out.push({ id:item.id, kind:"removed", name:item.clientName, text:`${formatQty(item.qty)} ${item.unit || "шт"} × ${money(item.price)}`, delta:-(item.qty * item.price) }));
+  revDiscountTypes(project).forEach(type => {
+    const id = "disc:" + type;
+    const was = approvedDiscountPercent(project, type), next = revDiscountPercent(project, type);
+    const base = buildRevisionSnapshot(project, new Set()).total;
+    const delta = buildRevisionSnapshot(project, new Set([id])).total - base;
+    out.push({ id, kind:"discount", name: type === "work" ? "Знижка на роботи" : "Знижка на матеріали", text:`${fmtPct(was)} → ${fmtPct(next)}`, delta });
+  });
   return out;
+}
+
+/* ==== Знижка після погодження ====
+   Нова знижка лежить у project.revDiscount = { work, material } і йде клієнту як рядок «Зміни до кошторису».
+   У project.workDiscount / materialDiscount вона потрапляє лише після погодження — до того все рахується
+   від погодженої знижки. */
+function fmtPct(v){ const n = Number(v) || 0; return (Math.round(n * 100) / 100).toString().replace(".", ",") + "%"; }
+function approvedDiscountPercent(project, type){
+  const a = getApproved(project);
+  const key = type === "work" ? "workDiscountPercent" : "materialsDiscountPercent";
+  if(a && a[key] !== undefined) return normalizeDiscountPercent(a[key]);
+  return type === "work" ? getWorksDiscountPercent(project) : getMaterialsDiscountPercent(project);
+}
+function revDiscountPercent(project, type){
+  const r = project && project.revDiscount;
+  return r && r[type] !== undefined ? normalizeDiscountPercent(r[type]) : approvedDiscountPercent(project, type);
+}
+function revDiscountTypes(project){
+  if(!getApproved(project)) return [];
+  return ["work", "material"].filter(type => project.revDiscount && project.revDiscount[type] !== undefined &&
+    Math.abs(revDiscountPercent(project, type) - approvedDiscountPercent(project, type)) > 1e-9);
+}
+/* Після погодження: знижка зі знімка стає знижкою об'єкта, погоджені чернетки знижки прибираємо */
+function syncDiscountFromApproved(project){
+  const a = getApproved(project);
+  if(!a) return;
+  if(a.workDiscountPercent !== undefined) project.workDiscount = normalizeDiscountPercent(a.workDiscountPercent);
+  if(a.materialsDiscountPercent !== undefined) project.materialDiscount = normalizeDiscountPercent(a.materialsDiscountPercent);
+  if(project.revDiscount){
+    ["work", "material"].forEach(type => {
+      if(project.revDiscount[type] !== undefined && Math.abs(normalizeDiscountPercent(project.revDiscount[type]) - approvedDiscountPercent(project, type)) < 1e-9) delete project.revDiscount[type];
+    });
+    if(!Object.keys(project.revDiscount).length) delete project.revDiscount;
+  }
 }
 
 function buildRevisionSnapshot(project, selected){
@@ -7791,7 +7835,93 @@ function buildRevisionSnapshot(project, selected){
     merged.push(selected.has(item.id) ? pos : Object.assign({}, pos, { qty:item.qty, price:item.price }));
   });
   current.forEach(pos => { if(!approved.positions.some(item => item.id === pos.id) && selected.has(pos.id)) merged.push(pos); });
-  return makeApprovedSnapshot(Object.assign({}, project, { positions:merged }));
+  const pct = type => selected.has("disc:" + type) ? revDiscountPercent(project, type) : approvedDiscountPercent(project, type);
+  return makeApprovedSnapshot(Object.assign({}, project, { positions:merged, workDiscount:pct("work"), materialDiscount:pct("material") }));
+}
+
+function renderRevDiscount(project){
+  const types = ["work", "material"].filter(type => (getApproved(project).positions || []).some(x => x.type === type) || (project.positions || []).some(x => x.type === type && !x.buyLaterOnly));
+  if(!types.length) return "";
+  const ed = revision.disc;
+  if(!ed) return `<button type="button" class="onbLink" style="text-align:left;color:var(--p);padding:0" onclick="revDiscOpen()">＋ Знижка для клієнта</button>`;
+  const type = types.includes(ed.type) ? ed.type : types[0];
+  const was = approvedDiscountPercent(project, type);
+  const pct = ed.pct !== null ? ed.pct : revDiscountPercent(project, type);
+  const amount = revDiscAmount(project, type, pct);
+  const chips = [0, 5, 10, 15, 20].map(v => `<button type="button" class="chip small ${Math.abs(pct - v) < 1e-9 ? "active" : ""}" onclick="revDiscSet(${v})">${v ? v + "%" : "без"}</button>`).join("");
+  return `<div class="revTotals" id="revDiscBox" style="gap:.625rem">
+    ${types.length > 1 ? `<div class="chips tight" style="margin:0">${types.map(t => `<button type="button" class="chip small ${t === type ? "active" : ""}" onclick="revDiscType('${t}')">${t === "work" ? "Роботи" : "Матеріали"}</button>`).join("")}</div>` : ""}
+    <div><span>Знижка на ${type === "work" ? "роботи" : "матеріали"} зараз у клієнта</span><b>${fmtPct(was)}</b></div>
+    <div class="chips tight" style="margin:0">${chips}</div>
+    <div style="gap:.5rem">
+      <input class="formInput" id="revDiscPct" inputmode="decimal" placeholder="інша, %" style="flex:1;min-width:0" oninput="revDiscInput('pct',this.value)">
+      <input class="formInput" id="revDiscSum" inputmode="decimal" placeholder="або сума, ₴" style="flex:1;min-width:0" oninput="revDiscInput('sum',this.value)">
+    </div>
+    <div class="big"><span>Знижка ${fmtPct(pct)}</span><b>−${money(amount)}</b></div>
+    <small>Ціни в позиціях не змінюються. Клієнт побачить окремий рядок і погодить нову суму.</small>
+    <div style="gap:.5rem;justify-content:flex-end">
+      <button type="button" class="onbLink" onclick="revDiscClose()">Скасувати</button>
+      <button type="button" class="chip active" style="margin:0" onclick="revDiscApply()">Застосувати</button>
+    </div>
+  </div>`;
+}
+/* Сума знижки в кошторисі для клієнта з цим відсотком (з урахуванням уже відмічених змін) */
+function revDiscAmount(project, type, pct){
+  const key = type === "work" ? "workDiscountAmount" : "materialsDiscountAmount";
+  const saved = project.revDiscount;
+  project.revDiscount = Object.assign({}, saved || {}, { [type]: pct });
+  try{
+    const sel = new Set(revision ? revision.selected : []); sel.add("disc:" + type);
+    return Math.round(Number(buildRevisionSnapshot(project, sel)[key]) || 0);
+  } finally {
+    if(saved) project.revDiscount = saved; else delete project.revDiscount;
+  }
+}
+function revDiscOpen(){ if(!revision) return; revision.disc = { type:"work", pct:null }; const p = projects.find(x => x.id === revision.projectId); if(p && !(getApproved(p).positions || []).some(x => x.type === "work") && !(p.positions || []).some(x => x.type === "work" && !x.buyLaterOnly)) revision.disc.type = "material"; renderRevision(); }
+function revDiscClose(){ if(!revision) return; revision.disc = null; renderRevision(); }
+function revDiscType(t){ if(!revision || !revision.disc) return; revision.disc = { type:t, pct:null }; renderRevision(); }
+function revDiscSet(v){ if(!revision || !revision.disc) return; revision.disc.pct = v; renderRevision(); }
+function revDiscInput(kind, raw){
+  if(!revision || !revision.disc) return;
+  const project = projects.find(x => x.id === revision.projectId);
+  const num = Number(String(raw).replace(/\s/g, "").replace(",", "."));
+  const box = document.getElementById("revDiscBox");
+  if(!project || !Number.isFinite(num) || num < 0 || String(raw).trim() === "") return;
+  const type = revision.disc.type;
+  let pct = num;
+  if(kind === "sum"){
+    const sel = new Set(revision.selected); sel.add("disc:" + type);
+    const whole = wholeMode(project);
+    const base = buildRevisionSnapshot(project, sel).positions.filter(x => x.type === type && !x.noDiscount)
+      .reduce((sum, x) => sum + (whole ? wholeLine(x) : (Number(x.price) || 0) * (Number(x.qty) || 0)), 0);
+    if(base <= 0) return;
+    pct = Math.round(num / base * 1e6) / 1e4;
+  }
+  if(pct >= 100) return;
+  revision.disc.pct = pct;
+  const amount = revDiscAmount(project, type, pct);
+  const big = box && box.querySelector(".big");
+  if(big) big.innerHTML = `<span>Знижка ${fmtPct(pct)}</span><b>−${money(amount)}</b>`;
+  box && box.querySelectorAll(".chip").forEach(b => { if(/%$|^без$/.test(b.textContent.trim())) b.classList.remove("active"); });
+}
+function revDiscApply(){
+  const project = revision && projects.find(x => x.id === revision.projectId);
+  if(!project || !revision.disc) return;
+  const type = revision.disc.type;
+  const pct = revision.disc.pct !== null ? revision.disc.pct : revDiscountPercent(project, type);
+  if(!(pct >= 0 && pct < 100)){ toast("Некоректна знижка"); return; }
+  if(!project.revDiscount) project.revDiscount = {};
+  project.revDiscount[type] = pct;
+  const id = "disc:" + type;
+  if(Math.abs(pct - approvedDiscountPercent(project, type)) < 1e-9){
+    delete project.revDiscount[type];
+    if(!Object.keys(project.revDiscount).length) delete project.revDiscount;
+    revision.selected.delete(id);
+  } else revision.selected.add(id);
+  revision.disc = null;
+  touchProject(project);
+  render();
+  renderRevision();
 }
 
 function openRevision(id){
@@ -7829,8 +7959,8 @@ function renderRevision(){
   const approved = getApproved(project);
   const changes = revisionChanges(project);
   const draft = buildRevisionSnapshot(project, revision.selected);
-  const label = { added:"＋ Додано", changed:"✎ Змінено", removed:"− Прибрано" };
-  const groups = ["added", "changed", "removed"].map(kind => {
+  const label = { added:"＋ Додано", changed:"✎ Змінено", removed:"− Прибрано", discount:"％ Знижка" };
+  const groups = ["added", "changed", "removed", "discount"].map(kind => {
     const list = changes.filter(ch => ch.kind === kind);
     if(!list.length) return "";
     return `<div class="opGroup">${label[kind]}</div>` + list.map(ch => {
@@ -7842,6 +7972,7 @@ function renderRevision(){
     <div class="onbTop"><button type="button" class="onbBack" onclick="closeRevision()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Кошторис для клієнта</span></div>
     ${changes.length ? `<span class="onbNote" style="text-align:left">Ваші зміни після ${formatQuoteDate(approved.at)}. Відмітьте ті, що стосуються клієнта (він щось поміняв, добрав, відмовився). Невідмічене — ваша внутрішня робота, клієнт її не побачить.</span>
     <div class="opList">${groups}</div>` : `<span class="onbNote" style="text-align:left">Нових змін немає — кошторис для клієнта актуальний.</span>`}
+    ${renderRevDiscount(project)}
     <div class="revTotals">
       <div><span>Зараз у клієнта (${formatQuoteDate(approved.at)})</span><b>${money(approved.total)}</b></div>
       ${revision.selected.size ? `<div class="big"><span>Стане</span><b>${money(draft.total)}</b></div>` : ""}
@@ -7872,6 +8003,7 @@ function revisionApprove(){
   draft.revised = true;
   const prevTotalLog = getClientTotal(project);
   project.approved = draft;
+  syncDiscountFromApproved(project);
   logApproval(project, prevTotalLog, "оновлено вручну (фактичний кошторис)");
   const pend = clientSendPending(project);
   if(pend && pend.kind === "changes" && (pend.selected || []).slice().sort().join() === Array.from(revision.selected).sort().join()) pend.approvedAt = new Date().toISOString();
@@ -9648,8 +9780,8 @@ function renderFloatingPanel(p){
   const materialsDiscountPercent = getMaterialsDiscountPercent(p);
   const profitLabel = profit.confirmed ? "Прибуток" : "≈ Прибуток";
   const profitValue = profit.hasUnknownPrice ? (profit.partial !== undefined ? `≈ ${money(profit.partial)} · без ${profit.unknownCount} поз.` : "—") : money(profit.value);
-  const worksLabel = workDiscountPercent > 0 ? `Роботи −${workDiscountPercent}%` : "Роботи";
-  const materialsLabel = materialsDiscountPercent > 0 ? `Матеріали −${materialsDiscountPercent}%` : "Матеріали";
+  const worksLabel = workDiscountPercent > 0 ? `Роботи −${fmtPct(workDiscountPercent)}` : "Роботи";
+  const materialsLabel = materialsDiscountPercent > 0 ? `Матеріали −${fmtPct(materialsDiscountPercent)}` : "Матеріали";
 
   const moneyTabDebt = projectTab === "money" ? total - moneySum(moneyList(p, "payment")) : null;
   return `
@@ -10386,8 +10518,8 @@ function clientSendDraft(p){
   if(quoteDraft && sel.length && getApproved(p)){
     const n = clientSends(p).filter(x => x.kind === "changes").length + 2;
     const ch = revisionChanges(p).filter(c => sel.includes(c.id));
-    const sign = { added:"＋", removed:"−", changed:"✎" };
-    const lines = ch.map(c => ({ sign: sign[c.kind], name: c.name + (c.kind === "changed" && c.text ? `: ${c.text}` : ""), delta: Math.round(c.delta) }));
+    const sign = { added:"＋", removed:"−", changed:"✎", discount:"％" };
+    const lines = ch.map(c => ({ sign: sign[c.kind], name: c.name + ((c.kind === "changed" || c.kind === "discount") && c.text ? `: ${c.text}` : ""), delta: Math.round(c.delta) }));
     const prevTotal = getApproved(p).total;
     const title = `Зміни до кошторису №${n}`;
     const disc = (Number(pr.discount) || 0) > 0.5;
@@ -10469,6 +10601,7 @@ function sendApply(p, s, at, how){
     draft.revised = true;
     const prevTotalLog = getClientTotal(p);
     p.approved = draft;
+    syncDiscountFromApproved(p);
     logApproval(p, prevTotalLog, how === "клієнт" ? `клієнт за посиланням · зміни №${s.n}` : `вручну майстром · зміни №${s.n}`);
     return `Зміни №${s.n} погоджено · для клієнта ${money(getClientTotal(p))}`;
   }
@@ -10700,7 +10833,7 @@ function quoteXlsxRows(data){
       formulas.push({ row: rows.length, col: 6, f: `IF(F${rows.length}="","",D${rows.length}*F${rows.length})`, v: lineValue });
     });
     const last = rows.length;
-    if(percent > 0 && (Number(section.amount) || 0) >= 0.5) rows.push(["", `Знижку ${percent}% враховано в цінах`]);
+    if(percent > 0 && (Number(section.amount) || 0) >= 0.5) rows.push(["", `Знижку ${fmtPct(percent)} враховано в цінах`]);
     rows.push(["", "Разом", "", "", "", "", null]);
     formulas.push({ row: rows.length, col: 6, f: `ROUND(SUM(G${first}:G${last}),2)`, v: r2(sectionSum) });
     sums.push(`G${rows.length}`);
@@ -11760,6 +11893,7 @@ function renderApprovedBanner(project){
   if(changes.changed.length) parts.push(`змінено ${changes.changed.length}`);
   if(changes.added.length) parts.push(`додано ${changes.added.length}`);
   if(changes.removed.length) parts.push(`прибрано ${changes.removed.length}`);
+  if(revDiscountTypes(project).length) parts.push("нова знижка");
   const internalTotal = getEstimateTotal(project);
   const diff = internalTotal - (Number(approved.total) || 0);
   return `
