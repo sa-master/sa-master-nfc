@@ -184,7 +184,7 @@ const when = iso => { const d = new Date(iso); return d.toLocaleDateString("uk-U
 function renderApproval(data){
   const lines = [];
   if(data.kind === "changes" && Array.isArray(data.lines)){
-    data.lines.forEach(l => lines.push(`<div class="ln"><span>${esc(l.name)}<small>${l.sign === "＋" ? "додано" : l.sign === "−" ? "прибрано" : "змінено"}</small></span><b>${l.delta >= 0 ? "+" : "−"}${money(Math.abs(l.delta))}</b></div>`));
+    data.lines.forEach(l => lines.push(`<div class="ln"><span>${esc(l.name)}<small>${l.sign === "＋" ? "додано" : l.sign === "−" ? "прибрано" : l.sign === "％" ? "знижка" : "змінено"}</small></span><b>${l.delta >= 0 ? "+" : "−"}${money(Math.abs(l.delta))}</b></div>`));
   }else if((data.kind === "quote" || data.kind === "materials") && data.parts){
     const p = data.parts, mats = data.kind === "materials";
     if(!mats && p.works > 0.5) lines.push(`<div class="ln"><span>Роботи</span><b>${money(p.works)}</b></div>`);
