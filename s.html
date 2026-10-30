@@ -303,7 +303,13 @@ async function load(){
     if(!r.ok){ fail("Посилання не знайдено або застаріло. Зверніться до майстра."); return; }
     const d = await r.json();
     const master = [d.masterName, d.company].filter(Boolean).join(" · ");
-    $("who").textContent = master ? `${master}${d.masterPhone ? " · " + d.masterPhone : ""}` : "";
+    { const w = $("who"), tel = String(d.masterPhone || "").replace(/[^\d+]/g, "");
+      w.textContent = master || "";
+      if(master && d.masterPhone){
+        w.append(" · ");
+        if(tel){ const a = document.createElement("a"); a.href = "tel:" + tel; a.textContent = d.masterPhone; a.style.cssText = "color:var(--p);text-decoration:none;font-weight:700;white-space:nowrap"; w.append(a); }
+        else w.append(d.masterPhone);
+      } }
     $("title").textContent = `Прайс ${d.supplierName || ""}`.trim();
     document.title = `Прайс · ${d.supplierName || ""}`;
     base = (d.items || []).map(it => ({ ...it }));
