@@ -21081,12 +21081,28 @@ function openMissingPrices(all){
   renderBuyScreen();
   buyScreen().scrollTop = 0;
 }
+/* Підсумок закупівлі: скільки коштує вам, скільки платить клієнт, ваш заробіток на матеріалах */
+function missingPricesTotals(list){
+  let buy = 0, client = 0, priced = 0;
+  list.forEach(x => {
+    const q = Number(x.qty) || 0;
+    if(Number(x.purchasePrice) > 0){ buy += q * Number(x.purchasePrice); client += q * (Number(x.price) || 0); priced++; }
+  });
+  const all = list.reduce((s, x) => s + (Number(x.qty) || 0) * (Number(x.price) || 0), 0);
+  return `<div class="revTotals" id="mpTotals" style="margin:0 0 .75rem">
+    <div class="big"><span>Закупівля разом</span><b>${moneyWithCents(buy)}</b></div>
+    <div><span>Клієнту за ці позиції</span><b>${moneyWithCents(client)}</b></div>
+    <div><span>Ваш заробіток на матеріалах</span><b>${moneyWithCents(client - buy)}</b></div>
+    ${priced < list.length ? `<small>Пораховано ${priced} з ${list.length} поз. · клієнту за всі ${moneyWithCents(all)}</small>` : ""}
+  </div>`;
+}
 function renderMissingPrices(p){
   const list = buyUi.ids.map(id => (p.positions || []).find(x => x.id === id)).filter(Boolean);
   const left = list.filter(x => !(Number(x.purchasePrice) > 0)).length;
   buyScreen().innerHTML = `<div class="onbInner">
     <div class="onbTop"><button type="button" class="onbBack" onclick="closeBuyScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Закупівельні ціни</span></div>
     <div class="onbNote" style="text-align:left;margin-top:-.5rem">${buyUi.all ? "Усі матеріали кошторису. " : ""}Скільки кожна позиція коштувала вам — за одиницю (1 шт, 1 м). Потрібно лише для підрахунку заробітку; клієнт цього не бачить. Можна пропустити.</div>
+    ${list.length ? missingPricesTotals(list) : ""}
     <div class="opList">${list.map(pos => `<div class="stItem"><span class="stName"><b>${escapeHtml(positionShortName(pos))}</b><small>${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")}${Number(pos.price) > 0 ? ` · клієнту ${moneyWithCents(pos.price)}` : ""}</small></span>
       <input class="mpIn" inputmode="decimal" placeholder="₴" value="${Number(pos.purchasePrice) > 0 ? String(pos.purchasePrice).replace(".", ",") : ""}" onchange="setMissingPrice('${escapeHtml(pos.id)}', this.value)" aria-label="Ціна за 1"></div>`).join("") || `<div class="onbNote" style="padding:1rem 0">✓ Усі ціни вписані</div>`}</div>
     <div class="onbSpacer"></div>
@@ -21104,6 +21120,8 @@ function setMissingPrice(id, raw){
   const btn = buyScreen().querySelector(".onbPrimary");
   const left = buyUi.ids.map(i => (p.positions || []).find(x => x.id === i)).filter(x => x && !(Number(x.purchasePrice) > 0)).length;
   if(btn) btn.textContent = left ? `Готово · без ціни ще ${left}` : "Готово";
+  const box = document.getElementById("mpTotals");
+  if(box) box.outerHTML = missingPricesTotals(buyUi.ids.map(i => (p.positions || []).find(x => x.id === i)).filter(Boolean));
 }
 
 /* ---- Одна кнопка «＋»: що додаємо ---- */
