@@ -8287,6 +8287,7 @@ function projectDebt(p){ return getApproved(p) ? getClientTotal(p) - moneySum(mo
 function projectOverdue(p){ return projectDebt(p) > 0.5 && ((p.stage === "done" && p.handedOverAt) || p.stage === "closed"); }
 function debtWord(p){ return p && ((p.stage === "done" && p.handedOverAt) || p.stage === "closed") ? "Клієнт винен" : "Залишок до оплати"; }
 function projectWaiting(p){
+  if(projectCompleted(p)) return false; /* завершений об’єкт нічого не чекає */
   if(getApproved(p)) return clientSendsOpen(p).length > 0;
   return Boolean(p.quoteSentAt) || clientSendsOpen(p).length > 0 || (typeof supGroups === "function" && supGroups(p).some(g => g.state === "wait" || g.state === "ans"));
 }
