@@ -3279,6 +3279,13 @@ body.positionDragging{
 .stagePath span.done::before{background:var(--p)}
 .stagePath span.current{color:var(--p);font-weight:800}
 .stagePath span.current::before{background:var(--p)}
+.stagePath button{display:flex;flex-direction:column;align-items:center;gap:.3rem;font-size:.6875rem;font-weight:650;color:var(--tm);white-space:nowrap;min-width:0;background:none;padding:.25rem 0 0;height:auto;overflow:hidden;text-overflow:ellipsis}
+.stagePath button::before{content:"";width:100%;height:5px;border-radius:3px;background:rgba(120,120,128,.25)}
+.stagePath button.done{color:var(--p);opacity:.75}.stagePath button.done::before{background:var(--p)}
+.stagePath button.current{color:var(--p);font-weight:800}.stagePath button.current::before{background:var(--p)}
+.stagePath.done span{color:var(--tm);opacity:1}.stagePath.done span::before{background:rgba(31,138,76,.55)}
+.phaseDone{margin-top:.5rem;font-size:.8125rem;font-weight:700;color:#1F8A4C}.phaseDone button{background:none;padding:0;height:auto;color:var(--p);font-size:inherit;font-weight:800;text-decoration:underline;text-underline-offset:2px}
+.hCard.hDone{opacity:.72}.hCard.hDone .hTop b{color:var(--tm)}.hCard.hDone .hTop span{color:#1F8A4C}.hBar.done i,.hBar.done i.on{background:rgba(31,138,76,.45)}
 .projectHelpButton{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:.875rem;background:rgba(10,132,255,.12);color:var(--p);font-size:.875rem;font-weight:850}
 .stageHint{display:flex;gap:.625rem;align-items:flex-start;margin:0 0 .75rem;padding:.75rem .875rem;border-radius:1rem;background:#E7F0FB;color:#24476E;font-size:.8125rem;line-height:1.4;font-weight:600}
 .hero.heroCompact{padding:.25rem .25rem 0;background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:0;margin-bottom:0}
@@ -4664,6 +4671,11 @@ body{font-variant-numeric:tabular-nums}
       <div class="actionSheetRow" id="actionStageRow" onclick="actionAdvanceStage()">
         <div class="actionSheetIcon" id="actionStageIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
         <div class="actionSheetText" id="actionStageText">Наступний етап</div>
+      </div>
+
+      <div class="actionSheetRow hidden" id="actionSkipRow" onclick="actionSkipToDone()">
+        <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5l8 7-8 7z"/><path d="M13 5l6 7-6 7"/></svg></div>
+        <div class="actionSheetText">Роботи виконано — фактичний кошторис<small style="display:block;color:var(--tm);font-size:.75rem;font-weight:500">Фіксує кошторис і відкриває документ для клієнта</small></div>
       </div>
 
       <div class="actionSheetRow hidden" id="actionReapproveRow" onclick="actionOpenRevision()">
@@ -8281,59 +8293,62 @@ function projectWaiting(p){
 function homeMatches(p){
   const q = normalizeText(homeSearch);
   if(q){
-    const c = p.client || {};
-    const hay = normalizeText([projectTitlePlain(p), c.name, c.phone, c.address].join(" "));
+    /* Пошук і за тегами анкети: «колектор 2 санвуз тепла» знаходить схожі виконані об’єкти */
+    const c = p.client || {}, d = p.details || {};
+    const bath = Number(d.bathrooms) > 0 ? `${d.bathrooms} санвуз ${d.bathrooms}санвуз` : "";
+    const hay = normalizeText([projectTitlePlain(p), c.name, c.phone, c.address, d.objectType, d.workType, d.system, bath, ...(Array.isArray(d.features) ? d.features : [])].join(" "));
     if(!q.split(/\s+/).every(w => hay.includes(w))) return false;
   }
   const archived = (p.status || "active") === "archived";
   if(homeFilter === "archive") return archived;
+  if(q && archived) return true; /* під час пошуку — і архівні: там якраз старі виконані об’єкти */
   if(archived) return false;
   if(homeFilter === "debt") return projectOverdue(p);
   if(homeFilter === "wait") return projectWaiting(p);
   return true;
 }
-/* Наступна дія для картки: те саме, що «Що далі» в об’єкті, але одним рядком */
+/* Картка в списку: не підказка «що робити», а сума й стан об’єкта. Кнопка — лише коли треба записати оплату. */
 function homeNext(p){
   const id = escapeHtml(p.id);
   const open = (act) => `openProject('${id}');setTimeout(()=>{${act}},60)`;
   const positions = (p.positions || []).filter(x => !x.buyLaterOnly);
   const total = getApproved(p) ? getClientTotal(p) : getEstimateTotal(p);
-  if((p.status || "active") === "archived") return { text:"В архіві", sub: money(total), label:"Відкрити", action:`openProject('${id}')` };
-  if(!positions.length) return { text:"Кошторис порожній", sub:"додайте матеріали й роботи", label:"Відкрити", action:`openProject('${id}')`, primary:true };
+  const split = () => { const w = getApproved(p) ? getClientWorksTotal(p) : getCustomerWorksTotal(p), m = getApproved(p) ? getClientMaterialsTotal(p) : getCustomerMaterialsTotal(p); return `роботи ${money(w)} · матеріали ${money(m)}`; };
+  if((p.status || "active") === "archived") return { text:`В архіві · ${money(total)}`, sub: split() };
+  if(!positions.length) return { text:"Кошторис порожній" };
   const debt = projectDebt(p);
-  const stage = p.stage || "estimate";
-  if(debt > 0.5 && (stage === "work" || stage === "done")) return projectOverdue(p) ? { text:`Клієнт винен ${money(debt)}`, cls:"neg", sub:`з ${money(total)}`, label:"＋ Оплата", action: open("goMoney('payment')") }
-    : { text:`Залишок ${money(debt)}`, cls:"", sub:`до оплати · з ${money(total)}`, label:"＋ Оплата", action: open("goMoney('payment')") };
+  const paid = moneySum(moneyList(p, "payment"));
+  const payBtn = { label:"＋ Оплата", action: open("goMoney('payment')") };
+  if(projectCompleted(p)) return debt > 0.5
+    ? Object.assign({ text:`Клієнт винен ${money(debt)}`, cls:"neg", sub: homeSearch ? `${money(total)}: ${split()}` : `з ${money(total)}` }, payBtn)
+    : { text:`Завершено · ${money(total)}`, sub: (homeSearch ? split() + " · " : "") + (p.completedAt ? formatQuoteDate(p.completedAt).slice(0, 10) : "") };
+  if(paid > 0.5 && debt > 0.5) return Object.assign({ text:`Залишок ${money(debt)}`, sub:`сплачено ${money(paid)} з ${money(total)}` }, payBtn);
+  if(getApproved(p) && debt > 0.5 && projectOverdue(p)) return Object.assign({ text:`Клієнт винен ${money(debt)}`, cls:"neg", sub:`з ${money(total)}` }, payBtn);
   const opened = clientSendsOpen(p);
   if(opened.length){
     const s = opened[opened.length - 1];
     const what = s.kind === "changes" ? `зміни №${s.n}` : s.kind === "works" ? "роботи" : s.kind === "materials" ? "матеріали" : "кошторис";
-    return { text:"Чекаємо погодження", cls:"ok", sub:`${what} · надіслано ${formatQuoteDate(s.at).slice(0, 5)} · ${money(s.total)}`, label:"Відкрити", action:`openProject('${id}')` };
+    return { text:`Надіслано ${formatQuoteDate(s.at).slice(0, 5)} · ${money(s.total)}`, sub: what };
   }
-  if(buyOn(p)){
-    const items = buyItems(p).filter(x => x.whereK !== "skip");
-    const left = items.filter(x => buyNeed(p, x) > 0).length;
-    if(left) return { text:`Ще купити: ${left} поз.`, sub:`куплено ${items.length - left} з ${items.length}`, label:"Список", action: open("setProjectTab('notebook')") };
-  }
-  const step = getNextSteps(p)[0];
-  if(step) return { text: String(step.text).replace(/<[^>]+>/g, ""), sub: String(step.sub || "").replace(/<[^>]+>/g, ""), label: step.label, action: open(step.action), primary: step.primary };
-  return { text: money(total), sub:"кошторис", label:"Відкрити", action:`openProject('${id}')` };
+  if(getApproved(p)) return { text:`✓ Погоджено · ${money(total)}`, sub: formatQuoteDate(getApproved(p).at || "").slice(0, 10) };
+  return { text:`Кошторис ${money(total)}` };
 }
 function homeCard(p){
   const id = escapeHtml(p.id);
   const c = p.client || {};
-  const idx = projectPathIndex(p);
+  const steps = phaseSteps(p), idx = projectPhase(p), fin = projectCompleted(p);
   const n = homeNext(p);
   const tel = String(c.phone || "").replace(/[^\d+]/g, "");
-  return `<article class="hCard">
-    <div class="hTop" onclick="openProject('${id}')"><b>${p.urgent ? "🔥 " : ""}${projectTitle(p)}</b><span>${escapeHtml(PATH_STEPS[idx] || "")}</span>
+  return `<article class="hCard ${fin ? "hDone" : ""}">
+    <div class="hTop" onclick="openProject('${id}')"><b>${p.urgent ? "🔥 " : ""}${projectTitle(p)}</b><span>${escapeHtml(phaseText(p))}</span>
       <button type="button" class="hMenu" onclick="event.stopPropagation();openActions('${id}')" aria-label="Дії">⋯</button></div>
     ${c.address ? `<div class="hAddrRow"><span class="hAddrTx" onclick="openProject('${id}')">${escapeHtml(c.address)}</span><button type="button" class="hRoute" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>${ic("pin", 16)}</i>Як добратись</button></div>` : ""}
+    ${(() => { const d = p.details || {}; const t = [d.workType, Number(d.bathrooms) > 0 ? d.bathrooms + " санвуз." : "", ...(Array.isArray(d.features) ? d.features : [])].filter(Boolean); return homeSearch && t.length ? `<div class="hWho" style="font-size:.75rem">${escapeHtml(t.join(" · "))}</div>` : ""; })()}
     ${c.name || c.phone ? `<div class="hWho">${escapeHtml(c.name || "")}${c.name && c.phone ? " · " : ""}${c.phone ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(c.phone)}</a>` : ""}</div>` : ""}
     ${(() => { const sib = groupOrders(p).filter(x => x !== p).sort((a, b) => orderTime(a).localeCompare(orderTime(b))); return sib.length ? `<div class="hAlso" onclick="openProject('${id}')"><b>${escapeHtml(orderLabel(p))}</b><span>також: ${sib.map(x => escapeHtml(orderLabel(x)) + (!orderIsActive(x) ? ((x.status || "active") === "archived" ? " (архів)" : " ✓") : "") + (projectOverdue(x) ? ` <em class="hAlsoDebt">винен ${money(moneySummary(x).debt)}</em>` : "")).join(" · ")}</span></div>` : ""; })()}
-    <div class="hBar" onclick="openProject('${id}')">${PATH_STEPS.map((s, i) => `<i class="${i <= idx ? "on" : ""}"></i>`).join("")}</div>
+    <div class="hBar ${fin ? "done" : ""}" onclick="openProject('${id}')">${steps.map((s, i) => `<i class="${fin || i <= idx ? "on" : ""}"></i>`).join("")}</div>
     <div class="hNext"><div class="hTx" onclick="openProject('${id}')"><b class="${n.cls || ""}">${escapeHtml(n.text)}</b>${n.sub ? `<small>${escapeHtml(n.sub)}</small>` : ""}</div>
-      <button type="button" class="hBtn ${n.primary ? "pr" : ""}" onclick="${n.action}">${escapeHtml(n.label || "Відкрити")}</button></div>
+      ${n.label ? `<button type="button" class="hBtn" onclick="${n.action}">${escapeHtml(n.label)}</button>` : ""}</div>
   </article>`;
 }
 /* ==== Етапи на одному об’єкті ====
@@ -8419,7 +8434,7 @@ function renderHomeNew(){
   const chip = (k, label) => (k === "all" || cnt[k]) ? `<button type="button" class="hChip ${homeFilter === k ? "on" : ""}" onclick="setHomeFilter('${k}')">${label}<small>${cnt[k]}</small></button>` : "";
   main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + `
     <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button></div>
-    ${act.length > 3 || homeSearch ? `<input class="hSearch" type="search" placeholder="Адреса, ЖК або клієнт" value="${escapeHtml(homeSearch)}" oninput="onHomeSearch(this.value)">` : ""}
+    ${act.length > 3 || homeSearch ? `<input class="hSearch" type="search" placeholder="Адреса, клієнт або теги: тепла 2 санвуз" value="${escapeHtml(homeSearch)}" oninput="onHomeSearch(this.value)">` : ""}
     <div class="hChips">${chip("all", "Усі")}${chip("debt", "Борг")}${chip("wait", "Чекають")}${chip("archive", "Архів")}</div>
     <div id="hList">${renderHomeList()}</div>`;
   mountHomeNav("home");
@@ -8604,7 +8619,7 @@ function renderFinanceHtml(){
       ${finPeriod === "all" && matIncome ? row(matUnknown ? "≈ Дохід з матеріалів" : "Дохід з матеріалів", money(matIncome), "", matUnknown ? `за планом · без закупівельної ціни: ${matUnknown} поз.` : "кошторис мінус закупівля за планом") : ""}
     </div>
     <div class="msBox"><div class="finHead">За об’єктами${finPeriod === "all" ? `<small class="finHeadSub">ваш заробіток після розрахунку</small>` : ""}</div>
-      ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}${escapeHtml(orderSuffix(r.p))}<small>${r.debt > 0.5 ? (projectOverdue(r.p) ? "винен " : "залишок ") + money(r.debt) : escapeHtml(PATH_STEPS[projectPathIndex(r.p)] || "")}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
+      ${rows.length ? rows.map(r => `<button type="button" class="msRow finObj" onclick="openProject('${escapeHtml(r.p.id)}');setTimeout(()=>setProjectTab('money'),60)"><span>${projectTitle(r.p)}${escapeHtml(orderSuffix(r.p))}<small>${r.debt > 0.5 ? (projectOverdue(r.p) ? "винен " : "залишок ") + money(r.debt) : escapeHtml(phaseText(r.p))}</small></span><b class="${r.earn < 0 ? "neg" : r.earn > 0 ? "pos" : ""}">${r.earn ? money(r.earn) : "—"}</b></button>`).join("") : `<div class="msRow"><span>За цей період записів немає</span></div>`}
     </div>
     <div class="msBox"><div class="finHead finHeadRow">Разові роботи<button type="button" class="finAdd" onclick="openJobForm()">＋ Додати</button></div>
       ${jobs.length ? jobs.map(j => `<button type="button" class="msRow finObj" onclick="openJobForm('${escapeHtml(j.id)}')"><span>${escapeHtml(j.title)}${Number(j.qty) > 1 && Number(j.price) ? ` · ${escapeHtml(String(j.qty))} × ${money(j.price)}` : ""}<small>${formatQuoteDate(j.date).slice(0, 5)}${j.place ? " · " + escapeHtml(j.place) : ""}${(j.people || []).length ? " · " + j.people.map(x => escapeHtml(x.name)).join(", ") : ""}</small></span><b class="pos">${money(jobEarn(j))}</b></button>`).join("") : `<div class="msRow"><span>Дрібні роботи без кошторису: радіатори, умивальник…<small>Записуйте їх тут — вони підуть у заробіток.</small></span></div>`}
@@ -8887,7 +8902,7 @@ function crewState(per){
     const earned = getProjectAssignmentEarning(p, a);
     return {
       pid: p.id, title: crewObjTitle(p), address: cleanText((p.client || {}).address || ""),
-      stage: PATH_STEPS[projectPathIndex(p)] || "",
+      stage: phaseText(p),
       start: String(p.workStartDate || ""),
       phase: (p.stage === "done" && p.handedOverAt) || p.stage === "closed" || p.status === "archived" ? "done" : ["work", "done"].includes(p.stage) || (p.stage === "procurement" && p.workStartDate && p.workStartDate <= todayIso()) ? "now" : "plan",
       earned: earned === null ? null : Math.round(earned), done: ["done", "closed"].includes(p.stage),
@@ -9288,6 +9303,8 @@ function renderProjectList(){
 }
 
 function sortProjects(a,b){
+  const ca = projectCompleted(a), cb = projectCompleted(b);
+  if(ca !== cb) return ca ? 1 : -1;
   if(a.urgent && !b.urgent) return -1;
   if(!a.urgent && b.urgent) return 1;
   return String(b.updatedAt || "").localeCompare(String(a.updatedAt || ""));
@@ -9542,6 +9559,16 @@ function addMoneyEntry(kind){
   touchProject(project);
   render();
   toast(kind === "payment" ? "Оплату записано" : "Витрату записано");
+  /* Повна оплата — питаємо, чи роботи завершено (необов’язково) */
+  if(kind === "payment" && amount > 0 && !projectCompleted(project) && getApproved(project) && projectDebt(project) <= 0.5){
+    setTimeout(() => {
+      if(confirm(`Клієнт розрахувався повністю (${money(getClientTotal(project))}).\n\nРоботи на цьому етапі завершено?`)){
+        completeProject(project, "після повної оплати");
+        render();
+        toast("Об’єкт завершено. Наступні роботи — «Новий етап»");
+      }
+    }, 250);
+  }
 }
 
 let moneyEditId = "";
@@ -10326,19 +10353,36 @@ function renderQuoteDisc(){
   const project = projects.find(item => item.id === currentProjectId);
   const box = document.getElementById("quoteDiscBox");
   if(!project || !box) return;
-  const can = !getApproved(project) && !quoteDraft;
+  const can = !quoteDraft;
+  const approved = Boolean(getApproved(project));
   box.classList.toggle("hidden", !can);
   if(!can){ box.innerHTML = ""; return; }
   const has = type => (project.positions || []).some(x => x.type === type && !x.buyLaterOnly);
   const row = (type, label, cur) => `<div class="qdRow"><span>${label}</span><div class="qdChips">${[0,5,10,15].map(v => `<button type="button" class="${cur === v ? "on" : ""}" onclick="quoteSetDisc('${type}',${v})">${v ? v + "%" : "—"}</button>`).join("")}<button type="button" class="${cur && ![0,5,10,15].includes(cur) ? "on" : ""}" onclick="quoteCustomDisc('${type}')">${cur && ![0,5,10,15].includes(cur) ? cur + "%" : "інша"}</button></div></div>`;
   box.innerHTML = `<div class="qdTitle">Знижка для цього клієнта</div>
-    ${has("work") && quoteMode !== "materials" ? row("work", "Роботи", getWorksDiscountPercent(project)) : ""}
-    ${has("material") && quoteMode !== "works" ? row("material", "Матеріали", getMaterialsDiscountPercent(project)) : ""}
-    <div class="qdHint">У документі — лише сума знижки. Розхідники «без знижки» не враховуються.</div>`;
+    ${has("work") && quoteMode !== "materials" ? row("work", "Роботи", approved ? approvedDiscountPercent(project, "work") : getWorksDiscountPercent(project)) : ""}
+    ${has("material") && quoteMode !== "works" ? row("material", "Матеріали", approved ? approvedDiscountPercent(project, "material") : getMaterialsDiscountPercent(project)) : ""}
+    <div class="qdHint">${approved ? "Кошторис уже погоджений — знижка одразу змінить суму до сплати." : "У документі — лише сума знижки. Розхідники «без знижки» не враховуються."}</div>`;
 }
 function quoteSetDisc(type, v){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
+  /* Уже погоджено (домовились усно, треба лише фактичний кошторис): знижка одразу йде в погоджену суму */
+  if(getApproved(project)){
+    const pct = v > 0 && v < 100 ? v : 0;
+    if(Math.abs(pct - approvedDiscountPercent(project, type)) < 1e-9) return;
+    project.revDiscount = Object.assign({}, project.revDiscount || {}, { [type]: pct });
+    const prev = getClientTotal(project);
+    const draft = buildRevisionSnapshot(project, new Set(["disc:" + type]));
+    draft.revised = true;
+    project.approved = draft;
+    syncDiscountFromApproved(project);
+    logApproval(project, prev, `знижка на ${type === "work" ? "роботи" : "матеріали"} ${fmtPct(pct)} · вручну майстром`);
+    touchProject(project);
+    renderQuotePreview();
+    toast(`Сума для клієнта: ${money(prev)} → ${money(getClientTotal(project))}`, 2600);
+    return;
+  }
   project[type === "work" ? "workDiscount" : "materialDiscount"] = v > 0 && v < 100 ? v : 0;
   touchProject(project);
   renderQuotePreview();
@@ -10411,7 +10455,7 @@ function renderQuotePreview(){
   lastQuoteData = {
     whole,
     title: quoteModeTitle(),
-    dateLabel: `${quoteDraft ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
+    dateLabel: `${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
     companyName, companyPhone, objectName, clientName, clientPhone, objectAddress,
     sections: xlsxSections,
     total: documentTotal,
@@ -10446,7 +10490,7 @@ function renderQuotePreview(){
 
     <div class="quoteDocHeading">
       <div class="quoteDocumentTitle">${quoteModeTitle()}</div>
-      <div class="quoteIssuedNote">${quoteDraft ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
+      <div class="quoteIssuedNote">${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
     </div>
     ${quotePreliminary && quoteMode !== "works" && !approvedSnapshot ? `<div class="quotePrelimNote">Ціни на матеріали попередні — можуть уточнитися після підтвердження наявності в постачальника.</div>` : ""}
 
@@ -17940,12 +17984,14 @@ function openActions(id){
     done: ["closed", "Закрити об'єкт", "✓"],
     closed: ["estimate", "Відновити до прорахунку", "↺"]
   };
-  const next = nextStages[p.stage || "estimate"];
-  if(stageRow) stageRow.classList.toggle("hidden", isArchived || !next);
-  if(next){
-    stageText.textContent = next[1];
-    stageIcon.textContent = next[2];
-  }
+  void nextStages;
+  if(stageRow) stageRow.classList.toggle("hidden", isArchived);
+  stageText.textContent = projectCompleted(p) ? "Повернути в роботу" : "Позначити завершеним";
+  stageIcon.textContent = projectCompleted(p) ? "↺" : "✓";
+  const nsRow = document.getElementById("actionNewStageRow");
+  if(nsRow) nsRow.classList.toggle("hidden", isArchived);
+  const skipRow = document.getElementById("actionSkipRow");
+  if(skipRow) skipRow.classList.toggle("hidden", isArchived || ["done", "closed"].includes(p.stage || "estimate") || !(p.positions || []).some(x => !x.buyLaterOnly));
   const reapproveRow = document.getElementById("actionReapproveRow");
   if(reapproveRow) reapproveRow.classList.add("hidden");
   if(isArchived){
@@ -17959,7 +18005,45 @@ function openActions(id){
   document.getElementById("actionsSheet").classList.add("open");
 }
 
+/* Дрібний об'єкт: без погоджень і проміжних етапів — одразу «Завершено» і фактичний кошторис з поточного кошторису */
+function actionSkipToDone(){
+  const p = projects.find(x => x.id === actionsProjectId);
+  if(!p) return;
+  if(!getApproved(p)){
+    approveProject(p, "вручну (роботи виконано, етапи пропущено)");
+  } else {
+    const c = getApprovedChanges(p);
+    if((c.changed.length || c.added.length || c.removed.length) &&
+      confirm(`Після погодження кошторис змінювали.\n\nПогоджено: ${money(getClientTotal(p))}\nЗараз у кошторисі: ${money(getEstimateTotal(p))}\n\nВзяти у фактичний кошторис те, що зараз?`)){
+      approveProject(p, "вручну (фактичний кошторис)");
+    }
+  }
+  p.stage = "done";
+  p.phase = phaseSteps(p).length - 1;
+  p.updatedAt = new Date().toISOString();
+  if(!p.doneAt) p.doneAt = p.updatedAt;
+  saveProjects();
+  closeActionsSheet();
+  currentProjectId = p.id;
+  render();
+  quotePreliminary = false;
+  quoteDraft = null;
+  openQuotePreview();
+  toast("Роботи виконано. Перевірте знижку й надішліть клієнту", 2600);
+}
+
 function actionAdvanceStage(){
+  const p0 = projects.find(x => x.id === actionsProjectId);
+  if(!p0) return;
+  closeActionsSheet();
+  if(projectCompleted(p0)){ reopenProject(p0); render(); toast("Об’єкт знову в роботі"); return; }
+  const debt = projectDebt(p0);
+  if(debt > 0.5 && !confirm(`Клієнт ще винен ${money(debt)}.\n\nВсе одно позначити об’єкт завершеним?`)) return;
+  completeProject(p0, "вручну");
+  render();
+  toast("Об’єкт завершено");
+}
+function actionAdvanceStageOld(){
   const p = projects.find(x => x.id === actionsProjectId);
   if(!p) return;
   const nextStages = { estimate:"procurement", procurement:"work", work:"done", done:"closed", closed:"estimate" };
@@ -18003,7 +18087,7 @@ function grpRow(x){
   const id = escapeHtml(x.id);
   const ap = getApproved(x);
   const ms = moneySummary(x);
-  const stage = PATH_STEPS[projectPathIndex(x)] || "";
+  const stage = phaseText(x);
   const archived = (x.status || "active") === "archived";
   const sum = ap ? money(getClientTotal(x)) : "кошторис не погоджено";
   const debt = ap && ms.debt > 0.5 ? ` · залишок ${money(ms.debt)}` : "";
@@ -18022,7 +18106,7 @@ function grpRow(x){
     <button type="button" class="grpOpen" onclick="openProject('${id}')">Відкрити етап повністю ›</button>
   </div>`;
 }
-const STAGE_TYPES = ["Чорновий монтаж", "Чистовий монтаж"];
+const STAGE_TYPES = ["Чорновий монтаж", "Чистовий монтаж", "Разові роботи"];
 function actionNewStage(){
   const base = projects.find(x => x.id === actionsProjectId);
   closeActionsSheet();
@@ -21077,6 +21161,56 @@ let stageHintFull = "";
 const HINTS_SEEN_KEY = "sa_hintsSeen";
 let stageHintOpenFor = "";
 
+/* ==== Смужка етапів (спрощена) ====
+   Прорахунок → Комплектація → монтаж за типом етапу (Чорновий / Чистовий / обидва / Разові роботи…).
+   Етап ставить сам майстер одним дотиком (p.phase), нічого не обов’язково. Без p.phase — береться з внутрішнього stage.
+   Окремого етапу «Завершено» немає: завершений об’єкт (stage "closed") — інша картка. */
+function phaseSteps(p){
+  const w = cleanText((p && p.details && p.details.workType) || "");
+  let mont;
+  if(/повний/i.test(w)) mont = ["Чорновий", "Чистовий"];
+  else if(/чорнов/i.test(w)) mont = ["Чорновий"];
+  else if(/чистов/i.test(w)) mont = ["Чистовий"];
+  else if(w) mont = [w.length > 14 ? w.slice(0, 13) + "…" : w];
+  else mont = ["Монтаж"];
+  return ["Прорахунок", "Комплектація"].concat(mont);
+}
+function projectCompleted(p){ return Boolean(p) && p.stage === "closed"; }
+function projectPhase(p){
+  const n = phaseSteps(p).length;
+  if(Number.isInteger(p.phase)) return Math.max(0, Math.min(n - 1, p.phase));
+  const st = p.stage || "estimate";
+  if(st === "procurement") return 1;
+  if(st === "work" || st === "done" || st === "closed") return 2;
+  return 0;
+}
+function phaseText(p){
+  if((p.status || "active") === "archived") return "в архіві";
+  if(projectCompleted(p)) return "✓ Завершено";
+  return phaseSteps(p)[projectPhase(p)] || "";
+}
+function setPhase(id, i){
+  const p = projects.find(x => x.id === id);
+  if(!p || projectCompleted(p)) return;
+  p.phase = i;
+  touchProject(p);
+  render();
+}
+function completeProject(p, how){
+  if(!p) return;
+  p.stage = "closed";
+  p.completedAt = new Date().toISOString();
+  if(!p.doneAt) p.doneAt = p.completedAt;
+  if(how) p.completedHow = how;
+  touchProject(p);
+}
+function reopenProject(p){
+  if(!p) return;
+  p.stage = "work";
+  delete p.completedAt;
+  touchProject(p);
+}
+
 function projectPathIndex(p){
   const s = p.stage || "estimate";
   if(s === "estimate") return p.quoteSentAt ? 1 : 0;
@@ -21088,9 +21222,14 @@ function projectPathIndex(p){
 }
 
 function renderStagePath(p){
-  const current = projectPathIndex(p);
-  return `<div class="stagePath" aria-label="Етапи об’єкта">${PATH_STEPS.map((label, i) =>
-    `<span class="${i < current ? "done" : i === current ? "current" : ""}">${label}</span>`).join("")}</div>`;
+  const steps = phaseSteps(p);
+  if(projectCompleted(p)){
+    return `<div class="stagePath done" aria-label="Етапи об’єкта" style="grid-template-columns:repeat(${steps.length},minmax(0,1fr))">${steps.map(label => `<span class="done">${label}</span>`).join("")}</div>
+      <div class="phaseDone">✓ Завершено${p.completedAt ? " " + formatQuoteDate(p.completedAt).slice(0, 10) : ""} · <button type="button" onclick="actionsProjectId='${escapeHtml(p.id)}';actionNewStage()">Новий етап</button></div>`;
+  }
+  const current = projectPhase(p);
+  return `<div class="stagePath" aria-label="Етапи об’єкта — натисніть, щоб змінити" style="grid-template-columns:repeat(${steps.length},minmax(0,1fr))">${steps.map((label, i) =>
+    `<button type="button" class="${i < current ? "done" : i === current ? "current" : ""}" onclick="setPhase('${escapeHtml(p.id)}',${i})">${label}</button>`).join("")}</div>`;
 }
 
 function hintsSeen(){
@@ -21098,6 +21237,9 @@ function hintsSeen(){
 }
 
 function renderStageHint(p){
+  return ""; /* старі підказки драбини етапів більше не показуємо */
+}
+function renderStageHintOld(p){
   const index = projectPathIndex(p);
   const hint = STAGE_HINTS[index];
   if(!hint) return "";
@@ -21284,7 +21426,7 @@ function renderOnboarding(){
       <h1 class="onbTitle">Перший об’єкт</h1>
       <p class="onbText">Далі сервіс веде об’єкт по етапах: прорахунок → погодження → закупівля → роботи → здача → розрахунок. На кожному етапі — лише те, що потрібно зараз.</p>
       <div class="onbCard">
-        <div class="stagePath" style="margin:0">${PATH_STEPS.map((label, i) => `<span class="${i === 0 ? "current" : ""}">${label}</span>`).join("")}</div>
+        <div class="stagePath" style="margin:0;grid-template-columns:repeat(4,minmax(0,1fr))">${["Прорахунок", "Комплектація", "Чорновий", "Чистовий"].map((label, i) => `<span class="${i === 0 ? "current" : ""}">${label}</span>`).join("")}</div>
       </div>
       <div class="onbSpacer"></div>
       ${onbWorkMode !== "solo" ? `<button type="button" class="onbSecondary" onclick="finishOnboarding('team')">Спершу додати команду</button>` : ""}
