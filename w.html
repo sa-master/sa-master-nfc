@@ -108,6 +108,23 @@ body{background-image:linear-gradient(var(--gridM) 1px,transparent 1px),linear-g
 .btn,.route,.search,.chip,.toggle,button.btn,.filebtn,.photo,input,textarea,select,.call,.x{border-radius:8px!important}
 .th,.fi{border-radius:6px!important}
 h1{letter-spacing:-.02em}
+/* як у калькуляторі: шапка об’єкта кольором етапу, тінь і проміжок між картками */
+.card.obj{padding-top:0!important;overflow:hidden;box-shadow:0 0 0 1px var(--bpa),0 6px 18px rgba(16,40,90,.10),0 1px 3px rgba(16,40,90,.08)!important;margin-bottom:6px}
+@media (prefers-color-scheme: dark){.card.obj{box-shadow:0 0 0 1px var(--bpa),0 8px 22px rgba(0,0,0,.45)!important}}
+.card.obj h2{margin:0 -14px 2px;padding:12px 14px 10px;background:var(--hd);border-bottom:1px solid var(--hdl);color:var(--bp);font-size:19px}
+.card.obj .stage{color:var(--hdt)!important;border-color:var(--hdt)!important}
+.card.obj.fin h2{color:var(--tm)}
+.card.obj.ph0{--hd:rgba(31,107,242,.09);--hdl:rgba(31,107,242,.18);--hdt:#1F5FD1}
+.card.obj.ph1{--hd:rgba(232,145,45,.15);--hdl:rgba(232,145,45,.30);--hdt:#A35A00}
+.card.obj.ph2{--hd:rgba(31,138,76,.12);--hdl:rgba(31,138,76,.26);--hdt:#17703D}
+.card.obj.phPlan{--hd:rgba(120,120,128,.08);--hdl:rgba(120,120,128,.18);--hdt:#5A616B}
+.card.obj.fin{--hd:rgba(120,120,128,.10);--hdl:rgba(120,120,128,.20);--hdt:#4F7A5E;opacity:.8}
+@media (prefers-color-scheme: dark){
+.card.obj.ph0{--hd:rgba(90,160,255,.14);--hdl:rgba(90,160,255,.24);--hdt:#8EC5FF}
+.card.obj.ph1{--hd:rgba(240,168,72,.16);--hdl:rgba(240,168,72,.30);--hdt:#F4B866}
+.card.obj.ph2{--hd:rgba(76,195,126,.15);--hdl:rgba(76,195,126,.28);--hdt:#6FD69A}
+.card.obj.phPlan{--hd:rgba(255,255,255,.05);--hdl:rgba(255,255,255,.10);--hdt:#9FB3CC}
+.card.obj.fin{--hd:rgba(255,255,255,.06);--hdl:rgba(255,255,255,.10);--hdt:#8FC9A3}}
 </style>
 </head>
 <body>
@@ -168,12 +185,15 @@ function render(){
     const more = openMore[o.pid];
     const folded = (o.phase === "plan" || o.phase === "done") && !openMore["p_" + o.pid];
     const tag = o.phase === "plan" ? (o.start ? "з " + startDay(o.start) : "дата ще не відома") : o.phase === "done" ? "завершено" : o.stage;
-    if(folded) return `<section class="card obj ${o.phase === "done" ? "fin" : ""}">
+    /* колір шапки — етап з калькулятора (phaseIdx), для старих даних — за назвою етапу */
+    const pi = Number.isInteger(o.phaseIdx) ? o.phaseIdx : /прорах/i.test(o.stage || "") ? 0 : /комплект|закуп/i.test(o.stage || "") ? 1 : 2;
+    const phc = o.phase === "done" ? "fin" : o.phase === "plan" ? "phPlan" : "ph" + Math.min(2, pi);
+    if(folded) return `<section class="card obj ${phc}">
       <h2>${esc(o.title)}<span class="stage">${esc(tag)}</span></h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
       ${(o.notes || []).length || (o.files || []).length ? `<button class="toggle" onclick="openMore['p_${esc(o.pid)}']=true;render()"><span>${o.phase === "done" ? "Деталі" : "Проєкт і нотатки"}${(o.files || []).length ? ` · ${o.files.length}` : ""}</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>` : ""}
     </section>`;
-    return `<section class="card obj">
+    return `<section class="card obj ${phc}">
       <h2>${esc(o.title)}${tag ? `<span class="stage">${esc(tag)}</span>` : ""}</h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
       ${(o.crew || []).length ? `<div class="crew">На об’єкті також: ${o.crew.map(c => { const t = String(c.phone || "").replace(/[^\d+]/g, ""); return t ? `<a href="tel:${esc(t)}">${esc(c.name)}</a>` : esc(c.name); }).join(", ")}</div>` : ""}
