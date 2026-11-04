@@ -3852,6 +3852,26 @@ body{font-variant-numeric:tabular-nums}
  background-position:-1px -1px,-1px -1px,calc(100% + 1px) -1px,calc(100% + 1px) -1px,-1px calc(100% + 1px),-1px calc(100% + 1px),calc(100% + 1px) calc(100% + 1px),calc(100% + 1px) calc(100% + 1px)!important}
 .hCard::before,.hCard::after{display:none!important}
 .hCard,.planTodo,.msBox,.fsCard{background-color:var(--card)!important}
+/* картки в списку: більший проміжок і легка тінь, щоб не зливались між собою */
+.hCard{margin-bottom:1.25rem!important;box-shadow:0 0 0 1px var(--bpa),0 6px 18px rgba(16,40,90,.10),0 1px 3px rgba(16,40,90,.08)!important}
+@media (prefers-color-scheme: dark){.hCard{box-shadow:0 0 0 1px var(--bpa),0 8px 22px rgba(0,0,0,.45)!important}}
+/* назва об’єкта — синя й більша; сума під нею — звичайним кольором, щоб синього не було забагато */
+.hCard .hTop b{color:var(--p);font-size:1.25rem;letter-spacing:-.01em}
+.hCard.hDone .hTop b{color:var(--tm)}
+.hCard .hNext b:not(.neg){color:var(--t)}
+/* шапка картки кольором етапу: прорахунок — синя, комплектація — бурштинова, монтаж — зелена, завершено/архів — сіра */
+.hCard{padding-top:0!important;overflow:hidden}
+.hCard .hTop{margin:0 -1rem .625rem;padding:.875rem 1rem .75rem;background:var(--hd);border-bottom:1px solid var(--hdl)}
+.hCard .hTop span{color:var(--hdt)!important;border-color:var(--hdt)!important}
+.hCard.ph0{--hd:rgba(31,107,242,.09);--hdl:rgba(31,107,242,.18);--hdt:#1F5FD1}
+.hCard.ph1{--hd:rgba(232,145,45,.15);--hdl:rgba(232,145,45,.30);--hdt:#A35A00}
+.hCard.ph2{--hd:rgba(31,138,76,.12);--hdl:rgba(31,138,76,.26);--hdt:#17703D}
+.hCard.phDone,.hCard.phArc{--hd:rgba(120,120,128,.10);--hdl:rgba(120,120,128,.20);--hdt:#4F7A5E}
+@media (prefers-color-scheme: dark){
+.hCard.ph0{--hd:rgba(90,160,255,.14);--hdl:rgba(90,160,255,.24);--hdt:#8EC5FF}
+.hCard.ph1{--hd:rgba(240,168,72,.16);--hdl:rgba(240,168,72,.30);--hdt:#F4B866}
+.hCard.ph2{--hd:rgba(76,195,126,.15);--hdl:rgba(76,195,126,.28);--hdt:#6FD69A}
+.hCard.phDone,.hCard.phArc{--hd:rgba(255,255,255,.06);--hdl:rgba(255,255,255,.10);--hdt:#8FC9A3}}
 .projectHeaderCard,.floatingPanel{background-color:var(--gb)!important}
 /* заголовок з розмірною лінією */
 .hTitle{position:relative;padding-bottom:.875rem;margin-bottom:.75rem}
@@ -8341,7 +8361,8 @@ function homeCard(p){
   const steps = phaseSteps(p), idx = projectPhase(p), fin = projectCompleted(p);
   const n = homeNext(p);
   const tel = String(c.phone || "").replace(/[^\d+]/g, "");
-  return `<article class="hCard ${fin ? "hDone" : ""}">
+  const phCls = (p.status || "active") === "archived" ? "phArc" : fin ? "phDone" : "ph" + Math.min(2, idx);
+  return `<article class="hCard ${phCls} ${fin ? "hDone" : ""}">
     <div class="hTop" onclick="openProject('${id}')"><b>${p.urgent ? "🔥 " : ""}${projectTitle(p)}</b><span>${escapeHtml(phaseText(p))}</span>
       <button type="button" class="hMenu" onclick="event.stopPropagation();openActions('${id}')" aria-label="Дії">⋯</button></div>
     ${c.address ? `<div class="hAddrRow"><span class="hAddrTx" onclick="openProject('${id}')">${escapeHtml(c.address)}</span><button type="button" class="hRoute" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>${ic("pin", 16)}</i>Як добратись</button></div>` : ""}
