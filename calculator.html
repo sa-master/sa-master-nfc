@@ -8023,7 +8023,7 @@ function revisionApprove(){
   revision.selected = new Set();
   render();
   renderRevision();
-  toast("Кошторис для клієнта оновлено");
+  toast("Кошторис оновлено");
 }
 
 /* У меню «⋯» — той самий екран, що й кнопка в зеленому блоці: клієнт бачить лише те, що ви відмітите. */
@@ -11943,13 +11943,13 @@ function renderApprovedBanner(project){
   const diff = internalTotal - (Number(approved.total) || 0);
   return `
     <section class="approvedBanner">
-      <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис для клієнта оновлено" : approved.how && !/клієнт/.test(approved.how) ? "Погоджено (зафіксовано вручну)" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}${clientSends(project).length || (project.approvalLog || []).length ? ` <button type="button" class="csLink" style="float:right" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "сховати історію" : "історія"}</button>` : ""}</div>
-      ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · за цінами для клієнта це ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
+      <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис оновлено" : approved.how && !/клієнт/.test(approved.how) ? "Погоджено (зафіксовано вручну)" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}${clientSends(project).length || (project.approvalLog || []).length ? ` <button type="button" class="csLink" style="float:right" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "сховати історію" : "історія"}</button>` : ""}</div>
+      ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · різниця ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
       ${changes.added.length ? `<div class="approvedBannerRemoved">Додано: ${changes.added.map(item => escapeHtml(item.clientName || positionClientName(item) || item.name || "")).join(", ")}</div>` : ""}
       ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>` : ""}
       ${(() => { const pend = clientSendPending(project); return pend && pend.kind === "changes"
-        ? `<div class="approvedBannerActions"><button type="button" class="soft" onclick="openRevision('${project.id}')">📄 Кошторис для клієнта</button></div>`
-        : `<div class="approvedBannerActions"><button type="button" class="${parts.length ? "" : "soft"}" onclick="openRevision('${project.id}')">📄 Кошторис для клієнта${parts.length ? " · є зміни" : ""}</button></div>`; })()}
+        ? `<div class="approvedBannerActions"><button type="button" class="soft" onclick="openRevision('${project.id}')">📄 Кошторис</button></div>`
+        : `<div class="approvedBannerActions"><button type="button" class="${parts.length ? "" : "soft"}" onclick="openRevision('${project.id}')">📄 Кошторис${parts.length ? " · є зміни" : ""}</button></div>`; })()}
     </section>
   `;
 }
