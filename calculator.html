@@ -8306,6 +8306,7 @@ function homeMatches(p){
   if(archived) return false;
   if(homeFilter === "debt") return projectOverdue(p);
   if(homeFilter === "wait") return projectWaiting(p);
+  if(/^ph[0-2]$/.test(homeFilter)){ if(projectCompleted(p)) return false; const ph = projectPhase(p), k = Number(homeFilter.slice(2)); return k === 2 ? ph >= 2 : ph === k; }
   return true;
 }
 /* Картка в списку: не підказка «що робити», а сума й стан об’єкта. Кнопка — лише коли треба записати оплату. */
@@ -8431,12 +8432,14 @@ function renderHomeNew(){
     return;
   }
   const act = projects.filter(p => (p.status || "active") !== "archived");
-  const cnt = { all: groupsCount(act), debt: groupsCount(act.filter(projectOverdue)), wait: groupsCount(act.filter(projectWaiting)), archive: groupsCount(projects.filter(p => (p.status || "active") === "archived")) };
+  const live = act.filter(p => !projectCompleted(p));
+  const cnt = { all: groupsCount(act), debt: groupsCount(act.filter(projectOverdue)), wait: groupsCount(act.filter(projectWaiting)), archive: groupsCount(projects.filter(p => (p.status || "active") === "archived")),
+    ph0: groupsCount(live.filter(p => projectPhase(p) === 0)), ph1: groupsCount(live.filter(p => projectPhase(p) === 1)), ph2: groupsCount(live.filter(p => projectPhase(p) >= 2)) };
   const chip = (k, label) => (k === "all" || cnt[k]) ? `<button type="button" class="hChip ${homeFilter === k ? "on" : ""}" onclick="setHomeFilter('${k}')">${label}<small>${cnt[k]}</small></button>` : "";
   main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + `
     <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button></div>
     ${act.length > 3 || homeSearch ? `<input class="hSearch" type="search" placeholder="Адреса, клієнт або теги: тепла 2 санвуз" value="${escapeHtml(homeSearch)}" oninput="onHomeSearch(this.value)">` : ""}
-    <div class="hChips">${chip("all", "Усі")}${chip("debt", "Борг")}${chip("wait", "Чекають")}${chip("archive", "Архів")}</div>
+    <div class="hChips">${chip("all", "Усі")}${chip("ph0", "Прорахунок")}${chip("ph1", "Комплектація")}${chip("ph2", "Монтаж")}${chip("debt", "Борг")}${chip("wait", "Чекають")}${chip("archive", "Архів")}</div>
     <div id="hList">${renderHomeList()}</div>`;
   mountHomeNav("home");
 }
@@ -21195,13 +21198,32 @@ function phaseSteps(p){
   return ["Прорахунок", "Комплектація"].concat(mont);
 }
 function projectCompleted(p){ return Boolean(p) && p.stage === "closed"; }
+/* Етап визначається сам, з того, що вже відбулося на об’єкті:
+   Прорахунок — поки кошторис складається або в клієнта;
+   Комплектація — клієнт погодився (на роботи чи весь кошторис), або йде звірка з постачальником, або надіслано матеріали;
+   Монтаж — усе куплено, або команді вже видавали гроші з цього об’єкта, або роботи позначено виконаними.
+   Дотик по смужці лише виправляє (p.phase); дотик по етапу, який калькулятор і так визначив, — повертає автоматику. */
+function autoPhase(p){
+  const st = p.stage || "estimate";
+  if(["work", "done", "closed"].includes(st)) return 2;
+  let teamPaid = 0;
+  try{ teamPaid = teamPayoutsInExpenses(p) + ledgerList().filter(e => e.kind === "pay" && e.projectId === p.id).length; }catch(e){}
+  let allBought = false;
+  try{
+    if(buyOn(p)){ const items = buyItems(p).filter(x => x.whereK !== "skip"); allBought = items.length > 0 && items.every(x => buyNeed(p, x) <= 0); }
+  }catch(e){}
+  if(teamPaid > 0 || allBought) return 2;
+  let sup = false;
+  try{ sup = supGroups(p).some(g => g.state && g.state !== "none"); }catch(e){}
+  const pa = partsApproved(p);
+  const matsSent = clientSends(p).some(x => x.kind === "materials");
+  if(st === "procurement" || getApproved(p) || pa.works || pa.materials || sup || matsSent) return 1;
+  return 0;
+}
 function projectPhase(p){
   const n = phaseSteps(p).length;
-  if(Number.isInteger(p.phase)) return Math.max(0, Math.min(n - 1, p.phase));
-  const st = p.stage || "estimate";
-  if(st === "procurement") return 1;
-  if(st === "work" || st === "done" || st === "closed") return 2;
-  return 0;
+  const v = Number.isInteger(p.phase) ? p.phase : autoPhase(p);
+  return Math.max(0, Math.min(n - 1, v));
 }
 function phaseText(p){
   if((p.status || "active") === "archived") return "в архіві";
@@ -21211,7 +21233,7 @@ function phaseText(p){
 function setPhase(id, i){
   const p = projects.find(x => x.id === id);
   if(!p || projectCompleted(p)) return;
-  p.phase = i;
+  if(i === autoPhase(p)) delete p.phase; else p.phase = i;
   touchProject(p);
   render();
 }
