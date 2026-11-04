@@ -21222,7 +21222,7 @@ function autoPhase(p){
 }
 function projectPhase(p){
   const n = phaseSteps(p).length;
-  const v = Number.isInteger(p.phase) ? p.phase : autoPhase(p);
+  const v = autoPhase(p); /* лише автоматично: смужка — індикатор, не перемикач */
   return Math.max(0, Math.min(n - 1, v));
 }
 function phaseText(p){
@@ -21269,8 +21269,8 @@ function renderStagePath(p){
       <div class="phaseDone">✓ Завершено${p.completedAt ? " " + formatQuoteDate(p.completedAt).slice(0, 10) : ""} · <button type="button" onclick="actionsProjectId='${escapeHtml(p.id)}';actionNewStage()">Новий етап</button></div>`;
   }
   const current = projectPhase(p);
-  return `<div class="stagePath" aria-label="Етапи об’єкта — натисніть, щоб змінити" style="grid-template-columns:repeat(${steps.length},minmax(0,1fr))">${steps.map((label, i) =>
-    `<button type="button" class="${i < current ? "done" : i === current ? "current" : ""}" onclick="setPhase('${escapeHtml(p.id)}',${i})">${label}</button>`).join("")}</div>`;
+  return `<div class="stagePath" aria-label="Етап об’єкта: ${escapeHtml(steps[current] || "")}" style="grid-template-columns:repeat(${steps.length},minmax(0,1fr))">${steps.map((label, i) =>
+    `<span class="${i < current ? "done" : i === current ? "current" : ""}">${label}</span>`).join("")}</div>`;
 }
 
 function hintsSeen(){
