@@ -11215,7 +11215,16 @@ function openEstimateSheet(){
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Кошторис">
     <div class="amHead"><b>Кошторис</b><button type="button" class="amClose" onclick="document.getElementById('moneySheet').classList.remove('open')" aria-label="Закрити">✕</button></div>
     <div class="msBox">
-      ${row("Матеріали", money(ap ? getClientMaterialsTotal(p) : getCustomerMaterialsTotal(p)))}
+      ${(() => {
+        /* Сантехприлади окремим рядком: частка приладів у матеріалах (знижка ділиться пропорційно) */
+        const matTotal = ap ? getClientMaterialsTotal(p) : getCustomerMaterialsTotal(p);
+        const src = (ap ? (ap.positions || []) : (p.positions || []).filter(x => !x.buyLaterOnly)).filter(x => x.type === "material");
+        const isFx = pos => { const live = (p.positions || []).find(x => x.id === pos.id); if(live) return getPositionMaterialCategory(live) === "fixtures"; if(pos.category) return pos.category === "fixtures"; return isFixtureName(pos.clientName || pos.name); };
+        const gross = list => list.reduce((sum, x) => sum + (Number(x.price) || 0) * (Number(x.qty) || 0), 0);
+        const all = gross(src), fx = gross(src.filter(isFx));
+        const fxPart = all > 0 ? Math.round(matTotal * fx / all) : 0;
+        return fxPart > 0 ? row("Матеріали", money(matTotal - fxPart)) + row("Прилади", money(fxPart)) : row("Матеріали", money(matTotal));
+      })()}
       ${row("Роботи", money(ap ? getClientWorksTotal(p) : getCustomerWorksTotal(p)))}
       ${row("Разом", money(ap ? getClientTotal(p) : getEstimateTotal(p)), "big")}
       ${ap ? row(ap.revised ? "Оновлено для клієнта" : "Погоджено з клієнтом", formatQuoteDate(ap.at)) : ""}
