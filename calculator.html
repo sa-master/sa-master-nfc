@@ -3398,6 +3398,9 @@ body.positionDragging{
 .cvBanner{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin:0 0 .75rem;padding:.625rem .875rem;border-radius:1rem;background:rgba(10,108,214,.14);color:var(--attn);font-size:.875rem;font-weight:700}
 .cvBanner button{height:2rem;padding:0 .875rem;border-radius:.625rem;background:var(--p-action);color:#fff;font-weight:750;font-size:.8125rem}
 body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,body.clientView .catalogMoreWrap,body.clientView #csPurchasePrice,body.clientView #csPurchasePriceGroup>.formLabel:first-child,body.clientView #csPurchasePriceGroup>.formHint{display:none!important}
+.csPreview{background:rgba(120,120,128,.10);border-radius:.875rem;padding:.75rem .875rem;font-size:.9375rem;line-height:1.4;color:var(--t);margin:.25rem 0 .75rem}
+.csPreview a{color:var(--p);text-decoration:underline}
+.csShareBtn{width:100%;min-height:3rem;border-radius:.875rem;margin-top:.5rem;background:rgba(120,120,128,.12);color:var(--t);font-size:1rem;font-weight:700}
 .stockSug{display:flex;flex-direction:column;gap:.25rem;margin-top:.375rem}
 .stockSug button{display:flex;justify-content:space-between;align-items:center;gap:.5rem;width:100%;text-align:left;padding:.625rem .75rem;border-radius:.75rem;background:var(--card);color:var(--t);font-size:.9375rem;font-weight:600;min-height:2.75rem;height:auto}
 .stockSug button small{color:var(--tm);font-weight:600;flex:0 0 auto}
@@ -3474,6 +3477,7 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .csPill.ok{background:var(--p);color:#fff}
 .csPill.old{background:rgba(120,120,128,.14);color:var(--tm);text-decoration:line-through}
 .csPill.wait{background:var(--card);color:var(--p);border:1.5px solid var(--p)}
+.csPill.no{background:var(--card);color:#c62828;border:1.5px solid #c62828}
 .csPill.pre{background:var(--card);color:var(--p);border:1.5px dashed var(--p)}
 .csPill.new{background:var(--p-action);color:#fff;box-shadow:0 0 0 3px rgba(10,132,255,.25)}
 .csLink{background:none;color:var(--p);font-weight:700;font-size:.75rem;padding:0;text-decoration:underline}
@@ -8319,6 +8323,7 @@ function projectOverdue(p){ return projectDebt(p) > 0.5 && ((p.stage === "done" 
 function debtWord(p){ return p && ((p.stage === "done" && p.handedOverAt) || p.stage === "closed") ? "Клієнт винен" : "Залишок до оплати"; }
 function projectWaiting(p){
   if(projectCompleted(p)) return false; /* завершений об’єкт нічого не чекає */
+  { const op = clientSendsOpen(p); if(op.length && op[op.length - 1].declinedAt) return false; } /* клієнт відповів «Не підходить» — уже не чекаємо */
   if(getApproved(p)) return clientSendsOpen(p).length > 0;
   return Boolean(p.quoteSentAt) || clientSendsOpen(p).length > 0 || (typeof supGroups === "function" && supGroups(p).some(g => g.state === "wait" || g.state === "ans"));
 }
@@ -8361,7 +8366,10 @@ function homeNext(p){
   if(opened.length){
     const s = opened[opened.length - 1];
     const what = s.kind === "changes" ? `зміни №${s.n}` : s.kind === "works" ? "роботи" : s.kind === "materials" ? "матеріали" : "кошторис";
-    return { text:`Надіслано ${formatQuoteDate(s.at).slice(0, 5)} · ${money(s.total)}`, sub: what };
+    if(s.declinedAt) return { text:`✗ Не підходить · ${money(s.total)}`, cls:"neg", sub: what + " · " + formatQuoteDate(s.declinedAt).slice(0, 5) };
+    return s.seenAt
+      ? { text:`Переглянуто ${formatQuoteDate(s.seenAt).slice(0, 5)} · ${money(s.total)}`, sub: what }
+      : { text:`Надіслано ${formatQuoteDate(s.at).slice(0, 5)} · ${money(s.total)}`, sub: what + " · ще не відкривав" };
   }
   if(getApproved(p)) return { text:`✓ Погоджено · ${money(total)}`, sub: formatQuoteDate(getApproved(p).at || "").slice(0, 10) };
   return { text:`Кошторис ${money(total)}` };
@@ -10593,7 +10601,18 @@ function clientSendDraft(p){
   const pr = d.parts || {};
   const obj = projectTitlePlain(p);
   const date = formatQuoteDate(new Date());
-  const head = title => `${title} · ${obj} · ${date}\n\n`;
+  /* Шапка повідомлення: що й на скільки, далі об’єкт, замовник, адреса, коли можемо приступити */
+  const c = p.client || {};
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(p.workStartDate || "") ? formatQuoteDate(p.workStartDate + "T12:00:00").slice(0, 10) : "";
+  const who = [cleanText(c.name), cleanText(c.phone) ? `(${cleanText(c.phone)})` : ""].filter(Boolean).join(" ");
+  const card = [
+    `🏠 Об’єкт: ${obj}`,
+    who ? `👤 Замовник: ${who}` : "",
+    cleanText(c.address) ? `📍 Адреса: ${cleanText(c.address)}` : "",
+    start ? `📅 Орієнтовний початок робіт: ${start}` : ""].filter(Boolean).join("\n");
+  void date;
+  /* Повідомлення — лише картка об’єкта; назва й сума — у прев’ю посилання */
+  const head = () => card + "\n\n";
   const sel = quoteDraft && revision && revision.projectId === p.id ? Array.from(revision.selected) : [];
   if(quoteDraft && sel.length && getApproved(p)){
     const n = clientSends(p).filter(x => x.kind === "changes").length + 2;
@@ -10612,27 +10631,17 @@ function clientSendDraft(p){
   const tail = quotePreliminary ? "\n\nЦе попередній розрахунок — ціни матеріалів уточню після звірки з постачальниками." : "";
   if(quoteMode === "works"){
     const title = quotePreliminary ? "Попередній кошторис робіт" : "Кошторис робіт";
-    const text = head(title) + `Разом за роботи: ${money(d.total)}` + (!pa.materials ? "\n\nМатеріали надішлю окремо." : "") + tail;
+    const text = card + tail;
     return { kind:"works", n:1, title, text, total: d.total, prelim: quotePreliminary || undefined };
   }
   if(quoteMode === "materials"){
     const title = quotePreliminary ? "Попередній кошторис матеріалів" : "Кошторис матеріалів";
     const works = pa.works ? Math.round(pa.works.total) : 0;
-    const text = head(title) + [
-      pr.materials > 0.5 ? `Матеріали — ${money(pr.materials)}` : "",
-      pr.fixtures > 0.5 ? `Сантехприлади — ${money(pr.fixtures)}` : "",
-      pr.matDiscount > 0.5 ? `Знижка — −${money(pr.matDiscount)} (уже врахована)` : "",
-      `Разом за матеріали: ${money(d.total)}`,
-      works ? `\nРоботи (погоджено ${formatQuoteDate(pa.works.at).slice(0, 5)}) — ${money(works)}\nРазом з роботами: ${money(works + d.total)}` : ""].filter(Boolean).join("\n") + tail;
+    const text = card + tail;
     return { kind:"materials", n:1, title, text, total: d.total, prelim: quotePreliminary || undefined, worksApproved: pa.works ? { at: pa.works.at, total: works } : undefined };
   }
   const title = quotePreliminary ? "Попередній кошторис" : "Кошторис";
-  const text = head(title) + [
-    pr.works > 0.5 ? `Роботи — ${money(pr.works)}` : "",
-    pr.materials > 0.5 ? `Матеріали — ${money(pr.materials)}` : "",
-    pr.fixtures > 0.5 ? `Сантехприлади — ${money(pr.fixtures)}` : "",
-    pr.discount > 0.5 ? `Знижка — −${money(pr.discount)} (уже врахована)` : "",
-    `Разом: ${money(d.total)}`].filter(Boolean).join("\n") + tail;
+  const text = card + tail;
   return { kind:"quote", n:1, title, text, total: d.total, prelim: quotePreliminary || undefined };
 }
 /* Яке старе непогоджене надсилання стає неактуальним після нового */
@@ -10703,7 +10712,7 @@ function clientSendTellServer(s){
   if(!lid || s.clientApprovedAt || !cloudEnabled()) return;
   fetch(`${cloudConfig().server}/q/${lid}/approve`, { method:"POST", headers:{ "Content-Type":"application/json", ...cloudAuthHeaders() }, body: JSON.stringify({ by:"master" }) }).catch(() => {});
 }
-function sendLinkId(link){ const m = String(link || "").match(/#([A-Za-z0-9]{6,20})$/); return m ? m[1] : ""; }
+function sendLinkId(link){ const m = String(link || "").match(/(?:#|\/k\/)([A-Za-z0-9]{6,20})$/); return m ? m[1] : ""; }
 /* Клієнт натиснув «Погоджую»: якщо суми збігаються — записуємо одразу, інакше просимо майстра глянути */
 function clientSendApplySilent(p, s, at){
   s.clientApprovedAt = at;
@@ -10728,6 +10737,9 @@ function pollClientSends(p){
   clientPollAt[p.id] = Date.now();
   list.forEach(s => {
     fetch(`${cloudConfig().server}/q/${sendLinkId(s.link)}`, { cache:"no-store" }).then(r => r.ok ? r.json() : null).then(d => {
+      if(d && d.seenAt && !s.seenAt){ s.seenAt = d.seenAt; touchProject(p); if(currentProjectId === p.id || !currentProjectId) render(); }
+      /* Клієнт натиснув «Не підходить» (або передумав і погодив — тоді позначку прибираємо) */
+      if(d && Boolean(d.declinedAt && !d.approvedAt) !== Boolean(s.declinedAt)){ if(d.declinedAt && !d.approvedAt) s.declinedAt = d.declinedAt; else delete s.declinedAt; touchProject(p); if(currentProjectId === p.id || !currentProjectId) render(); }
       if(d && d.approvedAt && d.approvedBy !== "master" && sendOpen(p, s) && !s.clientApprovedAt) clientSendApplySilent(p, s, d.approvedAt);
     }).catch(() => {});
   });
@@ -10761,7 +10773,9 @@ function sendMarker(p, s){
     return `<span class="csPill old">↻ Неактуально</span>`;
   }
   if(s.clientApprovedAt) return `<button type="button" class="csPill new" onclick="clientSendApprove('${escapeHtml(s.id)}')">● Погодив — глянути</button>`;
-  return `<span class="csPill wait">◷ Чекаємо</span>`;
+  if(s.declinedAt) return `<span class="csPill no">✗ Не підходить ${formatQuoteDate(s.declinedAt).slice(0, 5)}</span>`;
+  if(s.seenAt) return `<span class="csPill wait">◉ Переглянуто ${formatQuoteDate(s.seenAt).slice(0, 5)}</span>`;
+  return `<span class="csPill wait">◷ Надіслано, ще не відкривав</span>`;
 }
 function renderApprovalLog(p){
   const log = Array.isArray(p.approvalLog) ? p.approvalLog : [];
@@ -10972,19 +10986,57 @@ function clientLinksEnabled(){
 
 /* Завантажує PDF + Excel на сервер і повертає посилання для клієнта.
    Для того ж об'єкта і того ж виду (усе / роботи / матеріали) посилання не змінюється — файли оновлюються. */
+/* Повний кошторис для сторінки клієнта — ті самі суми, що в Excel; лише ціни для клієнта (закупівельних тут немає) */
+function clientPageSections(data){
+  const titles = { "РОБОТИ":"Роботи", "МАТЕРІАЛИ":"Матеріали", "САНТЕХПРИЛАДИ":"Сантехприлади" };
+  const r2 = v => Math.round(v * 100) / 100;
+  return (data.sections || []).map(section => {
+    const percent = Number(section.percent) || 0;
+    const items = section.positions.map(pos => {
+      const qty = roundQty(Number(pos.qty) || 1);
+      const name = pos.clientName !== undefined ? pos.clientName : positionClientName(pos);
+      const brand = pos.brand !== undefined ? pos.brand : positionBrand(pos);
+      let price, line;
+      if(data.whole){ price = roundClientPrice(pos.price); line = price > 0 ? wholeLine(pos) : 0; }
+      else{
+        const raw = Number(pos.price) || 0;
+        price = raw > 0 ? Math.round((pos.noDiscount ? raw : raw * (1 - percent / 100)) * 100) / 100 : 0;
+        line = price > 0 ? r2(qty * price) : 0;
+      }
+      return { n: String(name || ""), b: String(brand || "") || undefined, q: qty, u: pos.unit || "шт", p: price, s: line };
+    });
+    const sum = r2(items.reduce((a, x) => a + x.s, 0));
+    const disc = data.whole ? Math.round(Number(section.amount) || 0) : 0;
+    return { t: titles[section.title] || section.title, items, sum, disc, inPrice: !data.whole && percent > 0 && (Number(section.amount) || 0) >= 0.5 ? fmtPct(percent) : undefined };
+  });
+}
 async function uploadQuoteForLink(project, pdfFile, xlsxFile){
   if(!project.quoteLinks || typeof project.quoteLinks !== "object") project.quoteLinks = {};
   const form = new FormData();
   /* Кожне надсилання — своє посилання: у переписці кожна версія лежить окремо */
   form.append("pdf", pdfFile, pdfFile.name);
   if(xlsxFile) form.append("xlsx", xlsxFile, xlsxFile.name);
+  /* Лого майстра — для іконки в прев’ю посилання (якщо додане в Профілі) */
+  try{
+    const m = String(profile.logoData || "").match(/^data:(image\/(?:png|jpe?g|webp));base64,(.+)$/i);
+    if(m){
+      const bin = atob(m[2]); const arr = new Uint8Array(bin.length);
+      for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      if(arr.length <= 300 * 1024) form.append("logo", new Blob([arr], { type: m[1] }), "logo");
+    }
+  }catch(e){}
   const data = lastQuoteData || {};
   form.append("meta", JSON.stringify({
     title: (pendingClientSend && pendingClientSend.title) || data.title, kind: pendingClientSend ? pendingClientSend.kind : "doc", prevTotal: pendingClientSend && pendingClientSend.kind === "changes" ? pendingClientSend.prevTotal : undefined,
     lines: pendingClientSend && pendingClientSend.lines, parts: pendingClientSend && ["quote", "materials"].includes(pendingClientSend.kind) ? data.parts : undefined, prelim: pendingClientSend && pendingClientSend.prelim,
     worksApproved: pendingClientSend && pendingClientSend.worksApproved,
     dateLabel: data.dateLabel, total: data.total, received: data.received || 0, madeWith: !profile.hideMadeWith,
-    objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone
+    objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone,
+    address: cleanText(project.client && project.client.address) || undefined,
+    clientWho: [cleanText(project.client && project.client.name), cleanText(project.client && project.client.phone) ? `(${cleanText(project.client.phone)})` : ""].filter(Boolean).join(" ") || undefined,
+    linkLabel: clientLinkLabel(pendingClientSend),
+    sections: pendingClientSend && ["quote", "works", "materials"].includes(pendingClientSend.kind) && !pendingClientSend.prelim ? clientPageSections(data) : undefined,
+    startDate: /^\d{4}-\d{2}-\d{2}$/.test(project.workStartDate || "") ? project.workStartDate : undefined
   }));
   const cfg = cloudConfig();
   const response = await fetch(`${cfg.server}/upload`, { method:"POST", headers: cloudAuthHeaders(), body: form });
@@ -10994,7 +11046,8 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
   if(!result.id) throw new Error("server");
   project.quoteLinks[quoteMode] = result.id;
   saveProjects();
-  return CLIENT_LINK_BASE + result.id;
+  /* Посилання через сервер: у месенджері — картка з назвою й сумою, далі відкривається sa-master.pro/k.html */
+  return `${cfg.server}/k/${result.id}`;
 }
 
 async function printQuotePreview(){
@@ -11100,7 +11153,10 @@ async function printQuotePreview(){
           : "Сервер недоступний. Надсилаю файлами.");
       }
       if(link){
-        const text = `${shareMessage}\n\n${pendingClientSend && pendingClientSend.kind !== "doc" && !pendingClientSend.prelim ? "Погодити або переглянути PDF / Excel:" : "PDF / Excel:"}\n${link}`;
+        /* Універсально для всіх месенджерів: «Кошторис на роботи: посилання» одним рядком */
+        /* Повідомлення — лише посилання; об’єкт, замовник, адреса й дата — у прев’ю, сума — на сторінці */
+        void shareMessage;
+        const text = link;
         if(navigator.share){
           try{ await navigator.share({ text }); clientSendRecord(project, link); }
           catch(e){
@@ -21310,6 +21366,65 @@ function openAddMenu(){
   requestAnimationFrame(() => el.classList.add("open"));
 }
 function closeAddMenu(){ document.getElementById("addMenu")?.classList.remove("open"); }
+
+/* ==== Надсилання клієнту: текст + жирне посилання «Кошторис на …» ====
+   Telegram (і iMessage, WhatsApp на iPhone) зберігає жирний текст-посилання, якщо вставити скопійоване.
+   Viber посилань у тексті не підтримує — туди йде звичайний текст з адресою. */
+let clientSendCtx = null;
+function clientLinkLabel(d){
+  const k = d && d.kind;
+  if(k === "works") return "Кошторис на роботи";
+  if(k === "materials") return "Кошторис на матеріали";
+  if(k === "changes") return `Зміни до кошторису №${d.n}`;
+  if(k === "quote") return "Кошторис на роботи й матеріали";
+  return (d && d.title) || "Кошторис";
+}
+function openClientSendSheet(project, message, link, draft){
+  const label = clientLinkLabel(draft);
+  const esc = v => String(v).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[c]);
+  const html = message.split("\n").map(esc).join("<br>") + `<br><br><b><a href="${esc(link)}">${esc(label)}</a></b>`;
+  const plain = `${message}\n\n${label}:\n${link}`;
+  clientSendCtx = { project, link, html, plain };
+  let el = document.getElementById("addMenu");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "addMenu";
+    el.className = "addMenu";
+    el.onclick = e => { if(e.target === el) closeAddMenu(); };
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Надіслати клієнту">
+    <div class="amHead"><b>Надіслати клієнту</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    <div class="csPreview">${html.replace(/<a /, '<a onclick="return false" ')}</div>
+    <button type="button" class="onbPrimary" onclick="clientSendCopyRich()">Скопіювати — вставити в Telegram</button>
+    <button type="button" class="csShareBtn" onclick="clientSendSharePlain()">Поділитися (Viber та інші)</button>
+    <span class="onbNote" style="text-align:left">У Telegram «${esc(label)}» буде жирним посиланням. У Viber посилання показується адресою.</span>
+  </div>`;
+  requestAnimationFrame(() => el.classList.add("open"));
+}
+async function clientSendCopyRich(){
+  const c = clientSendCtx;
+  if(!c) return;
+  try{
+    if(window.ClipboardItem && navigator.clipboard && navigator.clipboard.write){
+      await navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([c.html], { type:"text/html" }), "text/plain": new Blob([c.plain], { type:"text/plain" }) })]);
+    }else await navigator.clipboard.writeText(c.plain);
+    toast("Скопійовано. Відкрийте чат у Telegram і вставте", 3200);
+  }catch(e){ prompt("Скопіюйте і надішліть клієнту", c.plain); }
+  clientSendRecord(c.project, c.link);
+  closeAddMenu();
+}
+async function clientSendSharePlain(){
+  const c = clientSendCtx;
+  if(!c) return;
+  if(navigator.share){
+    try{ await navigator.share({ text: c.plain }); clientSendRecord(c.project, c.link); closeAddMenu(); }
+    catch(e){ if(!(e && e.name === "AbortError")){ prompt("Скопіюйте і надішліть клієнту", c.plain); clientSendRecord(c.project, c.link); closeAddMenu(); } }
+  }else{
+    try{ await navigator.clipboard.writeText(c.plain); toast("Текст із посиланням скопійовано"); }catch(e){ prompt("Скопіюйте і надішліть клієнту", c.plain); }
+    clientSendRecord(c.project, c.link); closeAddMenu();
+  }
+}
 
 /* ==== Провідник: шлях об'єкта ==== */
 const PATH_STEPS = ["Прорахунок", "Погодж.", "Закупівля", "Роботи", "Здача", "Розрахунок"];
