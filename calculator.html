@@ -3240,6 +3240,13 @@ body.positionDragging{
 .posMeta{font-size:.8125rem;font-weight:550;color:var(--tm);margin-top:.1875rem;display:flex;flex-wrap:wrap;gap:.25rem .5rem;align-items:center}
 .posTag{font-size:.6875rem;font-weight:750;padding:.125rem .375rem;border-radius:.375rem;background:rgba(120,120,128,.12);color:var(--ts)}
 .posTag.stock{background:rgba(52,199,89,.14);color:var(--green)}
+.posTag.doubt{background:rgba(232,145,45,.18);color:#9A5200;max-width:14rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (prefers-color-scheme: dark){.posTag.doubt{background:rgba(240,168,72,.18);color:#F4B866}}
+.estimateSection.doubtSec .estimateSectionTitle{color:#B26200}
+@media (prefers-color-scheme: dark){.estimateSection.doubtSec .estimateSectionTitle{color:#F4B866}}
+.doubtTgl{width:100%;min-height:2.75rem;border-radius:.75rem;font-size:.9375rem;font-weight:700;background:rgba(120,120,128,.12);color:var(--t)}
+.doubtTgl.on{background:rgba(232,145,45,.18);color:#9A5200}
+@media (prefers-color-scheme: dark){.doubtTgl.on{color:#F4B866}}
 .posTag.warn{background:rgba(10,108,214,.15);color:var(--attn)}
 .posSum{flex:0 0 auto;font-size:.9375rem;font-weight:800;font-variant-numeric:tabular-nums;color:var(--t)}
 .posSum.notSet{color:var(--orange);font-size:.8125rem}
@@ -11383,13 +11390,26 @@ function renderProjectTabs(p){
   return `<nav class="projectTabs ${nb ? "" : "two"}" aria-label="Розділи об’єкта">${tab("estimate", "Кошторис", count)}${tab("money", "Облік", 0)}${nb ? tab("notebook", "Аудит", todo) : ""}</nav>`;
 }
 
+/* «Під питанням»: сумнівні позиції (треба погодити, ймовірно зміниться) — першими в списку, лише для майстра */
+function isDoubt(pos){ return Boolean(pos && pos.doubt); }
+function estimateGroups(list){
+  if(clientView) return groupMaterialPositions(list);
+  const doubt = list.filter(isDoubt);
+  const groups = groupMaterialPositions(list.filter(x => !isDoubt(x)));
+  return doubt.length ? [{ label:"? ПІД ПИТАННЯМ", positions:doubt }].concat(groups) : groups;
+}
+function renderWorksSplit(works, projectId, percent){
+  if(clientView) return renderEstimateSection("РОБОТИ", works, projectId, percent);
+  const doubt = works.filter(isDoubt);
+  return (doubt.length ? renderEstimateSection("? ПІД ПИТАННЯМ", doubt, projectId, percent) : "") + renderEstimateSection("РОБОТИ", works.filter(x => !isDoubt(x)), projectId, percent);
+}
 function renderWorksTab(p){
   const works = (p.positions || []).filter(x => x.type === "work");
   const percent = getWorksDiscountPercent(p);
   return `
     <div class="estimateBlock">
       ${works.length ? `
-        ${renderEstimateSection("РОБОТИ", works, p.id, percent)}
+        ${renderWorksSplit(works, p.id, percent)}
       ` : `${(p.positions || []).some(x => !x.buyLaterOnly) ? `<div class="emptyEstimate">Робіт ще немає — «＋ Додати» внизу</div>` : ""}`}
     </div>
     ${renderProjectTeamBlock(p)}
@@ -11842,7 +11862,7 @@ function renderMaterialsTab(p){
           <span class="matCollapsedGo">Показати / правити</span>
         </button>` : materials.length ? `
         ${false ? `<button type="button" class="matCollapse" onclick="toggleMaterialsList('${escapeHtml(p.id)}', false)">Згорнути кошторис ↑</button>` : ""}
-        ${groupMaterialPositions(materials).map(group => renderEstimateSection(group.label, group.positions, p.id, percent)).join("")}
+        ${estimateGroups(materials).map(group => renderEstimateSection(group.label, group.positions, p.id, percent)).join("")}
       ` : `<div class="emptyEstimate">${(p.positions || []).some(x => !x.buyLaterOnly) ? "Матеріалів ще немає — «＋ Додати» внизу" : "Кошторис порожній.<br>Додайте матеріали й роботи кнопкою «＋ Додати» внизу"}</div>`}
     </div>
   `;
@@ -11855,7 +11875,7 @@ function renderMaterialsTab(p){
           <span class="matCollapsedGo">Показати / правити</span>
         </button>` : materials.length ? `
         ${["work", "done", "closed"].includes(p.stage) && projectOrders(p).length ? `<button type="button" class="matCollapse" onclick="toggleMaterialsList('${escapeHtml(p.id)}', false)">Згорнути кошторис ↑</button>` : ""}
-        ${groupMaterialPositions(materials).map(group => renderEstimateSection(group.label, group.positions, p.id, percent)).join("")}
+        ${estimateGroups(materials).map(group => renderEstimateSection(group.label, group.positions, p.id, percent)).join("")}
       ` : `<div class="emptyEstimate">${(p.positions || []).some(x => !x.buyLaterOnly) ? "Матеріалів ще немає — «＋ Додати» внизу" : "Кошторис порожній.<br>Додайте матеріали й роботи кнопкою «＋ Додати» внизу"}</div>`}
     </div>
   `;
@@ -11879,7 +11899,7 @@ function renderMaterialsTab(p){
           <span class="matCollapsedGo">Показати / правити</span>
         </button>` : materials.length ? `
         ${["work", "done", "closed"].includes(p.stage) && projectOrders(p).length ? `<button type="button" class="matCollapse" onclick="toggleMaterialsList('${escapeHtml(p.id)}', false)">Згорнути кошторис ↑</button>` : ""}
-        ${groupMaterialPositions(materials).map(group => renderEstimateSection(group.label, group.positions, p.id, percent)).join("")}
+        ${estimateGroups(materials).map(group => renderEstimateSection(group.label, group.positions, p.id, percent)).join("")}
       ` : `<div class="emptyEstimate">${(p.positions || []).some(x => !x.buyLaterOnly) ? "Матеріалів ще немає — «＋ Додати» внизу" : "Кошторис порожній.<br>Додайте матеріали й роботи кнопкою «＋ Додати» внизу"}</div>`}
     </div>
   `;
@@ -12129,7 +12149,7 @@ function renderEstimateSection(label, items, projectId, discountPercent){
   const sectionPercent = wholeMode(projects.find(x => x.id === projectId)) ? 0 : (Number(discountPercent) || 0);
   if(sectionPercent === 0 && wholeMode(projects.find(x => x.id === projectId))){
     return `
-    <div class="estimateSection" data-sec="${escapeHtml(label)}">
+    <div class="estimateSection ${/ПІД ПИТАННЯМ/.test(label) ? "doubtSec" : ""}" data-sec="${escapeHtml(label)}">
       <div class="estimateSectionHead"><span class="estimateSectionTitle">${label}</span><span class="estimateSectionCount">${items.length}</span></div>
       ${items.map((pos) => renderPosition(projectId, pos)).join("")}
       <div class="estimateSectionTotal"><span class="estimateSectionTotalLabel">Разом:</span><span class="estimateSectionTotalValue">${money(wholeSum(items))}</span></div>
@@ -12144,7 +12164,7 @@ function renderEstimateSection(label, items, projectId, discountPercent){
   const totalLabel = sectionPercent > 0 ? label + ` (−${sectionPercent}%)` : label;
 
   return `
-    <div class="estimateSection" data-sec="${escapeHtml(label)}">
+    <div class="estimateSection ${/ПІД ПИТАННЯМ/.test(label) ? "doubtSec" : ""}" data-sec="${escapeHtml(label)}">
       <div class="estimateSectionHead">
         <span class="estimateSectionTitle">${label}</span>
         <span class="estimateSectionCount">${items.length}</span>
@@ -12180,6 +12200,7 @@ function renderPosition(projectId, pos){
     const extra = more > 0 && (projectOrders(rowProject).length || pos.buyLater);
     tags.push(extra ? `<span class="posTag warn">докупити ${ord || positionSelfQty(pos) ? "+" : ""}${formatQty(more)}</span>` : more > 0 ? `<span class="posTag buy">купую</span>` : ord ? `<span class="posTag">замовлено · ${escapeHtml(ord.supplierName)}</span>` : positionSelfQty(pos) ? `<span class="posTag">куплено</span>` : "");
   }
+  if(isDoubt(pos) && !clientView) tags.push(`<span class="posTag doubt">? ${escapeHtml(cleanText(pos.doubtNote) || "під питанням")}</span>`);
   if(pos.noDiscount) tags.push(`<span class="posTag">без знижки</span>`);
   if(pos.clientPriceCheck && !clientView) tags.push(`<span class="posTag warn">перевірте ціну</span>`);
   const note = approvedQtyNote(rowProject, pos);
@@ -12255,6 +12276,10 @@ function renderPosName(p, pos){
     <div class="pnPrice">${Number(pos.price) > 0 ? `${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")} × ${money(pos.price)} = <b>${money((Number(pos.price) || 0) * (Number(pos.qty) || 0))}</b>` : "Ціна для клієнта не вказана"}</div>
     <div class="planAdd"><span class="opLabel">Своя назва — так бачить клієнт</span><div class="planAddRow"><input id="posOwnName" value="${escapeHtml(cleanText(pos.ownName))}" placeholder="${escapeHtml(short)}" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();posNameSave()}"></div>
       <span class="onbNote" style="text-align:left">Порожньо — береться назва з каталогу: «${escapeHtml(short)}»</span></div>
+    <div class="planAdd"><span class="opLabel">Під питанням</span>
+      <button type="button" class="doubtTgl ${pos.doubt ? "on" : ""}" onclick="posDoubtToggle()">${pos.doubt ? "? Під питанням — натисніть, щоб зняти" : "Позначити «під питанням»"}</button>
+      ${pos.doubt ? `<div class="planAddRow"><input id="posDoubtNote" value="${escapeHtml(cleanText(pos.doubtNote))}" placeholder="Що уточнити (необов’язково)" autocomplete="off" enterkeyhint="done"></div>` : ""}
+      <span class="onbNote" style="text-align:left">Треба погодити або ймовірно зміниться. Такі позиції стоять першими в списку. Клієнт позначки не бачить.</span></div>
     <div class="onbSpacer"></div>
     <button type="button" class="byDel" onclick="posNameDelete()">Прибрати з кошторису</button>
     <button type="button" class="onbPrimary" onclick="posNameSave()">Готово</button>
@@ -12267,9 +12292,21 @@ function posNameDelete(){
   touchProject(p);
   closeBuyScreen();
 }
+function posDoubtToggle(){
+  const { p, pos } = buyPos(buyUi && buyUi.posId);
+  if(!pos) return;
+  const own = document.getElementById("posOwnName");
+  if(own){ const v = cleanText(own.value); if(v) pos.ownName = v; else delete pos.ownName; }
+  if(pos.doubt){ delete pos.doubt; delete pos.doubtNote; } else pos.doubt = true;
+  touchProject(p);
+  renderBuyScreen();
+  if(pos.doubt) setTimeout(() => document.getElementById("posDoubtNote")?.focus(), 60);
+}
 function posNameSave(){
   const { p, pos } = buyPos(buyUi && buyUi.posId);
   const v = cleanText(document.getElementById("posOwnName")?.value);
+  const dn = document.getElementById("posDoubtNote");
+  if(pos && dn && pos.doubt){ const t = cleanText(dn.value); if(t !== cleanText(pos.doubtNote)){ if(t) pos.doubtNote = t; else delete pos.doubtNote; touchProject(p); } }
   if(pos){
     if(v && v !== cleanText(pos.ownName)){ pos.ownName = v; touchProject(p); }
     else if(!v && pos.ownName){ delete pos.ownName; touchProject(p); }
@@ -12654,6 +12691,41 @@ function toggleCatalogMore(event){
 }
 
 let catalogDest = "estimate";
+/* «Склад»: додаємо матеріали тим самим каталогом, що й у кошторис — пошук, фільтри, лічильники */
+function openStockCatalog(){
+  document.getElementById("stockScreen")?.classList.remove("open");
+  catalogDest = "stock";
+  setCatalogMode("material");
+  document.getElementById("catalogTitle").textContent = "Каталог · на склад";
+  document.getElementById("catalogSheet").classList.add("open");
+  setTimeout(() => document.getElementById("catalogSearch").focus(), 200);
+}
+function stockAsPositions(){
+  const by = {};
+  stockList().forEach(e => { if(e.catalogId){ by[e.catalogId] = (by[e.catalogId] || 0) + (Number(e.qty) || 0); } });
+  return Object.keys(by).map(id => ({ id: "stk_" + id, catalogId: id, qty: roundQty(by[id]) }));
+}
+function stockCatStep(catalogId, delta){
+  const item = catalog.find(c => c.id === catalogId);
+  if(!item) return;
+  const list = stockList();
+  if(delta > 0){
+    stockAdd({ name: catalogDisplayName(item), unit: item.unit || "шт", qty: delta, catalogId: item.id, from: "" });
+  }else{
+    let need = -delta;
+    list.filter(e => e.catalogId === catalogId).sort((a, b) => (a.from ? 1 : 0) - (b.from ? 1 : 0)).forEach(e => {
+      if(need <= 0) return; const t = Math.min(need, Number(e.qty) || 0); e.qty = roundQty((Number(e.qty) || 0) - t); need = roundQty(need - t);
+    });
+    stockSave(list.filter(e => (Number(e.qty) || 0) > 0.0001));
+  }
+  renderCatalogList();
+}
+function stockCatSet(catalogId, raw){
+  const q = Number(String(raw || "").replace(",", "."));
+  const cur = (stockAsPositions().find(x => x.catalogId === catalogId) || {}).qty || 0;
+  if(!Number.isFinite(q) || q < 0) return;
+  stockCatStep(catalogId, roundQty(q - cur));
+}
 /* Позиція цього товару там, куди зараз додаємо: у кошторис клієнта чи в блокнот (для себе) */
 function catalogPosFor(list, catalogId){
   const item = catalog.find(c => c.id === catalogId);
@@ -12709,6 +12781,8 @@ function updateCatalogTabs(){
 }
 
 function closeCatalog(){
+  const backToStock = catalogDest === "stock";
+  if(backToStock) setTimeout(() => openStockScreen(), 0);
   document.getElementById("catalogSheet").classList.remove("open");
   closeCatalogFilters();
   document.getElementById("catalogImportButton").classList.add("hidden");
@@ -13502,6 +13576,7 @@ function cancelCatalogItemTouch(){
 function catalogItemTap(catalogId){
   if(Date.now() - catalogSwipeAt < 700) return;
   if(Date.now() - lastScrollAt < 450) return;
+  if(catalogDest === "stock"){ stockCatStep(catalogId, 1); return; }
   if(catalogDest === "browse" || !currentProjectId){ openCatalogItemEditor(catalogId); return; }
   catalogCounterIncrement(catalogId);
 }
@@ -13512,8 +13587,8 @@ function renderCatalogList(){
   updateCatalogFilterButton();
   const list = document.getElementById("catalogList");
   const items = getCatalogItems();
-  const project = projects.find(p => p.id === currentProjectId);
-  const positions = Array.isArray(project && project.positions) ? project.positions : [];
+  const project = catalogDest === "stock" ? null : projects.find(p => p.id === currentProjectId);
+  const positions = catalogDest === "stock" ? stockAsPositions() : Array.isArray(project && project.positions) ? project.positions : [];
 
   if(!items.length){
     const hasMaterials = catalog.some(item => item.type === "material");
@@ -13617,6 +13692,7 @@ function openCustomFromSearch(){
 
 function catalogCounterIncrement(catalogId){
   if(Date.now() - lastScrollAt < 450) return;
+  if(catalogDest === "stock"){ stockCatStep(catalogId, 1); return; }
   const item = catalog.find(c => c.id === catalogId);
   if(!item) return;
   const project = projects.find(p => p.id === currentProjectId);
@@ -13655,6 +13731,7 @@ function catalogCounterIncrement(catalogId){
 }
 
 function catalogCounterDecrement(catalogId){
+  if(catalogDest === "stock"){ if(Date.now() - lastScrollAt >= 450) stockCatStep(catalogId, -1); return; }
   const project = projects.find(p => p.id === currentProjectId);
   if(!project || !Array.isArray(project.positions)) return;
   const position = catalogPosFor(project.positions, catalogId);
@@ -13680,6 +13757,7 @@ function catalogCounterDecrement(catalogId){
 }
 
 function setCatalogItemQty(catalogId, rawValue){
+  if(catalogDest === "stock"){ stockCatSet(catalogId, rawValue); return; }
   const project = projects.find(p => p.id === currentProjectId);
   if(!project || !Array.isArray(project.positions)) return;
 
@@ -14035,6 +14113,14 @@ function saveCustom(){
 
   closeCustom();
 
+  if(catalogDest === "stock"){
+    if(newItem.type === "material"){
+      const q = Number(String(document.getElementById("csQty")?.value || "1").replace(",", "."));
+      stockAdd({ name: catalogDisplayName(newItem), unit: newItem.unit || "шт", qty: q > 0 ? roundQty(q) : 1, catalogId: newItem.id, from: "" });
+    }
+    renderCatalogList();
+    return;
+  }
   const project = projects.find(p => p.id === currentProjectId);
   if(project){
     if(!Array.isArray(project.positions)) project.positions = [];
@@ -21040,8 +21126,9 @@ function renderStockScreen(){
     ${list.length ? `<div class="opList">${list.map(x => `<div class="stItem"><span class="stName"><b>${escapeHtml(x.name)}</b><small>${x.from ? `з «${escapeHtml(x.from)}» · ` : ""}${formatQuoteDate(x.at)}</small></span>
       <input inputmode="decimal" value="${formatQty(x.qty)}" onchange="stockSetQty('${escapeHtml(x.id)}', this.value)" aria-label="Кількість"><span class="stUnit">${escapeHtml(x.unit || "шт")}</span>
       <button type="button" class="ptDel" onclick="stockRemove('${escapeHtml(x.id)}')" aria-label="Прибрати">×</button></div>`).join("")}</div>` : `<div class="onbNote">Поки порожньо. Сюди потрапляє те, що в «Залишках» об’єкта ви відправили «На склад».</div>`}
+    <button type="button" class="onbPrimary" style="margin-top:.75rem" onclick="openStockCatalog()">＋ Додати з каталогу</button>
     <form class="planAdd" onsubmit="event.preventDefault();stockAddManual()">
-      <span class="opLabel">＋ Додати вручну (напр., лишилось з попередніх об’єктів)</span>
+      <span class="opLabel">або вписати вручну (лишилось з попередніх об’єктів)</span>
       <div class="planAddRow"><input id="stockNewName" placeholder="Почніть вводити назву з каталогу" autocomplete="off" oninput="stockSuggest(this.value)"><input id="stockNewQty" inputmode="decimal" placeholder="К-сть" value="1"><button type="submit">Додати</button></div>
       <div id="stockSug" class="stockSug"></div>
     </form>
