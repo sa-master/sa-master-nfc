@@ -11019,14 +11019,19 @@ function logoBlobForPreview(src){
       const side = 256, k = Math.min(1, side / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
       const c = document.createElement("canvas");
       c.width = Math.max(1, Math.round((img.naturalWidth || 1) * k)); c.height = Math.max(1, Math.round((img.naturalHeight || 1) * k));
+      /* Кругле лого: квадрат по центру, обрізаний колом, кути прозорі */
+      const d = Math.min(c.width, c.height); c.width = d; c.height = d;
       const g = c.getContext("2d");
-      g.drawImage(img, 0, 0, c.width, c.height);
+      g.beginPath(); g.arc(d / 2, d / 2, d / 2, 0, Math.PI * 2); g.closePath(); g.clip();
+      const iw = (img.naturalWidth || 1) * k, ih = (img.naturalHeight || 1) * k;
+      const f = d / Math.min(iw, ih);
+      g.drawImage(img, (d - iw * f) / 2, (d - ih * f) / 2, iw * f, ih * f);
       c.toBlob(png => {
         if(png && png.size <= 300 * 1024){ resolve(png); return; }
-        /* Завеликий PNG — JPEG на білому тлі */
-        const j = document.createElement("canvas"); j.width = c.width; j.height = c.height;
-        const jg = j.getContext("2d"); jg.fillStyle = "#fff"; jg.fillRect(0, 0, j.width, j.height); jg.drawImage(c, 0, 0);
-        j.toBlob(jpg => resolve(jpg && jpg.size <= 300 * 1024 ? jpg : null), "image/jpeg", 0.85);
+        /* Завеликий — менший кружок */
+        const m = document.createElement("canvas"); m.width = 160; m.height = 160;
+        const mg = m.getContext("2d"); mg.drawImage(c, 0, 0, 160, 160);
+        m.toBlob(small => resolve(small && small.size <= 300 * 1024 ? small : null), "image/png");
       }, "image/png");
     };
     img.src = src;
