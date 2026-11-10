@@ -70,6 +70,34 @@ body{background-image:linear-gradient(var(--gridM) 1px,transparent 1px),linear-g
 .btn,.route,.search,.chip,.toggle,button.btn,.filebtn,.photo,input,textarea,select,.call,.x{border-radius:8px!important}
 .th,.fi{border-radius:6px!important}
 h1{letter-spacing:-.02em}
+/* ==== Повний кошторис, завантаження, панель відповіді ==== */
+.secT{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--bp);font-weight:800;text-transform:uppercase;margin:10px 0 2px}
+.secT:first-child{margin-top:0}
+.it{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px dashed var(--bpa)}
+.it span{flex:1;font-size:15px;line-height:1.3;overflow-wrap:anywhere}.it small{display:block;color:var(--tm);font-size:13px;margin-top:2px}
+.it b{white-space:nowrap;font-size:15px}
+.sub{display:flex;justify-content:space-between;font-size:14px;color:var(--tm);padding:8px 0 2px;border-top:1px solid rgba(120,120,128,.25)}
+.sub b{color:var(--t)}
+.disc{display:flex;justify-content:space-between;font-size:15px;color:#1F8A4C;font-weight:700;padding:6px 0}
+.inprice{font-size:13px;color:#1F8A4C;padding:4px 0 2px}
+.start{font-weight:700;color:var(--t)!important;font-size:14.5px}
+.dlBox{margin:4px 0 0}
+.dlT{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:var(--tm);margin-bottom:8px;letter-spacing:.2px}
+.dlRow{display:flex;gap:10px}
+.dlI{flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px!important;background:var(--card);border:1px solid rgba(120,120,128,.2);box-shadow:0 1px 2px rgba(0,0,0,.04);text-decoration:none;color:var(--t);text-align:left}
+.dlI:active{transform:scale(.98)}
+.dlI span{display:flex;flex-direction:column;line-height:1.2}
+.dlI b{font-size:15px}.dlI small{font-size:11.5px;color:var(--tm);margin-top:2px}
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:rgba(242,244,247,.94);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-top:1px solid rgba(31,107,242,.18);box-shadow:0 -6px 24px rgba(0,0,0,.08);transform:translateY(110%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.dock.show{transform:none}
+@media (prefers-color-scheme: dark){.dock{background:rgba(12,24,40,.94);border-top-color:rgba(120,180,255,.2)}}
+.dock .in2{max-width:460px;margin:0 auto;display:flex;gap:10px}
+.dock .btn{flex:1;height:56px;font-size:16px}
+.btn.two{flex-direction:column;gap:0;line-height:1.15}.btn.two small{font-size:13px;font-weight:600;opacity:.9}
+.btn.no{background:var(--card);color:var(--red);box-shadow:0 0 0 1.5px currentColor inset}
+.st.no{background:var(--card);color:var(--red);border:1.5px solid var(--red)}
+.dockSpace{height:0;transition:height .35s}.dockSpace.show{height:96px}
+.again{display:block;margin:10px auto 0;background:none;border:0;color:var(--p);font:inherit;font-size:14px;font-weight:700;text-decoration:underline;cursor:pointer}
 </style>
 </head>
 <body>
@@ -90,26 +118,33 @@ h1{letter-spacing:-.02em}
       <div class="kind" id="title">Кошторис</div>
       <h1 id="object"></h1>
       <div class="meta" id="date"></div>
+      <div class="meta hidden" id="addr"></div>
+      <div class="meta start hidden" id="start"></div>
       <div class="lines hidden" id="lines"></div>
       <div class="rows hidden" id="rows">
         <div><span>Разом за кошторисом</span><b id="sum"></b></div>
         <div><span>Отримано</span><b id="received"></b></div>
       </div>
-      <div class="total"><span id="totalLabel">До сплати</span><b id="total"></b></div>
+      <div class="total" id="totalRow"><span id="totalLabel">До сплати</span><b id="total"></b></div>
     </div>
+    <div class="card hidden" id="itemsCard"></div>
 
-    <div id="approveBox" class="hidden" style="display:flex;flex-direction:column;gap:10px">
-      <button type="button" class="btn primary" id="approveBtn">✓ Погоджую</button>
-      <div class="note" id="askNote">Є питання — напишіть у відповідь на повідомлення.<br>Або <a id="callLink" href="#" style="color:var(--tm);text-decoration:underline">подзвоніть майстру</a>.</div>
-    </div>
+    <div class="note" id="askNote"></div>
     <div id="okBox" class="okbox hidden"></div>
 
-    <div class="row2" id="files"><a class="btn second" id="pdfLink" href="#">📄 PDF</a><a class="btn second" id="xlsxLink" href="#">📊 Excel</a></div>
-    <div class="note" id="filesNote">Повний кошторис — у PDF. Excel — якщо хочете самі порахувати.</div>
+    <div class="dlBox" id="files">
+      <div class="dlT"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Завантажити кошторис</div>
+      <div class="dlRow">
+        <a class="dlI" id="pdfLink" href="#"><svg width="26" height="32" viewBox="0 0 26 32"><path d="M3 0h14l9 9v20a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3V3a3 3 0 0 1 3-3z" fill="#e5484d"/><path d="M17 0v6a3 3 0 0 0 3 3h6z" fill="#fff" opacity=".45"/><text x="13" y="25" text-anchor="middle" font-size="7.5" font-weight="800" fill="#fff" font-family="system-ui">PDF</text></svg><span><b>PDF</b><small>для друку</small></span></a>
+        <a class="dlI" id="xlsxLink" href="#"><svg width="26" height="32" viewBox="0 0 26 32"><path d="M3 0h14l9 9v20a3 3 0 0 1-3 3H3a3 3 0 0 1-3-3V3a3 3 0 0 1 3-3z" fill="#1f8a4c"/><path d="M17 0v6a3 3 0 0 0 3 3h6z" fill="#fff" opacity=".45"/><text x="13" y="25" text-anchor="middle" font-size="7.5" font-weight="800" fill="#fff" font-family="system-ui">XLS</text></svg><span><b>Excel</b><small>таблиця</small></span></a>
+      </div>
+    </div>
   </div>
 
   <div class="made hidden" id="made">Складено в <b>et<span>.app</span></b></div>
+  <div class="dockSpace" id="dockSpace"></div>
 </main>
+<div class="dock hidden" id="dock"><div class="in2"><button type="button" class="btn no" id="declineBtn">Не підходить</button><button type="button" class="btn primary" id="approveBtn">✓ Погоджую</button></div></div>
 
 <script>
 /* Адреса вашого Cloudflare Worker (див. інструкцію). */
@@ -155,6 +190,14 @@ async function load(){
     else if(data.kind === "materials") $("totalLabel").textContent = "Разом за матеріали";
     $("object").textContent = data.objectName || "";
     $("date").textContent = data.dateLabel || "";
+    if(data.address){ $("addr").textContent = data.address; $("addr").classList.remove("hidden"); }
+    if(/^\d{4}-\d{2}-\d{2}$/.test(data.startDate || "")){
+      const sd = new Date(data.startDate + "T12:00:00");
+      $("start").textContent = "Орієнтовний початок робіт: " + sd.toLocaleDateString("uk-UA", { day:"numeric", month:"long", year:"numeric" }).replace(/\s*р\.?$/, "");
+      $("start").classList.remove("hidden");
+    }
+    /* «Переглянуто» для майстра — лише коли відкрив не сам майстер (у нього на цьому сайті є вхід в et.app) */
+    try{ if(!localStorage.getItem("sacloud_session")) fetch(`${SERVER}/q/${id}/seen`, { method:"POST" }).catch(() => {}); }catch(e){}
     const received = Number(data.received) || 0;
     if(received > 0.5 && data.kind !== "changes"){
       $("rows").classList.remove("hidden");
@@ -169,7 +212,7 @@ async function load(){
     document.title = `${data.title || "Кошторис"} · ${data.objectName || ""}`;
     $("pdfLink").href = `${SERVER}/q/${id}/pdf`;
     if(data.xlsxName) $("xlsxLink").href = `${SERVER}/q/${id}/xlsx`;
-    else{ $("xlsxLink").classList.add("hidden"); $("filesNote").textContent = "Повний кошторис — у PDF."; }
+    else $("xlsxLink").classList.add("hidden");
     renderApproval(data);
     $("loading").classList.add("hidden");
     $("content").classList.remove("hidden");
@@ -181,11 +224,37 @@ async function load(){
 
 const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
 const when = iso => { const d = new Date(iso); return d.toLocaleDateString("uk-UA", { day:"2-digit", month:"2-digit" }) + " о " + d.toLocaleTimeString("uk-UA", { hour:"2-digit", minute:"2-digit" }); };
+/* Повний кошторис: позиції по розділах (лише ціни для клієнта). Сума — лише внизу, після всіх позицій. */
+function renderItems(data){
+  const secs = Array.isArray(data.sections) ? data.sections.filter(x => x && Array.isArray(x.items) && x.items.length) : [];
+  if(!secs.length) return false;
+  const qty = v => String(Math.round((Number(v) || 0) * 100) / 100).replace(".", ",");
+  const html = [];
+  secs.forEach(sec => {
+    html.push(`<div class="secT">${esc(sec.t)}</div>`);
+    sec.items.forEach(x => {
+      const price = Number(x.p) || 0;
+      html.push(`<div class="it"><span>${esc(x.n)}${x.b ? ` <small style="display:inline;margin:0">· ${esc(x.b)}</small>` : ""}<small>${qty(x.q)} ${esc(x.u || "шт")}${price > 0 ? ` × ${money(price)}` : ""}</small></span><b>${price > 0 ? money(x.s) : "—"}</b></div>`);
+    });
+    if(sec.inPrice) html.push(`<div class="inprice">Знижку ${esc(sec.inPrice)} враховано в цінах</div>`);
+    if(secs.length > 1 || sec.disc > 0.5) html.push(`<div class="sub"><span>${esc(sec.t)} разом</span><b>${money(sec.sum)}</b></div>`);
+    if(sec.disc > 0.5) html.push(`<div class="disc"><span>Знижка</span><span>−${money(sec.disc)}</span></div>`);
+    if(secs.length > 1 && sec.disc > 0.5) html.push(`<div class="sub" style="border-top:0;padding-top:0"><span>${esc(sec.t)} зі знижкою</span><b>${money(sec.sum - sec.disc)}</b></div>`);
+  });
+  const card = $("itemsCard");
+  card.innerHTML = html.join("");
+  card.appendChild($("rows"));
+  card.appendChild($("totalRow"));
+  card.classList.remove("hidden");
+  return true;
+}
+
 function renderApproval(data){
   const lines = [];
+  const full = data.kind !== "changes" && renderItems(data);
   if(data.kind === "changes" && Array.isArray(data.lines)){
     data.lines.forEach(l => lines.push(`<div class="ln"><span>${esc(l.name)}<small>${l.sign === "＋" ? "додано" : l.sign === "−" ? "прибрано" : l.sign === "％" ? "знижка" : "змінено"}</small></span><b>${l.delta >= 0 ? "+" : "−"}${money(Math.abs(l.delta))}</b></div>`));
-  }else if((data.kind === "quote" || data.kind === "materials") && data.parts){
+  }else if(!full && (data.kind === "quote" || data.kind === "materials") && data.parts){
     const p = data.parts, mats = data.kind === "materials";
     if(!mats && p.works > 0.5) lines.push(`<div class="ln"><span>Роботи</span><b>${money(p.works)}</b></div>`);
     if(p.materials > 0.5) lines.push(`<div class="ln"><span>Матеріали</span><b>${money(p.materials)}</b></div>`);
@@ -196,42 +265,88 @@ function renderApproval(data){
   if(data.kind === "materials" && data.worksApproved && data.worksApproved.total){
     $("worksOk").innerHTML = `<span>Роботи погоджено ${when(data.worksApproved.at).split(" о ")[0]}</span><b>✓ ${money(data.worksApproved.total)}</b>`;
     $("worksOk").classList.remove("hidden");
-    $("total").parentElement.insertAdjacentHTML("afterend", `<div class="ln" style="border-top:1px dashed rgba(120,120,128,.25)"><span>Разом з роботами</span><b>${money(data.worksApproved.total + (Number(data.total) || 0))}</b></div>`);
+    $("totalRow").insertAdjacentHTML("afterend", `<div class="ln" style="border-top:1px dashed rgba(120,120,128,.25)"><span>Разом з роботами</span><b>${money(data.worksApproved.total + (Number(data.total) || 0))}</b></div>`);
   }
   if(lines.length){ $("lines").innerHTML = lines.join(""); $("lines").classList.remove("hidden"); }
-  if(data.companyPhone) $("callLink").href = `tel:${String(data.companyPhone).replace(/[^\d+]/g, "")}`; else $("askNote").classList.add("hidden");
+  {
+    const works = data.kind === "works";
+    const tel = data.companyPhone ? String(data.companyPhone).replace(/[^\d+]/g, "") : "";
+    const call = tel ? ` чи <a href="tel:${esc(tel)}" style="color:var(--tm);text-decoration:underline">подзвоніть майстру</a>` : "";
+    $("askNote").innerHTML = (works ? "Кошторис на матеріали складається на місці під час підготовчих робіт.<br>Якщо потрібна орієнтовна сума на матеріали або є питання" : "Є питання")
+      + ` — напишіть у відповідь на повідомлення${call}.`;
+  }
   if(!["quote", "changes", "works", "materials"].includes(data.kind)) return;
   const st = $("status"); st.classList.remove("hidden");
   if(data.prelim){ st.className = "st pre"; st.textContent = "~ Попередній розрахунок"; return; }
-  if(data.approvedAt){
-    st.className = "st ok"; st.textContent = "✓ Погоджено " + when(data.approvedAt);
-    return;
-  }
+  if(data.approvedAt){ st.className = "st ok"; st.textContent = "✓ Погоджено " + when(data.approvedAt); return; }
   if(data.supersededBy){
     st.className = "st old"; st.textContent = "↻ Замінено новішою версією";
     $("newer").href = "#" + data.supersededBy; $("newer").classList.remove("hidden");
     return;
   }
-  st.className = "st wait"; st.textContent = "◷ Очікує погодження";
-  const btnText = data.kind === "works" ? "✓ Погоджую роботи" : data.kind === "materials" ? "✓ Погоджую матеріали" : "✓ Погоджую";
-  $("approveBtn").textContent = btnText;
-  if(data.kind === "works") $("askNote").insertAdjacentHTML("beforebegin", `<div class="note">Матеріали майстер надішле окремо.</div>`);
-  $("approveBox").classList.remove("hidden");
-  $("approveBtn").onclick = async () => {
+  const baseText = data.kind === "works" ? "✓ Погоджую роботи" : data.kind === "materials" ? "✓ Погоджую матеріали" : "✓ Погоджую";
+  /* Є дата початку — «Погоджую» закріплює її за клієнтом */
+  let dateWord = "";
+  if(data.kind !== "changes" && /^\d{4}-\d{2}-\d{2}$/.test(data.startDate || "")){
+    dateWord = new Date(data.startDate + "T12:00:00").toLocaleDateString("uk-UA", { day:"numeric", month:"long" });
+  }
+  const ab = $("approveBtn");
+  const setApproveLabel = () => {
+    if(dateWord){ ab.classList.add("two"); ab.innerHTML = `<span>✓ Закріпити дату</span><small>${esc(dateWord)} за мною</small>`; }
+    else ab.textContent = baseText;
+  };
+  setApproveLabel();
+  const dock = $("dock");
+  const showDock = () => { dock.classList.add("show"); $("dockSpace").classList.add("show"); };
+  const hideDock = () => { dock.classList.remove("show"); $("dockSpace").classList.remove("show"); setTimeout(() => dock.classList.add("hidden"), 400); };
+  const waiting = () => { st.className = "st wait"; st.textContent = "◷ Очікує погодження"; };
+  const thanks = (text, again) => {
+    $("okBox").innerHTML = esc(text) + (again ? `<button type="button" class="again" id="againBtn">Передумали? Погодити</button>` : "");
+    $("okBox").classList.remove("hidden");
+    if(again) $("againBtn").onclick = () => approve();
+  };
+  const approve = async () => {
     const what = data.kind === "changes" ? `зміни до кошторису — разом ${money(data.total)}` : data.kind === "works" ? `кошторис робіт на ${money(data.total)}` : data.kind === "materials" ? `кошторис матеріалів на ${money(data.total)}` : `кошторис на ${money(data.total)}`;
-    if(!confirm(`Погоджуєте ${what}?`)) return;
-    const b = $("approveBtn"); b.disabled = true; b.textContent = "Надсилаємо…";
+    if(!confirm(`Погоджуєте ${what}?${dateWord ? `\nОрієнтовний початок робіт — ${dateWord}.` : ""}`)) return;
+    ab.disabled = true; $("declineBtn").disabled = true; ab.textContent = "Надсилаємо…"; ab.classList.remove("two");
     try{
       const r = await fetch(`${SERVER}/q/${id}/approve`, { method:"POST" });
       const d = await r.json().catch(() => ({}));
       if(r.status === 409 && d.supersededBy){ location.hash = d.supersededBy; return; }
       if(!r.ok) throw new Error(d.error || "");
-      $("approveBox").classList.add("hidden");
+      hideDock();
       st.className = "st ok"; st.textContent = "✓ Погоджено " + when(d.approvedAt);
-      $("okBox").textContent = "Дякуємо! Майстер отримав ваше погодження.";
-      $("okBox").classList.remove("hidden");
-    }catch(e){ alert(e.message || "Немає з'єднання. Спробуйте ще раз."); b.disabled = false; b.textContent = btnText; }
+      thanks(dateWord ? `Дякуємо! Дату ${dateWord} закріплено за вами. Майстер отримав ваше погодження.` : "Дякуємо! Майстер отримав ваше погодження.", false);
+    }catch(e){ alert(e.message || "Немає з'єднання. Спробуйте ще раз."); ab.disabled = false; $("declineBtn").disabled = false; setApproveLabel(); }
   };
+  const decline = async () => {
+    const b = $("declineBtn"); b.disabled = true; ab.disabled = true; b.textContent = "Надсилаємо…";
+    try{
+      const r = await fetch(`${SERVER}/q/${id}/decline`, { method:"POST" });
+      const d = await r.json().catch(() => ({}));
+      if(r.status === 409 && d.supersededBy){ location.hash = d.supersededBy; return; }
+      if(r.status === 409 && d.approvedAt){ location.reload(); return; }
+      if(!r.ok) throw new Error(d.error || "");
+      hideDock();
+      st.className = "st no"; st.textContent = "✗ Не підходить";
+      thanks("Дякуємо, майстер отримав вашу відповідь.", true);
+    }catch(e){ alert(e.message || "Немає з'єднання. Спробуйте ще раз."); b.disabled = false; ab.disabled = false; b.textContent = "Не підходить"; }
+  };
+  ab.onclick = approve;
+  $("declineBtn").onclick = decline;
+  if(data.declinedAt){
+    st.className = "st no"; st.textContent = "✗ Не підходить";
+    thanks("Ви відповіли, що кошторис не підходить. Майстер це бачить.", true);
+    return;
+  }
+  waiting();
+  /* Кнопки з’являються, коли клієнт догортав до підсумку — і далі лишаються внизу */
+  dock.classList.remove("hidden");
+  const target = $("totalRow");
+  if("IntersectionObserver" in window){
+    const io = new IntersectionObserver(entries => { if(entries.some(e => e.isIntersecting)){ showDock(); io.disconnect(); } }, { threshold: 0.6 });
+    io.observe(target);
+  }else showDock();
 }
 window.addEventListener("hashchange", () => location.reload());
 load();
