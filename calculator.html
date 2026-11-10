@@ -11010,20 +11010,39 @@ function clientPageSections(data){
     return { t: titles[section.title] || section.title, items, sum, disc, inPrice: !data.whole && percent > 0 && (Number(section.amount) || 0) >= 0.5 ? fmtPct(percent) : undefined };
   });
 }
+function logoBlobForPreview(src){
+  return new Promise(resolve => {
+    if(!/^data:image\/(png|jpe?g|webp);base64,/i.test(String(src || ""))){ resolve(null); return; }
+    const img = new Image();
+    img.onerror = () => resolve(null);
+    img.onload = () => {
+      const side = 256, k = Math.min(1, side / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, Math.round((img.naturalWidth || 1) * k)); c.height = Math.max(1, Math.round((img.naturalHeight || 1) * k));
+      const g = c.getContext("2d");
+      g.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(png => {
+        if(png && png.size <= 300 * 1024){ resolve(png); return; }
+        /* Завеликий PNG — JPEG на білому тлі */
+        const j = document.createElement("canvas"); j.width = c.width; j.height = c.height;
+        const jg = j.getContext("2d"); jg.fillStyle = "#fff"; jg.fillRect(0, 0, j.width, j.height); jg.drawImage(c, 0, 0);
+        j.toBlob(jpg => resolve(jpg && jpg.size <= 300 * 1024 ? jpg : null), "image/jpeg", 0.85);
+      }, "image/png");
+    };
+    img.src = src;
+  });
+}
 async function uploadQuoteForLink(project, pdfFile, xlsxFile){
   if(!project.quoteLinks || typeof project.quoteLinks !== "object") project.quoteLinks = {};
   const form = new FormData();
   /* Кожне надсилання — своє посилання: у переписці кожна версія лежить окремо */
   form.append("pdf", pdfFile, pdfFile.name);
   if(xlsxFile) form.append("xlsx", xlsxFile, xlsxFile.name);
-  /* Лого майстра — для іконки в прев’ю посилання (якщо додане в Профілі) */
+  /* Лого майстра — для іконки в прев’ю посилання (якщо додане в Профілі).
+     У профілі воно до 512 px і буває понад 300 КБ — для прев’ю зменшуємо до 256 px, щоб сервер його прийняв. */
   try{
-    const m = String(profile.logoData || "").match(/^data:(image\/(?:png|jpe?g|webp));base64,(.+)$/i);
-    if(m){
-      const bin = atob(m[2]); const arr = new Uint8Array(bin.length);
-      for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-      if(arr.length <= 300 * 1024) form.append("logo", new Blob([arr], { type: m[1] }), "logo");
-    }
+    const blob = await logoBlobForPreview(profile.logoData);
+    if(blob) form.append("logo", blob, "logo");
   }catch(e){}
   const data = lastQuoteData || {};
   form.append("meta", JSON.stringify({
