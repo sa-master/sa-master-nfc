@@ -3391,6 +3391,10 @@ body.positionDragging{
 .cvBanner{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin:0 0 .75rem;padding:.625rem .875rem;border-radius:1rem;background:rgba(10,108,214,.14);color:var(--attn);font-size:.875rem;font-weight:700}
 .cvBanner button{height:2rem;padding:0 .875rem;border-radius:.625rem;background:var(--p-action);color:#fff;font-weight:750;font-size:.8125rem}
 body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,body.clientView .catalogMoreWrap,body.clientView #csPurchasePrice,body.clientView #csPurchasePriceGroup>.formLabel:first-child,body.clientView #csPurchasePriceGroup>.formHint{display:none!important}
+.stockSug{display:flex;flex-direction:column;gap:.25rem;margin-top:.375rem}
+.stockSug button{display:flex;justify-content:space-between;align-items:center;gap:.5rem;width:100%;text-align:left;padding:.625rem .75rem;border-radius:.75rem;background:var(--card);color:var(--t);font-size:.9375rem;font-weight:600;min-height:2.75rem;height:auto}
+.stockSug button small{color:var(--tm);font-weight:600;flex:0 0 auto}
+.stockSugNone{font-size:.8125rem;color:var(--tm);padding:.25rem}
 .stockCard{display:flex;align-items:center;justify-content:space-between;width:calc(100% - 1.5rem);margin:.5rem .75rem .25rem;padding:.75rem 1rem;border-radius:1rem;background:var(--card);text-align:left;box-shadow:0 2px 10px rgba(40,80,120,.06)}
 .stockCard b{display:block;font-size:1rem;font-weight:800;color:var(--t)}
 .stockCard small{display:block;font-size:.8125rem;color:var(--tm);font-weight:600}
@@ -21038,7 +21042,8 @@ function renderStockScreen(){
       <button type="button" class="ptDel" onclick="stockRemove('${escapeHtml(x.id)}')" aria-label="Прибрати">×</button></div>`).join("")}</div>` : `<div class="onbNote">Поки порожньо. Сюди потрапляє те, що в «Залишках» об’єкта ви відправили «На склад».</div>`}
     <form class="planAdd" onsubmit="event.preventDefault();stockAddManual()">
       <span class="opLabel">＋ Додати вручну (напр., лишилось з попередніх об’єктів)</span>
-      <div class="planAddRow"><input id="stockNewName" placeholder="Назва" autocomplete="off"><input id="stockNewQty" inputmode="decimal" placeholder="К-сть" value="1"><button type="submit">Додати</button></div>
+      <div class="planAddRow"><input id="stockNewName" placeholder="Почніть вводити назву з каталогу" autocomplete="off" oninput="stockSuggest(this.value)"><input id="stockNewQty" inputmode="decimal" placeholder="К-сть" value="1"><button type="submit">Додати</button></div>
+      <div id="stockSug" class="stockSug"></div>
     </form>
   </div>`;
 }
@@ -21057,12 +21062,41 @@ function stockRemove(id){
   stockSave(stockList().filter(e => e.id !== id));
   renderStockScreen();
 }
+/* Підказки з каталогу матеріалів: шукаємо за всіма словами, як у пошуку каталогу */
+let stockPick = null;
+function stockSuggest(raw){
+  stockPick = null;
+  const box = document.getElementById("stockSug");
+  if(!box) return;
+  const q = normalizeText(raw || "").trim();
+  if(q.length < 2){ box.innerHTML = ""; return; }
+  const words = q.split(/\s+/);
+  const hits = catalog.filter(c => c.type === "material")
+    .filter(c => { const hay = normalizeText([catalogDisplayName(c), c.article, c.brand].join(" ")); return words.every(w => hay.includes(w)); })
+    .slice(0, 8);
+  box.innerHTML = hits.length
+    ? hits.map(c => `<button type="button" onclick="stockChoose('${escapeHtml(c.id)}')"><span>${escapeHtml(catalogDisplayName(c))}</span><small>${escapeHtml(c.unit || "шт")}</small></button>`).join("")
+    : `<div class="stockSugNone">У каталозі не знайдено — додасться як ввели</div>`;
+}
+function stockChoose(id){
+  const c = catalog.find(x => x.id === id);
+  if(!c) return;
+  stockPick = c;
+  const inp = document.getElementById("stockNewName");
+  if(inp) inp.value = catalogDisplayName(c);
+  const box = document.getElementById("stockSug");
+  if(box) box.innerHTML = "";
+  const q = document.getElementById("stockNewQty");
+  if(q){ q.focus(); q.select(); }
+}
 function stockAddManual(){
   const name = cleanText(document.getElementById("stockNewName")?.value);
   const q = Number(String(document.getElementById("stockNewQty")?.value || "1").replace(",", "."));
   if(!name){ toast("Впишіть назву"); return; }
-  const item = catalog.find(c => c.type === "material" && normalizeText(catalogDisplayName(c)) === normalizeText(name));
+  const item = (stockPick && normalizeText(catalogDisplayName(stockPick)) === normalizeText(name)) ? stockPick
+    : catalog.find(c => c.type === "material" && normalizeText(catalogDisplayName(c)) === normalizeText(name));
   stockAdd({ name, unit: (item && item.unit) || "шт", qty: q > 0 ? q : 1, catalogId: item ? item.id : "", from: "" });
+  stockPick = null;
   renderStockScreen();
   setTimeout(() => document.getElementById("stockNewName")?.focus(), 60);
 }
