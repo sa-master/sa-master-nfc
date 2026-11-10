@@ -5048,7 +5048,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 29.10.2026 12:15</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 11.11.2026 01:10</div>
   </div>
 
   <div class="fsFooter">
@@ -11053,7 +11053,13 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone,
     address: cleanText(project.client && project.client.address) || undefined,
     clientWho: [cleanText(project.client && project.client.name), cleanText(project.client && project.client.phone) ? `(${cleanText(project.client.phone)})` : ""].filter(Boolean).join(" ") || undefined,
-    linkLabel: clientLinkLabel(pendingClientSend),
+    linkLabel: pendingClientSend ? clientLinkLabel(pendingClientSend) : (() => {
+      /* Посилання не з «Надіслати клієнту» (напр. «Поділитися») — назва за вмістом документа */
+      const pt = data.parts || {}, hasW = (Number(pt.works) || 0) > 0.5, hasM = (Number(pt.materials) || 0) + (Number(pt.fixtures) || 0) > 0.5;
+      if(quoteMode === "works" || (hasW && !hasM)) return "Кошторис на роботи";
+      if(quoteMode === "materials" || (hasM && !hasW)) return "Кошторис на матеріали";
+      return hasW && hasM ? "Кошторис на роботи й матеріали" : (data.title || "Кошторис");
+    })(),
     sections: pendingClientSend && ["quote", "works", "materials"].includes(pendingClientSend.kind) && !pendingClientSend.prelim ? clientPageSections(data) : undefined,
     startDate: /^\d{4}-\d{2}-\d{2}$/.test(project.workStartDate || "") ? project.workStartDate : undefined
   }));
