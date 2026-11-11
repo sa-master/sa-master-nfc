@@ -274,7 +274,9 @@ function renderApproval(data){
     const works = data.kind === "works" || onlyWorks; /* матеріали ще не рахували — пояснюємо, як буде */
     const tel = data.companyPhone ? String(data.companyPhone).replace(/[^\d+]/g, "") : "";
     const call = tel ? ` чи <a href="tel:${esc(tel)}" style="color:var(--tm);text-decoration:underline">подзвоніть майстру</a>` : "";
-    $("askNote").innerHTML = (works ? "Кошторис на матеріали складається на місці під час підготовчих робіт.<br>Якщо потрібна орієнтовна сума на матеріали або є питання" : "Є питання")
+    const hasMat = !works && (data.kind === "materials" || (Number(pt.materials) || 0) + (Number(pt.fixtures) || 0) > 0.5);
+    $("askNote").innerHTML = (works ? "Кошторис на матеріали складається на місці під час підготовчих робіт.<br>Якщо потрібна орієнтовна сума на матеріали або є питання"
+      : (hasMat ? "Ціни на матеріали вказані на дату кошторису й можуть змінитися в постачальника.<br>" : "") + "Є питання")
       + ` — напишіть у відповідь на повідомлення${call}.`;
   }
   if(!["quote", "changes", "works", "materials"].includes(data.kind)) return;
