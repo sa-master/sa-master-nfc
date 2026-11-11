@@ -3409,13 +3409,32 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .stockCard b{display:block;font-size:1rem;font-weight:800;color:var(--t)}
 .stockCard small{display:block;font-size:.8125rem;color:var(--tm);font-weight:600}
 .stockGo{color:var(--tm);font-size:1.25rem;font-weight:700}
-.stItem{display:flex;align-items:center;gap:.5rem;padding:.625rem 0;border-bottom:1px solid rgba(120,120,128,.14)}
+.stInner{padding-bottom:0}
+.stInner{gap:.625rem}
+.stSec{display:flex;flex-direction:column;gap:.25rem}
+.stSecHead{display:flex;justify-content:space-between;padding:0 .25rem;font-size:.6875rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tm)}
+.stBox{background:var(--gb);border:1px solid var(--gbr);border-radius:.75rem;padding:0 .625rem}
+.stRow{display:flex;align-items:center;gap:.375rem;min-height:2.375rem;padding:.25rem 0;border-bottom:1px solid rgba(120,120,128,.13)}
+.stRow:last-child{border-bottom:0}
+.stMain{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.stNm{font-size:.8125rem;font-weight:650;line-height:1.25;color:var(--t);overflow-wrap:anywhere}
+.stMeta{font-size:.6875rem;color:var(--tm);line-height:1.25;margin-top:.0625rem}
+.stMeta b{font-weight:700;color:var(--ts)}
+.stQty{flex:0 0 auto;display:flex;align-items:center;gap:.125rem}
+.stQty button{width:1.5rem;height:1.5rem;border-radius:.4375rem;background:rgba(10,132,255,.12);color:var(--p);font-size:.9375rem;font-weight:800;padding:0}
+.stQty input{width:2.125rem;height:1.5rem;border:1px solid rgba(120,120,128,.3);border-radius:.4375rem;background:var(--card);color:var(--t);text-align:center;font-size:.8125rem;font-weight:800;padding:0}
+.stRow .stUnit{flex:0 0 1.375rem;font-size:.6875rem;color:var(--tm);font-weight:700}
+.stDock{position:sticky;bottom:calc(-1 * (var(--sab) + 1.5rem));z-index:3;margin:0 -1.25rem calc(-1 * (var(--sab) + 1.5rem));padding:.5rem .75rem calc(var(--sab) + .75rem);background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.stPanel{touch-action:auto}
+.stDock .planAdd{margin:0 0 .5rem}
+.stItem{display:flex;align-items:center;gap:.375rem;padding:.3125rem 0;border-bottom:1px solid rgba(120,120,128,.12)}
 .stName{flex:1 1 auto;min-width:0}
-.stName b{display:block;font-size:.9375rem;font-weight:700;color:var(--t)}
-.stName small{display:block;font-size:.75rem;color:var(--tm);font-weight:600}
-.stItem input{width:3.75rem;height:2.125rem;border-radius:.625rem;border:1px solid rgba(120,120,128,.25);background:var(--bgs);color:var(--t);text-align:center;font-weight:750}
+.stName b{display:block;font-size:.875rem;font-weight:650;line-height:1.25;color:var(--t)}
+.stName small{display:block;font-size:.6875rem;color:var(--tm);font-weight:600;line-height:1.2}
+.stItem input{width:3rem;height:1.75rem;border-radius:.5rem;border:1px solid rgba(120,120,128,.25);background:var(--bgs);color:var(--t);text-align:center;font-weight:750;font-size:.875rem;padding:0}
 .stItem .mpIn{width:5.5rem}
-.stUnit{color:var(--tm);font-weight:700;font-size:.8125rem}
+.stUnit{color:var(--tm);font-weight:700;font-size:.75rem;min-width:1.5rem}
+.stItem .ptDel{width:1.75rem;height:1.75rem;font-size:1rem}
 .byLeftItem{flex-wrap:wrap}
 .byLeftItem .byName{flex:1 1 100%}
 .byLeftItem .ptBtn{flex:1 1 0;height:2.125rem;font-size:.8125rem}
@@ -21206,26 +21225,64 @@ function closeStockScreen(){ document.getElementById("stockScreen")?.classList.r
 function renderStockScreen(){
   const screen = document.getElementById("stockScreen");
   if(!screen) return;
-  const list = stockList().slice().sort((a, b) => String(a.name).localeCompare(String(b.name), "uk"));
-  screen.innerHTML = `<div class="onbInner">
+  const list = stockList();
+  /* Як у кошторисі: розділи за категоріями каталогу, кількість кнопками − / ＋ (до нуля — прибирається, з «Повернути») */
+  const groups = groupMaterialPositions(list.map(x => ({ ...x, type:"material", _stk:x })));
+  const row = x => {
+    const id = escapeHtml(x.id);
+    const cat = x.catalogId ? catalog.find(c => c.id === x.catalogId) : null;
+    const meta = [cat && cleanText(cat.manufacturer) ? `<b>${escapeHtml(cleanText(cat.manufacturer))}</b>` : "", x.from ? `з «${escapeHtml(x.from)}»` : ""].filter(Boolean).join(" · ");
+    return `<div class="stRow">
+      <span class="stMain"><span class="stNm">${escapeHtml(x.name)}</span>${meta ? `<span class="stMeta">${meta}</span>` : ""}</span>
+      <div class="stQty">
+        <button type="button" onclick="stockStep('${id}',-1)" aria-label="Менше">−</button>
+        <input inputmode="decimal" enterkeyhint="done" value="${formatQty(x.qty)}" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur()}" onchange="stockSetQty('${id}', this.value)" aria-label="Кількість, ${escapeHtml(x.unit || "шт")}">
+        <button type="button" onclick="stockStep('${id}',1)" aria-label="Більше">＋</button>
+      </div>
+      <span class="stUnit">${escapeHtml(x.unit || "шт")}</span>
+    </div>`;
+  };
+  screen.innerHTML = `<div class="onbInner stInner">
     <div class="onbTop"><button type="button" class="onbBack" onclick="closeStockScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Склад</span></div>
     <div class="onbNote" style="text-align:left;margin-top:-.5rem">Залишки з об’єктів. Беруться на об’єкт у «Де беру» → «Зі складу».</div>
-    ${list.length ? `<div class="opList">${list.map(x => `<div class="stItem"><span class="stName"><b>${escapeHtml(x.name)}</b><small>${x.from ? `з «${escapeHtml(x.from)}» · ` : ""}${formatQuoteDate(x.at)}</small></span>
-      <input inputmode="decimal" value="${formatQty(x.qty)}" onchange="stockSetQty('${escapeHtml(x.id)}', this.value)" aria-label="Кількість"><span class="stUnit">${escapeHtml(x.unit || "шт")}</span>
-      <button type="button" class="ptDel" onclick="stockRemove('${escapeHtml(x.id)}')" aria-label="Прибрати">×</button></div>`).join("")}</div>` : `<div class="onbNote">Поки порожньо. Сюди потрапляє те, що в «Залишках» об’єкта ви відправили «На склад».</div>`}
-    <button type="button" class="onbPrimary" style="margin-top:.75rem" onclick="openStockCatalog()">＋ Додати з каталогу</button>
-    <form class="planAdd" onsubmit="event.preventDefault();stockAddManual()">
-      <span class="opLabel">або вписати вручну (лишилось з попередніх об’єктів)</span>
-      <div class="planAddRow"><input id="stockNewName" placeholder="Почніть вводити назву з каталогу" autocomplete="off" oninput="stockSuggest(this.value)"><input id="stockNewQty" inputmode="decimal" placeholder="К-сть" value="1"><button type="submit">Додати</button></div>
-      <div id="stockSug" class="stockSug"></div>
-    </form>
+    ${list.length ? groups.map(g => `<div class="stSec">
+      <div class="stSecHead"><span>${escapeHtml(g.label)}</span><span>${g.positions.length}</span></div>
+      <div class="stBox">${g.positions.map(p => row(p._stk)).join("")}</div>
+    </div>`).join("") : `<div class="onbNote">Поки порожньо. Сюди потрапляє те, що в «Залишках» об’єкта ви відправили «На склад», або додайте кнопкою внизу.</div>`}
+    <div class="stDock">
+      <div class="floatingPanel compact estPanel stPanel">
+        <div class="estTotal"><span class="lbl">На складі</span><b>${list.length} ${plural(list.length, "позиція", "позиції", "позицій")}</b></div>
+        <div class="floatingButtons">
+          <button type="button" class="addButton primary" onclick="openStockCatalog()">＋ Додати</button>
+        </div>
+      </div>
+    </div>
   </div>`;
+}
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  return a > 10 && a < 20 ? many : b === 1 ? one : b >= 2 && b <= 4 ? few : many;
+}
+function stockToggleManual(){
+  const screen = document.getElementById("stockScreen");
+  if(!screen) return;
+  if(screen.dataset.manual) delete screen.dataset.manual; else screen.dataset.manual = "1";
+  renderStockScreen();
+  if(screen.dataset.manual) setTimeout(() => document.getElementById("stockNewName")?.focus(), 60);
+}
+function stockStep(id, delta){
+  const x = stockList().find(e => e.id === id);
+  if(!x) return;
+  const q = roundQty((Number(x.qty) || 0) + delta);
+  if(q <= 0){ stockRemove(id); return; }
+  stockSetQty(id, String(q));
 }
 function stockSetQty(id, raw){
   const q = Number(String(raw || "").replace(",", "."));
   const list = stockList();
   const x = list.find(e => e.id === id);
   if(!x || !(q >= 0)) return;
+  if(q === 0){ stockRemove(id); return; }
   x.qty = roundQty(q);
   stockSave(list.filter(e => (Number(e.qty) || 0) > 0.0001));
   renderStockScreen();
