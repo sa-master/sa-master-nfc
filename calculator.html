@@ -3424,7 +3424,7 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .stQty button{width:1.5rem;height:1.5rem;border-radius:.4375rem;background:rgba(10,132,255,.12);color:var(--p);font-size:.9375rem;font-weight:800;padding:0}
 .stQty input{width:2.125rem;height:1.5rem;border:1px solid rgba(120,120,128,.3);border-radius:.4375rem;background:var(--card);color:var(--t);text-align:center;font-size:.8125rem;font-weight:800;padding:0}
 .stRow .stUnit{flex:0 0 1.375rem;font-size:.6875rem;color:var(--tm);font-weight:700}
-.stDock{position:sticky;bottom:calc(-1 * (var(--sab) + 1.5rem));z-index:3;margin:0 -1.25rem calc(-1 * (var(--sab) + 1.5rem));padding:.5rem .75rem calc(var(--sab) + .75rem);background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.stDock{position:sticky;bottom:calc(-1 * (var(--sab) + 1.5rem));z-index:3;margin:auto -1.25rem calc(-1 * (var(--sab) + 1.5rem));padding:.5rem .75rem calc(var(--sab) + .75rem);background:linear-gradient(to top,var(--bg) 70%,transparent)}
 .stPanel{touch-action:auto}
 .stDock .planAdd{margin:0 0 .5rem}
 .stItem{display:flex;align-items:center;gap:.375rem;padding:.3125rem 0;border-bottom:1px solid rgba(120,120,128,.12)}
@@ -21227,6 +21227,15 @@ function renderStockScreen(){
   if(!screen) return;
   const list = stockList();
   /* Як у кошторисі: розділи за категоріями каталогу, кількість кнопками − / ＋ (до нуля — прибирається, з «Повернути») */
+  /* Вартість складу за роздрібною ціною з каталогу — скільки ці залишки принесуть, коли підуть у кошториси клієнтам.
+     Позиція без ціни в каталозі не рахується — тоді перед сумою «≈» */
+  const sv = list.reduce((a, x) => {
+    const c = x.catalogId ? catalog.find(i => i.id === x.catalogId) : null;
+    const pr = Number(c && c.price) || 0;
+    if(!(pr > 0)) a.approx = true;
+    a.sum += pr * (Number(x.qty) || 0);
+    return a;
+  }, { sum:0, approx:false });
   const groups = groupMaterialPositions(list.map(x => ({ ...x, type:"material", _stk:x })));
   const row = x => {
     const id = escapeHtml(x.id);
@@ -21251,7 +21260,7 @@ function renderStockScreen(){
     </div>`).join("") : `<div class="onbNote">Поки порожньо. Сюди потрапляє те, що в «Залишках» об’єкта ви відправили «На склад», або додайте кнопкою внизу.</div>`}
     <div class="stDock">
       <div class="floatingPanel compact estPanel stPanel">
-        <div class="estTotal"><span class="lbl">На складі</span><b>${list.length} ${plural(list.length, "позиція", "позиції", "позицій")}</b></div>
+        <div class="estTotal"><span class="lbl">На складі · ${list.length} ${plural(list.length, "позиція", "позиції", "позицій")}</span><b>${sv.approx ? "≈ " : ""}${money(sv.sum)}</b></div>
         <div class="floatingButtons">
           <button type="button" class="addButton primary" onclick="openStockCatalog()">＋ Додати</button>
         </div>
