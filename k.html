@@ -269,7 +269,9 @@ function renderApproval(data){
   }
   if(lines.length){ $("lines").innerHTML = lines.join(""); $("lines").classList.remove("hidden"); }
   {
-    const works = data.kind === "works";
+    const pt = data.parts || {};
+    const onlyWorks = data.kind === "quote" && (Number(pt.works) || 0) > 0.5 && (Number(pt.materials) || 0) + (Number(pt.fixtures) || 0) <= 0.5;
+    const works = data.kind === "works" || onlyWorks; /* матеріали ще не рахували — пояснюємо, як буде */
     const tel = data.companyPhone ? String(data.companyPhone).replace(/[^\d+]/g, "") : "";
     const call = tel ? ` чи <a href="tel:${esc(tel)}" style="color:var(--tm);text-decoration:underline">подзвоніть майстру</a>` : "";
     $("askNote").innerHTML = (works ? "Кошторис на матеріали складається на місці під час підготовчих робіт.<br>Якщо потрібна орієнтовна сума на матеріали або є питання" : "Є питання")
