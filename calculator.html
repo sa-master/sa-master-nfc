@@ -11058,8 +11058,9 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone,
     address: cleanText(project.client && project.client.address) || undefined,
     clientWho: [cleanText(project.client && project.client.name), cleanText(project.client && project.client.phone) ? `(${cleanText(project.client.phone)})` : ""].filter(Boolean).join(" ") || undefined,
-    linkLabel: pendingClientSend ? clientLinkLabel(pendingClientSend) : (() => {
-      /* Посилання не з «Надіслати клієнту» (напр. «Поділитися») — назва за вмістом документа */
+    linkLabel: pendingClientSend && pendingClientSend.kind !== "quote" ? clientLinkLabel(pendingClientSend) : (() => {
+      /* Повний кошторис або посилання не з «Надіслати клієнту» — назва за фактичним вмістом:
+         лише роботи → «Кошторис на роботи», а не «роботи й матеріали» */
       const pt = data.parts || {}, hasW = (Number(pt.works) || 0) > 0.5, hasM = (Number(pt.materials) || 0) + (Number(pt.fixtures) || 0) > 0.5;
       if(quoteMode === "works" || (hasW && !hasM)) return "Кошторис на роботи";
       if(quoteMode === "materials" || (hasM && !hasW)) return "Кошторис на матеріали";
