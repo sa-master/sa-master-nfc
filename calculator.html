@@ -1037,6 +1037,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 /* Каталог: кожна група фільтрів займає один рядок і гортається пальцем.
    Вертикальний простір залишається списку товарів. */
 #catalogChips,
+.catalogGroupHead{font-size:.6875rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);padding:.5rem .25rem .25rem}
+.catalogGroupHead:first-child{padding-top:0}
 #catalogBrandChips,
 #catalogSystemChips{
   flex-wrap:nowrap;
@@ -13537,7 +13539,22 @@ function collectBrands(){
     if(value) set.add(value);
   });
 
-  return Array.from(set).sort((a,b) => a.localeCompare(b, "uk"));
+  /* «Geberit» і «GEBERIT» — один бренд: одна кнопка. Показуємо написання, яке трапляється найчастіше
+     (за рівності — не все великими). Фільтр і так не зважає на регістр. */
+  const counts = new Map();
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    if(catalogFilter !== "all" && item.category !== catalogFilter) return;
+    const v = String(item.manufacturer || "").trim();
+    if(v) counts.set(v, (counts.get(v) || 0) + 1);
+  });
+  const byKey = new Map();
+  Array.from(set).forEach(v => {
+    const k = normalizeText(v), cur = byKey.get(k);
+    const better = !cur || counts.get(v) > counts.get(cur) || (counts.get(v) === counts.get(cur) && cur === cur.toUpperCase() && v !== v.toUpperCase());
+    if(better) byKey.set(k, v);
+  });
+  return Array.from(byKey.values()).sort((a,b) => a.localeCompare(b, "uk"));
 }
 
 function collectSystems(){
@@ -13687,6 +13704,15 @@ function catalogItemTap(catalogId){
   catalogCounterIncrement(catalogId);
 }
 
+function catalogUsageCounts(exceptProjectId){
+  const map = new Map();
+  (projects || []).forEach(p => {
+    if(!p || p.id === exceptProjectId || !Array.isArray(p.positions)) return;
+    const seen = new Set();
+    p.positions.forEach(pos => { const id = pos && pos.catalogId; if(id && !seen.has(id)){ seen.add(id); map.set(id, (map.get(id) || 0) + 1); } });
+  });
+  return map;
+}
 function renderCatalogList(){
   catalogSearch = document.getElementById("catalogSearch").value || "";
   updateCatalogHeaderActions();
@@ -13725,7 +13751,24 @@ function renderCatalogList(){
   }
 
   const supLinks = loadSupplierLinks();
-  list.innerHTML = items.map(item => {
+  /* Часто вживані — вгорі: у скількох інших об’єктах була ця позиція.
+     Без пошуку — окремий блок «Часто використовуєте» (до 15), далі все за абеткою.
+     З пошуком — знайдене теж від найчастішого. Поточний об’єкт не рахується, тож список не «стрибає», поки додаєте. */
+  const usage = catalogUsageCounts(project && project.id);
+  const useOf = it => usage.get(it.id) || 0;
+  let freqIds = new Set();
+  let ordered = items;
+  if(cleanText(catalogSearch)){
+    ordered = items.map((it, i) => [it, i]).sort((a, b) => useOf(b[0]) - useOf(a[0]) || a[1] - b[1]).map(x => x[0]);
+  }else{
+    const top = items.filter(it => useOf(it) >= 2).sort((a, b) => useOf(b) - useOf(a)).slice(0, 15);
+    if(top.length >= 3 && items.length > top.length + 5){
+      freqIds = new Set(top.map(it => it.id));
+      ordered = top.concat(items.filter(it => !freqIds.has(it.id)));
+    }
+  }
+  const lastFreqId = freqIds.size ? ordered[freqIds.size - 1].id : null;
+  list.innerHTML = (freqIds.size ? `<div class="catalogGroupHead">Часто використовуєте</div>` : "") + ordered.map(item => {
     const position = catalogPosFor(positions, item.id);
     const qty = Number(position && position.qty) || 0;
     const selected = qty > 0;
@@ -13782,6 +13825,7 @@ function renderCatalogList(){
           </button>
         </div>
       </div>
+${item.id === lastFreqId ? `<div class="catalogGroupHead">Усі ${catalogMode === "work" ? "роботи" : "матеріали"}</div>` : ""}
     `;
   }).join("") + (cleanText(catalogSearch) ? `
     <div class="catalogEmptyActions" style="margin:.75rem 0 1rem">
