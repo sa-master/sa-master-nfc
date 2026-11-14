@@ -11412,7 +11412,12 @@ function getNextSteps(p){
   }
 
   if(stage === "procurement" && buyOn(p)){
-    if(!buyItems(p).some(pos => !pos.got)) steps.push({ text:"Усе куплено", sub:"Переходимо до робіт", label:"Почати роботи", action:`advanceProjectStage('${id}')`, primary:true });
+    /* «Усе куплено» — лише коли матеріали в кошторисі є. Порожній список — це «ще не склали», а не «куплено» */
+    if(!buyItems(p).length){
+      steps.push({ text:"Матеріалів ще немає", sub:"Складіть список на об’єкті — додайте матеріали в кошторис", label:"＋ Матеріали", action:"openCatalogFor('material')", primary:true });
+      steps.push({ text:"Матеріали не потрібні?", sub:"Тоді одразу до робіт", label:"Почати роботи", action:`advanceProjectStage('${id}')` });
+    }
+    else if(!buyItems(p).some(pos => !pos.got)) steps.push({ text:"Усе куплено", sub:"Переходимо до робіт", label:"Почати роботи", action:`advanceProjectStage('${id}')`, primary:true });
   }else if(stage === "procurement" && planOn(p)){
     migrateSentOrders(p);
     const o = planOverview(p);
@@ -20702,8 +20707,8 @@ function renderBuyList(p){
   return `
     <section class="planTodo buyList">
       <div class="ptHead"><span>Що купити й зробити</span></div>
-      <div class="byTitle">Купити${groups.length ? `<small>натисніть товар — змінити, де берете</small>` : ""}</div>
-      ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}
+      ${buyItems(p).length ? `<div class="byTitle">Купити${groups.length ? `<small>натисніть товар — змінити, де берете</small>` : ""}</div>
+      ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}` : ""}
       ${(() => { const left = buyLeftovers(p); return left.length ? `<div class="byTitle byLeft">Залишки<small>після змін у кошторисі</small></div>${left.map(x => `<div class="byItem byLeftItem"><span class="byName">${escapeHtml(x.l.n)}<small>${formatQty(x.q)} ${escapeHtml(x.l.u)}${x.l.s ? " · " + escapeHtml(x.l.s) : x.l.w ? " · " + escapeHtml(x.l.w) : ""}${x.gone ? " · прибрано з кошторису" : ""}</small></span><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','return')">Повернув</button><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','stock')">На склад</button></div>`).join("")}` : ""; })()}
       ${notes || planNoteOpen ? `<div class="byTitle">Нотатки</div>${notes}` : ""}
       ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off" enterkeyhint="done">${notePrivBtn(p)}<button type="submit">Додати</button><button type="button" class="ghost" onclick="planNoteCancel()" aria-label="Скасувати">✕</button></form>` : ""}
