@@ -3517,6 +3517,8 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .actCamHint{position:absolute;left:0;right:0;top:calc(46% + min(41vw,190px) + 1rem);text-align:center;font-size:.9375rem;font-weight:600;text-shadow:0 1px 4px #000;pointer-events:none}
 .actCamBot{position:absolute;left:0;right:0;bottom:0;padding:2rem 1rem calc(env(safe-area-inset-bottom) + 2rem);background:linear-gradient(transparent,rgba(0,0,0,.85) 35%);display:flex;flex-direction:column;align-items:center;gap:1rem}
 .actCamStamp{font-size:.78rem;background:rgba(0,0,0,.45);padding:.3rem .625rem;border-radius:.5rem;opacity:.9}
+.actCamTorch{width:2.75rem!important;height:2.75rem!important;display:flex;align-items:center;justify-content:center;padding:0}
+.actCamTorch.on{background:#ffd60a!important;color:#000!important}
 .actCamShut{width:4.75rem;height:4.75rem;border-radius:50%;border:4px solid #fff;background:none;display:flex;align-items:center;justify-content:center;padding:0}
 .actCamShut i{width:3.75rem;height:3.75rem;border-radius:50%;background:#fff}
 .actCamShut:active i{transform:scale(.92)}
@@ -4971,7 +4973,7 @@ body{font-variant-numeric:tabular-nums}
 <div id="actCam" class="actCam hidden">
   <video id="actCamVideo" playsinline muted autoplay></video>
   <div class="actCamMask"></div><div class="actCamRing"></div>
-  <div class="actCamTop"><button type="button" onclick="closeActCam()" aria-label="Закрити">✕</button><div><b id="actCamTitle"></b><small id="actCamSub"></small></div></div>
+  <div class="actCamTop"><button type="button" onclick="closeActCam()" aria-label="Закрити">✕</button><div style="flex:1;min-width:0"><b id="actCamTitle"></b><small id="actCamSub"></small></div><button type="button" class="actCamTorch" id="actCamTorch" onclick="actCamTorchToggle()" aria-label="Вспишка"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></button></div>
   <div class="actCamHint">Наведіть манометр у коло</div>
   <div class="actCamBot"><div class="actCamStamp" id="actCamStamp"></div><button type="button" class="actCamShut" id="actCamShut" onclick="actCamShoot()" aria-label="Зробити фото"><i></i></button></div>
   <input type="file" id="actCamFallback" accept="image/*" capture="environment" hidden onchange="actCamFallbackPick(this)">
@@ -10900,14 +10902,37 @@ async function openActCam(i, which){
   }
   const v = document.getElementById("actCamVideo");
   v.srcObject = actCamStream;
+  /* Вспишка: де браузер вміє — вмикаємо ліхтарик прямо тут; де ні — кнопка відкриває камеру телефона (там вспишка є) */
+  actCamTorchOn = false;
+  try{ const tr = actCamStream.getVideoTracks()[0]; const caps = tr && tr.getCapabilities ? tr.getCapabilities() : {}; actCamTorchOk = Boolean(caps && caps.torch); }catch(e){ actCamTorchOk = false; }
+  actCamTorchPaint();
   try{ await v.play(); }catch(e){}
   document.getElementById("actCam").classList.remove("hidden");
   tick();
   clearInterval(openActCam.t); openActCam.t = setInterval(tick, 1000);
 }
+let actCamTorchOk = false, actCamTorchOn = false;
+function actCamTorchPaint(){
+  const b = document.getElementById("actCamTorch");
+  if(b) b.classList.toggle("on", actCamTorchOn);
+}
+async function actCamTorchToggle(){
+  if(actCamTorchOk && actCamStream){
+    try{
+      const tr = actCamStream.getVideoTracks()[0];
+      await tr.applyConstraints({ advanced:[{ torch: !actCamTorchOn }] });
+      actCamTorchOn = !actCamTorchOn; actCamTorchPaint(); return;
+    }catch(e){ actCamTorchOk = false; }
+  }
+  /* Браузер не керує вспишкою — відкриваємо камеру телефона; на фото так само буде підпис з часом */
+  closeActCam();
+  toast("Відкриваю камеру телефона — увімкніть вспишку там", 2600);
+  document.getElementById("actCamFallback").click();
+}
 function closeActCam(){
   clearInterval(openActCam.t);
-  if(actCamStream){ actCamStream.getTracks().forEach(t => t.stop()); actCamStream = null; }
+  if(actCamStream){ try{ if(actCamTorchOn) actCamStream.getVideoTracks()[0].applyConstraints({ advanced:[{ torch:false }] }); }catch(e){} actCamStream.getTracks().forEach(t => t.stop()); actCamStream = null; }
+  actCamTorchOn = false;
   const v = document.getElementById("actCamVideo"); if(v) v.srcObject = null;
   document.getElementById("actCam")?.classList.add("hidden");
 }
