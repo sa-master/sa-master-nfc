@@ -819,7 +819,7 @@ button{border:0;background:none;cursor:pointer;touch-action:manipulation}
 
 .formInput{height:3rem}
 /* iOS Safari: текст дати в полі «прилипає» до верху — вирівнюємо по центру */
-input[type="date"].formInput{-webkit-appearance:none;appearance:none;display:flex;align-items:center;line-height:normal;text-align:left}
+input[type="date"].formInput{width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none;display:flex;align-items:center;line-height:normal;text-align:left}
 input[type="date"]::-webkit-date-and-time-value{margin:0;text-align:left;min-height:1.25em;line-height:1.25}
 input[type="date"]::-webkit-datetime-edit{padding:0}
 
@@ -3488,7 +3488,7 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .actPhAdd{width:4.5rem;height:4.5rem;border-radius:.625rem;border:1.5px dashed rgba(10,132,255,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--p);cursor:pointer}
 .actPhAdd span{font-size:1.25rem;font-weight:800;line-height:1}.actPhAdd small{font-size:.6875rem;font-weight:700}
 .actPair{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem}
-.actPair .actPh,.actPair .actPhAdd{width:auto;height:5.5rem}
+.actPair .actPh,.actPair .actPhAdd{width:auto;height:auto;aspect-ratio:1}
 .actPair .actPh span{position:absolute;left:0;right:0;bottom:0;padding:.1875rem .375rem;background:rgba(0,0,0,.6);color:#fff;font-size:.6875rem;font-weight:700}
 .actWarn{margin-top:.375rem;font-size:.75rem;font-weight:700;color:#c62828}
 .actAuto{margin-top:.375rem;font-size:.75rem;color:var(--tm)}.actAuto b{color:var(--t)}
@@ -3498,7 +3498,14 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .actSum{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-top:.5rem;font-size:.875rem;font-weight:700;color:var(--t)}
 .actSum button{background:rgba(10,132,255,.12);color:var(--p);font-weight:750;font-size:.8125rem;border-radius:.5rem;padding:.375rem .625rem}
 .actPair .actPhAdd{font:inherit;background:none}
-.actPair .actPhAdd span{font-size:1.375rem}
+.actPair .actPhAdd{gap:.25rem;padding:.5rem;text-align:center}
+.actPair .actPhAdd b{font-size:.8125rem;font-weight:750;color:var(--p)}
+.actPair .actPhAdd small{font-size:.6875rem;font-weight:600;color:var(--tm)}
+.actPress{margin-top:.625rem}
+.actManual{display:block;margin:.5rem auto 0;background:none;color:var(--tm);font-size:.75rem;font-weight:600;text-decoration:underline;padding:.25rem}
+.actPress label{display:flex;align-items:center;gap:.5rem;font-size:.875rem;font-weight:700;color:var(--t)}
+.actPress input{width:4rem;height:2.25rem;border-radius:.625rem;border:1px solid rgba(120,120,128,.3);background:var(--bgs, rgba(0,0,0,.2));color:var(--t);text-align:center;font:inherit;font-size:1rem;font-weight:800;margin-left:auto}
+.actPress span{color:var(--tm);font-weight:700}
 .actCam{position:fixed;inset:0;z-index:400;background:#000;color:#fff}
 .actCam.hidden{display:none}
 .actCam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
@@ -10757,6 +10764,7 @@ function actGapWarn(x){
   if(g > 3 * 24 * 60) return `Між фото ${Math.round(g / 1440)} дн. — перевірте, чи правильні фото`;
   return "";
 }
+const ACT_GAUGE_SVG = '<svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="none" stroke="currentColor" stroke-width="3.5"/><circle cx="32" cy="32" r="21" fill="none" stroke="currentColor" stroke-width="1" opacity=".35"/><g stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M14.5 45.5l3-2.6M11 32h4M14.5 18.5l3 2.6M32 9v4M49.5 18.5l-3 2.6M53 32h-4M49.5 45.5l-3-2.6"/></g><path d="M32 32L44 20" stroke="#ff453a" stroke-width="3.5" stroke-linecap="round"/><circle cx="32" cy="32" r="4" fill="currentColor"/><path d="M26 50h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".6"/></svg>';
 function openActSheet(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
@@ -10791,22 +10799,26 @@ function renderActSheet(){
   const box = document.getElementById("actSheetBody");
   if(!box || !actDraft) return;
   const sys = (x, i) => {
-    const ok = actSysOk(x);
+    /* Результат показуємо, коли випробування відбулось: є фото «після» або цифри внесено вручну */
+    const done = Boolean(actPair(x).a) || Boolean(x.manual);
+    const ok = done ? actSysOk(x) : null;
     return `<div class="actSys ${x.on ? "" : "off"}">
       <label class="actSysHead"><input type="checkbox" id="actOn${i}" ${x.on ? "checked" : ""} onchange="actReadForm();renderActSheet()"><span>${escapeHtml(x.label)}</span>
-        ${x.on ? `<b class="${ok === false ? "bad" : ok ? "ok" : ""}">${ok === false ? "Падіння тиску" : ok ? "✓ Герметично" : ""}</b>` : `<small>не випробовувалось</small>`}</label>
+        ${x.on ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</label>
       ${x.on ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
           ? `<div class="actPh"><img src="${ph.src}" alt="" onclick="openActCam(${i},'${w}')" title="Перезняти"><span>${escapeHtml(actPhLabel(x, w))} · ↻</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
-          : `<button type="button" class="actPhAdd" onclick="openActCam(${i},'${w}')"><span>📷</span><small>Фото ${w === "before" ? "до" : "після"}</small></button>`; }).join("")}
+          : `<button type="button" class="actPhAdd" onclick="openActCam(${i},'${w}')">${ACT_GAUGE_SVG}<b>Зробіть фото ${w === "before" ? "до" : "після"}</b><small>${w === "before" ? "на початку випробування" : "через 30+ хв"}</small></button>`; }).join("")}
       </div>
       ${actGapWarn(x) ? `<div class="actWarn">${escapeHtml(actGapWarn(x))}</div>` : ""}
+      <div class="actPress"><label>Тиск випробування<input id="act_pressure_${i}" inputmode="decimal" value="${actFmt(x.pressure).replace("—", "")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"><span>бар</span></label></div>
       ${x.edit ? `<div class="actGrid">
-        <label>Тиск випробування, бар<input class="formInput" id="act_pressure_${i}" inputmode="decimal" value="${actFmt(x.pressure).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
         <label>Тривалість, хв<input class="formInput" id="act_minutes_${i}" inputmode="decimal" value="${actFmt(x.minutes).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
-        <label style="grid-column:1/-1">Тиск у кінці, бар <small style="font-weight:600">(якщо впав — впишіть, скільки показав манометр)</small><input class="formInput" id="act_end_${i}" inputmode="decimal" value="${actFmt(x.end).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
+        <label>Тиск у кінці, бар<input class="formInput" id="act_end_${i}" inputmode="decimal" value="${actFmt(x.end).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
+        <small style="grid-column:1/-1;font-size:.6875rem;color:var(--tm)">Якщо тиск упав — впишіть, скільки показав манометр у кінці</small>
       </div>`
-      : `<div class="actSum"><span>${actFmt(x.pressure)} бар · ${x.minutes ? actDur(x.minutes) : "—"} · ${actSysOk(x) === false ? `впав до ${actFmt(x.end)} бар` : "без падіння"}</span><button type="button" onclick="actEdit(${i})">Змінити</button></div>`}
+      : done ? `<div class="actSum"><span>${x.minutes ? actDur(x.minutes) : "—"} · ${actSysOk(x) === false ? `впав до ${actFmt(x.end)} бар` : "без падіння"}</span><button type="button" onclick="actEdit(${i})">Змінити</button></div>`
+        : `<button type="button" class="actManual" onclick="actEdit(${i})">Випробували без калькулятора? Вписати результат</button>`}
       </div>` : ""}
     </div>`;
   };
@@ -10948,7 +10960,7 @@ function actCamFallbackPick(input){
   img.onerror = () => { URL.revokeObjectURL(url); toast("Не вдалося відкрити фото"); };
   img.src = url;
 }
-function actEdit(i){ if(!actDraft) return; actReadForm(); actDraft.systems[i].edit = true; renderActSheet(); setTimeout(() => document.getElementById("act_end_" + i)?.focus(), 50); }
+function actEdit(i){ if(!actDraft) return; actReadForm(); actDraft.systems[i].edit = true; actDraft.systems[i].manual = true; renderActSheet(); setTimeout(() => document.getElementById("act_end_" + i)?.focus(), 50); }
 function actPhotoDel(i, which){ if(!actDraft) return; actReadForm(); const x = actDraft.systems[i]; if(x.ph) delete x.ph[which]; renderActSheet(); }
 function actOldPhotoDel(i){ if(!actDraft) return; actReadForm(); actDraft.photos.splice(i, 1); renderActSheet(); }
 function saveAct(){
@@ -10956,6 +10968,8 @@ function saveAct(){
   if(!project || !actDraft) return;
   actReadForm();
   if(!actDraft.systems.some(x => x.on)){ toast("Позначте хоча б одну систему"); return; }
+  const notDone = actDraft.systems.find(x => x.on && !actPair(x).a && !x.manual);
+  if(notDone){ toast(`${notDone.label}: зробіть фото «після» або впишіть результат через «Змінити». Якщо систему не випробовували — зніміть галочку`, 3600); return; }
   const bad = actDraft.systems.find(x => x.on && (actNum(x.pressure) === null || actNum(x.start) === null || actNum(x.end) === null));
   if(bad){ toast(`${bad.label}: вкажіть тиск`); return; }
   project.pressureAct = { ...actDraft, systems: actDraft.systems.map(({ edit, ...x }) => x), updatedAt: new Date().toISOString() };
