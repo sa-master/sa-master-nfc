@@ -3554,7 +3554,7 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .qaConcl{margin-top:10px;font-size:12.5px;font-weight:700;color:#1F8A4C}
 .qaNote{margin-top:6px;font-size:12px;color:#374151}
 .qaPhotos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
-.qaPhotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;border:1px solid #e5e7eb}
+.qaPhotos img{display:block;width:100%;height:auto;border-radius:6px;border:1px solid #e5e7eb}
 .qdBox{background:var(--card);border-radius:1rem;padding:.75rem .875rem;margin:0 0 .75rem;display:flex;flex-direction:column;gap:.5rem}
 .qdTitle{font-size:.75rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--tm)}
 .qdRow{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
@@ -11750,6 +11750,27 @@ function logoBlobForPreview(src){
     img.src = src;
   });
 }
+function actShrinkSrc(src, max, q){
+  return new Promise(res => {
+    if(!/^data:image\//.test(src || "")){ res(src); return; }
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      const out = c.toDataURL("image/jpeg", q);
+      res(out.length < src.length ? out : src);
+    };
+    img.onerror = () => res(src);
+    img.src = src;
+  });
+}
+async function actShrinkForLink(act){
+  const a = JSON.parse(JSON.stringify(act));
+  for(const x of a.systems || []) for(const ph of x.ph || []) ph.src = await actShrinkSrc(ph.src, 640, .7);
+  a.photos = await Promise.all((a.photos || []).map(src => actShrinkSrc(src, 640, .7)));
+  return a;
+}
 async function uploadQuoteForLink(project, pdfFile, xlsxFile){
   if(!project.quoteLinks || typeof project.quoteLinks !== "object") project.quoteLinks = {};
   const form = new FormData();
@@ -11763,6 +11784,8 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
     if(blob) form.append("logo", blob, "logo");
   }catch(e){}
   const data = lastQuoteData || {};
+  /* Фото акта для сторінки клієнта — зменшені (до 640 px): у PDF вони в повному розмірі, а опис кошторису має бути легким */
+  const act = data.act ? await actShrinkForLink(data.act) : undefined;
   form.append("meta", JSON.stringify({
     title: (pendingClientSend && pendingClientSend.title) || data.title, kind: pendingClientSend ? pendingClientSend.kind : "doc", prevTotal: pendingClientSend && pendingClientSend.kind === "changes" ? pendingClientSend.prevTotal : undefined,
     lines: pendingClientSend && pendingClientSend.lines, parts: pendingClientSend && ["quote", "materials"].includes(pendingClientSend.kind) ? data.parts : undefined, prelim: pendingClientSend && pendingClientSend.prelim,
@@ -11781,13 +11804,16 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
       return hasW && hasM ? "Кошторис на роботи й матеріали" : (data.title || "Кошторис");
     })(),
     sections: pendingClientSend && ["quote", "works", "materials", "doc"].includes(pendingClientSend.kind) && !pendingClientSend.prelim ? clientPageSections(data) : undefined,
-    act: data.act || undefined,
+    act,
     startDate: /^\d{4}-\d{2}-\d{2}$/.test(project.workStartDate || "") && !actFactual(project) ? project.workStartDate : undefined
   }));
   const cfg = cloudConfig();
   const response = await fetch(`${cfg.server}/upload`, { method:"POST", headers: cloudAuthHeaders(), body: form });
   if(response.status === 401) throw new Error("key");
-  if(!response.ok) throw new Error("server");
+  if(!response.ok){
+    let why = ""; try{ why = String((await response.json()).error || ""); }catch(e){}
+    const err = new Error("server"); err.why = why || `код ${response.status}`; throw err;
+  }
   const result = await response.json();
   if(!result.id) throw new Error("server");
   project.quoteLinks[quoteMode] = result.id;
@@ -11894,6 +11920,7 @@ async function printQuotePreview(){
     if(project){ project.quoteSentAt = new Date().toISOString(); saveProjects(); }
 
     /* Клієнту — текст з описом і посилання на сторінку: там суми, PDF/Excel і кнопка «Погоджую» */
+    if(project && !clientLinksEnabled()) toast("Ви не увійшли в акаунт (Профіль) — надсилаю файлами, без посилання", 4500);
     if(clientLinksEnabled() && project){
       let link = "";
       if(button) button.textContent = "Готуємо посилання…";
@@ -11903,7 +11930,7 @@ async function printQuotePreview(){
         console.error("Link upload error:", e);
         toast(e && e.message === "key"
           ? "Потрібно увійти в акаунт (Профіль). Надсилаю файлами."
-          : "Сервер недоступний. Надсилаю файлами.");
+          : e && e.why ? `Посилання не створено (${e.why}). Надсилаю файлами.` : "Немає зв’язку з сервером. Надсилаю файлами.", 4500);
       }
       if(link){
         /* Універсально для всіх месенджерів: «Кошторис на роботи: посилання» одним рядком */
