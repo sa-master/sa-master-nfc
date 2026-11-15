@@ -270,13 +270,16 @@ function renderAct(data){
   const f = v => v === null || v === undefined ? "—" : String(v).replace(".", ",");
   const dur = v => { const m = Math.round(Number(v) || 0); if(v === null || v === undefined) return "—"; if(m < 60) return m + " хв"; const h = Math.floor(m / 60), r = m % 60; return r ? `${h} год ${r} хв` : `${h} год`; };
   const okSrc = x => /^data:image\/(jpeg|png|webp);base64,/.test(x || "");
-  const d = /^\d{4}-\d{2}-\d{2}$/.test(a.date || "") ? a.date.split("-").reverse().join(".") : "";
+  const dl = v => /^\d{4}-\d{2}-\d{2}$/.test(v || "") ? v.split("-").reverse().join(".") : "";
+  const ds = [...new Set(a.systems.map(x => x.d).filter(Boolean))].sort();
+  const many = ds.length > 1;
+  const d = many ? `${dl(ds[0])} – ${dl(ds[ds.length - 1])}` : dl(ds[0] || a.date);
   const allOk = a.systems.every(x => x.ok);
   const photos = Array.isArray(a.photos) ? a.photos.filter(x => /^data:image\/(jpeg|png|webp);base64,/.test(x)) : [];
   card.innerHTML = `<div class="secT">Акт гідравлічних випробувань</div>
     ${d ? `<div class="meta" style="margin:2px 0 6px">Дата випробування: <b style="color:var(--t)">${esc(d)}</b></div>` : ""}
     ${a.systems.map(x => `<div class="actRow"><div class="actTop"><b>${esc(x.l)}</b><span class="${x.ok === false ? "bad" : "ok"}">${x.ok === false ? "Падіння тиску" : "✓ Герметично"}</span></div>
-      <small>Тиск ${f(x.p)} бар · ${dur(x.m)} · на початку ${f(x.s)} → у кінці ${f(x.e)} бар</small>
+      <small>${many && x.d ? dl(x.d) + " · " : ""}Тиск ${f(x.p)} бар · ${dur(x.m)} · на початку ${f(x.s)} → у кінці ${f(x.e)} бар${x.ok !== false && typeof x.s === "number" && typeof x.e === "number" && x.s - x.e > 0.001 && typeof x.al === "number" ? ` · падіння в межах норми (до ${f(x.al)} бар)` : ""}</small>
       ${Array.isArray(x.ph) && x.ph.some(ph => ph && okSrc(ph.src)) ? `<div class="actPhotos">${x.ph.filter(ph => ph && okSrc(ph.src)).map(ph => `<figure><img src="${ph.src}" alt="Манометр" onclick="actZoom(this.src)"><figcaption>${esc(ph.c || "")}</figcaption></figure>`).join("")}</div>` : ""}</div>`).join("")}
     ${allOk ? `<div class="actOk">Системи випробувано тиском. Падіння тиску та протікань не виявлено.</div>` : ""}
     ${a.note ? `<div class="meta" style="margin-top:6px">${esc(a.note)}</div>` : ""}
