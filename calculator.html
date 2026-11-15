@@ -3510,7 +3510,14 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .actCam.hidden{display:none}
 .actCam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .actCamMask{position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,transparent min(41vw,190px),rgba(0,0,0,.82) calc(min(41vw,190px) + 2px));pointer-events:none}
-.actCamRing{position:absolute;left:50%;top:46%;width:min(82vw,380px);aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #34c759;border-radius:50%;pointer-events:none}
+.actCamRing{position:absolute;left:50%;top:46%;width:min(82vw,380px);aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.6);border-radius:50%;pointer-events:none}
+.actCamRing{transition:border-color .2s,box-shadow .2s}
+.actCam.locked .actCamRing{border-color:#34c759;box-shadow:0 0 0 3px rgba(52,199,89,.35)}
+.actCam.locked .actCamHint{color:#34c759}
+.actCamRing svg{position:absolute;inset:-3px;width:calc(100% + 6px);height:calc(100% + 6px);transform:rotate(-90deg);overflow:visible}
+.actCamRing circle{fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;opacity:0;transition:opacity .15s}
+.actCam.snap::after{content:"";position:absolute;inset:0;background:#fff;animation:actSnap .25s ease-out forwards;pointer-events:none}
+@keyframes actSnap{from{opacity:.85}to{opacity:0}}
 .actCamTop{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 1rem) 1rem 1rem;background:linear-gradient(rgba(0,0,0,.7),transparent);display:flex;align-items:center;gap:.75rem}
 .actCamTop button{width:2.375rem;height:2.375rem;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:1.125rem;flex:0 0 auto}
 .actCamTop b{display:block;font-size:1.0625rem}.actCamTop small{font-size:.8125rem;opacity:.8}
@@ -4977,9 +4984,9 @@ body{font-variant-numeric:tabular-nums}
 <!-- CAMERA: PRESSURE TEST PHOTO -->
 <div id="actCam" class="actCam hidden">
   <video id="actCamVideo" playsinline muted autoplay></video>
-  <div class="actCamMask"></div><div class="actCamRing"></div>
+  <div class="actCamMask"></div><div class="actCamRing"><svg viewBox="0 0 100 100" aria-hidden="true"><circle id="actCamProg" cx="50" cy="50" r="49" pathLength="100" stroke-dasharray="0 100"/></svg></div>
   <div class="actCamTop"><button type="button" onclick="closeActCam()" aria-label="Закрити">✕</button><div style="flex:1;min-width:0"><b id="actCamTitle"></b><small id="actCamSub"></small></div><button type="button" class="actCamTorch" id="actCamTorch" onclick="actCamTorchToggle()" aria-label="Вспишка"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></button></div>
-  <div class="actCamHint">Наведіть манометр у коло</div>
+  <div class="actCamHint" id="actCamHint">Наведіть манометр у коло</div>
   <div class="actCamBot"><div class="actCamStamp" id="actCamStamp"></div><button type="button" class="actCamShut" id="actCamShut" onclick="actCamShoot()" aria-label="Зробити фото"><i></i></button></div>
   <input type="file" id="actCamFallback" accept="image/*" capture="environment" hidden onchange="actCamFallbackPick(this)">
 </div>
@@ -10918,26 +10925,135 @@ async function openActCam(i, which){
   const v = document.getElementById("actCamVideo");
   v.srcObject = actCamStream;
   /* Вспишка: де браузер вміє — вмикаємо ліхтарик прямо тут; де ні — кнопка відкриває камеру телефона (там вспишка є) */
-  actCamTorchOn = false;
+  actCamTorchOn = false; actCamTorchUser = false;
   try{ const tr = actCamStream.getVideoTracks()[0]; const caps = tr && tr.getCapabilities ? tr.getCapabilities() : {}; actCamTorchOk = Boolean(caps && caps.torch); }catch(e){ actCamTorchOk = false; }
   actCamTorchPaint();
   try{ await v.play(); }catch(e){}
   document.getElementById("actCam").classList.remove("hidden");
   tick();
   clearInterval(openActCam.t); openActCam.t = setInterval(tick, 1000);
+  actAutoStart();
+}
+/* «Захоплення» манометра: калькулятор шукає кругле в колі й підказує; фото робить майстер кнопкою */
+let actLock = null;
+const ACT_LOCK_N = 96;
+const ACT_LOCK_HINT = { none:"Наведіть манометр у коло", closer:"Ближче", center:"Манометр — у центр кола", ok:"Тримайте нерухомо…", dark:"Темно — підсвітіть манометр" };
+const ACT_AUTO_MS = 1200;
+function actAutoStart(){
+  actAutoStop();
+  const c = document.createElement("canvas"); c.width = ACT_LOCK_N; c.height = ACT_LOCK_N;
+  actLock = { c, g: c.getContext("2d", { willReadFrequently:true }), shown:"none", cand:"none", n:0, prev:null, still:0, dark:0, t0:Date.now(), last:Date.now(), timer:null };
+  actLock.timer = setInterval(actLockTick, 150);
+  actLockPaint("none");
+}
+function actAutoStop(){ if(actLock) clearInterval(actLock.timer); actLock = null; actLockPaint("none"); actProgPaint(0); }
+function actProgPaint(f){
+  const el = document.getElementById("actCamProg");
+  if(el){ el.setAttribute("stroke-dasharray", `${Math.round(f * 100)} 100`); el.style.opacity = f > 0 ? 1 : 0; }
+}
+function actLockPaint(st){
+  const cam = document.getElementById("actCam");
+  if(cam) cam.classList.toggle("locked", st === "ok");
+  const h = document.getElementById("actCamHint");
+  if(h) h.textContent = ACT_LOCK_HINT[st] || ACT_LOCK_HINT.none;
+}
+function actLockTick(){
+  const a = actLock, v = document.getElementById("actCamVideo");
+  if(!a || !v || !v.videoWidth) return;
+  const N = ACT_LOCK_N;
+  let d;
+  try{
+    const ring = document.querySelector("#actCam .actCamRing").getBoundingClientRect(), vr = v.getBoundingClientRect();
+    const k = Math.max(vr.width / v.videoWidth, vr.height / v.videoHeight);
+    const ox = vr.left + (vr.width - v.videoWidth * k) / 2, oy = vr.top + (vr.height - v.videoHeight * k) / 2;
+    a.g.drawImage(v, (ring.left - ox) / k, (ring.top - oy) / k, ring.width / k, ring.height / k, 0, 0, N, N);
+    d = a.g.getImageData(0, 0, N, N).data;
+  }catch(e){ return; }
+  const y = new Float32Array(N * N);
+  for(let i = 0; i < N * N; i++) y[i] = d[i * 4] * .3 + d[i * 4 + 1] * .59 + d[i * 4 + 2] * .11;
+  const now = Date.now(), dt = now - a.last; a.last = now;
+  let mean = 0, motion = 0;
+  for(let i = 0; i < N * N; i++){ mean += y[i]; if(a.prev) motion += Math.abs(y[i] - a.prev[i]); }
+  mean /= N * N; motion = a.prev ? motion / (N * N) : 99; a.prev = y;
+  /* Темно: вмикаємо ліхтарик сам (де телефон дозволяє); якщо майстер вимкнув — більше не чіпаємо */
+  a.dark = mean < 50 ? a.dark + 1 : 0;
+  if(a.dark >= 3 && actCamTorchOk && !actCamTorchOn && !actCamTorchUser && !a.torchTried){ a.torchTried = true; actCamTorchSet(true); }
+  let st = actFindCircle(y, N).state;
+  if(st === "none" && a.dark >= 3 && !actCamTorchOn) st = "dark";
+  /* щоб не блимало: новий стан показуємо, коли він тримається 2 перевірки */
+  if(st === a.cand) a.n++; else { a.cand = st; a.n = 1; }
+  if(a.n >= 2 && a.shown !== st){ a.shown = st; actLockPaint(st); }
+  /* Автофото: манометр у колі й телефон нерухомий ~1,2 с — коло заповнюється, фото робиться саме */
+  const ok = a.shown === "ok" && now - a.t0 > 700 && motion < 6;
+  a.still = ok ? a.still + dt : 0;
+  actProgPaint(Math.min(1, a.still / ACT_AUTO_MS));
+  if(a.still >= ACT_AUTO_MS){
+    actAutoStop();
+    try{ navigator.vibrate && navigator.vibrate(60); }catch(e){}
+    const cam = document.getElementById("actCam");
+    cam.classList.add("snap");
+    setTimeout(() => { cam.classList.remove("snap"); if(!cam.classList.contains("hidden")) actCamShoot(); }, 180);
+  }
+}
+/* y: Float32Array N*N grayscale of ring's bounding square; returns {ok, cx, cy, r, score} in px of N */
+function actFindCircle(y, N){
+  const mag = new Float32Array(N*N), gx = new Float32Array(N*N), gy = new Float32Array(N*N);
+  let mmax = 0;
+  for(let j=1;j<N-1;j++)for(let i=1;i<N-1;i++){
+    const k=j*N+i;
+    const a=y[k-N-1],b=y[k-N],c=y[k-N+1],d=y[k-1],f=y[k+1],g=y[k+N-1],h=y[k+N],l=y[k+N+1];
+    const x=(c+2*f+l)-(a+2*d+g), z=(g+2*h+l)-(a+2*b+c);
+    gx[k]=x;gy[k]=z;const m=Math.hypot(x,z);mag[k]=m;if(m>mmax)mmax=m;
+  }
+  if(mmax < 40) return { state:"none", score:0 };
+  const thr = Math.max(40, mmax*.25);
+  const rMin = Math.round(N*.16), rMax = Math.round(N*.47);
+  const acc = new Float32Array(N*N);
+  const edges=[];
+  for(let k=0;k<N*N;k++){ if(mag[k]<thr) continue; edges.push(k);
+    const ux=gx[k]/mag[k], uy=gy[k]/mag[k], i0=k%N, j0=(k/N)|0;
+    for(let r=rMin;r<=rMax;r++){
+      for(const s of [1,-1]){ const ci=Math.round(i0+s*ux*r), cj=Math.round(j0+s*uy*r);
+        if(ci>=0&&cj>=0&&ci<N&&cj<N) acc[cj*N+ci]+=1; }
+    }
+  }
+  /* smooth 3x3 and pick best */
+  let best=-1,bk=0;
+  for(let j=1;j<N-1;j++)for(let i=1;i<N-1;i++){const k=j*N+i;let v=0;for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++)v+=acc[k+dj*N+di];if(v>best){best=v;bk=k;}}
+  const cx=bk%N, cy=(bk/N)|0;
+  /* radius: histogram of edge distances whose gradient points to/from centre */
+  const hist=new Float32Array(rMax+2);
+  for(const k of edges){const i0=k%N,j0=(k/N)|0;const dx=i0-cx,dy=j0-cy;const d=Math.hypot(dx,dy);if(d<rMin-1||d>rMax+1)continue;
+    const cos=Math.abs((dx*gx[k]+dy*gy[k])/(d*mag[k]));if(cos<.85)continue;hist[Math.round(d)]+=1;}
+  let r=0,hv=0;for(let q=rMin;q<=rMax;q++){const v=hist[q-1]+hist[q]+hist[q+1];if(v>hv){hv=v;r=q;}}
+  /* score: share of the circumference with edge support, by angle bins */
+  const bins=new Uint8Array(36), vis=new Uint8Array(36);
+  for(let b=0;b<36;b++){const t=(b+.5)/36*2*Math.PI-Math.PI;const px=cx+r*Math.cos(t),py=cy+r*Math.sin(t);if(px>=1&&py>=1&&px<=N-2&&py<=N-2)vis[b]=1;}
+  for(const k of edges){const i0=k%N,j0=(k/N)|0;const dx=i0-cx,dy=j0-cy;const d=Math.hypot(dx,dy);if(Math.abs(d-r)>1.6)continue;
+    const cos=Math.abs((dx*gx[k]+dy*gy[k])/(d*mag[k]));if(cos<.8)continue;bins[Math.floor((Math.atan2(dy,dx)+Math.PI)/(2*Math.PI)*36)%36]=1;}
+  let sup=0,nv=0;for(let b=0;b<36;b++){if(vis[b]){nv++;if(bins[b])sup++;}}
+  const score=nv?sup/nv:0, seen=nv/36;
+  const found = score>=.72 && seen>=.45;
+  const off = Math.hypot(cx-N/2,cy-N/2)/N;
+  const state = !found ? "none" : (seen<.97 || off>.12) ? "center" : r < N*.27 ? "closer" : "ok";
+  return { state, cx, cy, r, score:+score.toFixed(2), seen:+seen.toFixed(2) };
 }
 let actCamTorchOk = false, actCamTorchOn = false;
 function actCamTorchPaint(){
   const b = document.getElementById("actCamTorch");
   if(b) b.classList.toggle("on", actCamTorchOn);
 }
+let actCamTorchUser = false;
+async function actCamTorchSet(on){
+  try{
+    await actCamStream.getVideoTracks()[0].applyConstraints({ advanced:[{ torch: on }] });
+    actCamTorchOn = on; actCamTorchPaint(); return true;
+  }catch(e){ actCamTorchOk = false; return false; }
+}
 async function actCamTorchToggle(){
   if(actCamTorchOk && actCamStream){
-    try{
-      const tr = actCamStream.getVideoTracks()[0];
-      await tr.applyConstraints({ advanced:[{ torch: !actCamTorchOn }] });
-      actCamTorchOn = !actCamTorchOn; actCamTorchPaint(); return;
-    }catch(e){ actCamTorchOk = false; }
+    actCamTorchUser = true;
+    if(await actCamTorchSet(!actCamTorchOn)) return;
   }
   /* Браузер не керує вспишкою — відкриваємо камеру телефона; на фото так само буде підпис з часом */
   closeActCam();
@@ -10946,7 +11062,8 @@ async function actCamTorchToggle(){
 }
 function closeActCam(){
   clearInterval(openActCam.t);
-  if(actCamStream){ try{ if(actCamTorchOn) actCamStream.getVideoTracks()[0].applyConstraints({ advanced:[{ torch:false }] }); }catch(e){} actCamStream.getTracks().forEach(t => t.stop()); actCamStream = null; }
+  actAutoStop();
+  if(actCamStream){ try{ if(actCamTorchOn) actCamStream.getVideoTracks()[0].applyConstraints({ advanced:[{ torch:false }] }).catch(() => {}); }catch(e){} actCamStream.getTracks().forEach(t => t.stop()); actCamStream = null; }
   actCamTorchOn = false;
   const v = document.getElementById("actCamVideo"); if(v) v.srcObject = null;
   document.getElementById("actCam")?.classList.add("hidden");
