@@ -4799,6 +4799,11 @@ body{font-variant-numeric:tabular-nums}
         <div class="actionSheetText" id="actionStageText">Наступний етап</div>
       </div>
 
+      <div class="actionSheetRow" id="actionActRow" onclick="actionOpenAct()">
+        <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 12l4-4M8 16h8"/></svg></div>
+        <div class="actionSheetText" id="actionActText">Акт гідравлічних випробувань</div>
+      </div>
+
       <div class="actionSheetRow hidden" id="actionSkipRow" onclick="actionSkipToDone()">
         <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5l8 7-8 7z"/><path d="M13 5l6 7-6 7"/></svg></div>
         <div class="actionSheetText">Роботи виконано — фактичний кошторис<small style="display:block;color:var(--tm);font-size:.75rem;font-weight:500">Фіксує кошторис і відкриває документ для клієнта</small></div>
@@ -10692,9 +10697,17 @@ function actFactual(project){
   if(quoteDraft) return Boolean(quoteDraft.factual);
   return Boolean(getApproved(project) && isFactualStage(project));
 }
+/* Системи випробовують у різні дні: акт зберігається частинами; клієнту йдуть лише випробувані */
+function actSysDone(x){ return Boolean(x && x.on && (actPair(x).a || x.manual)); }
+function actSysDate(x, a){
+  const ph = actPair(x).a;
+  if(ph && ph.at){ const d = new Date(ph.at); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+  return x.date || (a && a.date) || todayIso();
+}
+function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
 function actIncluded(project){
   const a = project && project.pressureAct;
-  return Boolean(a && actFactual(project) && quoteMode !== "materials" && (a.systems || []).some(x => x.on));
+  return Boolean(a && actFactual(project) && quoteMode !== "materials" && (a.systems || []).some(actSysDone));
 }
 function actNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function actFmt(v){ return v === null || v === undefined || v === "" ? "—" : String(v).replace(".", ","); }
@@ -10783,18 +10796,20 @@ function openActSheet(){
 function closeActSheet(){
   closeActCam();
   document.getElementById("actSheet").classList.remove("open");
+  if(actPrevProject){ currentProjectId = actPrevProject.id; actPrevProject = null; }
   actDraft = null;
 }
 function actReadForm(){
   if(!actDraft) return;
   const v = id => { const el = document.getElementById(id); return el ? el.value : ""; };
-  actDraft.date = v("actDate") || todayIso();
+  actDraft.date = actDraft.date || todayIso();
   actDraft.note = cleanText(v("actNote"));
   actDraft.systems.forEach((x, i) => {
     const on = document.getElementById("actOn" + i);
     if(on) x.on = on.checked;
     ["pressure", "minutes", "end"].forEach(f => { if(document.getElementById(`act_${f}_${i}`)){ const prev = x.pressure; x[f] = actNum(v(`act_${f}_${i}`)); if(f === "pressure" && actNum(x.end) === actNum(prev)) x.end = x.pressure; } });
     x.start = x.pressure;
+    const dt = document.getElementById(`act_date_${i}`); if(dt && dt.value) x.date = dt.value;
   });
 }
 function renderActSheet(){
@@ -10817,6 +10832,7 @@ function renderActSheet(){
       ${x.edit ? `<div class="actGrid">
         <label>Тривалість, хв<input class="formInput" id="act_minutes_${i}" inputmode="decimal" value="${actFmt(x.minutes).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
         <label>Тиск у кінці, бар<input class="formInput" id="act_end_${i}" inputmode="decimal" value="${actFmt(x.end).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
+        ${actPair(x).a ? "" : `<label style="grid-column:1/-1">Дата випробування<input class="formInput" type="date" id="act_date_${i}" value="${escapeHtml(x.date || todayIso())}" onchange="actReadForm()"></label>`}
         <small style="grid-column:1/-1;font-size:.6875rem;color:var(--tm)">Якщо тиск упав — впишіть, скільки показав манометр у кінці</small>
       </div>`
       : done ? `<div class="actSum"><span>${x.minutes ? actDur(x.minutes) : "—"} · ${actSysOk(x) === false ? `впав до ${actFmt(x.end)} бар` : "без падіння"}</span><button type="button" onclick="actEdit(${i})">Змінити</button></div>`
@@ -10826,7 +10842,6 @@ function renderActSheet(){
   };
   const photos = actDraft.photos || [];
   box.innerHTML = `
-    <div class="formGroup"><label class="formLabel">Дата випробування</label><input class="formInput" type="date" id="actDate" value="${escapeHtml(actDraft.date || todayIso())}" onchange="actReadForm()"></div>
     ${actDraft.systems.map(sys).join("")}
     ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${src}" alt=""><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
     <div class="formGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
@@ -10993,16 +11008,17 @@ function saveAct(){
   if(!project || !actDraft) return;
   actReadForm();
   if(!actDraft.systems.some(x => x.on)){ toast("Позначте хоча б одну систему"); return; }
-  const notDone = actDraft.systems.find(x => x.on && !actPair(x).a && !x.manual);
-  if(notDone){ toast(`${notDone.label}: зробіть фото «після» або впишіть результат через «Змінити». Якщо систему не випробовували — зніміть галочку`, 3600); return; }
-  const bad = actDraft.systems.find(x => x.on && (actNum(x.pressure) === null || actNum(x.start) === null || actNum(x.end) === null));
+  const pending = actDraft.systems.filter(x => x.on && !actPair(x).a && !x.manual);
+  const bad = actDraft.systems.find(x => x.on && actNum(x.pressure) === null);
   if(bad){ toast(`${bad.label}: вкажіть тиск`); return; }
+  delete project.actSkip;
   project.pressureAct = { ...actDraft, systems: actDraft.systems.map(({ edit, ...x }) => x), updatedAt: new Date().toISOString() };
   project.updatedAt = project.pressureAct.updatedAt;
   try{ saveProjects(); }catch(e){ toast("Не вдалося зберегти — забагато фото. Приберіть одне й спробуйте ще раз"); return; }
   closeActSheet();
+  render();
   if(document.getElementById("quotePreviewScreen").classList.contains("open")) renderQuotePreview();
-  toast("Акт додано до фактичного кошторису");
+  toast(pending.length ? `Збережено. ${(t => t.charAt(0).toUpperCase() + t.slice(1))(pending.map(actShortName).join(", "))} — допишете, коли випробуєте` : document.getElementById("quotePreviewScreen").classList.contains("open") ? "Акт додано до фактичного кошторису" : "Акт збережено — додасться до фактичного кошторису", 2800);
 }
 function removeAct(){
   const project = projects.find(item => item.id === currentProjectId);
@@ -11012,6 +11028,7 @@ function removeAct(){
   project.updatedAt = new Date().toISOString();
   saveProjects();
   closeActSheet();
+  render();
   if(document.getElementById("quotePreviewScreen").classList.contains("open")) renderQuotePreview();
 }
 function renderQuoteActBox(){
@@ -11020,17 +11037,20 @@ function renderQuoteActBox(){
   if(!box) return;
   if(!project || !actFactual(project) || quoteMode === "materials"){ box.classList.add("hidden"); box.innerHTML = ""; return; }
   const a = project.pressureAct;
-  const on = a ? (a.systems || []).filter(x => x.on) : [];
+  const on = a ? (a.systems || []).filter(actSysDone) : [];
+  const wait = a ? (a.systems || []).filter(x => x.on && !actSysDone(x)) : [];
   box.classList.remove("hidden");
   box.innerHTML = `<div class="qdTitle">Акт гідравлічних випробувань</div>
-    <div class="qdRow"><span>${a ? `✓ ${on.map(x => x.key === "water" ? "водопостачання" : x.key === "heat" ? "опалення" : x.label).join(", ")}${(() => { const n = on.reduce((k, x) => k + Object.keys(x.ph || {}).length, 0) + (a.photos || []).length; return n ? ` · фото ${n}` : ""; })()}` : `<small style="font-weight:600;color:var(--tm)">Клієнт отримає його разом з фактичним кошторисом</small>`}</span>
-    <button type="button" class="ptBtn ${a ? "" : "primary"}" onclick="openActSheet()">${a ? "Змінити" : "＋ Додати акт"}</button></div>`;
+    <div class="qdRow"><span>${a ? `${on.length ? `✓ ${on.map(actShortName).join(", ")}` : ""}${(() => { const n = on.reduce((k, x) => k + Object.keys(x.ph || {}).length, 0) + (a.photos || []).length; return n ? ` · фото ${n}` : ""; })()}${wait.length ? `<small style="display:block;color:#c62828;font-weight:700">Ще не випробувано: ${wait.map(actShortName).join(", ")} — у клієнта його не буде</small>` : ""}` : `<small style="font-weight:600;color:var(--tm)">Клієнт отримає його разом з фактичним кошторисом</small>`}</span>
+    <button type="button" class="ptBtn ${a ? "" : "primary"}" onclick="openActSheet()">${a ? "Змінити" : "Випробувати"}</button></div>`;
 }
 function actClientData(project){
   const a = project.pressureAct;
+  const done = (a.systems || []).filter(actSysDone);
+  const dates = done.map(x => actSysDate(x, a)).sort();
   return {
-    date: a.date,
-    systems: (a.systems || []).filter(x => x.on).map(x => ({ l:x.label, p:actNum(x.pressure), m:actNum(x.minutes), s:actNum(x.start), e:actNum(x.end), ok:actSysOk(x),
+    date: dates[dates.length - 1] || a.date,
+    systems: done.map(x => ({ l:x.label, d:actSysDate(x, a), p:actNum(x.pressure), m:actNum(x.minutes), s:actNum(x.start), e:actNum(x.end), ok:actSysOk(x),
       ph: ["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph ? { src:ph.src, c:actPhLabel(x, w) } : null; }).filter(Boolean) })),
     note: a.note || "",
     photos: (a.photos || []).slice(0, ACT_MAX_PHOTOS)
@@ -11045,11 +11065,11 @@ function actPaperHtml(project, info){
       <div><span>Об’єкт</span><b>${escapeHtml(info.objectName)}${info.objectAddress ? `, ${escapeHtml(info.objectAddress)}` : ""}</b></div>
       ${info.clientName ? `<div><span>Замовник</span><b>${escapeHtml(info.clientName)}</b></div>` : ""}
       <div><span>Виконавець</span><b>${escapeHtml(info.companyName)}</b></div>
-      <div><span>Дата випробування</span><b>${actDateLabel(d.date)}</b></div>
+      <div><span>Дата випробування</span><b>${(() => { const ds = [...new Set(d.systems.map(x => x.d))].sort(); return ds.length > 1 ? `${actDateLabel(ds[0])} – ${actDateLabel(ds[ds.length - 1])}` : actDateLabel(d.date); })()}</b></div>
     </div>
     <div class="qaTable">
       <div class="qaRow qaHead"><span>Система</span><span>Тиск, бар</span><span>Тривалість</span><span>Початок → кінець</span><span>Результат</span></div>
-      ${d.systems.map(x => `<div class="qaRow"><span>${escapeHtml(x.l)}</span><span>${actFmt(x.p)}</span><span>${x.m === null ? "—" : actDur(x.m)}</span><span>${actFmt(x.s)} → ${actFmt(x.e)}</span><span class="${x.ok === false ? "bad" : "ok"}">${x.ok === false ? "Падіння тиску" : "Герметично"}</span></div>`).join("")}
+      ${d.systems.map(x => `<div class="qaRow"><span>${escapeHtml(x.l)}${new Set(d.systems.map(y => y.d)).size > 1 ? `<small style="display:block;color:#6b7280">${actDateLabel(x.d)}</small>` : ""}</span><span>${actFmt(x.p)}</span><span>${x.m === null ? "—" : actDur(x.m)}</span><span>${actFmt(x.s)} → ${actFmt(x.e)}</span><span class="${x.ok === false ? "bad" : "ok"}">${x.ok === false ? "Падіння тиску" : "Герметично"}</span></div>`).join("")}
     </div>
     ${allOk ? `<div class="qaConcl">Системи випробувано тиском. Падіння тиску та протікань не виявлено.</div>` : ""}
     ${d.note ? `<div class="qaNote">${escapeHtml(d.note)}</div>` : ""}
@@ -11932,6 +11952,7 @@ function getNextSteps(p){
 
   if(stage === "work" && (planOn(p) || buyOn(p))){
     if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
+    { const st = actStep(p); if(st) steps.push({ ...st, primary:steps.length === 0 }); }
     steps.push({ text:"Роботи завершено?", sub:"Далі — здача клієнту", label:"Завершено", action:`advanceProjectStage('${id}')`, primary:steps.length === 0 });
   }else if(stage === "work"){
     if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
@@ -11939,9 +11960,11 @@ function getNextSteps(p){
     if(later) steps.push({ text:`Докупити: ${later} поз.`, sub:"Купите самі або дозамовите", label:"Список", action:"setProjectTab('materials')" });
     const rets = returnsPending(p).length;
     if(rets) steps.push({ text:`Повернути: ${rets} поз.`, sub:"Замовлено більше, ніж треба", label:"Список", action:"setProjectTab('materials')" });
+    { const st = actStep(p); if(st) steps.push({ ...st, primary:steps.length === 0 }); }
     steps.push({ text:"Роботи завершено?", sub:"Далі — здача клієнту", label:"Завершено", action:`advanceProjectStage('${id}')`, primary:steps.length === 0 });
   }
 
+  if(stage === "done" && !p.handedOverAt){ const st = actStep(p); if(st) steps.push(st); }
   if(stage === "done" && buyOn(p) && buyLeftovers(p).length) steps.push({ text:`Нерозібрані залишки: ${buyLeftovers(p).length}`, sub:"Повернути постачальнику чи на склад", label:"Показати", action:"setProjectTab('notebook');setTimeout(()=>document.querySelector('.byLeft')?.scrollIntoView({behavior:'smooth',block:'center'}),120)" });
   if(stage === "done" && !p.handedOverAt){
     steps.push({ text:"Здали об’єкт клієнту?", sub:"Клієнт подивився і прийняв роботи", label:"Так, здали", action:`handOverProject('${id}')`, primary:true });
@@ -18768,6 +18791,9 @@ function openActions(id){
 
   }
 
+  { const a = p && p.pressureAct; const t = document.getElementById("actionActText");
+    if(t){ const done = a ? (a.systems || []).filter(actSysDone) : [], wait = a ? (a.systems || []).filter(x => x.on && !actSysDone(x)) : [];
+      t.innerHTML = a ? `Акт гідравлічних випробувань<small style="display:block;color:var(--tm);font-size:.75rem;font-weight:500">${done.length ? `✓ ${escapeHtml(done.map(x => actShortName(x) + " " + actDateLabel(actSysDate(x, a)).slice(0, 5)).join(", "))}` : ""}${wait.length ? `${done.length ? " · " : ""}чекає: ${escapeHtml(wait.map(actShortName).join(", "))}` : " · додасться до фактичного кошторису"}</small>` : "Акт гідравлічних випробувань"; } }
   document.getElementById("actionsSheet").classList.add("open");
 }
 
@@ -18798,11 +18824,44 @@ function actionSkipToDone(){
   toast("Роботи виконано. Перевірте знижку й надішліть клієнту", 2600);
 }
 
+/* Випробування — окремий крок робіт: нагадування в «Що далі», поки не випробувано або майстер не сказав, що не потрібно */
+function actPending(p){
+  if(!p || p.actSkip) return null;
+  const a = p.pressureAct;
+  if(!a) return { done:[], wait:ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label })) };
+  const on = (a.systems || []).filter(x => x.on);
+  const done = on.filter(actSysDone), wait = on.filter(x => !actSysDone(x));
+  return wait.length ? { done, wait } : null;
+}
+function actStep(p){
+  const t = actPending(p);
+  if(!t) return null;
+  return { text:"Гідравлічні випробування", sub: t.done.length ? `✓ ${t.done.map(x => `${actShortName(x)} ${actSysDate(x, p.pressureAct).slice(8, 10)}.${actSysDate(x, p.pressureAct).slice(5, 7)}`).join(", ")} · чекає: ${t.wait.map(actShortName).join(", ")}` : "Фото манометра до й після — акт піде клієнту з фактичним кошторисом", label:"Випробувати", action:`openActFor('${escapeHtml(p.id)}')` };
+}
+function openActFor(id){
+  actionsProjectId = id;
+  actionOpenAct();
+}
+/* Акт випробувань можна заповнити будь-коли (зазвичай — до закриття штроб); у фактичний кошторис він додасться сам */
+function actionOpenAct(){
+  const p = projects.find(x => x.id === actionsProjectId);
+  if(!p) return;
+  closeActionsSheet();
+  actPrevProject = { id: currentProjectId };
+  currentProjectId = p.id;
+  openActSheet();
+}
+let actPrevProject = null;
 function actionAdvanceStage(){
   const p0 = projects.find(x => x.id === actionsProjectId);
   if(!p0) return;
   closeActionsSheet();
   if(projectCompleted(p0)){ reopenProject(p0); render(); toast("Об’єкт знову в роботі"); return; }
+  const t = actPending(p0);
+  if(t){
+    if(!confirm(`Гідравлічні випробування ще не зроблено: ${t.wait.map(actShortName).join(", ")}.\n\nЗавершити об’єкт без акту випробувань?`)) return;
+    p0.actSkip = true;
+  }
   const debt = projectDebt(p0);
   if(debt > 0.5 && !confirm(`Клієнт ще винен ${money(debt)}.\n\nВсе одно позначити об’єкт завершеним?`)) return;
   completeProject(p0, "вручну");
