@@ -11042,7 +11042,7 @@ function renderQuoteActBox(){
   box.classList.remove("hidden");
   box.innerHTML = `<div class="qdTitle">Акт гідравлічних випробувань</div>
     <div class="qdRow"><span>${a ? `${on.length ? `✓ ${on.map(actShortName).join(", ")}` : ""}${(() => { const n = on.reduce((k, x) => k + Object.keys(x.ph || {}).length, 0) + (a.photos || []).length; return n ? ` · фото ${n}` : ""; })()}${wait.length ? `<small style="display:block;color:#c62828;font-weight:700">Ще не випробувано: ${wait.map(actShortName).join(", ")} — у клієнта його не буде</small>` : ""}` : `<small style="font-weight:600;color:var(--tm)">Клієнт отримає його разом з фактичним кошторисом</small>`}</span>
-    <button type="button" class="ptBtn ${a ? "" : "primary"}" onclick="openActSheet()">${a ? "Змінити" : "Випробувати"}</button></div>`;
+    <button type="button" class="ptBtn ${a ? "" : "primary"}" onclick="openActSheet()">${a ? "Змінити" : "＋ Додати"}</button></div>`;
 }
 function actClientData(project){
   const a = project.pressureAct;
@@ -18836,7 +18836,7 @@ function actPending(p){
 function actStep(p){
   const t = actPending(p);
   if(!t) return null;
-  return { text:"Гідравлічні випробування", sub: t.done.length ? `✓ ${t.done.map(x => `${actShortName(x)} ${actSysDate(x, p.pressureAct).slice(8, 10)}.${actSysDate(x, p.pressureAct).slice(5, 7)}`).join(", ")} · чекає: ${t.wait.map(actShortName).join(", ")}` : "Фото манометра до й після — акт піде клієнту з фактичним кошторисом", label:"Випробувати", action:`openActFor('${escapeHtml(p.id)}')` };
+  return { text:"Гідравлічні випробування", sub: t.done.length ? `✓ ${t.done.map(x => `${actShortName(x)} ${actSysDate(x, p.pressureAct).slice(8, 10)}.${actSysDate(x, p.pressureAct).slice(5, 7)}`).join(", ")} · чекає: ${t.wait.map(actShortName).join(", ")}` : "Фото манометра до й після — акт піде клієнту з фактичним кошторисом", label:"＋ Додати", action:`openActFor('${escapeHtml(p.id)}')` };
 }
 function openActFor(id){
   actionsProjectId = id;
