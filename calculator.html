@@ -3487,7 +3487,7 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .actPh button{position:absolute;top:.125rem;right:.125rem;width:1.375rem;height:1.375rem;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:.875rem;padding:0}
 .actPhAdd{width:4.5rem;height:4.5rem;border-radius:.625rem;border:1.5px dashed rgba(10,132,255,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--p);cursor:pointer}
 .actPhAdd span{font-size:1.25rem;font-weight:800;line-height:1}.actPhAdd small{font-size:.6875rem;font-weight:700}
-.actPair{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.5rem}
+.actPair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.5rem;margin-top:.5rem}
 .actPair .actPh,.actPair .actPhAdd{width:auto;height:auto;aspect-ratio:1}
 .actPair .actPh span{position:absolute;left:0;right:0;bottom:0;padding:.1875rem .375rem;background:rgba(0,0,0,.6);color:#fff;font-size:.6875rem;font-weight:700}
 .actWarn{margin-top:.375rem;font-size:.75rem;font-weight:700;color:#c62828}
@@ -3509,7 +3509,7 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .actCam{position:fixed;inset:0;z-index:400;background:#000;color:#fff}
 .actCam.hidden{display:none}
 .actCam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.actCamMask{position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,transparent min(41vw,190px),rgba(0,0,0,.55) calc(min(41vw,190px) + 2px));pointer-events:none}
+.actCamMask{position:absolute;inset:0;background:radial-gradient(circle at 50% 46%,transparent min(41vw,190px),rgba(0,0,0,.82) calc(min(41vw,190px) + 2px));pointer-events:none}
 .actCamRing{position:absolute;left:50%;top:46%;width:min(82vw,380px);aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid #34c759;border-radius:50%;pointer-events:none}
 .actCamTop{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 1rem) 1rem 1rem;background:linear-gradient(rgba(0,0,0,.7),transparent);display:flex;align-items:center;gap:.75rem}
 .actCamTop button{width:2.375rem;height:2.375rem;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:1.125rem;flex:0 0 auto}
@@ -10980,11 +10980,40 @@ function actCamStore(src, at){
   if(g !== null && g >= 1) x.minutes = Math.round(g);
   renderActSheet();
 }
+/* Фото з камери калькулятора: лише те, що в колі (манометр); навколо — темно, внизу — підпис */
+function actCircleCanvas(v, at){
+  try{
+    const ring = document.querySelector("#actCam .actCamRing").getBoundingClientRect();
+    const vr = v.getBoundingClientRect();
+    const vw = v.videoWidth, vh = v.videoHeight;
+    const k = Math.max(vr.width / vw, vr.height / vh);
+    const ox = vr.left + (vr.width - vw * k) / 2, oy = vr.top + (vr.height - vh * k) / 2;
+    const sx = (ring.left + 3 - ox) / k, sy = (ring.top + 3 - oy) / k, sd = (ring.width - 6) / k;
+    if(!(sd > 50)) return null;
+    const D = 1080, fs = 28, pad = 26, barH = 124;
+    const cd = D - barH - 24, cx = D / 2, cy = 12 + cd / 2;
+    const c = document.createElement("canvas"); c.width = D; c.height = D;
+    const g = c.getContext("2d");
+    g.fillStyle = "#0b0f17"; g.fillRect(0, 0, D, D);
+    g.save(); g.beginPath(); g.arc(cx, cy, cd / 2, 0, Math.PI * 2); g.clip();
+    g.drawImage(v, sx, sy, sd, sd, cx - cd / 2, cy - cd / 2, cd, cd);
+    g.restore();
+    const L = actCamLabels();
+    g.textBaseline = "top";
+    g.fillStyle = "#fff"; g.font = `700 ${fs}px -apple-system, system-ui, sans-serif`;
+    g.fillText(`${L.kind} · ${L.sys}`, pad, D - barH + pad * .5, D - pad * 2);
+    g.fillStyle = "rgba(255,255,255,.88)"; g.font = `500 ${Math.round(fs * .82)}px -apple-system, system-ui, sans-serif`;
+    g.fillText(L.obj, pad, D - barH + pad * .5 + fs * 1.35, D - pad * 2);
+    g.fillStyle = "#9cc8ff";
+    g.fillText(`${actStampTime(at)}  ·  et.app`, pad, D - barH + pad * .5 + fs * 2.55, D - pad * 2);
+    return c.toDataURL("image/jpeg", .75);
+  }catch(e){ return null; }
+}
 function actCamShoot(){
   const v = document.getElementById("actCamVideo");
   if(!v || !v.videoWidth){ toast("Камера ще вмикається"); return; }
   const at = new Date();
-  const src = actStampCanvas(v, v.videoWidth, v.videoHeight, at);
+  const src = actCircleCanvas(v, at) || actStampCanvas(v, v.videoWidth, v.videoHeight, at);
   closeActCam();
   actCamStore(src, at);
 }
