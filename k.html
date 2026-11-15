@@ -98,6 +98,17 @@ h1{letter-spacing:-.02em}
 .st.no{background:var(--card);color:var(--red);border:1.5px solid var(--red)}
 .dockSpace{height:0;transition:height .35s}.dockSpace.show{height:96px}
 .again{display:block;margin:10px auto 0;background:none;border:0;color:var(--p);font:inherit;font-size:14px;font-weight:700;text-decoration:underline;cursor:pointer}
+.actRow{padding:10px 0;border-top:1px dashed var(--bpa)}
+.actRow:first-of-type{border-top:0}
+.actTop{display:flex;justify-content:space-between;gap:10px;font-size:15px}
+.actTop .ok{color:#1F8A4C;font-weight:800;white-space:nowrap}.actTop .bad{color:var(--red);font-weight:800;white-space:nowrap}
+.actRow small{display:block;color:var(--tm);font-size:13px;margin-top:3px}
+.actOk{margin-top:8px;font-size:14px;font-weight:700;color:#1F8A4C}
+.actPhotos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.actPhotos figure{margin:0}.actPhotos figcaption{font-size:12px;color:var(--tm);text-align:center;margin-top:4px}
+.actPhotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;cursor:zoom-in}
+.actZoom{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;padding:16px}
+.actZoom img{max-width:100%;max-height:100%;border-radius:8px}
 </style>
 </head>
 <body>
@@ -128,6 +139,7 @@ h1{letter-spacing:-.02em}
       <div class="total" id="totalRow"><span id="totalLabel">До сплати</span><b id="total"></b></div>
     </div>
     <div class="card hidden" id="itemsCard"></div>
+    <div class="card hidden" id="actCard"></div>
 
     <div class="note" id="askNote"></div>
     <div id="okBox" class="okbox hidden"></div>
@@ -214,6 +226,7 @@ async function load(){
     if(data.xlsxName) $("xlsxLink").href = `${SERVER}/q/${id}/xlsx`;
     else $("xlsxLink").classList.add("hidden");
     renderApproval(data);
+    renderAct(data);
     $("loading").classList.add("hidden");
     $("content").classList.remove("hidden");
     if(data.madeWith) $("made").classList.remove("hidden");
@@ -249,6 +262,34 @@ function renderItems(data){
   return true;
 }
 
+/* Акт гідравлічних випробувань — приходить разом з фактичним кошторисом */
+function renderAct(data){
+  const a = data && data.act;
+  const card = $("actCard");
+  if(!a || !Array.isArray(a.systems) || !a.systems.length){ card.classList.add("hidden"); return; }
+  const f = v => v === null || v === undefined ? "—" : String(v).replace(".", ",");
+  const dur = v => { const m = Math.round(Number(v) || 0); if(v === null || v === undefined) return "—"; if(m < 60) return m + " хв"; const h = Math.floor(m / 60), r = m % 60; return r ? `${h} год ${r} хв` : `${h} год`; };
+  const okSrc = x => /^data:image\/(jpeg|png|webp);base64,/.test(x || "");
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(a.date || "") ? a.date.split("-").reverse().join(".") : "";
+  const allOk = a.systems.every(x => x.ok);
+  const photos = Array.isArray(a.photos) ? a.photos.filter(x => /^data:image\/(jpeg|png|webp);base64,/.test(x)) : [];
+  card.innerHTML = `<div class="secT">Акт гідравлічних випробувань</div>
+    ${d ? `<div class="meta" style="margin:2px 0 6px">Дата випробування: <b style="color:var(--t)">${esc(d)}</b></div>` : ""}
+    ${a.systems.map(x => `<div class="actRow"><div class="actTop"><b>${esc(x.l)}</b><span class="${x.ok === false ? "bad" : "ok"}">${x.ok === false ? "Падіння тиску" : "✓ Герметично"}</span></div>
+      <small>Тиск ${f(x.p)} бар · ${dur(x.m)} · на початку ${f(x.s)} → у кінці ${f(x.e)} бар</small>
+      ${Array.isArray(x.ph) && x.ph.some(ph => ph && okSrc(ph.src)) ? `<div class="actPhotos">${x.ph.filter(ph => ph && okSrc(ph.src)).map(ph => `<figure><img src="${ph.src}" alt="Манометр" onclick="actZoom(this.src)"><figcaption>${esc(ph.c || "")}</figcaption></figure>`).join("")}</div>` : ""}</div>`).join("")}
+    ${allOk ? `<div class="actOk">Системи випробувано тиском. Падіння тиску та протікань не виявлено.</div>` : ""}
+    ${a.note ? `<div class="meta" style="margin-top:6px">${esc(a.note)}</div>` : ""}
+    ${photos.length ? `<div class="actPhotos">${photos.map((src, i) => `<img src="${src}" alt="Фото манометра ${i + 1}" onclick="actZoom(this.src)">`).join("")}</div>` : ""}`;
+  card.classList.remove("hidden");
+}
+function actZoom(src){
+  const o = document.createElement("div");
+  o.className = "actZoom";
+  o.innerHTML = `<img src="${src}" alt="">`;
+  o.onclick = () => o.remove();
+  document.body.appendChild(o);
+}
 function renderApproval(data){
   const lines = [];
   const full = data.kind !== "changes" && renderItems(data);
@@ -271,10 +312,11 @@ function renderApproval(data){
   {
     const pt = data.parts || {};
     const onlyWorks = data.kind === "quote" && (Number(pt.works) || 0) > 0.5 && (Number(pt.materials) || 0) + (Number(pt.fixtures) || 0) <= 0.5;
-    const works = data.kind === "works" || onlyWorks; /* матеріали ще не рахували — пояснюємо, як буде */
+    const factual = /^Фактичн/i.test(data.title || "") || Boolean(data.act); /* роботи виконано — про «складання матеріалів» уже не пишемо */
+    const works = !factual && (data.kind === "works" || onlyWorks); /* матеріали ще не рахували — пояснюємо, як буде */
     const tel = data.companyPhone ? String(data.companyPhone).replace(/[^\d+]/g, "") : "";
     const call = tel ? ` чи <a href="tel:${esc(tel)}" style="color:var(--tm);text-decoration:underline">подзвоніть майстру</a>` : "";
-    const hasMat = !works && (data.kind === "materials" || (Number(pt.materials) || 0) + (Number(pt.fixtures) || 0) > 0.5);
+    const hasMat = !works && !factual && (data.kind === "materials" || (Number(pt.materials) || 0) + (Number(pt.fixtures) || 0) > 0.5);
     $("askNote").innerHTML = (works ? "Кошторис на матеріали складається на місці під час підготовчих робіт.<br>Якщо потрібна орієнтовна сума на матеріали або є питання"
       : (hasMat ? "Ціни на матеріали вказані на дату кошторису й можуть змінитися в постачальника.<br>" : "") + "Є питання")
       + ` — напишіть у відповідь на повідомлення${call}.`;
