@@ -11533,7 +11533,8 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone,
     address: cleanText(project.client && project.client.address) || undefined,
     clientWho: [cleanText(project.client && project.client.name), cleanText(project.client && project.client.phone) ? `(${cleanText(project.client.phone)})` : ""].filter(Boolean).join(" ") || undefined,
-    linkLabel: pendingClientSend && pendingClientSend.kind !== "quote" ? clientLinkLabel(pendingClientSend) : (() => {
+    linkLabel: pendingClientSend && pendingClientSend.kind === "doc" ? `${data.title || "Кошторис"}${data.act ? " та акт гідравлічних випробувань" : ""}`
+      : pendingClientSend && pendingClientSend.kind !== "quote" ? clientLinkLabel(pendingClientSend) : (() => {
       /* Повний кошторис або посилання не з «Надіслати клієнту» — назва за фактичним вмістом:
          лише роботи → «Кошторис на роботи», а не «роботи й матеріали» */
       const pt = data.parts || {}, hasW = (Number(pt.works) || 0) > 0.5, hasM = (Number(pt.materials) || 0) + (Number(pt.fixtures) || 0) > 0.5;
@@ -11541,9 +11542,9 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
       if(quoteMode === "materials" || (hasM && !hasW)) return "Кошторис на матеріали";
       return hasW && hasM ? "Кошторис на роботи й матеріали" : (data.title || "Кошторис");
     })(),
-    sections: pendingClientSend && ["quote", "works", "materials"].includes(pendingClientSend.kind) && !pendingClientSend.prelim ? clientPageSections(data) : undefined,
+    sections: pendingClientSend && ["quote", "works", "materials", "doc"].includes(pendingClientSend.kind) && !pendingClientSend.prelim ? clientPageSections(data) : undefined,
     act: data.act || undefined,
-    startDate: /^\d{4}-\d{2}-\d{2}$/.test(project.workStartDate || "") ? project.workStartDate : undefined
+    startDate: /^\d{4}-\d{2}-\d{2}$/.test(project.workStartDate || "") && !actFactual(project) ? project.workStartDate : undefined
   }));
   const cfg = cloudConfig();
   const response = await fetch(`${cfg.server}/upload`, { method:"POST", headers: cloudAuthHeaders(), body: form });
