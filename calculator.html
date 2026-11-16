@@ -18282,7 +18282,9 @@ function classifyPriceHeader(text){
   const isRetail = /ціна.*без\s*зниж|цена.*без\s*скид|retail.*price|list.*price|роздрібн.*ціна|розничн.*цена/.test(t);
   const isMaster = /ціна.*майстра|ціна.*закуп|закупівельн|закупочн|оптов|wholesale|dealer.*price|моя\s*ціна/.test(t);
   const isDiscountAsMaster = /ціна.*(зі|з)\s*зниж|цена.*(со|с)\s*скид|ціна.*після.*зниж|цена.*после.*скид|discount.*price|акційн.*ціна|акционн.*цена/.test(t);
-  const isPlain = /^(ціна|цена|price)(\s*[.,:()].*)?$/i.test(t);
+  /* «Ціна без ПДВ», «Ціна з ПДВ», «Ціна, грн з ПДВ» — теж звичайна ціна (ПДВ враховуємо окремо) */
+  const tNoVat = t.replace(/[\s,]*(грн\.?)?[\s,]*(без|з|із|зі|с|вкл\.?|включно з|з урахуванням|без урахування)\s*(пдв|ндс).*$/, "");
+  const isPlain = /^(ціна|цена|price)(\s*[.,:()].*)?$/i.test(tNoVat);
   const isGeneric = isPlain && !isRetail && !isMaster && !isDiscountAsMaster;
 
   if(isRetail) return "retail";
@@ -18298,7 +18300,7 @@ function findHeaderRow(rows){
   rows.slice(0, 60).forEach((row, rowIndex) => {
     let articleCol = -1, qtyCol = -1, nameCol = -1;
     let retailCol = -1, masterCol = -1, genericCol = -1;
-    let score = 0;
+    let score = 0, vatCol = -1, vatExcl = false;
 
     row.forEach((cell, col) => {
       const text = ntext(cell);
@@ -18319,7 +18321,9 @@ function findHeaderRow(rows){
         score += 3;
       }
 
+      if(/ставка\s*(пдв|ндс)|^(пдв|ндс)\s*,?\s*%/.test(text) && vatCol < 0) vatCol = col;
       const kind = classifyPriceHeader(cell);
+      if(kind && /без\s*(пдв|ндс)/.test(text)) vatExcl = true;
       if(kind === "retail" && retailCol < 0){ retailCol = col; score += 5; }
       else if(kind === "master" && masterCol < 0){ masterCol = col; score += 5; }
       else if(kind === "generic" && genericCol < 0){ genericCol = col; score += 4; }
@@ -18351,7 +18355,7 @@ function findHeaderRow(rows){
 
     if(priceCol >= 0 && nameCol >= 0 && score >= 7){
       if(!best || score > best.score){
-        best = { rowIndex, score, articleCol, qtyCol, nameCol, priceCol, regularPriceCol, discountPriceCol };
+        best = { rowIndex, score, articleCol, qtyCol, nameCol, priceCol, regularPriceCol, discountPriceCol, vatExcl, vatCol };
       }
     }
   });
@@ -18444,14 +18448,22 @@ function parseSheetRows(rows, header){
 
     if(!name || price === null || price < 0) continue;
 
+    /* Ціни в рахунку без ПДВ — додаємо ПДВ (ставка з колонки, інакше 20%), щоб у каталозі була ціна, яку майстер реально платить */
+    let k = 1;
+    if(header.vatExcl){
+      const rate = header.vatCol >= 0 ? parseNumber(row[header.vatCol]) : null;
+      k = 1 + (rate !== null && rate >= 0 && rate < 100 ? rate : 20) / 100;
+    }
+    const vat = v => v === null || k === 1 ? v : Math.round(v * k * 100) / 100;
+
     result.push({
       name,
       article,
       supplierArticle,
       qty,
-      price,
-      retailPrice,
-      masterPrice,
+      price: vat(price),
+      retailPrice: vat(retailPrice),
+      masterPrice: vat(masterPrice),
       unit: unit || "шт"
     });
   }
@@ -18829,7 +18841,7 @@ function detectCategory(text, brand, system){
 /* Матеріали інших напрямів — лише якщо майстер цим займається (у сантехніка визначення як було) */
 function detectTradeCategory(source){
   const t = myTrades();
-  if(t.includes("electric") && /кабел|провід|провод|автомат.*вимик|\bавтомат\b|узо\b|диф.*автомат|розетк|вимикач|підрозетн|подрозетн|розподільч.*короб|гофр|ввг|nym|щит(ок)?\b|клемм|wago|клем/.test(source)) return "electric";
+  if(t.includes("electric") && /кабел|провід|провод|автомат.*вимик|(^|[^а-яіїєґ])автомат($|[^а-яіїєґ])|(^|[^а-яіїєґ])узо($|[^а-яіїєґ])|диф.*автомат|розетк|вимикач|підрозетн|подрозетн|розподільч.*короб|гофр|ввг|nym|(^|[^а-яіїєґ])щит(ок)?($|[^а-яіїєґ])|клем|wago/.test(source)) return "electric";
   if(t.includes("tile") && /плитк|керамогран|затирк|хрестик|свп|клин.*вирівн|плиточн|клей.*плит|гідроізоляц|гидроизоляц|мозаїк/.test(source)) return "tile";
   if(t.includes("drywall") && /гіпсокартон|гипсокартон|гкл|гклв|cd[\s-]*60|ud[\s-]*27|cw[\s-]*\d|uw[\s-]*\d|профіль.*(стел|стін|напрямн)|підвіс|прямий підвіс|дюбель.*швидкомонт|серпянк/.test(source)) return "drywall";
   if(t.includes("paint") && /фарб|краск|ґрунт|грунт|шпакл|шпатл|валик|пензл|малярн|шпалер|флізелін|склохолст/.test(source)) return "paint";
