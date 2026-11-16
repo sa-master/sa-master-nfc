@@ -4838,6 +4838,11 @@ body{font-variant-numeric:tabular-nums}
         <div class="actionSheetText" id="actionActText">Акт гідравлічних випробувань</div>
       </div>
 
+      <div class="actionSheetRow" id="actionRestoreRow" onclick="actionRestoreProject()">
+        <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></div>
+        <div class="actionSheetText">Повернути об’єкт з копії<small style="display:block;font-size:.75rem;color:var(--tm);font-weight:500">лише цей об’єкт, решта без змін</small></div>
+      </div>
+
       <div class="actionSheetRow hidden" id="actionSkipRow" onclick="actionSkipToDone()">
         <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5l8 7-8 7z"/><path d="M13 5l6 7-6 7"/></svg></div>
         <div class="actionSheetText">Роботи виконано — фактичний кошторис<small style="display:block;color:var(--tm);font-size:.75rem;font-weight:500">Фіксує кошторис і відкриває документ для клієнта</small></div>
@@ -5613,6 +5618,79 @@ async function cloudShowHistory(){
   }catch(e){
     box.innerHTML = `<div class="formHint" style="color:var(--red)">Не вдалося отримати список копій.</div>`;
   }
+}
+
+/* ==== Повернути ОДИН об’єкт з хмарної копії (решта даних не змінюється) ==== */
+let prjRestore = null;
+function prjRestoreScreen(){
+  let el = document.getElementById("prjRestoreScreen");
+  if(!el){ el = document.createElement("div"); el.id = "prjRestoreScreen"; el.className = "onbScreen"; document.body.appendChild(el); }
+  return el;
+}
+function actionRestoreProject(){
+  const id = actionsProjectId;
+  closeActionsSheet();
+  openProjectRestore(id);
+}
+async function openProjectRestore(projectId){
+  if(!cloudEnabled()){ toast("Копії є лише в хмарі — увійдіть в акаунт"); return; }
+  const p = projects.find(x => x.id === projectId);
+  if(!p) return;
+  prjRestore = { projectId, loading:true, items:[] };
+  prjRestoreScreen().classList.add("open");
+  renderProjectRestore();
+  try{
+    const { status, body } = await cloudFetch("/sync/history");
+    if(status !== 200) throw new Error();
+    prjRestore.items = (body.items || []).slice(0, 60);
+  }catch(e){ prjRestore.error = true; }
+  prjRestore.loading = false;
+  renderProjectRestore();
+}
+function closeProjectRestore(){ prjRestoreScreen().classList.remove("open"); prjRestore = null; }
+function cloudCopyLabel(id){
+  const save = id.startsWith("s-");
+  const raw = id.replace(/^s-/, "");
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2})-(\d{2}))?/);
+  let date = m ? `${m[3]}.${m[2]}.${m[1]}` : raw;
+  if(m && m[4]){ const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5])); date = d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" }); }
+  return save ? `${date} · збереження` : raw.includes("conflict") ? `${date} · відкладена версія` : raw.includes("before-restore") ? `${date} · перед відновленням` : `${date} · копія дня`;
+}
+function renderProjectRestore(){
+  if(!prjRestore) return;
+  const p = projects.find(x => x.id === prjRestore.projectId);
+  const cur = p ? `Зараз: ${getApproved(p) ? `погоджено ${money(getClientTotal(p))}` : `кошторис ${money(getEstimateTotal(p))}`}` : "";
+  prjRestoreScreen().innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeProjectRestore()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Повернути з копії</span></div>
+    <div class="psHead"><b>${escapeHtml(p ? projectTitlePlain(p) : "Об’єкт")}</b><small>${escapeHtml(cur)}</small></div>
+    <span class="onbNote" style="text-align:left">Оберіть копію — покажу, що в ній було з цим об’єктом, і лише потім повернемо. Інші об’єкти, каталог і склад не зміняться.</span>
+    ${prjRestore.loading ? `<span class="onbNote">Завантажую копії…</span>` : prjRestore.error ? `<span class="onbNote">Не вдалося отримати копії. Перевірте інтернет.</span>`
+      : `<div class="opList">${prjRestore.items.map((it, i) => `<button type="button" class="opItem" onclick="previewProjectRestore(${i})"><span class="opName">${escapeHtml(cloudCopyLabel(it.id))}</span></button>`).join("") || `<span class="onbNote">Копій ще немає.</span>`}</div>`}
+  </div>`;
+}
+async function previewProjectRestore(i){
+  const it = prjRestore && prjRestore.items[i];
+  if(!it) return;
+  let old = null;
+  try{
+    const { status, body } = await cloudFetch(`/sync/history/${encodeURIComponent(it.id)}`);
+    if(status !== 200 || !body || !body.data) throw new Error();
+    const list = JSON.parse(body.data[PROJECTS_KEY] || "[]");
+    old = (Array.isArray(list) ? list : []).find(x => x && x.id === prjRestore.projectId) || null;
+  }catch(e){ toast("Не вдалося відкрити копію"); return; }
+  if(!old){ toast("У цій копії цього об’єкта ще немає"); return; }
+  const was = getApproved(old) ? `погоджено ${money(getClientTotal(old))}` : `кошторис ${money(getEstimateTotal(old))}`;
+  const nPos = (old.positions || []).length;
+  if(!confirm(`Копія: ${cloudCopyLabel(it.id)}\n\nУ ній «${projectTitlePlain(old)}»: ${was}, позицій ${nPos}.\n\nПовернути об’єкт до цього стану? Поточний стан збережеться окремою копією в хмарі.`)) return;
+  try{ await cloudArchive(cloudCollect(), "before-restore"); }catch(e){}
+  const idx = projects.findIndex(x => x.id === prjRestore.projectId);
+  if(idx < 0) return;
+  old.updatedAt = new Date().toISOString();
+  projects[idx] = old;
+  saveProjects();
+  closeProjectRestore();
+  render();
+  toast(`Об’єкт повернуто: ${was}`, 3200);
 }
 
 async function cloudRestore(id){
@@ -11651,6 +11729,8 @@ function sendCurrentTotal(p, s){
 }
 /* Записати погодження. Повертає текст для підказки. */
 function sendApply(p, s, at, how){
+  /* Запам’ятовуємо, що було до погодження — щоб ручне «погодив усно» можна було скасувати */
+  try{ s.prevApproved = JSON.stringify({ approved: p.approved || null, parts: p.partsApproved || null, stage: p.stage || "", log: (p.approvalLog || []).length, wd: p.workDiscount ?? null, md: p.materialDiscount ?? null, rd: p.revDiscount ? JSON.parse(JSON.stringify(p.revDiscount)) : null }); }catch(e){}
   s.approvedAt = at; s.how = how;
   if(s.kind === "changes"){
     const draft = buildRevisionSnapshot(p, new Set(s.selected || []));
@@ -11729,9 +11809,41 @@ function clientSendApprove(id){
   render();
   toast(res, 3200);
 }
+/* Надіслане, яке вже не треба погоджувати (передумали, домовились інакше): прибираємо з «Чекаємо», суму не чіпаємо */
+function clientSendDismiss(id){
+  const p = projects.find(x => x.id === currentProjectId);
+  const s = p && clientSends(p).find(x => x.id === id);
+  if(!s) return;
+  const what = s.kind === "changes" ? `Зміни №${s.n}` : "Цей кошторис";
+  if(!confirm(`${what} — неактуально?\n\nПрибрати з «Чекаємо погодження». Погоджена сума (${money(getApproved(p) ? getClientTotal(p) : getEstimateTotal(p))}) не зміниться.`)) return;
+  s.superseded = true; s.dismissedAt = new Date().toISOString();
+  touchProject(p); render();
+  toast("Прибрано з очікування");
+}
+function isLastApprovedSend(p, s){
+  const done = clientSends(p).filter(x => x.approvedAt);
+  return done.length && done.reduce((a, b) => String(a.approvedAt) > String(b.approvedAt) ? a : b).id === s.id;
+}
+function clientSendUndo(id){
+  const p = projects.find(x => x.id === currentProjectId);
+  const s = p && clientSends(p).find(x => x.id === id);
+  if(!s || !s.prevApproved) return;
+  if(!confirm("Скасувати ручне погодження? Повернеться погоджена сума, що була до нього.")) return;
+  let prev; try{ prev = JSON.parse(s.prevApproved); }catch(e){ return; }
+  if(prev.approved) p.approved = prev.approved; else delete p.approved;
+  if(prev.parts) p.partsApproved = prev.parts; else delete p.partsApproved;
+  if(prev.stage) p.stage = prev.stage;
+  if(prev.wd === null) delete p.workDiscount; else p.workDiscount = prev.wd;
+  if(prev.md === null) delete p.materialDiscount; else p.materialDiscount = prev.md;
+  if(prev.rd) p.revDiscount = prev.rd; else delete p.revDiscount;
+  if(Array.isArray(p.approvalLog)) p.approvalLog = p.approvalLog.slice(0, prev.log);
+  delete s.approvedAt; delete s.how; delete s.prevApproved;
+  touchProject(p); render();
+  toast(`Погодження скасовано · для клієнта ${money(getApproved(p) ? getClientTotal(p) : getEstimateTotal(p))}`, 3200);
+}
 let clientSendsAll = false;
 function sendMarker(p, s){
-  if(s.approvedAt) return `<span class="csPill ok">✓ Погоджено ${formatQuoteDate(s.approvedAt).slice(0, 5)}</span>`;
+  if(s.approvedAt) return `<span class="csPill ok">✓ Погоджено ${formatQuoteDate(s.approvedAt).slice(0, 5)}</span>${s.how === "вручну" && s.prevApproved && isLastApprovedSend(p, s) ? ` <button type="button" class="csLink" onclick="clientSendUndo('${escapeHtml(s.id)}')">скасувати</button>` : ""}`;
   if(s.superseded) return `<span class="csPill old">↻ Замінено</span>`;
   if(s.prelim) return `<span class="csPill pre">~ Попередній</span>`;
   if(!sendOpen(p, s)){
@@ -11753,7 +11865,8 @@ function renderClientSends(p){
   const list = clientSends(p);
   if(clientView) return "";
   if(!list.length){ return clientSendsAll && (p.approvalLog || []).length ? `<section class="csBox"><div class="csHead">Історія погоджень<button type="button" class="csMore" style="float:right;padding:0" onclick="clientSendsAll=false;render()">Згорнути</button></div>${renderApprovalLog(p)}</section>` : ""; }
-  const open = clientSendsOpen(p);
+  /* Завершений об’єкт: нічого вже не чекаємо — блок не показуємо (історія — через «історія» в банері) */
+  const open = projectCompleted(p) ? [] : clientSendsOpen(p);
   if(open.length) pollClientSends(p);
   /* Нічого не чекаємо — блок не показуємо; історія відкривається з зеленого/синього банера */
   if(!open.length && !clientSendsAll) return "";
@@ -12953,7 +13066,8 @@ function renderMaterialsTab(p){
   const materials = (p.positions || []).filter(x => x.type === "material" && !x.buyLaterOnly);
   const percent = getMaterialsDiscountPercent(p);
   const stage = p.stage || "estimate";
-  const showBuy = materials.length && (stage !== "estimate" || projectOrders(p).length);
+  /* Завершений об’єкт: закупівля вже не актуальна — картку «Треба купити» не показуємо */
+  const showBuy = materials.length && !projectCompleted(p) && (stage !== "estimate" || projectOrders(p).length);
   const toBuy = showBuy ? positionsToBuy(p) : [];
   const fromStock = materials.filter(x => positionStockQty(x) > 0).length;
   const ordered = materials.filter(x => positionOrderedIn(p, x)).length;
