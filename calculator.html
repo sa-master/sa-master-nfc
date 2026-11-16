@@ -16508,7 +16508,7 @@ function buildProcurementRequestTemplateFile(draft){
   });
 }
 
-function openProcurementRequest(rawSupplierName){
+function openProcurementRequest(rawSupplierName, onlyIds){
   const project = projects.find(item => item.id === currentProjectId);
   const supplierName = cleanText(rawSupplierName);
   if(!project || !supplierName) return;
@@ -16517,7 +16517,8 @@ function openProcurementRequest(rawSupplierName){
     position.type === "material" &&
     positionOrderQty(position) > 0 &&
     !isBuyLater(position) &&
-    normalizeText(getPositionPlannedSupplier(position)) === normalizeText(supplierName)
+    normalizeText(getPositionPlannedSupplier(position)) === normalizeText(supplierName) &&
+    (!Array.isArray(onlyIds) || onlyIds.includes(position.id))
   );
   if(!positions.length){
     toast("Для цього постачальника нічого замовляти — усе зі складу");
@@ -20337,6 +20338,8 @@ function openOrderPick(later, planSupplier, simple){
   const prevPlan = getProcurementDelivery({ projectId:project.id, supplierName: suppliers[0] || "" });
   orderPick = { later: Boolean(later), plan: planSupplier || "", simple: Boolean(simple), supplier: suppliers[0] || "", checked: new Set(), when: "", date: "", pickup: false, touched: false, np: planSupplier && prevPlan.kind === "np" && prevPlan.np ? prevPlan.np : null };
   orderPickPreselect(project);
+  /* Список постачальнику з «Купити»: спершу — запит наявності й цін (поки цьому постачальнику його не надсилали), потім — замовлення */
+  if(simple) orderPick.kind = planSupplier && supChk(project, normalizeText(planSupplier)) ? "order" : "check";
   /* Куди: за замовчуванням — поштомат біля об’єкта (якщо є адреса); попередній вибір для цього постачальника — пріоритетніший */
   const hasAddr = Boolean(project.client && cleanText(project.client.address));
   orderPick.where = prevPlan && prevPlan.where ? prevPlan.where : hasAddr ? "near" : "delivery";
@@ -20462,6 +20465,10 @@ function renderOrderPick(){
     ${orderPick.plan ? `<span class="onbNote" style="text-align:left;margin-top:-.5rem">${orderPick.simple ? "Інший постачальник для товару — натисніть на товар у списку «Купити»." : "За планом закупівлі. Змінити, у кого що беремо, — у «План»."}</span>` : `<div class="opStep"><span class="opLabel">1. У кого?</span>
       <div class="opChips">${suppliers.map(name => chip(name, normalizeText(name) === normalizeText(orderPick.supplier), `orderPickSupplier(${enc(name)})`)).join("")}${chip("＋ Інший", false, "orderPickSupplier('__new__')")}</div>
     </div>`}
+    ${orderPick.simple ? `<div class="opStep"><span class="opLabel">Що надсилаємо?</span>
+      <div class="opChips">${chip("Запит: наявність і ціни", orderPick.kind === "check", "orderPick.kind='check';renderOrderPick()")}${chip("Замовлення", orderPick.kind !== "check", "orderPick.kind='order';renderOrderPick()")}</div>
+      ${orderPick.kind === "check" ? `<span class="onbNote" style="text-align:left">Постачальник перевірить, що є і за скільки, — нічого не замовляємо. Відповідь прийде в калькулятор.</span>` : ""}
+    </div>` : ""}
     <div class="opStep"><div class="opRowHead"><span class="opLabel">${orderPick.plan ? "Що саме?" : "2. Що саме?"} · ${n} з ${toBuy.length}</span><button type="button" class="opLink" onclick="orderPickAll(${n < toBuy.length})">${n < toBuy.length ? "Усе" : "Нічого"}</button></div>
       <div class="opList">${groups.map(group => `<div class="opGroup">${escapeHtml(group.label)}</div>` + group.positions.map(pos => {
         const on = orderPick.checked.has(pos.id);
@@ -20470,7 +20477,7 @@ function renderOrderPick(){
         return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="orderPickToggle('${escapeHtml(pos.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(positionShortName(pos))}${hint}</span><span class="opQty">${(orderPick.simple ? false : orderPick.plan ? orderLineQty(findOrder(project, orderPick.plan), pos.id) > 0 : positionOrderedIn(project, pos)) ? "ще " : ""}${formatQty(orderPickQty(project, pos))} ${escapeHtml(pos.unit || "шт")}</span></button>`;
       }).join("")).join("")}</div>
       ${orderPick.plan ? `<button type="button" class="psReplace" onclick="${orderPick.simple ? "openBuyAdd(orderPick.plan, true)" : "openPlanAdd(orderPick.plan)"}">＋ Додати товар з каталогу</button>` : ""}
-      <span class="onbNote" style="text-align:left">${orderPick.simple ? "Невідмічене лишиться в списку «Купити»." : orderPick.plan ? "Невідмічене лишиться в плані — замовите пізніше." : `Невідмічене лишиться в «${orderPick.later ? "Докупити самому" : "Дозамовити"}» — замовите в іншого.`}</span>
+      <span class="onbNote" style="text-align:left">${orderPick.simple && orderPick.kind === "check" ? "Запит піде лише на відмічене." : orderPick.simple ? "Невідмічене лишиться в списку «Купити»." : orderPick.plan ? "Невідмічене лишиться в плані — замовите пізніше." : `Невідмічене лишиться в «${orderPick.later ? "Докупити самому" : "Дозамовити"}» — замовите в іншого.`}</span>
     </div>
     <div class="opStep"><span class="opLabel">Куди?</span>
       <div class="opChips">${project.client && cleanText(project.client.address) ? chip("Поштомат біля об’єкта", orderPick.where === "near", "orderPickWhere('near')") : ""}${chip(orderPick.where === "np" && orderPick.np ? "✓ Інше відділення" : "Інше відділення / поштомат", orderPick.where === "np", "orderPickWhere('np')")}${chip("🚚 Доставка на об’єкт", orderPick.where === "delivery", "orderPickWhere('delivery')")}${chip("Заберу сам", orderPick.where === "pickup", "orderPickWhere('pickup')")}</div>
@@ -20485,6 +20492,25 @@ function renderOrderPick(){
     <button type="button" class="onbPrimary" ${!orderPick.supplier || !n ? "disabled style=\"opacity:.45\"" : ""} onclick="orderPickSend(false)">${orderPick.supplier ? `Надіслати: ${escapeHtml(orderPick.supplier)} · ${n} поз.` : "Оберіть постачальника"}</button>
     <button type="button" class="onbLink" ${!orderPick.supplier || !n ? "disabled" : ""} onclick="orderPickSend(true)">${orderPick.plan ? "Записати без надсилання (вже купив / замовив інакше)" : "Купую сам, без надсилання (ринок, магазин)"}</button>
   </div>`;
+  /* Запит наявності й цін: доставка й дата не потрібні */
+  if(orderPick.simple && orderPick.kind === "check"){
+    screen.querySelectorAll(".opStep").forEach(st => { const l = st.querySelector(".opLabel"); if(l && /^(Куди|Коли)\?/.test(l.textContent.trim())) st.remove(); });
+    const prim = screen.querySelector(".onbPrimary");
+    if(prim){ prim.textContent = `Надіслати запит: ${orderPick.supplier} · ${n} поз.`; prim.setAttribute("onclick", "orderPickCheck()"); }
+    screen.querySelector(".onbLink")?.remove();
+  }
+}
+function orderPickCheck(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project || !orderPick || !orderPick.supplier) return;
+  const ids = orderPickSource(project).filter(pos => orderPick.checked.has(pos.id)).map(pos => pos.id);
+  if(!ids.length){ toast("Відмітьте, про що спитати"); return; }
+  const sup = orderPick.supplier;
+  ids.forEach(id => { const pos = project.positions.find(x => x.id === id); if(pos) pos.plannedSupplierName = sup; });
+  touchProject(project);
+  closeOrderPick();
+  openProcurementRequest(sup, ids);
+  setProcurementRequestMode("check");
 }
 
 async function orderPickSend(silent){
