@@ -9875,7 +9875,7 @@ function renderProject(p){
           <div class="projectHeaderTitle">${title}${!clientView && groupOrders(p).length > 1 ? `<small class="ordTag">${escapeHtml(orderLabel(p))}</small>` : ""}</div>
           <div class="projectHeaderRight">
             ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
-            ${clientView || buyOn(p) || planOn(p) ? "" : `<button class="projectHelpButton ${nextStepsHidden() ? "" : "on"}" onclick="toggleNextSteps()" aria-label="${nextStepsHidden() ? "Показати «Що далі»" : "Сховати «Що далі»"}">?</button>`}
+            ${clientView || buyOn(p) || planOn(p) || !nextStepsList(p).length ? "" : `<button class="projectHelpButton ${nextStepsHidden() ? "" : "on"}" onclick="toggleNextSteps()" aria-label="${nextStepsHidden() ? "Показати «Що далі»" : "Сховати «Що далі»"}">?</button>`}
             ${clientView ? "" : `<button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>`}
           </div>
         </div>
@@ -12576,10 +12576,15 @@ function toggleNextSteps(){
   try{ if(nextStepsHidden()) localStorage.removeItem(NEXT_HIDDEN_KEY); else localStorage.setItem(NEXT_HIDDEN_KEY, "1"); }catch(e){}
   render();
 }
+/* Кроки «Що далі» (і чи взагалі є що показувати — від цього залежить кнопка «?») */
+function nextStepsList(p){
+  if(!p || planOn(p) || projectCompleted(p)) return [];
+  /* На вкладці «Матеріали» картка «Треба купити» вже є — не дублюємо. */
+  return getNextSteps(p).filter(step => !(projectTab === "estimate" && /^Треба купити/.test(step.text)));
+}
 function renderNextSteps(p){
   if(planOn(p) || nextStepsHidden()) return "";
-  /* На вкладці «Матеріали» картка «Треба купити» вже є — не дублюємо. */
-  const steps = getNextSteps(p).filter(step => !(projectTab === "estimate" && /^Треба купити/.test(step.text)));
+  const steps = nextStepsList(p);
   if(!steps.length) return "";
   return `
     <section class="nextSteps">
