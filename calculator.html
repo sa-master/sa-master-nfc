@@ -9810,7 +9810,7 @@ function renderProject(p){
       ${clientView ? "" : renderGroupStages(p)}
       ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderCrewBox(p) : ""}
       ${buyOn(p) ? (projectTab === "notebook" ? renderBuyList(p) : "") : renderNextSteps(p) + (planOn(p) && projectTab === "estimate" ? "" : renderPlanTodo(p))}
-      ${projectTab === "estimate" ? renderApprovedBanner(p) + renderClientSends(p) + renderSupLine(p) : projectTab === "notebook" ? renderClientSends(p) : ""}
+      ${projectTab === "estimate" ? renderApprovedBanner(p) + renderClientSends(p) + renderSupLine(p) : projectTab === "notebook" ? renderClientSends(p) + renderSupLine(p) : ""}
       ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderFilesBox(p) : ""}
       ${projectTab === "notebook" ? "" : projectTab === "money" ? renderMoneyTab(p) : `<div id="estMaterials">${renderMaterialsTab(p)}</div><div id="estWorks">${renderWorksTab(p)}</div>`}
       </div>
@@ -10535,7 +10535,8 @@ function supGroups(p){
   });
 }
 function renderSupLine(p){
-  if(getApproved(p) || clientView) return "";
+  /* Видно, поки клієнт не погодив матеріали (погодження лише робіт звірку не скасовує) */
+  if(approvalCoversMaterials(p) || clientView) return "";
   const groups = supGroups(p);
   if(!groups.length) return "";
   if(!groups.some(g => g.state !== "none")) return "";
