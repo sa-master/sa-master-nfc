@@ -5118,6 +5118,14 @@ body{font-variant-numeric:tabular-nums}
     </div>
 
     <div class="fsSection" data-pf="me">
+      <div class="fsSectionTitle">Запити постачальникам</div>
+      <div class="fsCard">
+        <button type="button" class="areaAddRoom" onclick="openSupRequests()">Що бачать постачальники — переглянути / скасувати</button>
+        <div class="formHint">Звірки, які ви надсилали. Тестові й зайві можна скасувати — постачальник їх більше не побачить.</div>
+      </div>
+    </div>
+
+    <div class="fsSection" data-pf="me">
       <div class="fsSectionTitle">Напрями робіт</div>
       <div class="fsCard">
         <div class="chips" id="pfTrades"></div>
@@ -10514,6 +10522,65 @@ function openSendChoice(){
 
 /* ==== Звірка за посиланням: постачальник відповідає на своїй сторінці, відповідь приходить сюди сама ====
    p.supplierChecks[supKey] = { at, linkId, checkId, handledAt, answer?, sent? } (старі записи — просто дата) */
+/* ==== Запити постачальникам: усі звірки на сервері, щоб прибрати тестові й зайві ==== */
+let supReq = null;
+function supReqScreen(){
+  let el = document.getElementById("supReqScreen");
+  if(!el){ el = document.createElement("div"); el.id = "supReqScreen"; el.className = "onbScreen"; document.body.appendChild(el); }
+  return el;
+}
+async function openSupRequests(){
+  if(!cloudEnabled() || !cloudSession()){ toast("Увійдіть в акаунт (Профіль), щоб бачити запити постачальникам"); return; }
+  supReq = { loading:true, list:[] };
+  supReqScreen().classList.add("open");
+  renderSupRequests();
+  try{
+    const mine = await supplierApi("/sup/mine");
+    const server = cloudConfig().server;
+    const out = [];
+    await Promise.all((mine.links || []).map(async l => {
+      try{
+        const r = await fetch(`${server}/sup/${l.id}`, { cache:"no-store" });
+        if(!r.ok) return;
+        const d = await r.json();
+        (d.checks || []).forEach(c => out.push({ linkId:l.id, supplierName:d.supplierName || l.supplierName || "", ...c }));
+      }catch(e){}
+    }));
+    out.sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+    supReq = { loading:false, list:out };
+  }catch(e){ supReq = { loading:false, list:[], error:true }; }
+  renderSupRequests();
+}
+function closeSupRequests(){ supReqScreen().classList.remove("open"); supReq = null; }
+function renderSupRequests(){
+  if(!supReq) return;
+  const rows = supReq.list.map((c, i) => {
+    const p = projects.find(x => x.id === c.projectId);
+    const gone = !p;
+    const answered = c.answeredAt && String(c.sentAt) <= String(c.answeredAt);
+    return `<div class="opItem" style="align-items:flex-start;cursor:default"><span class="opName">${escapeHtml(c.supplierName)} · «${escapeHtml(c.title || "об’єкт")}»<small>${c.count || 0} поз. · надіслано ${formatQuoteDate(c.sentAt)} · ${answered ? "відповіли" : "чекає відповіді"}${gone ? " · <b style=\"color:var(--danger,#ff453a)\">об’єкта вже немає</b>" : ""}</small></span><button type="button" class="ptBtn" onclick="supReqCancel(${i})">Скасувати</button></div>`;
+  }).join("");
+  supReqScreen().innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeSupRequests()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Запити постачальникам</span></div>
+    <span class="onbNote" style="text-align:left">Так ці звірки бачать постачальники за своїми посиланнями. «Скасувати» — прибрати в постачальника (тестові, не тому, об’єкт скасовано).</span>
+    ${supReq.loading ? `<span class="onbNote">Завантажую…</span>` : supReq.error ? `<span class="onbNote">Не вдалося завантажити. Перевірте інтернет.</span>` : rows ? `<div class="opList">${rows}</div>` : `<span class="onbNote">Запитів немає.</span>`}
+  </div>`;
+}
+async function supReqCancel(i){
+  const c = supReq && supReq.list[i];
+  if(!c || !confirm(`Скасувати звірку «${c.title || "об’єкт"}» для ${c.supplierName}? Постачальник її більше не побачить.`)) return;
+  try{ await supplierApi(`/sup/${c.linkId}/checks/${c.id}/cancel`, { method:"POST", body:"{}" }); }
+  catch(e){ toast(e && e.message === "login" ? "Увійдіть в акаунт" : "Не вдалося скасувати: " + (e && e.message || "")); return; }
+  /* і в об’єкті калькулятора — щоб не чекати відповіді на скасоване */
+  const p = projects.find(x => x.id === c.projectId);
+  if(p && p.supplierChecks){
+    Object.keys(p.supplierChecks).forEach(k => { const v = supChk(p, k); if(v && v.checkId === c.id) delete p.supplierChecks[k]; });
+    touchProject(p);
+  }
+  supReq.list.splice(i, 1);
+  renderSupRequests();
+  toast("Запит скасовано");
+}
 function supChk(p, key){
   const v = p && p.supplierChecks && p.supplierChecks[key];
   if(!v) return null;
