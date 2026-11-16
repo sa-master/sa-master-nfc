@@ -8050,10 +8050,20 @@ function getApproved(project){
   return approved && Array.isArray(approved.positions) ? approved : null;
 }
 
+/* Чи погоджували з клієнтом матеріали. Якщо погодили лише роботи — матеріали, що з’являються потім,
+   це новий прорахунок (кошторис на матеріали), а не «зміни після погодження». */
+function approvalCoversMaterials(project){
+  const a = getApproved(project);
+  if(!a) return false;
+  let pa = {};
+  try{ pa = partsApproved(project) || {}; }catch(e){}
+  return Boolean(pa.materials) || (Number(a.materials) || 0) > 0.5 || (a.positions || []).some(x => x.type === "material");
+}
 function getApprovedChanges(project){
   const approved = getApproved(project);
   if(!approved) return { changed:[], added:[], removed:[] };
-  const current = (Array.isArray(project.positions) ? project.positions : []).filter(pos => !pos.buyLaterOnly);
+  const worksOnly = !approvalCoversMaterials(project);
+  const current = (Array.isArray(project.positions) ? project.positions : []).filter(pos => !pos.buyLaterOnly && !(worksOnly && pos.type === "material"));
   const byId = new Map(approved.positions.map(item => [item.id, item]));
   const currentIds = new Set(current.map(pos => pos.id));
   const changed = current.filter(pos => byId.has(pos.id) &&
@@ -13021,11 +13031,12 @@ function renderApprovedBanner(project){
   if(changes.added.length) parts.push(`додано ${changes.added.length}`);
   if(changes.removed.length) parts.push(`прибрано ${changes.removed.length}`);
   if(revDiscountTypes(project).length) parts.push("нова знижка");
-  const internalTotal = getEstimateTotal(project);
-  const diff = internalTotal - (Number(approved.total) || 0);
+  const worksOnly = !approvalCoversMaterials(project);
+  const internalTotal = worksOnly ? getCustomerWorksTotal(project) : getEstimateTotal(project);
+  const diff = internalTotal - (Number(worksOnly && approved.works ? approved.works : approved.total) || 0);
   return `
     <section class="approvedBanner">
-      <div class="approvedBannerTitle">✓ ${approved.revised ? "Кошторис оновлено" : approved.how && !/клієнт/.test(approved.how) ? "Погоджено (зафіксовано вручну)" : "Погоджено з клієнтом"} ${formatQuoteDate(approved.at)} · ${money(approved.total)}${clientSends(project).length || (project.approvalLog || []).length ? ` <button type="button" class="csLink" style="float:right" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "сховати історію" : "історія"}</button>` : ""}</div>
+      <div class="approvedBannerTitle">✓ ${approved.revised ? (worksOnly ? "Кошторис на роботи оновлено" : "Кошторис оновлено") : `${worksOnly ? "Роботи погоджено" : "Погоджено"} ${approved.how && !/клієнт/.test(approved.how) ? "(зафіксовано вручну)" : "з клієнтом"}`} ${formatQuoteDate(approved.at)} · ${money(approved.total)}${clientSends(project).length || (project.approvalLog || []).length ? ` <button type="button" class="csLink" style="float:right" onclick="clientSendsAll=!clientSendsAll;render()">${clientSendsAll ? "сховати історію" : "історія"}</button>` : ""}</div>
       ${parts.length ? `<div class="approvedBannerChanges">Після погодження: ${parts.join(", ")}${Math.abs(diff) >= 1 ? ` · різниця ${diff > 0 ? "+" : "−"}${money(Math.abs(diff))}` : ""}</div>` : ""}
       ${changes.added.length ? `<div class="approvedBannerRemoved">Додано: ${changes.added.map(item => escapeHtml(item.clientName || positionClientName(item) || item.name || "")).join(", ")}</div>` : ""}
       ${changes.removed.length ? `<div class="approvedBannerRemoved">Прибрано: ${changes.removed.map(item => escapeHtml(item.clientName)).join(", ")}</div>` : ""}
