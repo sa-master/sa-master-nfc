@@ -3300,6 +3300,7 @@ body.positionDragging{
 .phaseDone{margin-top:.5rem;font-size:.8125rem;font-weight:700;color:#1F8A4C}.phaseDone button{background:none;padding:0;height:auto;color:var(--p);font-size:inherit;font-weight:800;text-decoration:underline;text-underline-offset:2px}
 .hCard.hDone{opacity:.72}.hCard.hDone .hTop b{color:var(--tm)}.hCard.hDone .hTop span{color:#1F8A4C}.hBar.done i,.hBar.done i.on{background:rgba(31,138,76,.45)}
 .projectHelpButton{flex:0 0 auto;width:1.75rem;height:1.75rem;border-radius:.875rem;background:rgba(10,132,255,.12);color:var(--p);font-size:.875rem;font-weight:850}
+.projectHelpButton.on{background:var(--p);color:#fff}
 .stageHint{display:flex;gap:.625rem;align-items:flex-start;margin:0 0 .75rem;padding:.75rem .875rem;border-radius:1rem;background:#E7F0FB;color:#24476E;font-size:.8125rem;line-height:1.4;font-weight:600}
 .hero.heroCompact{padding:.25rem .25rem 0;background:none;border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:0;margin-bottom:0}
 .etHome.compact .etBrand b{font-size:1.375rem}.etHome.compact .heroAction{width:2.25rem;height:2.25rem}
@@ -3454,6 +3455,21 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .posRow2 .posMeta b{color:var(--t);font-weight:750}
 .posRow2 .notSetTxt{color:var(--orange)!important}
 .posQty{display:flex;align-items:center;gap:.125rem}
+.areaAddRoom{width:100%;background:rgba(10,132,255,.1);color:var(--p);font-weight:700;font-size:.875rem;border-radius:.75rem;padding:.75rem;text-align:center}
+.areaBox .chips{margin:.25rem 0 .375rem}
+.areaRooms .opItem{width:100%;display:flex;align-items:center;gap:.5rem}
+.areaRooms .opItem .opName{flex:1;text-align:left}
+.areaRooms .opItem b{font-size:.875rem;color:var(--t);white-space:nowrap}
+.areaFoot{display:flex;align-items:center;gap:.375rem;margin:.5rem 0;font-size:.8125rem;color:var(--tm);font-weight:600}
+.areaFoot .areaEdit{margin-left:auto;background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.25rem}
+.areaApply{margin-top:.25rem}
+.areaApply[disabled]{opacity:.5}
+.roomHead{display:flex;align-items:flex-end;gap:.5rem}.roomHead label{flex:1}
+.roomDel{width:2.25rem;height:2.25rem;border-radius:50%;background:rgba(120,120,128,.15);color:var(--tm);font-size:1.125rem;padding:0;flex:0 0 auto}
+.roomCard label{display:flex;flex-direction:column;gap:.25rem;font-size:.6875rem;font-weight:700;color:var(--tm)}
+.roomCard input{height:2.375rem;border-radius:.625rem;border:1px solid rgba(120,120,128,.3);background:var(--bgs, rgba(0,0,0,.2));color:var(--t);font:inherit;font-size:.9375rem;font-weight:700;padding:0 .625rem;min-width:0;width:100%;box-sizing:border-box}
+.roomGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin-top:.5rem}
+.roomSum{margin-top:.5rem;font-size:.75rem;font-weight:700;color:var(--t)}
 .posQty button{width:1.75rem;height:1.625rem;border-radius:.5rem;background:rgba(10,132,255,.12);color:var(--p);font-size:1rem;font-weight:800}
 .posQty input{width:2.25rem;height:1.625rem;margin:0 .125rem;border:1px solid rgba(120,120,128,.3);border-radius:.5625rem;background:var(--card);text-align:center;font-size:.9375rem;font-weight:800;color:var(--t);font-variant-numeric:tabular-nums;padding:0}
 .posQty input:focus{border-color:var(--p);outline:none}
@@ -5101,6 +5117,14 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
+    <div class="fsSection" data-pf="me">
+      <div class="fsSectionTitle">Напрями робіт</div>
+      <div class="fsCard">
+        <div class="chips" id="pfTrades"></div>
+        <div class="formHint">Від цього залежать стартові роботи в каталозі, групи матеріалів і особливості об’єкта. Можна кілька.</div>
+      </div>
+    </div>
+
     <div class="fsSection" data-pf="team" id="pfModeSection">
       <div class="fsSectionTitle">Режим роботи</div>
       <div class="fsCard">
@@ -6073,6 +6097,146 @@ const DEFAULT_WORKS = [
   { name: "Монтаж пральної машини", unit: "шт", stage: "finish" }
 ];
 
+/* ==== Напрями робіт: від них залежать стартові роботи, групи матеріалів, особливості й акт випробувань.
+   Хто напрям ще не обирав (усі, хто працював до цього) — сантехнік: у нього нічого не змінюється. ==== */
+const TRADES = [
+  { id:"plumb", label:"Сантехніка" },
+  { id:"electric", label:"Електрика" },
+  { id:"tile", label:"Плитка" },
+  { id:"drywall", label:"Гіпсокартон" },
+  { id:"paint", label:"Малярні роботи" },
+  { id:"plaster", label:"Штукатурка" },
+  { id:"screed", label:"Стяжка" }
+];
+const TRADE_WORKS = {
+  plumb: DEFAULT_WORKS,
+  electric: [
+    { name:"Штроблення під кабель", unit:"м", stage:"rough" },
+    { name:"Прокладання кабелю", unit:"м", stage:"rough" },
+    { name:"Монтаж підрозетника", unit:"шт", stage:"rough" },
+    { name:"Монтаж розподільчої коробки", unit:"шт", stage:"rough" },
+    { name:"Збирання електрощита", unit:"шт", stage:"rough" },
+    { name:"Монтаж автоматичного вимикача", unit:"шт", stage:"rough" },
+    { name:"Монтаж розетки", unit:"шт", stage:"finish" },
+    { name:"Монтаж вимикача", unit:"шт", stage:"finish" },
+    { name:"Монтаж світильника", unit:"шт", stage:"finish" },
+    { name:"Монтаж люстри", unit:"шт", stage:"finish" },
+    { name:"Монтаж LED-стрічки", unit:"м", stage:"finish" },
+    { name:"Підключення електроплити", unit:"шт", stage:"finish" }
+  ],
+  tile: [
+    { name:"Гідроізоляція", unit:"м²", stage:"rough" },
+    { name:"Укладання плитки на стіни", unit:"м²", stage:"finish" },
+    { name:"Укладання плитки на підлогу", unit:"м²", stage:"finish" },
+    { name:"Укладання великоформатної плитки", unit:"м²", stage:"finish" },
+    { name:"Запил під 45°", unit:"м", stage:"finish" },
+    { name:"Затирання швів", unit:"м²", stage:"finish" },
+    { name:"Плінтус з плитки", unit:"м", stage:"finish" },
+    { name:"Облицювання короба", unit:"шт", stage:"finish" },
+    { name:"Свердління отвору в плитці", unit:"шт", stage:"finish" },
+    { name:"Демонтаж плитки", unit:"м²", stage:"rough" }
+  ],
+  drywall: [
+    { name:"Монтаж стелі з гіпсокартону", unit:"м²", stage:"rough" },
+    { name:"Монтаж перегородки з гіпсокартону", unit:"м²", stage:"rough" },
+    { name:"Обшивка стін гіпсокартоном", unit:"м²", stage:"rough" },
+    { name:"Монтаж короба з гіпсокартону", unit:"м", stage:"rough" },
+    { name:"Монтаж ніші", unit:"шт", stage:"rough" },
+    { name:"Отвір під світильник", unit:"шт", stage:"rough" },
+    { name:"Шумоізоляція", unit:"м²", stage:"rough" }
+  ],
+  paint: [
+    { name:"Ґрунтування", unit:"м²", stage:"rough" },
+    { name:"Армування сіткою", unit:"м²", stage:"rough" },
+    { name:"Шпаклювання стін", unit:"м²", stage:"rough" },
+    { name:"Шпаклювання стелі", unit:"м²", stage:"rough" },
+    { name:"Шліфування", unit:"м²", stage:"rough" },
+    { name:"Фарбування стін", unit:"м²", stage:"finish" },
+    { name:"Фарбування стелі", unit:"м²", stage:"finish" },
+    { name:"Поклейка шпалер", unit:"м²", stage:"finish" },
+    { name:"Монтаж малярного кутника", unit:"м", stage:"rough" }
+  ],
+  plaster: [
+    { name:"Ґрунтування", unit:"м²", stage:"rough" },
+    { name:"Встановлення маяків", unit:"м²", stage:"rough" },
+    { name:"Штукатурення стін", unit:"м²", stage:"rough" },
+    { name:"Механізована штукатурка", unit:"м²", stage:"rough" },
+    { name:"Штукатурення укосів", unit:"м", stage:"rough" },
+    { name:"Монтаж штукатурного кутника", unit:"м", stage:"rough" }
+  ],
+  screed: [
+    { name:"Утеплення під стяжку", unit:"м²", stage:"rough" },
+    { name:"Демпферна стрічка", unit:"м", stage:"rough" },
+    { name:"Напівсуха стяжка", unit:"м²", stage:"rough" },
+    { name:"Мокра стяжка", unit:"м²", stage:"rough" },
+    { name:"Наливна підлога", unit:"м²", stage:"rough" },
+    { name:"Гідроізоляція підлоги", unit:"м²", stage:"rough" }
+  ]
+};
+/* Групи матеріалів напряму (сантехнічні — як були) */
+const TRADE_CATS = {
+  plumb:[["water","Водопостачання"],["heating","Опалення"],["sewer","Каналізація"],["fittings","Арматура"],["fixtures","Прилади"]],
+  electric:[["electric","Електрика"]],
+  tile:[["tile","Плитка й клей"]],
+  drywall:[["drywall","Гіпсокартон і профіль"]],
+  paint:[["paint","Фарби й шпаклівки"]],
+  plaster:[["mixes","Суміші"]],
+  screed:[["mixes","Суміші"]]
+};
+const TRADE_FEATURES = {
+  electric:["Нова проводка", "Заміна проводки", "Щит", "Слабкі струми", "Тепла підлога"],
+  tile:["Великий формат", "Запил 45°", "Мозаїка", "Тепла підлога"],
+  drywall:["Багаторівнева стеля", "Перегородки", "Ніші", "Шумоізоляція"],
+  paint:["Під фарбування", "Шпалери", "Декоративна штукатурка"],
+  plaster:["Гіпсова", "Цементна", "Механізована"],
+  screed:["Напівсуха", "Мокра", "Тепла підлога", "Наливна підлога"]
+};
+function myTrades(){
+  const t = Array.isArray(profile.trades) ? profile.trades.filter(id => TRADES.some(x => x.id === id)) : [];
+  return t.length ? t : ["plumb"];
+}
+function hasTrade(id){ return myTrades().includes(id); }
+function tradeFeatureSuggestions(){ return [...new Set(myTrades().flatMap(id => id === "plumb" ? FEATURE_SUGGESTIONS : (TRADE_FEATURES[id] || [])))]; }
+function tradeCategoryOptions(){
+  const seen = new Set(), out = [];
+  myTrades().forEach(id => (TRADE_CATS[id] || []).forEach(([v, l]) => { if(!seen.has(v)){ seen.add(v); out.push([v, l]); } }));
+  return out;
+}
+/* Змінили напрями: додаємо стартові роботи нових; прибираємо стартові роботи знятих — лише ті, що без ціни й ніде не використані */
+function applyTrades(next){
+  const prev = myTrades();
+  next = TRADES.map(t => t.id).filter(id => next.includes(id));
+  if(!next.length){ toast("Оберіть хоча б один напрям"); return false; }
+  profile.trades = next;
+  const used = new Set();
+  projects.forEach(p => (p.positions || []).forEach(x => { if(x.catalogId) used.add(x.catalogId); }));
+  const keepNames = new Set(next.flatMap(id => (TRADE_WORKS[id] || []).map(w => normalizeText(w.name))));
+  prev.filter(id => !next.includes(id)).forEach(id => {
+    const drop = new Set((TRADE_WORKS[id] || []).map(w => normalizeText(w.name)).filter(n => !keepNames.has(n)));
+    catalog = catalog.filter(c => !(c.type === "work" && drop.has(normalizeText(c.name)) && !(Number(c.price) > 0) && !used.has(c.id)));
+  });
+  next.forEach(id => (TRADE_WORKS[id] || []).forEach(w => {
+    if(catalog.some(c => c.type === "work" && normalizeText(c.name) === normalizeText(w.name))) return;
+    catalog.push({ id:uid("cat"), type:"work", name:w.name, nameMaster:"", unit:w.unit, price:0, category:"", stage:w.stage, manufacturer:"", system:"", article:"", basePriceEUR:0, supplierOffers:[] });
+  }));
+  saveProfileData();
+  saveCatalog();
+  renderTradeCategoryChips();
+  return true;
+}
+/* Чіпи категорій у формах матеріалу — за напрямами майстра */
+function renderTradeCategoryChips(){
+  ["ceCategoryChips", "csCategoryChips"].forEach(boxId => {
+    const box = document.getElementById(boxId);
+    if(!box) return;
+    const active = box.querySelector(".chip.active")?.dataset.value || "other";
+    const opts = [["other", "Інше"], ...tradeCategoryOptions()];
+    if(!opts.some(([v]) => v === active)) opts.push([active, (MATERIAL_CATEGORY_GROUPS.find(g => g.id === active) || {}).label || active]);
+    box.innerHTML = opts.map(([v, l]) => `<button type="button" class="chip ${v === active ? "active" : ""}" data-value="${v}">${escapeHtml(l.charAt(0) + l.slice(1).toLowerCase())}</button>`).join("");
+  });
+}
+
+
 let projects = [];
 let profile = {
   firstName: "",
@@ -6679,6 +6843,11 @@ const MATERIAL_CATEGORY_GROUPS = [
   { id:"heating", label:"ОПАЛЕННЯ" },
   { id:"sewer", label:"КАНАЛІЗАЦІЯ" },
   { id:"fixtures", label:"ПРИЛАДИ" },
+  { id:"electric", label:"ЕЛЕКТРИКА" },
+  { id:"tile", label:"ПЛИТКА Й КЛЕЙ" },
+  { id:"drywall", label:"ГІПСОКАРТОН І ПРОФІЛЬ" },
+  { id:"paint", label:"ФАРБИ Й ШПАКЛІВКИ" },
+  { id:"mixes", label:"СУМІШІ" },
   { id:"other", label:"ІНШЕ" }
 ];
 
@@ -9610,7 +9779,7 @@ function renderProject(p){
           <div class="projectHeaderTitle">${title}${!clientView && groupOrders(p).length > 1 ? `<small class="ordTag">${escapeHtml(orderLabel(p))}</small>` : ""}</div>
           <div class="projectHeaderRight">
             ${p.urgent ? `<span class="projectUrgent">🔥</span>` : ""}
-            ${clientView ? "" : `<button class="projectHelpButton" onclick="toggleStageHint()" aria-label="Підказка">?</button>`}
+            ${clientView || buyOn(p) || planOn(p) ? "" : `<button class="projectHelpButton ${nextStepsHidden() ? "" : "on"}" onclick="toggleNextSteps()" aria-label="${nextStepsHidden() ? "Показати «Що далі»" : "Сховати «Що далі»"}">?</button>`}
             ${clientView ? "" : `<button class="projectMenuButton" onclick="openActions('${escapeHtml(p.id)}')" aria-label="Дії">⋯</button>`}
           </div>
         </div>
@@ -11228,7 +11397,7 @@ function renderQuoteActBox(){
   const box = document.getElementById("quoteActBox");
   const project = projects.find(item => item.id === currentProjectId);
   if(!box) return;
-  if(!project || !actFactual(project) || quoteMode === "materials"){ box.classList.add("hidden"); box.innerHTML = ""; return; }
+  if(!project || !actFactual(project) || quoteMode === "materials" || (!hasTrade("plumb") && !project.pressureAct)){ box.classList.add("hidden"); box.innerHTML = ""; return; }
   const a = project.pressureAct;
   const on = a ? (a.systems || []).filter(actSysDone) : [];
   const wait = a ? (a.systems || []).filter(x => x.on && !actSysDone(x)) : [];
@@ -12208,8 +12377,15 @@ function getNextSteps(p){
   return steps.slice(0, 3);
 }
 
+/* Кнопка «?» у шапці об’єкта ховає / показує «Що далі» (запам’ятовуємо на цьому телефоні) */
+const NEXT_HIDDEN_KEY = "sa_nextStepsHidden";
+function nextStepsHidden(){ try{ return localStorage.getItem(NEXT_HIDDEN_KEY) === "1"; }catch(e){ return false; } }
+function toggleNextSteps(){
+  try{ if(nextStepsHidden()) localStorage.removeItem(NEXT_HIDDEN_KEY); else localStorage.setItem(NEXT_HIDDEN_KEY, "1"); }catch(e){}
+  render();
+}
 function renderNextSteps(p){
-  if(planOn(p)) return "";
+  if(planOn(p) || nextStepsHidden()) return "";
   /* На вкладці «Матеріали» картка «Треба купити» вже є — не дублюємо. */
   const steps = getNextSteps(p).filter(step => !(projectTab === "estimate" && /^Треба купити/.test(step.text)));
   if(!steps.length) return "";
@@ -13125,6 +13301,7 @@ function renderPosName(p, pos){
     <div class="pnPrice">${Number(pos.price) > 0 ? `${formatQty(pos.qty)} ${escapeHtml(pos.unit || "шт")} × ${money(pos.price)} = <b>${money((Number(pos.price) || 0) * (Number(pos.qty) || 0))}</b>` : "Ціна для клієнта не вказана"}</div>
     <div class="planAdd"><span class="opLabel">Своя назва — так бачить клієнт</span><div class="planAddRow"><input id="posOwnName" value="${escapeHtml(cleanText(pos.ownName))}" placeholder="${escapeHtml(short)}" autocomplete="off" enterkeyhint="done" onkeydown="if(event.key==='Enter'){event.preventDefault();posNameSave()}"></div>
       <span class="onbNote" style="text-align:left">Порожньо — береться назва з каталогу: «${escapeHtml(short)}»</span></div>
+    ${areaBlock(p, pos)}
     <div class="planAdd"><span class="opLabel">Під питанням</span>
       <button type="button" class="doubtTgl ${pos.doubt ? "on" : ""}" onclick="posDoubtToggle()">${pos.doubt ? "? Під питанням — натисніть, щоб зняти" : "Позначити «під питанням»"}</button>
       ${pos.doubt ? `<div class="planAddRow"><input id="posDoubtNote" value="${escapeHtml(cleanText(pos.doubtNote))}" placeholder="Що уточнити (необов’язково)" autocomplete="off" enterkeyhint="done"></div>` : ""}
@@ -13133,6 +13310,112 @@ function renderPosName(p, pos){
     <button type="button" class="byDel" onclick="posNameDelete()">Прибрати з кошторису</button>
     <button type="button" class="onbPrimary" onclick="posNameSave()">Готово</button>
   </div>`;
+}
+/* ==== Площа від кімнат: кімнати зберігаються в об’єкті, кількість позиції в м² / м рахується від них ==== */
+const AREA_DOOR = { w:.8, h:2.0 }, AREA_WIN = { w:1.2, h:1.4 };
+const AREA_MEASURES = [["walls", "Стіни", "м²"], ["floor", "Підлога", "м²"], ["ceiling", "Стеля", "м²"], ["perim", "Периметр", "м"]];
+function areaNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) && n > 0 ? n : 0; }
+function roomCalc(r){
+  const L = areaNum(r.l), W = areaNum(r.w), H = areaNum(r.h);
+  const doors = Math.round(areaNum(r.doors)), wins = Math.round(areaNum(r.wins)), other = areaNum(r.other);
+  const floor = L * W, perimRaw = 2 * (L + W);
+  const walls = Math.max(0, perimRaw * H - doors * AREA_DOOR.w * AREA_DOOR.h - wins * AREA_WIN.w * AREA_WIN.h - other);
+  const perim = Math.max(0, perimRaw - doors * AREA_DOOR.w);
+  const r2 = x => Math.round(x * 100) / 100;
+  return { floor:r2(floor), ceiling:r2(floor), walls:r2(walls), perim:r2(perim) };
+}
+function areaGuess(pos){
+  const n = normalizeText(positionShortName(pos) + " " + (pos.name || ""));
+  if(pos.unit === "м") return "perim";
+  if(/стел/.test(n)) return "ceiling";
+  if(/підлог|стяжк|наливн|утеплен.*стяжк|ламінат|підлогу/.test(n)) return "floor";
+  return "walls";
+}
+function posNameKeep(pos){
+  const own = document.getElementById("posOwnName");
+  if(own && pos){ const v = cleanText(own.value); if(v) pos.ownName = v; else delete pos.ownName; }
+}
+function areaState(pos){
+  if(!pos.area || typeof pos.area !== "object") pos.area = {};
+  if(!pos.area.m) pos.area.m = areaGuess(pos);
+  if(!Array.isArray(pos.area.rooms)) pos.area.rooms = null;
+  if(typeof pos.area.add !== "number") pos.area.add = 0;
+  return pos.area;
+}
+function areaBlock(p, pos){
+  if(!["м²", "м"].includes(pos.unit)) return "";
+  const rooms = Array.isArray(p.rooms) ? p.rooms : [];
+  if(!rooms.length) return `<div class="planAdd"><span class="opLabel">Площа від кімнат</span>
+      <button type="button" class="areaAddRoom" onclick="areaOpenRooms(true)">📐 Додати кімнату — порахуємо ${pos.unit === "м" ? "периметр" : "м² стін, підлоги, стелі"}</button></div>`;
+  const st = areaState(pos);
+  const picked = st.rooms ? rooms.filter(r => st.rooms.includes(r.id)) : rooms;
+  const measures = AREA_MEASURES.filter(([, , u]) => u === pos.unit);
+  if(!measures.some(([k]) => k === st.m)) st.m = measures[0][0];
+  const sum = picked.reduce((a, r) => a + roomCalc(r)[st.m], 0);
+  const total = Math.round(sum * (1 + st.add / 100) * 100) / 100;
+  return `<div class="planAdd areaBox"><span class="opLabel">Площа від кімнат</span>
+    ${measures.length > 1 ? `<div class="chips">${measures.map(([k, l]) => `<button type="button" class="chip small ${st.m === k ? "active" : ""}" onclick="areaSet('m','${k}')">${l}</button>`).join("")}</div>` : ""}
+    <div class="areaRooms">${rooms.map(r => { const on = !st.rooms || st.rooms.includes(r.id); return `<button type="button" class="opItem ${on ? "sel" : ""}" onclick="areaToggleRoom('${escapeHtml(r.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(r.name || "Кімната")}</span><b>${formatQty(roomCalc(r)[st.m])} ${pos.unit}</b></button>`; }).join("")}</div>
+    <div class="areaFoot"><span>Запас</span>${[0, 5, 10].map(v => `<button type="button" class="chip small ${st.add === v ? "active" : ""}" onclick="areaSet('add',${v})">${v ? "+" + v + "%" : "без"}</button>`).join("")}<button type="button" class="areaEdit" onclick="areaOpenRooms(false)">Кімнати</button></div>
+    <button type="button" class="onbPrimary areaApply" ${total > 0 ? "" : "disabled"} onclick="areaApply(${total})">Поставити ${formatQty(total)} ${pos.unit}${Math.abs(total - (Number(pos.qty) || 0)) < 0.005 ? " ✓" : ""}</button>
+  </div>`;
+}
+function areaSet(k, v){ const { p, pos } = buyPos(buyUi && buyUi.posId); if(!pos) return; posNameKeep(pos); areaState(pos)[k] = v; touchProject(p); renderBuyScreen(); }
+function areaToggleRoom(id){
+  const { p, pos } = buyPos(buyUi && buyUi.posId); if(!pos) return; posNameKeep(pos);
+  const st = areaState(pos), all = (p.rooms || []).map(r => r.id);
+  let sel = st.rooms ? st.rooms.slice() : all.slice();
+  sel = sel.includes(id) ? sel.filter(x => x !== id) : [...sel, id];
+  st.rooms = sel.length === all.length ? null : sel;
+  touchProject(p); renderBuyScreen();
+}
+function areaApply(total){
+  const { p, pos } = buyPos(buyUi && buyUi.posId); if(!pos || !(total > 0)) return; posNameKeep(pos);
+  pos.qty = roundQty(total);
+  if(pos.whereK === "stock") pos.fromStockQty = pos.qty;
+  touchProject(p); renderBuyScreen();
+  toast(`Кількість: ${formatQty(pos.qty)} ${pos.unit}`);
+}
+function areaOpenRooms(addNew){
+  const { p, pos } = buyPos(buyUi && buyUi.posId); if(!p) return; if(pos) posNameKeep(pos);
+  if(!Array.isArray(p.rooms)) p.rooms = [];
+  if(addNew || !p.rooms.length) p.rooms.push({ id:uid("room"), name:"", l:"", w:"", h:"2,7", doors:"1", wins:"0", other:"" });
+  buyUi.mode = "rooms"; renderBuyScreen();
+  if(addNew) setTimeout(() => { const cards = document.querySelectorAll(".roomCard"); cards[cards.length - 1]?.querySelector("input")?.focus(); }, 80);
+}
+function roomsRead(p){
+  (p.rooms || []).forEach(r => ["name", "l", "w", "h", "doors", "wins", "other"].forEach(f => { const el = document.getElementById(`room_${f}_${r.id}`); if(el) r[f] = f === "name" ? cleanText(el.value) : String(el.value || "").trim(); }));
+}
+function renderRooms(p, pos){
+  const rooms = p.rooms || [];
+  const fld = (r, f, label, ph, mode) => `<label>${label}<input id="room_${f}_${escapeHtml(r.id)}" value="${escapeHtml(r[f] || "")}" placeholder="${ph}" ${mode ? `inputmode="${mode}"` : ""} onfocus="this.select()" oninput="roomsChanged()"></label>`;
+  buyScreen().innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="roomsDone()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Кімнати</span></div>
+    <span class="onbNote" style="text-align:left">Розміри в метрах. Двері рахуємо ${String(AREA_DOOR.w).replace(".", ",")}×${String(AREA_DOOR.h).replace(".", ",")} м, вікна ${String(AREA_WIN.w).replace(".", ",")}×${String(AREA_WIN.h).replace(".", ",")} м — їх площу віднімаємо від стін.</span>
+    ${rooms.map((r, i) => { const c = roomCalc(r); return `<div class="planAdd roomCard">
+      <div class="roomHead">${fld(r, "name", "Назва", `Кімната ${i + 1}`)}<button type="button" class="roomDel" onclick="roomDelete('${escapeHtml(r.id)}')" aria-label="Видалити кімнату">×</button></div>
+      <div class="roomGrid">${fld(r, "l", "Довжина", "3,5", "decimal")}${fld(r, "w", "Ширина", "2,4", "decimal")}${fld(r, "h", "Висота", "2,7", "decimal")}
+      ${fld(r, "doors", "Двері, шт", "1", "numeric")}${fld(r, "wins", "Вікна, шт", "0", "numeric")}${fld(r, "other", "Ще мінус, м²", "0", "decimal")}</div>
+      <div class="roomSum" id="room_sum_${escapeHtml(r.id)}">Підлога ${formatQty(c.floor)} м² · Стіни ${formatQty(c.walls)} м² · Периметр ${formatQty(c.perim)} м</div>
+    </div>`; }).join("")}
+    <button type="button" class="areaAddRoom" onclick="roomAdd()">＋ Ще кімната</button>
+    <div class="onbSpacer"></div>
+    <button type="button" class="onbPrimary" onclick="roomsDone()">Готово</button>
+  </div>`;
+}
+/* Без перемальовування екрана (поле, з якого йде фокус, не зникає) — оновлюємо лише підсумки кімнат */
+function roomsChanged(){
+  const p = buyCur(); if(!p) return; roomsRead(p); touchProject(p);
+  (p.rooms || []).forEach(r => { const el = document.getElementById(`room_sum_${r.id}`); if(el){ const c = roomCalc(r); el.textContent = `Підлога ${formatQty(c.floor)} м² · Стіни ${formatQty(c.walls)} м² · Периметр ${formatQty(c.perim)} м`; } });
+}
+function roomAdd(){ const p = buyCur(); if(!p) return; roomsRead(p); p.rooms.push({ id:uid("room"), name:"", l:"", w:"", h:(p.rooms[p.rooms.length - 1] || {}).h || "2,7", doors:"1", wins:"0", other:"" }); touchProject(p); renderBuyScreen(); setTimeout(() => { const cards = document.querySelectorAll(".roomCard"); cards[cards.length - 1]?.querySelector("input")?.focus(); cards[cards.length - 1]?.scrollIntoView({ block:"center" }); }, 60); }
+function roomDelete(id){ const p = buyCur(); if(!p) return; roomsRead(p); p.rooms = p.rooms.filter(r => r.id !== id); touchProject(p); renderBuyScreen(); }
+function roomsDone(){
+  const p = buyCur(); if(!p) return; roomsRead(p);
+  p.rooms = (p.rooms || []).filter(r => areaNum(r.l) && areaNum(r.w));
+  p.rooms.forEach((r, i) => { if(!r.name) r.name = `Кімната ${i + 1}`; });
+  touchProject(p);
+  buyUi.mode = "pname"; renderBuyScreen();
 }
 function posNameDelete(){
   const { p, pos } = buyPos(buyUi && buyUi.posId);
@@ -13306,7 +13589,7 @@ function renderFeatureTags(){
 
 function renderFeatureSuggestions(){
   const box = document.getElementById("npFeatureSuggestions");
-  const available = FEATURE_SUGGESTIONS.filter(s =>
+  const available = tradeFeatureSuggestions().filter(s =>
     !editingFeatures.some(f => f.toLowerCase() === s.toLowerCase())
   );
   if(!available.length){ box.innerHTML = ""; return; }
@@ -14078,6 +14361,11 @@ function renderCatalogChips(){
     ["heating","Опалення"],
     ["sewer","Каналізація"],
     ["fixtures","Прилади"],
+    ["electric","Електрика"],
+    ["tile","Плитка й клей"],
+    ["drywall","Гіпсокартон"],
+    ["paint","Фарби"],
+    ["mixes","Суміші"],
     ["other","Інше"]
   ];
 
@@ -18490,6 +18778,8 @@ function detectSystem(text){
 
 function detectCategory(text, brand, system){
   const source = ntext(text + " " + (brand || "") + " " + (system || ""));
+  const tradeCat = detectTradeCategory(source);
+  if(tradeCat) return tradeCat;
 
   if(/каналіз|канализ|sewer|htsafe|ht safe|хрестовин|крестовин|сифон|відвід.*канал|отвод.*канал|канализац/.test(source)){
     return "sewer";
@@ -18534,6 +18824,17 @@ function detectCategory(text, brand, system){
   }
 
   return "other";
+}
+
+/* Матеріали інших напрямів — лише якщо майстер цим займається (у сантехніка визначення як було) */
+function detectTradeCategory(source){
+  const t = myTrades();
+  if(t.includes("electric") && /кабел|провід|провод|автомат.*вимик|\bавтомат\b|узо\b|диф.*автомат|розетк|вимикач|підрозетн|подрозетн|розподільч.*короб|гофр|ввг|nym|щит(ок)?\b|клемм|wago|клем/.test(source)) return "electric";
+  if(t.includes("tile") && /плитк|керамогран|затирк|хрестик|свп|клин.*вирівн|плиточн|клей.*плит|гідроізоляц|гидроизоляц|мозаїк/.test(source)) return "tile";
+  if(t.includes("drywall") && /гіпсокартон|гипсокартон|гкл|гклв|cd[\s-]*60|ud[\s-]*27|cw[\s-]*\d|uw[\s-]*\d|профіль.*(стел|стін|напрямн)|підвіс|прямий підвіс|дюбель.*швидкомонт|серпянк/.test(source)) return "drywall";
+  if(t.includes("paint") && /фарб|краск|ґрунт|грунт|шпакл|шпатл|валик|пензл|малярн|шпалер|флізелін|склохолст/.test(source)) return "paint";
+  if((t.includes("plaster") || t.includes("screed")) && /штукатур|маяк|стяжк|цемент|пісок|песок|ротбанд|rotband|наливн.*підлог|самовирівн|демпфер|фібр|піскобетон|пескобетон/.test(source)) return "mixes";
+  return "";
 }
 
 function findExistingCatalogItem(imported, supplierName){
@@ -19017,6 +19318,7 @@ function openActions(id){
 
   }
 
+  document.getElementById("actionActRow")?.classList.toggle("hidden", !hasTrade("plumb") && !(p && p.pressureAct));
   { const a = p && p.pressureAct; const t = document.getElementById("actionActText");
     if(t){ const done = a ? (a.systems || []).filter(actSysDone) : [], wait = a ? (a.systems || []).filter(x => x.on && !actSysDone(x)) : [];
       t.innerHTML = a ? `Акт гідравлічних випробувань<small style="display:block;color:var(--tm);font-size:.75rem;font-weight:500">${done.length ? `✓ ${escapeHtml(done.map(x => actShortName(x) + " " + actDateLabel(actSysDate(x, a)).slice(0, 5)).join(", "))}` : ""}${wait.length ? `${done.length ? " · " : ""}чекає: ${escapeHtml(wait.map(actShortName).join(", "))}` : " · додасться до фактичного кошторису"}</small>` : "Акт гідравлічних випробувань"; } }
@@ -19052,7 +19354,7 @@ function actionSkipToDone(){
 
 /* Випробування — окремий крок робіт: нагадування в «Що далі», поки не випробувано або майстер не сказав, що не потрібно */
 function actPending(p){
-  if(!p || p.actSkip) return null;
+  if(!p || p.actSkip || !hasTrade("plumb")) return null;
   const a = p.pressureAct;
   if(!a) return { done:[], wait:ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label })) };
   const on = (a.systems || []).filter(x => x.on);
@@ -19279,7 +19581,23 @@ function pfTab(t){
   try{ sessionStorage.setItem("sa_pfTab", t); }catch(e){}
   const body = el.querySelector(".fsBody"); if(body) body.scrollTop = 0;
 }
+function renderProfileTrades(){
+  const box = document.getElementById("pfTrades");
+  if(!box) return;
+  const mine = myTrades();
+  box.innerHTML = TRADES.map(t => `<button type="button" class="chip ${mine.includes(t.id) ? "active" : ""}" onclick="pfToggleTrade('${t.id}')">${t.label}</button>`).join("");
+}
+function pfToggleTrade(id){
+  const mine = myTrades();
+  const next = mine.includes(id) ? mine.filter(x => x !== id) : [...mine, id];
+  if(!applyTrades(next)) return;
+  renderProfileTrades();
+  render();
+  const t = TRADES.find(x => x.id === id);
+  toast(next.includes(id) ? `${t.label}: типові роботи додано в Каталог — впишіть свої ціни` : `${t.label} прибрано`, 2600);
+}
 function openProfile(){
+  renderProfileTrades();
   { let t = "me"; try{ t = sessionStorage.getItem("sa_pfTab") || "me"; }catch(e){} const el = document.getElementById("profileScreen"); if(el) el.dataset.pf = ["me", "team"].includes(t) ? t : "me"; }
   document.getElementById("pfFirstName").value = profile.firstName || "";
   document.getElementById("pfLastName").value = profile.lastName || "";
@@ -21655,6 +21973,7 @@ function renderBuyScreen(){
   if(buyUi.mode === "replace") return renderBuyReplace(p, pos);
   if(buyUi.mode === "cpos") return renderClientPos(p, pos);
   if(buyUi.mode === "pname") return renderPosName(p, pos);
+  if(buyUi.mode === "rooms") return renderRooms(p, pos);
   const offers = getCatalogSupplierOffers(getPositionCatalogItem(pos));
   const opt = (k, s, label, hint) => {
     const on = pos.whereK === k && (k !== "sup" || normalizeText(pos.whereS) === normalizeText(s));
@@ -22517,8 +22836,11 @@ let onbHasFop = true;
 
 function onbEsc(value){ return escapeHtml(String(value || "")); }
 
+let onbTrades = [];
+function onbToggleTrade(id){ onbTrades = onbTrades.includes(id) ? onbTrades.filter(x => x !== id) : [...onbTrades, id]; renderOnboarding(); }
 function openOnboarding(){
   onbStep = 1;
+  onbTrades = Array.isArray(profile.trades) ? profile.trades.slice() : [];
   onbWorkMode = profile.isSolo === false ? (team.length > 1 ? "brigades" : "partner") : "solo";
   onbHasFop = Boolean(profile.iban) || !profile.firstName;
   let screen = document.getElementById("onboarding");
@@ -22542,6 +22864,7 @@ function onbCollect(){
   }
   if(onbStep === 2){
     profile.isSolo = onbWorkMode === "solo";
+    if(onbTrades.length) applyTrades(onbTrades);
   }
   if(onbStep === 3){
     document.querySelectorAll("[data-onb-price]").forEach(input => {
@@ -22613,14 +22936,17 @@ function renderOnboarding(){
   if(onbStep === 2){
     const choice = (mode, title, sub) => `<button type="button" class="onbChoice ${onbWorkMode === mode ? "active" : ""}" onclick="onbSetWork('${mode}')"><span class="onbDot"></span><span><b>${title}</b><small>${sub}</small></span></button>`;
     body = `
-      <h1 class="onbTitle">Як ви працюєте?</h1>
+      <h1 class="onbTitle">Чим ви займаєтесь?</h1>
+      <p class="onbText">Можна кілька — підготуємо типові роботи й матеріали саме для вас.</p>
+      <div class="chips onbTrades">${TRADES.map(t => `<button type="button" class="chip ${onbTrades.includes(t.id) ? "active" : ""}" onclick="onbToggleTrade('${t.id}')">${t.label}</button>`).join("")}</div>
+      <h1 class="onbTitle" style="margin-top:1.25rem">Як ви працюєте?</h1>
       <p class="onbText">Від цього залежить, чи показувати команду й розподіл заробітку в об’єктах.</p>
       ${choice("solo", "Сам", "Без команди — усе просто")}
       ${choice("partner", "З напарником", "Ділите заробіток за відсотком або фіксом")}
       ${choice("brigades", "Кілька бригад", "Виконроб: різні люди на різних об’єктах")}
       <div class="onbSpacer"></div>
       ${onbWorkMode !== "solo" ? `<span class="onbNote">Людей додасте в Профілі → Команда (можна одразу після знайомства)</span>` : ""}
-      <button type="button" class="onbPrimary" onclick="onbGo(3)">Далі</button>`;
+      <button type="button" class="onbPrimary" onclick="${onbTrades.length ? "onbGo(3)" : "toast('Оберіть, чим ви займаєтесь')"}">Далі</button>`;
   }
 
   if(onbStep === 3){
@@ -22812,6 +23138,7 @@ if(ET_TEST_BUILD){
   badge.textContent = "ТЕСТОВА ВЕРСІЯ";
   document.body.appendChild(badge);
 }
+try{ renderTradeCategoryChips(); }catch(e){ console.error(e); }
 render();
 importRequestFromTelegramLink();
 setTimeout(() => {
