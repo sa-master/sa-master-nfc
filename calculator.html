@@ -10466,7 +10466,8 @@ function openSendChoice(){
   const p = projects.find(x => x.id === currentProjectId);
   if(!p) return;
   const mats = sendMaterials(p);
-  if(getApproved(p) || !mats.length){ quotePreliminary = false; openQuotePreview(); return; }
+  /* Звірка з постачальниками потрібна, поки матеріали не погоджені клієнтом (погодження самих робіт її не скасовує) */
+  if(approvalCoversMaterials(p) || !mats.length){ quotePreliminary = false; openQuotePreview(); return; }
   const groups = new Map();
   const noSup = [];
   mats.forEach(pos => {
@@ -21806,8 +21807,10 @@ function renderBuyList(p){
       btn = unsent ? `<button type="button" class="ptBtn primary" onclick="openBuySend(${buyEnc(g.s)})">Надіслати список</button>`
         : `<button type="button" class="ptBtn" onclick="openArrived(${buyEnc(g.s)})">Привезли</button>`;
     }
-    const head = g.k === "?" ? `<span class="byWarn">Де брати?</span><small>натисніть на товар і виберіть</small>` : `${escapeHtml(g.label)} <small>${g.items.length}</small>`;
-    return `<div class="byGroup"><div class="byHead"><span>${head}</span>${btn}</div>${g.items.map(item).join("")}</div>`;
+    if(g.k === "?" && g.items.length > 1) btn = `<button type="button" class="ptBtn primary" onclick="openBuyBulk()">Усім одразу</button>`;
+    const head = g.k === "?" ? `<span class="byWarn">Де брати?</span><small>${g.items.length > 1 ? "усім одразу або натисніть товар" : "натисніть на товар і виберіть"}</small>` : `${escapeHtml(g.label)} <small>${g.items.length}</small>`;
+    const headEl = g.k === "?" ? `<span role="button" tabindex="0" style="cursor:pointer" onclick="${g.items.length > 1 ? "openBuyBulk()" : `openBuySrc('${escapeHtml(g.items[0].id)}')`}">${head}</span>` : `<span>${head}</span>`;
+    return `<div class="byGroup"><div class="byHead">${headEl}${btn}</div>${g.items.map(item).join("")}</div>`;
   };
   const todo = Array.isArray(p.todo) ? p.todo : [];
   const openNotes = todo.filter(t => !t.done);
@@ -21980,6 +21983,65 @@ function buySupplierChoices(p, pos){
   (profile.mySuppliers || []).forEach(add);
   return Array.from(sup.values());
 }
+/* «Де брати?» для всіх товарів без джерела одним вибором */
+function buyBulkItems(p){ return buyItems(p).filter(pos => !pos.whereK && buyNeed(p, pos) > 0); }
+function buyPriceSupplier(pos){
+  /* постачальник, у чиєму прайсі є товар (найдешевший) */
+  const offers = getCatalogSupplierOffers(getPositionCatalogItem(pos)).filter(o => o && cleanText(o.supplierName));
+  let best = null;
+  offers.forEach(o => { const pr = supplierOfferPrice(o, "master"); if(!best || (pr > 0 && (!(best.pr > 0) || pr < best.pr))) best = { name: cleanText(o.supplierName), pr }; });
+  return best ? best.name : cleanText(getPositionPlannedSupplier(pos));
+}
+function openBuyBulk(){
+  buyUi = { mode:"bulk" };
+  buyScreen().classList.add("open");
+  renderBuyScreen();
+  buyScreen().scrollTop = 0;
+}
+function renderBuyBulk(p){
+  const items = buyBulkItems(p);
+  if(!items.length){ closeBuyScreen(); return; }
+  const sups = new Map();
+  items.forEach(pos => buySupplierChoices(p, pos).forEach(n => { const k = normalizeText(n); if(!sups.has(k)) sups.set(k, { name:n, has:0 }); }));
+  items.forEach(pos => getCatalogSupplierOffers(getPositionCatalogItem(pos)).forEach(o => { const k = normalizeText(o && o.supplierName); if(sups.has(k)) sups.get(k).has++; }));
+  const byPrice = items.filter(pos => buyPriceSupplier(pos)).length;
+  const opt = (action, label, hint, main) => `<button type="button" class="opItem byOpt ${main ? "sel" : ""}" onclick="${action}"><span class="opBox">${main ? "★" : ""}</span><span class="opName">${escapeHtml(label)}${hint ? `<small>${escapeHtml(hint)}</small>` : ""}</span></button>`;
+  buyScreen().innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeBuyScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Де брати — усім</span></div>
+    <div class="psHead"><b>${items.length} ${plural(items.length, "товар", "товари", "товарів")} без вибору</b><small>Потім будь-який товар можна змінити окремо — натиснути на нього</small></div>
+    <div class="opList">
+      ${byPrice ? opt("buyBulkApply('price')", "За прайсами постачальників", byPrice === items.length ? "кожен товар — до постачальника, у чиєму прайсі він є (дешевший)" : `${byPrice} з ${items.length} є в прайсах; решта лишиться в «Де брати?»`, true) : ""}
+      ${Array.from(sups.values()).sort((a, b) => b.has - a.has || a.name.localeCompare(b.name, "uk")).map(x => opt(`buyBulkApply('sup', ${buyEnc(x.name)})`, `Усе — ${x.name}`, x.has ? `у прайсі ${x.has} з ${items.length}` : "")).join("")}
+      ${opt("buyBulkApply('self')", "Усе куплю сам", "магазин, базар")}
+      <button type="button" class="psNew" onclick="buyBulkNew()">＋ Усе — іншому постачальнику</button>
+    </div>
+  </div>`;
+}
+function buyBulkNew(){
+  const name = cleanText(prompt("Назва постачальника або магазину") || "");
+  if(name) buyBulkApply("sup", name);
+}
+function buyBulkApply(k, s){
+  const p = buyCur();
+  if(!p) return;
+  let n = 0;
+  buyBulkItems(p).forEach(pos => {
+    const sup = k === "price" ? buyPriceSupplier(pos) : s;
+    if((k === "price" || k === "sup") && !sup) return;
+    const kk = k === "price" ? "sup" : k;
+    buySetWhere(pos, kk, sup);
+    if(kk === "sup" && pos.purchasePriceState !== "confirmed"){
+      const offer = getCatalogSupplierOffers(getPositionCatalogItem(pos)).find(o => normalizeText(o && o.supplierName) === normalizeText(sup));
+      const price = supplierOfferPrice(offer, "master");
+      if(price > 0){ pos.purchasePrice = price; pos.purchasePriceState = "estimated"; }
+    }
+    n++;
+  });
+  touchProject(p);
+  closeBuyScreen();
+  const left = buyBulkItems(p).length;
+  toast(left ? `Розподілено: ${n}. Ще без вибору: ${left}` : `Розподілено: ${n}`, 2800);
+}
 function openBuySrc(posId){
   buyUi = { mode:"src", posId, q:"" };
   buyScreen().classList.add("open");
@@ -21991,6 +22053,7 @@ function renderBuyScreen(){
   if(!p || !buyUi) return;
   if(buyUi.mode === "add") return renderBuyAdd(p);
   if(buyUi.mode === "prices") return renderMissingPrices(p);
+  if(buyUi.mode === "bulk") return renderBuyBulk(p);
   const pos = (p.positions || []).find(x => x.id === buyUi.posId);
   if(!pos){ closeBuyScreen(); return; }
   if(buyUi.mode === "replace") return renderBuyReplace(p, pos);
