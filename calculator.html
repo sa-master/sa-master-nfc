@@ -14975,7 +14975,17 @@ function photoQueryFor(item, fallbackName){
 function openPhotoSearch(query){
   const q = cleanText(query || photoQuery);
   if(!q) return;
-  window.open("https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(q), "_blank", "noopener");
+  openExternalLink("https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(q));
+}
+/* Зовнішнє посилання через звичайний <a>, а не window.open: на iPhone window.open спершу відкриває порожню сторінку,
+   і кнопка «назад» у браузері повертала на неї */
+function openExternalLink(url){
+  const a = document.createElement("a");
+  a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer";
+  a.style.display = "none";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 0);
 }
 function openItemPhoto(catalogId){
   openPhotoSearch(photoQueryFor(catalog.find(c => c.id === catalogId)));
