@@ -94,6 +94,8 @@ tr.skip td{color:var(--tm);text-decoration:line-through}
 .days input{width:70px;padding:5px 8px}
 .repl{background:var(--soft);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
 .repl .t{font-size:12.5px;font-weight:750;color:var(--p)}
+.fixOn{align-self:flex-start;background:none;border:0;padding:2px 0;color:var(--p);font:inherit;font-size:13px;font-weight:650;cursor:pointer}
+.fixOff{align-self:flex-start;background:none;border:0;padding:2px 0;color:var(--muted,#8a94a6);font:inherit;font-size:12.5px;cursor:pointer}
 .lnk{color:var(--p);font-weight:700;font-size:13px;background:none;border:0;text-align:left;padding:0;cursor:pointer;font-family:inherit}
 .mlist{display:flex;flex-direction:column}
 .mrow{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);text-decoration:none;color:var(--t)}
@@ -123,6 +125,13 @@ body{background-image:linear-gradient(var(--gridM) 1px,transparent 1px),linear-g
 .btn,.route,.search,.chip,.toggle,button.btn,.filebtn,.photo,input,textarea,select,.call,.x{border-radius:8px!important}
 .th,.fi{border-radius:6px!important}
 h1{letter-spacing:-.02em}
+.cabSup{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);padding:14px 2px 4px}
+.cabSup:first-child{padding-top:0}
+.oldChecks{margin-top:12px}
+.oldChecks>summary{cursor:pointer;list-style:none;padding:12px 4px;font-weight:750;color:var(--p);font-size:15px}
+.oldChecks>summary::-webkit-details-marker{display:none}
+.oldChecks>summary::before{content:"▸ ";}
+.oldChecks[open]>summary::before{content:"▾ ";}
 </style>
 </head>
 <body>
@@ -738,8 +747,10 @@ const fmtWhen = iso => { if(!iso) return ""; const d = new Date(iso); return new
 function renderChecks(){
   const box = $("checksBox");
   if(!checks.length){ box.innerHTML = ""; return; }
-  box.innerHTML = checks.map(c => {
-    const open = !c.answeredAt || c.sentAt > c.answeredAt;
+  /* Нові — зверху як є; на які вже відповіли — згорнуті в «Попередні звірки», щоб не заважали */
+  const isOpen = c => !c.answeredAt || c.sentAt > c.answeredAt;
+  const row = c => {
+    const open = isOpen(c);
     if(open) return `<section class="card req">
       <div class="reqTop"><span class="badge">НОВЕ</span><h2>Звірка: «${esc(c.title || "об’єкт")}»</h2></div>
       <div class="hint">${c.count} поз. · надіслано ${fmtWhen(c.sentAt)}<br>Перевірте наявність і ціни — майстер чекає, щоб надіслати кошторис клієнту.</div>
@@ -751,7 +762,10 @@ function renderChecks(){
       <div class="reqTop"><h2>Звірка: «${esc(c.title || "об’єкт")}»</h2><span class="pill ok" style="margin-left:auto">відповіли ${fmtDate(c.answeredAt)}</span></div>
       <button type="button" class="btn ghost" style="height:40px;font-size:14px" onclick="openCheck('${c.id}')">Переглянути / виправити</button>
     </section>`;
-  }).join("");
+  };
+  const fresh = checks.filter(isOpen), done = checks.filter(c => !isOpen(c));
+  box.innerHTML = fresh.map(row).join("") +
+    (done.length ? (fresh.length ? `<details class="oldChecks"><summary>Попередні звірки (${done.length})</summary>${done.map(row).join("")}</details>` : done.map(row).join("")) : "");
 }
 async function fetchCheck(cid){
   const r = await fetch(`${SERVER}/sup/${id}/checks/${cid}`, { cache:"no-store" });
@@ -783,6 +797,9 @@ function setRow(k, field, value){
   const r = chk.rows.get(k); if(!r) return;
   if(field === "avail"){ r.avail = value; if(value !== "no") r.repl = r.repl && (r.repl.name || r.repl.article) ? r.repl : null; renderCheck(); return; }
   if(field === "days" || field === "retail" || field === "master"){ r[field] = num(value); updateCheckSum(); return; }
+  /* Майстер помилився (не той артикул / кількість) — менеджер виправляє; назва в майстра лишається його */
+  if(field === "fixOpen"){ r.fix = r.fix ? null : { article:"", name:"", qty:null }; renderCheck(); return; }
+  if(field.startsWith("fix.")){ r.fix = r.fix || { article:"", name:"", qty:null }; const f = field.slice(4); r.fix[f] = f === "qty" ? num(value) : String(value || "").trim(); updateCheckSum(); return; }
   if(field.startsWith("repl.")){ r.repl = r.repl || { name:"", article:"", retail:null, master:null }; const f = field.slice(5); r.repl[f] = f === "name" || f === "article" ? String(value || "").trim() : num(value); updateCheckSum(); }
 }
 function renderCheck(){
@@ -794,6 +811,11 @@ function renderCheck(){
     return `<div class="ci">
       <div class="ciTop"><span><b>${esc(i.name)}</b><small>${[i.article ? "арт. " + esc(i.article) : "", esc(i.brand || "")].filter(Boolean).join(" · ")}</small></span><span class="ciQ">${String(i.qty ?? "").replace(".", ",")} ${esc(i.unit || "шт")}</span></div>
       <div class="seg">${b("yes", "Є")}${b("order", "Під замовл.")}${b("no", "Немає", "no")}</div>
+      ${r.avail !== "no" ? (r.fix ? `<div class="repl"><span class="t">Майстер помилився — правильно так</span>
+        <div class="pr"><label>Артикул<input style="text-align:left" value="${esc(r.fix.article || "")}" placeholder="${esc(i.article || "")}" oninput="setRow('${esc(i.k)}','fix.article',this.value)"></label><label>Кількість<input inputmode="decimal" value="${money(r.fix.qty)}" placeholder="${String(i.qty ?? "").replace(".", ",")}" oninput="setRow('${esc(i.k)}','fix.qty',this.value)"></label></div>
+        <input placeholder="Назва товару (необов’язково)" value="${esc(r.fix.name || "")}" oninput="setRow('${esc(i.k)}','fix.name',this.value)">
+        <button type="button" class="fixOff" onclick="setRow('${esc(i.k)}','fixOpen')">Скасувати виправлення</button></div>`
+        : `<button type="button" class="fixOn" onclick="setRow('${esc(i.k)}','fixOpen')">✎ Інший артикул або кількість</button>`) : ""}
       ${r.avail === "order" ? `<div class="days">Строк: <input inputmode="numeric" value="${r.days ?? ""}" placeholder="3" oninput="setRow('${esc(i.k)}','days',this.value)"> днів</div>` : ""}
       ${r.avail === "no" ? `<div class="repl"><span class="t">Заміна (якщо є)</span>
         <input placeholder="Назва замінника" value="${esc((r.repl && r.repl.name) || "")}" oninput="setRow('${esc(i.k)}','repl.name',this.value)">
@@ -805,15 +827,15 @@ function renderCheck(){
   updateCheckSum();
 }
 function checkStats(){
-  let yes = 0, order = 0, no = 0, repl = 0, prices = 0;
-  chk.rec.items.forEach(i => { const r = chk.rows.get(i.k); if(r.avail === "yes") yes++; else if(r.avail === "order") order++; else { no++; if(r.repl && (r.repl.name || r.repl.article)) repl++; }
+  let yes = 0, order = 0, no = 0, repl = 0, prices = 0, fixed = 0;
+  chk.rec.items.forEach(i => { const r = chk.rows.get(i.k); if(r.avail !== "no" && r.fix && (r.fix.article || r.fix.name || r.fix.qty !== null)) fixed++; if(r.avail === "yes") yes++; else if(r.avail === "order") order++; else { no++; if(r.repl && (r.repl.name || r.repl.article)) repl++; }
     if(r.avail !== "no" && ((r.retail !== null && i.retail !== null && Math.abs(r.retail - i.retail) > 0.009) || (r.master !== null && i.master !== null && Math.abs(r.master - i.master) > 0.009))) prices++; });
-  return { yes, order, no, repl, prices };
+  return { yes, order, no, repl, prices, fixed };
 }
 function updateCheckSum(){
   if(!chk) return;
   const s = checkStats();
-  $("cvSum").textContent = [`Є ${s.yes}`, s.order ? `під замовлення ${s.order}` : "", s.no ? `немає ${s.no}${s.repl ? ` (заміна ${s.repl})` : ""}` : "", s.prices ? `змінено цін ${s.prices}` : ""].filter(Boolean).join(" · ");
+  $("cvSum").textContent = [`Є ${s.yes}`, s.order ? `під замовлення ${s.order}` : "", s.no ? `немає ${s.no}${s.repl ? ` (заміна ${s.repl})` : ""}` : "", s.prices ? `змінено цін ${s.prices}` : "", s.fixed ? `виправлено ${s.fixed}` : ""].filter(Boolean).join(" · ");
 }
 async function postAnswer(cid, body){
   const r = await fetch(`${SERVER}/sup/${id}/checks/${cid}/answer`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) });
@@ -917,7 +939,11 @@ async function cabRegister(){
     if(!r.ok) return;
     const d = await r.json(); cabSet(d.cab);
     try{ sessionStorage.setItem("sup_m", id); history.replaceState(null, "", "#c=" + d.cab + "&m=" + id); }catch(e){}
-    const masters = await cabFetch(d.cab);
+    /* Лише запити для того ж постачальника, що й це посилання: запити до інших фірм тут ні до чого */
+    const all = await cabFetch(d.cab);
+    const me = all.find(m => m.id === id);
+    const sk = m => String((m && m.supplierName) || "").trim().toLowerCase();
+    const masters = me ? all.filter(m => sk(m) === sk(me)) : all;
     if(masters.length < 2) return;
     const others = masters.filter(m => m.id !== id);
     const newCount = others.reduce((s, m) => s + m.open, 0);
@@ -931,7 +957,12 @@ async function loadCabinet(c){
   try{ masters = await cabFetch(c); }catch(e){ fail("Кабінет не знайдено. Відкрийте посилання від майстра — кабінет створиться заново."); return; }
   $("loading").classList.add("hidden");
   $("cabWho").textContent = [...new Set(masters.map(m => m.supplierName).filter(Boolean))].join(" · ");
-  $("cabList").innerHTML = masters.length ? masters.map(m => cabRow(m, false)).join("") : `<p class="hint">Поки порожньо.</p>`;
+  /* Кілька фірм в одному телефоні — кожна окремим блоком, щоб запити до різних постачальників не змішувались */
+  const bySup = new Map();
+  masters.forEach(m => { const k = String(m.supplierName || "").trim().toLowerCase(); if(!bySup.has(k)) bySup.set(k, { name: m.supplierName || "", list: [] }); bySup.get(k).list.push(m); });
+  $("cabList").innerHTML = !masters.length ? `<p class="hint">Поки порожньо.</p>`
+    : bySup.size < 2 ? masters.map(m => cabRow(m, false)).join("")
+    : Array.from(bySup.values()).map(g => `<div class="cabSup">${esc(g.name || "Постачальник")}</div>` + g.list.map(m => cabRow(m, false)).join("")).join("");
   const n = masters.reduce((s, m) => s + m.open, 0);
   document.title = n ? `(${n}) Запити від майстрів` : "Запити від майстрів";
   $("cabShare").onclick = async () => {
