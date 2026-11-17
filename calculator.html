@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 21:15</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 22:00</div>
   </div>
 
   <div class="fsFooter">
@@ -22298,9 +22298,11 @@ function renderBuyList(p){
         : `<button type="button" class="ptBtn" onclick="openArrived(${buyEnc(g.s)})">Привезли</button>`;
     }
     if(g.k === "?" && g.items.length > 1) btn = `<button type="button" class="ptBtn primary" onclick="openBuyBulk()">Усім одразу</button>`;
+    const pay = buyGroupSum(p, g);
+    const payTxt = g.k === "sup" || g.k === "self" ? `<small style="display:block;margin:.125rem 0 0">${pay.sum > 0 ? `до оплати ≈ ${money(pay.sum)}` : ""}${pay.noPrice ? `${pay.sum > 0 ? " · " : ""}без ціни ${pay.noPrice}` : ""}</small>` : "";
     const head = g.k === "?" ? `<span class="byWarn">Де брати?</span><small>${g.items.length > 1 ? "усім одразу або натисніть товар" : "натисніть на товар і виберіть"}</small>` : `${escapeHtml(g.label)} <small>${g.items.length}</small>`;
     const headEl = g.k === "?" ? `<span role="button" tabindex="0" style="cursor:pointer" onclick="${g.items.length > 1 ? "openBuyBulk()" : `openBuySrc('${escapeHtml(g.items[0].id)}')`}">${head}</span>`
-      : `<span>${head}${g.items.length > 1 ? ` <button type="button" class="opLink" style="font-size:.75rem;font-weight:700;margin-left:.25rem" onclick="openBuyMove(${buyEnc(g.key)})">перенести…</button>` : ""}</span>`;
+      : `<span>${head}${g.items.length > 1 ? ` <button type="button" class="opLink" style="font-size:.75rem;font-weight:700;margin-left:.25rem" onclick="openBuyMove(${buyEnc(g.key)})">перенести…</button>` : ""}${payTxt}</span>`;
     return `<div class="byGroup"><div class="byHead">${headEl}${btn}</div>${g.items.map(item).join("")}</div>`;
   };
   const todo = Array.isArray(p.todo) ? p.todo : [];
@@ -22316,7 +22318,9 @@ function renderBuyList(p){
       <div class="ptHead"><span>Що купити й зробити</span></div>
       ${buyItems(p).length ? `<div class="byTitle">Купити${groups.length ? `<small>натисніть товар — змінити, де берете</small>` : ""}</div>
       ${groups.length ? (() => { const n = buyItems(p).filter(pos => buyNeed(p, pos) > 0 && stockAvail(pos) > 0).length;
-        return `<div class="ptFoot" style="border-top:0;padding-top:.25rem"><button type="button" class="ptLink" onclick="openStockPick()">▣ ${n ? `На складі є ${n} поз. з цього списку — взяти` : "Що є на складі"}</button><span></span></div>`; })() : ""}
+        const pays = groups.filter(g => g.k === "sup" || g.k === "self").map(g => ({ l: g.k === "self" ? "Сам" : g.label, v: buyGroupSum(p, g).sum })).filter(x => x.v > 0);
+        const payLine = pays.length > 1 ? `<div class="formHint" style="text-align:left;margin:.25rem 0 0">До оплати: ${pays.map(x => `${escapeHtml(x.l)} ${money(x.v)}`).join(" · ")} · <b>разом ${money(pays.reduce((a, x) => a + x.v, 0))}</b></div>` : "";
+        return payLine + `<div class="ptFoot" style="border-top:0;padding-top:.25rem"><button type="button" class="ptLink" onclick="openStockPick()">▣ ${n ? `На складі є ${n} поз. з цього списку — взяти` : "Що є на складі"}</button><span></span></div>`; })() : ""}
       ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}` : ""}
       ${(() => { const left = buyLeftovers(p); return left.length ? `<div class="byTitle byLeft">Залишки<small>після змін у кошторисі</small></div>${left.map(x => `<div class="byItem byLeftItem"><span class="byName">${escapeHtml(x.l.n)}<small>${formatQty(x.q)} ${escapeHtml(x.l.u)}${x.l.s ? " · " + escapeHtml(x.l.s) : x.l.w ? " · " + escapeHtml(x.l.w) : ""}${x.gone ? " · прибрано з кошторису" : ""}</small></span><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','return')">Повернув</button><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','stock')">На склад</button></div>`).join("")}` : ""; })()}
       ${notes || planNoteOpen ? `<div class="byTitle">Нотатки</div>${notes}` : ""}
@@ -22476,6 +22480,13 @@ function buySupplierChoices(p, pos){
   (profile.mySuppliers || []).forEach(add);
   return Array.from(sup.values());
 }
+/* Скільки платити за групу: закупівельна ціна × скільки ще треба купити */
+function buyGroupSum(p, g){
+  let sum = 0, noPrice = 0;
+  g.items.forEach(pos => { const pr = Number(pos.purchasePrice); const q = buyNeed(p, pos); if(pr > 0) sum += pr * q; else noPrice++; });
+  return { sum: Math.round(sum), noPrice };
+}
+
 /* Перенести кілька товарів (або цілу групу, напр. всю каналізацію) з одного джерела в інше */
 function buyMoveItems(p){ return buyItems(p).filter(pos => buyNeed(p, pos) > 0 && buyKey(pos) === buyUi.from); }
 function openBuyMove(fromKey){
