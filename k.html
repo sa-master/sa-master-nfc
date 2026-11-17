@@ -203,7 +203,8 @@ async function load(){
     $("object").textContent = data.objectName || "";
     $("date").textContent = data.dateLabel || "";
     if(data.address){ $("addr").textContent = data.address; $("addr").classList.remove("hidden"); }
-    if(/^\d{4}-\d{2}-\d{2}$/.test(data.startDate || "")){
+    /* Дата вже минула — роботи йдуть, «орієнтовний початок» лише плутає */
+    if(/^\d{4}-\d{2}-\d{2}$/.test(data.startDate || "") && data.startDate >= new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)){
       const sd = new Date(data.startDate + "T12:00:00");
       $("start").textContent = "Орієнтовний початок робіт: " + sd.toLocaleDateString("uk-UA", { day:"numeric", month:"long", year:"numeric" }).replace(/\s*р\.?$/, "");
       $("start").classList.remove("hidden");
@@ -336,7 +337,7 @@ function renderApproval(data){
   const baseText = data.kind === "works" ? "✓ Погоджую роботи" : data.kind === "materials" ? "✓ Погоджую матеріали" : "✓ Погоджую";
   /* Є дата початку — «Погоджую» закріплює її за клієнтом */
   let dateWord = "";
-  if(data.kind !== "changes" && /^\d{4}-\d{2}-\d{2}$/.test(data.startDate || "")){
+  if(data.kind !== "changes" && /^\d{4}-\d{2}-\d{2}$/.test(data.startDate || "") && data.startDate >= new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10)){
     dateWord = new Date(data.startDate + "T12:00:00").toLocaleDateString("uk-UA", { day:"numeric", month:"long" });
   }
   const ab = $("approveBtn");
