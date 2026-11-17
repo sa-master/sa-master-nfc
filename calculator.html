@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 22:40</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 22:55</div>
   </div>
 
   <div class="fsFooter">
@@ -22295,14 +22295,14 @@ function renderBuyList(p){
     if(g.k === "sup"){
       const unsent = g.items.filter(x => !buySent(x)).length;
       btn = unsent ? `<button type="button" class="ptBtn primary" onclick="openBuySend(${buyEnc(g.s)})">Надіслати список</button>`
-        : `<button type="button" class="ptBtn" onclick="openArrived(${buyEnc(g.s)})">Привезли</button>`;
+        : `<button type="button" class="ptBtn" onclick="openArrived(${buyEnc(g.s)})">Привезли / забрав</button>`;
     }
     if(g.k === "?" && g.items.length > 1) btn = `<button type="button" class="ptBtn primary" onclick="openBuyBulk()">Усім одразу</button>`;
     const pay = buyGroupSum(p, g);
     const payTxt = g.k === "sup" || g.k === "self" ? `<small style="display:block;margin:.125rem 0 0">${pay.sum > 0 ? `до оплати ≈ ${money(pay.sum)}` : ""}${pay.noPrice ? `${pay.sum > 0 ? " · " : ""}без ціни ${pay.noPrice}` : ""}</small>` : "";
     const head = g.k === "?" ? `<span class="byWarn">Де брати?</span><small>${g.items.length > 1 ? "усім одразу або натисніть товар" : "натисніть на товар і виберіть"}</small>` : `${escapeHtml(g.label)} <small>${g.items.length}</small>`;
     const headEl = g.k === "?" ? `<span role="button" tabindex="0" style="cursor:pointer" onclick="${g.items.length > 1 ? "openBuyBulk()" : `openBuySrc('${escapeHtml(g.items[0].id)}')`}">${head}</span>`
-      : `<span>${head}${g.items.length > 1 ? ` <button type="button" class="opLink" style="font-size:.75rem;font-weight:700;margin-left:.25rem" onclick="openBuyMove(${buyEnc(g.key)})">перенести…</button>` : ""}${payTxt}</span>`;
+      : `<span>${head}${g.items.length > 1 ? ` <button type="button" class="opLink" style="font-size:.75rem;font-weight:700;margin-left:.25rem" onclick="openBuyMove(${buyEnc(g.key)})">перенести…</button>` : ""}${g.k === "sup" && g.items.some(x => !buySent(x)) ? ` <button type="button" class="opLink" style="font-size:.75rem;font-weight:700;margin-left:.25rem" onclick="openArrived(${buyEnc(g.s)}, true)">забрав сам</button>` : ""}${payTxt}</span>`;
     return `<div class="byGroup"><div class="byHead">${headEl}${btn}</div>${g.items.map(item).join("")}</div>`;
   };
   const todo = Array.isArray(p.todo) ? p.todo : [];
@@ -22386,7 +22386,9 @@ function buyToggle(posId){
 
 /* FIN-02: «Привезли» — за замовчуванням усе; можна вписати, скільки привезли насправді.
    Недовезене лишається в «Що купити» («ще N»), наступне «Привезли» додає залишок. */
-function buyArrivedList(p, supplier){ return buyItems(p).filter(pos => buyNeed(p, pos) > 0 && pos.whereK === "sup" && normalizeText(pos.whereS) === normalizeText(supplier) && buySent(pos)); }
+/* Самовивіз («забрав сам»): список не надсилали — беремо всі товари цього постачальника */
+let arrivedPickup = false;
+function buyArrivedList(p, supplier){ return buyItems(p).filter(pos => buyNeed(p, pos) > 0 && pos.whereK === "sup" && normalizeText(pos.whereS) === normalizeText(supplier) && (arrivedPickup || buySent(pos))); }
 function buyReceive(p, pos, q){
   q = roundQty(Math.max(0, Math.min(Number(q) || 0, buyNeed(p, pos))));
   if(q <= 0) return false;
@@ -22405,7 +22407,8 @@ function buyArrived(supplier){
   closeAddMenu();
   touchProject(p);
   render();
-  toast(`Привезли ✓ ${list.length} поз.${paid ? ` · у витрати ${money(paid)}` : ""}`, 2800);
+  toast(`${arrivedPickup ? "Забрав" : "Привезли"} ✓ ${list.length} поз.${paid ? ` · у витрати ${money(paid)}` : ""}`, 2800);
+  arrivedPickup = false;
 }
 /* Оплата постачальнику при «Привезли» — одразу у витрати об’єкта */
 function buyArrivedPaid(p, supplier){
@@ -22415,18 +22418,19 @@ function buyArrivedPaid(p, supplier){
   moneyList(p, "expense").push({ id: uid("exp"), date: todayIso(), amount, to: "", note: `${supplier} — товар`, kind: "supplierPayment", supplierName: supplier });
   return amount;
 }
-function openArrived(supplier){
+function openArrived(supplier, pickup){
+  arrivedPickup = Boolean(pickup);
   const p = buyCur();
   if(!p) return;
   const list = buyArrivedList(p, supplier);
   if(!list.length) return;
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
-  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Привезли"><div class="amHead"><b>Привезли · ${escapeHtml(supplier)}</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+  el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Привезли"><div class="amHead"><b>${arrivedPickup ? "Забрав сам" : "Привезли"} · ${escapeHtml(supplier)}</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
     ${(() => { const est = Math.round(list.reduce((a, pos) => a + (Number(pos.purchasePrice) > 0 ? Number(pos.purchasePrice) * buyNeed(p, pos) : 0), 0));
       return `<label class="arrRow" style="margin:0 0 .5rem"><span>Заплатили постачальнику, ₴<small>піде у витрати об’єкта · пусто — ще не платили</small></span><input id="arrPaid" inputmode="decimal" value="${est > 0 ? String(est) : ""}" placeholder="0"></label>`; })()}
-    <button type="button" class="onbPrimary" style="margin:0" onclick="buyArrived(${buyEnc(supplier)})">Усе привезли (${list.length} поз.)</button>
-    <div class="arrHint">Чогось не довезли? Виправте кількість і натисніть «Записати».</div>
+    <button type="button" class="onbPrimary" style="margin:0" onclick="buyArrived(${buyEnc(supplier)})">${arrivedPickup ? "Усе забрав" : "Усе привезли"} (${list.length} поз.)</button>
+    <div class="arrHint">${arrivedPickup ? "Забрали не все? Виправте кількість і натисніть «Записати»." : "Чогось не довезли? Виправте кількість і натисніть «Записати»."}</div>
     <form class="arrList" onsubmit="event.preventDefault();buyArrivedPartial(${buyEnc(supplier)})">
       ${list.map(pos => `<label class="arrRow"><span>${escapeHtml(positionShortName(pos))}<small>треба ${formatQty(buyNeed(p, pos))} ${escapeHtml(pos.unit || "шт")}</small></span><input inputmode="decimal" data-arr="${escapeHtml(pos.id)}" value="${formatQty(buyNeed(p, pos))}"></label>`).join("")}
       <button type="submit" class="hBtn" style="height:2.75rem;width:100%">Записати</button>
@@ -22449,7 +22453,8 @@ function buyArrivedPartial(supplier){
   closeAddMenu();
   touchProject(p);
   render();
-  toast((part ? `Записано: ${full} повністю, ${part} частково — решта лишилась у «Що купити»` : `Привезли ✓ ${full} поз.`) + (paid ? ` · у витрати ${money(paid)}` : ""), 3200);
+  const word = arrivedPickup ? "Забрав" : "Привезли"; arrivedPickup = false;
+  toast((part ? `Записано: ${full} повністю, ${part} частково — решта лишилась у «Що купити»` : `${word} ✓ ${full} поз.`) + (paid ? ` · у витрати ${money(paid)}` : ""), 3200);
 }
 
 /* ---- Надіслати список постачальнику (той самий файл і Нова пошта, що й раніше) ---- */
