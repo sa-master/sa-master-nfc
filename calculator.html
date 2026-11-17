@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 16:40</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 18:20</div>
   </div>
 
   <div class="fsFooter">
@@ -7455,6 +7455,24 @@ function changePositionStockQty(positionId, delta){
   setPositionStockQty(positionId, positionStockQty(position) + delta);
 }
 
+function stockPickTakeAll(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  let n = 0;
+  (project.positions || []).filter(pos => pos.type === "material").forEach(pos => {
+    const want = positionOrderQty(pos);
+    if(!(want > 0) || !(stockAvail(pos) > 0)) return;
+    const took = stockTake(pos, want);
+    if(!(took > 0)) return;
+    pos.fromStockQty = roundQty(Math.min(Number(pos.qty) || 0, positionStockQty(pos) + took));
+    if(buyOn(project) && pos.fromStockQty >= (Number(pos.qty) || 0)) buySetWhere(pos, "stock");
+    n++;
+  });
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  renderStockPick();
+  toast(n ? `Зі складу взято: ${n} поз. · решту замовимо` : "На складі цього немає");
+}
 function togglePositionStockAll(positionId){
   const project = projects.find(item => item.id === currentProjectId);
   const position = project && (project.positions || []).find(item => item.id === positionId);
@@ -7475,7 +7493,10 @@ function renderStockPick(){
       })
     : materials;
 
-  box.innerHTML = (query.length && !visible.length) ? `<div class="formHint" style="text-align:center">Нічого не знайдено</div>` : groupMaterialPositions(visible).map(group => `
+  /* Склад (Профіль → Склад) має ці товари — беремо одним натиском, а не по одному */
+  const canTake = query.length ? [] : materials.filter(pos => positionOrderQty(pos) > 0 && stockAvail(pos) > 0);
+  const bulk = canTake.length ? `<button type="button" class="addPersonButton" style="margin:0 0 1rem" onclick="stockPickTakeAll()"><span style="font-size:1rem;line-height:1">▣</span><span>Узяти все, що є на складі · ${canTake.length} поз.</span></button>` : "";
+  box.innerHTML = bulk + ((query.length && !visible.length) ? `<div class="formHint" style="text-align:center">Нічого не знайдено</div>` : groupMaterialPositions(visible).map(group => `
     <div class="procurementCategoryTitle">${escapeHtml(group.label)}</div>
     ${group.positions.map(position => {
       const qty = Number(position.qty) || 0;
@@ -7513,7 +7534,7 @@ function renderStockPick(){
         </div>
       `;
     }).join("")}
-  `).join("");
+  `).join(""));
 
   const full = materials.filter(isPositionFullyFromStock).length;
   const part = materials.filter(position => !isPositionFullyFromStock(position) && positionStockQty(position) > 0).length;
@@ -22785,7 +22806,8 @@ function buyLogSet(p, pos){
 function buyNeed(p, pos){
   if(pos.whereK === "skip") return 0;
   const qty = roundQty(Number(pos.qty) || 0);
-  if(!pos.got) return qty;
+  /* Частину (або все) беремо зі складу — постачальнику лише решта */
+  if(!pos.got) return roundQty(Math.max(0, qty - positionStockQty(pos)));
   const l = buyLog(p)[pos.id];
   return l ? roundQty(Math.max(0, qty - (Number(l.q) || 0))) : 0;
 }
