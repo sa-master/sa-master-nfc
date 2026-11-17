@@ -226,6 +226,10 @@ h1{letter-spacing:-.02em}
       <div class="sub" id="cvSub"></div>
     </div>
     <div id="cvNote" class="card hidden" style="background:color-mix(in srgb,var(--p) 10%,var(--card))"></div>
+    <section class="card">
+      <div class="tlinks"><button type="button" onclick="downloadCheck()">⬇ Скачати таблицю</button><label>⬆ Завантажити заповнену<input type="file" accept=".xlsx,.xls,.xlsm,.csv" onchange="uploadCheck(this)"></label></div>
+      <p class="hint" style="margin:6px 0 0">Багато виправлень? Скачайте таблицю, перепишіть у ній неправильні артикули й кількість — і завантажте назад. Назви в майстра лишаться його.</p>
+    </section>
     <section class="card"><div class="items" id="cvItems"></div></section>
     <section class="card">
       <label class="f">Коментар майстру<input id="cvComment" placeholder="Необов'язково"></label>
@@ -233,7 +237,6 @@ h1{letter-spacing:-.02em}
         <label class="f">Менеджер<input id="cvManager" autocomplete="name" placeholder="Ім'я"></label>
         <label class="f">Телефон<input id="cvPhone" inputmode="tel" autocomplete="tel" placeholder="+380…"></label>
       </div>
-      <div class="tlinks"><button type="button" onclick="downloadCheck()">⬇ Скачати таблицю</button><label>⬆ Завантажити заповнену<input type="file" accept=".xlsx,.xls,.xlsm,.csv" onchange="uploadCheck(this)"></label></div>
     </section>
   </div>
 
@@ -873,7 +876,7 @@ const CHK_HEAD = ["ID", "Артикул", "Назва", "К-сть", "Од.", "�
 function downloadCheck(){
   if(!chk) return;
   const availText = { yes:"є", order:"замовлення", no:"немає" };
-  const rows = [CHK_HEAD].concat(chk.rec.items.map(i => { const r = chk.rows.get(i.k); return [i.k, i.article || "", i.name, i.qty ?? "", i.unit || "шт", availText[r.avail], r.days ?? "", r.retail ?? "", r.master ?? "", (r.repl && r.repl.name) || "", (r.repl && r.repl.article) || "", (r.repl && r.repl.retail) ?? "", (r.repl && r.repl.master) ?? ""]; }));
+  const rows = [CHK_HEAD].concat(chk.rec.items.map(i => { const r = chk.rows.get(i.k); const f = r.avail !== "no" && r.fix ? r.fix : {}; return [i.k, f.article || i.article || "", f.name || i.name, f.qty ?? i.qty ?? "", i.unit || "шт", availText[r.avail], r.days ?? "", r.retail ?? "", r.master ?? "", (r.repl && r.repl.name) || "", (r.repl && r.repl.article) || "", (r.repl && r.repl.retail) ?? "", (r.repl && r.repl.master) ?? ""]; }));
   const name = `Звірка — ${chk.rec.title || "об’єкт"}`.replace(/[\\/:*?"<>|]+/g, " ");
   try{
     if(typeof XLSX === "undefined") throw new Error("no xlsx");
@@ -899,7 +902,7 @@ async function uploadCheck(input){
   if(h < 0){ alert("Це не таблиця звірки. Скачайте таблицю кнопкою «Скачати таблицю», заповніть її і завантажте."); return; }
   const head = rows[h].map(c => norm(c));
   const col = test => head.findIndex(test);
-  const c = { id: col(x => x === "id"), avail: col(x => x.includes("наявн")), days: col(x => x.includes("строк")), retail: col(x => x.startsWith("роздріб")), master: col(x => x.startsWith("майстру")),
+  const c = { art: col(x => x === "артикул"), qty: col(x => x === "к-сть" || x === "кількість"), name: col(x => x === "назва"), id: col(x => x === "id"), avail: col(x => x.includes("наявн")), days: col(x => x.includes("строк")), retail: col(x => x.startsWith("роздріб")), master: col(x => x.startsWith("майстру")),
     rname: col(x => x.includes("заміна") && x.includes("назва")), rart: col(x => x.includes("заміна") && x.includes("артикул")), rret: col(x => x.includes("заміна") && x.includes("роздріб")), rmas: col(x => x.includes("заміна") && x.includes("майстру")) };
   let n = 0;
   rows.slice(h + 1).forEach(r => {
@@ -912,11 +915,18 @@ async function uploadCheck(input){
     if(c.master >= 0 && num(r[c.master]) !== null) row.master = num(r[c.master]);
     const rn = c.rname >= 0 ? String(r[c.rname] || "").trim() : "", ra = c.rart >= 0 ? String(r[c.rart] || "").trim() : "";
     row.repl = row.avail === "no" && (rn || ra) ? { name: rn, article: ra, retail: c.rret >= 0 ? num(r[c.rret]) : null, master: c.rmas >= 0 ? num(r[c.rmas]) : null } : null;
+    /* Пакетне виправлення: менеджер просто переписав у таблиці артикул / кількість / назву — це виправлення помилки майстра */
+    const it = chk.rec.items.find(x => x.k === k);
+    if(it && row.avail !== "no"){
+      const art = c.art >= 0 ? String(r[c.art] ?? "").trim() : "", q = c.qty >= 0 ? num(r[c.qty]) : null, nm = c.name >= 0 ? String(r[c.name] ?? "").trim() : "";
+      const artCh = art && norm(art) !== norm(it.article), qCh = q !== null && q > 0 && Math.abs(q - Number(it.qty || 0)) > 0.0001, nmCh = artCh && nm && norm(nm) !== norm(it.name);
+      row.fix = artCh || qCh ? { article: artCh ? art : "", name: nmCh ? nm : "", qty: qCh ? q : null } : null;
+    }
   });
   if(!n){ alert("У файлі не знайдено позицій цієї звірки."); return; }
   renderCheck();
   const s = checkStats();
-  $("cvNote").innerHTML = `<b>Таблицю розпізнано: ${n} поз.</b><div class="hint">Є ${s.yes}${s.order ? ` · під замовлення ${s.order}` : ""}${s.no ? ` · немає ${s.no}` : ""}${s.prices ? ` · змінено цін ${s.prices}` : ""}. Перевірте нижче і натисніть «Надіслати майстру».</div>`;
+  $("cvNote").innerHTML = `<b>Таблицю розпізнано: ${n} поз.</b><div class="hint">Є ${s.yes}${s.order ? ` · під замовлення ${s.order}` : ""}${s.no ? ` · немає ${s.no}` : ""}${s.prices ? ` · змінено цін ${s.prices}` : ""}${s.fixed ? ` · <b>виправлено артикулів / кількості: ${s.fixed}</b>` : ""}. Перевірте нижче і натисніть «Надіслати майстру».</div>`;
   $("cvNote").classList.remove("hidden");
   window.scrollTo(0, 0);
 }
