@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 18:55</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 20:45</div>
   </div>
 
   <div class="fsFooter">
@@ -7443,6 +7443,20 @@ function setPositionStockQty(positionId, rawValue, rerender){
   const value = Number(String(rawValue ?? "").replace(",", "."));
   const qty = Number(position.qty) || 0;
   position.fromStockQty = Number.isFinite(value) && value > 0 ? roundQty(Math.min(qty, value)) : 0;
+  /* Зменшили «зі складу» нижче взятого кнопкою «Взяти все» — різницю повертаємо на склад */
+  const taken = Number(position.stockTaken) || 0;
+  if(taken > position.fromStockQty){
+    const back = roundQty(taken - position.fromStockQty), same = stockMatch(position)[0];
+    if(same){ const all = stockList(); const e = all.find(x => x.id === same.id); e.qty = roundQty((Number(e.qty) || 0) + back); stockSave(all); }
+    else stockAdd({ name: positionShortName(position), unit: position.unit || "шт", qty: back, catalogId: position.catalogId || "", from: project.title || "" });
+    position.stockTaken = position.fromStockQty;
+  }
+  if(position.whereK === "stock" && position.fromStockQty < qty){
+    const sup = cleanText(position.plannedSupplierName || "");
+    const keep = position.fromStockQty;
+    if(sup) buySetWhere(position, "sup", sup); else { position.whereK = ""; position.whereS = ""; }
+    position.fromStockQty = keep;
+  }
   project.updatedAt = new Date().toISOString();
   saveProjects();
   if(rerender !== false) renderStockPick();
@@ -7458,6 +7472,7 @@ function changePositionStockQty(positionId, delta){
 function stockPickTakeAll(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
+  undoArm("Взято зі складу");
   let n = 0;
   (project.positions || []).filter(pos => pos.type === "material").forEach(pos => {
     const want = positionOrderQty(pos);
@@ -7465,6 +7480,7 @@ function stockPickTakeAll(){
     const took = stockTake(pos, want);
     if(!(took > 0)) return;
     pos.fromStockQty = roundQty(Math.min(Number(pos.qty) || 0, positionStockQty(pos) + took));
+    pos.stockTaken = roundQty((Number(pos.stockTaken) || 0) + took);
     if(buyOn(project) && pos.fromStockQty >= (Number(pos.qty) || 0)) buySetWhere(pos, "stock");
     n++;
   });
@@ -7472,6 +7488,34 @@ function stockPickTakeAll(){
   saveProjects();
   renderStockPick();
   toast(n ? `Зі складу взято: ${n} поз. · решту замовимо` : "На складі цього немає");
+}
+/* Почати заново: зняти всі позначки «зі складу» в об’єкті, повернути взяте на склад, товар — знову до постачальника */
+function stockPickResetAll(){
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!project) return;
+  const list = (project.positions || []).filter(pos => pos.type === "material" && (positionStockQty(pos) > 0 || pos.whereK === "stock") && !pos.got);
+  if(!list.length) return;
+  const legacy = list.filter(pos => !(Number(pos.stockTaken) > 0));
+  const giveBackLegacy = legacy.length ? confirm(`Зняти «зі складу» з ${list.length} поз.\n\nПовернути ці кількості на склад?\nТак — повернуться на склад (якщо ви натискали «Взяти все, що є на складі»).\nСкасувати — лише зняти позначки, склад не змінювати.`) : true;
+  undoArm("Позначки «зі складу» знято");
+  list.forEach(pos => {
+    const back = Number(pos.stockTaken) > 0 ? Number(pos.stockTaken) : giveBackLegacy ? positionStockQty(pos) : 0;
+    if(back > 0){
+      const same = stockMatch(pos)[0];
+      if(same){ const all = stockList(); const e = all.find(x => x.id === same.id); e.qty = roundQty((Number(e.qty) || 0) + back); stockSave(all); }
+      else stockAdd({ name: positionShortName(pos), unit: pos.unit || "шт", qty: back, catalogId: pos.catalogId || "", from: project.title || "" });
+    }
+    delete pos.stockTaken;
+    pos.fromStockQty = 0;
+    if(pos.whereK === "stock"){
+      const sup = cleanText(pos.plannedSupplierName || "");
+      if(sup) buySetWhere(pos, "sup", sup); else { pos.whereK = ""; pos.whereS = ""; }
+    }
+  });
+  project.updatedAt = new Date().toISOString();
+  saveProjects();
+  renderStockPick();
+  toast("Позначки знято — можна відбирати заново");
 }
 function togglePositionStockAll(positionId){
   const project = projects.find(item => item.id === currentProjectId);
@@ -7495,8 +7539,10 @@ function renderStockPick(){
 
   /* Склад (Профіль → Склад) має ці товари — беремо одним натиском, а не по одному */
   const canTake = query.length ? [] : materials.filter(pos => positionOrderQty(pos) > 0 && stockAvail(pos) > 0);
-  const bulk = canTake.length ? `<button type="button" class="addPersonButton" style="margin:0 0 1rem" onclick="stockPickTakeAll()"><span style="font-size:1rem;line-height:1">▣</span><span>Узяти все, що є на складі · ${canTake.length} поз.</span></button>` : "";
-  box.innerHTML = bulk + ((query.length && !visible.length) ? `<div class="formHint" style="text-align:center">Нічого не знайдено</div>` : groupMaterialPositions(visible).map(group => `
+  const bulk = canTake.length ? `<button type="button" class="addPersonButton" style="margin:0 0 1rem" onclick="stockPickTakeAll()"><span style="font-size:1rem;line-height:1">▣</span><span>Взяти все, що є на складі · ${canTake.length} поз.</span></button>` : "";
+  const marked = materials.filter(pos => (positionStockQty(pos) > 0 || pos.whereK === "stock") && !pos.got).length;
+  const reset = !query.length && marked ? `<button type="button" class="ptLink" style="display:block;margin:-.5rem 0 1rem" onclick="stockPickResetAll()">↺ Почати заново — зняти «зі складу» з ${marked} поз.</button>` : "";
+  box.innerHTML = bulk + reset + ((query.length && !visible.length) ? `<div class="formHint" style="text-align:center">Нічого не знайдено</div>` : groupMaterialPositions(visible).map(group => `
     <div class="procurementCategoryTitle">${escapeHtml(group.label)}</div>
     ${group.positions.map(position => {
       const qty = Number(position.qty) || 0;
@@ -22269,7 +22315,7 @@ function renderBuyList(p){
       <div class="ptHead"><span>Що купити й зробити</span></div>
       ${buyItems(p).length ? `<div class="byTitle">Купити${groups.length ? `<small>натисніть товар — змінити, де берете</small>` : ""}</div>
       ${groups.length ? (() => { const n = buyItems(p).filter(pos => buyNeed(p, pos) > 0 && stockAvail(pos) > 0).length;
-        return `<div class="ptFoot" style="border-top:0;padding-top:.25rem"><button type="button" class="ptLink" onclick="openStockPick()">▣ ${n ? `На складі є ${n} поз. з цього списку — узяти` : "Що є на складі"}</button><span></span></div>`; })() : ""}
+        return `<div class="ptFoot" style="border-top:0;padding-top:.25rem"><button type="button" class="ptLink" onclick="openStockPick()">▣ ${n ? `На складі є ${n} поз. з цього списку — взяти` : "Що є на складі"}</button><span></span></div>`; })() : ""}
       ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}` : ""}
       ${(() => { const left = buyLeftovers(p); return left.length ? `<div class="byTitle byLeft">Залишки<small>після змін у кошторисі</small></div>${left.map(x => `<div class="byItem byLeftItem"><span class="byName">${escapeHtml(x.l.n)}<small>${formatQty(x.q)} ${escapeHtml(x.l.u)}${x.l.s ? " · " + escapeHtml(x.l.s) : x.l.w ? " · " + escapeHtml(x.l.w) : ""}${x.gone ? " · прибрано з кошторису" : ""}</small></span><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','return')">Повернув</button><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','stock')">На склад</button></div>`).join("")}` : ""; })()}
       ${notes || planNoteOpen ? `<div class="byTitle">Нотатки</div>${notes}` : ""}
