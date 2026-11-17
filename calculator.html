@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 11.11.2026 01:10</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 16:00</div>
   </div>
 
   <div class="fsFooter">
@@ -8131,6 +8131,20 @@ function makeApprovedSnapshot(project){
   };
 }
 
+/* Погоджені раніше роботи (як погодили) + поточні матеріали — новий погоджений знімок */
+function approvedWithMaterials(project){
+  const a = getApproved(project);
+  const cur = (project.positions || []).filter(pos => !pos.buyLaterOnly);
+  const byId = new Map(cur.map(pos => [pos.id, pos]));
+  const merged = [];
+  a.positions.forEach(item => {
+    if(item.type !== "work") return;
+    const pos = byId.get(item.id);
+    merged.push(pos ? Object.assign({}, pos, { qty:item.qty, price:item.price }) : { id:item.id, type:item.type, name:item.clientName, fullName:item.clientName, qty:item.qty, price:item.price, unit:item.unit, noDiscount:item.noDiscount });
+  });
+  cur.forEach(pos => { if(pos.type === "material") merged.push(pos); });
+  return makeApprovedSnapshot(Object.assign({}, project, { positions:merged, workDiscount:approvedDiscountPercent(project, "work"), materialDiscount:getMaterialsDiscountPercent(project) }));
+}
 function getApproved(project){
   const approved = project && project.approved;
   return approved && Array.isArray(approved.positions) ? approved : null;
@@ -10412,6 +10426,7 @@ function openQuotePreview(){
   }
 
   if(getApproved(project)){
+    if(materialsPending(project)) quoteMode = "materials";
     renderQuotePreview();
     return;
   }
@@ -10921,6 +10936,12 @@ function quoteCustomDisc(type){
   quoteSetDisc(type, v);
 }
 
+/* Погоджено лише роботи, а матеріали ще ні: кошторис на матеріали (і «усе») будуємо з поточних позицій */
+function quoteSnapshot(project){
+  if(quoteDraft) return quoteDraft;
+  if(materialsPending(project) && quoteMode !== "works") return null;
+  return getApproved(project);
+}
 function renderQuotePreview(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
@@ -10930,7 +10951,7 @@ function renderQuotePreview(){
     button.setAttribute("aria-selected", String(active));
   });
 
-  const approvedSnapshot = quoteDraft || getApproved(project);
+  const approvedSnapshot = quoteSnapshot(project);
   const positions = approvedSnapshot ? approvedSnapshot.positions : (Array.isArray(project.positions) ? project.positions : []).filter(pos => !pos.buyLaterOnly);
   if(!positions.length){
     toast("Додайте хоча б одну позицію до кошторису");
@@ -11682,6 +11703,12 @@ function clientSendDraft(p){
       `\n\nБуло ${money(prevTotal)} → стане ${money(d.total)}${disc ? " (зі знижкою)" : ""}`;
     return { kind:"changes", n, title, text, total: d.total, prevTotal, lines, selected: sel };
   }
+  if(!quoteDraft && quoteMode === "materials" && materialsPending(p)){
+    const a = getApproved(p);
+    const title = quotePreliminary ? "Попередній кошторис матеріалів" : "Кошторис матеріалів";
+    const mtail = quotePreliminary ? "\n\nЦе попередній розрахунок — ціни матеріалів уточню після звірки з постачальниками." : "";
+    return { kind:"materials", n:1, title, text: card + mtail, total: d.total, prelim: quotePreliminary || undefined, worksApproved: { at: a.at, total: Math.round(Number(a.total) || 0) } };
+  }
   if(getApproved(p) || quoteDraft) return { kind:"doc", text:"" };
   const pa = partsApproved(p);
   const tail = quotePreliminary ? "\n\nЦе попередній розрахунок — ціни матеріалів уточню після звірки з постачальниками." : "";
@@ -11725,7 +11752,7 @@ function clientSendRecord(p, link){
 function sendOpen(p, s){
   if(!s || s.approvedAt || s.superseded || s.prelim) return false;
   if(s.kind === "changes") return Boolean(getApproved(p));
-  if(getApproved(p)) return false;
+  if(getApproved(p)) return s.kind === "materials" && materialsPending(p);
   if(s.kind === "works" || s.kind === "materials") return !partsApproved(p)[s.kind];
   return true;
 }
@@ -11751,6 +11778,16 @@ function sendApply(p, s, at, how){
     syncDiscountFromApproved(p);
     logApproval(p, prevTotalLog, how === "клієнт" ? `клієнт за посиланням · зміни №${s.n}` : `вручну майстром · зміни №${s.n}`);
     return `Зміни №${s.n} погоджено · для клієнта ${money(getClientTotal(p))}`;
+  }
+  if(s.kind === "materials" && getApproved(p) && !approvalCoversMaterials(p)){
+    if(!p.partsApproved || typeof p.partsApproved !== "object") p.partsApproved = {};
+    p.partsApproved.materials = { at, total: s.total };
+    const prevTotalLog = getApproved(p).total;
+    p.approved = approvedWithMaterials(p);
+    p.approved.how = how === "клієнт" ? "клієнт за посиланням" : "вручну майстром";
+    syncDiscountFromApproved(p);
+    logApproval(p, prevTotalLog, how === "клієнт" ? "клієнт за посиланням · матеріали" : "вручну майстром · матеріали");
+    return `Матеріали погоджено · для клієнта ${money(getClientTotal(p))}`;
   }
   let full = s.kind === "quote";
   if(s.kind === "works" || s.kind === "materials"){
@@ -11915,8 +11952,9 @@ function quoteShareMessage(project){
   const approvalStatus = quoteDraft && quoteDraft.factual ? "Фактичний" : quoteDraft ? "Оновлений" : approvalLabels[project?.customerApprovalStatus]
     || stageLabels[project?.stage]
     || "Потребує погодження";
+  const pendStatus = !quoteDraft && materialsPending(project) && quoteMode === "materials";
 
-  const approvedSnapshot = quoteDraft || getApproved(project);
+  const approvedSnapshot = quoteSnapshot(project);
   const sum = quoteMode === "works"
     ? (approvedSnapshot ? approvedSnapshot.works : getCustomerWorksTotal(project))
     : quoteMode === "materials"
@@ -11929,7 +11967,7 @@ function quoteShareMessage(project){
     ...(quoteMode === "all" && project && moneySum(moneyList(project, "payment")) > 0.5
       ? [`💰 Разом: ${money(sum)}`, `✅ Отримано: ${money(moneySum(moneyList(project, "payment")))}`, `👉 До сплати: ${money(Math.max(0, sum - moneySum(moneyList(project, "payment"))))}`]
       : [`💰 До сплати: ${money(sum)}`]),
-    `📊 Статус: ${approvalStatus}`
+    `📊 Статус: ${pendStatus ? "Потребує погодження" : approvalStatus}`
   ];
 
   /* Дата початку потрібна лише поки роботи не почались. */
@@ -17254,6 +17292,8 @@ function classifyProcurementResponse(response, project){
     const articleChanged = newArticle && oldArticle && newArticle !== oldArticle;
     const nameChanged = !newArticle && !oldArticle && newName && oldName && newName !== oldName;
     if(articleChanged || nameChanged) record.changes.push("replace");
+    /* Постачальник переписав артикул у таблиці звірки — це виправлення помилки, назва майстра лишається */
+    if(articleChanged && record.positionId && record.keepName === undefined && record.availability !== "unavailable") record.keepName = true;
     if(!record.answered && !record.changes.length) record.skip = true;
   });
   response.records = response.records.filter(record => !record.skip);
