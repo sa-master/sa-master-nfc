@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 20:45</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 21:15</div>
   </div>
 
   <div class="fsFooter">
@@ -22299,7 +22299,8 @@ function renderBuyList(p){
     }
     if(g.k === "?" && g.items.length > 1) btn = `<button type="button" class="ptBtn primary" onclick="openBuyBulk()">Усім одразу</button>`;
     const head = g.k === "?" ? `<span class="byWarn">Де брати?</span><small>${g.items.length > 1 ? "усім одразу або натисніть товар" : "натисніть на товар і виберіть"}</small>` : `${escapeHtml(g.label)} <small>${g.items.length}</small>`;
-    const headEl = g.k === "?" ? `<span role="button" tabindex="0" style="cursor:pointer" onclick="${g.items.length > 1 ? "openBuyBulk()" : `openBuySrc('${escapeHtml(g.items[0].id)}')`}">${head}</span>` : `<span>${head}</span>`;
+    const headEl = g.k === "?" ? `<span role="button" tabindex="0" style="cursor:pointer" onclick="${g.items.length > 1 ? "openBuyBulk()" : `openBuySrc('${escapeHtml(g.items[0].id)}')`}">${head}</span>`
+      : `<span>${head}${g.items.length > 1 ? ` <button type="button" class="opLink" style="font-size:.75rem;font-weight:700;margin-left:.25rem" onclick="openBuyMove(${buyEnc(g.key)})">перенести…</button>` : ""}</span>`;
     return `<div class="byGroup"><div class="byHead">${headEl}${btn}</div>${g.items.map(item).join("")}</div>`;
   };
   const todo = Array.isArray(p.todo) ? p.todo : [];
@@ -22475,6 +22476,67 @@ function buySupplierChoices(p, pos){
   (profile.mySuppliers || []).forEach(add);
   return Array.from(sup.values());
 }
+/* Перенести кілька товарів (або цілу групу, напр. всю каналізацію) з одного джерела в інше */
+function buyMoveItems(p){ return buyItems(p).filter(pos => buyNeed(p, pos) > 0 && buyKey(pos) === buyUi.from); }
+function openBuyMove(fromKey){
+  buyUi = { mode:"move", from: fromKey, sel: new Set() };
+  buyScreen().classList.add("open");
+  renderBuyScreen();
+  buyScreen().scrollTop = 0;
+}
+function buyMoveToggle(id){ const s = buyUi.sel; s.has(id) ? s.delete(id) : s.add(id); renderBuyScreen(); }
+function buyMoveGroup(list){ const ids = String(list).split(",").filter(Boolean); const s = buyUi.sel; const all = ids.every(id => s.has(id)); ids.forEach(id => all ? s.delete(id) : s.add(id)); renderBuyScreen(); }
+function renderBuyMove(p){
+  const items = buyMoveItems(p);
+  if(!items.length){ closeBuyScreen(); return; }
+  const sel = buyUi.sel;
+  const from = buyLabel(items[0]);
+  const groups = groupMaterialPositions(items);
+  const list = groups.map(g => {
+    const ids = g.positions.map(x => x.id);
+    const all = ids.every(id => sel.has(id));
+    return `<div class="byTitle" style="display:flex;justify-content:space-between;align-items:center"><span>${escapeHtml(g.label || g.title || "")}</span><button type="button" class="opLink" onclick="buyMoveGroup(${buyEnc(ids.join(","))})">${all ? "зняти групу" : "уся група"}</button></div>
+      ${g.positions.map(pos => `<button type="button" class="opItem ${sel.has(pos.id) ? "on" : ""}" onclick="buyMoveToggle('${escapeHtml(pos.id)}')"><span class="opBox">${sel.has(pos.id) ? "✓" : ""}</span><span class="opName">${escapeHtml(positionShortName(pos))}</span><span class="opQty">${formatQty(buyNeed(p, pos))} ${escapeHtml(pos.unit || "шт")}</span></button>`).join("")}`;
+  }).join("");
+  const sups = new Map();
+  items.forEach(pos => buySupplierChoices(p, pos).forEach(n => { const k = normalizeText(n); if(!sups.has(k) && "sup:" + k !== buyUi.from) sups.set(k, n); }));
+  const n = sel.size;
+  const dest = (action, label) => `<button type="button" class="opItem byOpt" ${n ? "" : "disabled style=\"opacity:.45\""} onclick="${action}"><span class="opBox"></span><span class="opName">${escapeHtml(label)}</span></button>`;
+  buyScreen().innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeBuyScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Перенести з «${escapeHtml(from)}»</span></div>
+    <div class="psHead"><b>Що переносимо? · ${n} з ${items.length}</b><small>Відмітьте товари або натисніть «уся група»</small></div>
+    <div class="opList">${list}</div>
+    <div class="psHead" style="margin-top:1rem"><b>Куди?</b></div>
+    <div class="opList">
+      ${Array.from(sups.values()).sort((a, b) => a.localeCompare(b, "uk")).map(x => dest(`buyMoveApply('sup', ${buyEnc(x)})`, x)).join("")}
+      ${buyUi.from !== "self" ? dest("buyMoveApply('self')", "Куплю сам (магазин, базар)") : ""}
+      <button type="button" class="psNew" ${n ? "" : "disabled style=\"opacity:.45\""} onclick="buyMoveNew()">＋ Іншому постачальнику</button>
+    </div>
+  </div>`;
+}
+function buyMoveNew(){
+  const name = cleanText(prompt("Назва постачальника або магазину") || "");
+  if(name) buyMoveApply("sup", name);
+}
+function buyMoveApply(k, s){
+  const p = buyCur();
+  if(!p || !buyUi || !buyUi.sel.size) return;
+  undoArm("Товари перенесено");
+  let n = 0;
+  buyMoveItems(p).filter(pos => buyUi.sel.has(pos.id)).forEach(pos => {
+    buySetWhere(pos, k, s);
+    if(k === "sup" && pos.purchasePriceState !== "confirmed"){
+      const offer = getCatalogSupplierOffers(getPositionCatalogItem(pos)).find(o => normalizeText(o && o.supplierName) === normalizeText(s));
+      const price = supplierOfferPrice(offer, "master");
+      if(price > 0){ pos.purchasePrice = price; pos.purchasePriceState = "estimated"; }
+    }
+    n++;
+  });
+  touchProject(p);
+  closeBuyScreen();
+  toast(`Перенесено: ${n} → ${k === "self" ? "сам" : s}`, 2800);
+}
+
 /* «Де брати?» для всіх товарів без джерела одним вибором */
 function buyBulkItems(p){ return buyItems(p).filter(pos => !pos.whereK && buyNeed(p, pos) > 0); }
 function buyPriceSupplier(pos){
@@ -22546,6 +22608,7 @@ function renderBuyScreen(){
   if(buyUi.mode === "add") return renderBuyAdd(p);
   if(buyUi.mode === "prices") return renderMissingPrices(p);
   if(buyUi.mode === "bulk") return renderBuyBulk(p);
+  if(buyUi.mode === "move") return renderBuyMove(p);
   const pos = (p.positions || []).find(x => x.id === buyUi.posId);
   if(!pos){ closeBuyScreen(); return; }
   if(buyUi.mode === "replace") return renderBuyReplace(p, pos);
