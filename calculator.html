@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 16:00</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 16:30</div>
   </div>
 
   <div class="fsFooter">
@@ -10941,7 +10941,8 @@ function quoteCustomDisc(type){
 /* Погоджено лише роботи, а матеріали ще ні: кошторис на матеріали (і «усе») будуємо з поточних позицій */
 function quoteSnapshot(project){
   if(quoteDraft) return quoteDraft;
-  if(materialsUnapproved(project) && quoteMode !== "works") return null;
+  if(materialsUnapproved(project) && quoteMode === "materials") return null;
+  if(materialsUnapproved(project) && quoteMode === "all") return approvedWithMaterials(project);
   return getApproved(project);
 }
 function renderQuotePreview(){
@@ -11078,6 +11079,13 @@ const ACT_MAX_PHOTOS = 4;
 let actDraft = null;
 
 function todayIso(){ const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+/* Дата початку потрібна клієнту, лише поки роботи ще не почались: дата не минула й об’єкт не в роботі */
+function upcomingStartDate(project){
+  const d = String(project && project.workStartDate || "");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d) || d < todayIso()) return "";
+  if(["work", "done", "closed"].includes(project.stage || "estimate")) return "";
+  return d;
+}
 function actFactual(project){
   if(quoteDraft) return Boolean(quoteDraft.factual);
   return Boolean(getApproved(project) && isFactualStage(project));
@@ -11682,7 +11690,7 @@ function clientSendDraft(p){
   const date = formatQuoteDate(new Date());
   /* Шапка повідомлення: що й на скільки, далі об’єкт, замовник, адреса, коли можемо приступити */
   const c = p.client || {};
-  const start = /^\d{4}-\d{2}-\d{2}$/.test(p.workStartDate || "") ? formatQuoteDate(p.workStartDate + "T12:00:00").slice(0, 10) : "";
+  const start = upcomingStartDate(p) ? formatQuoteDate(upcomingStartDate(p) + "T12:00:00").slice(0, 10) : "";
   const who = [cleanText(c.name), cleanText(c.phone) ? `(${cleanText(c.phone)})` : ""].filter(Boolean).join(" ");
   const card = [
     `🏠 Об’єкт: ${obj}`,
@@ -11710,6 +11718,11 @@ function clientSendDraft(p){
     const title = quotePreliminary ? "Попередній кошторис матеріалів" : "Кошторис матеріалів";
     const mtail = quotePreliminary ? "\n\nЦе попередній розрахунок — ціни матеріалів уточню після звірки з постачальниками." : "";
     return { kind:"materials", n:1, title, text: card + mtail, total: d.total, prelim: quotePreliminary || undefined, worksApproved: { at: a.at, total: Math.round(Number(a.total) || 0) } };
+  }
+  if(!quoteDraft && quoteMode === "all" && materialsUnapproved(p)){
+    const title = quotePreliminary ? "Попередній кошторис" : "Кошторис";
+    const mtail = quotePreliminary ? "\n\nЦе попередній розрахунок — ціни матеріалів уточню після звірки з постачальниками." : "";
+    return { kind:"quote", n:1, title, text: card + mtail, total: Math.round(approvedWithMaterials(p).total), prelim: quotePreliminary || undefined };
   }
   if(getApproved(p) || quoteDraft) return { kind:"doc", text:"" };
   const pa = partsApproved(p);
@@ -11754,7 +11767,7 @@ function clientSendRecord(p, link){
 function sendOpen(p, s){
   if(!s || s.approvedAt || s.superseded || s.prelim) return false;
   if(s.kind === "changes") return Boolean(getApproved(p));
-  if(getApproved(p)) return s.kind === "materials" && materialsUnapproved(p);
+  if(getApproved(p)) return (s.kind === "materials" || s.kind === "quote") && materialsUnapproved(p);
   if(s.kind === "works" || s.kind === "materials") return !partsApproved(p)[s.kind];
   return true;
 }
@@ -11764,6 +11777,7 @@ function clientSendPending(p){ const list = clientSendsOpen(p); return list[list
 function sendCurrentTotal(p, s){
   if(s.kind === "works") return Math.round(getCustomerWorksTotal(p));
   if(s.kind === "materials") return Math.round(getCustomerMaterialsTotal(p));
+  if(s.kind === "quote" && materialsUnapproved(p)) return Math.round(approvedWithMaterials(p).total);
   if(s.kind === "changes") return Math.round(buildRevisionSnapshot(p, new Set(s.selected || [])).total);
   return Math.round(getEstimateTotal(p));
 }
@@ -11781,7 +11795,7 @@ function sendApply(p, s, at, how){
     logApproval(p, prevTotalLog, how === "клієнт" ? `клієнт за посиланням · зміни №${s.n}` : `вручну майстром · зміни №${s.n}`);
     return `Зміни №${s.n} погоджено · для клієнта ${money(getClientTotal(p))}`;
   }
-  if(s.kind === "materials" && getApproved(p) && !approvalCoversMaterials(p)){
+  if((s.kind === "materials" || s.kind === "quote") && getApproved(p) && !approvalCoversMaterials(p)){
     if(!p.partsApproved || typeof p.partsApproved !== "object") p.partsApproved = {};
     p.partsApproved.materials = { at, total: s.total };
     const prevTotalLog = getApproved(p).total;
@@ -11954,7 +11968,7 @@ function quoteShareMessage(project){
   const approvalStatus = quoteDraft && quoteDraft.factual ? "Фактичний" : quoteDraft ? "Оновлений" : approvalLabels[project?.customerApprovalStatus]
     || stageLabels[project?.stage]
     || "Потребує погодження";
-  const pendStatus = !quoteDraft && materialsUnapproved(project) && quoteMode === "materials";
+  const pendStatus = !quoteDraft && materialsUnapproved(project) && quoteMode !== "works";
 
   const approvedSnapshot = quoteSnapshot(project);
   const sum = quoteMode === "works"
@@ -12223,7 +12237,7 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
     })(),
     sections: pendingClientSend && ["quote", "works", "materials", "doc"].includes(pendingClientSend.kind) && !pendingClientSend.prelim ? clientPageSections(data) : undefined,
     act,
-    startDate: /^\d{4}-\d{2}-\d{2}$/.test(project.workStartDate || "") && !actFactual(project) ? project.workStartDate : undefined
+    startDate: upcomingStartDate(project) && !actFactual(project) ? upcomingStartDate(project) : undefined
   }));
   const cfg = cloudConfig();
   const response = await fetch(`${cfg.server}/upload`, { method:"POST", headers: cloudAuthHeaders(), body: form });
