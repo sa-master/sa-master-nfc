@@ -8785,6 +8785,7 @@ function homeNext(p){
       ? { text:`Переглянуто ${formatQuoteDate(s.seenAt).slice(0, 5)} · ${money(s.total)}`, sub: what }
       : { text:`Надіслано ${formatQuoteDate(s.at).slice(0, 5)} · ${money(s.total)}`, sub: what + " · ще не відкривав" };
   }
+  if(getApproved(p) && materialsPending(p)) return { text:`✓ Роботи погоджено · ${money(getClientWorksTotal(p))}`, sub:`матеріали ще не погоджено · ${money(getCustomerMaterialsTotal(p))}` };
   if(getApproved(p)) return { text:`✓ Погоджено · ${money(total)}`, sub: formatQuoteDate(getApproved(p).at || "").slice(0, 10) };
   return { text:`Кошторис ${money(total)}` };
 }
