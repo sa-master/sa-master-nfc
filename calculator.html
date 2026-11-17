@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 18:20</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 18:55</div>
   </div>
 
   <div class="fsFooter">
@@ -20819,7 +20819,8 @@ async function orderPickFindNear(project){
   if(!project || !orderPick) return;
   const addr = cleanText(project.client && project.client.address);
   if(!addr) return;
-  if(project.npNear && project.npNear.addr === addr && project.npNear.np){ orderPick.np = project.npNear.np; return; }
+  const nearKey = a => { const st = npStreetFromAddress(a); const h = (a.match(new RegExp(st.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[^\\d]{0,6}(\\d+)", "i")) || [])[1] || ""; return normalizeText(npCityFromAddress(a) + "|" + st + "|" + h); };
+  if(project.npNear && project.npNear.np && (project.npNear.addr === addr || nearKey(project.npNear.addr || "") === nearKey(addr))){ orderPick.np = project.npNear.np; return; }
   orderPick.nearBusy = true;
   try{
     const city = npCityFromAddress(addr), street = npStreetFromAddress(addr);
@@ -20927,6 +20928,11 @@ async function orderPickSend(silent){
   if(!project || !orderPick || !orderPick.supplier) return;
   const ids = orderPickSource(project).filter(pos => orderPick.checked.has(pos.id)).map(pos => pos.id);
   if(!ids.length){ toast("Відмітьте, що замовити"); return; }
+  /* Обрано поштомат, а номера нема — не підміняємо мовчки доставкою на адресу */
+  if((orderPick.where === "near" || orderPick.where === "np") && !orderPick.np){
+    toast(orderPick.nearBusy ? "Ще шукаю поштомат — секунду" : "Поштомат не знайдено — оберіть «Інше відділення / поштомат» або «Доставка»", 3500);
+    return;
+  }
   const supplierName = orderPick.supplier;
   ids.forEach(id => {
     const pos = project.positions.find(item => item.id === id);
@@ -21993,8 +21999,11 @@ function npCityFromAddress(address){
   const m = a.match(/(?:м\.|місто)\s*([А-ЯІЇЄҐA-Z][\wʼ'’\-а-яіїєґ]+)/i);
   if(m) return m[1];
   if(/київ|kyiv|kiev/i.test(a) || !a) return "Київ";
+  /* Місто — лише окрема перша частина через кому й без цифр («Бровари, вул. …»).
+     «Олександра Олеся 8/17 кв.А112» — це вулиця, не місто: тоді Київ */
+  if(!a.includes(",")) return "Київ";
   const first = a.split(",")[0].trim();
-  return /вул|просп|пров|бул|^\d/i.test(first) ? "Київ" : first;
+  return /вул|просп|пров|бул|\d/i.test(first) ? "Київ" : first;
 }
 function npStreetFromAddress(address){
   const a = cleanText(address);
@@ -22259,6 +22268,8 @@ function renderBuyList(p){
     <section class="planTodo buyList">
       <div class="ptHead"><span>Що купити й зробити</span></div>
       ${buyItems(p).length ? `<div class="byTitle">Купити${groups.length ? `<small>натисніть товар — змінити, де берете</small>` : ""}</div>
+      ${groups.length ? (() => { const n = buyItems(p).filter(pos => buyNeed(p, pos) > 0 && stockAvail(pos) > 0).length;
+        return `<div class="ptFoot" style="border-top:0;padding-top:.25rem"><button type="button" class="ptLink" onclick="openStockPick()">▣ ${n ? `На складі є ${n} поз. з цього списку — узяти` : "Що є на складі"}</button><span></span></div>`; })() : ""}
       ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}` : ""}
       ${(() => { const left = buyLeftovers(p); return left.length ? `<div class="byTitle byLeft">Залишки<small>після змін у кошторисі</small></div>${left.map(x => `<div class="byItem byLeftItem"><span class="byName">${escapeHtml(x.l.n)}<small>${formatQty(x.q)} ${escapeHtml(x.l.u)}${x.l.s ? " · " + escapeHtml(x.l.s) : x.l.w ? " · " + escapeHtml(x.l.w) : ""}${x.gone ? " · прибрано з кошторису" : ""}</small></span><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','return')">Повернув</button><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','stock')">На склад</button></div>`).join("")}` : ""; })()}
       ${notes || planNoteOpen ? `<div class="byTitle">Нотатки</div>${notes}` : ""}
