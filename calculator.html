@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 22:00</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 22:40</div>
   </div>
 
   <div class="fsFooter">
@@ -22400,11 +22400,20 @@ function buyArrived(supplier){
   const p = buyCur();
   if(!p) return;
   const list = buyArrivedList(p, supplier);
+  const paid = buyArrivedPaid(p, supplier);
   list.forEach(pos => buyReceive(p, pos, buyNeed(p, pos)));
   closeAddMenu();
   touchProject(p);
   render();
-  toast(`Привезли ✓ ${list.length} поз.`, 2600);
+  toast(`Привезли ✓ ${list.length} поз.${paid ? ` · у витрати ${money(paid)}` : ""}`, 2800);
+}
+/* Оплата постачальнику при «Привезли» — одразу у витрати об’єкта */
+function buyArrivedPaid(p, supplier){
+  const inp = document.getElementById("arrPaid");
+  const amount = inp ? parseMoneyInput(String(inp.value || "").replace(/\s/g, "")) : 0;
+  if(!(amount > 0)) return 0;
+  moneyList(p, "expense").push({ id: uid("exp"), date: todayIso(), amount, to: "", note: `${supplier} — товар`, kind: "supplierPayment", supplierName: supplier });
+  return amount;
 }
 function openArrived(supplier){
   const p = buyCur();
@@ -22414,6 +22423,8 @@ function openArrived(supplier){
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Привезли"><div class="amHead"><b>Привезли · ${escapeHtml(supplier)}</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    ${(() => { const est = Math.round(list.reduce((a, pos) => a + (Number(pos.purchasePrice) > 0 ? Number(pos.purchasePrice) * buyNeed(p, pos) : 0), 0));
+      return `<label class="arrRow" style="margin:0 0 .5rem"><span>Заплатили постачальнику, ₴<small>піде у витрати об’єкта · пусто — ще не платили</small></span><input id="arrPaid" inputmode="decimal" value="${est > 0 ? String(est) : ""}" placeholder="0"></label>`; })()}
     <button type="button" class="onbPrimary" style="margin:0" onclick="buyArrived(${buyEnc(supplier)})">Усе привезли (${list.length} поз.)</button>
     <div class="arrHint">Чогось не довезли? Виправте кількість і натисніть «Записати».</div>
     <form class="arrList" onsubmit="event.preventDefault();buyArrivedPartial(${buyEnc(supplier)})">
@@ -22426,6 +22437,7 @@ function buyArrivedPartial(supplier){
   const p = buyCur();
   if(!p) return;
   let full = 0, part = 0;
+  const paid = buyArrivedPaid(p, supplier);
   document.querySelectorAll("#addMenu [data-arr]").forEach(inp => {
     const pos = (p.positions || []).find(x => x.id === inp.dataset.arr);
     if(!pos) return;
@@ -22437,7 +22449,7 @@ function buyArrivedPartial(supplier){
   closeAddMenu();
   touchProject(p);
   render();
-  toast(part ? `Записано: ${full} повністю, ${part} частково — решта лишилась у «Що купити»` : `Привезли ✓ ${full} поз.`, 3200);
+  toast((part ? `Записано: ${full} повністю, ${part} частково — решта лишилась у «Що купити»` : `Привезли ✓ ${full} поз.`) + (paid ? ` · у витрати ${money(paid)}` : ""), 3200);
 }
 
 /* ---- Надіслати список постачальнику (той самий файл і Нова пошта, що й раніше) ---- */
