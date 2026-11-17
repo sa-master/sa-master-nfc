@@ -10811,10 +10811,15 @@ function supAnswerResponse(p, key){
     const retailChanged = retail > 0 && diff(retail, Number(s.retail) || 0);
     const comment = [ans.avail === "order" ? `під замовлення${ans.days ? ", " + ans.days + " дн." : ""}` : "",
       ans.repl && (ans.repl.name || ans.repl.article) ? `пропонують заміну: ${[ans.repl.name, ans.repl.article ? "арт. " + ans.repl.article : ""].filter(Boolean).join(", ")}${ans.repl.master ? ` · майстру ${moneyWithCents(ans.repl.master)}` : ""}${ans.repl.retail ? ` · роздріб ${moneyWithCents(ans.repl.retail)}` : ""}` : ""].filter(Boolean).join("; ");
-    if(availability !== "available" || retailChanged || diff(master, Number(s.master) || 0)) clean = false;
+    /* Менеджер виправив помилку майстра: інший артикул / кількість. Назва в кошторисі лишається майстрова. */
+    const fx = availability !== "unavailable" && ans.fix && (ans.fix.article || ans.fix.name || ans.fix.qty !== null && ans.fix.qty !== undefined) ? ans.fix : null;
+    const fixArticle = fx && fx.article && ntext(fx.article) !== ntext(s.article) ? fx.article : "";
+    const fixQty = fx && Number(fx.qty) > 0 && roundQty(fx.qty) !== roundQty(Number(s.qty) || 0) ? roundQty(fx.qty) : null;
+    if(availability !== "available" || retailChanged || diff(master, Number(s.master) || 0) || fixArticle || fixQty !== null) clean = false;
     records.push({ positionId: k, availability, sourcePrice: master || null, currency: "UAH", rate: null, actualPriceUAH: master || null,
-      retailSource: retailChanged ? retail : null, retailUAH: retailChanged ? retail : null, fileQty: null,
-      article: s.article || "", name: s.name || "", brand: s.brand || "", unit: s.unit || "", answered: true, comment });
+      retailSource: retailChanged ? retail : null, retailUAH: retailChanged ? retail : null, fileQty: fixQty,
+      article: fixArticle || s.article || "", name: (fixArticle && fx.name) || (fixArticle ? fixArticle : s.name) || "", brand: fixArticle ? "" : s.brand || "", unit: s.unit || "", answered: true,
+      keepName: Boolean(fixArticle), comment: [comment, fixArticle ? `правильний артикул: ${fixArticle}${fx.name ? " (" + fx.name + ")" : ""}` : "", fixQty !== null ? `кількість: ${formatQty(fixQty)}` : ""].filter(Boolean).join("; ") });
   });
   const resp = { projectId: p.id, supplierName, records, fileVersion: 2, fileRates: {}, managerName: a.manager || "", managerPhone: a.phone || "",
     note: a.comment || "", webKey: key, answerAt: a.at, notInFile: [], missingCount: 0, lineTotals: false, clean };
@@ -13562,7 +13567,7 @@ function areaBlock(p, pos){
   const total = Math.round(sum * (1 + st.add / 100) * 100) / 100;
   return `<div class="planAdd areaBox"><span class="opLabel">Площа від кімнат</span>
     ${measures.length > 1 ? `<div class="chips">${measures.map(([k, l]) => `<button type="button" class="chip small ${st.m === k ? "active" : ""}" onclick="areaSet('m','${k}')">${l}</button>`).join("")}</div>` : ""}
-    <div class="areaRooms">${rooms.map(r => { const on = !st.rooms || st.rooms.includes(r.id); return `<button type="button" class="opItem ${on ? "sel" : ""}" onclick="areaToggleRoom('${escapeHtml(r.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(r.name || "Кімната")}</span><b>${formatQty(roomCalc(r)[st.m])} ${pos.unit}</b></button>`; }).join("")}</div>
+    <div class="areaRooms">${rooms.map(r => { const on = !st.rooms || st.rooms.includes(r.id); return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="areaToggleRoom('${escapeHtml(r.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(r.name || "Кімната")}</span><b>${formatQty(roomCalc(r)[st.m])} ${pos.unit}</b></button>`; }).join("")}</div>
     <div class="areaFoot"><span>Запас</span>${[0, 5, 10].map(v => `<button type="button" class="chip small ${st.add === v ? "active" : ""}" onclick="areaSet('add',${v})">${v ? "+" + v + "%" : "без"}</button>`).join("")}<button type="button" class="areaEdit" onclick="areaOpenRooms(false)">Кімнати</button></div>
     <button type="button" class="onbPrimary areaApply" ${total > 0 ? "" : "disabled"} onclick="areaApply(${total})">Поставити ${formatQty(total)} ${pos.unit}${Math.abs(total - (Number(pos.qty) || 0)) < 0.005 ? " ✓" : ""}</button>
   </div>`;
@@ -17334,7 +17339,7 @@ function openClientInvoiceFile(){
 function parseClientInvoiceRows(rows){
   const headerIndex = rows.findIndex(row => Array.isArray(row) &&
     row.some(cell => ntext(cell) === "артикул") &&
-    row.some(cell => /^ціна/.test(ntext(cell))));
+    row.some(cell => /^(ціна|цена)/.test(ntext(cell))));
   if(headerIndex < 0) throw new Error("Не знайдено таблицю з колонками «Артикул» і «Ціна»");
   const header = rows[headerIndex].map(cell => ntext(cell).replace(/\s+/g, " "));
   const find = test => header.findIndex(test);
@@ -17343,7 +17348,7 @@ function parseClientInvoiceRows(rows){
   const qtyCol = find(text => /^(кількість|к-сть|кіл)/.test(text));
   // Роздрібна ціна за одиницю: «Ціна без знижки» (не «Сума без знижки»!), інакше просто «Ціна».
   const retailCol = find(text => /^ціна.*без знижки|^роздрібна ціна/.test(text));
-  const netCol = find(text => /^ціна$|^ціна зі знижкою|^ціна, грн$/.test(text));
+  const netCol = find(text => /^(ціна|цена)$|^ціна зі знижкою|^(ціна|цена), грн$/.test(text));
   const priceCol = retailCol >= 0 ? retailCol : netCol;
   if(priceCol < 0 || (articleCol < 0 && nameCol < 0)) throw new Error("У рахунку бракує колонок з артикулом/назвою або ціною");
 
@@ -17694,7 +17699,7 @@ function renderProcurementResponseReview(){
     const availability = procurementAvailabilityLabel(record.availability) || "Коментар постачальника";
     const changes = record.changes || [];
     const qtyNote = changes.includes("qty") ? `<div class="importPreviewMeta procurementChangeLine">Кількість: ${formatQty(record.previousQty)} → <b>${formatQty(record.fileQty)}</b> ${escapeHtml(position.unit || "шт")}</div>` : "";
-    const replaceNote = changes.includes("replace") ? `<div class="importPreviewMeta procurementChangeLine">Заміна: <b>${escapeHtml(record.name || record.article)}</b>${record.article ? ` (арт. ${escapeHtml(record.article)})` : ""}${!getApproved(project) ? " · ціну для клієнта перевірте після імпорту" : ""}</div>` : "";
+    const replaceNote = changes.includes("replace") && record.keepName ? `<div class="importPreviewMeta procurementChangeLine">Правильний артикул: <b>${escapeHtml(record.article)}</b>${record.name && record.name !== record.article ? ` (${escapeHtml(record.name)})` : ""} · назва й ціна для клієнта лишаються ваші</div>` : changes.includes("replace") ? `<div class="importPreviewMeta procurementChangeLine">Заміна: <b>${escapeHtml(record.name || record.article)}</b>${record.article ? ` (арт. ${escapeHtml(record.article)})` : ""}${!getApproved(project) ? " · ціну для клієнта перевірте після імпорту" : ""}</div>` : "";
     const explicitRetail = procurementExplicitRetail(record, position, response);
     const retailUpdate = explicitRetail || (response.updateRetail === true ? procurementRetailUpdate(record, position, response) : null);
     const retailNote = retailUpdate ? `<div class="importPreviewMeta procurementChangeLine">Ціна для клієнта: ${moneyWithCents(retailUpdate.from)} → <b>${moneyWithCents(retailUpdate.to)}</b>${explicitRetail ? "" : ` (курс ${String(record.rate).replace(".", ",")})`}</div>` : "";
@@ -17818,7 +17823,17 @@ function applyProcurementResponse(){
         const retailUpdate = procurementRetailUpdate(record, position, response);
         if(retailUpdate){ position.price = roundClientPrice(retailUpdate.to); retailUpdated++; }
       }
-      if(changes.includes("replace")){
+      if(changes.includes("replace") && record.keepName){
+        /* Виправлення від менеджера: той самий задуманий товар, лише правильний артикул — назва й ціна для клієнта не змінюються */
+        const previousName = positionShortName(position);
+        const previousArticle = getPositionMaterialArticle(position) || "";
+        const item = findOrCreateCatalogItem(record, procurementRecordUnitPrice(record, position), getPositionMaterialCategory(position));
+        position.ownName = previousName;
+        position.catalogId = item.id;
+        position.fullName = item.name;
+        position.fixedFrom = previousArticle;
+        appliedChanges++;
+      }else if(changes.includes("replace")){
         const previousName = positionShortName(position);
         const item = findOrCreateCatalogItem(record, procurementRecordUnitPrice(record, position), getPositionMaterialCategory(position));
         if(!getApproved(project)){
@@ -17984,6 +17999,10 @@ document.getElementById("procurementResponseFileInput").addEventListener("change
   try{
     const buffer = await file.arrayBuffer();
     const workbook = XLSX.read(buffer, { type:"array", cellDates:false, cellNF:true });
+    /* Не наш файл звірки, а рахунок / замовлення з 1С від менеджера — оновлюємо матеріали за ним */
+    let isOurs = true;
+    try{ parseProcurementResponseWorkbook(workbook); }catch(err){ if(/не файл звірки/i.test(String(err && err.message))) isOurs = false; }
+    if(!isOurs){ openOrderImport(workbook, file.name); return; }
     const parsed = parseProcurementResponseWorkbook(workbook);
     const project = projects.find(item => item.id === parsed.projectId);
     if(!project) throw new Error("Цей файл звірки належить до об’єкта, якого немає в калькуляторі");
@@ -18012,6 +18031,112 @@ document.getElementById("procurementResponseFileInput").addEventListener("change
     alert(`Відповідь не імпортовано.\n\n${error && error.message ? error.message : "Не вдалося прочитати файл звірки."}`);
   }
 });
+
+/* ==== Замовлення / рахунок постачальника (1С) → матеріали об’єкта ==== */
+let orderImp = null;
+function orderImpScreen(){
+  let el = document.getElementById("orderImpScreen");
+  if(!el){ el = document.createElement("div"); el.id = "orderImpScreen"; el.className = "onbScreen"; document.body.appendChild(el); }
+  return el;
+}
+/* «Схожа» назва: головне слово (муфта, коліно, кран…) з вашої назви є в назві з файлу */
+function orderNameLooksSame(mine, theirs){
+  const a = ntext(mine).replace(/[^a-zа-яіїєґ0-9 ]/g, " ").split(/\s+/).filter(w => w.length > 3 && !/^\d/.test(w));
+  const b = ntext(theirs);
+  if(!a.length) return true;
+  return a.slice(0, 2).some(w => b.includes(w.slice(0, Math.max(4, w.length - 2))));
+}
+function openOrderImport(workbook, fileName){
+  const project = projects.find(x => x.id === currentProjectId);
+  if(!project){ alert("Відкрийте об’єкт і завантажте файл звідти"); return; }
+  const parsed = parseWorkbook(workbook);
+  if(!parsed || !parsed.items || !parsed.items.length){ alert("У файлі не знайдено товарів з цінами"); return; }
+  const items = parsed.items.map((it, i) => ({ i, article: cleanText(it.article || it.supplierArticle || ""), name: cleanText(it.name), qty: roundQty(Number(it.qty) > 0 ? it.qty : 1), unit: normalizeUnit(it.unit || "шт"), retail: Number(it.price) || 0, net: Number(it.price) || 0 }));
+  const matched = matchClientInvoice(items, project);
+  /* «Вгадані» за кількістю пари тут ненадійні (багато позицій по 1 шт) — краще показати як «нова» + «немає в замовленні» */
+  items.forEach(it => { if(it.guessed){ matched.delete(it.positionId); delete it.positionId; delete it.guessed; } });
+  const pos = id => project.positions.find(x => x.id === id);
+  const supCount = new Map();
+  matched.forEach((_, id) => { const n = cleanText(getPositionPlannedSupplier(pos(id))); if(n) supCount.set(n, (supCount.get(n) || 0) + 1); });
+  const supplier = Array.from(supCount.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+  const notIn = (project.positions || []).filter(x => x.type === "material" && !x.buyLaterOnly && !matched.has(x.id) && (!supplier || normalizeText(getPositionPlannedSupplier(x)) === normalizeText(supplier)));
+  items.forEach(it => {
+    if(!it.positionId || it.extraForSame) return;
+    const p0 = pos(it.positionId);
+    it.odd = !orderNameLooksSame(positionShortName(p0), it.name);
+    it.fixName = it.odd;
+  });
+  orderImp = { projectId: project.id, fileName, items, matched, supplier, notIn: notIn.map(x => ({ id:x.id, remove:false })), addNew: true };
+  orderImpScreen().classList.add("open");
+  renderOrderImport();
+}
+function closeOrderImport(){ orderImpScreen().classList.remove("open"); orderImp = null; }
+function renderOrderImport(){
+  const d = orderImp; if(!d) return;
+  const project = projects.find(x => x.id === d.projectId); if(!project) return;
+  const pos = id => project.positions.find(x => x.id === id);
+  const odd = d.items.filter(it => it.positionId && !it.extraForSame && it.odd);
+  const fresh = d.items.filter(it => !it.positionId);
+  const changed = d.items.filter(it => it.positionId && !it.extraForSame && !it.odd && (roundQty(pos(it.positionId).qty) !== it.qty));
+  const total = d.items.reduce((s, it) => s + it.net * it.qty, 0);
+  const box = (on) => `<span class="opBox">${on ? "✓" : ""}</span>`;
+  orderImpScreen().innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeOrderImport()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Замовлення постачальника</span></div>
+    <div class="psHead"><b>${escapeHtml(d.supplier || "Постачальник")} · ${d.items.length} поз. · ${money(total)}</b><small>${escapeHtml(d.fileName)} → «${escapeHtml(projectTitlePlain(project))}». Ціни для клієнта у знайдених позиціях не змінюються.</small></div>
+    ${odd.length ? `<span class="opLabel">Перевірте: назва у вас і в замовленні різна (${odd.length})</span><div class="opList">${odd.map(it => { const p0 = pos(it.positionId); return `<div class="opItem" style="align-items:flex-start"><span class="opName">${escapeHtml(positionShortName(p0))}<small>у замовленні: <b>${escapeHtml(it.name)}</b>${it.article ? ` · арт. ${escapeHtml(it.article)}` : ""} · ${formatQty(it.qty)} ${escapeHtml(it.unit)}</small></span></div>`; }).join("")}</div><span class="onbNote" style="text-align:left">Ваші назви лишаться. Якщо це не той товар — виправте артикул у позиції або попросіть менеджера виправити у звірці за посиланням.</span>` : ""}
+    ${changed.length ? `<span class="opLabel">Інша кількість (${changed.length})</span><div class="opList">${changed.map(it => { const p0 = pos(it.positionId); return `<div class="opItem"><span class="opName">${escapeHtml(positionShortName(p0))}<small>${formatQty(p0.qty)} → <b>${formatQty(it.qty)}</b> ${escapeHtml(p0.unit || "шт")}</small></span></div>`; }).join("")}</div>` : ""}
+    ${fresh.length ? `<span class="opLabel">Нові в замовленні (${fresh.length})</span><div class="opList"><div class="opItem ${d.addNew ? "on" : ""}" style="cursor:pointer" onclick="orderImpToggle('add')">${box(d.addNew, "")}<span class="opName">Додати в кошторис<small>ціна для клієнта — з каталогу, якщо є; інакше закупівельна з позначкою «перевірте ціну»</small></span></div>${fresh.map(it => `<div class="opItem"><span class="opName">${escapeHtml(it.name)}<small>${it.article ? `арт. ${escapeHtml(it.article)} · ` : ""}${formatQty(it.qty)} ${escapeHtml(it.unit)} · ${moneyWithCents(it.net)}</small></span></div>`).join("")}</div>` : ""}
+    ${d.notIn.length ? `<span class="opLabel">Немає в замовленні (${d.notIn.length}) — відмітьте, що прибрати</span><div class="opList">${d.notIn.map((x, k) => { const p0 = pos(x.id); return p0 ? `<div class="opItem ${x.remove ? "on" : ""}" style="cursor:pointer" onclick="orderImpToggle('rm',${k})">${box(x.remove, "")}<span class="opName">${escapeHtml(positionShortName(p0))}<small>${formatQty(p0.qty)} ${escapeHtml(p0.unit || "шт")}</small></span></div>` : ""; }).join("")}</div>` : ""}
+    <span class="onbNote" style="text-align:left">Решта ${d.items.length - odd.length - changed.length - fresh.length} поз. збігаються — оновиться лише закупівельна ціна з замовлення.</span>
+    <div class="onbSpacer"></div>
+    <button type="button" class="onbPrimary" onclick="applyOrderImport()">Внести зміни</button>
+  </div>`;
+}
+function orderImpToggle(k, i){
+  const d = orderImp; if(!d) return;
+  if(k === "fix"){ const it = d.items.find(x => x.i === i); if(it) it.fixName = !it.fixName; }
+  if(k === "add") d.addNew = !d.addNew;
+  if(k === "rm" && d.notIn[i]) d.notIn[i].remove = !d.notIn[i].remove;
+  const y = orderImpScreen().scrollTop; renderOrderImport(); orderImpScreen().scrollTop = y;
+}
+function orderCatalogItem(it, supplier){
+  let item = it.article ? findCatalogMaterialsByArticle(it.article)[0] : null;
+  if(!item) item = catalog.find(c => c.type === "material" && ntext(c.name) === ntext(it.name)) || null;
+  if(item) return { item, created:false };
+  item = { id: uid("cat"), type:"material", name: it.name || it.article, nameMaster:"", unit: it.unit || "шт", price:0, retailPriceUAH:0, purchasePriceUAH: it.net, availabilityStatus:"draft", preferredSupplierName: supplier || "", category: detectCategory(it.name || "", "", ""), stage:"", manufacturer:"", system: detectSystem(it.name || ""), article: it.article || "", needsReview:true, basePriceEUR:0,
+    supplierOffers: supplier ? [{ supplierName: supplier, supplierFullName:"", retail:null, master:{ priceUAH: it.net, sourcePrice: it.net, sourceCurrency:"UAH", sourceRate:null, importedAt:new Date().toISOString() }, supplierArticle: it.article || "", updatedAt:new Date().toISOString() }] : [] };
+  catalog.push(item);
+  return { item, created:true };
+}
+function applyOrderImport(){
+  const d = orderImp; if(!d) return;
+  const project = projects.find(x => x.id === d.projectId); if(!project) return;
+  const now = new Date().toISOString();
+  let fixed = 0, qty = 0, added = 0, removed = 0, catChanged = false;
+  d.matched.forEach((info, id) => {
+    const p0 = project.positions.find(x => x.id === id); if(!p0) return;
+    const it = info.entry;
+    /* Назви — ваші: з замовлення не беремо */
+    if(roundQty(p0.qty) !== roundQty(info.qty)){ p0.qty = info.qty; qty++; }
+    if(it.net > 0){ p0.purchasePrice = it.net; p0.purchasePriceState = "confirmed"; }
+    if(d.supplier){ p0.plannedSupplierName = d.supplier; if(!p0.whereK){ p0.whereK = "sup"; p0.whereS = d.supplier; } }
+  });
+  if(d.addNew) d.items.filter(it => !it.positionId).forEach(it => {
+    const { item, created } = orderCatalogItem(it, d.supplier); if(created) catChanged = true;
+    const retail = Number(item.retailPriceUAH) || Number(item.price) || supplierOfferPrice(getSelectedCatalogSupplierOffer(item), "retail") || 0;
+    project.positions.push({ id: uid("pos"), catalogId: item.id, type:"material", name: catalogDisplayName(item), fullName: item.name, unit: it.unit || item.unit || "шт",
+      price: retail > 0 ? retail : it.net, ...(retail > 0 ? {} : { clientPriceCheck:true }),
+      purchasePrice: it.net, purchasePriceState:"confirmed", plannedSupplierName: d.supplier || "", ...(d.supplier ? { whereK:"sup", whereS:d.supplier } : {}), qty: it.qty, addedFromSupplierAt: now });
+    added++;
+  });
+  const rm = new Set(d.notIn.filter(x => x.remove).map(x => x.id));
+  if(rm.size){ project.positions = project.positions.filter(x => !rm.has(x.id)); removed = rm.size; }
+  if(catChanged) saveCatalog();
+  touchProject(project);
+  closeOrderImport();
+  render();
+  toast([fixed && `назви виправлено: ${fixed}`, qty && `кількість: ${qty}`, added && `додано: ${added}`, removed && `прибрано: ${removed}`].filter(Boolean).join(" · ") || "Закупівельні ціни оновлено", 3500);
+}
 
 function parseWorkbook(workbook){
   const strictTemplate = parseSaMasterTemplate(workbook);
