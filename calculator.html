@@ -8179,6 +8179,8 @@ function getClientWorksTotal(project){
 }
 
 /* Погодили лише роботи — матеріали ще рахуємо з поточного кошторису (їх клієнт погодить окремо) */
+/* Роботи погоджено, а матеріали є і ще не погоджені (навіть якщо ціни для клієнта ще не вписані) */
+function materialsUnapproved(project){ return Boolean(getApproved(project)) && !approvalCoversMaterials(project) && projectHasType(project, "material"); }
 function materialsPending(project){ return Boolean(getApproved(project)) && !approvalCoversMaterials(project) && getCustomerMaterialsTotal(project) > 0.5; }
 function getClientMaterialsTotal(project){
   const approved = getApproved(project);
@@ -10426,7 +10428,7 @@ function openQuotePreview(){
   }
 
   if(getApproved(project)){
-    if(materialsPending(project)) quoteMode = "materials";
+    if(materialsUnapproved(project)) quoteMode = "materials";
     renderQuotePreview();
     return;
   }
@@ -10939,7 +10941,7 @@ function quoteCustomDisc(type){
 /* Погоджено лише роботи, а матеріали ще ні: кошторис на матеріали (і «усе») будуємо з поточних позицій */
 function quoteSnapshot(project){
   if(quoteDraft) return quoteDraft;
-  if(materialsPending(project) && quoteMode !== "works") return null;
+  if(materialsUnapproved(project) && quoteMode !== "works") return null;
   return getApproved(project);
 }
 function renderQuotePreview(){
@@ -11703,7 +11705,7 @@ function clientSendDraft(p){
       `\n\nБуло ${money(prevTotal)} → стане ${money(d.total)}${disc ? " (зі знижкою)" : ""}`;
     return { kind:"changes", n, title, text, total: d.total, prevTotal, lines, selected: sel };
   }
-  if(!quoteDraft && quoteMode === "materials" && materialsPending(p)){
+  if(!quoteDraft && quoteMode === "materials" && materialsUnapproved(p)){
     const a = getApproved(p);
     const title = quotePreliminary ? "Попередній кошторис матеріалів" : "Кошторис матеріалів";
     const mtail = quotePreliminary ? "\n\nЦе попередній розрахунок — ціни матеріалів уточню після звірки з постачальниками." : "";
@@ -11752,7 +11754,7 @@ function clientSendRecord(p, link){
 function sendOpen(p, s){
   if(!s || s.approvedAt || s.superseded || s.prelim) return false;
   if(s.kind === "changes") return Boolean(getApproved(p));
-  if(getApproved(p)) return s.kind === "materials" && materialsPending(p);
+  if(getApproved(p)) return s.kind === "materials" && materialsUnapproved(p);
   if(s.kind === "works" || s.kind === "materials") return !partsApproved(p)[s.kind];
   return true;
 }
@@ -11952,7 +11954,7 @@ function quoteShareMessage(project){
   const approvalStatus = quoteDraft && quoteDraft.factual ? "Фактичний" : quoteDraft ? "Оновлений" : approvalLabels[project?.customerApprovalStatus]
     || stageLabels[project?.stage]
     || "Потребує погодження";
-  const pendStatus = !quoteDraft && materialsPending(project) && quoteMode === "materials";
+  const pendStatus = !quoteDraft && materialsUnapproved(project) && quoteMode === "materials";
 
   const approvedSnapshot = quoteSnapshot(project);
   const sum = quoteMode === "works"
