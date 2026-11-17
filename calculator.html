@@ -5231,7 +5231,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 16:30</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 16:40</div>
   </div>
 
   <div class="fsFooter">
@@ -10616,7 +10616,9 @@ function openSendChoice(){
     ${sendChoiceList ? `<div class="scBlock"><div class="scHint" style="margin:0">Звірка з постачальниками</div>${rows}${noSup.length ? `<div class="scRow"><span class="scName"><b>Без постачальника: ${noSup.length}</b><small>звіряти нікому</small></span></div>` : ""}
       <div class="scLinks"><button type="button" onclick="closeSendChoice();openProcurementResponseFile()">⇩ Завантажити відповідь файлом</button></div></div>`
       : card(ic("box"), allOk ? "✓ Погоджено з постачальниками" : "Погодити з постачальниками", allOk ? "Наявність і ціни підтверджено" : "Наявність і ціни матеріалів", supAction)}
-    ${card(ic("doc"), allOk ? "Надіслати кошторис клієнту" : "Надіслати клієнту", allOk ? "Ціни актуальні" : "Попередній кошторис, без погодження", `closeSendChoice();quotePreliminary=${allOk ? "false" : "true"};openQuotePreview()`, allOk ? "amMain" : "")}
+    ${allOk ? card(ic("doc"), "Надіслати кошторис клієнту", "Ціни актуальні", "closeSendChoice();quotePreliminary=false;openQuotePreview()", "amMain")
+      : card(ic("doc"), "Клієнту на погодження", `З кнопкою «Погоджую» · постачальник не підтвердив ціни ${mats.filter(x => !posConfirmed(x)).length} з ${mats.length} матеріалів`, "closeSendChoice();quotePreliminary=false;openQuotePreview()")
+        + card(ic("doc"), "Клієнту попередній", "Лише для ознайомлення, без погодження", "closeSendChoice();quotePreliminary=true;openQuotePreview()")}
   </div>`;
   requestAnimationFrame(() => el.classList.add("open"));
 }
@@ -10942,7 +10944,7 @@ function quoteCustomDisc(type){
 function quoteSnapshot(project){
   if(quoteDraft) return quoteDraft;
   if(materialsUnapproved(project) && quoteMode === "materials") return null;
-  if(materialsUnapproved(project) && quoteMode === "all") return approvedWithMaterials(project);
+  if(materialsUnapproved(project) && quoteMode === "all") return Object.assign(approvedWithMaterials(project), { pending:true });
   return getApproved(project);
 }
 function renderQuotePreview(){
@@ -11005,7 +11007,7 @@ function renderQuotePreview(){
   lastQuoteData = {
     whole,
     title: quoteModeTitle(),
-    dateLabel: `${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
+    dateLabel: `${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
     companyName, companyPhone, objectName, clientName, clientPhone, objectAddress,
     sections: xlsxSections,
     total: documentTotal,
@@ -11040,7 +11042,7 @@ function renderQuotePreview(){
 
     <div class="quoteDocHeading">
       <div class="quoteDocumentTitle">${quoteModeTitle()}</div>
-      <div class="quoteIssuedNote">${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
+      <div class="quoteIssuedNote">${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
     </div>
     ${quotePreliminary && quoteMode !== "works" && !approvedSnapshot ? `<div class="quotePrelimNote">Ціни на матеріали попередні — можуть уточнитися після підтвердження наявності в постачальника.</div>` : ""}
 
@@ -12235,7 +12237,7 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
       if(quoteMode === "materials" || (hasM && !hasW)) return "Кошторис на матеріали";
       return hasW && hasM ? "Кошторис на роботи й матеріали" : (data.title || "Кошторис");
     })(),
-    sections: pendingClientSend && ["quote", "works", "materials", "doc"].includes(pendingClientSend.kind) && !pendingClientSend.prelim ? clientPageSections(data) : undefined,
+    sections: pendingClientSend && ["quote", "works", "materials", "doc"].includes(pendingClientSend.kind) ? clientPageSections(data) : undefined,
     act,
     startDate: upcomingStartDate(project) && !actFactual(project) ? upcomingStartDate(project) : undefined
   }));
