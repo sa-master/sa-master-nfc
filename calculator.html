@@ -5233,7 +5233,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 17.11.2026 23:50</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 18.11.2026 09:55</div>
   </div>
 
   <div class="fsFooter">
@@ -17062,7 +17062,7 @@ async function shareProcurementOrderFile(){
   let file = null;
   try{ file = buildProcurementOrderFile(draft); }catch(e){ console.error(e); }
   if(!file){ toast("Модуль Excel ще завантажується. Спробуйте за мить."); return; }
-  const text = `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project || {})}» — ${draft.positionIds.length} поз., список у файлі.\n${procurementDeliveryLine(draft)}\n\nДякую!`;
+  const text = `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project || {})}» — ${draft.positionIds.length} поз., список у файлі.${draft.replaces ? "\nЦе оновлений список — він замінює попереднє замовлення." : ""}\n${procurementDeliveryLine(draft)}\n\nДякую!`;
   const markSent = () => {
     if(!project) return;
     if(!project.ordersSent || typeof project.ordersSent !== "object") project.ordersSent = {};
@@ -17166,7 +17166,7 @@ function procurementOrderText(draft){
     });
     return `${group.label}\n${lines.join("\n")}`;
   });
-  return `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project)}» — ${count} поз.\n${procurementDeliveryLine(draft)}\n\n${blocks.join("\n\n")}\n\nДякую!`;
+  return `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project)}» — ${count} поз.${draft.replaces ? "\nЦе оновлений список — він замінює попереднє замовлення." : ""}\n${procurementDeliveryLine(draft)}\n\n${blocks.join("\n\n")}\n\nДякую!`;
 }
 
 async function shareProcurementOrderText(){
@@ -20758,7 +20758,8 @@ function returnsPending(project){
 
 /* Що показувати на екрані «Замовити»: звичайне «Треба купити» або список «Купити пізніше» */
 function orderPickSource(project){
-  if(orderPick && orderPick.simple) return buyItems(project).filter(pos => buyNeed(project, pos) > 0 && !buySent(pos) && pos.whereK === "sup" && normalizeText(pos.whereS) === normalizeText(orderPick.plan));
+  /* resend — «Надіслати весь список ще раз»: разом з уже надісланими */
+  if(orderPick && orderPick.simple) return buyItems(project).filter(pos => buyNeed(project, pos) > 0 && (orderPick.resend || !buySent(pos)) && pos.whereK === "sup" && normalizeText(pos.whereS) === normalizeText(orderPick.plan));
   if(orderPick && orderPick.plan) return planSupplierState(project, orderPick.plan).toOrder.map(x => x.pos);
   if(orderPick && orderPick.later) return extrasPending(project);
   return positionsToBuy(project);
@@ -20784,19 +20785,20 @@ function orderPickQty(project, pos){
   return positionToBuyQty(project, pos);
 }
 
-function openOrderPick(later, planSupplier, simple){
+function openOrderPick(later, planSupplier, simple, resend){
   if(!requireAccess()) return;
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
-  orderPick = { later: Boolean(later), plan: planSupplier || "", simple: Boolean(simple) };
+  orderPick = { later: Boolean(later), plan: planSupplier || "", simple: Boolean(simple), resend: Boolean(resend) };
   const toBuy = orderPickSource(project);
   if(!toBuy.length){ orderPick = null; toast(later ? "У списку нічого замовляти" : "Усе вже замовлено"); return; }
   const suppliers = planSupplier ? [planSupplier] : mySupplierNames(project);
   const prevPlan = getProcurementDelivery({ projectId:project.id, supplierName: suppliers[0] || "" });
   orderPick = { later: Boolean(later), plan: planSupplier || "", simple: Boolean(simple), supplier: suppliers[0] || "", checked: new Set(), when: "", date: "", pickup: false, touched: false, np: planSupplier && prevPlan.kind === "np" && prevPlan.np ? prevPlan.np : null };
+  orderPick.resend = Boolean(resend);
   orderPickPreselect(project);
   /* Список постачальнику з «Купити»: спершу — запит наявності й цін (поки цьому постачальнику його не надсилали), потім — замовлення */
-  if(simple) orderPick.kind = planSupplier && supChk(project, normalizeText(planSupplier)) ? "order" : "check";
+  if(simple) orderPick.kind = resend || (planSupplier && supChk(project, normalizeText(planSupplier))) ? "order" : "check";
   /* Куди: за замовчуванням — поштомат біля об’єкта (якщо є адреса); попередній вибір для цього постачальника — пріоритетніший */
   const hasAddr = Boolean(project.client && cleanText(project.client.address));
   orderPick.where = prevPlan && prevPlan.where ? prevPlan.where : hasAddr ? "near" : "delivery";
@@ -20991,6 +20993,7 @@ async function orderPickSend(silent){
     if(price > 0){ pos.purchasePrice = price; pos.purchasePriceState = "estimated"; }
   });
   const draft = { projectId:project.id, supplierName, positionIds:ids };
+  if(orderPick.resend) draft.replaces = true;
   if(orderPick.simple) draft.simple = true;
   if(orderPick.plan) draft.qtyMap = Object.fromEntries(ids.map(id => [id, orderPickQty(project, project.positions.find(item => item.id === id))]));
   const plan = getProcurementDelivery(draft);
@@ -22289,7 +22292,10 @@ function renderBuyList(p){
   const doneList = buyItems(p).filter(pos => pos.got && buyNeed(p, pos) <= 0);
   const item = pos => {
     const pid = escapeHtml(pos.id);
-    const sent = pos.got ? `<small>докупити: було ${formatQty(buyLog(p)[pos.id] ? buyLog(p)[pos.id].q : 0)}, стало ${formatQty(pos.qty)}</small>` : "";
+    /* Ціна закупівлі видно біля кожного товару — щоб помилку в сумі «до оплати» було видно одразу */
+    const pr = Number(pos.purchasePrice);
+    const priceTxt = pos.whereK === "sup" || pos.whereK === "self" ? (pr > 0 ? `<small>по ${moneyWithCents(pr)}</small>` : `<small style="color:var(--attn)">без закупівельної ціни</small>`) : "";
+    const sent = (pos.got ? `<small>докупити: було ${formatQty(buyLog(p)[pos.id] ? buyLog(p)[pos.id].q : 0)}, стало ${formatQty(pos.qty)}</small>` : "") + priceTxt;
     return `<div class="byItem"><button type="button" class="ptBox" onclick="buyToggle('${pid}')" aria-label="Є"></button><button type="button" class="byName" onclick="openBuySrc('${pid}')">${escapeHtml(positionShortName(pos))}${sent}</button><span class="ptQ">${pos.got ? "ще " : ""}${formatQty(buyNeed(p, pos))} ${escapeHtml(pos.unit || "шт")}</span></div>`;
   };
   const supGroupHtml = g => {
@@ -22529,6 +22535,7 @@ function openBuyGroupMenu(key, supplier){
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="${escapeHtml(supplier)}"><div class="amHead"><b>${escapeHtml(supplier)}</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    ${items.some(x => buySent(x)) ? it(`setTimeout(() => openOrderPick(false, ${buyEnc(supplier)}, true, true), 150)`, `Надіслати оновлений список · ${items.length} поз.`, "весь список заново, з урахуванням доданого й прибраного — замінює попереднє замовлення") : ""}
     ${items.length > 1 ? it(`setTimeout(() => openBuyMove(${buyEnc(key)}), 150)`, "Перенести до іншого постачальника", "кілька товарів або цілу групу, напр. каналізацію") : ""}
     ${unsent ? it(`setTimeout(() => openArrived(${buyEnc(supplier)}, true), 150)`, "Отримано без списку", "сам забрав або купив, список не надсилали") : ""}
   </div>`;
