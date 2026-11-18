@@ -5233,7 +5233,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 18.11.2026 09:55</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 18.11.2026 10:40</div>
   </div>
 
   <div class="fsFooter">
@@ -16951,7 +16951,14 @@ function setProcurementDelivery(field, value){
   renderProcurementRequestMode();
 }
 
+/* Окремі позиції — Новою поштою (позначка «НП» у «Де беру»), решта — як обрано в «Куди?» */
 function procurementDeliveryLine(draft){
+  const main = procurementDeliveryMain(draft);
+  const ids = draft.npShipIds || [];
+  if(!ids.length) return main;
+  return `${main}\n\nПозиції з позначкою «НП» (${ids.length}) — окремо:\n${npDeliveryLines({ np: draft.npPoint }).join("\n")}`;
+}
+function procurementDeliveryMain(draft){
   const plan = getProcurementDelivery(draft);
   const project = projects.find(item => item.id === draft.projectId);
   const parts = [];
@@ -17033,7 +17040,7 @@ function buildProcurementOrderFile(draft){
     [`Дата замовлення: ${formatQuoteDate(new Date())}`],
     ...procurementDeliveryLine(draft).split("\n").map(line => [line]),
     [],
-    ["№", "Артикул", "Найменування", "Кількість", "Од."]
+    (draft.npShipIds || []).length ? ["№", "Артикул", "Найменування", "Кількість", "Од.", "Доставка"] : ["№", "Артикул", "Найменування", "Кількість", "Од."]
   ];
   let n = 0;
   groups.forEach(group => {
@@ -17041,13 +17048,15 @@ function buildProcurementOrderFile(draft){
     group.positions.forEach(position => {
       const item = getPositionCatalogItem(position);
       const fullName = cleanText((item && item.name) || position.fullName || position.name);
-      rows.push([++n, getPositionMaterialArticle(position), fullName, draft.qtyMap && draft.qtyMap[position.id] !== undefined ? draft.qtyMap[position.id] : positionToBuyQty(project, position), position.unit || "шт"]);
+      const row = [++n, getPositionMaterialArticle(position), fullName, draft.qtyMap && draft.qtyMap[position.id] !== undefined ? draft.qtyMap[position.id] : positionToBuyQty(project, position), position.unit || "шт"];
+      if((draft.npShipIds || []).length) row.push(draft.npShipIds.includes(position.id) ? "Нова пошта" : "");
+      rows.push(row);
     });
   });
   rows.push([]);
   rows.push(["", "", `Разом позицій: ${n}`]);
   const sheet = XLSX.utils.aoa_to_sheet(rows);
-  sheet["!cols"] = [{ wch:5 }, { wch:16 }, { wch:70 }, { wch:11 }, { wch:6 }];
+  sheet["!cols"] = [{ wch:5 }, { wch:16 }, { wch:70 }, { wch:11 }, { wch:6 }, { wch:14 }];
   const book = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(book, sheet, "Замовлення");
   const bytes = XLSX.write(book, { bookType:"xlsx", type:"array" });
@@ -17062,7 +17071,7 @@ async function shareProcurementOrderFile(){
   let file = null;
   try{ file = buildProcurementOrderFile(draft); }catch(e){ console.error(e); }
   if(!file){ toast("Модуль Excel ще завантажується. Спробуйте за мить."); return; }
-  const text = `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project || {})}» — ${draft.positionIds.length} поз., список у файлі.${draft.replaces ? "\nЦе оновлений список — він замінює попереднє замовлення." : ""}\n${procurementDeliveryLine(draft)}\n\nДякую!`;
+  const text = `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project || {})}» — ${draft.positionIds.length} поз., список у файлі.${draft.replaces ? "\nЦе оновлений список — він замінює попереднє замовлення." : draft.separate ? "\nЦі позиції з попереднього замовлення прошу відправити окремо, як указано нижче." : ""}\n${procurementDeliveryLine(draft)}\n\nДякую!`;
   const markSent = () => {
     if(!project) return;
     if(!project.ordersSent || typeof project.ordersSent !== "object") project.ordersSent = {};
@@ -17162,11 +17171,11 @@ function procurementOrderText(draft){
       const name = article
         ? positionClientName(position)
         : cleanText((item && item.name) || position.fullName || position.name).replace(/\s*\(\s*упак[^)]*\)/gi, "");
-      return `• ${article ? article + " · " : ""}${name} — ${formatQty(draft.qtyMap && draft.qtyMap[position.id] !== undefined ? draft.qtyMap[position.id] : positionToBuyQty(project, position))} ${position.unit || "шт"}`;
+      return `• ${article ? article + " · " : ""}${name} — ${formatQty(draft.qtyMap && draft.qtyMap[position.id] !== undefined ? draft.qtyMap[position.id] : positionToBuyQty(project, position))} ${position.unit || "шт"}${(draft.npShipIds || []).includes(position.id) ? " · НП" : ""}`;
     });
     return `${group.label}\n${lines.join("\n")}`;
   });
-  return `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project)}» — ${count} поз.${draft.replaces ? "\nЦе оновлений список — він замінює попереднє замовлення." : ""}\n${procurementDeliveryLine(draft)}\n\n${blocks.join("\n\n")}\n\nДякую!`;
+  return `Доброго дня! Прошу зібрати замовлення для об’єкта «${projectTitlePlain(project)}» — ${count} поз.${draft.replaces ? "\nЦе оновлений список — він замінює попереднє замовлення." : draft.separate ? "\nЦі позиції з попереднього замовлення прошу відправити окремо, як указано нижче." : ""}\n${procurementDeliveryLine(draft)}\n\n${blocks.join("\n\n")}\n\nДякую!`;
 }
 
 async function shareProcurementOrderText(){
@@ -20803,7 +20812,7 @@ function openOrderPick(later, planSupplier, simple, resend){
   const hasAddr = Boolean(project.client && cleanText(project.client.address));
   orderPick.where = prevPlan && prevPlan.where ? prevPlan.where : hasAddr ? "near" : "delivery";
   if(orderPick.where === "near" && !hasAddr) orderPick.where = "delivery";
-  if(orderPick.where === "near") orderPickFindNear(project);
+  if(orderPick.where === "near" || (orderPick.where !== "np" && toBuy.some(x => x.npShip))) orderPickFindNear(project);
   if(orderPick.where === "np" && prevPlan && prevPlan.np) orderPick.np = prevPlan.np;
   orderPick.pickup = orderPick.where === "pickup";
   let screen = document.getElementById("orderPickScreen");
@@ -20934,13 +20943,15 @@ function renderOrderPick(){
         const on = orderPick.checked.has(pos.id);
         const planned = cleanText(getPositionPlannedSupplier(pos));
         const hint = planned && normalizeText(planned) !== normalizeText(orderPick.supplier) ? `<small>в прайсі: ${escapeHtml(planned)}</small>` : "";
-        return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="orderPickToggle('${escapeHtml(pos.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(positionShortName(pos))}${hint}</span><span class="opQty">${(orderPick.simple ? false : orderPick.plan ? orderLineQty(findOrder(project, orderPick.plan), pos.id) > 0 : positionOrderedIn(project, pos)) ? "ще " : ""}${formatQty(orderPickQty(project, pos))} ${escapeHtml(pos.unit || "шт")}</span></button>`;
+        return `<button type="button" class="opItem ${on ? "on" : ""}" onclick="orderPickToggle('${escapeHtml(pos.id)}')"><span class="opBox">${on ? "✓" : ""}</span><span class="opName">${escapeHtml(positionShortName(pos))}${pos.npShip && orderPick.simple ? ` <b style="color:var(--p);font-size:.75rem">НП</b>` : ""}${hint}</span><span class="opQty">${(orderPick.simple ? false : orderPick.plan ? orderLineQty(findOrder(project, orderPick.plan), pos.id) > 0 : positionOrderedIn(project, pos)) ? "ще " : ""}${formatQty(orderPickQty(project, pos))} ${escapeHtml(pos.unit || "шт")}</span></button>`;
       }).join("")).join("")}</div>
       ${orderPick.plan ? `<button type="button" class="psReplace" onclick="${orderPick.simple ? "openBuyAdd(orderPick.plan, true)" : "openPlanAdd(orderPick.plan)"}">＋ Додати товар з каталогу</button>` : ""}
       <span class="onbNote" style="text-align:left">${orderPick.simple && orderPick.kind === "check" ? "Запит піде лише на відмічене." : orderPick.simple ? "Невідмічене лишиться в списку «Купити»." : orderPick.plan ? "Невідмічене лишиться в плані — замовите пізніше." : `Невідмічене лишиться в «${orderPick.later ? "Докупити самому" : "Дозамовити"}» — замовите в іншого.`}</span>
     </div>
     <div class="opStep"><span class="opLabel">Куди?</span>
       <div class="opChips">${project.client && cleanText(project.client.address) ? chip("Поштомат біля об’єкта", orderPick.where === "near", "orderPickWhere('near')") : ""}${chip(orderPick.where === "np" && orderPick.np ? "✓ Інше відділення" : "Інше відділення / поштомат", orderPick.where === "np", "orderPickWhere('np')")}${chip("🚚 Доставка на об’єкт", orderPick.where === "delivery", "orderPickWhere('delivery')")}${chip("Заберу сам", orderPick.where === "pickup", "orderPickWhere('pickup')")}</div>
+      ${(() => { const n = orderPick.simple && orderPick.where !== "near" && orderPick.where !== "np" ? orderPickSource(project).filter(x => x.npShip && orderPick.checked.has(x.id)).length : 0;
+        return n ? `<span class="onbNote" style="text-align:left">📦 «НП» (${n} поз.) — окремо Новою поштою: ${orderPick.nearBusy ? "шукаю поштомат…" : orderPick.np ? escapeHtml(orderPick.np.text) : "поштомат не знайдено"}</span>` : ""; })()}
       ${orderPick.where === "near" ? `<span class="onbNote" style="text-align:left">${orderPick.nearBusy ? "Шукаю поштомат біля об’єкта…" : orderPick.np ? `📦 ${escapeHtml(orderPick.np.text)} · <button type="button" class="opLink" onclick="orderPickWhere('np')">інший</button>` : `Не вдалося знайти поштомат біля адреси. <button type="button" class="opLink" onclick="orderPickWhere('np')">Обрати вручну</button>`}</span>` : ""}
       ${orderPick.where === "np" && orderPick.np ? `<span class="onbNote" style="text-align:left">${escapeHtml(orderPick.np.text)} · <button type="button" class="opLink" onclick="openNpPick()">змінити</button></span>` : ""}
       ${orderPick.where === "delivery" && project.client && project.client.address ? `<span class="onbNote" style="text-align:left">Адреса: ${escapeHtml(project.client.address)}</span>` : ""}
@@ -20993,8 +21004,24 @@ async function orderPickSend(silent){
     if(price > 0){ pos.purchasePrice = price; pos.purchasePriceState = "estimated"; }
   });
   const draft = { projectId:project.id, supplierName, positionIds:ids };
-  if(orderPick.resend) draft.replaces = true;
+  /* «Надіслати оновлений список»: усе відмічене — нове замовлення замість попереднього;
+     лише частина вже надісланого — ці позиції окремо (напр. одну — Новою поштою) */
+  if(orderPick.resend){
+    const all = orderPickSource(project).length;
+    const already = ids.filter(id => { const x = (project.positions || []).find(q => q.id === id); return x && buySent(x); }).length;
+    if(ids.length >= all) draft.replaces = true;
+    else if(already) draft.separate = true;
+  }
   if(orderPick.simple) draft.simple = true;
+  {
+    const whole = (orderPick.where === "near" || orderPick.where === "np") && orderPick.np;
+    const npIds = whole ? [] : ids.filter(id => { const x = (project.positions || []).find(q => q.id === id); return x && x.npShip; });
+    if(npIds.length){
+      if(!orderPick.np){ toast(orderPick.nearBusy ? "Ще шукаю поштомат для позицій «НП» — секунду" : "Поштомат для позицій «НП» не знайдено — у «Куди?» виберіть «Інше відділення / поштомат»", 3800); return; }
+      draft.npShipIds = npIds;
+      draft.npPoint = orderPick.np;
+    }
+  }
   if(orderPick.plan) draft.qtyMap = Object.fromEntries(ids.map(id => [id, orderPickQty(project, project.positions.find(item => item.id === id))]));
   const plan = getProcurementDelivery(draft);
   plan.kind = orderPick.where === "pickup" ? "pickup" : (orderPick.where === "near" || orderPick.where === "np") && orderPick.np ? "np" : "delivery";
@@ -22295,7 +22322,8 @@ function renderBuyList(p){
     /* Ціна закупівлі видно біля кожного товару — щоб помилку в сумі «до оплати» було видно одразу */
     const pr = Number(pos.purchasePrice);
     const priceTxt = pos.whereK === "sup" || pos.whereK === "self" ? (pr > 0 ? `<small>по ${moneyWithCents(pr)}</small>` : `<small style="color:var(--attn)">без закупівельної ціни</small>`) : "";
-    const sent = (pos.got ? `<small>докупити: було ${formatQty(buyLog(p)[pos.id] ? buyLog(p)[pos.id].q : 0)}, стало ${formatQty(pos.qty)}</small>` : "") + priceTxt;
+    const npTag = pos.npShip && pos.whereK === "sup" ? `<small style="color:var(--p)">📦 Новою поштою</small>` : "";
+    const sent = npTag + (pos.got ? `<small>докупити: було ${formatQty(buyLog(p)[pos.id] ? buyLog(p)[pos.id].q : 0)}, стало ${formatQty(pos.qty)}</small>` : "") + priceTxt;
     return `<div class="byItem"><button type="button" class="ptBox" onclick="buyToggle('${pid}')" aria-label="Є"></button><button type="button" class="byName" onclick="openBuySrc('${pid}')">${escapeHtml(positionShortName(pos))}${sent}</button><span class="ptQ">${pos.got ? "ще " : ""}${formatQty(buyNeed(p, pos))} ${escapeHtml(pos.unit || "шт")}</span></div>`;
   };
   const supGroupHtml = g => {
@@ -22535,7 +22563,7 @@ function openBuyGroupMenu(key, supplier){
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="${escapeHtml(supplier)}"><div class="amHead"><b>${escapeHtml(supplier)}</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
-    ${items.some(x => buySent(x)) ? it(`setTimeout(() => openOrderPick(false, ${buyEnc(supplier)}, true, true), 150)`, `Надіслати оновлений список · ${items.length} поз.`, "весь список заново, з урахуванням доданого й прибраного — замінює попереднє замовлення") : ""}
+    ${items.some(x => buySent(x)) ? it(`setTimeout(() => openOrderPick(false, ${buyEnc(supplier)}, true, true), 150)`, `Надіслати оновлений список · ${items.length} поз.`, "весь список заново (замінює попередній) або лише відмічене окремо — напр. одну позицію Новою поштою") : ""}
     ${items.length > 1 ? it(`setTimeout(() => openBuyMove(${buyEnc(key)}), 150)`, "Перенести до іншого постачальника", "кілька товарів або цілу групу, напр. каналізацію") : ""}
     ${unsent ? it(`setTimeout(() => openArrived(${buyEnc(supplier)}, true), 150)`, "Отримано без списку", "сам забрав або купив, список не надсилали") : ""}
   </div>`;
@@ -22701,6 +22729,7 @@ function renderBuyScreen(){
       ${opt("skip", "", "Не купую", "не потрібно або дає клієнт")}
       <button type="button" class="psNew" onclick="buyChooseNew()">＋ Інший постачальник</button>
     </div>
+    ${pos.whereK === "sup" ? `<button type="button" class="opItem ${pos.npShip ? "on" : ""}" style="margin:.75rem 0 0;width:100%" onclick="buyToggleNp()"><span class="opBox">${pos.npShip ? "✓" : ""}</span><span class="opName">📦 Відправити Новою поштою<small>окремо від решти замовлення — у списку й файлі для постачальника буде позначка «НП» і поштомат</small></span></button>` : ""}
     <button type="button" class="psReplace" onclick="buyUi.mode='replace';buyUi.q='';renderBuyScreen();setTimeout(()=>document.getElementById('buyQ')?.focus(),60)">⇄ Замінити на інший товар</button>
     ${pos.replacedFrom ? `<div class="onbNote" style="text-align:left">Замінено: було «${escapeHtml(pos.replacedFrom)}»</div>` : ""}
     <div class="planAdd"><span class="opLabel">Кількість${pos.buyLaterOnly ? "" : " · зміниться й у кошторисі клієнта"}</span>
@@ -22710,6 +22739,14 @@ function renderBuyScreen(){
       : `<button type="button" class="psReplace" onclick="buyOpenPrices()">Ціни (клієнту й закупівля)</button>`}
     <button type="button" class="byDel" onclick="buyDelete()">${pos.buyLaterOnly ? "Видалити" : "Видалити з кошторису"}</button>
   </div>`;
+}
+function buyToggleNp(){
+  const { p, pos } = buyPos(buyUi.posId);
+  if(!pos) return;
+  pos.npShip = !pos.npShip;
+  if(!pos.npShip) delete pos.npShip;
+  touchProject(p);
+  renderBuyScreen();
 }
 function buyChoose(k, s){
   const { p, pos } = buyPos(buyUi.posId);
