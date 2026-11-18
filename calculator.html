@@ -5233,7 +5233,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 18.11.2026 10:40</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 18.11.2026 10:55</div>
   </div>
 
   <div class="fsFooter">
@@ -17048,7 +17048,7 @@ function buildProcurementOrderFile(draft){
     group.positions.forEach(position => {
       const item = getPositionCatalogItem(position);
       const fullName = cleanText((item && item.name) || position.fullName || position.name);
-      const row = [++n, getPositionMaterialArticle(position), fullName, draft.qtyMap && draft.qtyMap[position.id] !== undefined ? draft.qtyMap[position.id] : positionToBuyQty(project, position), position.unit || "шт"];
+      const row = [++n, getPositionMaterialArticle(position), fullName, draftPosQty(project, draft, position), position.unit || "шт"];
       if((draft.npShipIds || []).length) row.push(draft.npShipIds.includes(position.id) ? "Нова пошта" : "");
       rows.push(row);
     });
@@ -17171,7 +17171,7 @@ function procurementOrderText(draft){
       const name = article
         ? positionClientName(position)
         : cleanText((item && item.name) || position.fullName || position.name).replace(/\s*\(\s*упак[^)]*\)/gi, "");
-      return `• ${article ? article + " · " : ""}${name} — ${formatQty(draft.qtyMap && draft.qtyMap[position.id] !== undefined ? draft.qtyMap[position.id] : positionToBuyQty(project, position))} ${position.unit || "шт"}${(draft.npShipIds || []).includes(position.id) ? " · НП" : ""}`;
+      return `• ${article ? article + " · " : ""}${name} — ${formatQty(draftPosQty(project, draft, position))} ${position.unit || "шт"}${(draft.npShipIds || []).includes(position.id) ? " · НП" : ""}`;
     });
     return `${group.label}\n${lines.join("\n")}`;
   });
@@ -20717,6 +20717,12 @@ function positionSelfQty(position){
   if(!list.length && position.buyLater && position.buyLaterDone) return positionOrderQty(position);
   return roundQty(sum);
 }
+/* Скільки писати постачальнику: явна кількість із вікна замовлення, а в новій закупівлі — «скільки ще треба»
+   (стара формула віднімала старі «замовлення» й давала 0 для вже надісланих позицій) */
+function draftPosQty(project, draft, position){
+  if(draft && draft.qtyMap && draft.qtyMap[position.id] !== undefined) return draft.qtyMap[position.id];
+  return buyOn(project) ? buyNeed(project, position) : positionToBuyQty(project, position);
+}
 function positionToBuyQty(project, position){
   return roundQty(Math.max(0, positionOrderQty(position) - positionOrderedQty(project, position) - positionSelfQty(position)));
 }
@@ -21012,7 +21018,7 @@ async function orderPickSend(silent){
     if(ids.length >= all) draft.replaces = true;
     else if(already) draft.separate = true;
   }
-  if(orderPick.simple) draft.simple = true;
+  if(orderPick.simple){ draft.simple = true; draft.qtyMap = Object.fromEntries(ids.map(id => { const x = project.positions.find(q => q.id === id); return [id, x ? buyNeed(project, x) : 0]; })); }
   {
     const whole = (orderPick.where === "near" || orderPick.where === "np") && orderPick.np;
     const npIds = whole ? [] : ids.filter(id => { const x = (project.positions || []).find(q => q.id === id); return x && x.npShip; });
@@ -21022,7 +21028,7 @@ async function orderPickSend(silent){
       draft.npPoint = orderPick.np;
     }
   }
-  if(orderPick.plan) draft.qtyMap = Object.fromEntries(ids.map(id => [id, orderPickQty(project, project.positions.find(item => item.id === id))]));
+  if(orderPick.plan && !orderPick.simple) draft.qtyMap = Object.fromEntries(ids.map(id => [id, orderPickQty(project, project.positions.find(item => item.id === id))]));
   const plan = getProcurementDelivery(draft);
   plan.kind = orderPick.where === "pickup" ? "pickup" : (orderPick.where === "near" || orderPick.where === "np") && orderPick.np ? "np" : "delivery";
   plan.where = orderPick.where;
