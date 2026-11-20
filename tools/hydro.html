@@ -324,8 +324,30 @@ function actReadForm(){
     /* тиск у кінці «йде» за тиском на початку, поки майстер його окремо не змінював */
     if(actNum(x.end) === prev && actNum(x.pressure) !== prev) x.end = x.pressure;
     x.start = x.pressure;
+    if(document.getElementById(`act_work_${i}`)) x.work = actNum(v(`act_work_${i}`));
+    if(document.getElementById(`act_k_${i}`)) x.k = Number(v(`act_k_${i}`)) || 1.5;
     const dt = document.getElementById(`act_date_${i}`); if(dt && dt.value) x.date = dt.value;
   });
+}
+/* Підказка пробного тиску: робочий тиск × коефіцієнт. Коефіцієнт залежить від виробника труб і проєкту — вибирає майстер */
+const ACT_KS = [1.1, 1.3, 1.5];
+function actSuggest(x){ const w = actNum(x && x.work), k = (x && x.k) || 1.5; return w === null || w <= 0 ? null : Math.round(w * k * 10) / 10; }
+function actWorkHtml(x, i){
+  const sug = actSuggest(x), k = x.k || 1.5, w = actNum(x.work);
+  return `<div class="actWork">
+    <label><small>Робочий тиск, бар</small><input id="act_work_${i}" inputmode="decimal" placeholder="напр. 6" value="${w === null ? "" : String(w).replace(".", ",")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"></label>
+    <label><small>Коефіцієнт</small><select id="act_k_${i}" onchange="actReadForm();renderActSheet()">${ACT_KS.map(c => `<option value="${c}" ${c === k ? "selected" : ""}>× ${String(c).replace(".", ",")}</option>`).join("")}</select></label>
+    ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b>${String(sug).replace(".", ",")} бар</b> <button type="button" onclick="actApplySug(${i})">Застосувати</button></div>`}
+    <small class="actWorkNote">Коефіцієнт залежить від виробника труб і проєкту: уточніть його в інструкції.</small>
+  </div>`;
+}
+function actApplySug(i){
+  actReadForm();
+  const x = actDraft && actDraft.systems[i], sug = actSuggest(x); if(!x || sug === null) return;
+  const prev = actNum(x.pressure);
+  x.pressure = sug; x.start = sug;
+  if(actNum(x.end) === prev) x.end = sug;
+  renderActSheet();
 }
 function renderActSheet(){
   const box = document.getElementById("actSheetBody");
@@ -343,6 +365,7 @@ function renderActSheet(){
           : `<button type="button" class="actPhAdd" onclick="openActCam(${i},'${w}')">${ACT_GAUGE_SVG}<b>Зробіть фото ${w === "before" ? "до" : "після"}</b><small>${w === "before" ? "на початку випробування" : "через 30+ хв"}</small></button>`; }).join("")}
       </div>
       ${actGapWarn(x) ? `<div class="actWarn">${escapeHtml(actGapWarn(x))}</div>` : ""}
+      ${done ? "" : actWorkHtml(x, i)}
       <div class="actPrs">
         <label><small>Тиск на початку</small><span><input id="act_pressure_${i}" inputmode="decimal" value="${actFmt(x.pressure).replace("—", "")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"> бар</span></label>
         <label><small>Тиск у кінці</small><span><input id="act_end_${i}" inputmode="decimal" value="${actFmt(x.end).replace("—", "")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"> бар</span></label>
