@@ -169,7 +169,7 @@ textarea.formInput{resize:vertical}
     <div class="ttl">Випробування</div>
     <div id="actSheetBody"></div>
     <button type="button" class="btnPrimary" id="btnMake">Показати акт</button>
-    <p class="hint">Значення за замовчуванням: 10 бар, 30 хв, допустиме падіння 0,6 бар. Їх можна змінити. Допуск залежить від ваших труб: інструкції багатьох виробників передбачають, що тиск не повинен падати (з поправкою на різницю температур води й повітря). Тому уточніть вимоги в інструкції виробника або постачальника труб і у проєкті. Сторінка допомагає оформити акт, але не замінює вашого рішення.</p>
+    <p class="hint">Значення за замовчуванням: 10 бар, 30 хв, падіння тиску не допускається (0 бар). Їх можна змінити. Допуск залежить від ваших труб: інструкції багатьох виробників передбачають, що тиск не повинен падати (з поправкою на різницю температур води й повітря). Тому уточніть вимоги в інструкції виробника або постачальника труб і у проєкті. Сторінка допомагає оформити акт, але не замінює вашого рішення.</p>
   </div>
 
   <div id="outBox" class="hidden">
@@ -217,8 +217,8 @@ const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},
 
 /* ===== Логіка акта (перенесена з калькулятора без змін) ===== */
 const ACT_SYSTEMS = [
-  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:10, minutes:30, allow:0.6 },
-  { key:"heat", label:"Опалення", pressure:10, minutes:30, allow:0.6 }
+  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:10, minutes:30, allow:0 },
+  { key:"heat", label:"Опалення", pressure:10, minutes:30, allow:0 }
 ];
 const ACT_MAX_PHOTOS = 4;
 let actDraft = null;
@@ -234,14 +234,14 @@ function actSysDate(x, a){
 function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
 function actNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function actFmt(v){ return v === null || v === undefined || v === "" ? "—" : String(v).replace(".", ","); }
-/* Допустиме падіння: пластик під тиском розширюється, тож невелике просідання — норма (за замовчуванням до 0,6 бар) */
-function actAllow(x){ const v = actNum(x && x.allow); return v === null ? 0.6 : v; }
+/* Допустиме падіння: за замовчуванням 0 (падіння не допускається). Допуск залежить від труб — майстер вказує його за інструкцією виробника */
+function actAllow(x){ const v = actNum(x && x.allow); return v === null ? 0 : v; }
 function actDrop(x){ const s = actNum(x.start), e = actNum(x.end); return s === null || e === null ? null : Math.round((s - e) * 100) / 100; }
 function actSysOk(x){ const d = actDrop(x); return d === null ? null : d <= actAllow(x) + 1e-9; }
 function actDropText(x){
   const d = actDrop(x);
   if(d === null || d <= 0) return "без падіння";
-  return actSysOk(x) ? `падіння ${actFmt(d)} бар — у межах норми` : `впав до ${actFmt(x.end)} бар`;
+  return actSysOk(x) ? `падіння ${actFmt(d)} бар — у межах допуску` : `впав до ${actFmt(x.end)} бар`;
 }
 function actDateLabel(iso){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) return "";
@@ -351,7 +351,7 @@ function renderActSheet(){
         <label>Тривалість, хв<input class="formInput" id="act_minutes_${i}" inputmode="decimal" value="${actFmt(x.minutes).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
         <label style="grid-column:1/-1">Допустиме падіння, бар<input class="formInput" id="act_allow_${i}" inputmode="decimal" value="${actFmt(actAllow(x)).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
         ${actPair(x).a ? "" : `<label style="grid-column:1/-1">Дата проведення<input class="formInput" type="date" id="act_date_${i}" value="${escapeHtml(x.date || todayIso())}" onchange="actReadForm()"></label>`}
-        <small style="grid-column:1/-1;font-size:.6875rem;color:var(--tm)">Падіння в межах допустимого — це норма (герметично)</small>
+        <small style="grid-column:1/-1;font-size:.6875rem;color:var(--tm)">Падіння в межах вказаного допуску вважається герметичним</small>
       </div>`
       : done ? `<div class="actSum"><span>${x.minutes ? actDur(x.minutes) : "—"} · ${actDropText(x)}</span><button type="button" onclick="actEdit(${i})">Змінити</button></div>`
         : `<button type="button" class="actManual" onclick="actEdit(${i})">Без фото? Вписати результат вручну</button>`}
