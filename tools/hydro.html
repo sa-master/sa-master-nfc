@@ -222,8 +222,8 @@ const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},
 
 /* ===== Логіка акта (перенесена з калькулятора без змін) ===== */
 const ACT_SYSTEMS = [
-  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:6, minutes:30, k:1.5, need:30 },
-  { key:"heat", label:"Опалення / тепла підлога", pressure:5.2, minutes:120, k:1.3, need:120 }
+  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:6, minutes:30, work:4, k:1.5, need:30 },
+  { key:"heat", label:"Опалення / тепла підлога", pressure:7.8, minutes:120, work:6, k:1.3, need:120 }
 ];
 const ACT_MAX_PHOTOS = 4;
 let actDraft = null;
@@ -777,7 +777,7 @@ function actCamLabels(){
 const $ = id => document.getElementById(id);
 const newDraft = () => ({
   date: todayIso(),
-  systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:true, pressure:x.pressure, minutes:x.minutes, work:4, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
+  systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:true, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
   note: "", photos: []
 });
 actDraft = newDraft();
