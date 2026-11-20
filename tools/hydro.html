@@ -225,7 +225,7 @@ const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},
 /* ===== Логіка акта (перенесена з калькулятора без змін) ===== */
 const ACT_SYSTEMS = [
   { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
-  { key:"heat", label:"Опалення / тепла підлога", pressure:3.9, minutes:120, work:3, k:1.3, need:120 }
+  { key:"heat", label:"Опалення / тепла підлога", pressure:4, minutes:120, work:3, k:1.3, need:120 }
 ];
 const ACT_MAX_PHOTOS = 4;
 const ACT_ALLOW = 0.2; /* падіння не більше 0,2 бар — герметично */
@@ -354,7 +354,7 @@ function actReadForm(){
 }
 /* Підказка пробного тиску: робочий тиск × коефіцієнт. Коефіцієнт залежить від виробника труб і проєкту — вибирає майстер */
 const ACT_KS = [1.1, 1.3, 1.5];
-function actSuggest(x){ const w = actNum(x && x.work), k = (x && x.k) || 1.5; return w === null || w <= 0 ? null : Math.round(w * k * 10) / 10; }
+function actSuggest(x){ const w = actNum(x && x.work), k = (x && x.k) || 1.5; return w === null || w <= 0 ? null : Math.round(w * k * 2) / 2; }
 function actSetMedium(m){
   actReadForm();
   if(!actDraft) return;
@@ -363,7 +363,7 @@ function actSetMedium(m){
     x.medium = med;
     if(actSysDone(x)) return;
     if(med === "air"){ x.pressure = 1; x.minutes = 5; }
-    else { x.pressure = actSuggest(x) || (x.key === "heat" ? 3.9 : 4.5); x.minutes = x.need || 30; }
+    else { x.pressure = actSuggest(x) || (x.key === "heat" ? 4 : 4.5); x.minutes = x.need || 30; }
     x.start = x.pressure; x.end = x.pressure; x.pManual = false;
   });
   renderActSheet();
