@@ -169,7 +169,7 @@ textarea.formInput{resize:vertical}
     <div class="ttl">Випробування</div>
     <div id="actSheetBody"></div>
     <button type="button" class="btnPrimary" id="btnMake">Показати акт</button>
-    <p class="hint">Значення за замовчуванням: водопостачання — 9 бар (робочий тиск 6 бар × 1,5), 30 хв, падіння не більше 0,2 бар (ДБН В.2.5-64:2012, п. 27.2.2); опалення — 9 бар, 30 хв, падіння не більше 0,2 бар. Їх можна змінити. Інструкції виробників труб можуть бути суворішими, тому уточніть вимоги в інструкції виробника чи постачальника труб і у проєкті. Сторінка допомагає оформити акт, але не замінює вашого рішення.</p>
+    <p class="hint">Значення за замовчуванням: водопостачання — пробний тиск 1,5 × робочого (при 6 бар це 9 бар), 30 хв, падіння не більше 0,2 бар (ДБН В.2.5-64:2012, п. 27.2.2); опалення — 1,3 × робочого (при 6 бар це 7,8 бар), не менше 2 год (ДБН В.2.5-67:2013, дод. Г), допуск падіння 0,2 бар задано нами, у додатку його немає. Значення можна змінити. Інструкції виробників труб можуть бути суворішими, тому уточніть вимоги в інструкції виробника чи постачальника труб і у проєкті. Сторінка допомагає оформити акт, але не замінює вашого рішення.</p>
   </div>
 
   <div id="outBox" class="hidden">
@@ -217,8 +217,8 @@ const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},
 
 /* ===== Логіка акта (перенесена з калькулятора без змін) ===== */
 const ACT_SYSTEMS = [
-  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:9, minutes:30, allow:0.2 },
-  { key:"heat", label:"Опалення", pressure:9, minutes:30, allow:0.2 }
+  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:9, minutes:30, allow:0.2, k:1.5, need:30 },
+  { key:"heat", label:"Опалення", pressure:7.8, minutes:120, allow:0.2, k:1.3, need:120 }
 ];
 const ACT_MAX_PHOTOS = 4;
 let actDraft = null;
@@ -234,7 +234,7 @@ function actSysDate(x, a){
 function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
 function actNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function actFmt(v){ return v === null || v === undefined || v === "" ? "—" : String(v).replace(".", ","); }
-/* Допустиме падіння: водопостачання — 0,2 бар за 30 хв (ДБН В.2.5-64:2012, п. 27.2.2); опалення — теж 0,2 бар (за рішенням власника сервісу, з ДБН В.2.5-67 не звірено). Виробник труб може вимагати суворіше */
+/* Допустиме падіння: водопостачання — 0,2 бар за 30 хв (ДБН В.2.5-64:2012, п. 27.2.2); опалення — пробний тиск на 30 % більший за робочий (1,3), не менше 2 год (ДБН В.2.5-67:2013, дод. Г); допуск падіння в цьому додатку не задано — 0,2 бар за рішенням власника сервісу. Виробник труб може вимагати суворіше */
 function actAllow(x){ const v = actNum(x && x.allow); return v === null ? 0 : v; }
 function actDrop(x){ const s = actNum(x.start), e = actNum(x.end); return s === null || e === null ? null : Math.round((s - e) * 100) / 100; }
 function actSysOk(x){ const d = actDrop(x); return d === null ? null : d <= actAllow(x) + 1e-9; }
@@ -306,7 +306,7 @@ function actGapWarn(x){
   const g = actGapMin(x);
   if(g === null) return "";
   if(g < 0) return "Фото «після» зроблено раніше, ніж «до» — перевірте, чи не переплутали";
-  const need = x.medium === "air" ? 5 : 30;
+  const need = x.medium === "air" ? 5 : (x.need || 30);
   if(g < need) return `Між фото лише ${actDur(g)} — менше ${need} хв, які вимагає ДБН`;
   if(g > 3 * 24 * 60) return `Між фото ${Math.round(g / 1440)} дн. — перевірте, чи правильні фото`;
   return "";
@@ -374,7 +374,7 @@ function renderActSheet(){
       ${x.on ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
           ? `<div class="actPh"><img src="${ph.src}" alt="" onclick="actPhView(${i},'${w}')" title="Відкрити"><span>${escapeHtml(actPhLabel(x, w))}</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
-          : `<button type="button" class="actPhAdd" onclick="openActCam(${i},'${w}')">${ACT_GAUGE_SVG}<b>Зробіть фото ${w === "before" ? "до" : "після"}</b><small>${w === "before" ? "на початку випробування" : `через ${x.medium === "air" ? 5 : 30}+ хв`}</small></button>`; }).join("")}
+          : `<button type="button" class="actPhAdd" onclick="openActCam(${i},'${w}')">${ACT_GAUGE_SVG}<b>Зробіть фото ${w === "before" ? "до" : "після"}</b><small>${w === "before" ? "на початку випробування" : (x.medium === "air" ? "через 5+ хв" : x.need >= 120 ? "через 2+ год" : "через 30+ хв")}</small></button>`; }).join("")}
       </div>
       ${actGapWarn(x) ? `<div class="actWarn">${escapeHtml(actGapWarn(x))}</div>` : ""}
       ${done ? "" : actWorkHtml(x, i)}
@@ -733,7 +733,7 @@ function actCamLabels(){
 const $ = id => document.getElementById(id);
 const newDraft = () => ({
   date: todayIso(),
-  systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:true, pressure:x.pressure, minutes:x.minutes, allow:x.allow, work:6, k:1.5, start:x.pressure, end:x.pressure })),
+  systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:true, pressure:x.pressure, minutes:x.minutes, allow:x.allow, work:6, k:x.k, need:x.need, start:x.pressure, end:x.pressure })),
   note: "", photos: []
 });
 actDraft = newDraft();
