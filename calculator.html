@@ -3378,6 +3378,22 @@ body.positionDragging{
 .ic{display:block;flex:0 0 auto}
 .undoBar{position:fixed;left:50%;bottom:calc(5.5rem + var(--sab));transform:translateX(-50%) translateY(1rem);z-index:600;display:flex;align-items:center;gap:1rem;max-width:calc(100% - 2rem);background:var(--t);color:var(--bg);border-radius:.875rem;padding:.625rem .75rem .625rem 1rem;font-size:.875rem;font-weight:600;box-shadow:0 .5rem 1.5rem rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 .undoBar.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.actHint{color:var(--tm);font-size:.875rem;line-height:1.45;margin:0 0 .75rem}
+.actRow{display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 0;border-top:1px solid var(--gbr)}
+.actRow.undone .actText{text-decoration:line-through;color:var(--tm)}
+.actMain{flex:1 1 auto;min-width:0}
+.actTime{font-size:.75rem;color:var(--tm);margin-bottom:.125rem}
+.actText{font-size:.9375rem;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
+.actMore{margin-top:.25rem;font-size:.8125rem;color:var(--ts)}
+.actMore summary{cursor:pointer;color:var(--p)}
+.actMore ul{margin:.25rem 0 0;padding-left:1.1rem}
+.actNote{margin-top:.25rem;font-size:.8125rem;color:var(--orange)}
+.actUndoBtn{flex:0 0 auto;min-height:2.5rem;padding:0 .875rem;border-radius:.75rem;border:1px solid var(--gbr);background:var(--card);color:var(--p);font-weight:700;font-size:.875rem}
+.actListLink{display:block;margin:1rem auto .5rem;background:none;border:0;color:var(--p);font-size:.875rem;font-weight:600;padding:.5rem;min-height:2.75rem}
+.jrnWarn{margin:0 0 .75rem;padding:.75rem 1rem;border-radius:.875rem;background:var(--card);border:1px solid var(--attn);background:color-mix(in srgb,var(--attn) 12%,var(--card));border:1px solid color-mix(in srgb,var(--attn) 35%,transparent);font-size:.875rem;line-height:1.45}
+.jrnWarn b{display:block;margin-bottom:.25rem}
+.jrnWarn ul{margin:0;padding-left:1.1rem}
+.actTag{flex:0 0 auto;font-size:.75rem;color:var(--tm);padding-top:.25rem}
 .undoBar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .undoBar button{flex:0 0 auto;background:none;color:#6FC0FF;font-weight:800;font-size:.875rem;padding:.25rem .25rem}
 @media (prefers-color-scheme:dark){.undoBar button{color:var(--p-action)}}
@@ -4645,6 +4661,24 @@ body{font-variant-numeric:tabular-nums}
         <input class="formInput" id="csArticle" placeholder="Наприклад: 720420" autocomplete="off">
       </div>
 
+      <div class="formGroup hidden" id="csCurGroup">
+        <label class="formLabel">Ціни в</label>
+        <div class="chips" id="csCurChips">
+          <button type="button" class="chip active" data-value="UAH" onclick="setCsCurrency('UAH')">₴ гривні</button>
+          <button type="button" class="chip" data-value="EUR" onclick="setCsCurrency('EUR')">€ євро</button>
+          <button type="button" class="chip" data-value="USD" onclick="setCsCurrency('USD')">$ долари</button>
+        </div>
+        <div class="hidden" id="csRateRow" style="margin-top:.75rem">
+          <label class="formLabel" for="csRateSupplier">Постачальник — чий це прайс і курс</label>
+          <input class="formInput" id="csRateSupplier" list="csRateSupplierList" placeholder="Напр. Енерготрейд" autocomplete="off" oninput="csRateSupplierChanged()">
+          <datalist id="csRateSupplierList"></datalist>
+          <div class="formHint" style="margin-bottom:.75rem">Курс цього постачальника зможе змінити його менеджер у звірці — ціни перерахуються самі.</div>
+          <label class="formLabel" id="csRateLabel" for="csRate">Курс, ₴ за 1 €</label>
+          <input class="formInput" id="csRate" inputmode="decimal" placeholder="Напр. 48,5" autocomplete="off">
+          <div class="formHint">Ціни переведуться в гривні за цим курсом.</div>
+        </div>
+      </div>
+
       <div class="formRow">
         <div class="formGroup">
           <label class="formLabel" id="csPriceLabel">Ціна, ₴</label>
@@ -4657,7 +4691,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
 
       <div class="formGroup hidden" id="csPurchasePriceGroup">
-        <label class="formLabel">Закупівельна ціна, ₴</label>
+        <label class="formLabel" id="csPurchaseLabel">Закупівельна ціна, ₴</label>
         <input class="formInput" id="csPurchasePrice" inputmode="decimal" placeholder="Не вказана" autocomplete="off">
         <div class="formHint">Необов’язково. Якщо вказати — одразу рахуватиметься прибуток.</div>
         <label class="formLabel" for="csQty" style="margin-top:.75rem">Кількість</label>
@@ -4823,6 +4857,11 @@ body{font-variant-numeric:tabular-nums}
       <div class="actionSheetRow" onclick="actionEdit()">
         <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></div>
         <div class="actionSheetText">Редагувати</div>
+      </div>
+
+      <div class="actionSheetRow" onclick="openJrn(actionsProjectId)">
+        <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg></div>
+        <div class="actionSheetText">Журнал дій — відмінити помилку</div>
       </div>
 
       <div class="actionSheetRow" id="actionNewStageRow" onclick="actionNewStage()">
@@ -5233,7 +5272,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 18.11.2026 10:55</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 01:15</div>
   </div>
 
   <div class="fsFooter">
@@ -6568,7 +6607,13 @@ syncSupplierRatesFromCatalog();
 try{ localStorage.setItem(DEFAULT_WORKS_SEEDED_KEY, "1"); }catch(e){}
 
 function saveProjects(){
-  try{ localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects)); }catch(e){}
+  const strings = projects.map(p => JSON.stringify(p));
+  try{ jrnRecord(strings); }catch(e){}
+  const data = "[" + strings.join(",") + "]";
+  try{ localStorage.setItem(PROJECTS_KEY, data); }
+  catch(e){ /* місця забракло — спершу звільняємо журнал, об'єкти важливіші */
+    try{ localStorage.removeItem(JRN_KEY); jrnLogCache = {}; localStorage.setItem(PROJECTS_KEY, data); }catch(e2){}
+  }
 }
 
 function saveProfileData(){
@@ -8909,7 +8954,8 @@ function renderHomeList(){
   const groups = new Map();
   projects.filter(homeMatches).forEach(p => { const k = groupKey(p); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(p); });
   const list = Array.from(groups.values()).map(groupRep).sort(sortProjects);
-  return list.length ? list.map(homeCard).join("") : `<div class="hEmpty">${homeSearch ? "Нічого не знайдено" : homeFilter === "debt" ? "Ніхто не винен ✓" : homeFilter === "wait" ? "Нічого не чекає відповіді" : homeFilter === "archive" ? "Архів порожній" : "Об’єктів ще немає"}</div>`;
+  return (list.length ? list.map(homeCard).join("") : `<div class="hEmpty">${homeSearch ? "Нічого не знайдено" : homeFilter === "debt" ? "Ніхто не винен ✓" : homeFilter === "wait" ? "Нічого не чекає відповіді" : homeFilter === "archive" ? "Архів порожній" : "Об’єктів ще немає"}</div>`)
+    + (homeSearch ? "" : `${Object.keys(jrnLogLoad()).length ? `<button type="button" class="actListLink" onclick="openJrn(null)">Журнал дій · відмінити помилку чи повернути видалений об'єкт</button>` : ""}`);
 }
 function setHomeFilter(f){ homeFilter = f; render(); }
 function onHomeSearch(v){ homeSearch = v; const box = document.getElementById("hList"); if(box) box.innerHTML = renderHomeList(); }
@@ -9527,7 +9573,7 @@ function crewApply(per, events){
   });
   seen[per.wLink] = Array.from(mine).slice(-600);
   try{ localStorage.setItem(CREW_SEEN_KEY, JSON.stringify(seen)); }catch(e){}
-  if(changed){ saveProjects(); }
+  if(changed){ jrnWith(`Від працівника: ${per.name || ""}`, () => saveProjects(), true); }
   return { changed, news };
 }
 async function crewSync(){
@@ -9752,6 +9798,7 @@ function undoArm(label, after){
   undoKeys().forEach(k => { try{ snap[k] = localStorage.getItem(k); }catch(e){} });
   if(undoState && undoState.after){ try{ undoState.after(); }catch(e){} }
   undoState = { label, snap, after };
+  jrnPending = { label, at: Date.now() };
   setTimeout(showUndo, 0);
   return true;
 }
@@ -9772,6 +9819,7 @@ function undoRestore(){
   if(el){ clearTimeout(el._t); el.classList.remove("show"); }
   Object.entries(u.snap).forEach(([k, v]) => { try{ if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){} });
   try{ projects = JSON.parse(localStorage.getItem(PROJECTS_KEY) || "[]"); }catch(e){}
+  try{ jrnWith(`Повернуто: ${u.label}`, () => saveProjects()); }catch(e){}
   try{ team = JSON.parse(localStorage.getItem(TEAM_KEY) || "[]"); }catch(e){}
   try{ catalog = JSON.parse(localStorage.getItem(CATALOG_KEY) || "[]"); }catch(e){}
   if(currentProjectId && !projects.some(p => p.id === currentProjectId)) currentProjectId = null;
@@ -9782,6 +9830,302 @@ function undoRestore(){
   try{ if(document.getElementById("stockScreen")?.classList.contains("open")) renderStockScreen(); }catch(e){}
   toast("Повернуто");
 }
+
+/* ==== Журнал дій: кожна зміна об'єкта записується; будь-яку можна відмінити, решта лишається як є ==== */
+var JRN_KEY = "et_actionLog_v1";   /* не "sa_" — журнал живе на цьому пристрої й не роздуває хмару */
+var JRN_MAX = 250;
+var jrnBase = null;      /* Map: id об'єкта → JSON, яким він був після попереднього збереження */
+var jrnCtx = null;       /* { label, external } — назва дії, яку зараз зберігаємо */
+var jrnPending = null;   /* назва з undoArm — для найближчого збереження */
+var jrnLogCache = null;
+var jrnLogView = null;   /* id об'єкта або null = усі об'єкти */
+
+function jrnLogLoad(){
+  if(jrnLogCache) return jrnLogCache;
+  try{ jrnLogCache = JSON.parse(localStorage.getItem(JRN_KEY) || "{}") || {}; }catch(e){ jrnLogCache = {}; }
+  if(typeof jrnLogCache !== "object" || Array.isArray(jrnLogCache)) jrnLogCache = {};
+  return jrnLogCache;
+}
+var JRN_MAX_CHARS = 900000;   /* журнал не має забрати місце в об'єктів */
+function jrnLogSave(){
+  const log = jrnLogLoad();
+  let str = JSON.stringify(log);
+  while(str.length > JRN_MAX_CHARS){
+    let oldK = null, oldT = Infinity;
+    Object.keys(log).forEach(k => { const e = (log[k] || [])[0]; if(e && e.t < oldT){ oldT = e.t; oldK = k; } });
+    if(!oldK) break;
+    log[oldK].shift(); if(!log[oldK].length) delete log[oldK];
+    str = JSON.stringify(log);
+  }
+  for(let i = 0; i < 8; i++){
+    try{ localStorage.setItem(JRN_KEY, JSON.stringify(log)); return; }
+    catch(e){ Object.keys(log).forEach(k => { const l = log[k] || []; log[k] = l.slice(-Math.max(3, Math.floor(l.length / 2))); }); }
+  }
+}
+function jrnBaseInit(){ jrnBase = new Map(); projects.forEach(p => { if(p && p.id) jrnBase.set(p.id, JSON.stringify(p)); }); }
+function jrnWith(label, fn, external){
+  const prev = jrnCtx;
+  jrnCtx = { label, external: Boolean(external) };
+  try{ return fn(); }finally{ jrnCtx = prev; }
+}
+function jrnClone(v){ return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
+function jrnJ(v){ return v === undefined ? "\u0000u" : JSON.stringify(v); }
+
+/* Викликається з saveProjects: рядки JSON кожного об'єкта потрібні й для збереження, тож рахуємо їх один раз */
+function jrnRecord(strings){
+  if(!jrnBase) return;
+  const now = new Map();
+  projects.forEach((p, i) => { if(p && p.id) now.set(p.id, strings[i]); });
+  const touched = [];
+  new Set([...jrnBase.keys(), ...now.keys()]).forEach(id => {
+    const a = jrnBase.get(id), b = now.get(id);
+    if(a !== b) touched.push([id, a, b]);
+  });
+  const oldIndex = new Map(Array.from(jrnBase.keys()).map((id, i) => [id, i]));
+  jrnBase = now;
+  if(!touched.length) return;
+  let ctx = jrnCtx;
+  if(!ctx && jrnPending && Date.now() - jrnPending.at < 4000) ctx = jrnPending;
+  touched.forEach(([id, a, b]) => {
+    const before = a ? JSON.parse(a) : undefined, after = b ? JSON.parse(b) : undefined;
+    const ch = [];
+    if(before === undefined) ch.push({ path:[], b:undefined, a:true });  /* для відміни створення копія не потрібна */
+    else if(after === undefined) ch.push({ path:[], b:before, a:undefined, i: oldIndex.get(id) || 0 });
+    else jrnDiff(before, after, [], ch);
+    if(ch.length) jrnPush(id, ch, ctx, after || before);
+  });
+  if(ctx === jrnPending) jrnPending = null;
+}
+
+function jrnIsIdArr(x){
+  if(!Array.isArray(x)) return false;
+  const ids = new Set();
+  for(const e of x){
+    if(!e || typeof e !== "object" || Array.isArray(e) || e.id === undefined || e.id === null || e.id === "") return false;
+    ids.add(String(e.id));
+  }
+  return ids.size === x.length;
+}
+/* «порожньо» в усіх видах однакове: показ екрана дописує got:false, expenses:[] тощо — це не дія майстра */
+function jrnEmpty(v){ return v === undefined || v === null || v === false || v === "" || (Array.isArray(v) && !v.length) || (v && typeof v === "object" && !Array.isArray(v) && !Object.keys(v).length); }
+var JRN_SKIP_TOP = { updatedAt:1, buyV:1, planV:1 };
+function jrnDiff(a, b, path, out){
+  if(a === b) return;
+  if(jrnEmpty(a) && jrnEmpty(b)) return;
+  if(jrnJ(a) === jrnJ(b)) return;
+  if(Array.isArray(a) && Array.isArray(b) && jrnIsIdArr(a) && jrnIsIdArr(b)){
+    const ma = new Map(a.map(e => [String(e.id), e])), mb = new Map(b.map(e => [String(e.id), e]));
+    a.forEach((e, i) => { if(!mb.has(String(e.id))) out.push({ path:[...path, "#" + e.id], b:e, a:undefined, i }); });
+    b.forEach((e, i) => {
+      const id = String(e.id);
+      if(!ma.has(id)) out.push({ path:[...path, "#" + id], b:undefined, a:e, i });
+      else jrnDiff(ma.get(id), e, [...path, "#" + id], out);
+    });
+    return;
+  }
+  if(a && b && typeof a === "object" && typeof b === "object" && !Array.isArray(a) && !Array.isArray(b)){
+    new Set([...Object.keys(a), ...Object.keys(b)]).forEach(k => {
+      if(!path.length && JRN_SKIP_TOP[k]) return;
+      jrnDiff(a[k], b[k], [...path, k], out);
+    });
+    return;
+  }
+  out.push({ path, b:a, a:b });
+}
+
+function jrnPosName(proj, id){
+  const pos = (proj && proj.positions || []).find(x => x && String(x.id) === String(id));
+  try{ return pos ? positionShortName(pos) : ""; }catch(e){ return pos && pos.name || ""; }
+}
+function jrnPush(pid, ch, ctx, proj){
+  ch.forEach(c => {
+    if(c.path[0] === "positions" && String(c.path[1] || "").startsWith("#")){
+      const own = c.path.length === 2 ? (c.a || c.b) : null;
+      try{ c.n = own ? positionShortName(own) : jrnPosName(proj, String(c.path[1]).slice(1)); }catch(e){ c.n = ""; }
+    }
+  });
+  const log = jrnLogLoad();
+  const list = log[pid] || (log[pid] = []);
+  const last = list[list.length - 1];
+  const t = Date.now();
+  const label = ctx && ctx.label || "";
+  const ext = Boolean(ctx && ctx.external);
+  const canMerge = last && !last.ext && !ext && !last.undone && !last.undoOf && !(ctx && ctx.undoOf)
+    && t - last.t < 2500 && (last.label || "") === label;
+  if(canMerge){
+    ch.forEach(c => {
+      const key = c.path.join("\u0001");
+      const old = last.ch.find(x => x.path.join("\u0001") === key);
+      if(old){ old.a = c.a; if(c.n) old.n = c.n; }
+      else last.ch.push(c);
+    });
+    last.ch = last.ch.filter(c => jrnJ(c.a) !== jrnJ(c.b));
+    last.t = t;
+    if(!last.ch.length) list.pop();
+  }else{
+    const e = { id: uid("act"), t, label, ch, title: proj && proj.title || "" };
+    if(ext) e.ext = 1;
+    if(ctx && ctx.undoOf) e.undoOf = ctx.undoOf;
+    list.push(e);
+  }
+  if(list.length > JRN_MAX) list.splice(0, list.length - JRN_MAX);
+  if(!list.length) delete log[pid];
+  jrnLogSave();
+}
+
+/* ---- Текст для людини ---- */
+var JRN_FIELDS = { qty:"кількість", price:"ціна", purchasePrice:"ціна закупівлі", name:"назва", ownName:"назва", fullName:"назва", unit:"одиниця", whereK:"де брати", whereS:"де брати", plannedSupplierName:"постачальник", fromStockQty:"зі складу", stockTaken:"зі складу", buyLater:"купити пізніше", selfBuys:"купує клієнт", isFixture:"прилад", catalogId:"товар", buySent:"надіслано постачальнику", buyNeed:"треба купити", npShip:"Нова пошта" };
+var JRN_AREAS = { positions:"Кошторис", expenses:"Витрати", payments:"Оплати", salaries:"Виплати", todo:"Нотатки", teamAssignments:"Команда", clientSends:"Відправка клієнту", approved:"Погодження", partsApproved:"Погодження", approvalLog:"Погодження", supplierChecks:"Звірка з постачальником", status:"Статус", stage:"Етап", client:"Клієнт", details:"Дані об'єкта", title:"Назва об'єкта", files:"Файли", pressureAct:"Акт випробувань", workDiscount:"Знижка на роботи", materialDiscount:"Знижка на матеріали", workStartDate:"Дата початку", workEndDate:"Дата завершення", urgent:"Пріоритет", crewReq:"Запити працівника", crewBought:"Покупки працівника", orders:"Замовлення", ordersSent:"Замовлення", deliveryPlans:"Доставка", rooms:"Приміщення", gotLog:"Отримано", stages:"Етапи", quoteLinks:"Посилання клієнту", completedAt:"Завершення", doneAt:"Завершення" };
+function jrnScalar(v){ return v === undefined || v === null || ["string", "number", "boolean"].includes(typeof v); }
+function jrnVal(v){
+  if(v === undefined || v === null || v === "") return "—";
+  if(v === true) return "так";
+  if(v === false) return "ні";
+  if(typeof v === "number") return String(Math.round(v * 100) / 100).replace(".", ",");
+  const s = String(v);
+  return s.length > 40 ? s.slice(0, 39) + "…" : s;
+}
+function jrnItemName(o){
+  if(!o || typeof o !== "object") return "";
+  const txt = cleanText(o.note || o.text || o.name || o.title || o.supplierName || "");
+  const amt = Number(o.amount || o.sum || 0);
+  return `${txt ? " «" + (txt.length > 40 ? txt.slice(0, 39) + "…" : txt) + "»" : ""}${amt ? " " + jrnVal(amt) + " ₴" : ""}`;
+}
+function jrnChangeText(c){
+  if(!c.path.length) return c.b === undefined ? "Створено об'єкт" : c.a === undefined ? "Видалено об'єкт" : "Змінено об'єкт";
+  const top = c.path[0];
+  const elem = c.path.length === 2 && String(c.path[1]).startsWith("#");
+  if(top === "positions" && String(c.path[1] || "").startsWith("#")){
+    const nm = c.n || "позиція";
+    if(elem) return c.b === undefined ? `Додано: ${nm}` : `Прибрано: ${nm}`;
+    const f = c.path[2], fl = JRN_FIELDS[f];
+    if(fl && c.path.length === 3 && jrnScalar(c.b) && jrnScalar(c.a)) return `${nm}: ${fl} ${jrnVal(c.b)} → ${jrnVal(c.a)}`;
+    return `${nm}: ${fl || "змінено"}`;
+  }
+  const area = JRN_AREAS[top] || "Інші дані";
+  if(elem) return `${area}: ${c.b === undefined ? "додано" : "прибрано"}${jrnItemName(c.b === undefined ? c.a : c.b)}`;
+  if(c.path.length === 1 && jrnScalar(c.b) && jrnScalar(c.a)) return `${area}: ${jrnVal(c.b)} → ${jrnVal(c.a)}`;
+  return `${area}: змінено`;
+}
+function jrnLines(e){ return Array.from(new Set(e.ch.map(jrnChangeText))); }
+function jrnSummary(e){
+  if(e.label) return e.label;
+  const l = jrnLines(e);
+  return l.length <= 2 ? l.join("; ") : `${l.slice(0, 2).join("; ")} і ще ${l.length - 2}`;
+}
+function jrnSentSomething(e){ return e.ch.some(c => c.path.some(s => /sent|clientSends|ordersSent/i.test(String(s)))); }
+
+/* ---- Відміна однієї дії ---- */
+function jrnStep(cur, seg){
+  if(cur === null || cur === undefined || typeof cur !== "object") return undefined;
+  if(Array.isArray(cur) && String(seg).startsWith("#")) return cur.find(x => x && String(x.id) === String(seg).slice(1));
+  return cur[seg];
+}
+function jrnApplyBack(p, c){
+  let parent = p;
+  for(let i = 0; i < c.path.length - 1; i++){ parent = jrnStep(parent, c.path[i]); if(!parent || typeof parent !== "object") return false; }
+  const seg = c.path[c.path.length - 1];
+  if(Array.isArray(parent) && String(seg).startsWith("#")){
+    const id = String(seg).slice(1);
+    const idx = parent.findIndex(x => x && String(x.id) === id);
+    if(c.b === undefined){ if(idx >= 0) parent.splice(idx, 1); return true; }        /* було додано → прибираємо */
+    if(c.a === undefined){ if(idx < 0) parent.splice(Math.min(c.i || 0, parent.length), 0, jrnClone(c.b)); return true; } /* було прибрано → повертаємо */
+    return false;
+  }
+  const cur = parent[seg];
+  if(jrnJ(cur) === jrnJ(c.b)) return true;
+  if(jrnJ(cur) !== jrnJ(c.a)) return false;   /* це поле потім змінили ще раз — не чіпаємо */
+  if(c.b === undefined) delete parent[seg]; else parent[seg] = jrnClone(c.b);
+  return true;
+}
+function jrnUndo(pid, eid){
+  const log = jrnLogLoad();
+  const e = (log[pid] || []).find(x => x.id === eid);
+  if(!e || e.undone || e.ext) return;
+  let ok = 0, skip = 0;
+  const root = e.ch.find(c => !c.path.length);
+  const orig0 = e.undoOf && (log[pid] || []).find(x => x.id === e.undoOf);
+  const label = e.undoOf ? `Знову: ${orig0 ? jrnSummary(orig0) : jrnSummary(e).replace(/^Відмінено: /, "")}` : `Відмінено: ${jrnSummary(e)}`;
+  jrnWith(label, () => {
+    jrnCtx.undoOf = e.id;
+    if(root){
+      const idx = projects.findIndex(x => x.id === pid);
+      if(root.b === undefined){ if(idx >= 0){ projects.splice(idx, 1); if(currentProjectId === pid) currentProjectId = null; } ok++; }
+      else if(root.a === undefined){ if(idx < 0) projects.splice(Math.min(root.i || 0, projects.length), 0, jrnClone(root.b)); ok++; }
+      saveProjects();
+      return;
+    }
+    const p = projects.find(x => x.id === pid);
+    if(!p){ skip = e.ch.length; return; }
+    e.ch.slice().reverse().forEach(c => { if(jrnApplyBack(p, c)) ok++; else skip++; });
+    touchProject(p);
+  });
+  if(!ok && skip){ toast("Не вдалося відмінити: ці дані вже змінено пізніше"); return; }
+  e.undone = 1;
+  if(e.undoOf){ const orig = (log[pid] || []).find(x => x.id === e.undoOf); if(orig) delete orig.undone; }
+  jrnLogSave();
+  jrnRefreshScreens();
+  toast(skip ? `Відмінено частково: ${skip} змін пропущено — їх потім змінили ще раз` : "Відмінено", skip ? 4200 : 2200);
+}
+function jrnRefreshScreens(){
+  render();
+  try{ if(personUi) renderPersonLedger(); }catch(e){}
+  try{ if(document.getElementById("stockScreen")?.classList.contains("open")) renderStockScreen(); }catch(e){}
+  try{ if(document.getElementById("stockPickScreen")?.classList.contains("open")) renderStockPick(); }catch(e){}
+  if(document.getElementById("jrnSheet")?.classList.contains("open")) renderJrn();
+}
+
+/* ---- Екран журналу ---- */
+function openJrn(pid){
+  jrnLogView = pid || null;
+  try{ closeActionsSheet(); }catch(e){}
+  let el = document.getElementById("jrnSheet");
+  if(!el){
+    el = document.createElement("div");
+    el.className = "sheet"; el.id = "jrnSheet";
+    el.addEventListener("click", ev => { if(ev.target === el) closeJrn(); });
+    document.body.appendChild(el);
+  }
+  renderJrn();
+  el.classList.add("open");
+}
+function closeJrn(){ document.getElementById("jrnSheet")?.classList.remove("open"); }
+function jrnWhen(t){
+  const d = new Date(t), now = new Date();
+  const hm = d.toLocaleTimeString("uk-UA", { hour:"2-digit", minute:"2-digit" });
+  const same = (x, y) => x.toDateString() === y.toDateString();
+  const y = new Date(now); y.setDate(now.getDate() - 1);
+  return same(d, now) ? `сьогодні ${hm}` : same(d, y) ? `учора ${hm}` : `${d.toLocaleDateString("uk-UA", { day:"2-digit", month:"2-digit" })} ${hm}`;
+}
+function renderJrn(){
+  const el = document.getElementById("jrnSheet");
+  if(!el) return;
+  const log = jrnLogLoad();
+  const ids = jrnLogView ? [jrnLogView] : Object.keys(log);
+  const rows = [];
+  ids.forEach(pid => (log[pid] || []).forEach(e => rows.push([pid, e])));
+  rows.sort((x, y) => y[1].t - x[1].t);
+  const proj = jrnLogView && projects.find(x => x.id === jrnLogView);
+  const head = jrnLogView ? `Журнал дій · ${escapeHtml(proj && proj.title || "об'єкт")}` : "Журнал дій · усі об'єкти";
+  el.innerHTML = `<div class="panel"><div class="panelHead"><strong>${head}</strong><button class="close" onclick="closeJrn()">×</button></div>
+  <div class="panelBody" style="padding-bottom:1.25rem">
+    <p class="actHint">Тут кожна ваша зміна. Помилилися — натисніть «Відмінити» біля потрібної дії: повернеться лише вона, решта лишиться як є.</p>
+    ${rows.length ? rows.slice(0, 200).map(([pid, e]) => {
+      const lines = jrnLines(e);
+      const exists = projects.some(x => x.id === pid);
+      return `<div class="actRow${e.undone ? " undone" : ""}">
+        <div class="actMain">
+          <div class="actTime">${jrnWhen(e.t)}${!jrnLogView ? ` · ${escapeHtml(e.title || "об'єкт")}${exists ? "" : " (видалено)"}` : ""}${e.ext ? " · не ваша дія" : ""}</div>
+          <div class="actText">${escapeHtml(jrnSummary(e))}</div>
+          ${lines.length > 1 || e.label ? `<details class="actMore"><summary>${lines.length === 1 ? "що змінилось" : `що змінилось · ${lines.length}`}</summary><ul>${lines.slice(0, 40).map(l => `<li>${escapeHtml(l)}</li>`).join("")}${lines.length > 40 ? `<li>і ще ${lines.length - 40}</li>` : ""}</ul></details>` : ""}
+          ${!e.undone && !e.ext && jrnSentSomething(e) ? `<div class="actNote">Повідомлення вже пішло. Відміна змінить лише позначки в et.app.</div>` : ""}
+        </div>
+        ${e.undone ? `<span class="actTag">відмінено</span>` : e.ext ? "" : `<button type="button" class="actUndoBtn" onclick="jrnUndo('${escapeHtml(pid)}','${escapeHtml(e.id)}')">Відмінити</button>`}
+      </div>`;
+    }).join("") : `<p class="actHint">Поки що нічого. Щойно ви щось зміните, це з'явиться тут.</p>`}
+  </div></div>`;
+}
+setTimeout(jrnBaseInit, 0);
 
 function renderEmptyState(){
   return `
@@ -9986,7 +10330,7 @@ function renderProject(p){
       ${clientView ? "" : renderGroupStages(p)}
       ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderCrewBox(p) : ""}
       ${projectTab === "estimate" || projectTab === "notebook" ? renderSupLine(p) : ""}
-      ${buyOn(p) ? (projectTab === "notebook" ? renderBuyList(p) : "") : renderNextSteps(p) + (planOn(p) && projectTab === "estimate" ? "" : renderPlanTodo(p))}
+      ${buyOn(p) ? (projectTab === "notebook" ? renderJrnWarnings(p) + renderBuyList(p) : "") : renderNextSteps(p) + (planOn(p) && projectTab === "estimate" ? "" : renderPlanTodo(p))}
       ${projectTab === "estimate" ? renderApprovedBanner(p) + renderClientSends(p) : projectTab === "notebook" ? renderClientSends(p) : ""}
       ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderFilesBox(p) : ""}
       ${projectTab === "notebook" ? "" : projectTab === "money" ? renderMoneyTab(p) : `<div id="estMaterials">${renderMaterialsTab(p)}</div><div id="estWorks">${renderWorksTab(p)}</div>`}
@@ -10831,7 +11175,7 @@ async function prepareSupplierCheck(draft){
   try{
     const linkId = await publishSupplierLink(draft.supplierName);
     const prev = supChk(p, normalizeText(draft.supplierName)) || {};
-    const d = await supplierApi(`/sup/${linkId}/checks`, { method:"POST", body: JSON.stringify({ checkId: prev.linkId === linkId ? prev.checkId : undefined, projectId: p.id, title: projectTitlePlain(p), items: supCheckItems(p, draft) }) });
+    const d = await supplierApi(`/sup/${linkId}/checks`, { method:"POST", body: JSON.stringify({ checkId: prev.linkId === linkId ? prev.checkId : undefined, projectId: p.id, title: projectTitlePlain(p), items: supCheckItems(p, draft), rates: supplierCurrencyRates(draft.supplierName) }) });
     draft.web = { linkId, checkId: d.checkId };
   }catch(e){ draft.web = null; }
   if(procurementRequestDraft === draft) renderProcurementRequestMode();
@@ -10861,6 +11205,7 @@ function pollSupplierChecks(p, force){
     const cur = supChk(p, key);
     p.supplierChecks[key] = { ...cur, answer: a, sent: rec.items || [] };
     const resp = supAnswerResponse(p, key);
+    jrnWith(`${resp ? resp.supplierName : "Постачальник"}: відповідь на звірку`, () => {
     if(resp && resp.clean){
       pendingProcurementResponse = resp;
       const keepProject = currentProjectId;
@@ -10872,6 +11217,7 @@ function pollSupplierChecks(p, force){
       if(currentProjectId === p.id) render();
       toast(`${resp ? resp.supplierName : "Постачальник"} відповів на звірку — є зміни`, 3200);
     }
+    });
   });
 }
 window.addEventListener("focus", () => { const p = projects.find(x => x.id === currentProjectId); if(p) pollSupplierChecks(p); });
@@ -10909,8 +11255,24 @@ function supAnswerResponse(p, key){
       article: fixArticle || s.article || "", name: (fixArticle && fx.name) || (fixArticle ? fixArticle : s.name) || "", brand: fixArticle ? "" : s.brand || "", unit: s.unit || "", answered: true,
       keepName: Boolean(fixArticle), comment: [comment, fixArticle ? `правильний артикул: ${fixArticle}${fx.name ? " (" + fx.name + ")" : ""}` : "", fixQty !== null ? `кількість: ${formatQty(fixQty)}` : ""].filter(Boolean).join("; ") });
   });
-  const resp = { projectId: p.id, supplierName, records, fileVersion: 2, fileRates: {}, managerName: a.manager || "", managerPhone: a.phone || "",
-    note: a.comment || "", webKey: key, answerAt: a.at, notInFile: [], missingCount: 0, lineTotals: false, clean };
+  const curRates = supplierCurrencyRates(supplierName);
+  const rateChanges = Object.entries(a.rates || {}).map(([c, v]) => ({ c: String(c).toUpperCase(), to: Number(v), from: Number(curRates[String(c).toUpperCase()]) || 0 }))
+    .filter(x => ["EUR","USD"].includes(x.c) && x.to > 0 && x.from > 0 && Math.abs(x.to - x.from) > 0.00001);
+  if(rateChanges.length) clean = false;
+  /* Ціни валютних позицій, які менеджер не чіпав, — за новим курсом */
+  rateChanges.forEach(x => records.forEach(rec => {
+    const pos = (p.positions || []).find(q => q.id === rec.positionId);
+    const offer = pos && getCatalogSupplierOffers(getPositionCatalogItem(pos)).find(o => normalizeText(o && o.supplierName) === normalizeText(supplierName));
+    if(!offer || ![offer.master, offer.retail].some(sn => sn && String(sn.sourceCurrency || "").toUpperCase() === x.c)) return;
+    const s0 = sent.get(rec.positionId) || {};
+    if(rec.actualPriceUAH > 0 && Math.abs(rec.actualPriceUAH - (Number(s0.master) || 0)) < 0.01){
+      rec.actualPriceUAH = Math.round(rec.actualPriceUAH * x.to / x.from * 100) / 100;
+      rec.sourcePrice = rec.actualPriceUAH;
+    }
+  }));
+  const rateNote = rateChanges.map(x => `Новий курс ${x.c === "EUR" ? "€" : "$"}: ${String(x.to).replace(".", ",")} ₴ (був ${String(x.from).replace(".", ",")}) — ціни ${x.c === "EUR" ? "в євро" : "в доларах"} перерахуються`).join("\n");
+  const resp = { projectId: p.id, supplierName, records, fileVersion: 2, fileRates: {}, managerName: a.manager || "", managerPhone: a.phone || "", rateChanges,
+    note: [a.comment || "", rateNote].filter(Boolean).join("\n"), webKey: key, answerAt: a.at, notInFile: [], missingCount: 0, lineTotals: false, clean };
   classifyProcurementResponse(resp, p);
   return resp;
 }
@@ -11918,12 +12280,12 @@ function pollClientSends(p){
   if(!list.length) return;
   clientPollAt[p.id] = Date.now();
   list.forEach(s => {
-    fetch(`${cloudConfig().server}/q/${sendLinkId(s.link)}`, { cache:"no-store" }).then(r => r.ok ? r.json() : null).then(d => {
+    fetch(`${cloudConfig().server}/q/${sendLinkId(s.link)}`, { cache:"no-store" }).then(r => r.ok ? r.json() : null).then(d => jrnWith("Відповідь клієнта", () => {
       if(d && d.seenAt && !s.seenAt){ s.seenAt = d.seenAt; touchProject(p); if(currentProjectId === p.id || !currentProjectId) render(); }
       /* Клієнт натиснув «Не підходить» (або передумав і погодив — тоді позначку прибираємо) */
       if(d && Boolean(d.declinedAt && !d.approvedAt) !== Boolean(s.declinedAt)){ if(d.declinedAt && !d.approvedAt) s.declinedAt = d.declinedAt; else delete s.declinedAt; touchProject(p); if(currentProjectId === p.id || !currentProjectId) render(); }
       if(d && d.approvedAt && d.approvedBy !== "master" && sendOpen(p, s) && !s.clientApprovedAt) clientSendApplySilent(p, s, d.approvedAt);
-    }).catch(() => {});
+    }, true)).catch(() => {});
   });
 }
 window.addEventListener("focus", () => { const p = projects.find(x => x.id === currentProjectId); if(p){ clientPollAt[p.id] = 0; pollClientSends(p); } });
@@ -14266,6 +14628,59 @@ function supplierRateKey(supplierName, brand, currency){
   return `${normalizeText(supplierName)}|${normalizeText(brand)}|${String(currency || "").toUpperCase()}`;
 }
 
+/* Курс валюти постачальника (останній за датою) — для звірки, щоб менеджер міг його виправити */
+function supplierCurrencyRates(supplierName){
+  syncSupplierRatesFromCatalog();
+  const best = {};
+  Object.values(supplierRates).forEach(r => {
+    if(!r || normalizeText(r.supplierName) !== normalizeText(supplierName)) return;
+    const c = String(r.currency || "").toUpperCase();
+    if(!["EUR","USD"].includes(c) || !(Number(r.rate) > 0)) return;
+    if(!best[c] || String(r.updatedAt || "") > String(best[c].at || "")) best[c] = { rate:Number(r.rate), at:r.updatedAt || "" };
+  });
+  return Object.fromEntries(Object.entries(best).map(([c, v]) => [c, v.rate]));
+}
+/* Новий курс від постачальника: оновлюємо всі його бренди в цій валюті й перераховуємо ціни каталогу */
+function setSupplierCurrencyRate(supplierName, currency, rate){
+  syncSupplierRatesFromCatalog();
+  const now = new Date().toISOString();
+  const changedKeys = new Set();
+  Object.entries(supplierRates).forEach(([k, r]) => {
+    if(r && normalizeText(r.supplierName) === normalizeText(supplierName) && String(r.currency || "").toUpperCase() === currency && Math.abs(Number(r.rate) - rate) > 0.00001){
+      supplierRates[k] = { ...r, rate, updatedAt:now };
+      changedKeys.add(k);
+    }
+  });
+  if(!changedKeys.size) return 0;
+  let priceChanges = 0;
+  catalog.forEach(item => {
+    if(item.type !== "material") return;
+    getCatalogSupplierOffers(item).forEach(offer => {
+      const brand = cleanText(item.manufacturer) || "Без бренду";
+      ["retail","master"].forEach(kind => {
+        const snapshot = offer && offer[kind];
+        const cur = String(snapshot && snapshot.sourceCurrency || "").toUpperCase();
+        if(!snapshot || !["EUR","USD"].includes(cur)) return;
+        const key = supplierRateKey(offer.supplierName, brand, cur);
+        if(!changedKeys.has(key)) return;
+        const sourcePrice = Number(snapshot.sourcePrice);
+        if(!Number.isFinite(sourcePrice)) return;
+        const next = sourcePrice * rate;
+        if(Math.abs(next - Number(snapshot.priceUAH || 0)) > 0.00001) priceChanges++;
+        snapshot.sourceRate = rate; snapshot.priceUAH = next; snapshot.rateUpdatedAt = now; offer.updatedAt = now;
+      });
+    });
+    const selected = getSelectedCatalogSupplierOffer(item);
+    if(!selected) return;
+    const retail = supplierOfferPrice(selected, "retail"), master = supplierOfferPrice(selected, "master");
+    if(retail) item.retailPriceUAH = retail;
+    if(master) item.purchasePriceUAH = master;
+    if(retail) item.price = retail; else if(master && !(Number(item.price) > 0)) item.price = master;
+  });
+  saveSupplierRates();
+  saveCatalog();
+  return priceChanges;
+}
 function getMaterialOfferRateProfile(item, offer){
   if(!item || item.type !== "material" || !offer) return null;
   const snapshots = [offer.retail, offer.master].filter(Boolean);
@@ -15557,6 +15972,8 @@ function openCustomPosition(){
   document.getElementById("csUnit").value = "";
 
   document.getElementById("csArticleGroup").classList.toggle("hidden", customType !== "material");
+  document.getElementById("csCurGroup").classList.toggle("hidden", customType !== "material");
+  setCsCurrency("UAH");
   document.getElementById("csPurchasePriceGroup").classList.toggle("hidden", customType !== "material");
   document.getElementById("csWorkFields").classList.toggle("hidden", customType !== "work");
   document.getElementById("csMaterialFields").classList.toggle("hidden", customType !== "material");
@@ -15574,6 +15991,36 @@ function openCustomPosition(){
   setTimeout(() => document.getElementById("csName").focus(), 200);
 }
 
+/* Валюта цін нового матеріалу: прайси Ostendorf, Geberit тощо часто в € — переводимо в ₴ за курсом */
+let csCurrency = "UAH";
+const CS_RATE_KEYS = { EUR: EUR_RATE_KEY, USD: "sa_usdRate" };
+function setCsCurrency(cur){
+  csCurrency = cur;
+  document.querySelectorAll("#csCurChips .chip").forEach(c => c.classList.toggle("active", c.dataset.value === cur));
+  const sign = cur === "EUR" ? "€" : cur === "USD" ? "$" : "₴";
+  document.getElementById("csRateRow").classList.toggle("hidden", cur === "UAH");
+  document.getElementById("csRateLabel").textContent = `Курс, ₴ за 1 ${sign}`;
+  let saved = 0;
+  try{ saved = Number(localStorage.getItem(CS_RATE_KEYS[cur] || "") || 0); }catch(e){}
+  const supInput = document.getElementById("csRateSupplier");
+  if(cur !== "UAH"){
+    const names = Array.from(new Set(catalog.flatMap(it => getCatalogSupplierOffers(it).map(o => cleanText(o && o.supplierName))).filter(Boolean))).sort((a, b) => a.localeCompare(b, "uk"));
+    document.getElementById("csRateSupplierList").innerHTML = names.map(n => `<option value="${escapeHtml(n)}">`).join("");
+    if(!supInput.value){ try{ supInput.value = localStorage.getItem("sa_csRateSupplier") || ""; }catch(e){} }
+    const r = supInput.value ? Number(supplierCurrencyRates(supInput.value)[cur]) : 0;
+    if(r > 0) saved = r;
+  }
+  const rateInput = document.getElementById("csRate");
+  if(cur !== "UAH" && !rateInput.value && saved > 0) rateInput.value = String(saved).replace(".", ",");
+  if(customType === "material"){
+    document.getElementById("csPriceLabel").textContent = `Ціна для клієнта, ${sign}`;
+    document.getElementById("csPurchaseLabel").textContent = `Закупівельна ціна, ${sign}`;
+  }
+}
+function csRateSupplierChanged(){
+  const r = Number(supplierCurrencyRates(document.getElementById("csRateSupplier").value)[csCurrency]) || 0;
+  if(r > 0) document.getElementById("csRate").value = String(r).replace(".", ",");
+}
 function closeCustom(){
   document.getElementById("customSheet").classList.remove("open");
 }
@@ -15581,9 +16028,28 @@ function closeCustom(){
 function saveCustom(){
   const name = document.getElementById("csName").value.trim();
   const article = document.getElementById("csArticle").value.trim();
-  const price = Number(String(document.getElementById("csPrice").value).replace(",",".")) || 0;
-  const purchasePrice = Number(String(document.getElementById("csPurchasePrice").value).replace(",",".")) || 0;
+  let price = Number(String(document.getElementById("csPrice").value).replace(",",".")) || 0;
+  let purchasePrice = Number(String(document.getElementById("csPurchasePrice").value).replace(",",".")) || 0;
   const unit = normalizeUnit(document.getElementById("csUnit").value);
+  let sourceEUR = 0, curOffer = null;
+  if(customType === "material" && csCurrency !== "UAH" && (price > 0 || purchasePrice > 0)){
+    const rate = Number(String(document.getElementById("csRate").value).replace(",", ".")) || 0;
+    if(!(rate > 0)){ toast(`Вкажіть курс ${csCurrency === "EUR" ? "євро" : "долара"}`); return; }
+    try{ localStorage.setItem(CS_RATE_KEYS[csCurrency], String(rate)); }catch(e){}
+    const sup = cleanText(document.getElementById("csRateSupplier").value);
+    if(sup){
+      try{ localStorage.setItem("sa_csRateSupplier", sup); }catch(e){}
+      const at = new Date().toISOString();
+      const snap = v => v > 0 ? { priceUAH: Math.round(v * rate * 100) / 100, sourcePrice: v, sourceCurrency: csCurrency, sourceRate: rate, importedAt: at } : null;
+      curOffer = { supplierName: sup, supplierFullName: "", retail: snap(price), master: snap(purchasePrice), updatedAt: at };
+      const key = supplierRateKey(sup, "Без бренду", csCurrency);
+      supplierRates[key] = { supplierName: sup, brand: "Без бренду", currency: csCurrency, rate, updatedAt: at };
+      saveSupplierRates();
+    }
+    if(csCurrency === "EUR") sourceEUR = price;
+    price = Math.round(price * rate * 100) / 100;
+    purchasePrice = Math.round(purchasePrice * rate * 100) / 100;
+  }
 
   if(!name){
     toast("Вкажіть назву");
@@ -15630,9 +16096,10 @@ function saveCustom(){
     manufacturer: "",
     system: "",
     article: customType === "material" ? article : "",
-    basePriceEUR: 0,
-    supplierOffers: []
+    basePriceEUR: sourceEUR,
+    supplierOffers: curOffer ? [curOffer] : []
   };
+  if(curOffer) newItem.preferredSupplierName = curOffer.supplierName;
 
   catalog.push(newItem);
   saveCatalog();
@@ -17076,7 +17543,9 @@ async function shareProcurementOrderFile(){
     if(!project) return;
     if(!project.ordersSent || typeof project.ordersSent !== "object") project.ordersSent = {};
     project.ordersSent[normalizeText(draft.supplierName)] = new Date().toISOString();
-    if(draft.simple) buyMarkSent(draft.positionIds);
+    /* Нова закупівля: позначаємо «надіслано» у списку «Що купити» — хоч би звідки відправили (з цього вікна чи з «Надіслати»).
+       Старі «замовлення» тут не створюємо: вони давали 0 у кількостях і подвійні замовлення */
+    if(draft.simple || buyOn(project)) buyMarkSent(draft.positionIds);
     else orderMarkSent(project, draft.supplierName, draft.positionIds, draft.qtyMap);
     if(typeof closeOrderPick === "function") closeOrderPick();
     touchProject(project);
@@ -17865,6 +18334,16 @@ function applyProcurementResponse(){
   let appliedChanges = 0;
   let retailUpdated = 0;
   let catalogChanged = false;
+  (response.rateChanges || []).forEach(x => setSupplierCurrencyRate(response.supplierName, x.c, x.to));
+  /* Закупівельна ціна валютних позицій цього постачальника в об’єкті — за новим курсом (ціна для клієнта не змінюється) */
+  if((response.rateChanges || []).length) (project.positions || []).forEach(pos => {
+    if(pos.type !== "material") return;
+    const offer = getCatalogSupplierOffers(getPositionCatalogItem(pos)).find(o => normalizeText(o && o.supplierName) === normalizeText(response.supplierName));
+    const snap = offer && offer.master;
+    if(!snap || !["EUR","USD"].includes(String(snap.sourceCurrency || "").toUpperCase())) return;
+    const v = Math.round(Number(snap.priceUAH) * 100) / 100;
+    if(v > 0) pos.purchasePrice = v;
+  });
 
   const findOrCreateCatalogItem = (record, unitPrice, fallbackCategory) => {
     const byArticle = record.article ? findCatalogMaterialsByArticle(record.article) : [];
@@ -18200,7 +18679,8 @@ function openOrderImport(workbook, fileName){
     if(!it.positionId || it.extraForSame) return;
     const p0 = pos(it.positionId);
     it.odd = !orderNameLooksSame(positionShortName(p0), it.name);
-    it.fixName = it.odd;
+    /* Той самий артикул — це той самий товар, хоч назви й різні; інакше — чекаємо вашого підтвердження */
+    it.sameOk = Boolean(it.article && ntext(it.article) === ntext(getPositionMaterialArticle(p0)));
   });
   orderImp = { projectId: project.id, fileName, items, matched, supplier, notIn: notIn.map(x => ({ id:x.id, remove:false })), addNew: true };
   orderImpScreen().classList.add("open");
@@ -18219,7 +18699,7 @@ function renderOrderImport(){
   orderImpScreen().innerHTML = `<div class="onbInner">
     <div class="onbTop"><button type="button" class="onbBack" onclick="closeOrderImport()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Замовлення постачальника</span></div>
     <div class="psHead"><b>${escapeHtml(d.supplier || "Постачальник")} · ${d.items.length} поз. · ${money(total)}</b><small>${escapeHtml(d.fileName)} → «${escapeHtml(projectTitlePlain(project))}». Ціни для клієнта у знайдених позиціях не змінюються.</small></div>
-    ${odd.length ? `<span class="opLabel">Перевірте: назва у вас і в замовленні різна (${odd.length})</span><div class="opList">${odd.map(it => { const p0 = pos(it.positionId); return `<div class="opItem" style="align-items:flex-start"><span class="opName">${escapeHtml(positionShortName(p0))}<small>у замовленні: <b>${escapeHtml(it.name)}</b>${it.article ? ` · арт. ${escapeHtml(it.article)}` : ""} · ${formatQty(it.qty)} ${escapeHtml(it.unit)}</small></span></div>`; }).join("")}</div><span class="onbNote" style="text-align:left">Ваші назви лишаться. Якщо це не той товар — виправте артикул у позиції або попросіть менеджера виправити у звірці за посиланням.</span>` : ""}
+    ${odd.length ? `<span class="opLabel">Перевірте: назва у вас і в замовленні різна (${odd.length})</span><div class="opList">${odd.map(it => { const p0 = pos(it.positionId); return `<div class="opItem ${it.sameOk ? "on" : ""}" style="align-items:flex-start;cursor:pointer" onclick="orderImpToggle('same', ${it.i})">${box(it.sameOk)}<span class="opName">${escapeHtml(positionShortName(p0))}<small>у замовленні: <b>${escapeHtml(it.name)}</b>${it.article ? ` · арт. ${escapeHtml(it.article)}` : ""} · ${formatQty(it.qty)} ${escapeHtml(it.unit)} · ${moneyWithCents(it.net)}</small></span></div>`; }).join("")}</div><span class="onbNote" style="text-align:left">Відмітьте, якщо це той самий товар — тоді візьмемо ціну й кількість із замовлення. Не відмічене не змінюється. Ваші назви лишаються.</span>` : ""}
     ${changed.length ? `<span class="opLabel">Інша кількість (${changed.length})</span><div class="opList">${changed.map(it => { const p0 = pos(it.positionId); return `<div class="opItem"><span class="opName">${escapeHtml(positionShortName(p0))}<small>${formatQty(p0.qty)} → <b>${formatQty(it.qty)}</b> ${escapeHtml(p0.unit || "шт")}</small></span></div>`; }).join("")}</div>` : ""}
     ${fresh.length ? `<span class="opLabel">Нові в замовленні (${fresh.length})</span><div class="opList"><div class="opItem ${d.addNew ? "on" : ""}" style="cursor:pointer" onclick="orderImpToggle('add')">${box(d.addNew, "")}<span class="opName">Додати в кошторис<small>ціна для клієнта — з каталогу, якщо є; інакше закупівельна з позначкою «перевірте ціну»</small></span></div>${fresh.map(it => `<div class="opItem"><span class="opName">${escapeHtml(it.name)}<small>${it.article ? `арт. ${escapeHtml(it.article)} · ` : ""}${formatQty(it.qty)} ${escapeHtml(it.unit)} · ${moneyWithCents(it.net)}</small></span></div>`).join("")}</div>` : ""}
     ${d.notIn.length ? `<span class="opLabel">Немає в замовленні (${d.notIn.length}) — відмітьте, що прибрати</span><div class="opList">${d.notIn.map((x, k) => { const p0 = pos(x.id); return p0 ? `<div class="opItem ${x.remove ? "on" : ""}" style="cursor:pointer" onclick="orderImpToggle('rm',${k})">${box(x.remove, "")}<span class="opName">${escapeHtml(positionShortName(p0))}<small>${formatQty(p0.qty)} ${escapeHtml(p0.unit || "шт")}</small></span></div>` : ""; }).join("")}</div>` : ""}
@@ -18231,6 +18711,7 @@ function renderOrderImport(){
 function orderImpToggle(k, i){
   const d = orderImp; if(!d) return;
   if(k === "fix"){ const it = d.items.find(x => x.i === i); if(it) it.fixName = !it.fixName; }
+  if(k === "same"){ const it = d.items.find(x => x.i === i); if(it) it.sameOk = !it.sameOk; }
   if(k === "add") d.addNew = !d.addNew;
   if(k === "rm" && d.notIn[i]) d.notIn[i].remove = !d.notIn[i].remove;
   const y = orderImpScreen().scrollTop; renderOrderImport(); orderImpScreen().scrollTop = y;
@@ -18252,6 +18733,8 @@ function applyOrderImport(){
   d.matched.forEach((info, id) => {
     const p0 = project.positions.find(x => x.id === id); if(!p0) return;
     const it = info.entry;
+    /* Назва в замовленні зовсім інша — можливо, це інший товар: ціну й кількість беремо, лише якщо ви підтвердили */
+    if(it.odd && !it.sameOk) return;
     /* Назви — ваші: з замовлення не беремо */
     if(roundQty(p0.qty) !== roundQty(info.qty)){ p0.qty = info.qty; qty++; }
     if(it.net > 0){ p0.purchasePrice = it.net; p0.purchasePriceState = "confirmed"; }
@@ -19881,6 +20364,12 @@ function actionAdvanceStage(){
     if(!confirm(`Гідравлічні випробування ще не зроблено: ${t.wait.map(actShortName).join(", ")}.\n\nЗавершити об’єкт без акту випробувань?`)) return;
     p0.actSkip = true;
   }
+  if(buyOn(p0)){
+    const notGot = buyItems(p0).filter(pos => buyNeed(p0, pos) > 0 && !["skip", "stock"].includes(pos.whereK)).length;
+    const unpaid = jrnWarnings(p0).filter(x => x.kind === "unpaid").map(x => x.text);
+    const lines = [notGot ? `Ще не отримано: ${notGot} поз.` : "", ...unpaid].filter(Boolean);
+    if(lines.length && !confirm(`${lines.join("\n")}\n\nВсе одно завершити об’єкт?`)) return;
+  }
   const debt = projectDebt(p0);
   if(debt > 0.5 && !confirm(`Клієнт ще винен ${money(debt)}.\n\nВсе одно позначити об’єкт завершеним?`)) return;
   completeProject(p0, "вручну");
@@ -21005,6 +21494,8 @@ async function orderPickSend(silent){
     const pos = project.positions.find(item => item.id === id);
     if(!pos) return;
     pos.plannedSupplierName = supplierName;
+    /* Підтверджену постачальником ціну (звірка, замовлення) не перезаписуємо прайсом із каталогу */
+    if(pos.purchasePriceState === "confirmed" && Number(pos.purchasePrice) > 0) return;
     const offer = getCatalogSupplierOffers(getPositionCatalogItem(pos)).find(o => normalizeText(o && o.supplierName) === normalizeText(supplierName));
     const price = supplierOfferPrice(offer, "master");
     if(price > 0){ pos.purchasePrice = price; pos.purchasePriceState = "estimated"; }
@@ -21038,7 +21529,7 @@ async function orderPickSend(silent){
     buyMarkSent(ids);
     closeOrderPick();
     render();
-    toast(`Записано: ${ids.length} поз. · ${supplierName}. Привезли — «Привезли» або галочки`, 3600);
+    toast(`Записано: ${ids.length} поз. · ${supplierName}. Коли отримаєте — «Отримано»`, 3600);
     return;
   }
   if(silent){
@@ -22318,6 +22809,45 @@ function buyGroups(p){
   return Array.from(map.values()).sort((a, b) => order(a) - order(b) || a.label.localeCompare(b.label, "uk"));
 }
 
+/* ==== Попередження про упущення: що не сходиться на об'єкті ==== */
+function buyOddPrice(pos){
+  const pr = Number(pos.purchasePrice);
+  if(!(pr > 0)) return null;
+  const offers = getCatalogSupplierOffers(getPositionCatalogItem(pos)).map(o => ({ n: o && o.supplierName, v: supplierOfferPrice(o, "master") })).filter(o => o.v > 0).sort((a, b) => a.v - b.v);
+  return offers.length && (pr > offers[0].v * 3 || pr < offers[0].v / 3) ? offers[0] : null;
+}
+function jrnWarnings(p){
+  const out = [];
+  if(!p || !buyOn(p)) return out;
+  const items = buyItems(p);
+  /* отримано, а оплату постачальнику не записано */
+  const got = new Map();
+  items.forEach(pos => {
+    if(!pos.got || pos.whereK !== "sup" || !pos.whereS) return;
+    const q = Number((buyLog(p)[pos.id] || {}).q) || 0, pr = Number(pos.purchasePrice) || 0;
+    if(!(q > 0 && pr > 0)) return;
+    const k = normalizeText(pos.whereS);
+    const g = got.get(k) || { name: pos.whereS, sum: 0 };
+    g.sum += q * pr; got.set(k, g);
+  });
+  got.forEach((g, k) => {
+    const paid = moneyList(p, "expense").reduce((a, e) => a + ((e.kind === "supplierPayment" && normalizeText(e.supplierName) === k) || normalizeText(String(e.note || "")).startsWith(k) ? Number(e.amount) || 0 : 0), 0);
+    const left = Math.round(g.sum - paid);
+    if(left > Math.max(100, g.sum * 0.1)) out.push({ kind: "unpaid", text: `${g.name}: отримано ≈${money(Math.round(g.sum))}, оплат записано ${money(Math.round(paid))}. Не записали оплату?` });
+  });
+  /* дивна ціна закупівлі */
+  const odd = items.filter(pos => buyNeed(p, pos) > 0 && buyOddPrice(pos));
+  if(odd.length) out.push({ kind: "price", text: `Дивна ціна закупівлі: ${odd.slice(0, 3).map(positionShortName).join(", ")}${odd.length > 3 ? ` і ще ${odd.length - 3}` : ""} — утричі відрізняється від прайсу.` });
+  /* у кошторисі є, а де купувати — не вирішено */
+  const noWhere = items.filter(pos => !pos.whereK && buyNeed(p, pos) > 0);
+  if(noWhere.length) out.push({ kind: "where", text: `${noWhere.length} поз. ще без постачальника: ${noWhere.slice(0, 3).map(positionShortName).join(", ")}${noWhere.length > 3 ? "…" : ""}` });
+  return out;
+}
+function renderJrnWarnings(p){
+  const w = jrnWarnings(p);
+  if(!w.length) return "";
+  return `<div class="jrnWarn"><b>⚠ Варто перевірити</b><ul>${w.map(x => `<li>${escapeHtml(x.text)}</li>`).join("")}</ul></div>`;
+}
 function renderBuyList(p){
   if(!buyOn(p)) return "";
   const id = escapeHtml(p.id);
@@ -22327,7 +22857,10 @@ function renderBuyList(p){
     const pid = escapeHtml(pos.id);
     /* Ціна закупівлі видно біля кожного товару — щоб помилку в сумі «до оплати» було видно одразу */
     const pr = Number(pos.purchasePrice);
-    const priceTxt = pos.whereK === "sup" || pos.whereK === "self" ? (pr > 0 ? `<small>по ${moneyWithCents(pr)}</small>` : `<small style="color:var(--attn)">без закупівельної ціни</small>`) : "";
+    /* Підозріла ціна: утричі вища або нижча за найдешевшу пропозицію постачальників у каталозі */
+    const oddOffer = buyOddPrice(pos);
+    const odd = oddOffer ? ` <span style="color:var(--attn)">· ⚠ у ${escapeHtml(oddOffer.n || "постачальника")} ${moneyWithCents(oddOffer.v)} — перевірте</span>` : "";
+    const priceTxt = pos.whereK === "sup" || pos.whereK === "self" ? (pr > 0 ? `<small>по ${moneyWithCents(pr)}${odd}</small>` : `<small style="color:var(--attn)">без закупівельної ціни</small>`) : "";
     const npTag = pos.npShip && pos.whereK === "sup" ? `<small style="color:var(--p)">📦 Новою поштою</small>` : "";
     const sent = npTag + (pos.got ? `<small>докупити: було ${formatQty(buyLog(p)[pos.id] ? buyLog(p)[pos.id].q : 0)}, стало ${formatQty(pos.qty)}</small>` : "") + priceTxt;
     return `<div class="byItem"><button type="button" class="ptBox" onclick="buyToggle('${pid}')" aria-label="Є"></button><button type="button" class="byName" onclick="openBuySrc('${pid}')">${escapeHtml(positionShortName(pos))}${sent}</button><span class="ptQ">${pos.got ? "ще " : ""}${formatQty(buyNeed(p, pos))} ${escapeHtml(pos.unit || "шт")}</span></div>`;
