@@ -12336,7 +12336,7 @@ function actClientData(project){
   const dates = done.map(x => actSysDate(x, a)).sort();
   return {
     date: dates[dates.length - 1] || a.date,
-    systems: done.map(x => ({ l:x.label + (x.medium === "air" ? " (повітрям)" : ""), d:actSysDate(x, a), p:actNum(x.pressure), m:actNum(x.minutes), s:actNum(x.start), e:actNum(x.end), dt:actDropText(x), ok:actSysOk(x), rule:(r => r ? { norm:r.norm, clause:r.clause, title:r.title, maxDrop:r.maxDrop } : null)(actRule(x)), wk:actNum(x.work), leak:x.leak,
+    systems: done.map(x => ({ l:x.label + (x.medium === "air" ? " (повітрям)" : ""), d:actSysDate(x, a), p:actNum(x.pressure), m:actNum(x.minutes), s:actNum(x.start), e:actNum(x.end), dt:actDropText(x), ok:actSysOk(x), air:x.medium === "air", rule:(r => r ? { norm:r.norm, clause:r.clause, title:r.title, maxDrop:r.maxDrop } : null)(actRule(x)), wk:actNum(x.work), leak:x.leak,
       ph: ["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph ? { src:ph.src, c:actPhLabel(x, w) } : null; }).filter(Boolean) })),
     note: a.note || "",
     photos: (a.photos || []).slice(0, ACT_MAX_PHOTOS)
@@ -12348,10 +12348,15 @@ function actConclusion(list){
   const drop = list.some(x => x.s !== null && x.e !== null && x.s - x.e > 0.001);
   return `${one ? "Систему" : "Системи"} випробувано надлишковим тиском. ${drop ? "Протікань не виявлено; значення тиску на початку й у кінці наведено в таблиці." : "Падіння тиску та протікань не виявлено."}`;
 }
+/* Заголовок акта: гідравлічне — водою, манометричне — повітрям */
+function actPaperTitle(list){
+  const air = list.filter(x => x.air).length;
+  return air === 0 ? "Акт гідравлічних випробувань" : air === list.length ? "Акт манометричних випробувань" : "Акт гідравлічних і манометричних випробувань";
+}
 function actPaperHtml(project, info){
   const d = actClientData(project);
   return `<section class="quoteAct">
-    <div class="qaTitle">Акт випробування внутрішньої інженерної системи</div>
+    <div class="qaTitle">${actPaperTitle(d.systems)}</div>
     <div class="qaSub">${d.systems.map(x => escapeHtml(x.rule ? x.rule.title : x.l)).join("; ")}</div>
     <div class="qaMeta">
       <div><span>Об’єкт</span><b>${escapeHtml(info.objectName)}${info.objectAddress ? `, ${escapeHtml(info.objectAddress)}` : ""}</b></div>
