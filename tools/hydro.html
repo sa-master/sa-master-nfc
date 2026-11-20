@@ -391,7 +391,7 @@ function actCheckHtml(x, i, ev, done){
   const c = x.cond || {};
   const norm = `${r.norm}, ${r.clause}: ` + (r.method === "air"
     ? `етап 1 — ${String(r.stage1).replace(".", ",")} бар, етап 2 — ${String(r.control).replace(".", ",")} бар, ${r.minutes} хв, падіння не більше ${String(r.maxDrop).replace(".", ",")} бар`
-    : `${String(r.factor).replace(".", ",")} × робочого, не менше ${r.minutes} хв, ` + (r.maxDrop == null ? "допустиме падіння в нормі не задано" : `падіння не більше ${String(r.maxDrop).replace(".", ",")} бар`) + (r.range ? `, пробний тиск ${r.range[0]}–${String(r.range[1]).replace(".", ",")} бар` : ""));
+    : `${String(r.factor).replace(".", ",")} × робочого, не менше ${r.minutes} хв, ` + (r.maxDrop == null ? "допустиме падіння в нормі не задано" : `падіння не більше ${String(r.maxDrop).replace(".", ",")} бар`));
   return `<details class="actChk" ${done ? "open" : ""}><summary>Перевірка за ДБН</summary>
     <small class="actChkNorm">${escapeHtml(norm)}</small>
     ${r.method === "air" ? ck("air1", "Етап 1 виконано: 1,5 бар, огляд на дефекти", x.air1) : ""}
@@ -741,7 +741,7 @@ function actClientData(project){
 function actConclusion(list){
   const one = list.length === 1;
   const drop = list.some(x => x.s !== null && x.e !== null && x.s - x.e > 0.001);
-  return `${one ? "Систему" : "Системи"} випробувано надлишковим тиском. ${drop ? "Падіння тиску в межах допустимого, протікань не виявлено." : "Падіння тиску та протікань не виявлено."}`;
+  return `${one ? "Систему" : "Системи"} випробувано надлишковим тиском. ${drop ? "Протікань не виявлено; значення тиску на початку й у кінці наведено в таблиці." : "Падіння тиску та протікань не виявлено."}`;
 }
 function actPaperHtml(project, info){
   const d = actClientData(project);

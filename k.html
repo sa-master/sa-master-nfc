@@ -101,7 +101,7 @@ h1{letter-spacing:-.02em}
 .actRow{padding:10px 0;border-top:1px dashed var(--bpa)}
 .actRow:first-of-type{border-top:0}
 .actTop{display:flex;justify-content:space-between;gap:10px;font-size:15px}
-.actTop .ok{color:#1F8A4C;font-weight:800;white-space:nowrap}.actTop .bad{color:var(--red);font-weight:800;white-space:nowrap}
+.actTop .ok{color:#1F8A4C;font-weight:800;white-space:nowrap}.actTop .bad{color:var(--red);font-weight:800;white-space:nowrap}.actTop .warn{color:#b26a00;font-weight:800;white-space:nowrap}
 .actRow small{display:block;color:var(--tm);font-size:13px;margin-top:3px}
 .actOk{margin-top:8px;font-size:14px;font-weight:700;color:#1F8A4C}
 .actPhotos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
@@ -275,14 +275,14 @@ function renderAct(data){
   const ds = [...new Set(a.systems.map(x => x.d).filter(Boolean))].sort();
   const many = ds.length > 1;
   const d = many ? `${dl(ds[0])} – ${dl(ds[ds.length - 1])}` : dl(ds[0] || a.date);
-  const allOk = a.systems.every(x => x.ok);
+  const allOk = a.systems.every(x => x.ev && x.ev.status ? x.ev.status === "Відповідає критеріям" : x.ok);
   const photos = Array.isArray(a.photos) ? a.photos.filter(x => /^data:image\/(jpeg|png|webp);base64,/.test(x)) : [];
   card.innerHTML = `<div class="secT">Акт гідравлічних випробувань</div>
     ${d ? `<div class="meta" style="margin:2px 0 6px">Дата проведення: <b style="color:var(--t)">${esc(d)}</b></div>` : ""}
-    ${a.systems.map(x => `<div class="actRow"><div class="actTop"><b>${esc(x.l)}</b><span class="${x.ok === false ? "bad" : "ok"}">${x.ok === false ? "Падіння тиску" : "✓ Герметично"}</span></div>
-      <small>${many && x.d ? dl(x.d) + " · " : ""}Тиск ${f(x.p)} бар · ${dur(x.m)} · на початку ${f(x.s)} → у кінці ${f(x.e)} бар${x.ok !== false && typeof x.s === "number" && typeof x.e === "number" && x.s - x.e > 0.001 && typeof x.al === "number" ? ` · падіння в межах норми (до ${f(x.al)} бар)` : ""}</small>
+    ${a.systems.map(x => `<div class="actRow"><div class="actTop"><b>${esc(x.l)}</b><span class="${x.ev && x.ev.status ? (x.ev.status === "Відповідає критеріям" ? "ok" : /^Не відповідає|^Параметри/.test(x.ev.status) ? "bad" : "warn") : x.ok === false ? "bad" : "ok"}">${x.ev && x.ev.status ? esc(x.ev.status) : x.ok === false ? "Падіння тиску" : "✓ Герметично"}</span></div>
+      <small>${many && x.d ? dl(x.d) + " · " : ""}Тиск ${f(x.p)} бар · ${dur(x.m)} · на початку ${f(x.s)} → у кінці ${f(x.e)} бар${!x.ev && x.ok !== false && typeof x.s === "number" && typeof x.e === "number" && x.s - x.e > 0.001 && typeof x.al === "number" ? ` · падіння в межах норми (до ${f(x.al)} бар)` : ""}</small>
       ${Array.isArray(x.ph) && x.ph.some(ph => ph && okSrc(ph.src)) ? `<div class="actPhotos">${x.ph.filter(ph => ph && okSrc(ph.src)).map(ph => `<figure><img src="${ph.src}" alt="Манометр" onclick="actZoom(this.src)"><figcaption>${esc(ph.c || "")}</figcaption></figure>`).join("")}</div>` : ""}</div>`).join("")}
-    ${allOk ? `<div class="actOk">${a.systems.length === 1 ? "Систему" : "Системи"} випробувано надлишковим тиском. ${a.systems.some(x => typeof x.s === "number" && typeof x.e === "number" && x.s - x.e > 0.001) ? "Падіння тиску в межах допустимого, протікань не виявлено." : "Падіння тиску та протікань не виявлено."}</div>` : ""}
+    ${allOk ? `<div class="actOk">${a.systems.length === 1 ? "Систему" : "Системи"} випробувано надлишковим тиском. ${a.systems.some(x => typeof x.s === "number" && typeof x.e === "number" && x.s - x.e > 0.001) ? (a.systems.some(x => x.ev) ? "Протікань не виявлено; значення тиску на початку й у кінці наведено вище." : "Падіння тиску в межах допустимого, протікань не виявлено.") : "Падіння тиску та протікань не виявлено."}</div>` : ""}
     ${a.note ? `<div class="meta" style="margin-top:6px">${esc(a.note)}</div>` : ""}
     ${photos.length ? `<div class="actPhotos">${photos.map((src, i) => `<img src="${src}" alt="Фото манометра ${i + 1}" onclick="actZoom(this.src)">`).join("")}</div>` : ""}`;
   card.classList.remove("hidden");
