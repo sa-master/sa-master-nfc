@@ -353,13 +353,17 @@ function actReadForm(){
 /* Підказка пробного тиску: робочий тиск × коефіцієнт. Коефіцієнт залежить від виробника труб і проєкту — вибирає майстер */
 const ACT_KS = [1.1, 1.3, 1.5];
 function actSuggest(x){ const w = actNum(x && x.work), k = (x && x.k) || 1.5; return w === null || w <= 0 ? null : Math.round(w * k * 10) / 10; }
-function actSetMedium(i, m){
+function actSetMedium(m){
   actReadForm();
-  const x = actDraft && actDraft.systems[i]; if(!x) return;
-  x.medium = m === "air" ? "air" : "water";
-  if(x.medium === "air"){ x.pressure = 1; x.minutes = 5; }
-  else { x.pressure = actSuggest(x) || 6; x.minutes = 30; }
-  x.start = x.pressure; x.end = x.pressure;
+  if(!actDraft) return;
+  const med = m === "air" ? "air" : "water";
+  actDraft.systems.forEach(x => {
+    x.medium = med;
+    if(actSysDone(x)) return;
+    if(med === "air"){ x.pressure = 1; x.minutes = 5; }
+    else { x.pressure = actSuggest(x) || (x.key === "heat" ? 3.9 : 4.5); x.minutes = x.need || 30; }
+    x.start = x.pressure; x.end = x.pressure; x.pManual = false;
+  });
   renderActSheet();
 }
 /* Колір тиску: до 6,5 бар звичайний, далі від жовтого до червоного, з 10 бар червоний */
@@ -369,9 +373,8 @@ function actToggleInfo(b){ const n = b.closest(".actSys").querySelector(".actInf
 const ACT_INFO_TXT = "Перед випробуванням переконайтеся, що обладнання в мережі (труби, фітинги, крани, лічильники, фільтри, редуктори, арматура) розраховане на цей пробний тиск. Якщо ні — не випробовуйте з ним: зніміть або відключіть його на час випробування.";
 function actWorkHtml(x, i){
   const sug = actSuggest(x), k = x.k || 1.5, w = actNum(x.work);
-  const medSel = x.key === "water" ? `<label style="grid-column:1/-1"><small>Чим випробовуємо</small><select id="act_med_${i}" onchange="actSetMedium(${i}, this.value)"><option value="water" ${x.medium === "air" ? "" : "selected"}>Водою (гідростатичне)</option><option value="air" ${x.medium === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label>` : "";
-  if(x.medium === "air") return `<div class="actWork">${medSel}<small class="actWorkNote" style="font-size:.78rem">Повітрям (ДБН В.2.5-64:2012, п. 27.2.3). Етап 1: накачати до 1,5 бар і оглянути систему на дефекти; якщо знайшли, знизити тиск до атмосферного й усунути. Етап 2 (контрольний): 1,0 бар, 5 хв, падіння не більше 0,1 бар. Тиск 1,5 бар це не контрольна витримка.</small></div>`;
-  return `<div class="actWork">${medSel}
+  if(x.medium === "air") return `<div class="actWork"><small class="actWorkNote" style="font-size:.78rem">Повітрям. Етап 1: накачати до 1,5 бар і оглянути систему на дефекти; якщо знайшли, знизити тиск до атмосферного й усунути. Етап 2 (контрольний): 1,0 бар, 5 хв, падіння не більше 0,1 бар. Тиск 1,5 бар це не контрольна витримка.</small></div>`;
+  return `<div class="actWork">
     <label><small>Робочий тиск, бар</small><input id="act_work_${i}" inputmode="decimal" placeholder="напр. 6" value="${w === null ? "" : String(w).replace(".", ",")}" onfocus="this.select()" onchange="actReadForm();actAutoP(${i});renderActSheet()"></label>
     <label><small>Коефіцієнт</small><select id="act_k_${i}" onchange="actReadForm();actAutoP(${i});renderActSheet()">${ACT_KS.map(c => `<option value="${c}" ${c === k ? "selected" : ""}>× ${String(c).replace(".", ",")}</option>`).join("")}</select></label>
     ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b ${actPColor(sug) ? `style="color:${actPColor(sug)}"` : ""}>${String(sug).replace(".", ",")} бар</b> ${actInfoBtn(sug)}</div>`}
@@ -447,7 +450,9 @@ function renderActSheet(){
     </div>`;
   };
   const photos = actDraft.photos || [];
+  const med = actDraft.systems.some(x => x.medium === "air") ? "air" : "water";
   box.innerHTML = `
+    <div class="actWork" style="grid-template-columns:1fr"><label><small>Чим випробовуємо</small><select id="act_med" onchange="actSetMedium(this.value)"><option value="water" ${med === "water" ? "selected" : ""}>Водою (гідравлічне)</option><option value="air" ${med === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label></div>
     ${actDraft.systems.map(sys).join("")}
     ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${src}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
     <div class="formGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
