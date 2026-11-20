@@ -3393,6 +3393,13 @@ body.positionDragging{
 .jrnWarn{margin:0 0 .75rem;padding:.75rem 1rem;border-radius:.875rem;background:var(--card);border:1px solid var(--attn);background:color-mix(in srgb,var(--attn) 12%,var(--card));border:1px solid color-mix(in srgb,var(--attn) 35%,transparent);font-size:.875rem;line-height:1.45}
 .jrnWarn b{display:block;margin-bottom:.25rem}
 .jrnWarn ul{margin:0;padding-left:1.1rem}
+.chRow{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;border-top:1px solid var(--gbr)}
+.chMain{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:.125rem;font-size:.875rem;color:var(--ts)}
+.chMain b{color:var(--t);font-size:.9375rem}
+.chMain span b{font-size:inherit;color:var(--green)}
+.chMain small{color:var(--tm);font-size:.75rem}
+.chBtn{flex:0 0 auto;min-height:2.75rem;padding:0 1rem;border-radius:.75rem;background:var(--p);color:#fff;font-weight:700;font-size:.875rem}
+.peRecv{display:block;background:none;border:0;padding:.25rem 0;color:var(--p);font:inherit;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;letter-spacing:0;text-transform:none;font-size:.8125rem;font-weight:600;text-align:left;min-height:1.75rem}
 .actTag{flex:0 0 auto;font-size:.75rem;color:var(--tm);padding-top:.25rem}
 .undoBar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .undoBar button{flex:0 0 auto;background:none;color:#6FC0FF;font-weight:800;font-size:.875rem;padding:.25rem .25rem}
@@ -5272,7 +5279,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 01:15</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 09:30</div>
   </div>
 
   <div class="fsFooter">
@@ -9364,7 +9371,8 @@ function personBalance(pid){
   if(nm) projects.forEach(p => moneyList(p, "expense").forEach(x => {
     if(String(x.to || "").trim().toLowerCase() === nm && !led.some(e => e.expenseId === x.id)) led.push({ id:"", kind:"pay", amount:Number(x.amount) || 0, date:x.date, note:x.note || "", projectId:p.id, fromObject:true });
   }));
-  const paid = led.filter(e => e.kind === "pay").reduce((s, e) => s + (Number(e.amount) || 0), 0) + jobsPaid;
+  const objReceived = objects.reduce((s, o) => s + (o.a.received !== undefined ? Number(o.a.received) || 0 : 0), 0);
+  const paid = led.filter(e => e.kind === "pay").reduce((s, e) => s + (Number(e.amount) || 0), 0) + jobsPaid + objReceived;
   const bought = led.filter(e => e.kind === "expense").reduce((s, e) => s + (Number(e.amount) || 0), 0);
   /* balance — до виплати зараз (за завершене); pending — ще буде за об’єктами в роботі */
   return { per, objects, jobs, led, earned, pending, paid, bought, balance: earned + bought - paid };
@@ -9430,7 +9438,13 @@ function renderPersonLedger(){
       <div class="jobBtns"><button type="submit" class="hBtn pr">Записати</button><button type="button" class="hBtn" onclick="personUi.form='';renderPersonLedger()">Скасувати</button></div>
     </form>` : ""}
     <div class="msBox"><div class="finHead">Заробіток</div>
-      ${b.objects.filter(o => o.amount === null || Number(o.amount) > 0.5).map(o => row(projectTitle(o.p), `${/percent/.test(o.a.payType || "") ? (Number(o.a.payValue) || 0) + "% від робіт · " : ""}${o.done ? "завершено" : "буде після завершення"}`, o.amount === null ? "уточнити" : money(o.amount))).join("")}
+      ${b.objects.filter(o => o.amount === null || Number(o.amount) > 0.5 || o.a.received !== undefined).map(o => {
+        const got = o.a.received;
+        const diff = got !== undefined && o.amount !== null && o.done ? Math.round(Number(got) - Number(o.amount)) : 0;
+        const gotTxt = got !== undefined ? `отримав ${money(got)}${diff > 0 ? ` · аванс ${money(diff)}` : diff < 0 ? ` · винен йому ${money(-diff)}` : ""}` : o.done ? "отримав —" : "";
+        const recv = `<button type="button" class="peRecv" onclick="personSetReceived('${escapeHtml(o.p.id)}')">${gotTxt || "отримав від клієнта?"} ✎</button>`;
+        return row(projectTitle(o.p), `${/percent/.test(o.a.payType || "") ? (Number(o.a.payValue) || 0) + "% від робіт · " : ""}${o.done ? "завершено" : "буде після завершення"}<br>${recv}`, o.amount === null ? "уточнити" : money(o.amount));
+      }).join("")}
       ${b.jobs.map(x => row(escapeHtml(x.j.title), `${formatQuoteDate(x.j.date).slice(0, 5)}${x.j.place ? " · " + escapeHtml(x.j.place) : ""} · разова${x.paid ? " · отримав одразу" : ""}`, money(x.amount))).join("")}
       ${!b.objects.length && !b.jobs.length ? `<div class="msRow"><span>Ще нічого</span></div>` : ""}
     </div>
@@ -9440,6 +9454,22 @@ function renderPersonLedger(){
       ${b.led.slice().sort((x, y) => String(y.date).localeCompare(String(x.date))).map(e => row(e.kind === "pay" ? "Видано" : "Купив за свої", `${formatQuoteDate(e.date).slice(0, 5)}${e.note ? " · " + escapeHtml(e.note) : ""}${e.projectId ? " · " + escapeHtml(projectTitlePlain(projects.find(p => p.id === e.projectId) || {})) : ""}`, (e.kind === "pay" ? "−" : "+") + money(e.amount), "", e.fromObject ? "" : `deletePersonEntry('${escapeHtml(e.id)}')`)).join("")}</div>` : ""}
     <div class="onbSpacer"></div>
   </div>`;
+}
+/* Скільки працівник фактично отримав за об'єкт (напр. клієнт заплатив на його картку). Різниця із заробітком — аванс або борг */
+function personSetReceived(projectId){
+  if(!personUi) return;
+  const p = projects.find(x => x.id === projectId);
+  const a = p && (p.teamAssignments || []).find(x => x.personId === personUi.pid);
+  if(!a) return;
+  const earn = getProjectAssignmentEarning(p, a);
+  const raw = prompt(`Скільки ${team.find(t => t.id === personUi.pid)?.name || "працівник"} отримав за «${projectTitlePlain(p)}», ₴?${earn !== null ? `\nЗаробив: ${money(earn)}` : ""}\n\nБільше за заробіток — різниця піде в аванс, менше — ви винні йому.\nПусто — нічого не отримав.`, a.received !== undefined ? String(a.received) : earn !== null ? String(Math.round(earn)) : "");
+  if(raw === null) return;
+  const v = parseMoneyInput(String(raw).replace(/\s/g, ""));
+  if(String(raw).trim() === "" || !(v >= 0)){ delete a.received; }
+  else a.received = Math.round(v * 100) / 100;
+  delete a.receivedAuto;
+  touchProject(p);
+  renderPersonLedger();
 }
 function savePersonEntry(){
   if(!personUi || !personUi.form) return;
@@ -10436,14 +10466,15 @@ function addMoneyEntry(kind){
     toast("Змінено");
     return;
   }
-  moneyList(project, kind).push({
+  const entry = {
     id: uid(kind === "payment" ? "pay" : "exp"),
     date: document.getElementById("moneyDate")?.value || todayIso(),
     amount: Math.round(amount * 100) / 100,
     to: kind === "expense" ? toText : undefined,
     ...(personId ? { toPersonId: personId } : {}),
     note: cleanText(document.getElementById("moneyNote")?.value)
-  });
+  };
+  moneyList(project, kind).push(entry);
   moneyFormOpen = "";
   touchProject(project);
   render();
@@ -22908,7 +22939,7 @@ function renderBuyList(p){
       ${groups.length ? (() => { const n = buyItems(p).filter(pos => buyNeed(p, pos) > 0 && stockAvail(pos) > 0).length;
         const pays = groups.filter(g => g.k === "sup" || g.k === "self").map(g => ({ l: g.k === "self" ? "Сам" : g.label, v: buyGroupSum(p, g).sum })).filter(x => x.v > 0);
         const payLine = pays.length > 1 ? `<div class="formHint" style="text-align:left;margin:.25rem 0 0">Разом до оплати ≈ <b>${money(pays.reduce((a, x) => a + x.v, 0))}</b></div>` : "";
-        return payLine + `<div class="ptFoot" style="border-top:0;padding-top:.25rem"><button type="button" class="ptLink" onclick="openStockPick()">▣ ${n ? `На складі є ${n} поз. з цього списку — взяти` : "Що є на складі"}</button><span></span></div>`; })() : ""}
+        return payLine + `<div class="ptFoot" style="border-top:0;padding-top:.25rem"><button type="button" class="ptLink" onclick="openStockPick()">▣ ${n ? `На складі є ${n} поз. з цього списку — взяти` : "Що є на складі"}</button>${buyCheapAvailable(p) ? `<button type="button" class="ptLink" onclick="openBuyCheap()">₴ Де дешевше?</button>` : "<span></span>"}</div>`; })() : ""}
       ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}` : ""}
       ${(() => { const left = buyLeftovers(p); return left.length ? `<div class="byTitle byLeft">Залишки<small>після змін у кошторисі</small></div>${left.map(x => `<div class="byItem byLeftItem"><span class="byName">${escapeHtml(x.l.n)}<small>${formatQty(x.q)} ${escapeHtml(x.l.u)}${x.l.s ? " · " + escapeHtml(x.l.s) : x.l.w ? " · " + escapeHtml(x.l.w) : ""}${x.gone ? " · прибрано з кошторису" : ""}</small></span><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','return')">Повернув</button><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','stock')">На склад</button></div>`).join("")}` : ""; })()}
       ${notes || planNoteOpen ? `<div class="byTitle">Нотатки</div>${notes}` : ""}
@@ -23170,6 +23201,92 @@ function buyMoveApply(k, s){
   toast(`Перенесено: ${n} → ${k === "self" ? "сам" : s}`, 2800);
 }
 
+/* ==== «Де дешевше?» — лише підказка по групах матеріалів; переносить майстер сам, цілою групою ==== */
+function buyCheapItems(p){ return buyItems(p).filter(pos => buyNeed(p, pos) > 0 && !buySent(pos) && !pos.got && (pos.whereK === "sup" || !pos.whereK)); }
+function buyOffersOf(pos){
+  const m = new Map();
+  getCatalogSupplierOffers(getPositionCatalogItem(pos)).forEach(o => {
+    const n = cleanText(o && o.supplierName), v = supplierOfferPrice(o, "master");
+    if(n && v > 0){ const k = normalizeText(n); if(!m.has(k) || m.get(k).v > v) m.set(k, { n, v }); }
+  });
+  return m;
+}
+function buyCurPrice(pos, offers){
+  if(pos.whereK !== "sup") return null;
+  const pr = Number(pos.purchasePrice);
+  if(pos.purchasePriceState === "confirmed" && pr > 0) return pr;
+  const o = offers.get(normalizeText(pos.whereS));
+  return o ? o.v : pr > 0 ? pr : null;
+}
+function buyCheapAnalysis(p){
+  const items = buyCheapItems(p);
+  const rows = [];
+  groupMaterialPositions(items).forEach(g => {
+    const data = g.positions.map(pos => { const offers = buyOffersOf(pos); return { pos, offers, cur: buyCurPrice(pos, offers), need: buyNeed(p, pos) }; });
+    const names = new Map();
+    data.forEach(d => d.offers.forEach((o, k) => names.set(k, o.n)));
+    let best = null;
+    names.forEach((n, k) => {
+      let save = 0, curSum = 0, newSum = 0, moved = [], fresh = 0;
+      data.forEach(d => {
+        const o = d.offers.get(k);
+        if(!o || (d.pos.whereK === "sup" && normalizeText(d.pos.whereS) === k)) return;
+        moved.push(d.pos.id);
+        if(d.cur === null){ fresh++; return; }
+        curSum += d.cur * d.need; newSum += o.v * d.need; save += (d.cur - o.v) * d.need;
+      });
+      if(!moved.length) return;
+      if(!best || save > best.save || (save === best.save && fresh > best.fresh)) best = { k, n, save, curSum, newSum, ids: moved, fresh };
+    });
+    const from = Array.from(new Set(data.filter(d => d.pos.whereK === "sup").map(d => d.pos.whereS))).join(", ");
+    const useful = best && (best.save >= Math.max(50, best.curSum * 0.03) || (best.fresh && best.save >= 0));
+    const lb = String(g.label || g.title || "");
+    rows.push({ label: lb.charAt(0) + lb.slice(1).toLowerCase(), count: g.positions.length, from, best: useful ? best : null });
+  });
+  return { rows, sentSkipped: buyItems(p).filter(pos => buyNeed(p, pos) > 0 && buySent(pos) && pos.whereK === "sup").length };
+}
+function buyCheapAvailable(p){ return buyCheapItems(p).some(pos => buyOffersOf(pos).size > 1 || (!pos.whereK && buyOffersOf(pos).size)); }
+function openBuyCheap(){
+  buyUi = { mode:"cheap" };
+  buyScreen().classList.add("open");
+  renderBuyScreen();
+  buyScreen().scrollTop = 0;
+}
+function renderBuyCheap(p){
+  const a = buyCheapAnalysis(p);
+  const tips = a.rows.filter(r => r.best).sort((x, y) => y.best.save - x.best.save);
+  const fine = a.rows.filter(r => !r.best);
+  buyScreen().innerHTML = `<div class="onbInner">
+    <div class="onbTop"><button type="button" class="onbBack" onclick="closeBuyScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Де дешевше?</span></div>
+    <div class="psHead"><b>За цінами з прайсів у каталозі</b><small>Нічого не переноситься саме. Вирішуєте ви — цілою групою.</small></div>
+    ${tips.length ? `<div class="opList">${tips.map(r => {
+      const b = r.best;
+      const what = b.save >= 1 ? `дешевше на <b>${money(Math.round(b.save))}</b>` : "є в прайсі";
+      return `<div class="chRow"><div class="chMain"><b>${escapeHtml(r.label)}</b><span>у ${escapeHtml(b.n)} ${what} · ${b.ids.length} з ${r.count} поз.</span>${r.from ? `<small>зараз: ${escapeHtml(r.from)}${b.fresh ? ` · ${b.fresh} поз. ще без постачальника` : ""}</small>` : b.fresh ? `<small>${b.fresh} поз. ще без постачальника</small>` : ""}</div>
+        <button type="button" class="chBtn" onclick="buyCheapMove(${buyEnc(b.ids.join(","))}, ${buyEnc(b.n)})">Перенести</button></div>`;
+    }).join("")}</div>` : `<div class="psHead"><b>Вигіднішого не знайшлося ✓</b><small>Там, де зараз, — найдешевше з того, що є в прайсах.</small></div>`}
+    ${fine.length && tips.length ? `<div class="psHead" style="margin-top:1rem"><small>Уже найдешевше: ${escapeHtml(fine.map(r => r.label).join(", "))}</small></div>` : ""}
+    ${a.sentSkipped ? `<div class="psHead"><small>Уже надіслане постачальникам (${a.sentSkipped} поз.) не враховуємо.</small></div>` : ""}
+  </div>`;
+}
+function buyCheapMove(list, sup){
+  const p = buyCur();
+  if(!p) return;
+  const ids = String(list).split(",").filter(Boolean);
+  let n = 0;
+  jrnWith(`Де дешевше: перенесено ${ids.length} поз. → ${sup}`, () => {
+    (p.positions || []).filter(pos => ids.includes(pos.id) && !buySent(pos)).forEach(pos => {
+      const o = buyOffersOf(pos).get(normalizeText(sup));
+      buySetWhere(pos, "sup", sup);
+      if(o){ pos.purchasePrice = o.v; pos.purchasePriceState = "estimated"; }
+      n++;
+    });
+    touchProject(p);
+  });
+  render();
+  renderBuyScreen();
+  toast(`Перенесено ${n} поз. → ${sup}. Відмінити — «⋯» → «Журнал дій»`, 3200);
+}
 /* «Де брати?» для всіх товарів без джерела одним вибором */
 function buyBulkItems(p){ return buyItems(p).filter(pos => !pos.whereK && buyNeed(p, pos) > 0); }
 function buyPriceSupplier(pos){
@@ -23242,6 +23359,7 @@ function renderBuyScreen(){
   if(buyUi.mode === "prices") return renderMissingPrices(p);
   if(buyUi.mode === "bulk") return renderBuyBulk(p);
   if(buyUi.mode === "move") return renderBuyMove(p);
+  if(buyUi.mode === "cheap") return renderBuyCheap(p);
   const pos = (p.positions || []).find(x => x.id === buyUi.posId);
   if(!pos){ closeBuyScreen(); return; }
   if(buyUi.mode === "replace") return renderBuyReplace(p, pos);
@@ -24035,12 +24153,19 @@ function completeProject(p, how){
   p.completedAt = new Date().toISOString();
   if(!p.doneAt) p.doneAt = p.completedAt;
   if(how) p.completedHow = how;
+  /* Працівнику одразу записується, що він отримав свій заробіток з об'єкта. Отримав інакше — виправляється на його сторінці; різниця = борг або аванс */
+  (p.teamAssignments || []).forEach(a => {
+    if(!a.personId || a.received !== undefined) return;
+    const v = getProjectAssignmentEarning(p, a);
+    if(v !== null && Number(v) > 0){ a.received = Math.round(Number(v)); a.receivedAuto = true; }
+  });
   touchProject(p);
 }
 function reopenProject(p){
   if(!p) return;
   p.stage = "work";
   delete p.completedAt;
+  (p.teamAssignments || []).forEach(a => { if(a.receivedAuto){ delete a.received; delete a.receivedAuto; } });
   touchProject(p);
 }
 
