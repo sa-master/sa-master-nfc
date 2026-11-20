@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Калькулятор водяної теплої підлоги: метраж, контури, бухти | SA-MASTER.PRO</title>
+<meta name="description" content="Безкоштовний розрахунок водяної теплої підлоги: метраж труби, контури, монтажний запас і підбір бухт. PDF для клієнта.">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="canonical" href="https://sa-master.pro/tools/floor.html">
+<link rel="stylesheet" href="shared/tools.css">
+<style>
+.zr{display:grid;grid-template-columns:1fr 1fr 34px;gap:8px;align-items:end;margin-top:8px}
+.zr label{display:flex;flex-direction:column;gap:4px;font-size:.7rem;font-weight:700;color:var(--tm)}
+.zr .formInput{padding:9px 8px;font-size:.95rem;color:var(--t)}
+.zx{width:34px;height:40px;border-radius:12px;background:rgba(255,59,48,.12);color:#d70015;font-weight:700}
+select.formInput{appearance:none;-webkit-appearance:none}
+.ct{border:1px solid var(--ln);border-radius:16px;padding:12px;margin-top:10px;background:rgba(120,130,140,.06)}
+.cth{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.cres{margin-top:10px;padding:9px 12px;border-radius:12px;background:rgba(52,199,89,.12);font-size:.88rem;line-height:1.4}
+.cres.warn{background:rgba(255,149,0,.18)}
+.cres b{font-size:1rem}
+.mini{width:auto;display:inline-block;margin-top:8px;padding:8px 12px;border-radius:12px;background:rgba(0,122,255,.1);color:var(--p);font-weight:700;font-size:.82rem}
+.banner{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(0,122,255,.1);font-size:.84rem;line-height:1.4}
+.sum{display:grid;gap:0}
+.sum div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--ln);font-size:.95rem}
+.sum div:last-child{border:0}.sum span{color:var(--ts)}
+.sum .big b{font-size:1.25rem}
+.coil{margin-top:8px;padding:10px 12px;border-radius:12px;background:rgba(120,130,140,.1);font-size:.86rem;line-height:1.45}
+.coil b{font-size:.92rem}
+.err{margin-top:8px;padding:10px 12px;border-radius:12px;background:rgba(255,59,48,.12);color:#d70015;font-size:.86rem}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="g hero"><img src="/logo.png" alt=""><div><a href="/">SA-MASTER<span style="font-weight:500;font-size:.8rem">.pro</span></a><small>інструменти для майстрів</small></div></div>
+
+  <div class="g card">
+    <h1>Тепла підлога: метраж і контури</h1>
+    <p class="lead">Введіть площу укладання. Калькулятор розподілить її на контури, додасть монтажний запас і підбере бухти. Орієнтовний розрахунок метражу, а не теплотехнічний проєкт. Без реєстрації.</p>
+    <div class="formGroup" style="margin-top:14px"><label class="formLabel" for="docTitle">Назва розрахунку</label><input class="formInput titleIn" id="docTitle" autocomplete="off"></div>
+  </div>
+
+  <div class="g card">
+    <details class="fold"><summary>Мої розрахунки <span id="docCount" style="color:var(--tm);font-weight:500;margin-left:6px"></span></summary>
+      <div><div id="docList"></div><button type="button" class="btnSec" id="btnNew">+ Новий розрахунок</button>
+      <p class="hint">Зберігається автоматично в цьому браузері. Після очищення даних браузера розрахунки зникнуть.</p></div></details>
+  </div>
+  <div class="g card"><details class="fold"><summary>Ваші дані для PDF</summary><div id="profileBox"></div></details></div>
+
+  <div class="g card">
+    <div class="ttl">Параметри</div>
+    <div class="zr" style="grid-template-columns:1fr 1fr">
+      <label>Труба<select class="formInput" id="pPipe"></select></label>
+      <label>Спосіб укладання<select class="formInput" id="pMethod"><option value="snail">Равлик</option><option value="snake">Змійка</option></select></label>
+    </div>
+    <div class="zr" style="grid-template-columns:1fr 1fr">
+      <label>Рекомендована довжина контуру, м<input class="formInput" id="pMax" inputmode="decimal"></label>
+      <label>Монтажний запас, %<select class="formInput" id="pRes"><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></label>
+    </div>
+    <p class="hint">80 м це рекомендація для Ø16×2 мм разом з підведеннями. Її можна змінити. Спосіб укладання не змінює метраж.</p>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Площа укладання</div>
+    <p class="hint" style="margin:0 0 4px">Вводьте чисту площу, на якій буде труба. Площі під меблями й обладнанням виключіть самі. Крайова зона з іншим кроком додається окремим рядком.</p>
+    <div id="zones"></div>
+    <button type="button" class="mini" id="btnZone">+ Зона з іншим кроком</button>
+    <div class="zr" style="grid-template-columns:1fr;margin-top:14px"><label>Відстань до колектора в один бік, м<input class="formInput" id="pDist" inputmode="decimal" placeholder="0"></label></div>
+    <p class="hint">Подача й зворотна лінія враховуються автоматично: підведення = 2 × відстань. Для окремих контурів відстань можна змінити нижче.</p>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Контури</div>
+    <div id="banner"></div>
+    <div id="contours"></div>
+    <div class="btnRow"><button type="button" class="btnSec" id="btnAddC">+ Контур</button><button type="button" class="btnSec" id="btnAuto">Перерахувати автоматично</button></div>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Разом</div>
+    <div class="sum" id="sum"></div>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Бухти</div>
+    <div class="zr" style="grid-template-columns:1fr 1fr">
+      <label>Довжина бухти<select class="formInput" id="pCoil"><option value="auto">Підібрати автоматично</option><option value="200">200 м</option><option value="300">300 м</option><option value="500">500 м</option><option value="custom">Своя довжина</option></select></label>
+      <label id="coilCustomBox">Своя, м<input class="formInput" id="pCoilCustom" inputmode="decimal"></label>
+    </div>
+    <div id="coils"></div>
+    <p class="hint">Контур не розривається між бухтами, труба всередині стяжки не з'єднується. Розкрій орієнтовний.</p>
+  </div>
+
+  <div class="g card">
+    <button type="button" class="btnPrimary" id="btnPdf" style="margin-top:0">Завантажити PDF</button>
+    <button type="button" class="btnSec" id="btnShare">Поділитися</button>
+    <p class="hint">Розрахунок орієнтовний і не підтверджує відповідність ДБН. Точну довжину визначає схема укладання, яку слід звірити з вимогами виробника труб.</p>
+  </div>
+
+  <div class="g card cta">
+    <b>Потрібен монтаж сантехніки в Києві?</b>
+    <span>Комплексний монтаж у новобудовах: від колектора до санвузла.</span>
+    <a class="btn" href="/">Дізнатися більше</a>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="shared/floorcalc.js"></script>
+<script src="shared/store.js"></script>
+<script src="shared/ui.js"></script>
+<script src="shared/profile.js"></script>
+<script src="shared/doc.js"></script>
+<script>
+"use strict";
+const { esc, toast, num, f1, f2 } = SMUI, FC = FloorCalc;
+const $ = id => document.getElementById(id);
+const defaults = () => ({ pipe: "16x2", method: "snail", max: 80, res: 5, zones: [{ area: "", step: 150 }], dist: "", mode: "auto", dOver: [], contours: [], coil: "auto", coilCustom: "" });
+let state = defaults();
+
+/* ---------- похідні дані ---------- */
+function contours() { return state.mode === "auto" ? FC.autoContours(state.zones, state.dist, state.max, state.dOver) : state.contours; }
+function sumData() { return FC.summary(contours(), state.res, state.max); }
+function coilData(rows) {
+  if (!rows.length) return null;
+  if (state.coil === "auto") { const b = FC.bestCoil(rows, state.res, FC.COILS); return b ? { auto: true, p: b } : { auto: true, fail: true }; }
+  const size = state.coil === "custom" ? num(state.coilCustom) : num(state.coil);
+  if (!(size > 0)) return { empty: true };
+  return { auto: false, p: FC.packCoils(rows, state.res, size) };
+}
+function isEmpty() { return !FC.validZones(state.zones).length && !(state.mode === "manual" && state.contours.length); }
+
+/* ---------- рендер ---------- */
+function keepFocus(fn) {
+  const a = document.activeElement, key = a && a.dataset && a.dataset.k, pos = a && a.selectionStart;
+  fn();
+  if (key) { const n = document.querySelector('[data-k="' + key + '"]'); if (n) { n.focus(); try { if (pos != null) n.setSelectionRange(pos, pos); } catch (e) {} } }
+}
+const stepOpts = cur => FC.STEPS.map(s => '<option value="' + s + '"' + (num(cur) === s ? " selected" : "") + ">" + s + " мм</option>").join("");
+function renderZones() {
+  keepFocus(() => {
+    $("zones").innerHTML = state.zones.map((z, i) => '<div class="zr"><label>Площа, м²<input class="formInput" data-k="za' + i + '" data-zi="' + i + '" data-f="area" inputmode="decimal" value="' + esc(z.area) + '" placeholder="0"></label><label>Крок<select class="formInput" data-k="zs' + i + '" data-zi="' + i + '" data-f="step">' + stepOpts(z.step) + '</select></label>' + (state.zones.length > 1 ? '<button type="button" class="zx" data-zdel="' + i + '" aria-label="Видалити зону">×</button>' : "<span></span>") + "</div>").join("");
+  });
+}
+function renderContours() {
+  const cs = contours(), sd = FC.summary(cs, state.res, state.max);
+  $("banner").innerHTML = state.mode === "manual" ? '<div class="banner">Контури відредаговано вручну. Зміни у «Площа укладання» застосуються після кнопки «Перерахувати автоматично».</div>' : (cs.length ? '<div class="banner">Розподіл автоматичний. Ви можете змінити площу, крок, відстань чи кількість контурів, тоді розподіл стане ручним.</div>' : "");
+  keepFocus(() => {
+    $("contours").innerHTML = cs.length ? cs.map((c, i) => {
+      const r = sd.rows[i], dVal = state.mode === "auto" ? (c.dOver !== "" ? c.dOver : state.dist) : c.dist;
+      const zs = (c.zones.length ? c.zones : [{ area: 0, step: 150 }]).map((z, j) => '<div class="zr"><label>Площа, м²<input class="formInput" data-k="c' + i + "a" + j + '" data-c="' + i + '" data-z="' + j + '" data-f="area" inputmode="decimal" value="' + (state.mode === "auto" ? f2(z.area).replace(",", ".") : esc(z.area)) + '"></label><label>Крок<select class="formInput" data-k="c' + i + "s" + j + '" data-c="' + i + '" data-z="' + j + '" data-f="step">' + stepOpts(z.step) + '</select></label>' + (c.zones.length > 1 ? '<button type="button" class="zx" data-cz-del="' + i + "," + j + '" aria-label="Видалити зону">×</button>' : "<span></span>") + "</div>").join("");
+      return '<div class="ct"><div class="cth"><span>Контур ' + (i + 1) + '</span><button type="button" class="zx" data-cdel="' + i + '" aria-label="Видалити контур">×</button></div>' + zs +
+        '<button type="button" class="mini" data-cz-add="' + i + '">+ зона</button>' +
+        '<div class="zr" style="grid-template-columns:1fr"><label>Відстань до колектора, м<input class="formInput" data-k="c' + i + 'd" data-c="' + i + '" data-f="dist" inputmode="decimal" value="' + esc(dVal) + '"></label></div>' +
+        '<div class="cres' + (r.over ? " warn" : "") + '"><b>' + f1(r.total) + " м</b> = укладання " + f1(r.lay) + " м + підведення " + f1(r.feed) + " м" + (r.over ? "<br>Перевищує рекомендовану довжину " + f1(sd.Lmax) + " м. Це лише попередження." : "") + "</div></div>";
+    }).join("") : '<p class="hint" style="margin:0">Введіть площу укладання, і контури зʼявляться тут.</p>';
+  });
+}
+function renderResults() {
+  const s = sumData(), cs = contours();
+  $("sum").innerHTML = cs.length ? '<div><span>Площа укладання</span><b>' + f2(s.area) + ' м²</b></div><div><span>Контурів</span><b>' + cs.length + '</b></div><div><span>Розрахунковий метраж</span><b>' + f1(s.calc) + ' м</b></div><div><span>Монтажний запас ' + s.reservePct + '%</span><b>+ ' + f1(s.reserve) + ' м</b></div><div class="big"><span>Метраж до закупівлі</span><b>' + f1(s.buy) + ' м</b></div>' : '<p class="hint" style="margin:0">Результати зʼявляться після введення площі.</p>';
+  $("coilCustomBox").style.display = state.coil === "custom" ? "" : "none";
+  const cd = coilData(s.rows);
+  if (!cs.length) { $("coils").innerHTML = ""; return; }
+  if (!cd || cd.empty) { $("coils").innerHTML = '<p class="hint">Вкажіть довжину бухти.</p>'; return; }
+  if (cd.fail) { $("coils").innerHTML = '<div class="err">Найдовший контур із запасом не вміщується в жодну стандартну бухту (200, 300, 500 м). Оберіть «Свою довжину» або змініть розподіл.</div>'; return; }
+  const p = cd.p;
+  if (!p.ok) { $("coils").innerHTML = '<div class="err">' + (p.size > 0 ? "Контур " + p.tooLong.map(i => i + 1).join(", ") + " із запасом довший за бухту " + f1(p.size) + " м." : "Вкажіть довжину бухти.") + "</div>"; return; }
+  $("coils").innerHTML = '<div class="coil"><b>' + p.count + " × " + f1(p.size) + " м" + (cd.auto ? " (підібрано автоматично)" : "") + "</b><br>Всього труби: " + f1(p.count * p.size) + " м. Залишок після розкрою: " + f1(p.left) + " м (окремо від монтажного запасу " + f1(s.reserve) + " м).</div>" +
+    p.coils.map((c, k) => '<div class="coil"><b>Бухта ' + (k + 1) + "</b> · контури " + c.items.map(i => i + 1).join(", ") + "<br>Розрахунково " + f1(c.calc) + " м + запас " + f1(c.reserve) + " м = " + f1(c.need) + " м · залишок " + f1(c.left) + " м</div>").join("");
+}
+function renderParams() {
+  $("pPipe").innerHTML = FC.PIPES.map(p => '<option value="' + p.id + '"' + (p.id === state.pipe ? " selected" : "") + ">" + p.label + "</option>").join("");
+  $("pMethod").value = state.method; $("pMax").value = state.max; $("pRes").value = String(state.res); $("pDist").value = state.dist; $("pCoil").value = state.coil; $("pCoilCustom").value = state.coilCustom;
+}
+function renderAll() { renderParams(); renderZones(); renderContours(); renderResults(); }
+function changed() { renderContours(); renderResults(); mgr.touch(); }
+
+/* ---------- ручне коригування ---------- */
+function toManual() {
+  if (state.mode === "manual") return;
+  state.contours = contours().map(c => ({ dist: c.dOver !== "" ? c.dOver : state.dist, zones: c.zones.map(z => ({ area: z.area, step: z.step })) }));
+  state.mode = "manual";
+}
+
+/* ---------- події ---------- */
+$("zones").addEventListener("input", e => { const i = +e.target.dataset.zi; if (isNaN(i)) return; state.zones[i][e.target.dataset.f] = e.target.value; changed(); });
+$("zones").addEventListener("change", e => { const i = +e.target.dataset.zi; if (isNaN(i)) return; state.zones[i][e.target.dataset.f] = e.target.value; changed(); });
+$("zones").addEventListener("click", e => { const b = e.target.closest("[data-zdel]"); if (!b) return; state.zones.splice(+b.dataset.zdel, 1); renderZones(); changed(); });
+$("btnZone").addEventListener("click", () => { state.zones.push({ area: "", step: state.zones.length ? 100 : 150 }); renderZones(); changed(); const l = $("zones").querySelectorAll("input"); if (l.length) l[l.length - 1].focus(); });
+["pDist"].forEach(id => $(id).addEventListener("input", e => { state.dist = e.target.value; changed(); }));
+$("pMax").addEventListener("input", e => { state.max = e.target.value; changed(); });
+$("pRes").addEventListener("change", e => { state.res = +e.target.value; changed(); });
+$("pPipe").addEventListener("change", e => { state.pipe = e.target.value; mgr.touch(); });
+$("pMethod").addEventListener("change", e => { state.method = e.target.value; mgr.touch(); });
+$("pCoil").addEventListener("change", e => { state.coil = e.target.value; renderResults(); mgr.touch(); });
+$("pCoilCustom").addEventListener("input", e => { state.coilCustom = e.target.value; renderResults(); mgr.touch(); });
+
+function onContourEdit(e) {
+  const t = e.target, ci = +t.dataset.c, f = t.dataset.f; if (isNaN(ci)) return;
+  if (f === "dist" && state.mode === "auto") { state.dOver[ci] = t.value; changed(); return; }
+  toManual();
+  const c = state.contours[ci]; if (!c) return;
+  if (f === "dist") c.dist = t.value; else { const z = c.zones[+t.dataset.z]; if (z) z[f] = t.value; }
+  renderContours(); renderResults(); mgr.touch();
+}
+$("contours").addEventListener("input", e => { if (e.target.tagName === "INPUT") onContourEdit(e); });
+$("contours").addEventListener("change", e => { if (e.target.tagName === "SELECT") onContourEdit(e); });
+$("contours").addEventListener("click", e => {
+  const del = e.target.closest("[data-cdel]"), add = e.target.closest("[data-cz-add]"), zdel = e.target.closest("[data-cz-del]");
+  if (del) { toManual(); state.contours.splice(+del.dataset.cdel, 1); changed(); }
+  else if (add) { toManual(); state.contours[+add.dataset.czAdd].zones.push({ area: "", step: 100 }); changed(); }
+  else if (zdel) { toManual(); const [i, j] = zdel.dataset.czDel.split(",").map(Number); state.contours[i].zones.splice(j, 1); changed(); }
+});
+$("btnAddC").addEventListener("click", () => { toManual(); state.contours.push({ dist: state.dist, zones: [{ area: "", step: 150 }] }); changed(); });
+$("btnAuto").addEventListener("click", () => { state.mode = "auto"; state.contours = []; state.dOver = []; changed(); toast("Контури перераховано автоматично"); });
+
+/* ---------- збереження ---------- */
+const mgr = SMUI.docs({
+  tool: "floor", titlePrefix: "Тепла підлога", el: $("docList"), titleInput: $("docTitle"), countId: "docCount",
+  serialize: () => JSON.parse(JSON.stringify(state)),
+  load: d => { state = Object.assign(defaults(), d); renderAll(); },
+  reset: () => { state = defaults(); renderAll(); },
+  isEmpty,
+  sub: () => { const s = sumData(); return s.rows.length ? s.rows.length + " конт., " + f1(s.buy) + " м" : ""; }
+});
+$("btnNew").addEventListener("click", () => { mgr.fresh(); toast("Новий розрахунок"); });
+SMProfile.mount($("profileBox"));
+
+/* ---------- PDF ---------- */
+async function paperEl() {
+  const prof = await SMProfile.get(), s = sumData(), cd = coilData(s.rows), cs = contours();
+  const steps = [...new Set(cs.flatMap(c => c.zones.filter(z => num(z.area) > 0).map(z => num(z.step))))].sort((a, b) => a - b);
+  const pipe = FC.PIPES.find(p => p.id === state.pipe) || FC.PIPES[0];
+  const rows = s.rows.map((r, i) => "<tr><td>" + (i + 1) + "</td><td>" + cs[i].zones.filter(z => num(z.area) > 0).map(z => f2(num(z.area)) + " м² / " + num(z.step) + " мм").join("<br>") + '</td><td class="r">' + f1(r.lay) + '</td><td class="r">' + f1(r.feed) + '</td><td class="r' + (r.over ? " bad" : "") + '">' + f1(r.total) + (r.over ? " *" : "") + "</td></tr>").join("");
+  let coilHtml = "";
+  if (cd && cd.p && cd.p.ok) {
+    coilHtml = '<div class="docBlock"><b>Бухти:</b> ' + cd.p.count + " × " + f1(cd.p.size) + " м. Залишок після розкрою " + f1(cd.p.left) + ' м.<table class="docT"><tr><th>Бухта</th><th>Контури</th><th class="r">З запасом, м</th><th class="r">Залишок, м</th></tr>' +
+      cd.p.coils.map((c, k) => "<tr><td>" + (k + 1) + "</td><td>" + c.items.map(i => i + 1).join(", ") + '</td><td class="r">' + f1(c.need) + '</td><td class="r">' + f1(c.left) + "</td></tr>").join("") + "</table></div>";
+  }
+  const el = document.createElement("div"); el.className = "paper";
+  el.innerHTML = SMProfile.headerHtml(prof) + '<div class="docH">Розрахунок водяної теплої підлоги</div><div class="docSub">' + esc(mgr.currentTitle()) + (/\d{2}\.\d{2}\.\d{4}/.test(mgr.currentTitle()) ? "" : " · " + SMUI.dateLabel(Date.now())) + "</div>" +
+    '<div class="docBlock docKV"><span>Труба</span><b>' + esc(pipe.label) + "</b><span>Крок укладання</span><b>" + steps.join(", ") + " мм</b><span>Спосіб укладання</span><b>" + (state.method === "snake" ? "змійка" : "равлик") + "</b><span>Рекомендована довжина контуру</span><b>" + f1(s.Lmax) + " м</b></div>" +
+    '<div class="docBlock"><table class="docT"><tr><th>№</th><th>Зони (площа / крок)</th><th class="r">Укладання, м</th><th class="r">Підведення, м</th><th class="r">Довжина, м</th></tr>' + rows + "</table>" + (s.rows.some(r => r.over) ? '<div class="docNote" style="margin:6px 0 0">* перевищує рекомендовану довжину контуру</div>' : "") + "</div>" +
+    '<div class="docBlock docTot"><div><span>Площа укладання</span><b>' + f2(s.area) + " м²</b></div><div><span>Розрахунковий метраж</span><b>" + f1(s.calc) + " м</b></div><div><span>Монтажний запас " + s.reservePct + "%</span><b>+ " + f1(s.reserve) + ' м</b></div><div class="big"><span>Метраж до закупівлі</span><b>' + f1(s.buy) + " м</b></div></div>" + coilHtml +
+    '<div class="docNote">Орієнтовний розрахунок метражу труби: не є теплотехнічним чи гідравлічним проєктом і не підтверджує відповідність ДБН. Точну довжину визначає схема укладання.</div>';
+  return el;
+}
+async function makePdf(btn, mode) {
+  if (!contours().length) { toast("Спершу введіть площу укладання"); return; }
+  const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Готуємо PDF…";
+  try {
+    const blob = await SMDoc.pdf(await paperEl()), name = "teplа-pidloga-" + new Date().toISOString().slice(0, 10) + ".pdf";
+    if (mode === "share") { const r = await SMDoc.share(blob, name, mgr.currentTitle()); if (r === "downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
+    else SMDoc.download(blob, name);
+  } catch (e) { toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
+  finally { btn.disabled = false; btn.textContent = t0; }
+}
+$("btnPdf").addEventListener("click", e => makePdf(e.currentTarget, "download"));
+$("btnShare").addEventListener("click", e => makePdf(e.currentTarget, "share"));
+renderAll();
+</script>
+</body>
+</html>
