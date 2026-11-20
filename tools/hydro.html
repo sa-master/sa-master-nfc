@@ -360,6 +360,11 @@ function actSetMedium(i, m){
   x.start = x.pressure; x.end = x.pressure;
   renderActSheet();
 }
+/* Колір тиску: до 6,5 бар звичайний, далі від жовтого до червоного, з 10 бар червоний */
+function actPColor(p){ p = actNum(p); if(p === null || p <= 6.5) return ""; const t = Math.min(1, (p - 6.5) / 3.5); return `hsl(${Math.round(42 - 42 * t)} 90% 45%)`; }
+function actInfoBtn(p){ const c = actPColor(p); return `<button type="button" class="actInfo" ${c ? `style="color:${c};border-color:${c}"` : ""} onclick="event.preventDefault();actToggleInfo(this)" aria-label="Підказка">і</button>`; }
+function actToggleInfo(b){ const n = b.closest(".actSys").querySelector(".actInfoTxt"); if(n) n.hidden = !n.hidden; }
+const ACT_INFO_TXT = "Перед випробуванням переконайтеся, що обладнання в мережі (труби, фітинги, крани, лічильники, фільтри, редуктори, арматура) розраховане на цей пробний тиск. Якщо ні — не випробовуйте з ним: зніміть або відключіть його на час випробування.";
 function actWorkHtml(x, i){
   const sug = actSuggest(x), k = x.k || 1.5, w = actNum(x.work);
   const medSel = x.key === "water" ? `<label style="grid-column:1/-1"><small>Чим випробовуємо</small><select id="act_med_${i}" onchange="actSetMedium(${i}, this.value)"><option value="water" ${x.medium === "air" ? "" : "selected"}>Водою (гідростатичне)</option><option value="air" ${x.medium === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label>` : "";
@@ -367,7 +372,7 @@ function actWorkHtml(x, i){
   return `<div class="actWork">${medSel}
     <label><small>Робочий тиск, бар</small><input id="act_work_${i}" inputmode="decimal" placeholder="напр. 6" value="${w === null ? "" : String(w).replace(".", ",")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"></label>
     <label><small>Коефіцієнт</small><select id="act_k_${i}" onchange="actReadForm();renderActSheet()">${ACT_KS.map(c => `<option value="${c}" ${c === k ? "selected" : ""}>× ${String(c).replace(".", ",")}</option>`).join("")}</select></label>
-    ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b>${String(sug).replace(".", ",")} бар</b> <button type="button" onclick="actApplySug(${i})">Застосувати</button></div>`}
+    ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b ${actPColor(sug) ? `style="color:${actPColor(sug)}"` : ""}>${String(sug).replace(".", ",")} бар</b> ${actInfoBtn(sug)} <button type="button" onclick="actApplySug(${i})">Застосувати</button></div>`}
     <small class="actWorkNote">Коефіцієнт залежить від виробника труб і проєкту: уточніть його в інструкції. Якщо температура води й повітря в приміщенні відрізняється більше ніж на 10 °C, після набору тиску зачекайте близько 30 хв, щоб вона вирівнялась. Залишки повітря в системі можуть дати просідання кінцевого тиску: перед випробуванням ретельно видаліть повітря.</small>
   </div>`;
 }
@@ -419,9 +424,10 @@ function renderActSheet(){
       ${done ? "" : actWorkHtml(x, i)}
       ${ev.status === HydroRules.ST.RANGE ? `<div class="actWarn">${ev.reasons.map(escapeHtml).join("<br>")}. Висновок про відповідність недоступний.</div>` : ""}
       <div class="actPrs">
-        <label><small>Тиск на початку</small><span><input id="act_pressure_${i}" inputmode="decimal" value="${actFmt(x.pressure).replace("—", "")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"> бар</span></label>
+        <label><small>Тиск на початку ${actInfoBtn(x.pressure)}</small><span><input id="act_pressure_${i}" ${actPColor(x.pressure) ? `style="color:${actPColor(x.pressure)};font-weight:700"` : ""} inputmode="decimal" value="${actFmt(x.pressure).replace("—", "")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"> бар</span></label>
         <label><small>Тиск у кінці</small><span><input id="act_end_${i}" inputmode="decimal" value="${actFmt(x.end).replace("—", "")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"> бар</span></label>
       </div>
+      <div class="actInfoTxt actWorkNote" hidden>${ACT_INFO_TXT}</div>
       ${x.edit ? `<div class="actGrid">
         <label>Тривалість, хв<input class="formInput" id="act_minutes_${i}" inputmode="decimal" value="${actFmt(x.minutes).replace("—", "")}" onchange="actReadForm();renderActSheet()"></label>
         ${actPair(x).a ? "" : `<label style="grid-column:1/-1">Дата проведення<input class="formInput" type="date" id="act_date_${i}" value="${escapeHtml(x.date || todayIso())}" onchange="actReadForm()"></label>`}
