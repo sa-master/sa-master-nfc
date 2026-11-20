@@ -1,4 +1,4 @@
-/* Спільний PDF-шаблон: підпис «Сформовано на sa-master.pro» з активним посиланням на кожній сторінці,
+/* Спільний PDF-шаблон: підпис «Сформовано на sa-master.pro» з активним посиланням угорі кожної сторінки,
    завантаження та «Поділитися» (Web Share API, якщо браузер уміє ділитися файлами). */
 (function (root) {
   "use strict";
@@ -13,14 +13,15 @@
     return false;
   }
   function footerImage(wMm) {
-    const px = 6, w = Math.round(wMm * px * 3), h = Math.round(5 * px * 3), c = document.createElement("canvas");
+    const px = 6, hMm = 7, w = Math.round(wMm * px * 3), h = Math.round(hMm * px * 3), c = document.createElement("canvas");
     c.width = w; c.height = h; const g = c.getContext("2d");
     g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
-    g.fillStyle = "#8a8f98"; g.textBaseline = "middle"; g.textAlign = "center";
-    const fs = Math.round(h * 0.5); g.font = fs + 'px -apple-system,"Segoe UI",Arial,sans-serif';
+    g.fillStyle = "#0a64d6"; g.textBaseline = "middle"; g.textAlign = "center";
+    const fs = Math.round(h * 0.5); g.font = '700 ' + fs + 'px -apple-system,"Segoe UI",Arial,sans-serif';
     const t = "Сформовано на sa-master.pro", tw = g.measureText(t).width;
-    g.fillText(t, w / 2, h / 2);
-    return { data: c.toDataURL("image/jpeg", 0.92), textW: tw / (px * 3) };
+    g.fillText(t, w / 2, h * 0.46);
+    g.fillStyle = "#d0d5dd"; g.fillRect(0, h - 3, w, 3);
+    return { data: c.toDataURL("image/jpeg", 0.92), textW: tw / (px * 3), hMm };
   }
   /* paperEl — елемент з готовим вмістом документа (білий фон). Повертає Blob PDF. */
   async function pdf(paperEl, opts) {
@@ -37,7 +38,7 @@
       const sel = opts.breakSelector || ".qaMeta,.qaRow,.qaConcl,.qaNote,.qaPhT,.qaPhotos figure,.docRow,.docBlock,.docHead";
       const breaks = Array.from(src.querySelectorAll(sel)).map(el => Math.round((el.getBoundingClientRect().bottom - sr.top) * scale)).filter(v => v > 0 && v < canvas.height).sort((a, b) => a - b);
       const { jsPDF } = root.jspdf, doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
-      const mm = 10, footH = 8, cw = 210 - mm * 2, ch = 297 - mm * 2 - footH, pxPerMm = canvas.width / cw, maxH = Math.floor(ch * pxPerMm);
+      const mm = 10, footH = 9, cw = 210 - mm * 2, ch = 297 - mm * 2 - footH, pxPerMm = canvas.width / cw, maxH = Math.floor(ch * pxPerMm);
       const foot = footerImage(cw);
       let off = 0, page = 0;
       while (off < canvas.height) {
@@ -46,11 +47,11 @@
         const h = end - off, slice = document.createElement("canvas"); slice.width = canvas.width; slice.height = h;
         slice.getContext("2d").drawImage(canvas, 0, off, canvas.width, h, 0, 0, canvas.width, h);
         if (page > 0) doc.addPage();
-        doc.addImage(slice.toDataURL("image/jpeg", 0.9), "JPEG", mm, mm, cw, h / pxPerMm);
-        const fy = 297 - mm - 5;
-        doc.addImage(foot.data, "JPEG", mm, fy, cw, 5);
-        const lw = foot.textW + 2;
-        doc.link(105 - lw / 2, fy, lw, 5, { url: "https://sa-master.pro" });
+        doc.addImage(slice.toDataURL("image/jpeg", 0.9), "JPEG", mm, mm + footH, cw, h / pxPerMm);
+        /* підпис зверху кожної сторінки, з активним посиланням */
+        doc.addImage(foot.data, "JPEG", mm, mm, cw, foot.hMm);
+        const lw = foot.textW + 4;
+        doc.link(105 - lw / 2, mm, lw, foot.hMm, { url: "https://sa-master.pro" });
         off = end; page++;
       }
       return doc.output("blob");
