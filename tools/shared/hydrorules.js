@@ -62,9 +62,9 @@
     if (range.length) { out.status = ST.RANGE; out.reasons = range; return out; }
     /* Межа тиску з норми — лише м’яка примітка, висновок не блокує */
     if (rule.method === "hydro" && rule.range && testP !== null && (testP < rule.range[0] || testP > rule.range[1] + 1e-9))
-      out.soft.push(`Пробний тиск ${testP} бар поза межами ${rule.range[0]}–${rule.range[1]} бар, які вказує ${rule.norm}, ${rule.clause}. Уточніть у проєкті`);
+      out.soft.push(`Для довідки: ${rule.norm} згадує пробний тиск ${rule.range[0]}–${rule.range[1]} бар`);
     if (rule.method === "air" && rule.range) {
-      [start, end].forEach(v => { if (v !== null && (v < rule.range[0] || v > rule.range[1] + 1e-9)) out.soft.push(`Тиск ${v} бар поза межами ${rule.range[0]}–${rule.range[1]} бар, які вказує ${rule.norm}, ${rule.clause}. Уточніть у проєкті`); });
+      [start, end].forEach(v => { if (v !== null && (v < rule.range[0] || v > rule.range[1] + 1e-9)) out.soft.push(`Для довідки: ${rule.norm} згадує тиск ${rule.range[0]}–${rule.range[1]} бар`); });
     }
     /* 2. Достатність даних */
     const miss = [];
