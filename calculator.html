@@ -4130,6 +4130,7 @@ body.inSec #pfAddPerson{display:none}
 .actRes.bad{background:rgba(198,40,40,.14);color:#c62828}
 .actRes.warn{background:rgba(255,149,0,.16)}
 .actInfo{width:18px;height:18px;padding:0;margin-left:4px;border-radius:50%;border:1.5px solid var(--tm);background:transparent;color:var(--tm);font:italic 700 12px/1 serif;cursor:pointer;vertical-align:middle}
+.actHelp{grid-column:1/-1;font-size:.78rem;color:var(--tm)}.actHelp summary{cursor:pointer;font-weight:600;color:var(--ts)}.actHelp p{margin:6px 0 0;line-height:1.45}
 .actInfoTxt{margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--bgs);font-size:.78rem;color:var(--ts)}
 .actInfoTxt[hidden]{display:none}
 .actSug button.actInfo{margin-left:4px;padding:0;width:18px;height:18px;border-radius:50%;background:transparent;border:1.5px solid var(--tm);color:var(--tm);font:italic 700 12px/1 serif}
@@ -11714,10 +11715,11 @@ function renderQuotePreview(){
    Додається до фактичного кошторису: на сторінці клієнта окремим блоком, у PDF — з нової сторінки.
    project.pressureAct = { date, systems:[{ key, label, on, pressure, minutes, start, end }], note, photos:[dataURL] } */
 const ACT_SYSTEMS = [
-  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:9, minutes:30, work:6, k:1.5, need:30 },
-  { key:"heat", label:"Опалення / тепла підлога", pressure:7.8, minutes:120, work:6, k:1.3, need:120 }
+  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
+  { key:"heat", label:"Опалення / тепла підлога", pressure:3.9, minutes:120, work:3, k:1.3, need:120 }
 ];
 const ACT_MAX_PHOTOS = 4;
+const ACT_ALLOW = 0.2; /* падіння не більше 0,2 бар — герметично */
 let actDraft = null;
 
 function todayIso(){ const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
@@ -11754,12 +11756,12 @@ function actEval(x){
   return HydroRules.evaluate(actRule(x), { work: actNum(x.work), start: actNum(x.start), end: actNum(x.end), minutes: actNum(x.minutes),
     leak: x.leak, cond: x.cond || {}, glued: x.glued, confirm: x.confirm, air1: x.air1, compMax: actNum(x.compMax) });
 }
-function actSysOk(x){ const e = actEval(x); return e.status === HydroRules.ST.OK ? true : (e.status === HydroRules.ST.BAD || e.status === HydroRules.ST.RANGE ? false : null); }
+function actSysOk(x){ const d = actDrop(x); return d === null ? null : d <= ACT_ALLOW + 1e-9; }
 function actStatusCls(st){ const T = HydroRules.ST; return st === T.OK ? "ok" : (st === T.BAD || st === T.RANGE ? "bad" : "warn"); }
 function actDropText(x){
   const d = actDrop(x);
   if(d === null) return "—";
-  return d <= 0 ? "падіння не зафіксовано" : `падіння ${actFmt(d)} бар`;
+  return d <= ACT_ALLOW + 1e-9 ? "Герметично" : `Падіння ${actFmt(d)} бар`;
 }
 function actDateLabel(iso){
   if(!/^\d{4}-\d{2}-\d{2}$/.test(iso || "")) return "";
@@ -11861,6 +11863,7 @@ function actReadForm(){
     const prev = actNum(x.pressure);
     ["pressure", "minutes", "end"].forEach(f => { if(document.getElementById(`act_${f}_${i}`)) x[f] = actNum(v(`act_${f}_${i}`)); });
     /* тиск у кінці «йде» за тиском на початку, поки майстер його окремо не змінював */
+    if(actNum(x.pressure) !== prev) x.pManual = true;
     if(actNum(x.end) === prev && actNum(x.pressure) !== prev) x.end = x.pressure;
     x.start = x.pressure;
     const lk = document.getElementById(`act_leak_${i}`); if(lk) x.leak = lk.value || null;
@@ -11878,13 +11881,17 @@ function actReadForm(){
 /* Підказка пробного тиску: робочий тиск × коефіцієнт. Коефіцієнт залежить від виробника труб і проєкту — вибирає майстер */
 const ACT_KS = [1.1, 1.3, 1.5];
 function actSuggest(x){ const w = actNum(x && x.work), k = (x && x.k) || 1.5; return w === null || w <= 0 ? null : Math.round(w * k * 10) / 10; }
-function actSetMedium(i, m){
+function actSetMedium(m){
   actReadForm();
-  const x = actDraft && actDraft.systems[i]; if(!x) return;
-  x.medium = m === "air" ? "air" : "water";
-  if(x.medium === "air"){ x.pressure = 1; x.minutes = 5; }
-  else { x.pressure = actSuggest(x) || 6; x.minutes = 30; }
-  x.start = x.pressure; x.end = x.pressure;
+  if(!actDraft) return;
+  const med = m === "air" ? "air" : "water";
+  actDraft.systems.forEach(x => {
+    x.medium = med;
+    if(actSysDone(x)) return;
+    if(med === "air"){ x.pressure = 1; x.minutes = 5; }
+    else { x.pressure = actSuggest(x) || (x.key === "heat" ? 3.9 : 4.5); x.minutes = x.need || 30; }
+    x.start = x.pressure; x.end = x.pressure; x.pManual = false;
+  });
   renderActSheet();
 }
 /* Колір тиску: до 6,5 бар звичайний, далі від жовтого до червоного, з 10 бар червоний */
@@ -11894,14 +11901,20 @@ function actToggleInfo(b){ const n = b.closest(".actSys").querySelector(".actInf
 const ACT_INFO_TXT = "Перед випробуванням переконайтеся, що обладнання в мережі (труби, фітинги, крани, лічильники, фільтри, редуктори, арматура) розраховане на цей пробний тиск. Якщо ні — не випробовуйте з ним: зніміть або відключіть його на час випробування.";
 function actWorkHtml(x, i){
   const sug = actSuggest(x), k = x.k || 1.5, w = actNum(x.work);
-  const medSel = x.key === "water" ? `<label style="grid-column:1/-1"><small>Чим випробовуємо</small><select id="act_med_${i}" onchange="actSetMedium(${i}, this.value)"><option value="water" ${x.medium === "air" ? "" : "selected"}>Водою (гідростатичне)</option><option value="air" ${x.medium === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label>` : "";
-  if(x.medium === "air") return `<div class="actWork">${medSel}<small class="actWorkNote" style="font-size:.78rem">Повітрям (ДБН В.2.5-64:2012, п. 27.2.3). Етап 1: накачати до 1,5 бар і оглянути систему на дефекти; якщо знайшли, знизити тиск до атмосферного й усунути. Етап 2 (контрольний): 1,0 бар, 5 хв, падіння не більше 0,1 бар. Тиск 1,5 бар це не контрольна витримка.</small></div>`;
-  return `<div class="actWork">${medSel}
-    <label><small>Робочий тиск, бар</small><input id="act_work_${i}" inputmode="decimal" placeholder="напр. 6" value="${w === null ? "" : String(w).replace(".", ",")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"></label>
-    <label><small>Коефіцієнт</small><select id="act_k_${i}" onchange="actReadForm();renderActSheet()">${ACT_KS.map(c => `<option value="${c}" ${c === k ? "selected" : ""}>× ${String(c).replace(".", ",")}</option>`).join("")}</select></label>
-    ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b ${actPColor(sug) ? `style="color:${actPColor(sug)}"` : ""}>${String(sug).replace(".", ",")} бар</b> ${actInfoBtn(sug)} <button type="button" onclick="actApplySug(${i})">Застосувати</button></div>`}
-    <small class="actWorkNote">Коефіцієнт залежить від виробника труб і проєкту: уточніть його в інструкції. Якщо температура води й повітря в приміщенні відрізняється більше ніж на 10 °C, після набору тиску зачекайте близько 30 хв, щоб вона вирівнялась. Залишки повітря в системі можуть дати просідання кінцевого тиску: перед випробуванням ретельно видаліть повітря.</small>
+  if(x.medium === "air") return `<div class="actWork"><details class="actHelp"><summary>Підказки</summary><p>Повітрям. Етап 1: накачати до 1,5 бар і оглянути систему на дефекти; якщо знайшли, знизити тиск до атмосферного й усунути. Етап 2 (контрольний): 1,0 бар, 5 хв, падіння не більше 0,1 бар. Тиск 1,5 бар це не контрольна витримка.</p></details></div>`;
+  return `<div class="actWork">
+    <label><small>Робочий тиск, бар</small><input id="act_work_${i}" inputmode="decimal" placeholder="напр. 6" value="${w === null ? "" : String(w).replace(".", ",")}" onfocus="this.select()" onchange="actReadForm();actAutoP(${i});renderActSheet()"></label>
+    <label><small>Коефіцієнт</small><select id="act_k_${i}" onchange="actReadForm();actAutoP(${i});renderActSheet()">${ACT_KS.map(c => `<option value="${c}" ${c === k ? "selected" : ""}>× ${String(c).replace(".", ",")}</option>`).join("")}</select></label>
+    ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b ${actPColor(sug) ? `style="color:${actPColor(sug)}"` : ""}>${String(sug).replace(".", ",")} бар</b> ${actInfoBtn(sug)}</div>`}
+    <details class="actHelp"><summary>Підказки</summary><p>Коефіцієнт залежить від виробника труб і проєкту: уточніть його в інструкції. Якщо температура води й повітря в приміщенні відрізняється більше ніж на 10 °C, після набору тиску зачекайте близько 30 хв, щоб вона вирівнялась. Залишки повітря в системі можуть дати просідання кінцевого тиску: перед випробуванням ретельно видаліть повітря.</p></details>
   </div>`;
+}
+/* Початковий тиск сам береться з пропозиції, поки майстер не виправив його вручну */
+function actAutoP(i){
+  const x = actDraft && actDraft.systems[i], sug = actSuggest(x); if(!x || sug === null || x.pManual) return;
+  const prev = actNum(x.pressure);
+  x.pressure = sug; x.start = sug;
+  if(actNum(x.end) === prev) x.end = sug;
 }
 function actApplySug(i){
   actReadForm();
@@ -11941,7 +11954,7 @@ function renderActSheet(){
     const ok = done ? actSysOk(x) : null;
     return `<div class="actSys ${x.on ? "" : "off"}">
       <label class="actSysHead"><input type="checkbox" id="actOn${i}" ${x.on ? "checked" : ""} onchange="actReadForm();renderActSheet()"><span>${escapeHtml(x.label)}</span>
-        ${x.on ? (done ? `<b class="${actStatusCls(ev.status)}">${escapeHtml(ev.status)}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</label>
+        ${x.on ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</label>
       ${x.on ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
           ? `<div class="actPh"><img src="${ph.src}" alt="" onclick="actPhView(${i},'${w}')" title="Відкрити"><span>${escapeHtml(actPhLabel(x, w))}</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
@@ -11949,7 +11962,6 @@ function renderActSheet(){
       </div>
       ${actGapWarn(x) ? `<div class="actWarn">${escapeHtml(actGapWarn(x))}</div>` : ""}
       ${done ? "" : actWorkHtml(x, i)}
-      ${ev.status === HydroRules.ST.RANGE ? `<div class="actWarn">${ev.reasons.map(escapeHtml).join("<br>")}. Висновок про відповідність недоступний.</div>` : ""}
       <div class="actPrs">
         <label><small>Тиск на початку ${actInfoBtn(x.pressure)}</small><span><input id="act_pressure_${i}" ${actPColor(x.pressure) ? `style="color:${actPColor(x.pressure)};font-weight:700"` : ""} inputmode="decimal" value="${actFmt(x.pressure).replace("—", "")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"> бар</span></label>
         <label><small>Тиск у кінці</small><span><input id="act_end_${i}" inputmode="decimal" value="${actFmt(x.end).replace("—", "")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"> бар</span></label>
@@ -11962,12 +11974,13 @@ function renderActSheet(){
       </div>`
       : done ? `<div class="actSum"><span>${x.minutes ? actDur(x.minutes) : "—"} · ${actDropText(x)}</span><button type="button" onclick="actEdit(${i})">Змінити</button></div>`
         : `<button type="button" class="actManual" onclick="actEdit(${i})">Без фото? Вписати результат вручну</button>`}
-      ${actCheckHtml(x, i, ev, done)}
       </div>` : ""}
     </div>`;
   };
   const photos = actDraft.photos || [];
+  const med = actDraft.systems.some(x => x.medium === "air") ? "air" : "water";
   box.innerHTML = `
+    <div class="actWork" style="grid-template-columns:1fr"><label><small>Чим випробовуємо</small><select id="act_med" onchange="actSetMedium(this.value)"><option value="water" ${med === "water" ? "selected" : ""}>Водою (гідравлічне)</option><option value="air" ${med === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label></div>
     ${actDraft.systems.map(sys).join("")}
     ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${src}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
     <div class="formGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
@@ -12329,7 +12342,7 @@ function actClientData(project){
   const dates = done.map(x => actSysDate(x, a)).sort();
   return {
     date: dates[dates.length - 1] || a.date,
-    systems: done.map(x => ({ l:x.label + (x.medium === "air" ? " (повітрям)" : ""), d:actSysDate(x, a), p:actNum(x.pressure), m:actNum(x.minutes), s:actNum(x.start), e:actNum(x.end), ok:actSysOk(x), al:actAllow(x), ev:actEval(x), rule:(r => r ? { norm:r.norm, clause:r.clause, title:r.title, maxDrop:r.maxDrop } : null)(actRule(x)), wk:actNum(x.work), leak:x.leak,
+    systems: done.map(x => ({ l:x.label + (x.medium === "air" ? " (повітрям)" : ""), d:actSysDate(x, a), p:actNum(x.pressure), m:actNum(x.minutes), s:actNum(x.start), e:actNum(x.end), dt:actDropText(x), ok:actSysOk(x), air:x.medium === "air", rule:(r => r ? { norm:r.norm, clause:r.clause, title:r.title, maxDrop:r.maxDrop } : null)(actRule(x)), wk:actNum(x.work), leak:x.leak,
       ph: ["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph ? { src:ph.src, c:actPhLabel(x, w) } : null; }).filter(Boolean) })),
     note: a.note || "",
     photos: (a.photos || []).slice(0, ACT_MAX_PHOTOS)
@@ -12341,11 +12354,15 @@ function actConclusion(list){
   const drop = list.some(x => x.s !== null && x.e !== null && x.s - x.e > 0.001);
   return `${one ? "Систему" : "Системи"} випробувано надлишковим тиском. ${drop ? "Протікань не виявлено; значення тиску на початку й у кінці наведено в таблиці." : "Падіння тиску та протікань не виявлено."}`;
 }
+/* Заголовок акта: гідравлічне — водою, манометричне — повітрям */
+function actPaperTitle(list){
+  const air = list.filter(x => x.air).length;
+  return air === 0 ? "Акт гідравлічних випробувань" : air === list.length ? "Акт манометричних випробувань" : "Акт гідравлічних і манометричних випробувань";
+}
 function actPaperHtml(project, info){
   const d = actClientData(project);
-  const allOk = d.systems.length && d.systems.every(x => x.ev.status === HydroRules.ST.OK);
   return `<section class="quoteAct">
-    <div class="qaTitle">Акт випробування внутрішньої інженерної системи</div>
+    <div class="qaTitle">${actPaperTitle(d.systems)}</div>
     <div class="qaSub">${d.systems.map(x => escapeHtml(x.rule ? x.rule.title : x.l)).join("; ")}</div>
     <div class="qaMeta">
       <div><span>Об’єкт</span><b>${escapeHtml(info.objectName)}${info.objectAddress ? `, ${escapeHtml(info.objectAddress)}` : ""}</b></div>
@@ -12355,15 +12372,12 @@ function actPaperHtml(project, info){
     </div>
     <div class="qaTable">
       <div class="qaRow qaHead"><span>Система</span><span>Тиск, бар</span><span>Тривалість</span><span>Початок → кінець</span><span>Результат</span></div>
-      ${d.systems.map(x => `<div class="qaRow"><span>${escapeHtml(x.l)}${new Set(d.systems.map(y => y.d)).size > 1 ? `<small style="display:block;color:#6b7280">${actDateLabel(x.d)}</small>` : ""}</span><span>${actFmt(x.p)}</span><span>${x.m === null ? "—" : actDur(x.m)}</span><span>${actFmt(x.s)} → ${actFmt(x.e)}</span><span class="${actStatusCls(x.ev.status)}">${escapeHtml(x.ev.status)}${x.ev.reasons.length ? `<small style="display:block;font-weight:500;color:#6b7280">${x.ev.reasons.map(escapeHtml).join("; ")}</small>` : ""}</span></div>`).join("")}
+      ${d.systems.map(x => `<div class="qaRow"><span>${escapeHtml(x.l)}${new Set(d.systems.map(y => y.d)).size > 1 ? `<small style="display:block;color:#6b7280">${actDateLabel(x.d)}</small>` : ""}</span><span>${actFmt(x.p)}</span><span>${x.m === null ? "—" : actDur(x.m)}</span><span>${actFmt(x.s)} → ${actFmt(x.e)}</span><span class="${x.ok === false ? "bad" : "ok"}">${escapeHtml(x.dt || "—")}</span></div>`).join("")}
     </div>
-    <div class="qaNorm">${d.systems.map(x => `<div>${escapeHtml(x.l)}: ${x.rule ? escapeHtml(x.rule.norm + ", " + x.rule.clause) : "—"}${x.wk !== null ? `, робочий тиск ${actFmt(x.wk)} бар` : ""}${x.rule && x.rule.maxDrop == null ? ". Числового допуску падіння в нормі немає, висновок спирається на огляд, тривалість і підтвердження виконавця" : ""}</div>`).join("")}</div>
-    ${allOk ? `<div class="qaConcl">${actConclusion(d.systems)}</div>` : ""}
     ${d.note ? `<div class="qaNote">${escapeHtml(d.note)}</div>` : ""}
     ${d.systems.filter(x => x.ph.length).map(x => `<div class="qaPhT">${escapeHtml(x.l)}</div><div class="qaPhotos">${x.ph.map(ph => `<figure><img src="${ph.src}" alt="Манометр"><figcaption>${escapeHtml(ph.c)}</figcaption></figure>`).join("")}</div>`).join("")}
     ${d.photos.length ? `<div class="qaPhotos">${d.photos.map(src => `<img src="${src}" alt="Манометр">`).join("")}</div>` : ""}
     <div class="qaSign"><div><span>Виконавець</span><i></i></div><div><span>Замовник / технагляд</span><i></i></div></div>
-    <div class="qaDisc">Акт сформовано з урахуванням довідкової форми додатків до ДБН В.2.5-64:2012; цей документ не є дослівною нормативною формою.</div>
   </section>`;
 }
 
