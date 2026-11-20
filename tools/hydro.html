@@ -169,7 +169,7 @@ textarea.formInput{resize:vertical}
     <div class="ttl">Випробування</div>
     <div id="actSheetBody"></div>
     <button type="button" class="btnPrimary" id="btnMake">Показати акт</button>
-    <p class="hint">Значення за замовчуванням: водопостачання — 9 бар (робочий тиск 6 бар × 1,5), 30 хв, падіння не більше 0,2 бар (ДБН В.2.5-64:2012, п. 27.2.2); опалення — 9 бар, 30 хв, падіння тиску не допускається. Їх можна змінити. Інструкції виробників труб можуть бути суворішими, тому уточніть вимоги в інструкції виробника чи постачальника труб і у проєкті. Сторінка допомагає оформити акт, але не замінює вашого рішення.</p>
+    <p class="hint">Значення за замовчуванням: водопостачання — 9 бар (робочий тиск 6 бар × 1,5), 30 хв, падіння не більше 0,2 бар (ДБН В.2.5-64:2012, п. 27.2.2); опалення — 9 бар, 30 хв, падіння не більше 0,2 бар. Їх можна змінити. Інструкції виробників труб можуть бути суворішими, тому уточніть вимоги в інструкції виробника чи постачальника труб і у проєкті. Сторінка допомагає оформити акт, але не замінює вашого рішення.</p>
   </div>
 
   <div id="outBox" class="hidden">
@@ -218,7 +218,7 @@ const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},
 /* ===== Логіка акта (перенесена з калькулятора без змін) ===== */
 const ACT_SYSTEMS = [
   { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:9, minutes:30, allow:0.2 },
-  { key:"heat", label:"Опалення", pressure:9, minutes:30, allow:0 }
+  { key:"heat", label:"Опалення", pressure:9, minutes:30, allow:0.2 }
 ];
 const ACT_MAX_PHOTOS = 4;
 let actDraft = null;
@@ -234,7 +234,7 @@ function actSysDate(x, a){
 function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
 function actNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function actFmt(v){ return v === null || v === undefined || v === "" ? "—" : String(v).replace(".", ","); }
-/* Допустиме падіння: водопостачання — 0,2 бар за 30 хв (ДБН В.2.5-64:2012, п. 27.2.2); опалення — 0 (падіння не допускається), поки не звірено з ДБН В.2.5-67. Виробник труб може вимагати суворіше */
+/* Допустиме падіння: водопостачання — 0,2 бар за 30 хв (ДБН В.2.5-64:2012, п. 27.2.2); опалення — теж 0,2 бар (за рішенням власника сервісу, з ДБН В.2.5-67 не звірено). Виробник труб може вимагати суворіше */
 function actAllow(x){ const v = actNum(x && x.allow); return v === null ? 0 : v; }
 function actDrop(x){ const s = actNum(x.start), e = actNum(x.end); return s === null || e === null ? null : Math.round((s - e) * 100) / 100; }
 function actSysOk(x){ const d = actDrop(x); return d === null ? null : d <= actAllow(x) + 1e-9; }
