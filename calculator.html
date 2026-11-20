@@ -4228,7 +4228,7 @@ body{font-variant-numeric:tabular-nums}
     <div class="panelHead">
       <strong id="catalogTitle">Каталог</strong>
       <div class="panelHeadActions">
-        <button class="catalogNewBtn" id="catalogAddButton" onclick="catalogMode === 'stock' ? openStockCatalog() : openCustomPosition()">＋ Нова</button>
+        <button class="catalogNewBtn" id="catalogAddButton" onclick="catalogNewItem()">＋ Нова</button>
         <div class="catalogMoreWrap">
           <button class="catalogMoreBtn" onclick="toggleCatalogMore(event)" aria-label="Інші дії з каталогом">⋯</button>
           <div class="catalogMoreMenu hidden" id="catalogMoreMenu" onclick="toggleCatalogMore(event)">
@@ -5290,7 +5290,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 10:40</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 10:55</div>
   </div>
 
   <div class="fsFooter">
@@ -9255,12 +9255,16 @@ function inFinPeriod(date){
 }
 
 /* «＋ Створити»: об’єкт чи разова робота */
+/* Каталог відкрито з нижнього меню (не з об’єкта) — тоді «＋ Нова» вгорі не потрібна: створення — через «＋» внизу */
+function catalogInNav(){ return document.body.dataset.sec === "cat" && document.getElementById("catalogSheet")?.classList.contains("open") && catalogDest === "browse"; }
+function catalogNewItem(){ if(catalogMode === "stock") openStockCatalog(); else openCustomPosition(); }
 function openCreateChoice(){
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
   const item = (icon, title, sub, action) => `<button type="button" class="amItem" onclick="closeAddMenu();navLeaveSection();${action}"><span class="amIcon">${icon}</span><span class="amText"><b>${title}</b><small>${sub}</small></span></button>`;
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Створити">
     <div class="amHead"><b>Створити</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
+    ${catalogInNav() ? `<button type="button" class="amItem" onclick="closeAddMenu();catalogNewItem()"><span class="amIcon">${ic("catalog")}</span><span class="amText"><b>${catalogMode === "stock" ? "Додати на склад" : catalogMode === "material" ? "Новий матеріал у каталог" : "Нова робота в каталог"}</b><small>${catalogMode === "stock" ? "вибрати з каталогу матеріалів" : "з’явиться в каталозі"}</small></span></button>` : ""}
     ${item(ic("objects"), "Новий об’єкт", "кошторис, закупівля, облік — повний шлях", "openNewProject()")}
     ${item(ic("wrench"), "Разова робота", "дрібна робота без кошторису: радіатори, умивальник…", "openJobForm()")}
   </div>`;
@@ -14642,15 +14646,16 @@ function setCatalogMode(type){
 }
 
 function updateCatalogHeaderActions(){
+  const navBrowse = document.body.dataset.sec === "cat" && catalogDest === "browse";
   if(catalogMode === "stock"){
-    document.getElementById("catalogAddButton").classList.remove("hidden");
+    document.getElementById("catalogAddButton").classList.toggle("hidden", navBrowse);
     ["catalogImportButton", "catalogRequestButton", "catalogRatesButton", "catalogClearButton"].forEach(id => document.getElementById(id).classList.add("hidden"));
     return;
   }
   const emptyMaterials = catalogMode === "material" && !catalog.some(item => item.type === "material");
   const hideActions = catalogMode !== "material" || emptyMaterials;
 
-  document.getElementById("catalogAddButton").classList.toggle("hidden", emptyMaterials);
+  document.getElementById("catalogAddButton").classList.toggle("hidden", emptyMaterials || navBrowse);
   document.getElementById("catalogImportButton").classList.toggle("hidden", hideActions);
   document.getElementById("catalogRequestButton").classList.toggle("hidden", hideActions);
   document.getElementById("catalogRatesButton").classList.toggle("hidden", hideActions);
