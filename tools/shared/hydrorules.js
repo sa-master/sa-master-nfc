@@ -48,22 +48,24 @@
   /* d: { work, testP, start, end, minutes, leak:"no"|"yes"|null, cond:{id:true}, glued:bool, confirm:bool, air1:bool, compMax }
      Повертає { status, reasons[], notes[], drop, required } */
   function evaluate(rule, d) {
-    const out = { status: ST.NODATA, reasons: [], notes: [], drop: null, required: null };
+    const out = { status: ST.NODATA, reasons: [], notes: [], soft: [], drop: null, required: null };
     if (!rule) { out.reasons.push("Немає нормативного правила для цієї системи"); return out; }
     d = d || {};
     const start = num(d.start), end = num(d.end), minutes = num(d.minutes), testP = num(d.testP != null ? d.testP : d.start);
     const drop = start !== null && end !== null ? r2(start - end) : null; out.drop = drop;
     const req = required(rule, d.work); out.required = req;
     const range = [];
-    /* 1. Межі */
-    if (rule.method === "hydro" && rule.range && testP !== null && (testP < rule.range[0] || testP > rule.range[1] + 1e-9))
-      range.push(`Пробний тиск ${testP} бар поза межами ${rule.range[0]}–${rule.range[1]} бар`);
-    if (rule.method === "air" && rule.range) {
-      [start, end].forEach(v => { if (v !== null && (v < rule.range[0] || v > rule.range[1] + 1e-9)) range.push(`Тиск ${v} бар поза межами ${rule.range[0]}–${rule.range[1]} бар`); });
-    }
+    /* 1. Некоректні значення і межа компонентів — блокують висновок */
+    [start, end].forEach(v => { if (v !== null && v < 0) range.push("Тиск не може бути від’ємним"); });
     const cm = num(d.compMax);
     if (cm !== null && testP !== null && testP > cm + 1e-9) range.push(`Пробний тиск ${testP} бар перевищує допустимий для найслабшого компонента (${cm} бар)`);
     if (range.length) { out.status = ST.RANGE; out.reasons = range; return out; }
+    /* Межа тиску з норми — лише м’яка примітка, висновок не блокує */
+    if (rule.method === "hydro" && rule.range && testP !== null && (testP < rule.range[0] || testP > rule.range[1] + 1e-9))
+      out.soft.push(`Для довідки: ${rule.norm} згадує пробний тиск ${rule.range[0]}–${rule.range[1]} бар`);
+    if (rule.method === "air" && rule.range) {
+      [start, end].forEach(v => { if (v !== null && (v < rule.range[0] || v > rule.range[1] + 1e-9)) out.soft.push(`Для довідки: ${rule.norm} згадує тиск ${rule.range[0]}–${rule.range[1]} бар`); });
+    }
     /* 2. Достатність даних */
     const miss = [];
     if (start === null) miss.push("початковий тиск"); if (end === null) miss.push("кінцевий тиск");
