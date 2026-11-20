@@ -3411,6 +3411,10 @@ body.positionDragging{
 .stSum b{font-size:1.0625rem;color:var(--t)}
 #catalogList .stSec+.stSec{margin-top:1rem}
 #catalogList .stSec{padding-bottom:.25rem}
+.byNotesHead{display:flex;justify-content:space-between;align-items:flex-start;gap:.75rem}
+.byNotesHead small{display:block;text-transform:none;letter-spacing:0;font-weight:500;margin:.125rem 0 0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;font-size:.75rem}
+.byNotesHead .ptLink{white-space:nowrap;text-transform:none;letter-spacing:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;font-size:.875rem;flex:0 0 auto}
+.byNoteHint{font-size:.8125rem;color:var(--tm);line-height:1.45;padding:.375rem 0 .25rem}
 .actTag{flex:0 0 auto;font-size:.75rem;color:var(--tm);padding-top:.25rem}
 .undoBar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .undoBar button{flex:0 0 auto;background:none;color:#6FC0FF;font-weight:800;font-size:.875rem;padding:.25rem .25rem}
@@ -4020,6 +4024,10 @@ body{font-variant-numeric:tabular-nums}
 :root{--bpa:rgba(31,107,242,.28);--gridM:rgba(31,107,242,.11)}
 @media (prefers-color-scheme: dark){:root{--bpa:rgba(120,180,255,.3);--gridM:rgba(120,180,255,.13)}}
 .bg{background-image:linear-gradient(var(--gridM) 1px,transparent 1px),linear-gradient(90deg,var(--gridM) 1px,transparent 1px),linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px)!important;background-size:96px 96px,96px 96px,12px 12px,12px 12px!important}
+/* Каталог і Профіль з нижнього меню — на тій самій сітці, що Об’єкти й Фінанси */
+body.inSec #profileScreen,body.inSec #catalogSheet .panel{background-color:var(--bg)!important;background-image:linear-gradient(var(--gridM) 1px,transparent 1px),linear-gradient(90deg,var(--gridM) 1px,transparent 1px),linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px)!important;background-size:96px 96px,96px 96px,12px 12px,12px 12px!important;background-attachment:local}
+/* «Додати людину» — лише через «＋ Створити» внизу, коли нижнє меню видно */
+body.inSec #pfAddPerson{display:none}
 /* картки — контур і чотири кути */
 .hCard,.planTodo,.msBox,.fsCard,.projectHeaderCard,.floatingPanel{border-radius:.5rem!important;box-shadow:0 0 0 1px var(--bpa)!important;
  background-image:linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp)),linear-gradient(var(--bp),var(--bp))!important;
@@ -5239,7 +5247,7 @@ body{font-variant-numeric:tabular-nums}
       <div class="fsSectionTitle">Команда</div>
       <div id="teamList"></div>
 
-      <button class="addPersonButton" onclick="openAddPerson()">
+      <button class="addPersonButton" id="pfAddPerson" onclick="openAddPerson()">
         <span style="font-size:1.25rem;line-height:1">＋</span>
         <span>Додати людину</span>
       </button>
@@ -5290,7 +5298,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 10:55</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 11:40</div>
   </div>
 
   <div class="fsFooter">
@@ -9258,15 +9266,29 @@ function inFinPeriod(date){
 /* Каталог відкрито з нижнього меню (не з об’єкта) — тоді «＋ Нова» вгорі не потрібна: створення — через «＋» внизу */
 function catalogInNav(){ return document.body.dataset.sec === "cat" && document.getElementById("catalogSheet")?.classList.contains("open") && catalogDest === "browse"; }
 function catalogNewItem(){ if(catalogMode === "stock") openStockCatalog(); else openCustomPosition(); }
+/* «＋ Створити»: першим — дія того екрана, де ви зараз; «Новий об’єкт» доступний звідусіль, бо це головне */
 function openCreateChoice(){
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
   const item = (icon, title, sub, action) => `<button type="button" class="amItem" onclick="closeAddMenu();navLeaveSection();${action}"><span class="amIcon">${icon}</span><span class="amText"><b>${title}</b><small>${sub}</small></span></button>`;
+  const here = (icon, title, sub, action) => `<button type="button" class="amItem" onclick="closeAddMenu();${action}"><span class="amIcon">${icon}</span><span class="amText"><b>${title}</b><small>${sub}</small></span></button>`;
+  const sec = document.body.dataset.sec || "";
+  const pf = document.getElementById("profileScreen")?.dataset.pf || "";
+  const obj = item(ic("objects"), "Новий об’єкт", "кошторис, закупівля, облік — повний шлях", "openNewProject()");
+  let list;
+  if(catalogInNav()){
+    list = here(ic("catalog"), catalogMode === "stock" ? "Додати на склад" : catalogMode === "material" ? "Новий матеріал у каталог" : "Нова робота в каталог", catalogMode === "stock" ? "вибрати з каталогу матеріалів" : "з’явиться в каталозі", "catalogNewItem()")
+      + obj + item(ic("wrench"), "Разова робота", "дрібна робота без кошторису: радіатори, умивальник…", "openJobForm()");
+  }else if(sec === "prof" && pf === "team"){
+    list = here(ic("profile"), "Новий працівник", "у команду: ім’я, телефон, умови оплати", "openAddPerson()") + obj;
+  }else if(!sec && homeView === "fin"){
+    list = item(ic("wrench"), "Дохід без об’єкта", "консультація або разова робота — піде в статистику", "openJobForm()") + obj;
+  }else{
+    list = obj + item(ic("wrench"), "Разова робота", "дрібна робота без кошторису: радіатори, умивальник…", "openJobForm()");
+  }
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Створити">
     <div class="amHead"><b>Створити</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
-    ${catalogInNav() ? `<button type="button" class="amItem" onclick="closeAddMenu();catalogNewItem()"><span class="amIcon">${ic("catalog")}</span><span class="amText"><b>${catalogMode === "stock" ? "Додати на склад" : catalogMode === "material" ? "Новий матеріал у каталог" : "Нова робота в каталог"}</b><small>${catalogMode === "stock" ? "вибрати з каталогу матеріалів" : "з’явиться в каталозі"}</small></span></button>` : ""}
-    ${item(ic("objects"), "Новий об’єкт", "кошторис, закупівля, облік — повний шлях", "openNewProject()")}
-    ${item(ic("wrench"), "Разова робота", "дрібна робота без кошторису: радіатори, умивальник…", "openJobForm()")}
+    ${list}
   </div>`;
   requestAnimationFrame(() => el.classList.add("open"));
 }
@@ -9729,7 +9751,7 @@ function crewBoughtNo(id){
 function renderFilesBox(p){
   const files = p.files || [];
   if(!files.length && !filesUploading) return "";
-  return `<section class="planTodo filesBox"><div class="ptHead"><span>Проєкт і фото</span><button type="button" class="ptLink" onclick="filesPick()">＋ Додати</button></div>
+  return `<section class="planTodo filesBox"><div class="ptHead"><span>Проєкт і фото</span></div>
     <div class="fRow">${files.filter(f => f.type !== "link" && f.type !== "application/pdf").map(f => `<a class="fThumb" href="${crewFileUrl(f.id)}" target="_blank" rel="noopener" style="background-image:url('${crewFileUrl(f.id)}')"></a>`).join("")}${files.filter(f => f.type === "link" || f.type === "application/pdf").map(f => `<a class="fChip" href="${f.type === "link" ? escapeHtml(f.url) : crewFileUrl(f.id)}" target="_blank" rel="noopener">${ic(f.type === "link" ? "link" : "doc", 16)}<span>${escapeHtml(f.name)}</span></a>`).join("")}${filesUploading ? `<span class="fChip busy">Завантажую ${filesUploading}…</span>` : ""}</div>
     ${files.length ? `<div class="ptFoot"><span class="crewInfo">Бачите ви й працівники об’єкта</span><button type="button" class="ptLink muted" onclick="filesManage()">Видалити…</button></div>` : ""}
   </section>`;
@@ -10579,14 +10601,14 @@ function renderMoneyBlock(project, inTab){
       ${moneyExpanded ? `
         ${inTab ? "" : `<div class="formHint" style="margin:.5rem 0 0">На руках з цього об'єкта: <b>${money(onHand)}</b> (отримано мінус витрачено)</div>`}
         <div class="moneySection">
-          <div class="moneySectionHead"><span>Від клієнта</span><button type="button" class="moneyAdd" onclick="openMoneyForm('payment')">＋ Оплата</button></div>
+          <div class="moneySectionHead"><span>Від клієнта</span></div>
           ${form("payment")}
-          ${sorted(payments).map(entry => row("payment", entry)).join("") || `<div class="formHint" style="margin:.25rem 0">Ще немає оплат</div>`}
+          ${sorted(payments).map(entry => row("payment", entry)).join("") || `<div class="formHint" style="margin:.25rem 0">Ще немає оплат. Додати — «＋ Додати» внизу.</div>`}
         </div>
         <div class="moneySection">
-          <div class="moneySectionHead"><span>Витрати</span><button type="button" class="moneyAdd" onclick="openMoneyForm('expense')">＋ Витрата</button></div>
+          <div class="moneySectionHead"><span>Витрати</span></div>
           ${form("expense")}
-          ${sorted(expenses).map(entry => row("expense", entry)).join("") || `<div class="formHint" style="margin:.25rem 0">Ще немає витрат</div>`}
+          ${sorted(expenses).map(entry => row("expense", entry)).join("") || `<div class="formHint" style="margin:.25rem 0">Ще немає витрат. Додати — «＋ Додати» внизу.</div>`}
         </div>
       ` : ""}
     </section>
@@ -20891,7 +20913,7 @@ function renderTeamList(){
       <div class="fsCard">
         <div class="emptyTeam">
           Команда порожня.<br>
-          Якщо працюєте самі — нічого додавати не треба.
+          Якщо працюєте самі — нічого додавати не треба.${document.body.classList.contains("inSec") ? "<br>Додати людину — «＋ Створити» внизу." : ""}
         </div>
       </div>
     `;
@@ -21895,7 +21917,7 @@ function renderPlanTodo(p){
       ${parts.join("") || `<div class="ptEmpty">✓ Зараз нічого робити не треба</div>`}
       ${doneHtml}
       <div class="ptFoot">
-        <span style="display:flex;gap:1.125rem"><button type="button" class="ptLink" onclick="openPlanAdd()">＋ Докупити</button><button type="button" class="ptLink" onclick="planNoteOpen=true;render();setTimeout(()=>document.getElementById('planNoteInput')?.focus(),60)">＋ Замітка</button></span>
+        <span style="display:flex;gap:1.125rem"><button type="button" class="ptLink" onclick="openPlanAdd()">＋ Докупити</button></span>
         ${doneCount ? `<button type="button" class="ptLink muted" onclick="planDoneOpen=!planDoneOpen;render()">${planDoneOpen ? "Сховати виконане" : `Виконано ${doneCount}`}</button>` : ""}
       </div>
     </section>`;
@@ -23019,7 +23041,8 @@ function renderBuyList(p){
         return payLine + `<div class="ptFoot" style="border-top:0;padding-top:.25rem"><button type="button" class="ptLink" onclick="openStockPick()">▣ ${n ? `На складі є ${n} поз. з цього списку — взяти` : "Що є на складі"}</button>${buyCheapAvailable(p) ? `<button type="button" class="ptLink" onclick="openBuyCheap()">₴ Де дешевше?</button>` : "<span></span>"}</div>`; })() : ""}
       ${groups.length ? groups.map(groupHtml).join("") : `<div class="ptEmpty" style="border-top:0">✓ Усе куплено</div>`}` : ""}
       ${(() => { const left = buyLeftovers(p); return left.length ? `<div class="byTitle byLeft">Залишки<small>після змін у кошторисі</small></div>${left.map(x => `<div class="byItem byLeftItem"><span class="byName">${escapeHtml(x.l.n)}<small>${formatQty(x.q)} ${escapeHtml(x.l.u)}${x.l.s ? " · " + escapeHtml(x.l.s) : x.l.w ? " · " + escapeHtml(x.l.w) : ""}${x.gone ? " · прибрано з кошторису" : ""}</small></span><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','return')">Повернув</button><button type="button" class="ptBtn" onclick="buyLeftResolve('${escapeHtml(x.id)}','stock')">На склад</button></div>`).join("")}` : ""; })()}
-      ${notes || planNoteOpen ? `<div class="byTitle">Нотатки</div>${notes}` : ""}
+      <div class="byTitle byNotesHead"><span>Нотатки${noteHasCrew(p) ? `<small>працівник бачить на своїй сторінці й відмічає виконане</small>` : ""}</span></div>
+      ${notes || (planNoteOpen ? "" : `<div class="byNoteHint">Додати — «＋ Додати» внизу → «Нотатку».${noteHasCrew(p) ? " 🔒 — лише для вас, працівник не бачить." : ""}</div>`)}
       ${planNoteOpen ? `<form class="ptNoteForm" onsubmit="event.preventDefault();planNoteAdd()"><input id="planNoteInput" placeholder="Напр.: забрати 10 ельок з попереднього об’єкта" autocomplete="off" enterkeyhint="done">${notePrivBtn(p)}<button type="submit">Додати</button><button type="button" class="ghost" onclick="planNoteCancel()" aria-label="Скасувати">✕</button></form>` : ""}
       ${steps.length ? `<div class="byGroup">${steps.map(step => `<div class="ptRow"><span class="ptText">${step.text}${step.sub ? `<small>${step.sub}</small>` : ""}</span><button type="button" class="ptBtn ${step.primary ? "primary" : ""}" onclick="${step.action}">${step.label}</button></div>`).join("")}</div>` : ""}
       ${done}
