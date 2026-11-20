@@ -11861,6 +11861,7 @@ function actReadForm(){
     const prev = actNum(x.pressure);
     ["pressure", "minutes", "end"].forEach(f => { if(document.getElementById(`act_${f}_${i}`)) x[f] = actNum(v(`act_${f}_${i}`)); });
     /* тиск у кінці «йде» за тиском на початку, поки майстер його окремо не змінював */
+    if(actNum(x.pressure) !== prev) x.pManual = true;
     if(actNum(x.end) === prev && actNum(x.pressure) !== prev) x.end = x.pressure;
     x.start = x.pressure;
     const lk = document.getElementById(`act_leak_${i}`); if(lk) x.leak = lk.value || null;
@@ -11897,11 +11898,18 @@ function actWorkHtml(x, i){
   const medSel = x.key === "water" ? `<label style="grid-column:1/-1"><small>Чим випробовуємо</small><select id="act_med_${i}" onchange="actSetMedium(${i}, this.value)"><option value="water" ${x.medium === "air" ? "" : "selected"}>Водою (гідростатичне)</option><option value="air" ${x.medium === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label>` : "";
   if(x.medium === "air") return `<div class="actWork">${medSel}<small class="actWorkNote" style="font-size:.78rem">Повітрям (ДБН В.2.5-64:2012, п. 27.2.3). Етап 1: накачати до 1,5 бар і оглянути систему на дефекти; якщо знайшли, знизити тиск до атмосферного й усунути. Етап 2 (контрольний): 1,0 бар, 5 хв, падіння не більше 0,1 бар. Тиск 1,5 бар це не контрольна витримка.</small></div>`;
   return `<div class="actWork">${medSel}
-    <label><small>Робочий тиск, бар</small><input id="act_work_${i}" inputmode="decimal" placeholder="напр. 6" value="${w === null ? "" : String(w).replace(".", ",")}" onfocus="this.select()" onchange="actReadForm();renderActSheet()"></label>
-    <label><small>Коефіцієнт</small><select id="act_k_${i}" onchange="actReadForm();renderActSheet()">${ACT_KS.map(c => `<option value="${c}" ${c === k ? "selected" : ""}>× ${String(c).replace(".", ",")}</option>`).join("")}</select></label>
-    ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b ${actPColor(sug) ? `style="color:${actPColor(sug)}"` : ""}>${String(sug).replace(".", ",")} бар</b> ${actInfoBtn(sug)} <button type="button" onclick="actApplySug(${i})">Застосувати</button></div>`}
+    <label><small>Робочий тиск, бар</small><input id="act_work_${i}" inputmode="decimal" placeholder="напр. 6" value="${w === null ? "" : String(w).replace(".", ",")}" onfocus="this.select()" onchange="actReadForm();actAutoP(${i});renderActSheet()"></label>
+    <label><small>Коефіцієнт</small><select id="act_k_${i}" onchange="actReadForm();actAutoP(${i});renderActSheet()">${ACT_KS.map(c => `<option value="${c}" ${c === k ? "selected" : ""}>× ${String(c).replace(".", ",")}</option>`).join("")}</select></label>
+    ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b ${actPColor(sug) ? `style="color:${actPColor(sug)}"` : ""}>${String(sug).replace(".", ",")} бар</b> ${actInfoBtn(sug)}</div>`}
     <small class="actWorkNote">Коефіцієнт залежить від виробника труб і проєкту: уточніть його в інструкції. Якщо температура води й повітря в приміщенні відрізняється більше ніж на 10 °C, після набору тиску зачекайте близько 30 хв, щоб вона вирівнялась. Залишки повітря в системі можуть дати просідання кінцевого тиску: перед випробуванням ретельно видаліть повітря.</small>
   </div>`;
+}
+/* Початковий тиск сам береться з пропозиції, поки майстер не виправив його вручну */
+function actAutoP(i){
+  const x = actDraft && actDraft.systems[i], sug = actSuggest(x); if(!x || sug === null || x.pManual) return;
+  const prev = actNum(x.pressure);
+  x.pressure = sug; x.start = sug;
+  if(actNum(x.end) === prev) x.end = sug;
 }
 function actApplySug(i){
   actReadForm();
