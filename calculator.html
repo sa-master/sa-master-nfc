@@ -4130,6 +4130,7 @@ body.inSec #pfAddPerson{display:none}
 .actRes.bad{background:rgba(198,40,40,.14);color:#c62828}
 .actRes.warn{background:rgba(255,149,0,.16)}
 .actInfo{width:18px;height:18px;padding:0;margin-left:4px;border-radius:50%;border:1.5px solid var(--tm);background:transparent;color:var(--tm);font:italic 700 12px/1 serif;cursor:pointer;vertical-align:middle}
+.actHelp{grid-column:1/-1;font-size:.78rem;color:var(--tm)}.actHelp summary{cursor:pointer;font-weight:600;color:var(--ts)}.actHelp p{margin:6px 0 0;line-height:1.45}
 .actInfoTxt{margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--bgs);font-size:.78rem;color:var(--ts)}
 .actInfoTxt[hidden]{display:none}
 .actSug button.actInfo{margin-left:4px;padding:0;width:18px;height:18px;border-radius:50%;background:transparent;border:1.5px solid var(--tm);color:var(--tm);font:italic 700 12px/1 serif}
@@ -11900,12 +11901,12 @@ function actToggleInfo(b){ const n = b.closest(".actSys").querySelector(".actInf
 const ACT_INFO_TXT = "Перед випробуванням переконайтеся, що обладнання в мережі (труби, фітинги, крани, лічильники, фільтри, редуктори, арматура) розраховане на цей пробний тиск. Якщо ні — не випробовуйте з ним: зніміть або відключіть його на час випробування.";
 function actWorkHtml(x, i){
   const sug = actSuggest(x), k = x.k || 1.5, w = actNum(x.work);
-  if(x.medium === "air") return `<div class="actWork"><small class="actWorkNote" style="font-size:.78rem">Повітрям. Етап 1: накачати до 1,5 бар і оглянути систему на дефекти; якщо знайшли, знизити тиск до атмосферного й усунути. Етап 2 (контрольний): 1,0 бар, 5 хв, падіння не більше 0,1 бар. Тиск 1,5 бар це не контрольна витримка.</small></div>`;
+  if(x.medium === "air") return `<div class="actWork"><details class="actHelp"><summary>Підказки</summary><p>Повітрям. Етап 1: накачати до 1,5 бар і оглянути систему на дефекти; якщо знайшли, знизити тиск до атмосферного й усунути. Етап 2 (контрольний): 1,0 бар, 5 хв, падіння не більше 0,1 бар. Тиск 1,5 бар це не контрольна витримка.</p></details></div>`;
   return `<div class="actWork">
     <label><small>Робочий тиск, бар</small><input id="act_work_${i}" inputmode="decimal" placeholder="напр. 6" value="${w === null ? "" : String(w).replace(".", ",")}" onfocus="this.select()" onchange="actReadForm();actAutoP(${i});renderActSheet()"></label>
     <label><small>Коефіцієнт</small><select id="act_k_${i}" onchange="actReadForm();actAutoP(${i});renderActSheet()">${ACT_KS.map(c => `<option value="${c}" ${c === k ? "selected" : ""}>× ${String(c).replace(".", ",")}</option>`).join("")}</select></label>
     ${sug === null ? "" : `<div class="actSug">Пропонований пробний тиск: <b ${actPColor(sug) ? `style="color:${actPColor(sug)}"` : ""}>${String(sug).replace(".", ",")} бар</b> ${actInfoBtn(sug)}</div>`}
-    <small class="actWorkNote">Коефіцієнт залежить від виробника труб і проєкту: уточніть його в інструкції. Якщо температура води й повітря в приміщенні відрізняється більше ніж на 10 °C, після набору тиску зачекайте близько 30 хв, щоб вона вирівнялась. Залишки повітря в системі можуть дати просідання кінцевого тиску: перед випробуванням ретельно видаліть повітря.</small>
+    <details class="actHelp"><summary>Підказки</summary><p>Коефіцієнт залежить від виробника труб і проєкту: уточніть його в інструкції. Якщо температура води й повітря в приміщенні відрізняється більше ніж на 10 °C, після набору тиску зачекайте близько 30 хв, щоб вона вирівнялась. Залишки повітря в системі можуть дати просідання кінцевого тиску: перед випробуванням ретельно видаліть повітря.</p></details>
   </div>`;
 }
 /* Початковий тиск сам береться з пропозиції, поки майстер не виправив його вручну */
