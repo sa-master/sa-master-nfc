@@ -3392,7 +3392,11 @@ body.positionDragging{
 .actListLink{display:block;margin:1rem auto .5rem;background:none;border:0;color:var(--p);font-size:.875rem;font-weight:600;padding:.5rem;min-height:2.75rem}
 .jrnWarn{margin:0 0 .75rem;padding:.75rem 1rem;border-radius:.875rem;background:var(--card);border:1px solid var(--attn);background:color-mix(in srgb,var(--attn) 12%,var(--card));border:1px solid color-mix(in srgb,var(--attn) 35%,transparent);font-size:.875rem;line-height:1.45}
 .jrnWarn b{display:block;margin-bottom:.25rem}
-.jrnWarn ul{margin:0;padding-left:1.1rem}
+.jrnWarnRow{display:flex;flex-direction:column;align-items:flex-start;gap:.125rem;width:100%;text-align:left;background:none;border:0;border-top:1px solid color-mix(in srgb,var(--attn) 25%,transparent);padding:.5rem 0;font:inherit;color:var(--t);min-height:2.75rem}
+.jrnWarnRow:first-of-type{border-top:0}
+.jrnWarnRow em{font-style:normal;font-weight:700;color:var(--p);font-size:.8125rem}
+@keyframes jrnFlash{0%,100%{background:transparent}30%{background:color-mix(in srgb,var(--attn) 22%,transparent)}}
+.jrnFlash{animation:jrnFlash 1.6s ease}
 .chRow{display:flex;align-items:center;gap:.75rem;padding:.75rem 0;border-top:1px solid var(--gbr)}
 .chMain{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:.125rem;font-size:.875rem;color:var(--ts)}
 .chMain b{color:var(--t);font-size:.9375rem}
@@ -5279,7 +5283,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 09:30</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 09:45</div>
   </div>
 
   <div class="fsFooter">
@@ -22862,22 +22866,48 @@ function jrnWarnings(p){
     g.sum += q * pr; got.set(k, g);
   });
   got.forEach((g, k) => {
-    const paid = moneyList(p, "expense").reduce((a, e) => a + ((e.kind === "supplierPayment" && normalizeText(e.supplierName) === k) || normalizeText(String(e.note || "")).startsWith(k) ? Number(e.amount) || 0 : 0), 0);
+    const paid = moneyList(p, "expense").reduce((a, e) => a + ((e.kind === "supplierPayment" && normalizeText(e.supplierName) === k) || normalizeText(String(e.to || "")) === k || normalizeText(String(e.note || "")).startsWith(k) ? Number(e.amount) || 0 : 0), 0);
     const left = Math.round(g.sum - paid);
-    if(left > Math.max(100, g.sum * 0.1)) out.push({ kind: "unpaid", text: `${g.name}: отримано ≈${money(Math.round(g.sum))}, оплат записано ${money(Math.round(paid))}. Не записали оплату?` });
+    if(left > Math.max(100, g.sum * 0.1)) out.push({ kind: "unpaid", text: `${g.name}: отримано ≈${money(Math.round(g.sum))}, оплат записано ${money(Math.round(paid))}. Не записали оплату?`, go: `jrnGoPay(${buyEnc(g.name)}, ${left})`, act: "Записати оплату" });
   });
   /* дивна ціна закупівлі */
   const odd = items.filter(pos => buyNeed(p, pos) > 0 && buyOddPrice(pos));
-  if(odd.length) out.push({ kind: "price", text: `Дивна ціна закупівлі: ${odd.slice(0, 3).map(positionShortName).join(", ")}${odd.length > 3 ? ` і ще ${odd.length - 3}` : ""} — утричі відрізняється від прайсу.` });
+  if(odd.length) out.push({ kind: "price", text: `Дивна ціна закупівлі: ${odd.slice(0, 3).map(positionShortName).join(", ")}${odd.length > 3 ? ` і ще ${odd.length - 3}` : ""} — утричі відрізняється від прайсу.`, go: `jrnGoPrices(${buyEnc(odd.map(x => x.id).join(","))})`, act: "Перевірити ціни" });
   /* у кошторисі є, а де купувати — не вирішено */
   const noWhere = items.filter(pos => !pos.whereK && buyNeed(p, pos) > 0);
-  if(noWhere.length) out.push({ kind: "where", text: `${noWhere.length} поз. ще без постачальника: ${noWhere.slice(0, 3).map(positionShortName).join(", ")}${noWhere.length > 3 ? "…" : ""}` });
+  if(noWhere.length) out.push({ kind: "where", text: `${noWhere.length} поз. ще без постачальника: ${noWhere.slice(0, 3).map(positionShortName).join(", ")}${noWhere.length > 3 ? "…" : ""}`, go: "jrnGoWhere()", act: "Показати" });
   return out;
 }
 function renderJrnWarnings(p){
   const w = jrnWarnings(p);
   if(!w.length) return "";
-  return `<div class="jrnWarn"><b>⚠ Варто перевірити</b><ul>${w.map(x => `<li>${escapeHtml(x.text)}</li>`).join("")}</ul></div>`;
+  return `<div class="jrnWarn"><b>⚠ Варто перевірити</b>${w.map(x => `<button type="button" class="jrnWarnRow" onclick="${x.go}"><span>${escapeHtml(x.text)}</span><em>${escapeHtml(x.act)} ›</em></button>`).join("")}</div>`;
+}
+/* Перехід туди, де виправляти */
+function jrnGoPay(sup, left){
+  setProjectTab("money");
+  openMoneyForm("expense");
+  setTimeout(() => {
+    const a = document.getElementById("moneyAmount"), t = document.getElementById("moneyTo"), n = document.getElementById("moneyNote");
+    if(a) a.value = String(left);
+    if(t) t.value = sup;
+    if(n && !n.value) n.value = "товар";
+  }, 90);
+}
+function jrnGoPrices(list){
+  const p = buyCur();
+  if(!p) return;
+  buyUi = { mode:"prices", all: true, ids: String(list).split(",").filter(Boolean) };
+  buyScreen().classList.add("open");
+  renderBuyScreen();
+  buyScreen().scrollTop = 0;
+}
+function jrnGoWhere(){
+  const el = document.querySelector(".byWarn");
+  const box = el && el.closest(".byGroup");
+  if(!box) return;
+  box.scrollIntoView({ block:"center", behavior:"smooth" });
+  box.classList.remove("jrnFlash"); void box.offsetWidth; box.classList.add("jrnFlash");
 }
 function renderBuyList(p){
   if(!buyOn(p)) return "";
