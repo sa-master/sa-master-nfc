@@ -3407,6 +3407,10 @@ body.positionDragging{
 .chMain small{color:var(--tm);font-size:.75rem}
 .chBtn{flex:0 0 auto;min-height:2.75rem;padding:0 1rem;border-radius:.75rem;background:var(--p);color:#fff;font-weight:700;font-size:.875rem}
 .peRecv{display:block;background:none;border:0;padding:.25rem 0;color:var(--p);font:inherit;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;letter-spacing:0;text-transform:none;font-size:.8125rem;font-weight:600;text-align:left;min-height:1.75rem}
+.stSum{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;margin:.25rem .25rem .75rem;font-size:.875rem;color:var(--tm);font-weight:600}
+.stSum b{font-size:1.0625rem;color:var(--t)}
+#catalogList .stSec+.stSec{margin-top:1rem}
+#catalogList .stSec{padding-bottom:.25rem}
 .actTag{flex:0 0 auto;font-size:.75rem;color:var(--tm);padding-top:.25rem}
 .undoBar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .undoBar button{flex:0 0 auto;background:none;color:#6FC0FF;font-weight:800;font-size:.875rem;padding:.25rem .25rem}
@@ -4224,7 +4228,7 @@ body{font-variant-numeric:tabular-nums}
     <div class="panelHead">
       <strong id="catalogTitle">Каталог</strong>
       <div class="panelHeadActions">
-        <button class="catalogNewBtn" id="catalogAddButton" onclick="openCustomPosition()">＋ Нова</button>
+        <button class="catalogNewBtn" id="catalogAddButton" onclick="catalogMode === 'stock' ? openStockCatalog() : openCustomPosition()">＋ Нова</button>
         <div class="catalogMoreWrap">
           <button class="catalogMoreBtn" onclick="toggleCatalogMore(event)" aria-label="Інші дії з каталогом">⋯</button>
           <div class="catalogMoreMenu hidden" id="catalogMoreMenu" onclick="toggleCatalogMore(event)">
@@ -4241,7 +4245,7 @@ body{font-variant-numeric:tabular-nums}
     <div class="catalogTabs" role="tablist" aria-label="Тип позицій">
       <button class="catalogTab active" id="catalogTabWork" role="tab" onclick="setCatalogMode('work')">Роботи</button>
       <button class="catalogTab" id="catalogTabMaterial" role="tab" onclick="setCatalogMode('material')">Матеріали</button>
-      <button class="catalogTab" id="catalogTabStock" role="tab" onclick="openStockScreen()">Склад</button>
+      <button class="catalogTab" id="catalogTabStock" role="tab" onclick="setCatalogMode('stock')">Склад</button>
     </div>
 
     <div class="panelBody" style="display:flex;flex-direction:column;padding-bottom:0">
@@ -5286,7 +5290,7 @@ body{font-variant-numeric:tabular-nums}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 10:20</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 10:40</div>
   </div>
 
   <div class="fsFooter">
@@ -14612,7 +14616,8 @@ function openCatalogFor(type, dest){
 }
 
 function setCatalogMode(type){
-  if(type !== "work" && type !== "material") return;
+  if(type !== "work" && type !== "material" && type !== "stock") return;
+  if(type === "stock" && catalogDest === "stock") catalogDest = "browse";
   catalogMode = type;
   catalogFilter = "all";
   catalogBrandFilter = "all";
@@ -14624,6 +14629,9 @@ function setCatalogMode(type){
   document.getElementById("catalogSearch").value = "";
   document.getElementById("catalogTitle").textContent = "Каталог";
   updateCatalogTabs();
+  document.getElementById("catalogFilterButton").classList.toggle("hidden", type === "stock");
+  document.getElementById("catalogSearch").placeholder = type === "stock" ? "Пошук на складі…" : "Пошук позиції…";
+  if(type === "stock"){ renderCatalogList(); return; }
 
   renderCatalogChips();
   renderCatalogBrandChips();
@@ -14634,6 +14642,11 @@ function setCatalogMode(type){
 }
 
 function updateCatalogHeaderActions(){
+  if(catalogMode === "stock"){
+    document.getElementById("catalogAddButton").classList.remove("hidden");
+    ["catalogImportButton", "catalogRequestButton", "catalogRatesButton", "catalogClearButton"].forEach(id => document.getElementById(id).classList.add("hidden"));
+    return;
+  }
   const emptyMaterials = catalogMode === "material" && !catalog.some(item => item.type === "material");
   const hideActions = catalogMode !== "material" || emptyMaterials;
 
@@ -14647,6 +14660,7 @@ function updateCatalogHeaderActions(){
 function updateCatalogTabs(){
   document.getElementById("catalogTabWork").classList.toggle("active", catalogMode === "work");
   document.getElementById("catalogTabMaterial").classList.toggle("active", catalogMode === "material");
+  document.getElementById("catalogTabStock").classList.toggle("active", catalogMode === "stock");
 }
 
 function closeCatalog(){
@@ -15537,6 +15551,7 @@ function renderCatalogList(){
   updateCatalogHeaderActions();
   updateCatalogFilterButton();
   const list = document.getElementById("catalogList");
+  if(catalogMode === "stock"){ list.innerHTML = stockListHtml(catalogSearch); return; }
   const items = getCatalogItems();
   const project = catalogDest === "stock" ? null : projects.find(p => p.id === currentProjectId);
   const positions = catalogDest === "stock" ? stockAsPositions() : Array.isArray(project && project.positions) ? project.positions : [];
@@ -23840,26 +23855,24 @@ function renderStockCard(){
   const list = stockList();
   return `<button type="button" class="stockCard" onclick="openStockScreen()"><span><b>Склад</b><small>${list.length ? `${list.length} поз. — залишки з об’єктів` : "залишки з об’єктів"}</small></span><span class="stockGo">›</span></button>`;
 }
+/* Склад — вкладка каталогу: та сама рамка, що «Роботи» й «Матеріали» (вкладки, пошук, нижнє меню) */
 function openStockScreen(){
-  let screen = document.getElementById("stockScreen");
-  if(!screen){
-    screen = document.createElement("div");
-    screen.id = "stockScreen";
-    screen.className = "onbScreen";
-    document.body.appendChild(screen);
-  }
-  screen.classList.add("open");
-  renderStockScreen();
+  if(!currentProjectId && document.body.dataset.sec !== "cat") setNavSection("cat");
+  catalogDest = "browse";
+  setCatalogMode("stock");
+  document.getElementById("catalogSheet").classList.add("open");
 }
 function closeStockScreen(){ document.getElementById("stockScreen")?.classList.remove("open"); render(); }
 function renderStockScreen(){
-  const screen = document.getElementById("stockScreen");
-  if(!screen) return;
-  const list = stockList();
-  /* Як у кошторисі: розділи за категоріями каталогу, кількість кнопками − / ＋ (до нуля — прибирається, з «Повернути») */
-  /* Вартість складу за роздрібною ціною з каталогу — скільки ці залишки принесуть, коли підуть у кошториси клієнтам.
-     Позиція без ціни в каталозі не рахується — тоді перед сумою «≈» */
-  const sv = list.reduce((a, x) => {
+  if(catalogMode === "stock" && document.getElementById("catalogSheet")?.classList.contains("open")) renderCatalogList();
+}
+function stockListHtml(search){
+  const all = stockList();
+  const q = normalizeText(search || "").trim();
+  const words = q ? q.split(/\s+/) : [];
+  const list = words.length ? all.filter(x => { const c = x.catalogId ? catalog.find(i => i.id === x.catalogId) : null; const hay = normalizeText([x.name, c && c.manufacturer, c && c.article, x.from].join(" ")); return words.every(w => hay.includes(w)); }) : all;
+  /* Вартість складу за роздрібною ціною з каталогу; позиція без ціни не рахується — тоді «≈» */
+  const sv = all.reduce((a, x) => {
     const c = x.catalogId ? catalog.find(i => i.id === x.catalogId) : null;
     const pr = Number(c && c.price) || 0;
     if(!(pr > 0)) a.approx = true;
@@ -23881,22 +23894,13 @@ function renderStockScreen(){
       <span class="stUnit">${escapeHtml(x.unit || "шт")}</span>
     </div>`;
   };
-  screen.innerHTML = `<div class="onbInner stInner">
-    <div class="onbTop"><button type="button" class="onbBack" onclick="closeStockScreen()" aria-label="Назад">←</button><span style="font-size:1.25rem;font-weight:800;color:var(--t)">Склад</span></div>
-    <div class="onbNote" style="text-align:left;margin-top:-.5rem">Залишки з об’єктів. Беруться на об’єкт у «Де беру» → «Зі складу».</div>
-    ${list.length ? groups.map(g => `<div class="stSec">
+  const head = `<div class="stSum"><span>На складі · ${all.length} ${plural(all.length, "позиція", "позиції", "позицій")}</span><b>${sv.approx ? "≈ " : ""}${money(sv.sum)}</b></div>`;
+  if(!all.length) return head + `<div class="catalogEmpty"><div>Поки порожньо. Сюди потрапляє те, що в «Залишках» об’єкта ви відправили «На склад». Або додайте кнопкою «＋ Нова» вгорі.</div></div>`;
+  if(!list.length) return head + `<div class="catalogEmpty"><div>На складі такого немає</div></div>`;
+  return head + groups.map(g => `<div class="stSec">
       <div class="stSecHead"><span>${escapeHtml(g.label)}</span><span>${g.positions.length}</span></div>
       <div class="stBox">${g.positions.map(p => row(p._stk)).join("")}</div>
-    </div>`).join("") : `<div class="onbNote">Поки порожньо. Сюди потрапляє те, що в «Залишках» об’єкта ви відправили «На склад», або додайте кнопкою внизу.</div>`}
-    <div class="stDock">
-      <div class="floatingPanel compact estPanel stPanel">
-        <div class="estTotal"><span class="lbl">На складі · ${list.length} ${plural(list.length, "позиція", "позиції", "позицій")}</span><b>${sv.approx ? "≈ " : ""}${money(sv.sum)}</b></div>
-        <div class="floatingButtons">
-          <button type="button" class="addButton primary" onclick="openStockCatalog()">＋ Додати</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
+    </div>`).join("");
 }
 function plural(n, one, few, many){
   const a = Math.abs(n) % 100, b = a % 10;
