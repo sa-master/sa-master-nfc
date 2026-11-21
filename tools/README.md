@@ -3,6 +3,7 @@
 - `index.html` — список інструментів
 - `floor.html` — калькулятор водяної теплої підлоги
 - `hydro.html` — акт гідравлічних випробувань (перенесено з et.app)
+- `diameters.html` — підбір діаметрів водопроводу (правила в `shared/diameters.js`, тест: `node shared/diameters.test.js`)
 - `shared/` — спільні модулі:
   - `store.js` — локальне збереження (IndexedDB, схема v1)
   - `profile.js` — імʼя/компанія, телефон, логотип майстра
