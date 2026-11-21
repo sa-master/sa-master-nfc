@@ -30,6 +30,8 @@ select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-si
 .sum div:last-child{border:0}.sum span{color:var(--ts)}
 .dn{display:inline-block;min-width:44px;text-align:center;padding:2px 8px;border-radius:10px;background:rgba(0,122,255,.12);color:var(--p);font-weight:800}
 .big{font-size:1.5rem}
+.sch{width:100%;height:auto;display:block;margin-top:6px}.sch text{fill:var(--t);font-family:inherit}
+.sch .nm{font-size:13px;font-weight:600}.sch .bd{font-size:11px;font-weight:800;fill:#fff}.sch .sm{font-size:11px;fill:var(--ts)}
 </style>
 </head>
 <body>
@@ -48,7 +50,7 @@ select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-si
       <label>Тип<select class="formInput" id="kind"><option value="flat">Квартира</option><option value="house">Будинок</option></select></label>
       <label>Санвузлів<select class="formInput" id="baths"></select></label>
     </div>
-    <div class="zr"><label>Схема розводки води<select class="formInput" id="scheme"><option value="ray">Променева (колектор)</option><option value="tee">Трійникова (послідовна)</option></select></label></div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Схема розводки води<select class="formInput" id="scheme"><option value="ray">Променева (колектор)</option><option value="tee">Трійникова (послідовна)</option></select></label></div>
   </div>
 
   <div class="g card">
@@ -73,13 +75,47 @@ select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-si
 <script src="shared/diameters.js?v=20261121"></script>
 <script>
 "use strict";
-const $ = id => document.getElementById(id), D = Diameters;
+const $ = id => document.getElementById(id), D = Diameters, esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
 const opts = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<option>${a + i}</option>`).join("");
 $("baths").innerHTML = opts(1, 6);
 const DEF = { bath: 1, basin: 1, sink: 1, wc: 1, washer: 1 };
 $("devs").innerHTML = D.DEVICES.map(d => `<div class="dv"><span>${d.label}</span><select class="formInput" id="c_${d.id}">${opts(0, 6)}</select></div>`).join("");
 D.DEVICES.forEach(d => $("c_" + d.id).value = DEF[d.id] || 0);
 const dn = n => `<span class="dn">Ø${n}</span>`;
+
+function scheme(r){
+  const W = 360, rowH = 44, top = 70, n = r.lines.length, H = top + n * rowH + 12, C = "#0A84FF", Hh = "#FF3B30", xc = 44, xh = 86, xe = 214;
+  const tee = r.scheme === "tee";
+  let o = `<svg class="sch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Схема розводки">`;
+  o += `<defs><marker id="ac" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="${C}"/></marker><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="${Hh}"/></marker><marker id="ahl" viewBox="0 0 8 8" refX="1" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M8 0L0 4L8 8z" fill="${Hh}"/></marker></defs>`;
+  const badge = (x, y, t, c) => `<rect x="${x - 16}" y="${y - 8}" width="32" height="16" rx="8" fill="${c}"/><text class="bd" x="${x}" y="${y + 4}" text-anchor="middle">${t}</text>`;
+  const cy = i => top + i * rowH + 10, hy = i => top + i * rowH + 28;
+  const lastCold = n - 1;
+  let lastHot = -1; r.lines.forEach((l, i) => { if(l.hot) lastHot = i; });
+  /* ввід */
+  o += `<line x1="${xc}" y1="8" x2="${xc}" y2="${tee ? cy(lastCold) : top - 4}" stroke="${C}" stroke-width="${tee ? 4 : 3}"/>`;
+  o += `<text class="nm" x="${xc + 12}" y="22">Ввід</text>` + badge(xc + 70, 18, "Ø" + r.inDn, C) + `<text class="sm" x="${xc + 94}" y="22">кран ${r.valveIn}</text>`;
+  if(tee){
+    o += badge(xc, top - 20, "Ø" + r.main.first, C);
+  } else {
+    o += `<rect x="${xc - 4}" y="${top - 4}" width="8" height="${n * rowH - 2}" rx="4" fill="${C}"/><text class="sm" x="${xc}" y="${top - 10}" text-anchor="middle">ХВП</text>`;
+    if(lastHot >= 0) o += `<rect x="${xh - 4}" y="${top - 4}" width="8" height="${n * rowH - 2}" rx="4" fill="${Hh}"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
+  }
+  if(tee && lastHot >= 0) o += `<line x1="${xh}" y1="${top - 4}" x2="${xh}" y2="${hy(lastHot)}" stroke="${Hh}" stroke-width="3"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
+  r.lines.forEach((l, i) => {
+    const yc = cy(i), yh = hy(i), mid = (xc + xe) / 2;
+    o += `<line x1="${xc}" y1="${yc}" x2="${xe}" y2="${yc}" stroke="${C}" stroke-width="2" marker-end="url(#ac)"/>` + badge(mid + 14, yc, "Ø" + l.cold, C);
+    if(l.hot){
+      if(l.boiler) o += `<line x1="${xe}" y1="${yh}" x2="${xh}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
+      else o += `<line x1="${xh}" y1="${yh}" x2="${xe}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
+      o += badge(mid + 14, yh, "Ø" + l.hot, Hh);
+    }
+    if(tee){ o += `<circle cx="${xc}" cy="${yc}" r="3.5" fill="${C}"/>`; if(l.hot) o += `<circle cx="${xh}" cy="${yh}" r="3.5" fill="${Hh}"/>`; }
+    o += `<text class="nm" x="${xe + 14}" y="${l.hot ? (yc + yh) / 2 + 4 : yc + 4}">${esc(l.name)}</text>`;
+  });
+  if(tee && n > 1) o += badge(xc, cy(0) + 22, "Ø" + r.main.after, C) + (lastHot > 0 ? badge(xh, (hy(0) + cy(1)) / 2, "Ø" + r.main.after, Hh) : "");
+  return o + "</svg>";
+}
 function render(){
   const counts = {}; D.DEVICES.forEach(d => counts[d.id] = $("c_" + d.id).value);
   const r = D.calc({ scheme: $("scheme").value, kind: $("kind").value, baths: $("baths").value, counts, boiler: $("boiler").checked, filter: $("filter").checked });
@@ -97,9 +133,8 @@ function render(){
     h += `<div><span>Виходів на колекторі холодної води</span><b>${r.outputsCold}</b></div>`;
     h += `<div><span>Виходів на колекторі гарячої води</span><b>${r.outputsHot}</b></div></div>`;
   }
-  h += `<div class="ttl" style="margin-top:14px">${r.scheme === "tee" ? "Відгалуження й кінцеві точки" : "Лінії до приладів"}</div><div class="sum">` +
-    (r.lines.length ? r.lines.map(l => `<div><span>${l.name}</span><b>${dn(l.cold)}${l.hot ? " + " + dn(l.hot) : ""}</b></div>`).join("") : `<div><span>Додайте прилади вище</span></div>`) + `</div>`;
-  h += `<p class="hint">Разом труби: Ø20 ${t.cold20} хол. і ${t.hot20} гар., Ø16 ${t.cold16} хол. і ${t.hot16} гар. Позначки Ø для труб зі зшитого поліетилену та металопластику (зовнішній діаметр). «+» означає лінію холодної і гарячої води.</p>`;
+  h += `<div class="ttl" style="margin-top:14px">Схема</div>` + (r.lines.length ? scheme(r) : `<p class="hint">Додайте прилади вище.</p>`);
+  h += `<p class="hint">Синя лінія це холодна вода, червона гаряча. Ø це зовнішній діаметр труби зі зшитого поліетилену або металопластику.</p>`;
   r.notes.forEach(n => h += `<p class="hint">${n}</p>`);
   h += `<p class="hint">Орієнтовний підбір за практикою монтажників, не нормативний розрахунок.</p>`;
   $("res").innerHTML = h;
