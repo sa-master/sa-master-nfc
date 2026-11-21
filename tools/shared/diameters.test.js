@@ -8,4 +8,7 @@ t("bind 18", r.bind && r.bind.dn === 18);
 r = D.calc({ kind: "house", baths: 3, counts: {} }); t("house3 32", r.inDn === 32 && r.notes.length === 1 && r.bind === null);
 r = D.calc({ kind: "house", baths: 2, counts: { shower: 2 }, filter: true }); t("house2 25, shower names", r.inDn === 25 && r.lines[1].name === "Душ (змішувач) 2" && r.bind.filter);
 r = D.calc({ kind: "flat", baths: 5, counts: {} }); t("flat any baths 25", r.inDn === 25);
+r = D.calc({ kind: "flat", baths: 1, scheme: "tee", counts: { bath: 1, basin: 1, wc: 1 } }); t("tee main 25->20", r.main.first === 25 && r.main.after === 20 && r.tees.cold === 2 && r.tees.hot === 1);
+r = D.calc({ kind: "house", baths: 3, scheme: "tee", counts: {} }); t("tee house 32->25", r.main.first === 32 && r.main.after === 25);
+t("ray no main", D.calc({ counts: {} }).main === null);
 console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);

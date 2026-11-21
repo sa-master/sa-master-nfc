@@ -26,17 +26,21 @@
       }
     });
     if (p.boiler) lines.push({ id: "boiler", name: "Бойлер", cold: 20, hot: 20, boiler: true });
+    const scheme = p.scheme === "tee" ? "tee" : "ray";
     const cnt = (k, dn) => lines.filter(l => l[k] === dn).length;
     const bindDn = inDn === 32 ? 22 : 18;
     return {
-      kind, baths, inDn,
+      kind, baths, inDn, scheme,
+      main: scheme === "tee" ? { first: inDn, after: inDn === 32 ? 25 : 20 } : null,
+      tees: scheme === "tee" ? { cold: Math.max(0, lines.length - 1), hot: Math.max(0, lines.filter(l => l.hot && !l.boiler).length - 1) } : null,
       valveIn: inDn === 32 ? "1\"" : "3/4\"",
       lines,
       totals: { cold20: cnt("cold", 20), cold16: cnt("cold", 16), hot20: cnt("hot", 20), hot16: cnt("hot", 16) },
       outputsCold: lines.length,
       outputsHot: lines.filter(l => l.hot && !l.boiler).length,
       bind: p.boiler || p.filter ? { dn: bindDn, boiler: Boolean(p.boiler), filter: Boolean(p.filter) } : null,
-      notes: inDn === 32 ? ["Будинок із 3+ санвузлами: ввід Ø32 це орієнтир, не з норми. Перевірте розрахунком."] : []
+      notes: (inDn === 32 ? ["Будинок із 3+ санвузлами: ввід Ø32 це орієнтир, не з норми. Перевірте розрахунком."] : [])
+        .concat(scheme === "tee" ? ["Трійникова схема: магістраль від вводу до першого трійника, далі на розмір менше. Для гарячої води магістраль від бойлера взято за тим самим правилом."] : [])
     };
   }
   const api = { DEVICES, calc, inletDn };

@@ -48,6 +48,7 @@ select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-si
       <label>Тип<select class="formInput" id="kind"><option value="flat">Квартира</option><option value="house">Будинок</option></select></label>
       <label>Санвузлів<select class="formInput" id="baths"></select></label>
     </div>
+    <div class="zr"><label>Схема розводки води<select class="formInput" id="scheme"><option value="ray">Променева (колектор)</option><option value="tee">Трійникова (послідовна)</option></select></label></div>
   </div>
 
   <div class="g card">
@@ -74,16 +75,22 @@ D.DEVICES.forEach(d => $("c_" + d.id).value = DEF[d.id] || 0);
 const dn = n => `<span class="dn">Ø${n}</span>`;
 function render(){
   const counts = {}; D.DEVICES.forEach(d => counts[d.id] = $("c_" + d.id).value);
-  const r = D.calc({ kind: $("kind").value, baths: $("baths").value, counts, boiler: $("boiler").checked, filter: $("filter").checked });
+  const r = D.calc({ scheme: $("scheme").value, kind: $("kind").value, baths: $("baths").value, counts, boiler: $("boiler").checked, filter: $("filter").checked });
   const t = r.totals;
   let h = `<div class="ttl">Результат</div><div class="sum">
     <div><span>Ввід у колектор</span><b>${dn(r.inDn)}</b></div>
     <div><span>Запірна арматура на вводі</span><b>${r.valveIn}</b></div>
     <div><span>Арматура до приладів</span><b>1/2"</b></div>`;
   if(r.bind) h += `<div><span>Обвʼязка ${[r.bind.boiler ? "бойлера" : "", r.bind.filter ? "водоочистки" : ""].filter(Boolean).join(" і ")}</span><b>нержавійка або мідь ${dn(r.bind.dn)}</b></div>`;
-  h += `<div><span>Виходів на колекторі холодної води</span><b>${r.outputsCold}</b></div>`;
-  h += `<div><span>Виходів на колекторі гарячої води</span><b>${r.outputsHot}</b></div></div>`;
-  h += `<div class="ttl" style="margin-top:14px">Лінії до приладів</div><div class="sum">` +
+  if(r.scheme === "tee"){
+    h += `<div><span>Магістраль від вводу до першого трійника</span><b>${dn(r.main.first)}</b></div>`;
+    h += `<div><span>Магістраль далі</span><b>${dn(r.main.after)}</b></div>`;
+    h += `<div><span>Трійників на холодній / гарячій воді</span><b>${r.tees.cold} / ${r.tees.hot}</b></div></div>`;
+  } else {
+    h += `<div><span>Виходів на колекторі холодної води</span><b>${r.outputsCold}</b></div>`;
+    h += `<div><span>Виходів на колекторі гарячої води</span><b>${r.outputsHot}</b></div></div>`;
+  }
+  h += `<div class="ttl" style="margin-top:14px">${r.scheme === "tee" ? "Відгалуження й кінцеві точки" : "Лінії до приладів"}</div><div class="sum">` +
     (r.lines.length ? r.lines.map(l => `<div><span>${l.name}</span><b>${dn(l.cold)}${l.hot ? " + " + dn(l.hot) : ""}</b></div>`).join("") : `<div><span>Додайте прилади вище</span></div>`) + `</div>`;
   h += `<p class="hint">Разом труби: Ø20 ${t.cold20} хол. і ${t.hot20} гар., Ø16 ${t.cold16} хол. і ${t.hot16} гар. Позначки Ø для труб зі зшитого поліетилену та металопластику (зовнішній діаметр). «+» означає лінію холодної і гарячої води.</p>`;
   r.notes.forEach(n => h += `<p class="hint">${n}</p>`);
