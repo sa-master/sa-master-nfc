@@ -1,0 +1,36 @@
+const H = require("./hydraulics.js"); let ok = 0, bad = 0;
+const t = (n, c) => { if (!c) { bad++; console.log("FAIL", n); } else ok++; };
+const near = (a, b, e = 0.005) => Math.abs(a - b) <= e;
+/* клітинки таблиці А.5 */
+t("A5 N=1 total q4", near(H.a5("total", 1, 4), 0.22)); t("A5 N=1 cold q4", near(H.a5("cold", 1, 4), 0.17));
+t("A5 N=2 total q20", near(H.a5("total", 2, 20), 0.66)); t("A5 N=30 cold q80", near(H.a5("cold", 30, 80), 2.05));
+t("A5 interp q", near(H.a5("cold", 1, 9), 0.28)); t("A5 interp N", near(H.a5("total", 11, 4), 0.35)); t("A5 N>30", H.a5("total", 31, 10) === null);
+/* клітинки таблиць А.6–А.9 (л/с: загальна, гаряча, холодна) */
+const u = (n, U) => H.byU(n, U);
+t("A6 U=1", near(u(150, 1).tot, 0.26) && near(u(150, 1).hot, 0.21) && near(u(150, 1).cold, 0.16));
+t("A6 U=4", near(u(150, 4).tot, 0.28) && near(u(150, 4).cold, 0.17));
+t("A7 U=8", near(u(210, 8).tot, 0.40) && near(u(210, 8).hot, 0.29) && near(u(210, 8).cold, 0.23));
+t("A8 U=4", near(u(250, 4).tot, 0.37) && near(u(250, 4).hot, 0.27));
+t("A9 U=8", near(u(285, 8).tot, 0.48) && near(u(285, 8).hot, 0.33) && near(u(285, 8).cold, 0.26));
+t("A9 U=36 hot (0.57 з крапкою в тексті)", near(u(285, 36).hot, 0.57));
+t("interp U=6 (150): між 0,28 і 0,34", near(u(150, 6).tot, 0.31));
+t("U>40 null", u(150, 41) === null);
+/* швидкість і втрати */
+t("velocity", near(H.vel(0.17, 12), 1.503, 0.01));
+const i = H.specLoss(0.2, 16, 0.007, false); t("specLoss ~0,93 кПа/м", i > 500 && i < 2000);
+/* квартира: 3 мешканці, норма 285, бойлер */
+const base = { mat: "pex", scheme: "ray", entry: { mat: "pex", od: 25 }, U: 3, norm: 285, counts: { bath: 1, shower: 1, basin: 2, sink: 1, wc: 1, washer: 1, dish: 1 }, boiler: true, lenEntry: 5, lenLine: 8, pIn: 3 };
+const r = H.calc(base);
+t("entry q = tot", near(r.sections[0].q, u(285, 3).tot) && r.sections[0].ok);
+t("bath line rule 20", r.lines.find(l => l.id === "bath").cold.od === 20 && r.lines.find(l => l.id === "bath").cold.rule);
+t("wc 16 at 5 l/min", r.lines.find(l => l.id === "wc").cold.od === 16 && near(r.lines.find(l => l.id === "wc").cold.q, 5 / 60, 0.0001));
+t("boiler line >=20", r.lines.find(l => l.id === "boiler").cold.od >= 20);
+t("hot only for hot devices", r.lines.find(l => l.id === "basin").hot && !r.lines.find(l => l.id === "wc").hot);
+t("pressure computed", r.pressure && r.pressure.left > 1e5 && r.pressure.left < 3e5);
+const rb = H.calc({ ...base, flows: { bath: 20 } }); t("bath with flow 20 l/min gets velocity", rb.lines.find(l => l.id === "bath").cold.v > 0);
+const big = H.calc({ ...base, U: 40, entry: { mat: "pex", od: 16 } }); t("small entry warns", !big.sections[0].ok && big.warnings.length === 1);
+const rt = H.calc({ ...base, scheme: "tee", counts: { bath: 1, basin: 1, wc: 1 } }); t("tee: ввід + 2 магістралі", rt.sections.length === 3);
+t("tee flows decrease", rt.sections[1].q < rt.sections[0].q && rt.sections[2].q < rt.sections[1].q);
+t("bad U", H.calc({ ...base, U: 0 }).warnings.length === 1);
+const c = H.compare(base); t("compare 6 materials", c.length === 6 && c.every(x => x.entry && x.line && x.reserve));
+console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);

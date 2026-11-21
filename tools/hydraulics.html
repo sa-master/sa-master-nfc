@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Гідравлічний розрахунок водопроводу квартири за ДБН | SA-MASTER.PRO</title>
+<meta name="description" content="Безкоштовний гідравлічний розрахунок внутрішнього водопроводу квартири за ДБН В.2.5-64:2012: ввід, лінії, швидкість води, втрати тиску.">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="canonical" href="https://sa-master.pro/tools/hydraulics.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="uk_UA">
+<meta property="og:site_name" content="SA-MASTER.PRO">
+<meta property="og:title" content="Гідравлічний розрахунок водопроводу">
+<meta property="og:description" content="Квартира: ввід, лінії, швидкість води та втрати тиску за ДБН В.2.5-64:2012.">
+<meta property="og:url" content="https://sa-master.pro/tools/hydraulics.html">
+<meta property="og:image" content="https://sa-master.pro/tools/og/tools.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="stylesheet" href="shared/tools.css?v=20261121">
+<style>
+.zr{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;margin-top:8px}
+.zr label{display:flex;flex-direction:column;gap:4px;font-size:.7rem;font-weight:700;color:var(--tm)}
+select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-size:.95rem;color:var(--t)}
+.dv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln);font-size:.95rem}
+.dv:last-child{border:0}.dv select{width:76px}
+.chk{display:flex;gap:10px;align-items:center;padding:8px 0;font-size:.95rem}
+.sum div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--ln);font-size:.95rem}
+.sum div:last-child{border:0}.sum span{color:var(--ts)}
+.dn{display:inline-block;min-width:44px;text-align:center;padding:2px 8px;border-radius:10px;background:rgba(0,122,255,.12);color:var(--p);font-weight:800}
+.big{font-size:1.5rem}
+.sch{width:100%;height:auto;display:block;margin-top:6px}.sch text{fill:var(--t);font-family:inherit}
+.sch .nm{font-size:13px;font-weight:600}.sch .bd{font-size:11px;font-weight:800;fill:#fff}.sch .sm{font-size:11px;fill:var(--ts)}
+
+.tb{width:100%;border-collapse:collapse;font-size:.85rem}.tb th{font-size:.7rem;font-weight:700;color:var(--tm);text-align:left;padding:4px 4px}
+.tb td{padding:7px 4px;border-top:1px solid var(--ln);vertical-align:top}.tb td.n{text-align:right;white-space:nowrap}
+.okc{color:#1a9b3c;font-weight:800}.wr{color:#d9480f;font-weight:800}
+.fl{display:grid;grid-template-columns:1fr 84px;gap:6px 10px;align-items:center;font-size:.9rem;margin-top:6px}
+input.formInput{padding:9px 8px;font-size:.95rem;width:100%;box-sizing:border-box}
+details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;font-size:.9rem;padding:4px 0}
+.warn{background:rgba(255,149,0,.14);border-radius:12px;padding:10px 12px;font-size:.88rem;margin-top:10px}
+.rec li{margin:6px 0;font-size:.92rem}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="g hero"><img src="/logo.png" alt=""><div><a href="/">SA-MASTER<span style="font-weight:500;font-size:.8rem">.pro</span></a><small>інструменти для майстрів</small></div></div>
+<div class="navrow"><a href="/tools/">← Усі інструменти</a></div>
+
+  <div class="g card">
+    <h1>Гідравлічний розрахунок</h1>
+    <p class="lead">Внутрішній водопровід квартири за ДБН В.2.5-64:2012: розрахункова витрата, швидкість води в трубах, втрати тиску.</p>
+    <details class="hl"><summary>Як рахується</summary>
+      <p class="hint">Витрата на вводі береться з таблиць А.6–А.9 за кількістю мешканців і нормою водоспоживання (п. 5.2). Швидкість порівнюється з межами п. 11.6 і 12.12: метал 1,5, мідь 3,0 (гаряча 2,0), полімери 2,5 м/с. Втрати тиску за формулою (9): H = i·l·(1 + 0,3). Питомі втрати i норма не наводить, вони рахуються за формулою Дарсі–Вейсбаха з типовою шорсткістю матеріалу. Лінії до приладів перевіряються за паспортною витратою приладу (за замовчуванням 5 л/хв). Лінії ванни, душу й бойлера не менші за Ø20: це рекомендація, а не вимога норми. Сторінка не замінює проєкт.</p></details>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Квартира</div>
+    <div class="zr">
+      <label>Мешканців<select class="formInput" id="U"></select></label>
+      <label>Схема розводки<select class="formInput" id="scheme"><option value="ray">Променева</option><option value="tee">Трійникова</option></select></label>
+    </div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Норма водоспоживання (табл. А.1)<select class="formInput" id="norm">
+      <option value="150">150 л/добу: ванни з твердопаливним водонагрівачем</option>
+      <option value="210">210 л/добу: ванни з газовим водонагрівачем</option>
+      <option value="250">250 л/добу: центральне ГВП, ванна понад 1500 мм (район I)</option>
+      <option value="285" selected>285 л/добу: те саме, райони II–IV (Київ)</option></select></label></div>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Труби</div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Ввід: матеріал<select class="formInput" id="em"></select></label></div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Ввід: розмір<select class="formInput" id="es"></select></label></div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Розводка квартирою: матеріал<select class="formInput" id="mat"></select></label></div>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Прилади</div>
+    <div id="devs"></div>
+    <label class="chk"><input type="checkbox" id="boiler"> Бойлер у квартирі</label>
+    <details class="hl"><summary>Паспортна витрата приладів, л/хв</summary>
+      <p class="hint">Для ліній до приладів. Порожньо: 5 л/хв (ванна й душ без перевірки, лінія Ø20). Якщо знаєте паспортну витрату змішувача, введіть, і лінія перевіриться за швидкістю.</p>
+      <div class="fl" id="fl"></div></details>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Втрати тиску (необовʼязково)</div>
+    <p class="hint" style="margin-top:0">Якщо ввести довжини й тиск, буде показано залишковий тиск на найдальшому приладі.</p>
+    <div class="zr"><label>Тиск після редуктора, бар<input class="formInput" id="pIn" type="number" inputmode="decimal" step="0.1" value="3"></label>
+    <label>Довжина вводу, м<input class="formInput" id="lE" type="number" inputmode="decimal" step="0.5" placeholder="напр. 5"></label></div>
+    <div class="zr"><label>Найдовша лінія до приладу, м<input class="formInput" id="lL" type="number" inputmode="decimal" step="0.5" placeholder="напр. 8"></label></div>
+  </div>
+
+  <div class="g card" id="res"></div>
+  <div class="g card" id="cmp"></div>
+
+  <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
+</div>
+
+<script src="shared/hydraulics.js?v=20261121"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id), H = Hydraulics;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+const f2 = (x, n = 2) => (x == null ? "–" : x.toFixed(n).replace(".", ","));
+const opts = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<option>${a + i}</option>`).join("");
+const dn = n => `<span class="dn">Ø${n}</span>`;
+$("U").innerHTML = opts(1, 12); $("U").value = 3;
+$("em").innerHTML = Object.keys(H.MAT).map(k => `<option value="${k}">${H.MAT[k].label}</option>`).join("");
+$("mat").innerHTML = $("em").innerHTML; $("em").value = "pex"; $("mat").value = "pex";
+function fillSizes(){ $("es").innerHTML = H.MAT[$("em").value].sizes.map(s => `<option value="${s[0]}">${s[1]} (внутр. ${String(s[2]).replace(".", ",")} мм)</option>`).join(""); const pref = H.MAT[$("em").value].sizes.find(s => s[0] === 25); if(pref) $("es").value = 25; }
+fillSizes();
+const DEF = { bath: 1, shower: 1, sink: 1, basin: 1, wc: 1, washer: 1 };
+$("devs").innerHTML = H.ORDER.map(id => `<div class="dv"><span>${H.DEV[id].label}</span><select class="formInput" id="c_${id}">${opts(0, 6)}</select></div>`).join("");
+H.ORDER.forEach(id => $("c_" + id).value = DEF[id] || 0);
+$("fl").innerHTML = H.ORDER.map(id => `<label for="f_${id}">${H.DEV[id].label}</label><input class="formInput" id="f_${id}" type="number" inputmode="decimal" step="0.5" placeholder="${H.DEV[id].reserve ? "–" : "5"}">`).join("");
+function scheme(r){
+  const W = 360, rowH = 44, top = 70, n = r.lines.length, H = top + n * rowH + 12, C = "#0A84FF", Hh = "#FF3B30", xc = 44, xh = 86, xe = 214;
+  const tee = r.scheme === "tee";
+  let o = `<svg class="sch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Схема розводки">`;
+  o += `<defs><marker id="ac" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="${C}"/></marker><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="${Hh}"/></marker><marker id="ahl" viewBox="0 0 8 8" refX="1" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M8 0L0 4L8 8z" fill="${Hh}"/></marker></defs>`;
+  const badge = (x, y, t, c) => `<rect x="${x - 16}" y="${y - 8}" width="32" height="16" rx="8" fill="${c}"/><text class="bd" x="${x}" y="${y + 4}" text-anchor="middle">${t}</text>`;
+  const cy = i => top + i * rowH + 10, hy = i => top + i * rowH + 28;
+  const lastCold = n - 1;
+  let lastHot = -1; r.lines.forEach((l, i) => { if(l.hot) lastHot = i; });
+  /* ввід */
+  o += `<line x1="${xc}" y1="8" x2="${xc}" y2="${tee ? cy(lastCold) : top - 4}" stroke="${C}" stroke-width="${tee ? 4 : 3}"/>`;
+  o += `<text class="nm" x="${xc + 12}" y="22">Ввід</text>` + badge(xc + 70, 18, "Ø" + r.inDn, C) + `<text class="sm" x="${xc + 94}" y="22">кран ${r.valveIn}</text>`;
+  if(tee){
+    o += badge(xc, top - 20, "Ø" + r.main.first, C);
+  } else {
+    o += `<rect x="${xc - 4}" y="${top - 4}" width="8" height="${n * rowH - 2}" rx="4" fill="${C}"/><text class="sm" x="${xc}" y="${top - 10}" text-anchor="middle">ХВП</text>`;
+    if(lastHot >= 0) o += `<rect x="${xh - 4}" y="${top - 4}" width="8" height="${n * rowH - 2}" rx="4" fill="${Hh}"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
+  }
+  if(tee && lastHot >= 0) o += `<line x1="${xh}" y1="${top - 4}" x2="${xh}" y2="${hy(lastHot)}" stroke="${Hh}" stroke-width="3"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
+  r.lines.forEach((l, i) => {
+    const yc = cy(i), yh = hy(i), mid = (xc + xe) / 2;
+    o += `<line x1="${xc}" y1="${yc}" x2="${xe}" y2="${yc}" stroke="${C}" stroke-width="2" marker-end="url(#ac)"/>` + badge(mid + 14, yc, "Ø" + l.cold, C);
+    if(l.hot){
+      if(l.boiler) o += `<line x1="${xe}" y1="${yh}" x2="${xh}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
+      else o += `<line x1="${xh}" y1="${yh}" x2="${xe}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
+      o += badge(mid + 14, yh, "Ø" + l.hot, Hh);
+    }
+    if(tee){ o += `<circle cx="${xc}" cy="${yc}" r="3.5" fill="${C}"/>`; if(l.hot) o += `<circle cx="${xh}" cy="${yh}" r="3.5" fill="${Hh}"/>`; }
+    o += `<text class="nm" x="${xe + 14}" y="${l.hot ? (yc + yh) / 2 + 4 : yc + 4}">${esc(l.name)}</text>`;
+  });
+  if(tee && n > 1) o += badge(xc, cy(0) + 22, "Ø" + r.main.after, C) + (lastHot > 0 ? badge(xh, (hy(0) + cy(1)) / 2, "Ø" + r.main.after, Hh) : "");
+  return o + "</svg>";
+}
+
+function params(){
+  const counts = {}, flows = {};
+  H.ORDER.forEach(id => { counts[id] = $("c_" + id).value; flows[id] = $("f_" + id).value; });
+  return { U: $("U").value, norm: $("norm").value, scheme: $("scheme").value, mat: $("mat").value, entry: { mat: $("em").value, od: +$("es").value }, counts, flows, boiler: $("boiler").checked, pIn: +$("pIn").value, lenEntry: +$("lE").value, lenLine: +$("lL").value };
+}
+function render(){
+  const p = params(), r = H.calc(p);
+  let h = "";
+  if(!r.q){ $("res").innerHTML = `<div class="ttl">Результат</div><p class="hint">${r.warnings.join(" ")}</p>`; $("cmp").innerHTML = ""; return; }
+  h += `<div class="ttl">Витрати за ДБН</div><div class="sum">
+    <div><span>Розрахункова витрата на вводі</span><b>${f2(r.sections[0].q)} л/с</b></div>
+    <div><span>Гаряча вода, окремо</span><b>${f2(r.q.hot)} л/с</b></div>
+    <div><span>Холодна вода, окремо</span><b>${f2(r.q.cold)} л/с</b></div></div>
+    <p class="hint">Таблиця А.${{150:6,210:7,250:8,285:9}[r.norm]}, ${r.U} мешканців. Ввід ${p.boiler ? "несе загальну витрату (холодна + на підігрів бойлера)" : "несе холодну витрату"}.</p>`;
+  h += `<div class="ttl" style="margin-top:14px">Швидкість води</div><table class="tb"><tr><th>Ділянка</th><th>Труба</th><th class="n">л/с</th><th class="n">м/с</th><th></th></tr>`;
+  const short = n => n.replace(" (змішувач)", "").replace("Холодна: ", "").replace("Гаряча: ", "");
+  const row = (s, lab) => `<tr><td>${lab || esc(s.name)}</td><td>${s.size}${s.rule ? "<br><span class=\"sm\" style=\"color:var(--ts)\">правило Ø20</span>" : ""}</td><td class="n">${s.q == null ? "–" : f2(s.q, 3)}</td><td class="n">${s.v == null ? "–" : f2(s.v)}</td><td class="n">${s.v == null ? "" : s.ok ? '<span class="okc">в нормі</span>' : '<span class="wr">більше ' + f2(s.vmax, 1) + '</span>'}</td></tr>`;
+  r.sections.forEach(s => h += row(s));
+  r.lines.forEach(l => { h += row(l.cold, esc(short(l.name)) + (l.hot ? " хол." : "")); if(l.hot) h += row(l.hot, esc(short(l.name)) + " гар."); });
+  h += `</table>`;
+  r.warnings.forEach(w => h += `<div class="warn">${esc(w)}</div>`);
+  if(r.pressure){
+    h += `<div class="ttl" style="margin-top:14px">Втрати тиску</div><div class="sum">
+      <div><span>Тиск після редуктора</span><b>${f2(r.pressure.pIn, 1)} бар</b></div>
+      <div><span>Втрати на вводі й найдовшій лінії (${esc(r.pressure.line)})</span><b>${f2(r.pressure.loss / 1e5, 2)} бар</b></div>
+      <div><span>Залишок біля найдальшого приладу</span><b>${f2(r.pressure.left / 1e5, 2)} бар</b></div></div>
+      <p class="hint">Без урахування висоти, фільтра й лічильника: їхні втрати треба додати за паспортом виробника.</p>`;
+  }
+  const ent = r.sections[0];
+  const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null }));
+  const sc = { scheme: r.scheme, inDn: ent.od, valveIn: ent.od > 25 ? '1"' : '3/4"', lines: ln, main: r.scheme === "tee" ? { first: ent.od, after: (r.sections[1] || ent).od } : null };
+  if(ln.length) h += `<div class="ttl" style="margin-top:14px">Схема</div>` + scheme(sc) + `<p class="hint">Синя лінія це холодна вода, червона гаряча. Ø це зовнішній діаметр труби.</p>`;
+  h += `<div class="ttl" style="margin-top:14px">Рекомендації</div><ul class="rec">
+    <li>Редуктор тиску на вводі, вихід 3–3,5 бар.</li>
+    <li>Механічний фільтр на 100 мкм перед приладами.</li>
+    <li>Запірна арматура на вводі ${sc.valveIn}, до приладів 1/2" (практика монтажу).</li>
+    ${p.boiler ? "<li>Обвʼязка бойлера: нержавійка або мідь Ø18 (практика монтажу).</li>" : ""}</ul>`;
+  r.notes.forEach(n => h += `<p class="hint">${esc(n)}</p>`);
+  if(r.scheme === "tee") h += `<p class="hint">Трійникова схема: витрату на ділянках магістралі розподілено пропорційно таблиці А.5, прилади йдуть від вводу в порядку списку. Це тлумачення, не пункт норми.</p>`;
+  $("res").innerHTML = h;
+  /* порівняння матеріалів */
+  const c = H.compare(p);
+  let g = `<div class="ttl">Порівняння матеріалів</div><p class="hint" style="margin-top:0">Мінімальний ввід за швидкістю води (витрата ${f2(r.sections[0].q)} л/с), лінія до малого приладу (5 л/хв) і запас для ванни, душу, бойлера.</p><table class="tb"><tr><th>Матеріал</th><th>Ввід</th><th>Лінія</th><th>Запас</th></tr>`;
+  c.forEach(x => g += `<tr><td>${x.label}</td><td>${x.entry}<br><span class="sm" style="color:var(--ts)">${f2(x.entryV)} м/с</span></td><td>${x.line}</td><td>${x.reserve}</td></tr>`);
+  $("cmp").innerHTML = g + `</table><p class="hint">Типорозміри: PEX і поліпропілен PN16 SDR 7,4, металопластик, поліпропілен PN20, мідь та нержавійка за типовими розмірами виробників.</p>`;
+}
+$("em").addEventListener("change", () => { fillSizes(); render(); });
+document.querySelectorAll("select,input").forEach(e => { if(e.id !== "em") e.addEventListener("change", render); e.addEventListener && e.type === "number" && e.addEventListener("input", render); });
+render();
+</script>
+</body>
+</html>
