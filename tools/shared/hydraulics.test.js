@@ -33,4 +33,15 @@ const rt = H.calc({ ...base, scheme: "tee", counts: { bath: 1, basin: 1, wc: 1 }
 t("tee flows decrease", rt.sections[1].q < rt.sections[0].q && rt.sections[2].q < rt.sections[1].q);
 t("bad U", H.calc({ ...base, U: 0 }).warnings.length === 1);
 const c = H.compare(base); t("compare 6 materials", c.length === 6 && c.every(x => x.entry && x.line && x.reserve));
+const ch = { riser: "1/2", filter: true, meter: "DN15", check: true, meterIn: "cabinet", pipeLen: 6, node: { valve: "3/4", reducer: true } };
+const rc = H.calc({ ...base, chain: ch });
+t("chain order", rc.chain.elements.map(e => e.type).join() === "riser,filter,meter,check,pipe,node,reducer");
+t("chain valve 1/2 speed = q/area(13)", near(rc.chain.elements[0].v, H.vel(rc.sections[0].q, 13), 1e-9));
+t("chain: 1/2 valve flagged with boiler at U=3 (q 0,40 l/s)", rc.chain.elements[0].status === "bad");
+t("chain no bottleneck at U=1 without boiler", H.calc({ ...base, U: 1, boiler: false, chain: ch }).chain.elements.every(e => e.status !== "bad"));
+const rc2 = H.calc({ ...base, U: 40, chain: ch });
+t("chain bottleneck at U=40 (1/2 valve)", rc2.chain.elements[0].status === "bad" && rc2.warnings.some(w => /Кран від стояка/.test(w)));
+t("meter over 2Qn warns", rc2.warnings.some(w => /лічильник/.test(w)));
+t("chain without meter/filter", H.calc({ ...base, chain: { riser: "3/4", meter: "", node: { valve: "1/2" } } }).chain.elements.map(e => e.type).join() === "riser,pipe,node");
+t("chain notes mention п. 7.9", rc.chain.notes.some(n => /7\.9/.test(n)));
 console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);
