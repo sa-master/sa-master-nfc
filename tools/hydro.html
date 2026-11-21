@@ -359,6 +359,7 @@ function actReadForm(){
     if(document.getElementById(`act_k_${i}`)) x.k = Number(v(`act_k_${i}`)) || 1.5;
     const dt = document.getElementById(`act_date_${i}`); if(dt && dt.value) x.date = dt.value;
   });
+  actSyncOn();
 }
 /* Підказка пробного тиску: робочий тиск × коефіцієнт. Коефіцієнт залежить від виробника труб і проєкту — вибирає майстер */
 const ACT_KS = [1.1, 1.3, 1.5];
@@ -426,18 +427,33 @@ function actCheckHtml(x, i, ev, done){
     ${done || ev.status !== T.NODATA ? `<div class="actRes ${actStatusCls(ev.status)}"><b>${escapeHtml(ev.status)}</b>${ev.reasons.length ? `<ul>${ev.reasons.map(t => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : ""}${ev.notes.map(t => `<small>${escapeHtml(t)}</small>`).join("")}</div>` : ""}
   </details>`;
 }
-/* Одна система на акт: вибір «Водопостачання» або «Опалення» */
+/* Випробування одного обʼєкта: вкладки «Водопостачання» / «Опалення», у PDF — разом або окремо */
+function actHasData(x){ return Boolean(x && (actPair(x).b || actPair(x).a || x.manual)); }
+function actSyncOn(){ if(actDraft) actDraft.systems.forEach(x => { x.on = actHasData(x) && !x.off; }); }
 function actChipsHtml(){
-  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip ${x.on ? "on" : ""}"><input type="checkbox" ${x.on ? "checked" : ""} onchange="actPickSys(${i})"><span>${escapeHtml(x.label)}</span></label>`).join("")}</div>`;
+  const tab = actDraft.tab || 0;
+  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip ${i === tab ? "on" : ""}"><input type="checkbox" ${i === tab ? "checked" : ""} onchange="actPickSys(${i})"><span>${escapeHtml(x.label)}${actHasData(x) ? " ✓" : ""}</span></label>`).join("")}</div>`;
 }
 function actPickSys(i){
   actReadForm();
   if(!actDraft) return;
-  actDraft.systems.forEach((x, j) => { x.on = (j === i); });
+  actDraft.tab = i;
+  renderActSheet();
+}
+function actIncHtml(){
+  const withData = actDraft.systems.map((x, i) => ({ x, i })).filter(o => actHasData(o.x));
+  if(withData.length < 2) return "";
+  return `<div class="actInc"><small>У PDF додати:</small>${withData.map(o => `<label><input type="checkbox" ${o.x.off ? "" : "checked"} onchange="actToggleInc(${o.i}, this.checked)"> ${escapeHtml(o.x.label)}</label>`).join("")}</div>`;
+}
+function actToggleInc(i, on){
+  actReadForm();
+  if(!actDraft) return;
+  actDraft.systems[i].off = !on;
+  actSyncOn();
   renderActSheet();
 }
 function renderActSheet(){
-  if(actDraft && !actDraft.systems.some(x => x.on)) actDraft.systems[0].on = true;
+  actSyncOn();
   const box = document.getElementById("actSheetBody");
   if(!box || !actDraft) return;
   const sys = (x, i) => {
@@ -445,9 +461,9 @@ function renderActSheet(){
     const done = Boolean(actPair(x).a) || Boolean(x.manual);
     const ev = actEval(x);
     const ok = done ? actSysOk(x) : null;
-    return `<div class="actSys ${x.on ? "" : "off"}">
-      <div class="actSysHead"><span></span>${x.on ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
-      ${x.on ? `<div class="actPair">
+    return `<div class="actSys">
+      <div class="actSysHead"><span></span>${1 ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
+      ${1 ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
           ? `<div class="actPh"><img src="${ph.src}" alt="" onclick="actPhView(${i},'${w}')" title="Відкрити"><span>${escapeHtml(actPhLabel(x, w))}</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
           : `<button type="button" class="actPhAdd" onclick="openActCam(${i},'${w}')">${ACT_GAUGE_SVG}<b>Зробіть фото ${w === "before" ? "до" : "після"}</b><small>${w === "before" ? "на початку випробування" : (x.medium === "air" ? "через 5+ хв" : x.need >= 120 ? "через 2+ год" : "через 30+ хв")}</small></button>`; }).join("")}
@@ -474,7 +490,8 @@ function renderActSheet(){
   box.innerHTML = `
     ${actChipsHtml()}
     <div class="actWork" style="grid-template-columns:1fr"><label><small>Чим випробовуємо</small><select id="act_med" onchange="actSetMedium(this.value)"><option value="water" ${med === "water" ? "selected" : ""}>Водою (гідравлічне)</option><option value="air" ${med === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label></div>
-    ${actDraft.systems.map((x, i) => x.on ? sys(x, i) : "").join("")}
+    ${actDraft.systems.map((x, i) => i === (actDraft.tab || 0) ? sys(x, i) : "").join("")}
+    ${actIncHtml()}
     ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${src}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
     <div class="formGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
     
@@ -818,7 +835,7 @@ function actCamLabels(){
 const $ = id => document.getElementById(id);
 const newDraft = () => ({
   date: todayIso(),
-  systems: ACT_SYSTEMS.map((x, n) => ({ key:x.key, label:x.label, on:n === 0, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
+  systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
   note: "", photos: []
 });
 actDraft = newDraft();
@@ -857,7 +874,7 @@ SMProfile.mount($("profileBox"));
 
 async function buildPaper(){
   actReadForm();
-  if(!actDraft.systems.some(x=>x.on)){toast("Позначте хоча б одну систему");return null;}
+  if(!actDraft.systems.some(x=>x.on)){toast("Зробіть фото або впишіть результат хоча б однієї системи");return null;}
   const bad=actDraft.systems.find(x=>x.on&&actNum(x.pressure)===null);
   if(bad){toast(bad.label+": вкажіть тиск");return null;}
   if(!actDraft.systems.some(actSysDone)){toast("Зробіть фото «після» або впишіть результат вручну");return null;}
