@@ -169,7 +169,7 @@
   function entryChain(c, qIn, e) {
     c = c || {};
     const warnings = [], notes = [], els = [];
-    const rv = VALVE[c.riser] || VALVE["1/2"], nv = VALVE[(c.node || {}).valve] || VALVE["3/4"];
+    const rv = VALVE[c.riser] || VALVE["1/2"], nv = VALVE[(c.node || {}).valve] || VALVE["1/2"];
     const push = (type, label, d, extra) => {
       const v = d ? vel(qIn, d) : null;
       const el = Object.assign({ type, label, d, v, status: v == null ? "ok" : v > VLIM ? "bad" : v > 0.8 * VLIM ? "warn" : "ok" }, extra || {});
