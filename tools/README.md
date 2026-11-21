@@ -4,7 +4,6 @@
 - `floor.html` — калькулятор водяної теплої підлоги
 - `hydro.html` — акт гідравлічних випробувань (перенесено з et.app)
 - `hydraulics.html` — гідравлічний розрахунок квартири за ДБН В.2.5-64:2012 (таблиці А.5–А.9 у `shared/hydraulics.js`, тест: `node shared/hydraulics.test.js`)
-- `diameters.html` — підбір діаметрів водопроводу (правила в `shared/diameters.js`, тест: `node shared/diameters.test.js`)
 - `shared/` — спільні модулі:
   - `store.js` — локальне збереження (IndexedDB, схема v1)
   - `profile.js` — імʼя/компанія, телефон, логотип майстра
