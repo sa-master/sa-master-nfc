@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Діаметри труб для водопроводу: ввід, лінії, арматура | SA-MASTER.PRO</title>
+<meta name="description" content="Безкоштовний підбір діаметрів труб для променевого водопроводу: ввід у колектор, лінії до приладів, арматура й обв'язка бойлера.">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="canonical" href="https://sa-master.pro/tools/diameters.html">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="uk_UA">
+<meta property="og:site_name" content="SA-MASTER.PRO">
+<meta property="og:title" content="Діаметри труб для водопроводу">
+<meta property="og:description" content="Безкоштовно: ввід у колектор, лінії до приладів, арматура й обв'язка бойлера.">
+<meta property="og:url" content="https://sa-master.pro/tools/diameters.html">
+<meta property="og:image" content="https://sa-master.pro/tools/og/tools.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="stylesheet" href="shared/tools.css?v=20261121">
+<style>
+.zr{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end;margin-top:8px}
+.zr label{display:flex;flex-direction:column;gap:4px;font-size:.7rem;font-weight:700;color:var(--tm)}
+select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-size:.95rem;color:var(--t)}
+.dv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln);font-size:.95rem}
+.dv:last-child{border:0}.dv select{width:76px}
+.chk{display:flex;gap:10px;align-items:center;padding:8px 0;font-size:.95rem}
+.sum div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--ln);font-size:.95rem}
+.sum div:last-child{border:0}.sum span{color:var(--ts)}
+.dn{display:inline-block;min-width:44px;text-align:center;padding:2px 8px;border-radius:10px;background:rgba(0,122,255,.12);color:var(--p);font-weight:800}
+.big{font-size:1.5rem}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="g hero"><img src="/logo.png" alt=""><div><a href="/">SA-MASTER<span style="font-weight:500;font-size:.8rem">.pro</span></a><small>інструменти для майстрів</small></div></div>
+<div class="navrow"><a href="/tools/">← Усі інструменти</a></div>
+
+  <div class="g card">
+    <h1>Діаметри труб</h1>
+    <p class="lead">Променева система водопроводу: оберіть обʼєкт і прилади, і отримаєте діаметри для вводу, ліній, арматури й обвʼязки.</p>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Обʼєкт</div>
+    <div class="zr">
+      <label>Тип<select class="formInput" id="kind"><option value="flat">Квартира</option><option value="house">Будинок</option></select></label>
+      <label>Санвузлів<select class="formInput" id="baths"></select></label>
+    </div>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Прилади</div>
+    <div id="devs"></div>
+    <label class="chk"><input type="checkbox" id="boiler"> Бойлер</label>
+    <label class="chk"><input type="checkbox" id="filter"> Водоочистка</label>
+  </div>
+
+  <div class="g card" id="res"></div>
+
+  <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
+</div>
+
+<script src="shared/diameters.js?v=20261121"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id), D = Diameters;
+const opts = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<option>${a + i}</option>`).join("");
+$("baths").innerHTML = opts(1, 6);
+const DEF = { bath: 1, basin: 1, sink: 1, wc: 1, washer: 1 };
+$("devs").innerHTML = D.DEVICES.map(d => `<div class="dv"><span>${d.label}</span><select class="formInput" id="c_${d.id}">${opts(0, 6)}</select></div>`).join("");
+D.DEVICES.forEach(d => $("c_" + d.id).value = DEF[d.id] || 0);
+const dn = n => `<span class="dn">Ø${n}</span>`;
+function render(){
+  const counts = {}; D.DEVICES.forEach(d => counts[d.id] = $("c_" + d.id).value);
+  const r = D.calc({ kind: $("kind").value, baths: $("baths").value, counts, boiler: $("boiler").checked, filter: $("filter").checked });
+  const t = r.totals;
+  let h = `<div class="ttl">Результат</div><div class="sum">
+    <div><span>Ввід у колектор</span><b>${dn(r.inDn)}</b></div>
+    <div><span>Запірна арматура на вводі</span><b>${r.valveIn}</b></div>
+    <div><span>Арматура до приладів</span><b>1/2"</b></div>`;
+  if(r.bind) h += `<div><span>Обвʼязка ${[r.bind.boiler ? "бойлера" : "", r.bind.filter ? "водоочистки" : ""].filter(Boolean).join(" і ")}</span><b>нержавійка або мідь ${dn(r.bind.dn)}</b></div>`;
+  h += `<div><span>Виходів на колекторі холодної води</span><b>${r.outputsCold}</b></div>`;
+  h += `<div><span>Виходів на колекторі гарячої води</span><b>${r.outputsHot}</b></div></div>`;
+  h += `<div class="ttl" style="margin-top:14px">Лінії до приладів</div><div class="sum">` +
+    (r.lines.length ? r.lines.map(l => `<div><span>${l.name}</span><b>${dn(l.cold)}${l.hot ? " + " + dn(l.hot) : ""}</b></div>`).join("") : `<div><span>Додайте прилади вище</span></div>`) + `</div>`;
+  h += `<p class="hint">Разом труби: Ø20 ${t.cold20} хол. і ${t.hot20} гар., Ø16 ${t.cold16} хол. і ${t.hot16} гар. Позначки Ø для труб зі зшитого поліетилену та металопластику (зовнішній діаметр). «+» означає лінію холодної і гарячої води.</p>`;
+  r.notes.forEach(n => h += `<p class="hint">${n}</p>`);
+  h += `<p class="hint">Орієнтовний підбір за практикою монтажників, не нормативний розрахунок.</p>`;
+  $("res").innerHTML = h;
+}
+document.querySelectorAll("select,input").forEach(e => e.addEventListener("change", render));
+render();
+</script>
+</body>
+</html>

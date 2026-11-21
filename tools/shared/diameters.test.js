@@ -1,0 +1,11 @@
+const D = require("./diameters.js"); let ok = 0, bad = 0;
+const t = (n, c) => { if (c) ok++; else { bad++; console.log("FAIL", n); } };
+let r = D.calc({ kind: "flat", baths: 1, counts: { bath: 1, basin: 1, sink: 1, wc: 1, washer: 1 }, boiler: true });
+t("flat inlet 25", r.inDn === 25); t("valve 3/4", r.valveIn === '3/4"');
+t("lines", r.lines.length === 6); t("cold20 bath+boiler", r.totals.cold20 === 2); t("cold16", r.totals.cold16 === 4);
+t("hot: bath basin sink boiler", r.outputsHot === 3 && r.totals.hot20 === 2 && r.totals.hot16 === 2);
+t("bind 18", r.bind && r.bind.dn === 18);
+r = D.calc({ kind: "house", baths: 3, counts: {} }); t("house3 32", r.inDn === 32 && r.notes.length === 1 && r.bind === null);
+r = D.calc({ kind: "house", baths: 2, counts: { shower: 2 }, filter: true }); t("house2 25, shower names", r.inDn === 25 && r.lines[1].name === "Душ (змішувач) 2" && r.bind.filter);
+r = D.calc({ kind: "flat", baths: 5, counts: {} }); t("flat any baths 25", r.inDn === 25);
+console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);
