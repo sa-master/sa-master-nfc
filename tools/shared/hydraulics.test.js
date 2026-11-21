@@ -32,7 +32,7 @@ const big = H.calc({ ...base, U: 40, entry: { mat: "pex", od: 16 } }); t("small 
 const rt = H.calc({ ...base, scheme: "tee", counts: { bath: 1, basin: 1, wc: 1 } }); t("tee: ввід + 2 магістралі", rt.sections.length === 3);
 t("tee flows decrease", rt.sections[1].q < rt.sections[0].q && rt.sections[2].q < rt.sections[1].q);
 t("bad U", H.calc({ ...base, U: 0 }).warnings.length === 1);
-const c = H.compare(base); t("compare 6 materials", c.length === 6 && c.every(x => x.entry && x.line && x.reserve));
+const c = H.compare(base); t("compare 3 materials", c.length === 3 && c.every(x => x.entry && x.line && x.reserve));
 const ch = { riser: "1/2", filter: true, meter: "DN15", check: true, meterIn: "cabinet", pipeLen: 6, node: { valve: "3/4", reducer: true } };
 const rc = H.calc({ ...base, chain: ch });
 t("chain order", rc.chain.elements.map(e => e.type).join() === "riser,filter,meter,check,pipe,node,reducer");
