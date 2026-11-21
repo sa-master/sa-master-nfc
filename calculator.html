@@ -4131,6 +4131,11 @@ body.inSec #pfAddPerson{display:none}
 .actRes.warn{background:rgba(255,149,0,.16)}
 .actInfo{width:18px;height:18px;padding:0;margin-left:4px;border-radius:50%;border:1.5px solid var(--tm);background:transparent;color:var(--tm);font:italic 700 12px/1 serif;cursor:pointer;vertical-align:middle}
 .actHelp{grid-column:1/-1;font-size:.78rem;color:var(--tm)}.actHelp summary{cursor:pointer;font-weight:600;color:var(--ts)}.actHelp p{margin:6px 0 0;line-height:1.45}
+.actChips{display:grid;gap:8px;margin-bottom:12px}
+.actChip{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:14px;border:1.5px solid var(--ln,#d0d5dd);font-weight:700;font-size:.95rem;cursor:pointer}
+.actChip input{width:1.15rem;height:1.15rem;flex:none}
+.actChip.on{border-color:var(--p);background:rgba(10,132,255,.08)}
+.actSysHead span:empty{display:none}.actSysHead{justify-content:flex-end}
 .actInfoTxt{margin:6px 0;padding:8px 10px;border-radius:10px;background:var(--bgs);font-size:.78rem;color:var(--ts)}
 .actInfoTxt[hidden]{display:none}
 .actSug button.actInfo{margin-left:4px;padding:0;width:18px;height:18px;border-radius:50%;background:transparent;border:1.5px solid var(--tm);color:var(--tm);font:italic 700 12px/1 serif}
@@ -11838,7 +11843,7 @@ function openActSheet(){
   const a = project.pressureAct;
   actDraft = a ? JSON.parse(JSON.stringify(a)) : {
     date: todayIso(),
-    systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:true, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
+    systems: ACT_SYSTEMS.map((x, n) => ({ key:x.key, label:x.label, on:n === 0, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
     note: "",
     photos: []
   };
@@ -11944,7 +11949,18 @@ function actCheckHtml(x, i, ev, done){
     ${done || ev.status !== T.NODATA ? `<div class="actRes ${actStatusCls(ev.status)}"><b>${escapeHtml(ev.status)}</b>${ev.reasons.length ? `<ul>${ev.reasons.map(t => `<li>${escapeHtml(t)}</li>`).join("")}</ul>` : ""}${ev.notes.map(t => `<small>${escapeHtml(t)}</small>`).join("")}</div>` : ""}
   </details>`;
 }
+/* Одна система на акт: вибір «Водопостачання» або «Опалення» */
+function actChipsHtml(){
+  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip ${x.on ? "on" : ""}"><input type="checkbox" ${x.on ? "checked" : ""} onchange="actPickSys(${i})"><span>${escapeHtml(x.label)}</span></label>`).join("")}</div>`;
+}
+function actPickSys(i){
+  actReadForm();
+  if(!actDraft) return;
+  actDraft.systems.forEach((x, j) => { x.on = (j === i); });
+  renderActSheet();
+}
 function renderActSheet(){
+  if(actDraft && !actDraft.systems.some(x => x.on)) actDraft.systems[0].on = true;
   const box = document.getElementById("actSheetBody");
   if(!box || !actDraft) return;
   const sys = (x, i) => {
@@ -11953,8 +11969,7 @@ function renderActSheet(){
     const ev = actEval(x);
     const ok = done ? actSysOk(x) : null;
     return `<div class="actSys ${x.on ? "" : "off"}">
-      <label class="actSysHead"><input type="checkbox" id="actOn${i}" ${x.on ? "checked" : ""} onchange="actReadForm();renderActSheet()"><span>${escapeHtml(x.label)}</span>
-        ${x.on ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</label>
+      <div class="actSysHead"><span></span>${x.on ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
       ${x.on ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
           ? `<div class="actPh"><img src="${ph.src}" alt="" onclick="actPhView(${i},'${w}')" title="Відкрити"><span>${escapeHtml(actPhLabel(x, w))}</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
@@ -11980,8 +11995,9 @@ function renderActSheet(){
   const photos = actDraft.photos || [];
   const med = actDraft.systems.some(x => x.medium === "air") ? "air" : "water";
   box.innerHTML = `
+    ${actChipsHtml()}
     <div class="actWork" style="grid-template-columns:1fr"><label><small>Чим випробовуємо</small><select id="act_med" onchange="actSetMedium(this.value)"><option value="water" ${med === "water" ? "selected" : ""}>Водою (гідравлічне)</option><option value="air" ${med === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label></div>
-    ${actDraft.systems.map(sys).join("")}
+    ${actDraft.systems.map((x, i) => x.on ? sys(x, i) : "").join("")}
     ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${src}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
     <div class="formGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
     
