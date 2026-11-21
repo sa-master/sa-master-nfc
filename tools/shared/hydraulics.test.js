@@ -53,4 +53,6 @@ const rr2 = H.calc({ ...base, hotDist: 1, dist: { basin: 1, sink: 1 } });
 t("short run: no recirc needed", rr2.recirc && rr2.recirc.needed === false);
 const rr3 = H.calc({ ...base, dist: { basin: 12 }, lenLine: 0 });
 t("per-device distance used for pressure", rr3.lines.find(l => l.id === "basin").len === 12);
+t("reserve = PEX20 equivalent: pex 20, cu/inox 18", H.reserveSize("pex")[0] === 20 && H.reserveSize("cu")[0] === 18 && H.reserveSize("inox")[0] === 18);
+const bx = H.calc({ ...base, mat: "inox" }); t("inox boiler line 18", bx.lines.find(l => l.id === "boiler").hot.od === 18 && bx.lines.find(l => l.id === "bath").cold.od === 18);
 console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);
