@@ -67,12 +67,14 @@
     if (len > 0) { s.i = specLoss(q, d, m.k, hot); s.dp = s.i * len * (1 + KL); s.len = len; }
     return s;
   }
-  function pick(mat, q, hot, minOd) {
+  /* запас для ванни, душу, бойлера: прохід не менший, ніж у PEX 20×2,8 (внутр. 14,4 мм); для міді й нержавійки це Ø18 */
+  const REF_BORE = 14.4;
+  function pick(mat, q, hot, minOd, minBore) {
     const m = MAT[mat], vmax = hot ? m.vh : m.vc;
-    const list = m.sizes.filter(s => s[0] >= minOd);
+    const list = m.sizes.filter(s => s[0] >= minOd && (!minBore || s[2] >= minBore - 0.05));
     return list.find(s => vel(q, s[2]) <= vmax) || list[list.length - 1];
   }
-  function reserveSize(mat) { return MAT[mat].sizes.find(s => s[0] >= 20); }
+  function reserveSize(mat) { return MAT[mat].sizes.find(s => s[2] >= REF_BORE - 0.05); }
   /* витрати по мешканцях (таблиці А.6–А.9), інтерполяція по U; U до 40 */
   function byU(norm, U) {
     const rows = A69[String(norm)]; if (!rows || U < 1 || U > 40) return null;
@@ -102,18 +104,18 @@
       const res = { name: x.name, id: x.id, reserve: x.reserve, cold: null, hot: null };
       const fl = flows[x.id] === "" || flows[x.id] == null ? (x.reserve ? null : 5) : +flows[x.id];
       const qd = fl == null ? null : fl * LPM;
-      const minOd = x.reserve ? 20 : 16;
-      const sc = qd == null ? reserveSize(mat) : pick(mat, qd, false, minOd);
+      const minOd = x.reserve ? 0 : 16, minB = x.reserve ? REF_BORE : 0;
+      const sc = qd == null ? reserveSize(mat) : pick(mat, qd, false, minOd, minB);
       res.len = lenOf(x.id); res.cold = section("Холодна: " + x.name, qd, sc, mat, false, res.len);
-      if (x.h > 0) { const sh = qd == null ? reserveSize(mat) : pick(mat, qd, true, minOd); res.hot = section("Гаряча: " + x.name, qd, sh, mat, true, res.len); }
+      if (x.h > 0) { const sh = qd == null ? reserveSize(mat) : pick(mat, qd, true, minOd, minB); res.hot = section("Гаряча: " + x.name, qd, sh, mat, true, res.len); }
       return res;
     };
     items.forEach(x => out.lines.push(lineOf(x)));
     if (p.boiler) {
       const b = { name: "Бойлер", id: "boiler", boiler: true, reserve: true,
         len: +p.hotDist > 0 ? +p.hotDist : p.lenLine,
-        cold: section("До бойлера", q.hot, pick(mat, q.hot, false, 20), mat, false, +p.hotDist > 0 ? +p.hotDist : p.lenLine),
-        hot: section("Від бойлера (ГВП)", q.hot, pick(mat, q.hot, true, 20), mat, true, +p.hotDist > 0 ? +p.hotDist : p.lenLine) };
+        cold: section("До бойлера", q.hot, pick(mat, q.hot, false, 0, REF_BORE), mat, false, +p.hotDist > 0 ? +p.hotDist : p.lenLine),
+        hot: section("Від бойлера (ГВП)", q.hot, pick(mat, q.hot, true, 0, REF_BORE), mat, true, +p.hotDist > 0 ? +p.hotDist : p.lenLine) };
       out.lines.push(b);
     }
     if (out.scheme === "tee" && items.length > 1) {
@@ -147,7 +149,7 @@
       out.pressure = { pIn: p.pIn, loss, left: p.pIn * 1e5 - loss, line: worst.name };
     }
     if (p.chain) { const ch = entryChain(p.chain, qIn, e); out.chain = ch; ch.warnings.forEach(w => out.warnings.push(w)); }
-    out.notes.push("Лінії ванни, душу й бойлера не менше Ø20 (запас під заміну приладу): рекомендація майстра, не вимога норми.");
+    out.notes.push("Лінії ванни, душу й бойлера з проходом не меншим, ніж PEX Ø20 (внутр. 14,4 мм): запас під заміну приладу, рекомендація майстра, не вимога норми. Для міді й нержавійки це Ø18.");
     return out;
   }
   /* порівняння матеріалів: мінімальний ввід за швидкістю, лінія до малого приладу (5 л/хв), запас Ø20 */
