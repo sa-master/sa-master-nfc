@@ -43,6 +43,39 @@
         .concat(scheme === "tee" ? ["Трійникова схема: магістраль від вводу до першого трійника, далі на розмір менше. Для гарячої води магістраль від бойлера взято за тим самим правилом."] : [])
     };
   }
-  const api = { DEVICES, calc, inletDn };
+  /* Еквівалент пропуску за внутрішнім діаметром. src: "cat" з каталогу виробника, "typ" типове значення. */
+  const EQ = [
+    { g: "Зшитий поліетилен / PE-RT", n: "16×2,0", d: 12, src: "typ" }, { g: "Зшитий поліетилен / PE-RT", n: "20×2,0", d: 16, src: "typ" },
+    { g: "Зшитий поліетилен / PE-RT", n: "20×2,8", d: 14.4, src: "typ" }, { g: "Зшитий поліетилен / PE-RT", n: "25×2,3", d: 20.4, src: "typ" },
+    { g: "Зшитий поліетилен / PE-RT", n: "25×3,5", d: 18, src: "typ" }, { g: "Зшитий поліетилен / PE-RT", n: "32×3,0", d: 26, src: "typ" },
+    { g: "Зшитий поліетилен / PE-RT", n: "32×4,4", d: 23.2, src: "typ" },
+    { g: "Композит TECEflex", n: "розмір 25 (26×4,0)", d: 18, src: "cat" },
+    { g: "Нержавійка Geberit Mapress", n: "18×1,0", d: 16, src: "cat" },
+    { g: "Нержавійка", n: "15×1,0", d: 13, src: "typ" }, { g: "Нержавійка", n: "22×1,2", d: 19.6, src: "typ" },
+    { g: "Нержавійка", n: "28×1,2", d: 25.6, src: "typ" },
+    { g: "Мідь", n: "15×1,0", d: 13, src: "typ" }, { g: "Мідь", n: "18×1,0", d: 16, src: "typ" },
+    { g: "Мідь", n: "22×1,0", d: 20, src: "typ" }, { g: "Мідь", n: "28×1,5", d: 25, src: "typ" },
+    { g: "Поліпропілен PN20", n: "20×3,4", d: 13.2, src: "typ" }, { g: "Поліпропілен PN20", n: "25×4,2", d: 16.6, src: "typ" },
+    { g: "Поліпропілен PN20", n: "32×5,4", d: 21.2, src: "typ" }, { g: "Поліпропілен PN20", n: "40×6,7", d: 26.6, src: "typ" },
+    { g: "Поліпропілен PN16", n: "20×2,8", d: 14.4, src: "typ" }, { g: "Поліпропілен PN16", n: "25×3,5", d: 18, src: "typ" },
+    { g: "Поліпропілен PN16", n: "32×4,4", d: 23.2, src: "typ" },
+    { g: "Різьба (прохід труби)", n: "1/2\"", d: 15, src: "typ" }, { g: "Різьба (прохід труби)", n: "3/4\"", d: 21, src: "typ" },
+    { g: "Різьба (прохід труби)", n: "1\"", d: 27, src: "typ" }
+  ];
+  const area = d => Math.PI * d * d / 4;
+  /* найближчий за внутрішнім діаметром розмір у кожній групі; diff — різниця площі перерізу в % */
+  function equiv(i) {
+    const it = EQ[i], out = [];
+    const groups = [...new Set(EQ.map(e => e.g))];
+    groups.forEach(g => {
+      const list = EQ.map((e, k) => ({ e, k })).filter(x => x.e.g === g && x.k !== i);
+      if (!list.length) return;
+      list.sort((a, b) => Math.abs(a.e.d - it.d) - Math.abs(b.e.d - it.d));
+      const b = list[0].e;
+      out.push({ g, n: b.n, d: b.d, src: b.src, diff: Math.round((area(b.d) / area(it.d) - 1) * 100) });
+    });
+    return { item: it, area: Math.round(area(it.d)), list: out };
+  }
+  const api = { DEVICES, calc, inletDn, EQ, equiv };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Diameters = api;
 })(typeof window !== "undefined" ? window : this);

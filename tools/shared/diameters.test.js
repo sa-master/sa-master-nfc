@@ -11,4 +11,7 @@ r = D.calc({ kind: "flat", baths: 5, counts: {} }); t("flat any baths 25", r.inD
 r = D.calc({ kind: "flat", baths: 1, scheme: "tee", counts: { bath: 1, basin: 1, wc: 1 } }); t("tee main 25->20", r.main.first === 25 && r.main.after === 20 && r.tees.cold === 2 && r.tees.hot === 1);
 r = D.calc({ kind: "house", baths: 3, scheme: "tee", counts: {} }); t("tee house 32->25", r.main.first === 32 && r.main.after === 25);
 t("ray no main", D.calc({ counts: {} }).main === null);
+const ti = D.EQ.findIndex(e => e.g === "Композит TECEflex"), e1 = D.equiv(ti);
+t("equiv tece->inox18 +/-27%", e1.list.find(x => x.g === "Нержавійка Geberit Mapress").diff === -21);
+t("equiv has ppr", e1.list.some(x => x.g.startsWith("Поліпропілен")));
 console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);

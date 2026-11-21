@@ -60,6 +60,13 @@ select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-si
 
   <div class="g card" id="res"></div>
 
+  <div class="g card">
+    <div class="ttl">Еквівалент за пропуском</div>
+    <p class="lead" style="margin:0 0 8px">Оберіть трубу, і побачите найближчі за пропуском розміри в інших матеріалах.</p>
+    <label class="zr" style="display:flex;flex-direction:column;font-size:.7rem;font-weight:700;color:var(--tm);gap:4px">Труба<select class="formInput" id="eq"></select></label>
+    <div id="eqRes"></div>
+  </div>
+
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
 
@@ -97,7 +104,25 @@ function render(){
   h += `<p class="hint">Орієнтовний підбір за практикою монтажників, не нормативний розрахунок.</p>`;
   $("res").innerHTML = h;
 }
-document.querySelectorAll("select,input").forEach(e => e.addEventListener("change", render));
+(function(){
+  let g = "", h = "";
+  D.EQ.forEach((e, i) => { if(e.g !== g){ if(g) h += "</optgroup>"; g = e.g; h += `<optgroup label="${e.g}">`; } h += `<option value="${i}">${e.n}</option>`; });
+  $("eq").innerHTML = h + "</optgroup>";
+  $("eq").value = D.EQ.findIndex(e => e.g === "Композит TECEflex");
+})();
+function renderEq(){
+  const q = D.equiv(Number($("eq").value)), it = q.item;
+  let h = `<div class="sum"><div><span>Внутрішній діаметр</span><b>${String(it.d).replace(".", ",")} мм</b></div><div><span>Площа перерізу</span><b>${q.area} мм²</b></div></div>
+    <div class="ttl" style="margin-top:14px">Найближчі аналоги</div><div class="sum">`;
+  q.list.forEach(x => {
+    const d = x.diff === 0 ? "однаково" : (x.diff > 0 ? "+" : "−") + Math.abs(x.diff) + "%";
+    h += `<div><span>${x.g}</span><b>${x.n} <span style="font-weight:500">(${String(x.d).replace(".", ",")} мм, ${d})</span></b></div>`;
+  });
+  h += `</div><p class="hint">Відсоток це різниця площі перерізу аналога порівняно з обраною трубою. Розміри TECEflex і Geberit Mapress взято з каталогів, решта типові: у різних виробників вони відрізняються на 1–2 мм. Фітинги й крани звужують прохід, тому реальний пропуск нижчий. Для різьби вказано прохід труби, у кульових кранів отвір менший (½" близько 12–13 мм, ¾" близько 17–18 мм).</p>`;
+  $("eqRes").innerHTML = h;
+}
+$("eq").addEventListener("change", renderEq); renderEq();
+document.querySelectorAll("select,input").forEach(e => { if(e.id !== "eq") e.addEventListener("change", render); });
 render();
 </script>
 </body>
