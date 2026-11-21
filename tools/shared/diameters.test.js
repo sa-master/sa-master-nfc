@@ -14,4 +14,5 @@ t("ray no main", D.calc({ counts: {} }).main === null);
 const ti = D.EQ.findIndex(e => e.g === "Металопластик" && e.n.startsWith("26×4")), e1 = D.equiv(ti);
 t("equiv metal-plastic 18 -> inox nearest 22x1,2 +19%", e1.list.find(x => x.g === "Нержавійка").diff === 19);
 t("equiv has ppr", e1.list.some(x => x.g.startsWith("Поліпропілен")));
+r = D.calc({ counts: { hyg: 1 } }); t("hyg 16+16", r.lines.length === 1 && r.lines[0].cold === 16 && r.lines[0].hot === 16);
 console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);

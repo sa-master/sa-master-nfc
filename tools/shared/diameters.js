@@ -6,6 +6,7 @@
   const DEVICES = [
     { id: "bath", label: "Ванна (змішувач)", hot: true, dn: 20 },
     { id: "shower", label: "Душ (змішувач)", hot: true, dn: 20 },
+    { id: "hyg", label: "Гігієнічний душ", hot: true, dn: 16 },
     { id: "basin", label: "Умивальник", hot: true, dn: 16 },
     { id: "sink", label: "Мийка на кухні", hot: true, dn: 16 },
     { id: "wc", label: "Унітаз", hot: false, dn: 16 },
