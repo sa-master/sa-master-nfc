@@ -70,7 +70,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
 
-<script src="shared/hydraulics.js?v=20261125"></script>
+<script src="shared/hydraulics.js?v=20261126"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id), H = Hydraulics;
@@ -150,7 +150,8 @@ function render(){
     if(l.hot && l.hot.od === l.cold.od) h += row(nm + ": холодна і гаряча", l.cold.v != null && l.hot.v != null && l.hot.v > l.cold.v ? l.hot : l.cold);
     else { h += row(nm + (l.hot ? ": холодна" : ""), l.cold); if(l.hot) h += row(nm + ": гаряча", l.hot); }
   });
-  h += `</table><p class="hint">Запас це наскільки швидкість нижча за межу ДБН (п. 11.6, 12.12: для полімерів 2,5 м/с). Для ванни й душу витрата змішувача не задана, тому Ø20 прийнято із запасу.</p>`;
+  h += `</table><p class="hint">Запас це наскільки швидкість нижча за межу ДБН (п. 11.6, 12.12: для полімерів 2,5 м/с). </p>`;
+  if(r.lines.some(l => l.id === "bath" || l.id === "shower")) h += `<div class="warn">Ванна й душ: Ø16 достатньо для звичайних змішувачів. Тропічний душ або змішувач з великою витратою (від 12 л/хв) на Ø16 може працювати некоректно: слабкий напір, шум, просідання тиску. Для таких приладів беріть Ø20.</div>`;
   const bad = [e0].concat(segs, r.lines.flatMap(l => [l.cold, l.hot].filter(Boolean))).filter(s => s.v != null && !s.ok);
   if(bad.length) h += `<div class="warn">Швидкість води вище норми на ділянках: ${bad.map(s => esc(s.name)).join(", ")}. Збільшіть діаметр.</div>`;
   if(r.recirc){
@@ -164,7 +165,7 @@ function render(){
   }
   const ad = H.nodeAdvice($("pIn").value, qIn);
   if(ad) h += `<div class="ttl" style="margin-top:14px">Вузол</div><ul class="rec">${ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul><p class="hint">Пороги тиску (3 і 4 бар) і запас Kvs в 1,5 раза це орієнтири, не вимоги норми. Витрата вводу ${f2(qIn * 3.6)} м³/год.</p>`;
-  h += `<p class="hint">Діаметри за практикою монтажу (ввід не менше PEX Ø25, ванна, душ і бойлер не менше PEX Ø20, решта Ø16) і перевіркою швидкості за ДБН В.2.5-64:2012. Для інших матеріалів підбирається еквівалент за внутрішнім діаметром. Це не заміна проєкту.</p>`;
+  h += `<p class="hint">Діаметри за практикою монтажу (ввід не менше PEX Ø25, бойлер не менше PEX Ø20, решта Ø16, у тому числі ванна й душ) і перевіркою швидкості за ДБН В.2.5-64:2012. Для інших матеріалів підбирається еквівалент за внутрішнім діаметром. Це не заміна проєкту.</p>`;
   $("res").innerHTML = h;
 }
 document.querySelectorAll("select,input").forEach(e => { e.addEventListener("change", render); if(e.type === "number") e.addEventListener("input", render); });

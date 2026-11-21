@@ -22,7 +22,9 @@ const i = H.specLoss(0.2, 16, 0.007, false); t("specLoss ~0,93 кПа/м", i > 5
 const base = { mat: "pex", scheme: "ray", entry: { mat: "pex", od: 25 }, U: 3, norm: 285, counts: { bath: 1, shower: 1, basin: 2, sink: 1, wc: 1, washer: 1, dish: 1 }, boiler: true, lenEntry: 5, lenLine: 8, pIn: 3 };
 const r = H.calc(base);
 t("entry q = tot", near(r.sections[0].q, u(285, 3).tot) && r.sections[0].ok);
-t("bath line rule 20", r.lines.find(l => l.id === "bath").cold.od === 20 && r.lines.find(l => l.id === "bath").cold.rule);
+t("bath line basic 16 (rule)", r.lines.find(l => l.id === "bath").cold.od === 16 && r.lines.find(l => l.id === "bath").cold.rule);
+t("bath warning about tropical shower", r.notes.some(n => /Тропічний душ/.test(n)));
+t("bath with 20 l/min flow grows to 20", H.calc({ ...base, flows: { bath: 20 } }).lines.find(l => l.id === "bath").cold.od === 20);
 t("wc 16 at 5 l/min", r.lines.find(l => l.id === "wc").cold.od === 16 && near(r.lines.find(l => l.id === "wc").cold.q, 5 / 60, 0.0001));
 t("boiler line >=20", r.lines.find(l => l.id === "boiler").cold.od >= 20);
 t("hot only for hot devices", r.lines.find(l => l.id === "basin").hot && !r.lines.find(l => l.id === "wc").hot);
@@ -44,10 +46,10 @@ t("chain bottleneck at U=40 (1/2 valve)", rc2.chain.elements[0].status === "bad"
 t("meter over 2Qn warns", rc2.warnings.some(w => /лічильник/.test(w)));
 t("chain without meter/filter", H.calc({ ...base, chain: { riser: "3/4", meter: "", node: { valve: "1/2" } } }).chain.elements.map(e => e.type).join() === "riser,pipe,node");
 t("chain notes mention п. 7.9", rc.chain.notes.some(n => /7\.9/.test(n)));
-const rr1 = H.calc({ ...base, flows: { basin: 6 }, hotDist: 20, dist: { basin: 8, sink: 3 } });
+const rr1 = H.calc({ ...base, flows: { basin: 6 }, hotDist: 30, dist: { basin: 8, sink: 3 } });
 const bi = rr1.recirc.items.find(x => x.id === "basin" || /умивальник/i.test(x.name));
 t("recirc items for hot devices", rr1.recirc && rr1.recirc.items.length >= 1 && rr1.recirc.items.every(x => x.vol > 0));
-t("recirc volume = pi d2/4 * L", near(bi.vol, Math.PI * Math.pow(bi.d / 2000, 2) * (20 + 8) * 1000, 1e-6));
+t("recirc volume = pi d2/4 * L", near(bi.vol, Math.PI * Math.pow(bi.d / 2000, 2) * (30 + 8) * 1000, 1e-6));
 t("recirc flagged over 3 l on long run", rr1.recirc.needed === true);
 const rr2 = H.calc({ ...base, hotDist: 1, dist: { basin: 1, sink: 1 } });
 t("short run: no recirc needed", rr2.recirc && rr2.recirc.needed === false);

@@ -106,10 +106,10 @@
       const res = { name: x.name, id: x.id, reserve: x.reserve, cold: null, hot: null };
       const fl = flows[x.id] === "" || flows[x.id] == null ? (x.reserve ? null : 5) : +flows[x.id];
       const qd = fl == null ? null : fl * LPM;
-      const minOd = x.reserve ? 0 : 16, minB = x.reserve ? REF_BORE : 0;
-      const sc = qd == null ? reserveSize(mat) : pick(mat, qd, false, minOd, minB);
+      const baseSz = MAT[mat].sizes.find(z => z[0] >= 16); /* ванна й душ: базовий розмір Ø16; для потужних змішувачів див. застереження */
+      const sc = qd == null ? baseSz : pick(mat, qd, false, 16);
       res.len = lenOf(x.id); res.cold = section("Холодна: " + x.name, qd, sc, mat, false, res.len);
-      if (x.h > 0) { const sh = qd == null ? reserveSize(mat) : pick(mat, qd, true, minOd, minB); res.hot = section("Гаряча: " + x.name, qd, sh, mat, true, res.len); }
+      if (x.h > 0) { const sh = qd == null ? baseSz : pick(mat, qd, true, 16); res.hot = section("Гаряча: " + x.name, qd, sh, mat, true, res.len); }
       return res;
     };
     items.forEach(x => out.lines.push(lineOf(x)));
@@ -155,7 +155,7 @@
       out.pressure = { pIn: p.pIn, loss, left: p.pIn * 1e5 - loss, line: worst.name };
     }
     if (p.chain) { const ch = entryChain(p.chain, qIn, e); out.chain = ch; ch.warnings.forEach(w => out.warnings.push(w)); }
-    out.notes.push("Лінії ванни, душу й бойлера з проходом не меншим, ніж PEX Ø20 (внутр. 14,4 мм): запас під заміну приладу, рекомендація майстра, не вимога норми. Для міді й нержавійки це Ø18.");
+    out.notes.push("Ванна й душ: Ø16 достатньо для звичайних змішувачів. Тропічний душ або змішувач з великою витратою (від 12 л/хв) на Ø16 може працювати некоректно: слабкий напір, шум, просідання тиску. Для таких приладів беріть Ø20. Бойлер: не менше PEX Ø20 (внутр. 14,4 мм), це рекомендація майстра, не вимога норми.");
     return out;
   }
   /* порівняння матеріалів: мінімальний ввід за швидкістю, лінія до малого приладу (5 л/хв), запас Ø20 */
