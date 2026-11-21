@@ -60,4 +60,7 @@ t("advice: 5 bar reducer needed, node 1/2", H.nodeAdvice(5, 0.4).reducer === "ne
 t("advice: 3.5 bar optional", H.nodeAdvice(3.5, 0.4).reducer === "optional");
 t("advice: 2 bar low -> node 3/4, no reducer", H.nodeAdvice(2, 0.4).node === "3/4" && H.nodeAdvice(2, 0.4).reducer === "no");
 t("advice: Kvs need = 1.5 * q m3/h", near(H.nodeAdvice(5, 0.4).kvNeed, 0.4 * 3.6 * 1.5, 1e-9));
+const rm = H.calc({ ...base, scheme: "tee", counts: { bath: 1, shower: 1, sink: 2, basin: 2, wc: 2, washer: 1 } });
+t("tee main flow non-increasing, OD non-increasing", rm.sections.every((s, i) => i === 0 || (s.q <= rm.sections[i - 1].q && s.od <= rm.sections[i - 1].od)));
+t("lines carry distance", H.calc({ ...base, dist: { wc: 7 } }).lines.find(l => l.id === "wc").len === 7);
 console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);

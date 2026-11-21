@@ -70,8 +70,8 @@
   }
   /* запас для ванни, душу, бойлера: прохід не менший, ніж у PEX 20×2,8 (внутр. 14,4 мм); для міді й нержавійки це Ø18 */
   const REF_BORE = 14.4;
-  function pick(mat, q, hot, minOd, minBore) {
-    const m = MAT[mat], vmax = hot ? m.vh : m.vc;
+  function pick(mat, q, hot, minOd, minBore, frac) {
+    const m = MAT[mat], vmax = (hot ? m.vh : m.vc) * (frac || 1);
     const list = m.sizes.filter(s => s[0] >= minOd && (!minBore || s[2] >= minBore - 0.05));
     return list.find(s => vel(q, s[2]) <= vmax) || list[list.length - 1];
   }
@@ -82,6 +82,7 @@
     const us = rows.map(r => r[0]);
     return { tot: lerp(U, us, rows.map(r => r[1])), hot: lerp(U, us, rows.map(r => r[2])), cold: lerp(U, us, rows.map(r => r[3])) };
   }
+  const MAIN_FRAC = 1; /* магістраль підбирається за межею швидкості ДБН; запас показується на сторінці */
   const LPM = 1 / 60; /* л/хв -> л/с */
   /* p: { mat, scheme: "ray"|"tee", entry: {mat, od}, U, norm, counts, boiler, flows: {id: л/хв, ...}, lenEntry, lenLine, pIn } */
   function calc(p) {
@@ -120,11 +121,15 @@
       out.lines.push(b);
     }
     if (out.scheme === "tee" && items.length > 1) {
-      const all = a5("total", items.length, items.reduce((s, x) => s + x.c + x.h, 0) / items.length);
+      const avgAll = items.reduce((s, x) => s + x.c + x.h, 0) / items.length, all = a5("total", items.length, avgAll);
+      let prevQ = qIn;
       for (let k = 1; k < items.length; k++) {
         const rest = items.slice(k), n = rest.length;
-        const r = a5("total", n, rest.reduce((s, x) => s + x.c + x.h, 0) / n) / all;
-        const qs = qIn * r, sz = pick(mat, qs, false, 0, REF_BORE);
+        const r = a5("total", n, avgAll) / all; /* середня витрата на прилад та сама, кількість приладів далі менша */
+        const qs = Math.min(qIn * r, prevQ); /* витрата вздовж магістралі не росте */
+        prevQ = qs;
+        let sz = pick(mat, qs, false, 16, 0, MAIN_FRAC);
+        if (mat === em.mat && sz[0] > eSize[0]) sz = eSize; /* магістраль не ширша за ввід */
         out.sections.push(section("Магістраль після " + k + "-го відгалуження", qs, sz, mat, false, 0));
       }
     }
