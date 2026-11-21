@@ -130,6 +130,7 @@
       const loss = e.dp + worst.cold.dp;
       out.pressure = { pIn: p.pIn, loss, left: p.pIn * 1e5 - loss, line: worst.name };
     }
+    if (p.chain) { const ch = entryChain(p.chain, qIn, e); out.chain = ch; ch.warnings.forEach(w => out.warnings.push(w)); }
     out.notes.push("Лінії ванни, душу й бойлера не менше Ø20 (запас під заміну приладу): рекомендація майстра, не вимога норми.");
     return out;
   }
@@ -142,6 +143,45 @@
       return { mat: k, label: m.label, entry: e[1], entryD: e[2], entryV: vel(qIn, e[2]), line: ln[1], reserve: rs[1], vmax: m.vc };
     });
   }
-  const api = { A5, A69, DEV, ORDER, MAT, a5, byU, calc, compare, specLoss, vel, pick, reserveSize, KL };
+  /* ввід від забудовника: арматура й лічильник. Прохідні перерізи й Qn типові, не каталожні: звіряти з паспортом */
+  const VALVE = { "1/2": { label: '1/2"', bore: 13 }, "3/4": { label: '3/4"', bore: 18 }, "1": { label: '1"', bore: 24 } };
+  const METER = { DN15: { label: "DN15", bore: 15, qn: 1.5 }, DN20: { label: "DN20", bore: 20, qn: 2.5 }, DN25: { label: "DN25", bore: 25, qn: 3.5 } };
+  const VLIM = 2.5; /* м/с, орієнтир для корпусів арматури: норма ДБН задає межі для труб, не для кранів */
+  const fm = (x, n) => x.toFixed(n == null ? 2 : n).replace(".", ",");
+  /* c: { riser, filter, meter, check, meterIn: "cabinet"|"flat", pipeLen, node: { valve, reducer } }, qIn л/с, e: секція вводу */
+  function entryChain(c, qIn, e) {
+    c = c || {};
+    const warnings = [], notes = [], els = [];
+    const rv = VALVE[c.riser] || VALVE["1/2"], nv = VALVE[(c.node || {}).valve] || VALVE["3/4"];
+    const push = (type, label, d, extra) => {
+      const v = d ? vel(qIn, d) : null;
+      const el = Object.assign({ type, label, d, v, status: v == null ? "ok" : v > VLIM ? "bad" : v > 0.8 * VLIM ? "warn" : "ok" }, extra || {});
+      els.push(el); return el;
+    };
+    push("riser", "Кран від стояка " + rv.label, rv.bore, { dev: true });
+    if (c.filter) push("filter", "Фільтр", rv.bore, { dev: true });
+    if (c.meter && METER[c.meter]) {
+      const m = METER[c.meter], qh = qIn * 3.6, ratio = qh / m.qn;
+      const el = push("meter", "Лічильник " + m.label, m.bore, { dev: true, qh, qn: m.qn, ratio });
+      if (ratio > 2) { el.status = "bad"; warnings.push("Розрахункова витрата " + fm(qh) + " м³/год більша за 2·Qn лічильника " + m.label + " (Qn " + fm(m.qn, 1) + " м³/год, типове значення): лічильник стане вузьким місцем. Звірте з паспортом."); }
+      else if (ratio > 1) { if (el.status === "ok") el.status = "warn"; notes.push("Витрата " + fm(qh) + " м³/год перевищує Qn лічильника " + m.label + " (типово " + fm(m.qn, 1) + " м³/год), але в межах короткочасного режиму. Звірте з паспортом."); }
+    }
+    if (c.check) push("check", "Зворотній клапан", rv.bore, { dev: true });
+    push("pipe", "Труба вводу " + (e ? e.size : ""), e ? e.d : null, { od: e ? e.od : null, len: +c.pipeLen > 0 ? +c.pipeLen : null, mat: e ? e.matLabel : "", v: e ? e.v : null, status: e && !e.ok ? "bad" : "ok" });
+    push("node", "Кран розподільчого вузла " + nv.label, nv.bore, { dev: true });
+    if ((c.node || {}).reducer) push("reducer", "Редуктор і манометр", null);
+    /* вузькі місця: перша арматура, що дає швидкість вище орієнтиру */
+    els.filter(x => x.dev && x.status === "bad" && x.type !== "meter").forEach(x => {
+      warnings.push(x.label + ": швидкість у прохідному перерізі близько " + fm(x.v, 1) + " м/с при витраті " + fm(qIn, 2) + " л/с. Орієнтир " + fm(VLIM, 1) + " м/с, тут можливі шум і втрати тиску.");
+    });
+    if (rv.bore < 18 && e && e.od >= 25) notes.push("Кран " + rv.label + " від забудовника вужчий за трубу вводу Ø" + e.od + ": він визначає пропускну здатність вводу, а не труба. Замінювати його в стояку майстер не може, тож це обмеження треба врахувати в розрахунку.");
+    if (c.meterIn === "cabinet") notes.push("Лічильник у шафі загального користування в коридорі: це відповідає п. 10.8 ДБН (лічильники, фільтри й арматура поза квартирою). Ділянка після лічильника в підлозі квартири ваша зона відповідальності.");
+    else if (c.meterIn === "flat") notes.push("Лічильник усередині квартири: доступ до нього й до кранів має бути без розбирання конструкцій (п. 7.9, 10.8).");
+    notes.push("Кран на вводі в квартиру передбачено п. 9.7 л. Редуктор з манометром ставиться після запірного крана, вузол обліку без запірних пристроїв між редуктором і фільтром (п. 9.10). Зворотній клапан на вводі в квартиру рекомендовано (п. 9.12, 9.13).");
+    notes.push("Труба в підлозі: у гільзі або ізоляції (п. 7.9). Муфта з насувною гільзою під стяжкою нерозʼємне зʼєднання. Перед заливанням стяжки перевірте в інструкції виробника фітингів, що це дозволено, і зробіть випробування тиском до заливання. Якщо інструкція забороняє, зробіть люк або винесіть вузол у доступне місце (п. 7.9, 10.8).");
+    notes.push("Прохідні перерізи кранів (1/2\" ≈ 13, 3/4\" ≈ 18, 1\" ≈ 24 мм) і Qn лічильників (DN15 1,5; DN20 2,5; DN25 3,5 м³/год) типові, а не каталожні: це орієнтир, а не вимога ДБН.");
+    return { elements: els, warnings, notes, riserDn: rv.label, nodeDn: nv.label };
+  }
+  const api = { VALVE, METER, entryChain, A5, A69, DEV, ORDER, MAT, a5, byU, calc, compare, specLoss, vel, pick, reserveSize, KL };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Hydraulics = api;
 })(typeof window !== "undefined" ? window : this);
