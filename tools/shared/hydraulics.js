@@ -29,6 +29,7 @@
     cu: { label: "Мідь", vc: 3.0, vh: 2.0, k: 0.0015, sizes: [[15, "15×1,0", 13], [18, "18×1,0", 16], [22, "22×1,0", 20], [28, "28×1,5", 25]] },
     inox: { label: "Нержавійка", vc: 1.5, vh: 1.5, k: 0.015, sizes: [[15, "15×1,0", 13], [18, "18×1,0", 16], [22, "22×1,2", 19.6], [28, "28×1,2", 25.6]] }
   };
+  const LIST = ["pex", "mp", "ppr20", "ppr16"]; /* матеріали, які пропонує сторінка; мідь і нержавійка залишені лише для розрахунків */
   const KL = 0.3; /* п. 11.7: питні водопроводи житлових будинків */
   function lerp(x, xs, ys) {
     if (x <= xs[0]) return ys[0];
@@ -156,7 +157,7 @@
   function compare(p) {
     const q = byU(+p.norm || 285, Math.floor(+p.U) || 0); if (!q) return [];
     const qIn = p.boiler ? q.tot : q.cold;
-    return Object.keys(MAT).map(k => {
+    return LIST.map(k => {
       const m = MAT[k], e = pick(k, qIn, false, 0), ln = pick(k, 5 * LPM, false, 16), rs = reserveSize(k);
       return { mat: k, label: m.label, entry: e[1], entryD: e[2], entryV: vel(qIn, e[2]), line: ln[1], reserve: rs[1], vmax: m.vc };
     });
@@ -201,6 +202,6 @@
     notes.push("Прохідні перерізи кранів (1/2\" ≈ 13, 3/4\" ≈ 18, 1\" ≈ 24 мм) і Qn лічильників (DN15 1,5; DN20 2,5; DN25 3,5 м³/год) типові, а не каталожні: це орієнтир, а не вимога ДБН.");
     return { elements: els, warnings, notes, riserDn: rv.label, nodeDn: nv.label };
   }
-  const api = { VALVE, METER, entryChain, A5, A69, DEV, ORDER, MAT, a5, byU, calc, compare, specLoss, vel, pick, reserveSize, KL };
+  const api = { LIST, VALVE, METER, entryChain, A5, A69, DEV, ORDER, MAT, a5, byU, calc, compare, specLoss, vel, pick, reserveSize, KL };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Hydraulics = api;
 })(typeof window !== "undefined" ? window : this);

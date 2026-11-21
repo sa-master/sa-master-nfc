@@ -52,7 +52,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
     <h1>Гідравлічний розрахунок</h1>
     <p class="lead">Внутрішній водопровід квартири за ДБН В.2.5-64:2012: розрахункова витрата, швидкість води в трубах, втрати тиску.</p>
     <details class="hl"><summary>Як рахується</summary>
-      <p class="hint">Витрата на вводі береться з таблиць А.6–А.9 за кількістю мешканців (норма 285 л/добу на мешканця, центральне ГВП, ванна понад 1500 мм, Київ). Швидкість порівнюється з межами п. 11.6 і 12.12: метал 1,5, мідь 3,0 (гаряча 2,0), полімери 2,5 м/с. Втрати тиску за формулою (9): H = i·l·(1 + 0,3). Питомі втрати i норма не наводить, вони рахуються за формулою Дарсі–Вейсбаха з типовою шорсткістю матеріалу. Лінії до приладів перевіряються за паспортною витратою приладу (за замовчуванням 5 л/хв). Лінії ванни, душу й бойлера беруться з проходом не меншим, ніж у PEX Ø20 (внутрішній 14,4 мм), для міді й нержавійки це Ø18: це рекомендація, а не вимога норми. Сторінка не замінює проєкт.</p></details>
+      <p class="hint">Витрата на вводі береться з таблиць А.6–А.9 за кількістю мешканців (норма 285 л/добу на мешканця, центральне ГВП, ванна понад 1500 мм, Київ). Швидкість порівнюється з межами п. 11.6 і 12.12: для полімерних труб 2,5 м/с. Втрати тиску за формулою (9): H = i·l·(1 + 0,3). Питомі втрати i норма не наводить, вони рахуються за формулою Дарсі–Вейсбаха з типовою шорсткістю матеріалу. Лінії до приладів перевіряються за паспортною витратою приладу (за замовчуванням 5 л/хв). Лінії ванни, душу й бойлера беруться з проходом не меншим, ніж у PEX Ø20 (внутрішній 14,4 мм), для міді й нержавійки це Ø18: це рекомендація, а не вимога норми. Сторінка не замінює проєкт.</p></details>
   </div>
 
   <div class="g card">
@@ -111,7 +111,7 @@ const f2 = (x, n = 2) => (x == null ? "–" : x.toFixed(n).replace(".", ","));
 const opts = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<option>${a + i}</option>`).join("");
 const dn = n => `<span class="dn">Ø${n}</span>`;
 $("U").innerHTML = opts(1, 12); $("U").value = 3;
-$("em").innerHTML = Object.keys(H.MAT).map(k => `<option value="${k}">${H.MAT[k].label}</option>`).join("");
+$("em").innerHTML = H.LIST.map(k => `<option value="${k}">${H.MAT[k].label}</option>`).join("");
 $("mat").innerHTML = $("em").innerHTML; $("em").value = "pex"; $("mat").value = "pex";
 function fillSizes(){ $("es").innerHTML = H.MAT[$("em").value].sizes.map(s => `<option value="${s[0]}">${s[1]} (внутр. ${String(s[2]).replace(".", ",")} мм)</option>`).join(""); const pref = H.MAT[$("em").value].sizes.find(s => s[0] === 25); if(pref) $("es").value = 25; }
 fillSizes();
@@ -229,7 +229,7 @@ function render(){
   const c = H.compare(p);
   let g = `<div class="ttl">Порівняння матеріалів</div><p class="hint" style="margin-top:0">Мінімальний ввід за швидкістю води (витрата ${f2(r.sections[0].q)} л/с), лінія до малого приладу (5 л/хв) і запас для ванни, душу, бойлера.</p><table class="tb"><tr><th>Матеріал</th><th>Ввід</th><th>Лінія</th><th>Запас</th></tr>`;
   c.forEach(x => g += `<tr><td>${x.label}</td><td>${x.entry}<br><span class="sm" style="color:var(--ts)">${f2(x.entryV)} м/с</span></td><td>${x.line}</td><td>${x.reserve}</td></tr>`);
-  $("cmp").innerHTML = g + `</table><p class="hint">Типорозміри: PEX і поліпропілен PN16 SDR 7,4, металопластик, поліпропілен PN20, мідь та нержавійка за типовими розмірами виробників.</p>`;
+  $("cmp").innerHTML = g + `</table><p class="hint">Типорозміри: PEX і поліпропілен PN16 SDR 7,4, металопластик і поліпропілен PN20 за типовими розмірами виробників.</p>`;
 }
 $("em").addEventListener("change", () => { fillSizes(); render(); });
 document.querySelectorAll("select,input").forEach(e => { if(e.id !== "em") e.addEventListener("change", render); e.addEventListener && e.type === "number" && e.addEventListener("input", render); });
