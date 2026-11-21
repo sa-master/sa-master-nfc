@@ -24,7 +24,7 @@
 .zr label{display:flex;flex-direction:column;gap:4px;font-size:.7rem;font-weight:700;color:var(--tm)}
 select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-size:.95rem;color:var(--t)}
 .dv{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln);font-size:.95rem}
-.dv:last-child{border:0}.dv select{width:76px}
+.dv:last-child{border:0}.dv select{width:76px}.dv>span:first-child{flex:1;min-width:0}.dv .dr{display:flex;gap:8px;flex:none}.dv .dr>*{width:68px;min-width:0;flex:none}
 .chk{display:flex;gap:10px;align-items:center;padding:8px 0;font-size:.95rem}
 .sum div{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--ln);font-size:.95rem}
 .sum div:last-child{border:0}.sum span{color:var(--ts)}
@@ -69,33 +69,31 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   </div>
 
   <div class="g card">
-    <div class="ttl">Ввід від забудовника</div>
-    <p class="hint" style="margin-top:0">Що вже стоїть на обʼєкті до вашого вузла.</p>
-    <div class="zr"><label>Кран від стояка<select class="formInput" id="rv"><option value="1/2" selected>1/2"</option><option value="3/4">3/4"</option><option value="1">1"</option></select></label>
-    <label>Лічильник<select class="formInput" id="mt"><option value="DN15" selected>DN15</option><option value="DN20">DN20</option><option value="DN25">DN25</option><option value="">немає</option></select></label></div>
-    <label class="chk"><input type="checkbox" id="cf" checked> Фільтр</label>
-    <label class="chk"><input type="checkbox" id="cc" checked> Зворотній клапан</label>
-    <div class="zr" style="grid-template-columns:1fr"><label>Де лічильник<select class="formInput" id="mi"><option value="cabinet" selected>У шафі в коридорі (загальна)</option><option value="flat">У квартирі</option></select></label></div>
+    <div class="ttl">Вже стоїть від забудовника</div>
+    <p class="hint" style="margin-top:0">Це майстер змінити не може, тому тут нічого вводити не треба: відвід від стояка Ø1/2", кран, косий фільтр, лічильник і зворотній клапан. Враховується в розрахунку як фіксований початок.</p>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Труба після лічильника</div>
+    <p class="hint" style="margin-top:0">Те, що ви бачите на обʼєкті: матеріал, діаметр і довжина до вашого вузла. Замінюється рідко.</p>
+    <div class="zr" style="grid-template-columns:1fr"><label>Матеріал<select class="formInput" id="em"></select></label></div>
+    <div class="zr"><label>Розмір<select class="formInput" id="es"></select></label>
+    <label>Довжина до вузла, м<input class="formInput" id="lE" type="number" inputmode="decimal" step="0.5" placeholder="напр. 6"></label></div>
   </div>
 
   <div class="g card">
     <div class="ttl">Мій розподільчий вузол</div>
     <div class="zr" style="grid-template-columns:1fr"><label>Кран вузла<select class="formInput" id="nv"><option value="1/2">1/2"</option><option value="3/4" selected>3/4"</option><option value="1">1"</option></select></label></div>
     <label class="chk"><input type="checkbox" id="nr" checked> Редуктор з манометром у вузлі</label>
-    <p class="hint">Труба вводу в підлозі в ізоляції, нероз'ємні муфти й трійники з насувною гільзою. Матеріал і діаметр вводу задайте нижче.</p>
-  </div>
-
-  <div class="g card">
-    <div class="ttl">Труби</div>
-    <div class="zr" style="grid-template-columns:1fr"><label>Труба вводу в квартиру: матеріал<select class="formInput" id="em"></select></label></div>
-    <div class="zr" style="grid-template-columns:1fr"><label>Труба вводу: розмір<select class="formInput" id="es"></select></label></div>
-    <div class="zr" style="grid-template-columns:1fr"><label>Розводка квартирою: матеріал<select class="formInput" id="mat"></select></label></div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Матеріал розводки по квартирі<select class="formInput" id="mat"></select></label></div>
   </div>
 
   <div class="g card">
     <div class="ttl">Прилади</div>
+    <p class="hint" style="margin-top:0">Кількість і відстань від розподільчого вузла до приладу, м (по трубі).</p>
     <div id="devs"></div>
     <label class="chk"><input type="checkbox" id="boiler"> Бойлер у квартирі</label>
+    <div class="zr" style="grid-template-columns:1fr"><label>Відстань від вузла до джерела гарячої води (бойлера), м<input class="formInput" id="hd" type="number" inputmode="decimal" step="0.5" placeholder="напр. 4"></label></div>
     <details class="hl"><summary>Паспортна витрата приладів, л/хв</summary>
       <p class="hint">Для ліній до приладів. Порожньо: 5 л/хв (ванна й душ без перевірки, лінія Ø20). Якщо знаєте паспортну витрату змішувача, введіть, і лінія перевіриться за швидкістю.</p>
       <div class="fl" id="fl"></div></details>
@@ -103,10 +101,9 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
 
   <div class="g card">
     <div class="ttl">Втрати тиску (необовʼязково)</div>
-    <p class="hint" style="margin-top:0">Якщо ввести довжини й тиск, буде показано залишковий тиск на найдальшому приладі.</p>
+    <p class="hint" style="margin-top:0">Залишковий тиск на найдальшому приладі, коли вказано довжину труби після лічильника й відстані до приладів.</p>
     <div class="zr"><label>Тиск після редуктора, бар<input class="formInput" id="pIn" type="number" inputmode="decimal" step="0.1" value="3"></label>
-    <label>Довжина труби вводу до вузла, м<input class="formInput" id="lE" type="number" inputmode="decimal" step="0.5" placeholder="напр. 5"></label></div>
-    <div class="zr"><label>Найдовша лінія до приладу, м<input class="formInput" id="lL" type="number" inputmode="decimal" step="0.5" placeholder="напр. 8"></label></div>
+    <label>Запасна довжина лінії, м<input class="formInput" id="lL" type="number" inputmode="decimal" step="0.5" placeholder="якщо не вказали вище"></label></div>
   </div>
 
   <div class="g card" id="res"></div>
@@ -129,7 +126,7 @@ $("mat").innerHTML = $("em").innerHTML; $("em").value = "pex"; $("mat").value = 
 function fillSizes(){ $("es").innerHTML = H.MAT[$("em").value].sizes.map(s => `<option value="${s[0]}">${s[1]} (внутр. ${String(s[2]).replace(".", ",")} мм)</option>`).join(""); const pref = H.MAT[$("em").value].sizes.find(s => s[0] === 25); if(pref) $("es").value = 25; }
 fillSizes();
 const DEF = { bath: 1, shower: 1, sink: 1, basin: 1, wc: 1, washer: 1 };
-$("devs").innerHTML = H.ORDER.map(id => `<div class="dv"><span>${H.DEV[id].label}</span><select class="formInput" id="c_${id}">${opts(0, 6)}</select></div>`).join("");
+$("devs").innerHTML = H.ORDER.map(id => `<div class="dv"><span>${H.DEV[id].label}</span><span class="dr"><select class="formInput" id="c_${id}">${opts(0, 6)}</select><input class="formInput" id="d_${id}" type="number" inputmode="decimal" step="0.5" placeholder="м"></span></div>`).join("");
 H.ORDER.forEach(id => $("c_" + id).value = DEF[id] || 0);
 $("fl").innerHTML = H.ORDER.map(id => `<label for="f_${id}">${H.DEV[id].label}</label><input class="formInput" id="f_${id}" type="number" inputmode="decimal" step="0.5" placeholder="${H.DEV[id].reserve ? "–" : "5"}">`).join("");
 function scheme(r){
@@ -167,10 +164,11 @@ function scheme(r){
 }
 
 function params(){
-  const counts = {}, flows = {};
-  H.ORDER.forEach(id => { counts[id] = $("c_" + id).value; flows[id] = $("f_" + id).value; });
+  const counts = {}, flows = {}, dist = {};
+  H.ORDER.forEach(id => { counts[id] = $("c_" + id).value; dist[id] = $("d_" + id).value; flows[id] = $("f_" + id).value; });
   return { U: $("U").value, norm: $("norm").value, scheme: $("scheme").value, mat: $("mat").value, entry: { mat: $("em").value, od: +$("es").value }, counts, flows, boiler: $("boiler").checked, pIn: +$("pIn").value, lenEntry: +$("lE").value, lenLine: +$("lL").value,
-    chain: { riser: $("rv").value, filter: $("cf").checked, meter: $("mt").value, check: $("cc").checked, meterIn: $("mi").value, pipeLen: $("lE").value, node: { valve: $("nv").value, reducer: $("nr").checked } } };
+    chain: { riser: "1/2", filter: true, meter: "DN15", check: true, meterIn: "cabinet", pipeLen: $("lE").value, node: { valve: $("nv").value, reducer: $("nr").checked } },
+    dist, hotDist: $("hd").value };
 }
 function chainSvg(ch, e){
   const W = 360, C = "#0A84FF", els = ch.elements, rowH = 40, top = 14, Hh = top + els.length * rowH + 10, x = 70;
@@ -220,6 +218,15 @@ function render(){
   const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null }));
   const sc = { scheme: r.scheme, inDn: ent.od, valveIn: r.chain ? r.chain.nodeDn : (ent.od > 25 ? '1"' : '3/4"'), lines: ln, main: r.scheme === "tee" ? { first: ent.od, after: (r.sections[1] || ent).od } : null };
   if(ln.length) h += `<div class="ttl" style="margin-top:14px">Схема</div>` + scheme(sc) + `<p class="hint">Синя лінія це холодна вода, червона гаряча. Ø це зовнішній діаметр труби.</p>`;
+  if(r.recirc){
+    const rc = r.recirc;
+    h += `<div class="ttl" style="margin-top:14px">Гаряча вода: чекання і циркуляція</div><table class="tb"><tr><th>Прилад</th><th class="n">Довжина, м</th><th class="n">Обʼєм, л</th><th class="n">Чекати, с</th></tr>`;
+    rc.items.forEach(x => h += `<tr><td>${esc(x.name)}</td><td class="n">${f2(x.len, 1)}</td><td class="n">${x.over ? '<span class="wr">' + f2(x.vol) + '</span>' : f2(x.vol)}</td><td class="n">${x.wait == null ? "–" : f2(x.wait, 0)}</td></tr>`);
+    h += `</table>` + (rc.needed
+      ? `<div class="warn">До ${esc(rc.worst.name.toLowerCase())} у трубі ${f2(rc.worst.vol)} л гарячої води, що більше ${rc.limit} л. Поки не піде гаряча, зливатиметься холодна. Варіанти: зменшити діаметр або відстань, поставити циркуляційну лінію з насосом і зворотним клапаном, або електростічку (кабель, що підігріває трубу).</div>`
+      : `<p class="hint">Обʼєм у всіх лініях не більше ${rc.limit} л, циркуляція не потрібна.</p>`)
+      + `<p class="hint">Критерій: не більше 3 л води в гілці без циркуляції (п. 7.4 ДБН для централізованого ГВП, для бойлера в квартирі це орієнтир). Обʼєм це внутрішній діаметр труби на довжину від джерела до приладу, час це обʼєм на витрату приладу. Довжина тут відстань від бойлера до вузла плюс від вузла до приладу, це спрощення. Для ванни й душу час не рахується, поки не вказано їхню паспортну витрату.</p>`;
+  }
   h += `<div class="ttl" style="margin-top:14px">Рекомендації</div><ul class="rec">
     <li>Редуктор тиску на вводі, вихід 3–3,5 бар.</li>
     <li>Механічний фільтр на 100 мкм перед приладами.</li>

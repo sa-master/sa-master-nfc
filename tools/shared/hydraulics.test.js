@@ -44,4 +44,13 @@ t("chain bottleneck at U=40 (1/2 valve)", rc2.chain.elements[0].status === "bad"
 t("meter over 2Qn warns", rc2.warnings.some(w => /лічильник/.test(w)));
 t("chain without meter/filter", H.calc({ ...base, chain: { riser: "3/4", meter: "", node: { valve: "1/2" } } }).chain.elements.map(e => e.type).join() === "riser,pipe,node");
 t("chain notes mention п. 7.9", rc.chain.notes.some(n => /7\.9/.test(n)));
+const rr1 = H.calc({ ...base, flows: { basin: 6 }, hotDist: 20, dist: { basin: 8, sink: 3 } });
+const bi = rr1.recirc.items.find(x => x.id === "basin" || /умивальник/i.test(x.name));
+t("recirc items for hot devices", rr1.recirc && rr1.recirc.items.length >= 1 && rr1.recirc.items.every(x => x.vol > 0));
+t("recirc volume = pi d2/4 * L", near(bi.vol, Math.PI * Math.pow(bi.d / 2000, 2) * (20 + 8) * 1000, 1e-6));
+t("recirc flagged over 3 l on long run", rr1.recirc.needed === true);
+const rr2 = H.calc({ ...base, hotDist: 1, dist: { basin: 1, sink: 1 } });
+t("short run: no recirc needed", rr2.recirc && rr2.recirc.needed === false);
+const rr3 = H.calc({ ...base, dist: { basin: 12 }, lenLine: 0 });
+t("per-device distance used for pressure", rr3.lines.find(l => l.id === "basin").len === 12);
 console.log(ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);

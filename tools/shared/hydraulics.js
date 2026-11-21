@@ -96,22 +96,24 @@
     e.matLabel = MAT[em.mat].label;
     out.sections.push(e);
     if (!e.ok) { const better = pick(em.mat, qIn, false, 0); if (better) out.warnings.push("Ввід " + eSize[1] + " не проходить за швидкістю (" + e.v.toFixed(2).replace(".", ",") + " м/с при межі " + e.vmax + " м/с), підходить " + better[1] + " (" + MAT[em.mat].label + ")."); }
-    const flows = p.flows || {};
+    const flows = p.flows || {}, dist = p.dist || {};
+    const lenOf = (id) => (+dist[id] > 0 ? +dist[id] : p.lenLine);
     const lineOf = (x) => {
       const res = { name: x.name, id: x.id, reserve: x.reserve, cold: null, hot: null };
       const fl = flows[x.id] === "" || flows[x.id] == null ? (x.reserve ? null : 5) : +flows[x.id];
       const qd = fl == null ? null : fl * LPM;
       const minOd = x.reserve ? 20 : 16;
       const sc = qd == null ? reserveSize(mat) : pick(mat, qd, false, minOd);
-      res.cold = section("Холодна: " + x.name, qd, sc, mat, false, p.lenLine);
-      if (x.h > 0) { const sh = qd == null ? reserveSize(mat) : pick(mat, qd, true, minOd); res.hot = section("Гаряча: " + x.name, qd, sh, mat, true, p.lenLine); }
+      res.len = lenOf(x.id); res.cold = section("Холодна: " + x.name, qd, sc, mat, false, res.len);
+      if (x.h > 0) { const sh = qd == null ? reserveSize(mat) : pick(mat, qd, true, minOd); res.hot = section("Гаряча: " + x.name, qd, sh, mat, true, res.len); }
       return res;
     };
     items.forEach(x => out.lines.push(lineOf(x)));
     if (p.boiler) {
       const b = { name: "Бойлер", id: "boiler", boiler: true, reserve: true,
-        cold: section("До бойлера", q.hot, pick(mat, q.hot, false, 20), mat, false, p.lenLine),
-        hot: section("Від бойлера (ГВП)", q.hot, pick(mat, q.hot, true, 20), mat, true, p.lenLine) };
+        len: +p.hotDist > 0 ? +p.hotDist : p.lenLine,
+        cold: section("До бойлера", q.hot, pick(mat, q.hot, false, 20), mat, false, +p.hotDist > 0 ? +p.hotDist : p.lenLine),
+        hot: section("Від бойлера (ГВП)", q.hot, pick(mat, q.hot, true, 20), mat, true, +p.hotDist > 0 ? +p.hotDist : p.lenLine) };
       out.lines.push(b);
     }
     if (out.scheme === "tee" && items.length > 1) {
@@ -123,8 +125,22 @@
         out.sections.push(section("Магістраль після " + k + "-го відгалуження", qs, sz, mat, false, 0));
       }
     }
+    /* ГВП: обʼєм води в трубі від джерела до приладу. ДБН 7.4: не більше 3 л у відгалуженні поза циркуляційним контуром (для централізованого ГВП; для бойлера в квартирі беремо як орієнтир) */
+    const S = +p.hotDist > 0 ? +p.hotDist : 0, rec = { limit: RECIRC_L, hotDist: S, items: [] };
+    out.lines.forEach(l => {
+      if (!l.hot || l.boiler) return;
+      const dev = items.find(x => x.id === l.id);
+      const L = S + (l.len > 0 ? l.len : 0);
+      if (!(L > 0)) return;
+      const vol = Math.PI * Math.pow(l.hot.d / 1000 / 2, 2) * L * 1000; /* літри */
+      const qd = l.hot.q;
+      rec.items.push({ name: l.name, id: l.id, len: L, d: l.hot.d, od: l.hot.od, vol, wait: qd ? vol / qd : null, over: vol > RECIRC_L });
+    });
+    rec.needed = rec.items.some(x => x.over);
+    rec.worst = rec.items.reduce((a, x) => (!a || x.vol > a.vol ? x : a), null);
+    if (rec.items.length) out.recirc = rec;
     const hasF = out.lines.some(l => l.cold && l.cold.dp != null);
-    if (p.pIn > 0 && p.lenEntry > 0 && p.lenLine > 0 && hasF) {
+    if (p.pIn > 0 && p.lenEntry > 0 && hasF) {
       const withDp = out.lines.filter(l => l.cold.dp != null);
       const worst = withDp.reduce((a, l) => (l.cold.dp > a.cold.dp ? l : a), withDp[0]);
       const loss = e.dp + worst.cold.dp;
@@ -146,6 +162,7 @@
   /* ввід від забудовника: арматура й лічильник. Прохідні перерізи й Qn типові, не каталожні: звіряти з паспортом */
   const VALVE = { "1/2": { label: '1/2"', bore: 13 }, "3/4": { label: '3/4"', bore: 18 }, "1": { label: '1"', bore: 24 } };
   const METER = { DN15: { label: "DN15", bore: 15, qn: 1.5 }, DN20: { label: "DN20", bore: 20, qn: 2.5 }, DN25: { label: "DN25", bore: 25, qn: 3.5 } };
+  const RECIRC_L = 3;
   const VLIM = 2.5; /* м/с, орієнтир для корпусів арматури: норма ДБН задає межі для труб, не для кранів */
   const fm = (x, n) => x.toFixed(n == null ? 2 : n).replace(".", ",");
   /* c: { riser, filter, meter, check, meterIn: "cabinet"|"flat", pipeLen, node: { valve, reducer } }, qIn л/с, e: секція вводу */
