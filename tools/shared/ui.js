@@ -16,7 +16,7 @@
     const defTitle = () => cfg.titlePrefix + " " + dateLabel(Date.now());
     async function refresh() {
       listCache = await SMStore.list(cfg.tool);
-      cfg.el.innerHTML = listCache.length ? listCache.map(d => '<div class="dlRow' + (d.id === id ? " cur" : "") + '" data-id="' + d.id + '"><button type="button" class="dlMain" data-act="open"><b>' + esc(d.title) + "</b><span>" + dateLabel(d.updated) + (d.sub ? " · " + esc(d.sub) : "") + '</span></button><button type="button" class="dlBtn" data-act="ren" aria-label="Перейменувати">✎</button><button type="button" class="dlBtn dlDel" data-act="del" aria-label="Видалити">🗑</button></div>').join("") : '<p class="hint" style="margin:0">Збережених поки немає. Дані зберігаються автоматично, щойно ви почнете вводити.</p>';
+      cfg.el.innerHTML = listCache.length ? listCache.map(d => '<div class="dlRow' + (d.id === id ? " cur" : "") + '" data-id="' + d.id + '"><button type="button" class="dlMain" data-act="open"><b>' + esc(d.title) + "</b><span>" + dateLabel(d.updated) + (d.sub ? " · " + esc(d.sub) : "") + '</span></button><button type="button" class="dlBtn" data-act="ren" aria-label="Перейменувати">✎</button><button type="button" class="dlBtn dlDel" data-act="del" aria-label="Видалити">🗑</button></div>').join("") : '<p class="hint" style="margin:0">Поки порожньо. Акти зберігаються самі.</p>';
       const cnt = document.getElementById(cfg.countId || ""); if (cnt) cnt.textContent = listCache.length ? "(" + listCache.length + ")" : "";
     }
     async function saveNow() {
