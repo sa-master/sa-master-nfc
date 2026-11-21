@@ -124,7 +124,7 @@
       for (let k = 1; k < items.length; k++) {
         const rest = items.slice(k), n = rest.length;
         const r = a5("total", n, rest.reduce((s, x) => s + x.c + x.h, 0) / n) / all;
-        const qs = qIn * r, sz = pick(mat, qs, false, 16);
+        const qs = qIn * r, sz = pick(mat, qs, false, 0, REF_BORE);
         out.sections.push(section("Магістраль після " + k + "-го відгалуження", qs, sz, mat, false, 0));
       }
     }
