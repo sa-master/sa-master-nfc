@@ -54,6 +54,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
     <div class="zr"><label>Мешканців<select class="formInput" id="U"></select></label>
     <label>Система<select class="formInput" id="scheme"><option value="ray">Променева</option><option value="tee">Трійникова</option></select></label></div>
     <div class="zr" style="grid-template-columns:1fr"><label>Матеріал розводки<select class="formInput" id="mat"></select></label></div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Тиск після лічильника, бар (необовʼязково)<input class="formInput" id="pIn" type="number" inputmode="decimal" step="0.5" placeholder="напр. 4"></label></div>
     <label class="chk"><input type="checkbox" id="boiler" checked> Бойлер у квартирі</label>
   </div>
 
@@ -67,10 +68,11 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
 
-<script src="shared/hydraulics.js?v=20261123"></script>
+<script src="shared/hydraulics.js?v=20261124"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id), H = Hydraulics;
+const f2 = (x, n = 2) => x.toFixed(n).replace(".", ",");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
 const opts = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<option>${a + i}</option>`).join("");
 $("U").innerHTML = opts(1, 12); $("U").value = 3;
@@ -143,10 +145,12 @@ function render(){
   h += `</table>`;
   const bad = [e0].concat(r.sections.slice(1), r.lines.flatMap(l => [l.cold, l.hot].filter(Boolean))).filter(s => s.v != null && !s.ok);
   if(bad.length) h += `<div class="warn">Швидкість води вище норми на ділянках: ${bad.map(s => esc(s.name)).join(", ")}. Збільшіть діаметр.</div>`;
+  const ad = H.nodeAdvice($("pIn").value, qIn);
+  if(ad) h += `<div class="ttl" style="margin-top:14px">Вузол</div><ul class="rec">${ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul><p class="hint">Пороги тиску (3 і 4 бар) і запас Kvs в 1,5 раза це орієнтири, не вимоги норми. Витрата вводу ${f2(qIn * 3.6)} м³/год.</p>`;
   h += `<p class="hint">Діаметри за практикою монтажу (ввід не менше PEX Ø25, ванна, душ і бойлер не менше PEX Ø20, решта Ø16) і перевіркою швидкості за ДБН В.2.5-64:2012. Для інших матеріалів підбирається еквівалент за внутрішнім діаметром. Це не заміна проєкту.</p>`;
   $("res").innerHTML = h;
 }
-document.querySelectorAll("select,input").forEach(e => e.addEventListener("change", render));
+document.querySelectorAll("select,input").forEach(e => { e.addEventListener("change", render); if(e.type === "number") e.addEventListener("input", render); });
 render();
 </script>
 </body>

@@ -202,6 +202,16 @@
     notes.push("Прохідні перерізи кранів (1/2\" ≈ 13, 3/4\" ≈ 18, 1\" ≈ 24 мм) і Qn лічильників (DN15 1,5; DN20 2,5; DN25 3,5 м³/год) типові, а не каталожні: це орієнтир, а не вимога ДБН.");
     return { elements: els, warnings, notes, riserDn: rv.label, nodeDn: nv.label };
   }
-  const api = { LIST, VALVE, METER, entryChain, A5, A69, DEV, ORDER, MAT, a5, byU, calc, compare, specLoss, vel, pick, reserveSize, KL };
+  /* підказка по вузлу за тиском після лічильника, бар, і витратою вводу, л/с. Пороги тиску й запас Kvs це орієнтири, не норма */
+  function nodeAdvice(pIn, qIn) {
+    const p = +pIn; if (!(p > 0)) return null;
+    const kv = qIn * 3.6, out = { p, kvNeed: kv * 1.5, node: "1/2", reducer: null, lines: [] };
+    if (p >= 4) { out.reducer = "needed"; out.lines.push("Тиск високий: ставте редуктор на 3–3,5 бар. Вузол 1/2\" достатній."); }
+    else if (p >= 3) { out.reducer = "optional"; out.lines.push("Тиск нормальний: редуктор за бажанням (вихід 3–3,5 бар). Вузол 1/2\" достатній."); }
+    else { out.reducer = "no"; out.node = "3/4"; out.lines.push("Тиск низький: не знижуйте його редуктором. Кран, фільтр і зʼєднання вузла краще 3/4\", щоб не втрачати тиск."); if (p < 2) out.lines.push("При тиску нижче 2 бар змішувачі й бойлер можуть працювати слабо: перевірте мінімальний тиск у паспортах приладів."); }
+    if (out.reducer !== "no") out.lines.push("Пропускна здатність редуктора (Kvs) у паспорті має бути помітно вища за " + kv.toFixed(2).replace(".", ",") + " м³/год, орієнтир від " + out.kvNeed.toFixed(1).replace(".", ",") + ". Якщо менше, беріть 3/4\".");
+    return out;
+  }
+  const api = { nodeAdvice, LIST, VALVE, METER, entryChain, A5, A69, DEV, ORDER, MAT, a5, byU, calc, compare, specLoss, vel, pick, reserveSize, KL };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Hydraulics = api;
 })(typeof window !== "undefined" ? window : this);
