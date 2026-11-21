@@ -69,9 +69,26 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   </div>
 
   <div class="g card">
+    <div class="ttl">Ввід від забудовника</div>
+    <p class="hint" style="margin-top:0">Що вже стоїть на обʼєкті до вашого вузла.</p>
+    <div class="zr"><label>Кран від стояка<select class="formInput" id="rv"><option value="1/2" selected>1/2"</option><option value="3/4">3/4"</option><option value="1">1"</option></select></label>
+    <label>Лічильник<select class="formInput" id="mt"><option value="DN15" selected>DN15</option><option value="DN20">DN20</option><option value="DN25">DN25</option><option value="">немає</option></select></label></div>
+    <label class="chk"><input type="checkbox" id="cf" checked> Фільтр</label>
+    <label class="chk"><input type="checkbox" id="cc" checked> Зворотній клапан</label>
+    <div class="zr" style="grid-template-columns:1fr"><label>Де лічильник<select class="formInput" id="mi"><option value="cabinet" selected>У шафі в коридорі (загальна)</option><option value="flat">У квартирі</option></select></label></div>
+  </div>
+
+  <div class="g card">
+    <div class="ttl">Мій розподільчий вузол</div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Кран вузла<select class="formInput" id="nv"><option value="1/2">1/2"</option><option value="3/4" selected>3/4"</option><option value="1">1"</option></select></label></div>
+    <label class="chk"><input type="checkbox" id="nr" checked> Редуктор з манометром у вузлі</label>
+    <p class="hint">Труба вводу в підлозі в ізоляції, нероз'ємні муфти й трійники з насувною гільзою. Матеріал і діаметр вводу задайте нижче.</p>
+  </div>
+
+  <div class="g card">
     <div class="ttl">Труби</div>
-    <div class="zr" style="grid-template-columns:1fr"><label>Ввід: матеріал<select class="formInput" id="em"></select></label></div>
-    <div class="zr" style="grid-template-columns:1fr"><label>Ввід: розмір<select class="formInput" id="es"></select></label></div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Труба вводу в квартиру: матеріал<select class="formInput" id="em"></select></label></div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Труба вводу: розмір<select class="formInput" id="es"></select></label></div>
     <div class="zr" style="grid-template-columns:1fr"><label>Розводка квартирою: матеріал<select class="formInput" id="mat"></select></label></div>
   </div>
 
@@ -88,7 +105,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
     <div class="ttl">Втрати тиску (необовʼязково)</div>
     <p class="hint" style="margin-top:0">Якщо ввести довжини й тиск, буде показано залишковий тиск на найдальшому приладі.</p>
     <div class="zr"><label>Тиск після редуктора, бар<input class="formInput" id="pIn" type="number" inputmode="decimal" step="0.1" value="3"></label>
-    <label>Довжина вводу, м<input class="formInput" id="lE" type="number" inputmode="decimal" step="0.5" placeholder="напр. 5"></label></div>
+    <label>Довжина труби вводу до вузла, м<input class="formInput" id="lE" type="number" inputmode="decimal" step="0.5" placeholder="напр. 5"></label></div>
     <div class="zr"><label>Найдовша лінія до приладу, м<input class="formInput" id="lL" type="number" inputmode="decimal" step="0.5" placeholder="напр. 8"></label></div>
   </div>
 
@@ -152,7 +169,25 @@ function scheme(r){
 function params(){
   const counts = {}, flows = {};
   H.ORDER.forEach(id => { counts[id] = $("c_" + id).value; flows[id] = $("f_" + id).value; });
-  return { U: $("U").value, norm: $("norm").value, scheme: $("scheme").value, mat: $("mat").value, entry: { mat: $("em").value, od: +$("es").value }, counts, flows, boiler: $("boiler").checked, pIn: +$("pIn").value, lenEntry: +$("lE").value, lenLine: +$("lL").value };
+  return { U: $("U").value, norm: $("norm").value, scheme: $("scheme").value, mat: $("mat").value, entry: { mat: $("em").value, od: +$("es").value }, counts, flows, boiler: $("boiler").checked, pIn: +$("pIn").value, lenEntry: +$("lE").value, lenLine: +$("lL").value,
+    chain: { riser: $("rv").value, filter: $("cf").checked, meter: $("mt").value, check: $("cc").checked, meterIn: $("mi").value, pipeLen: $("lE").value, node: { valve: $("nv").value, reducer: $("nr").checked } } };
+}
+function chainSvg(ch, e){
+  const W = 360, C = "#0A84FF", els = ch.elements, rowH = 40, top = 14, Hh = top + els.length * rowH + 10, x = 70;
+  const col = { ok: "#34C759", warn: "#FF9500", bad: "#FF3B30" };
+  let o = `<svg class="sch" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Схема вводу в квартиру"><line x1="${x}" y1="${top - 6}" x2="${x}" y2="${Hh - 4}" stroke="${C}" stroke-width="${3}"/>`;
+  els.forEach((el, i) => {
+    const y = top + i * rowH + 14, c = col[el.status];
+    if(el.type === "pipe") o += `<rect x="${x - 7}" y="${y - 14}" width="14" height="28" rx="3" fill="#fff" stroke="${C}" stroke-width="2"/><text class="sm" x="${x - 14}" y="${y + 4}" text-anchor="end">Ø${el.od || ""}</text>`;
+    else if(el.type === "reducer") o += `<circle cx="${x}" cy="${y}" r="9" fill="#fff" stroke="${C}" stroke-width="2"/><line x1="${x}" y1="${y}" x2="${x + 5}" y2="${y - 5}" stroke="${C}" stroke-width="2"/>`;
+    else if(el.type === "meter") o += `<rect x="${x - 11}" y="${y - 11}" width="22" height="22" rx="4" fill="#fff" stroke="${c}" stroke-width="2.5"/><text class="bd" x="${x}" y="${y + 4}" text-anchor="middle" style="fill:${c}">m³</text>`;
+    else if(el.type === "filter") o += `<rect x="${x - 8}" y="${y - 10}" width="16" height="20" rx="3" fill="#fff" stroke="${c}" stroke-width="2.5"/><line x1="${x - 5}" y1="${y - 4}" x2="${x + 5}" y2="${y + 4}" stroke="${c}" stroke-width="2"/>`;
+    else if(el.type === "check") o += `<path d="M${x - 9} ${y - 9}L${x + 9} ${y - 9}L${x} ${y + 9}z" fill="#fff" stroke="${c}" stroke-width="2.5"/>`;
+    else o += `<path d="M${x - 10} ${y - 8}L${x + 10} ${y + 8}M${x + 10} ${y - 8}L${x - 10} ${y + 8}" stroke="${c}" stroke-width="3"/>`;
+    const sub = el.type === "pipe" ? `${esc(el.mat || "")}${el.len ? ", " + f2(el.len, 1) + " м" : ""}, ${el.v != null ? f2(el.v) + " м/с" : ""}` : el.type === "meter" ? `${f2(el.qh)} м³/год при Qn ${f2(el.qn, 1)}` : el.v != null ? `${f2(el.v)} м/с в отворі ${el.d} мм` : "";
+    o += `<text class="nm" x="${x + 24}" y="${y - 2}">${esc(el.label)}</text><text class="sm" x="${x + 24}" y="${y + 12}">${sub}</text>`;
+  });
+  return o + "</svg>";
 }
 function render(){
   const p = params(), r = H.calc(p);
@@ -178,13 +213,17 @@ function render(){
       <p class="hint">Без урахування висоти, фільтра й лічильника: їхні втрати треба додати за паспортом виробника.</p>`;
   }
   const ent = r.sections[0];
+  if(r.chain){
+    h += `<div class="ttl" style="margin-top:14px">Ввід від стояка до вузла</div>` + chainSvg(r.chain, ent) + `<p class="hint">Зелений: швидкість у нормі, жовтий: близько до орієнтиру, червоний: вузьке місце. Орієнтир для арматури 2,5 м/с, це не вимога ДБН.</p>`;
+    r.chain.notes.forEach(n => h += `<p class="hint">${esc(n)}</p>`);
+  }
   const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null }));
-  const sc = { scheme: r.scheme, inDn: ent.od, valveIn: ent.od > 25 ? '1"' : '3/4"', lines: ln, main: r.scheme === "tee" ? { first: ent.od, after: (r.sections[1] || ent).od } : null };
+  const sc = { scheme: r.scheme, inDn: ent.od, valveIn: r.chain ? r.chain.nodeDn : (ent.od > 25 ? '1"' : '3/4"'), lines: ln, main: r.scheme === "tee" ? { first: ent.od, after: (r.sections[1] || ent).od } : null };
   if(ln.length) h += `<div class="ttl" style="margin-top:14px">Схема</div>` + scheme(sc) + `<p class="hint">Синя лінія це холодна вода, червона гаряча. Ø це зовнішній діаметр труби.</p>`;
   h += `<div class="ttl" style="margin-top:14px">Рекомендації</div><ul class="rec">
     <li>Редуктор тиску на вводі, вихід 3–3,5 бар.</li>
     <li>Механічний фільтр на 100 мкм перед приладами.</li>
-    <li>Запірна арматура на вводі ${sc.valveIn}, до приладів 1/2" (практика монтажу).</li>
+    <li>Кран вузла ${sc.valveIn}, до приладів 1/2" (практика монтажу).</li>
     ${p.boiler ? "<li>Обвʼязка бойлера: нержавійка або мідь Ø18 (практика монтажу).</li>" : ""}</ul>`;
   r.notes.forEach(n => h += `<p class="hint">${esc(n)}</p>`);
   if(r.scheme === "tee") h += `<p class="hint">Трійникова схема: витрату на ділянках магістралі розподілено пропорційно таблиці А.5, прилади йдуть від вводу в порядку списку. Це тлумачення, не пункт норми.</p>`;
