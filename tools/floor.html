@@ -46,16 +46,7 @@ select.formInput{appearance:none;-webkit-appearance:none}
   <div class="g hero"><img src="/logo.png" alt=""><div><a href="/">SA-MASTER<span style="font-weight:500;font-size:.8rem">.pro</span></a><small>інструменти для майстрів</small></div></div>
 <div class="navrow"><a href="/tools/">← Усі інструменти</a></div>
 
-  <div class="g card">
-    <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Тепла підлога: метраж і контури</h1>
-    <div class="formGroup"><label class="formLabel" for="docTitle">Назва розрахунку</label><input class="formInput titleIn" id="docTitle" autocomplete="off"></div>
-  </div>
-
-  <div class="g card">
-    <details class="fold"><summary>Мої розрахунки <span id="docCount" style="color:var(--tm);font-weight:500;margin-left:6px"></span></summary>
-      <div><div id="docList"></div><button type="button" class="btnSec" id="btnNew">+ Новий розрахунок</button>
-      <p class="hint">Зберігається автоматично в цьому браузері. Після очищення даних браузера розрахунки зникнуть.</p></div></details>
-  </div>
+  <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Тепла підлога: метраж і контури</h1>
   <div class="g card"><details class="fold"><summary>Ваші дані для PDF</summary><div id="profileBox"></div></details></div>
 
   <div class="g card">
@@ -221,16 +212,7 @@ $("contours").addEventListener("click", e => {
 $("btnAddC").addEventListener("click", () => { toManual(); state.contours.push({ dist: state.dist, zones: [{ area: "", step: 150 }] }); changed(); });
 $("btnAuto").addEventListener("click", () => { state.mode = "auto"; state.contours = []; state.dOver = []; changed(); toast("Контури перераховано автоматично"); });
 
-/* ---------- збереження ---------- */
-const mgr = SMUI.docs({
-  tool: "floor", titlePrefix: "Тепла підлога", el: $("docList"), titleInput: $("docTitle"), countId: "docCount",
-  serialize: () => JSON.parse(JSON.stringify(state)),
-  load: d => { state = Object.assign(defaults(), d); renderAll(); },
-  reset: () => { state = defaults(); renderAll(); },
-  isEmpty,
-  sub: () => { const s = sumData(); return s.rows.length ? s.rows.length + " конт., " + f1(s.buy) + " м" : ""; }
-});
-$("btnNew").addEventListener("click", () => { mgr.fresh(); toast("Новий розрахунок"); });
+const mgr = { touch() {}, currentTitle: () => "Тепла підлога" };
 SMProfile.mount($("profileBox"));
 
 /* ---------- PDF ---------- */
@@ -245,7 +227,7 @@ async function paperEl() {
       cd.p.coils.map((c, k) => "<tr><td>" + (k + 1) + "</td><td>" + c.items.map(i => i + 1).join(", ") + '</td><td class="r">' + f1(c.need) + '</td><td class="r">' + f1(c.left) + "</td></tr>").join("") + "</table></div>";
   }
   const el = document.createElement("div"); el.className = "paper";
-  el.innerHTML = SMProfile.headerHtml(prof) + '<div class="docH">Розрахунок водяної теплої підлоги</div><div class="docSub">' + esc(mgr.currentTitle()) + (/\d{2}\.\d{2}\.\d{4}/.test(mgr.currentTitle()) ? "" : " · " + SMUI.dateLabel(Date.now())) + "</div>" +
+  el.innerHTML = SMProfile.headerHtml(prof) + '<div class="docH">Розрахунок водяної теплої підлоги</div><div class="docSub">' + SMUI.dateLabel(Date.now()) + "</div>" +
     '<div class="docBlock docKV"><span>Труба</span><b>' + esc(pipe.label) + "</b><span>Крок укладання</span><b>" + steps.join(", ") + " мм</b><span>Спосіб укладання</span><b>" + (state.method === "snake" ? "змійка" : "равлик") + "</b><span>Рекомендована довжина контуру</span><b>" + f1(s.Lmax) + " м</b></div>" +
     '<div class="docBlock"><table class="docT"><tr><th>№</th><th>Зони (площа / крок)</th><th class="r">Укладання, м</th><th class="r">Підведення, м</th><th class="r">Довжина, м</th></tr>' + rows + "</table>" + (s.rows.some(r => r.over) ? '<div class="docNote" style="margin:6px 0 0">* перевищує рекомендовану довжину контуру</div>' : "") + "</div>" +
     '<div class="docBlock docTot"><div><span>Площа укладання</span><b>' + f2(s.area) + " м²</b></div><div><span>Розрахунковий метраж</span><b>" + f1(s.calc) + " м</b></div><div><span>Монтажний запас " + s.reservePct + "%</span><b>+ " + f1(s.reserve) + ' м</b></div><div class="big"><span>Метраж до закупівлі</span><b>' + f1(s.buy) + " м</b></div></div>" + coilHtml +

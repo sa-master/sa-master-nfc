@@ -41,6 +41,7 @@ input.formInput{padding:9px 8px;font-size:.95rem;width:100%;box-sizing:border-bo
 details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;font-size:.9rem;padding:4px 0}
 .warn{background:rgba(255,149,0,.14);border-radius:12px;padding:10px 12px;font-size:.88rem;margin-top:10px}
 .rec li{margin:6px 0;font-size:.92rem}
+.paper .sch text{fill:#111}.paper .sch .bd{fill:#fff}.paper .sch .sm{fill:#6b7280}
 </style>
 </head>
 <body>
@@ -48,6 +49,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   <div class="g hero"><img src="/logo.png" alt=""><div><a href="/">SA-MASTER<span style="font-weight:500;font-size:.8rem">.pro</span></a><small>інструменти для майстрів</small></div></div>
 <div class="navrow"><a href="/tools/">← Усі інструменти</a></div>
   <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Гідравлічний розрахунок</h1>
+  <div class="g card"><details class="fold"><summary>Ваші дані для PDF</summary><div id="profileBox"></div></details></div>
 
   <div class="g card">
     <div class="ttl">Квартира</div>
@@ -65,13 +67,24 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
 
   <div class="g card" id="res"></div>
 
+  <div class="g card" id="pdfCard">
+    <button type="button" class="btnPrimary" id="btnPdf" style="margin-top:0">Завантажити PDF</button>
+    <button type="button" class="btnSec" id="btnShare">Поділитися</button>
+  </div>
+
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
+<div id="toast"></div>
 
 <script src="shared/hydraulics.js?v=20261134"></script>
+<script src="shared/store.js?v=20261121"></script>
+<script src="shared/ui.js?v=20261121"></script>
+<script src="shared/profile.js?v=20261121"></script>
+<script src="shared/doc.js?v=20261121"></script>
 <script>
 "use strict";
-const $ = id => document.getElementById(id), H = Hydraulics;
+const $ = id => document.getElementById(id), H = Hydraulics, { toast } = SMUI;
+let lastDoc = null;
 const f2 = (x, n = 2) => x.toFixed(n).replace(".", ",");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
 const opts = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => `<option>${a + i}</option>`).join("");
@@ -145,7 +158,8 @@ function render(){
   const q = H.byU(285, U), qIn = boiler ? q.tot : q.cold;
   const ent = H.pick(mat, qIn, false, 0, 18); /* ввід у колектор або до першого трійника: прохід не менший, ніж у PEX Ø25 */
   const r = H.calc({ U, norm: 285, mat, scheme: tee ? "tee" : "ray", entry: { mat, od: ent[0] }, counts, boiler, dist, hotDist: $("d_boiler").value });
-  if(!r.lines.length){ $("res").innerHTML = `<p class="hint">Додайте хоча б один прилад.</p>`; return; }
+  if(!r.lines.length){ lastDoc = null; $("pdfCard").style.display = "none"; $("res").innerHTML = `<p class="hint">Додайте хоча б один прилад.</p>`; return; }
+  $("pdfCard").style.display = "";
   const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null, len: l.len > 0 ? l.len : null }));
   const e0 = r.sections[0], segs = r.sections.slice(1);
   const sc = { scheme: r.scheme, inDn: e0.od, valveIn: '1/2"', lines: ln, main: tee ? { first: e0.od, segs: segs.map(s => s.od), hot: H.reserveSize(mat)[0] } : null };
@@ -170,6 +184,7 @@ function render(){
     else { h += row(nm + (l.hot ? ": холодна" : ""), l.cold); if(l.hot) h += row(nm + ": гаряча", l.hot); }
   });
   h += `</table>`;
+  const docT = h.slice(h.indexOf('<table class="tb">')).replace('class="tb"', 'class="docT"');
   if(r.lines.some(l => l.id === "bath" || l.id === "shower")) h += `<div class="warn">Ванна й душ: прийнято витрату змішувача 0,30 л/с (18 л/хв). Тропічний душ або змішувач з більшою витратою може працювати некоректно.</div>`;
   const bad = [e0].concat(segs, r.lines.flatMap(l => [l.cold, l.hot].filter(Boolean))).filter(s => s.v != null && !s.ok);
   if(bad.length) h += `<div class="warn">Швидкість води вище норми на ділянках: ${bad.map(s => esc(s.name)).join(", ")}. Збільшіть діаметр.</div>`;
@@ -185,7 +200,39 @@ function render(){
   const ad = H.nodeAdvice($("pIn").value, qIn);
   if(ad) h += `<div class="ttl" style="margin-top:14px">Вузол</div><ul class="rec">${ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul><p class="hint">Пороги тиску (3 і 4 бар) і запас Kvs в 1,5 раза це орієнтири, не вимоги норми. Витрата вводу ${f2(qIn * 3.6)} м³/год.</p>`;
   $("res").innerHTML = h;
+  lastDoc = { svg: scheme(sc), diam: docT, recirc: r.recirc ? r.recirc : null, ad, qIn, U, scheme: tee ? "трійникова" : "променева", mat: H.MAT[mat].label, boiler, pIn: $("pIn").value };
 }
+
+/* ---------- PDF ---------- */
+SMProfile.mount($("profileBox"));
+async function paperEl(){
+  const d = lastDoc, prof = await SMProfile.get();
+  const el = document.createElement("div"); el.className = "paper";
+  let rc = "";
+  if(d.recirc){
+    rc = `<div class="docBlock"><b>Гаряча вода: чекання і циркуляція</b><table class="docT"><tr><th>Прилад</th><th class="r">Довжина, м</th><th class="r">Обʼєм, л</th><th class="r">Чекати, с</th></tr>` +
+      d.recirc.items.map(x => `<tr><td>${esc(x.name)}</td><td class="r">${f2(x.len, 1)}</td><td class="r${x.over ? " bad" : ""}">${f2(x.vol)}</td><td class="r">${x.wait == null ? "–" : f2(x.wait, 0)}</td></tr>`).join("") +
+      `</table>` + (d.recirc.needed ? `<div class="docNote" style="margin:6px 0 0">До ${esc(d.recirc.worst.name.toLowerCase())} у трубі ${f2(d.recirc.worst.vol)} л гарячої води, що більше ${d.recirc.limit} л: варто передбачити циркуляцію.</div>` : `<div class="docNote" style="margin:6px 0 0">Обʼєм у всіх лініях не більше ${d.recirc.limit} л, циркуляція не потрібна.</div>`) + `</div>`;
+  }
+  const nd = d.ad ? `<div class="docBlock"><b>Вузол</b><ul style="margin:6px 0 0 18px;padding:0">${d.ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul></div>` : "";
+  el.innerHTML = SMProfile.headerHtml(prof) + `<div class="docH">Гідравлічний розрахунок водопроводу квартири</div><div class="docSub">${SMUI.dateLabel(Date.now())}</div>` +
+    `<div class="docBlock docKV"><span>Мешканців</span><b>${d.U}</b><span>Система</span><b>${d.scheme}</b><span>Матеріал розводки</span><b>${esc(d.mat)}</b>${d.pIn ? `<span>Тиск після лічильника</span><b>${esc(String(d.pIn))} бар</b>` : ""}</div>` +
+    `<div class="docBlock"><b>Схема</b>${d.svg}</div><div class="docBlock"><b>Діаметри</b>${d.diam}</div>` + rc + nd +
+    `<div class="docNote">Орієнтовний розрахунок за ДБН В.2.5-64:2012. Ø це зовнішній діаметр труби, мм. Не замінює проєкт.</div>`;
+  return el;
+}
+async function makePdf(btn, mode){
+  if(!lastDoc) return;
+  const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Готуємо PDF…";
+  try {
+    const blob = await SMDoc.pdf(await paperEl()), name = "gidravlichnyi-rozrakhunok-" + new Date().toISOString().slice(0, 10) + ".pdf";
+    if(mode === "share"){ const r = await SMDoc.share(blob, name, "Гідравлічний розрахунок"); if(r === "downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
+    else SMDoc.download(blob, name);
+  } catch(e){ toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
+  finally { btn.disabled = false; btn.textContent = t0; }
+}
+$("btnPdf").addEventListener("click", e => makePdf(e.currentTarget, "download"));
+$("btnShare").addEventListener("click", e => makePdf(e.currentTarget, "share"));
 document.querySelectorAll("select,input").forEach(e => { e.addEventListener("change", render); if(e.type === "number") e.addEventListener("input", render); });
 render();
 </script>
