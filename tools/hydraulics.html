@@ -152,9 +152,12 @@ ul.note{padding-left:18px}ul.note li{margin:5px 0}
       <div id="distRows"></div>
       <div class="row" id="hotDistRow" style="min-height:50px"><label class="lbl" id="hotDistLbl" style="font-size:.95rem" for="hotDist">Водонагрівач → вузол</label><div class="fld"><input class="in" id="hotDist" data-g="hotDist" inputmode="decimal" autocomplete="off"><span class="unit">м</span></div></div>
       <div class="sep"></div>
-      <div class="h">Ввід</div>
-      <div class="row" style="min-height:50px"><label class="lbl" style="font-size:.95rem" for="lenEntry">Довжина вводу від лічильника до вузла<span class="sub" style="display:block">лише для орієнтовних втрат тиску</span></label><div class="fld"><input class="in" id="lenEntry" data-g="lenEntry" inputmode="decimal" autocomplete="off"><span class="unit">м</span></div></div>
-      <div class="row" style="min-height:50px"><label class="lbl" style="font-size:.95rem" for="pIn">Тиск після лічильника</label><div class="fld"><input class="in" id="pIn" data-g="pIn" inputmode="decimal" placeholder="4" autocomplete="off"><span class="unit">бар</span></div></div>
+      <div class="h">Вхідна труба (від забудовника)</div>
+      <div class="sub" style="margin:0 0 4px">Ввід, лічильник і арматуру задає забудовник. Вкажіть, що є: за замовчуванням сталева труба 1/2″. Розрахунок вводу, швидкість і втрата тиску рахуються за цією трубою.</div>
+      <div class="col"><label class="cap" for="entType">Тип труби</label><select class="sel" id="entType"></select></div>
+      <div class="col"><label class="cap" for="entSize">Діаметр</label><select class="sel" id="entSize"></select></div>
+      <div class="row" style="min-height:50px"><label class="lbl" style="font-size:.95rem" for="lenEntry">Довжина від лічильника до вузла<span class="sub" style="display:block">для втрати тиску у вводі</span></label><div class="fld"><input class="in" id="lenEntry" data-g="lenEntry" inputmode="decimal" autocomplete="off"><span class="unit">м</span></div></div>
+      <div class="row" style="min-height:50px"><label class="lbl" style="font-size:.95rem" for="pIn">Тиск на вводі (після лічильника)</label><div class="fld"><input class="in" id="pIn" data-g="pIn" inputmode="decimal" placeholder="4" autocomplete="off"><span class="unit">бар</span></div></div>
       <div id="hotModeBox"><div class="sep"></div>
         <div class="h">Гаряча вода до приладу</div>
         <div class="seg" id="hmSeg"><button type="button" class="sg" data-hm="node">Через вузол</button><button type="button" class="sg" data-hm="direct">Напряму</button></div>
@@ -202,7 +205,12 @@ const nm = s => s.replace(" (змішувач)", "");
 const short = x => String(x).replace(".", ",").replace(/,0$/, "");
 const DEF = { bath: 1, shower: 1, sink: 1, basin: 1, wc: 1, washer: 1 };
 /* ---------- стан форми ---------- */
-const S = { U: 3, scheme: "ray", mat: "pex", hs: "local", c: {}, dist: {}, flows: {}, walls: {}, hotDist: "", lenEntry: "", pIn: "", hotMode: "node", open: { a: true } };
+const S = { U: 3, scheme: "ray", mat: "pex", hs: "local", c: {}, dist: {}, flows: {}, walls: {}, hotDist: "", lenEntry: "", pIn: "", hotMode: "node", entry: { type: "steel", size: "1/2″" }, open: { a: true } };
+/* вхідна труба від забудовника. Сталева ВГП: внутрішні діаметри, шорсткість k = 0,2 мм і межа швидкості 1,5 м/с прийняті як припущення, у ядрі для сталі значень немає */
+const STEEL = { label: "Сталева (ВГП)", vc: 1.5, k: 0.2, sizes: [["1/2″", "21,3×2,8", 15.7], ["3/4″", "26,8×2,8", 21.2], ["1″", "33,5×3,2", 27.1], ["1 1/4″", "42,3×3,2", 35.9]] };
+const ENT_TYPES = ["steel"].concat(H.LIST);
+const entSpec = t => (t === "steel" ? STEEL : H.MAT[t]);
+const entList = t => (t === "steel" ? STEEL.sizes.map(z => ({ id: z[0], od: z[0], size: z[1], d: z[2] })) : H.MAT[t].sizes.map(z => ({ id: String(z[0]), od: "Ø" + z[0], size: z[1], d: z[2] })));
 H.ORDER.forEach(id => S.c[id] = DEF[id] || 0);
 const MAXC = 6, MAXU = 12;
 const stepper = (key, n, min, max) => `<button type="button" class="stb" data-st="${key}" data-d="-1" aria-label="Менше"${n <= min ? " disabled" : ""}>−</button><span class="stn${n === 0 ? " z" : ""}">${n}</span><button type="button" class="stb" data-st="${key}" data-d="1" aria-label="Більше"${n >= max ? " disabled" : ""}>+</button>`;
@@ -224,6 +232,8 @@ function renderForm(){
   $("hotDistRow").style.display = hasHot ? "" : "none";
   $("hotModeBox").style.display = hasHot ? "" : "none";
   $("hotDistLbl").textContent = S.hs === "ext" ? "Ввід ГВП → вузол" : "Водонагрівач → вузол";
+  $("entType").innerHTML = ENT_TYPES.map(t => `<option value="${t}">${entSpec(t).label}</option>`).join(""); $("entType").value = S.entry.type;
+  $("entSize").innerHTML = entList(S.entry.type).map(z => `<option value="${z.id}">${z.od} (${z.size}${S.entry.type === "steel" ? "" : ""})</option>`).join(""); $("entSize").value = S.entry.size;
   $("hotDist").value = S.hotDist; $("lenEntry").value = S.lenEntry; $("pIn").value = S.pIn;
   $("hmNote").textContent = S.hotMode === "node" ? "Від джерела через вузол: довжини додаються." : "Від джерела напряму: довжина до приладу рахується від джерела.";
   $("flowRows").innerHTML = act.map(id => inRow("flows", id, esc(nm(H.DEV[id].label)), "л/хв", H.DEV[id].lpm, S.flows[id] || "")).join("");
@@ -242,6 +252,8 @@ document.addEventListener("click", e => {
   const hm = e.target.closest("[data-hm]"); if(hm){ S.hotMode = hm.dataset.hm; renderForm(); render(); return; }
 });
 document.querySelectorAll("[data-hs] input").forEach(i => i.addEventListener("change", () => { S.hs = i.closest("[data-hs]").dataset.hs; renderForm(); render(); }));
+$("entType").addEventListener("change", () => { S.entry.type = $("entType").value; S.entry.size = entList(S.entry.type)[0].id; renderForm(); render(); });
+$("entSize").addEventListener("change", () => { S.entry.size = $("entSize").value; render(); });
 $("mat").addEventListener("change", () => { S.mat = $("mat").value; S.walls = {}; renderForm(); render(); });
 document.addEventListener("input", e => {
   const t = e.target; if(!t.dataset || !t.dataset.g) return;
@@ -351,6 +363,27 @@ const byOd = arr => { const m = {}; arr.forEach(x => (m[x.od] = m[x.od] || []).p
 const dets = (k, title, body, sub) => `<details class="ac" data-k="${k}"${S.open[k] ? " open" : ""}><summary class="acc"><span>${title}${sub ? ` <span class="sub" style="display:inline">${sub}</span>` : ""}</span></summary><div>${body}</div></details>`;
 const isSrc = l => !!(l.boiler || l.ext);
 
+function entryCalc(P, q){
+  const t = S.entry.type, spec = entSpec(t), z = entList(t).find(x => x.id === S.entry.size) || entList(t)[0];
+  const v = H.vel(q, z.d), qmax = spec.vc * Math.PI * z.d * z.d / 4 / 1000;
+  const len = +P.lenEntry > 0 ? +P.lenEntry : 0;
+  const dp = len > 0 ? H.specLoss(q, z.d, spec.k, false) * len * (1 + H.KL) : null; /* Па, п. 11.7 */
+  const pIn = +P.pIn > 0 ? +P.pIn : null;
+  return { type: t, label: spec.label, od: z.od, size: z.size, d: z.d, q, v, vmax: spec.vc, ok: v <= spec.vc, qmax, len, dp, pIn, pNode: pIn != null && dp != null ? pIn - dp / 1e5 : null, def: t === "steel" && z.id === "1/2″" };
+}
+const entName = ec => ec.label + " " + ec.od + " (" + ec.size + ")";
+function entryLines(ec){
+  const L = [];
+  L.push(`Вхідна труба: ${entName(ec)}, внутрішній Ø ${f2(ec.d, 1)} мм${ec.type === "steel" ? " (типове значення, уточніть)" : ""}.${ec.def ? " Вказано за замовчуванням, поки труба не введена." : ""}`);
+  L.push(`Розрахункова витрата ${fm(ec.q)} л/с: швидкість у цій трубі ${f2(ec.v, 1)} м/с при межі ${f2(ec.vmax, 1)} м/с${ec.ok ? "" : ", вище межі"}. Труба пропускає до ${fm(ec.qmax)} л/с у межах швидкості.`);
+  if(ec.dp != null) L.push(`Втрата тиску у вводі довжиною ${f2(ec.len, 1)} м: ${f2(ec.dp / 1000, 1)} кПа (${f2(ec.dp / 1e5, 2)} бар). Лічильник, фільтр і арматура не враховані.`);
+  else L.push("Довжину вводу не введено: втрату тиску у вводі не рахуємо.");
+  if(ec.pNode != null) L.push(`Тиск на вводі ${f2(ec.pIn, 1)} бар. Орієнтовний тиск у вузлі розводки ${f2(ec.pNode, 1)} бар (без лічильника, фільтра й арматури).`);
+  else if(ec.pIn != null) L.push(`Тиск на вводі ${f2(ec.pIn, 1)} бар. Введіть довжину вводу, щоб оцінити тиск у вузлі.`);
+  else L.push("Тиск на вводі не введено.");
+  L.push("Внутрішній діаметр і шорсткість сталевої труби (0,2 мм), межа швидкості для сталі 1,5 м/с це прийняті припущення. Ввід змінити не можна, тому це обмеження доводиться враховувати.");
+  return L;
+}
 function render(){
   const P = params();
   const r = H.calc({ U: P.U, mat: P.mat, scheme: P.tee ? "tee" : "ray", counts: P.counts, hotSrc: P.hotSrc, flows: P.flows, dist: P.dist, hotDist: P.hotDist, hotMode: P.hotMode, lenEntry: P.lenEntry, walls: P.walls });
@@ -361,6 +394,8 @@ function render(){
   }
   $("pdfCard").style.display = "";
   const tee = r.scheme === "tee", e0 = r.sections[0];
+  const ec = entryCalc(P, e0.q);
+  const lossRows = (ec.dp != null ? [{ name: "Ввід (вхідна труба)", q: ec.q, d: ec.d, len: ec.len, dp: ec.dp }] : []).concat(r.loss.rows.filter(x => x.name !== "Ввід"));
   const cm = r.sections.filter(s => s.kind === "coldMain"), hm = r.sections.filter(s => s.kind === "hotMain");
   const coll = r.sections.find(s => s.name === "Колектор ХВП");
   const bo = r.lines.find(l => l.boiler), ex = r.lines.find(l => l.ext), srcL = bo || ex;
@@ -377,7 +412,7 @@ function render(){
   if(tee) coldChain = cg.length ? cg.map(g => ({ od: g.s.od, label: gl(g) + " · " + fm(g.qmax) + " л/с" })) : [{ od: e0.od, label: "єдина ділянка" }];
   else coldChain = coll ? [{ od: coll.od, label: fm(coll.q) + " л/с" }] : [];
   let h = `<div class="sumrow"><span>${P.U} мешк. · ${tee ? "Трійникова" : "Променева"} · ${esc(H.MAT[P.mat].label.split(" (")[0])} · ${P.hotSrc === "local" ? "водонагрівач" : P.hotSrc === "ext" ? "централізоване ГВП" : "лише ХВП"}</span><button type="button" id="toParams">↑ Параметри</button></div>`;
-  let rec = `<div class="g card"><div class="h">Рекомендовані діаметри</div><p class="note" style="margin:0 0 2px">Ввід (лічильник і арматура) задає забудовник, тут його не підбираємо. Розрахункова витрата на вводі: <b>${fm(e0.q)} л/с</b>${e0.v != null ? ", швидкість " + f2(e0.v, 1) + " м/с" : ""}. Діаметри нижче це розводка після вводу.</p><div class="pair">`;
+  let rec = `<div class="g card"><div class="h">Рекомендовані діаметри</div><p class="note" style="margin:0 0 2px">Ввід (лічильник і арматура) задає забудовник, тут його не підбираємо. Розрахункова витрата на вводі: <b>${fm(e0.q)} л/с</b>. У вашій вхідній трубі (${esc(entName(ec))}) швидкість ${f2(ec.v, 1)} м/с${ec.ok ? "" : ", це вище межі " + f2(ec.vmax, 1) + " м/с"}. Діаметри нижче це розводка після вводу.</p><div class="pair">`;
   rec += `<div class="blk c"><div><span class="tag cold">ХВП</span> <b style="font-size:.95rem">Холодна вода</b></div><div class="tt">${tee ? "Магістраль" + (cg.length > 1 ? " (діаметр змінюється по ділянках)" : "") : "Колектор"}</div>${chain(coldChain, "c")}`;
   if(bo) rec += `<div class="gr" style="margin-top:6px"><span class="gd c">Ø${bo.cold.od}</span><span class="gq"><b>Підведення до водонагрівача</b> <span style="white-space:nowrap">· ${fm(bo.cold.q)} л/с</span></span></div>`;
   rec += `<div class="tt">Підводки до приладів</div>${grp(cons.filter(l => l.cold).map(l => ({ od: l.cold.od, name: l.name })), "c")}</div>`;
@@ -399,7 +434,7 @@ function render(){
   const sub = s => (s.custom ? `<span class="mr" style="color:var(--mut);font-weight:500">ваша стінка</span>` : "") + (s.minRule ? `<span class="mr">за швидкістю Ø${s.minRule.od}; Ø${s.od} прийнято за мінімумом майстра</span>` : "");
   const row = (n, s, q) => `<tr><td>${esc(n)}${sub(s)}</td><td>${s.noFit ? '<b class="wr">немає</b>' : `<span class="od">Ø${s.od}</span>`}<span class="sm">${esc(s.size)}</span><span class="sm">внутр. ${f2(s.d, 1)}</span></td><td>${fm(q == null ? s.q : q)}<span class="sm">${s.src === "А.5" ? "А.5" : "прийнято"}</span></td>${spd(s)}</tr>`;
   const rows = [];
-  rows.push(row(r.entryKind === "total" ? "Ввід (загальна), довідково" : "Ввід (холодна), довідково", e0));
+  rows.push(`<tr><td>${r.entryKind === "total" ? "Ввід (загальна)" : "Ввід (холодна)"}<span class="mr" style="color:var(--mut);font-weight:500">вхідна труба: ${esc(ec.label)}${ec.def ? ", за замовчуванням" : ""}</span></td><td><span class="od">${esc(ec.od)}</span><span class="sm">${esc(ec.size)}</span><span class="sm">внутр. ${f2(ec.d, 1)}</span></td><td>${fm(ec.q)}<span class="sm">А.5</span></td>${spd(ec)}</tr>`);
   if(tee) cg.forEach(g => rows.push(row("ХВП-магістраль, " + gl(g), g.s, g.qmax)));
   else r.sections.filter(s => s.name === "Колектор ХВП").forEach(s => rows.push(row(s.name, s)));
   if(bo) rows.push(row(bo.cold.name, bo.cold), row(bo.hot.name, bo.hot));
@@ -426,17 +461,18 @@ function render(){
   }
   /* ---- втрати тиску ---- */
   const lo = r.loss;
-  let t3 = lo.rows.length ? `<div class="tbw"><table class="tb tbs"><thead><tr><th>Ділянка</th><th>Витрата, л/с</th><th>Внутр. Ø, мм</th><th>Довжина, м</th><th>Втрата, кПа</th></tr></thead><tbody>${lo.rows.map(x => `<tr><td>${esc(nm(x.name))}</td><td>${fm(x.q)}</td><td>${f2(x.d, 1)}</td><td>${f2(x.len, 1)}</td><td>${f2(x.dp / 1000, 2)}</td></tr>`).join("")}</tbody></table></div>` : "";
-  t3 += `<p class="note">${lo.rows.length ? "" : "Орієнтовні втрати тиску показуються для ділянок із введеною довжиною: відстані до приладів (променева схема), довжина вводу, відстань до джерела гарячої води. "}${lo.skipTee ? "У трійниковій схемі відстань до приладу проходить по магістралі зі змінною витратою, а довжини ділянок магістралі не вводяться: втрати підводок до приладів не рахуються. " : ""}${lo.rows.length ? "Це втрати окремих ділянок за формулою п. 11.7 ДБН H = i·l·(1+0,3); питомі втрати i за Дарсі–Вейсбахом (у нормі за таблицями). Лічильник, фільтр, арматура, змішувачі, водонагрівач, висота й довжини магістралей не враховані; втрати ділянок не складаються в втрату до приладу. Висновок про достатність тиску не робиться, це не повний розрахунок." : ""}</p>`;
+  let t3 = lossRows.length ? `<div class="tbw"><table class="tb tbs"><thead><tr><th>Ділянка</th><th>Витрата, л/с</th><th>Внутр. Ø, мм</th><th>Довжина, м</th><th>Втрата, кПа</th></tr></thead><tbody>${lossRows.map(x => `<tr><td>${esc(nm(x.name))}</td><td>${fm(x.q)}</td><td>${f2(x.d, 1)}</td><td>${f2(x.len, 1)}</td><td>${f2(x.dp / 1000, 2)}</td></tr>`).join("")}</tbody></table></div>` : "";
+  t3 += `<p class="note">${lossRows.length ? "" : "Орієнтовні втрати тиску показуються для ділянок із введеною довжиною: відстані до приладів (променева схема), довжина вводу, відстань до джерела гарячої води. "}${lo.skipTee ? "У трійниковій схемі відстань до приладу проходить по магістралі зі змінною витратою, а довжини ділянок магістралі не вводяться: втрати підводок до приладів не рахуються. " : ""}${lossRows.length ? "Це втрати окремих ділянок за формулою п. 11.7 ДБН H = i·l·(1+0,3); питомі втрати i за Дарсі–Вейсбахом (у нормі за таблицями). Лічильник, фільтр, арматура, змішувачі, водонагрівач, висота й довжини магістралей не враховані; втрати ділянок не складаються в втрату до приладу. Висновок про достатність тиску не робиться, це не повний розрахунок." : ""}</p>`;
   /* ---- вузол вводу ---- */
   const ad = H.nodeAdvice(P.pIn, e0.q);
   /* ---- методика та обмеження ---- */
   let t5 = `<ul class="note">${r.assumptions.map(a => "<li>" + esc(a) + "</li>").join("")}</ul>`;
   if(r.ref) t5 += `<p class="note"><b>Довідково, не для підбору:</b> за таблицею А.9 ДБН (мешканців: ${r.ref.U}, ${r.ref.kind} витрата) ${fm(r.ref.q)} л/с. Це інший спосіб визначення витрати (за кількістю споживачів), норма не уточнює вибір між ним і А.5; тут діаметр підбирається за А.5.</p>`;
   if(r.check) t5 += `<p class="note">Діагностика моделі: ХВП ${fm(r.check.cold)}, водонагрівач ${fm(r.check.boiler)}, ввід ${fm(r.check.entry)} л/с. ${r.check.ok ? "Співвідношення max(ХВП; водонагрівач) ≤ ввід ≤ ХВП + водонагрівач виконується." : "Співвідношення max(ХВП; водонагрівач) ≤ ввід ≤ ХВП + водонагрівач не виконується."} Це лише контроль розрахунку, не нормативна вимога й не підтвердження відповідності ДБН.</p>`;
-  let det = `<div class="g card" style="padding:2px 14px">` + dets("a", "Витрати, швидкості, внутрішні діаметри", t1) + dets("b", "Орієнтовні втрати тиску", t3, "· довідково") + (r.recirc ? dets("c", "Гаряча вода: обʼєм і час очікування", t2) : "") + (ad ? dets("d", "Вузол вводу", `<ul class="note">${ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul>`) : "") + dets("e", "Методика та обмеження", t5) + `</div>`;
+  let det = `<div class="g card" style="padding:2px 14px">` + dets("a", "Витрати, швидкості, внутрішні діаметри", t1) + dets("b", "Орієнтовні втрати тиску", t3, "· довідково") + (r.recirc ? dets("c", "Гаряча вода: обʼєм і час очікування", t2) : "") + dets("d", "Ввід і вузол вводу", `<ul class="note">${entryLines(ec).concat(ad ? ad.lines : []).map(l => "<li>" + esc(l) + "</li>").join("")}</ul>`) + dets("e", "Методика та обмеження", t5) + `</div>`;
   /* ---- попередження ---- */
   let wn = "";
+  if(!ec.ok) wn += `<div class="warn">Ввід (${esc(entName(ec))}) не вкладається в межу швидкості: ${f2(ec.v, 1)} м/с при межі ${f2(ec.vmax, 1)} м/с для витрати ${fm(ec.q)} л/с. Ввід задає забудовник і замінити його не можна, тому це обмеження для всієї квартири. Труба пропускає до ${fm(ec.qmax)} л/с у межах швидкості.</div>`;
   if(P.badFl.length) wn += `<div class="warn">Витрата поза діапазоном 1–60 л/хв: ${esc(P.badFl.join(", "))}. Використано типове значення.</div>`;
   r.warnings.forEach(w => wn += `<div class="warn">${esc(w)}</div>`);
   let bw = "";
@@ -445,7 +481,7 @@ function render(){
   const chTxt = coldChain.map(c => "Ø" + c.od).join("→");
   $("jumpT").textContent = "Результат: ХВП " + chTxt;
   $("jumpS").textContent = (hasHot && srcL && srcL.hot ? "ГВП Ø" + srcL.hot.od + " · " : "") + "дивитись діаграму й підводки";
-  lastDoc = { r, P, svg, rows: null, ad, cm, hm, e0 };
+  lastDoc = { r, P, svg, rows: null, ad, cm, hm, e0, ec, lossRows };
 }
 
 /* ---------- PDF ---------- */
@@ -454,7 +490,7 @@ async function paperEl(){
   const d = lastDoc, r = d.r, P = d.P, prof = await SMProfile.get();
   const el = document.createElement("div"); el.className = "paper";
   const tr = (n, s, q) => `<tr><td>${esc(n)}</td><td class="r">${fm(q == null ? s.q : q)}</td><td class="r">${f2(s.d, 1)}</td><td class="r${s.ok ? "" : " bad"}">${s.v == null ? "–" : f2(s.v, 2)}</td><td class="r">${s.noFit ? "немає" : "Ø" + s.od + " (" + esc(s.size) + ")" + (s.custom ? " ваша стінка" : "")}${s.minRule ? `<div style="font-size:9px">за швидкістю Ø${s.minRule.od}; Ø${s.od} за мінімумом майстра</div>` : ""}</td></tr>`;
-  const rows = [tr(r.entryKind === "total" ? "Ввід (загальна, А.5)" : "Ввід (холодна, А.5)", r.sections[0])];
+  const ec = d.ec, rows = [`<tr><td>${r.entryKind === "total" ? "Ввід (загальна, А.5)" : "Ввід (холодна, А.5)"} вхідна труба</td><td class="r">${fm(ec.q)}</td><td class="r">${f2(ec.d, 1)}</td><td class="r${ec.ok ? "" : " bad"}">${f2(ec.v, 2)}</td><td class="r">${esc(ec.od)} (${esc(ec.size)}), ${esc(ec.label)}${ec.def ? ", за замовчуванням" : ""}</td></tr>`];
   if(r.scheme === "tee") groups(d.cm).forEach(g => rows.push(tr("ХВП-магістраль, ділянки " + (g.from === g.to ? g.from : g.from + "–" + g.to) + " (А.5)", g.s, g.qmax)));
   else r.sections.filter(s => s.name === "Колектор ХВП").forEach(s => rows.push(tr("Колектор ХВП (А.5)", s)));
   const bo = r.lines.find(l => l.boiler), ex = r.lines.find(l => l.ext);
@@ -475,12 +511,12 @@ async function paperEl(){
       `</table><div class="docNote" style="margin:6px 0 0">Обʼєм рахується окремо за ділянками з їх внутрішнім діаметром. Спрощення: ${direct ? "вся довжина від джерела до приладу береться за діаметром підводки." : "ділянка джерело→вузол за діаметром лінії " + (r.recirc.src === "ext" ? "вводу ГВП" : "водонагрівача") + ", вузол→прилад за діаметром підводки; у трійниковій схемі частина відстані проходить по магістралі іншого діаметра, тому обʼєм орієнтовний і не враховує всі зміни діаметрів."} Орієнтир 3 л (п. 7.4 ДБН для централізованого ГВП; тип джерела тут не визначається, тому довідковий). ${r.recirc.exceeded ? "У деяких лініях обʼєм більший: можна розглянути рециркуляцію, зменшення діаметра чи відстані. " : ""}${r.recirc.items.some(x => x.partial) ? "* одну з довжин не введено." : ""}</div></div>`;
   }
   const lo = r.loss;
-  const ls = `<div class="docBlock"><b>Орієнтовні втрати тиску на ділянках</b>` + (lo.rows.length ? `<table class="docT"><tr><th>Ділянка</th><th class="r">Витрата, л/с</th><th class="r">Внутр. Ø, мм</th><th class="r">Довжина, м</th><th class="r">Втрата, кПа</th></tr>${lo.rows.map(x => `<tr><td>${esc(nm(x.name))}</td><td class="r">${fm(x.q)}</td><td class="r">${f2(x.d, 1)}</td><td class="r">${f2(x.len, 1)}</td><td class="r">${f2(x.dp / 1000, 2)}</td></tr>`).join("")}</table>` : `<div class="docNote" style="margin:6px 0 0">Довжини ділянок не введено.</div>`) +
+  const ls = `<div class="docBlock"><b>Орієнтовні втрати тиску на ділянках</b>` + (d.lossRows.length ? `<table class="docT"><tr><th>Ділянка</th><th class="r">Витрата, л/с</th><th class="r">Внутр. Ø, мм</th><th class="r">Довжина, м</th><th class="r">Втрата, кПа</th></tr>${d.lossRows.map(x => `<tr><td>${esc(nm(x.name))}</td><td class="r">${fm(x.q)}</td><td class="r">${f2(x.d, 1)}</td><td class="r">${f2(x.len, 1)}</td><td class="r">${f2(x.dp / 1000, 2)}</td></tr>`).join("")}</table>` : `<div class="docNote" style="margin:6px 0 0">Довжини ділянок не введено.</div>`) +
     `<div class="docNote" style="margin:6px 0 0">${lo.skipTee ? "У трійниковій схемі довжини ділянок магістралі не вводяться, втрати підводок не рахуються. " : ""}Втрати окремих ділянок за формулою п. 11.7 ДБН H = i·l·(1+0,3), питомі втрати i за Дарсі–Вейсбахом. Лічильник, фільтр, арматура, змішувачі, водонагрівач, висота й довжини магістралей не враховані; втрати ділянок не складаються в втрату до приладу. Висновок про достатність тиску не робиться, це не повний розрахунок.</div></div>`;
-  const nd = d.ad ? `<div class="docBlock"><b>Вузол вводу</b><ul style="margin:6px 0 0 18px;padding:0">${d.ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul></div>` : "";
+  const nd = `<div class="docBlock"><b>Ввід і вузол вводу</b><ul style="margin:6px 0 0 18px;padding:0">${entryLines(ec).concat(d.ad ? d.ad.lines : []).map(l => "<li>" + esc(l) + "</li>").join("")}</ul></div>`;
   const refl = r.ref ? `<div class="docNote">Довідково, не для підбору: за таблицею А.9 (мешканців: ${r.ref.U}, ${r.ref.kind} витрата) ${fm(r.ref.q)} л/с.</div>` : "";
   el.innerHTML = SMProfile.headerHtml(prof) + `<div class="docH">Попередній підбір діаметрів труб водопостачання</div><div class="docSub">${SMUI.dateLabel(Date.now())}</div>` +
-    `<div class="docBlock docKV"><span>Мешканців</span><b>${P.U}</b><span>Система</span><b>${P.tee ? "трійникова (порядок приладів умовний)" : "променева"}</b><span>Матеріал розводки</span><b>${esc(H.MAT[P.mat].label)}</b><span>Гаряча вода</span><b>${esc(hotTxt)}</b>${wl ? `<span>Фактичні стінки труб</span><b>${esc(wl)}</b>` : ""}${+P.lenEntry > 0 ? `<span>Довжина вводу</span><b>${esc(String(P.lenEntry).replace(".", ","))} м</b>` : ""}${P.pIn ? `<span>Тиск після лічильника</span><b>${esc(String(P.pIn))} бар</b>` : ""}<span>Прилади</span><b>${esc(cnt)}</b></div>` +
+    `<div class="docBlock docKV"><span>Мешканців</span><b>${P.U}</b><span>Система</span><b>${P.tee ? "трійникова (порядок приладів умовний)" : "променева"}</b><span>Матеріал розводки</span><b>${esc(H.MAT[P.mat].label)}</b><span>Гаряча вода</span><b>${esc(hotTxt)}</b>${wl ? `<span>Фактичні стінки труб</span><b>${esc(wl)}</b>` : ""}<span>Вхідна труба</span><b>${esc(entName(ec))}${ec.def ? " (за замовчуванням)" : ""}</b>${+P.lenEntry > 0 ? `<span>Довжина вводу</span><b>${esc(String(P.lenEntry).replace(".", ","))} м</b>` : ""}${P.pIn ? `<span>Тиск після лічильника</span><b>${esc(String(P.pIn))} бар</b>` : ""}<span>Прилади</span><b>${esc(cnt)}</b></div>` +
     `<div class="docBlock"><b>Прийняті розрахункові витрати приладів</b><table class="docT"><tr><th>Прилад</th><th class="r">л/хв</th><th class="r">л/с</th><th>Джерело</th></tr>${fl}</table><div class="docNote" style="margin:6px 0 0">Витрати приладів не нормативні й не паспортні: уточнюйте за паспортом обладнання.</div></div>` +
     `<div class="docBlock"><b>Умовна схема</b>${d.svg}<div class="docNote" style="margin:6px 0 0">Схема умовна: фактична геометрія трубопроводів може відрізнятися. Ø це зовнішній діаметр труби, мм.</div></div>` +
     `<div class="docBlock"><b>Діаметри, витрати, швидкості</b><table class="docT"><tr><th>Ділянка</th><th class="r">Витрата, л/с</th><th class="r">Внутр. Ø, мм</th><th class="r">Швидкість, м/с</th><th class="r">Труба</th></tr>${rows.join("")}</table><div class="docNote" style="margin:6px 0 0">Швидкість не більше ${f2(r.sections[0].vmax, 1)} м/с (п. 11.6 ДБН для полімерних труб). Внутрішній діаметр залежить від виробника й стінки: звіряйте з паспортом. «За мінімумом майстра» означає, що за швидкістю вистачило б меншого діаметра; більший прийнято за рекомендацією майстра, не за нормою.</div>${refl}</div>` + rc + ls + nd +
