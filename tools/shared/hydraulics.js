@@ -102,6 +102,7 @@
     out.sections.push(e);
     if (!e.ok) { const better = pick(em.mat, qIn, false, 0); if (better) out.warnings.push("Ввід " + eSize[1] + " не проходить за швидкістю (" + e.v.toFixed(2).replace(".", ",") + " м/с при межі " + e.vmax + " м/с), підходить " + better[1] + " (" + MAT[em.mat].label + ")."); }
     const flows = p.flows || {}, dist = p.dist || {};
+    if (p.scheme === "tee" && items.some(x => +dist[x.id] > 0)) items.sort((a, b) => (+dist[a.id] > 0 ? +dist[a.id] : Infinity) - (+dist[b.id] > 0 ? +dist[b.id] : Infinity)); /* магістраль іде від ближніх приладів до дальніх */
     const lenOf = (id) => (+dist[id] > 0 ? +dist[id] : p.lenLine);
     const lineOf = (x) => {
       const res = { name: x.name, id: x.id, reserve: x.reserve, cold: null, hot: null };
