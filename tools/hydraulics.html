@@ -62,9 +62,6 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
     <div class="ttl">Прилади</div>
     <p class="hint" style="margin-top:0">Кількість і відстань від розподільчого вузла до приладу, м (по трубі).</p>
     <div id="devs"></div>
-    <details class="hl"><summary>Витрата змішувачів ванни й душу, л/хв</summary>
-      <p class="hint">За паспортом змішувача. ДБН не дає витрату цих приладів для водопроводу, тому прийнято 0,30 л/с (18 л/хв). Якщо змішувач інший, введіть його витрату: діаметр і швидкість підберуться за нею.</p>
-      <div class="zr"><label>Ванна<input class="formInput" id="f_bath" type="number" inputmode="decimal" step="1" placeholder="18"></label><label>Душ<input class="formInput" id="f_shower" type="number" inputmode="decimal" step="1" placeholder="18"></label></div></details>
     <div class="zr" style="grid-template-columns:1fr"><label>Відстань від вузла до бойлера, м<input class="formInput" id="hd" type="number" inputmode="decimal" step="0.5" placeholder="напр. 4"></label></div>
   </div>
 
@@ -73,7 +70,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
 
-<script src="shared/hydraulics.js?v=20261128"></script>
+<script src="shared/hydraulics.js?v=20261129"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id), H = Hydraulics;
@@ -128,7 +125,7 @@ function render(){
   const U = +$("U").value, mat = $("mat").value, boiler = $("boiler").checked, tee = $("scheme").value === "tee";
   const q = H.byU(285, U), qIn = boiler ? q.tot : q.cold;
   const ent = H.pick(mat, qIn, false, 0, 18); /* ввід у колектор або до першого трійника: прохід не менший, ніж у PEX Ø25 */
-  const r = H.calc({ U, norm: 285, mat, scheme: tee ? "tee" : "ray", entry: { mat, od: ent[0] }, counts, boiler, dist, hotDist: $("hd").value, flows: { bath: $("f_bath").value, shower: $("f_shower").value } });
+  const r = H.calc({ U, norm: 285, mat, scheme: tee ? "tee" : "ray", entry: { mat, od: ent[0] }, counts, boiler, dist, hotDist: $("hd").value });
   if(!r.lines.length){ $("res").innerHTML = `<p class="hint">Додайте хоча б один прилад.</p>`; return; }
   const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null }));
   const e0 = r.sections[0], segs = r.sections.slice(1);
@@ -154,7 +151,7 @@ function render(){
     else { h += row(nm + (l.hot ? ": холодна" : ""), l.cold); if(l.hot) h += row(nm + ": гаряча", l.hot); }
   });
   h += `</table><p class="hint">Запас це наскільки швидкість нижча за межу ДБН (п. 11.6, 12.12: для полімерів 2,5 м/с). Для ванни й душу прийнято витрату змішувача 0,30 л/с (18 л/хв), бо ДБН не дає їхню витрату для водопроводу. </p>`;
-  if(r.lines.some(l => l.id === "bath" || l.id === "shower") && !$("f_bath").value && !$("f_shower").value) h += `<div class="warn">Ванна й душ: прийнято витрату змішувача 0,30 л/с (18 л/хв). Якщо змішувач потужніший (тропічний душ, ванна на 25 л/хв), введіть паспортну витрату в блоці «Прилади».</div>`;
+  if(r.lines.some(l => l.id === "bath" || l.id === "shower")) h += `<div class="warn">Ванна й душ: прийнято витрату змішувача 0,30 л/с (18 л/хв). Тропічний душ або змішувач з більшою витратою може працювати некоректно.</div>`;
   const bad = [e0].concat(segs, r.lines.flatMap(l => [l.cold, l.hot].filter(Boolean))).filter(s => s.v != null && !s.ok);
   if(bad.length) h += `<div class="warn">Швидкість води вище норми на ділянках: ${bad.map(s => esc(s.name)).join(", ")}. Збільшіть діаметр.</div>`;
   if(r.recirc){
