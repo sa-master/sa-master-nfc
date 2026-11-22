@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Гідравлічний розрахунок водопроводу квартири за ДБН | SA-MASTER.PRO</title>
-<meta name="description" content="Безкоштовний гідравлічний розрахунок внутрішнього водопроводу квартири за ДБН В.2.5-64:2012: діаметри труб до приладів і магістралі зі схемою.">
+<title>Попередній підбір діаметрів труб водопостачання квартири | SA-MASTER.PRO</title>
+<meta name="description" content="Безкоштовний попередній підбір діаметрів труб водопостачання квартири за таблицями ДБН В.2.5-64:2012: діаметри підводок і магістралей, швидкість води, умовна схема, PDF. Не є проєктом, втрати тиску системи не розраховуються.">
 <link rel="icon" type="image/png" href="/logo.png">
 <link rel="canonical" href="https://sa-master.pro/tools/hydraulics.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="uk_UA">
 <meta property="og:site_name" content="SA-MASTER.PRO">
-<meta property="og:title" content="Гідравлічний розрахунок водопроводу">
-<meta property="og:description" content="Квартира: діаметри труб до кожного приладу і магістралі зі схемою.">
+<meta property="og:title" content="Попередній підбір діаметрів труб водопостачання">
+<meta property="og:description" content="Квартира: діаметри підводок і магістралей, швидкість води, умовна схема. Попередній підбір.">
 <meta property="og:url" content="https://sa-master.pro/tools/hydraulics.html">
 <meta property="og:image" content="https://sa-master.pro/tools/og/tools.jpg">
 <meta property="og:image:width" content="1200">
@@ -41,6 +41,7 @@ input.formInput{padding:9px 8px;font-size:.95rem;width:100%;box-sizing:border-bo
 details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;font-size:.9rem;padding:4px 0}
 .warn{background:rgba(255,149,0,.14);border-radius:12px;padding:10px 12px;font-size:.88rem;margin-top:10px}
 .rec li{margin:6px 0;font-size:.92rem}
+.tbs{font-size:.8rem;table-layout:fixed}.tbs th,.tbs td{padding-left:2px;padding-right:2px;word-wrap:break-word}.tbs th:first-child,.tbs td:first-child{width:34%}
 .paper .sch text{fill:#111}.paper .sch .bd{fill:#fff}.paper .sch .sm{fill:#6b7280}
 </style>
 </head>
@@ -48,7 +49,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
 <div class="page">
   <div class="g hero"><img src="/logo.png" alt=""><div><a href="/">SA-MASTER<span style="font-weight:500;font-size:.8rem">.pro</span></a><small>інструменти для майстрів</small></div></div>
 <div class="navrow"><a href="/tools/">← Усі інструменти</a></div>
-  <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Гідравлічний розрахунок</h1>
+  <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Попередній підбір діаметрів труб водопостачання</h1>
   <div class="g card"><details class="fold"><summary>Ваші дані для PDF</summary><div id="profileBox"></div></details></div>
 
   <div class="g card">
@@ -61,9 +62,16 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
 
   <div class="g card">
     <div class="ttl">Прилади</div>
-    <p class="hint" style="margin-top:0">Кількість і відстань від розподільчого вузла до приладу, м (по трубі). Бойлер без центрального ГВП.</p>
+    <p class="hint" style="margin-top:0">Кількість і відстань від розподільчого вузла до приладу, м (по трубі). Бойлер електричний, без центрального ГВП; його відстань це довжина від бойлера до вузла.</p>
     <div id="devs"></div>
   </div>
+
+  <div class="g card"><details class="fold"><summary>Додаткові параметри</summary><div>
+    <p class="hint" style="margin-top:8px">Розрахункова витрата приладу для підводки, л/хв. Це початкові інженерні припущення, не нормативні: уточнюйте за паспортом обладнання. Порожнє поле означає типове значення.</p>
+    <div class="fl" id="flows"></div>
+    <div class="zr" style="grid-template-columns:1fr"><label>Гаряча вода до приладу<select class="formInput" id="hotMode"><option value="node">від бойлера через вузол (довжини додаються)</option><option value="direct">від бойлера напряму (довжина до приладу від бойлера)</option></select></label></div>
+    <button type="button" class="btnSec" id="btnFlowReset">Повернути типові</button>
+  </div></details></div>
 
   <div class="g card" id="res"></div>
 
@@ -76,7 +84,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
 </div>
 <div id="toast"></div>
 
-<script src="shared/hydraulics.js?v=20261134"></script>
+<script src="shared/hydraulics.js?v=20261135"></script>
 <script src="shared/store.js?v=20261121"></script>
 <script src="shared/ui.js?v=20261121"></script>
 <script src="shared/profile.js?v=20261121"></script>
@@ -94,6 +102,8 @@ const DEF = { bath: 1, shower: 1, sink: 1, basin: 1, wc: 1, washer: 1 };
 $("devs").innerHTML = H.ORDER.map(id => `<div class="dv"><span>${H.DEV[id].label}</span><span class="dr"><select class="formInput" id="c_${id}">${opts(0, 6)}</select><input class="formInput" id="d_${id}" type="number" inputmode="decimal" step="0.5" placeholder="м"></span></div>`).join("");
 $("devs").insertAdjacentHTML("beforeend", `<div class="dv"><span>Бойлер (електричний)</span><span class="dr"><select class="formInput" id="c_boiler"><option>0</option><option selected>1</option></select><input class="formInput" id="d_boiler" type="number" inputmode="decimal" step="0.5" placeholder="м"></span></div>`);
 H.ORDER.forEach(id => $("c_" + id).value = DEF[id] || 0);
+$("flows").innerHTML = H.ORDER.map(id => `<span>${H.DEV[id].label}</span><input class="formInput" id="f_${id}" type="number" inputmode="decimal" step="1" min="1" max="60" placeholder="${H.DEV[id].lpm}">`).join("");
+$("btnFlowReset").addEventListener("click", () => { H.ORDER.forEach(id => $("f_" + id).value = ""); $("hotMode").value = "node"; render(); });
 function scheme(r){
   const W = 360, top = 70, C = "#0A84FF", Hh = "#FF3B30", xc = 44, xh = 86, x0 = 112;
   const tee = r.scheme === "tee";
@@ -115,7 +125,7 @@ function scheme(r){
   const lastCold = n - 1;
   let lastHot = -1; L.forEach((l, i) => { if(l.hot) lastHot = i; });
   o += `<line x1="${xc}" y1="8" x2="${xc}" y2="${tee ? cy(lastCold) : top - 4}" stroke="${C}" stroke-width="${tee ? 4 : 3}"/>`;
-  o += `<text class="nm" x="${xc + 12}" y="22">Ввід</text>` + badge(xc + 70, 18, "Ø" + r.inDn, C) + `<text class="sm" x="${xc + 94}" y="22">кран ${r.valveIn}</text>`;
+  o += `<text class="nm" x="${xc + 12}" y="22">Ввід</text>` + badge(xc + 70, 18, "Ø" + r.inDn, C) + ``;
   if(tee){
     o += badge(xc, top - 20, "Ø" + r.main.first, C);
   } else {
@@ -152,81 +162,121 @@ function scheme(r){
   return o + "</svg>";
 }
 
+const fm = (x, n = 3) => x.toFixed(n).replace(".", ",");
+const nm = s => s.replace(" (змішувач)", "");
+function params(){
+  const counts = {}, dist = {}, flows = {}, badFl = []; 
+  H.ORDER.forEach(id => {
+    counts[id] = $("c_" + id).value; dist[id] = $("d_" + id).value;
+    const v = $("f_" + id).value;
+    if(v !== "" && !(+v >= 1 && +v <= 60)){ badFl.push(H.DEV[id].label); flows[id] = ""; } else flows[id] = v;
+  });
+  return { counts, dist, flows, badFl, U: +$("U").value, mat: $("mat").value, boiler: $("c_boiler").value === "1", tee: $("scheme").value === "tee", hotDist: $("d_boiler").value, hotMode: $("hotMode").value, pIn: $("pIn").value };
+}
+function groups(secs){ /* ділянки магістралі однакового діаметра в один рядок */
+  const g = [];
+  secs.forEach((s, i) => { const l = g[g.length - 1]; if(l && l.s.od === s.od){ l.to = i + 1; if(s.v > l.s.v) l.s = s; l.qmax = Math.max(l.qmax, s.q); } else g.push({ s, from: i + 1, to: i + 1, qmax: s.q }); });
+  return g;
+}
 function render(){
-  const counts = {}, dist = {}; H.ORDER.forEach(id => { counts[id] = $("c_" + id).value; dist[id] = $("d_" + id).value; });
-  const U = +$("U").value, mat = $("mat").value, boiler = $("c_boiler").value === "1", tee = $("scheme").value === "tee";
-  const q = H.byU(285, U), qIn = boiler ? q.tot : q.cold;
-  const ent = H.pick(mat, qIn, false, 0, 18); /* ввід у колектор або до першого трійника: прохід не менший, ніж у PEX Ø25 */
-  const r = H.calc({ U, norm: 285, mat, scheme: tee ? "tee" : "ray", entry: { mat, od: ent[0] }, counts, boiler, dist, hotDist: $("d_boiler").value });
-  if(!r.lines.length){ lastDoc = null; $("pdfCard").style.display = "none"; $("res").innerHTML = `<p class="hint">Додайте хоча б один прилад.</p>`; return; }
+  const P = params();
+  const r = H.calc({ U: P.U, mat: P.mat, scheme: P.tee ? "tee" : "ray", counts: P.counts, boiler: P.boiler, flows: P.flows, dist: P.dist, hotDist: P.hotDist, hotMode: P.hotMode });
+  if(!r.lines.length || !r.sections.length){
+    lastDoc = null; $("pdfCard").style.display = "none";
+    $("res").innerHTML = r.warnings.length ? r.warnings.map(w => `<div class="warn">${esc(w)}</div>`).join("") : `<p class="hint">Додайте хоча б один прилад.</p>`;
+    return;
+  }
   $("pdfCard").style.display = "";
+  const tee = r.scheme === "tee", e0 = r.sections[0];
+  const cm = r.sections.filter(s => s.kind === "coldMain"), hm = r.sections.filter(s => s.kind === "hotMain");
   const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null, len: l.len > 0 ? l.len : null }));
-  const e0 = r.sections[0], segs = r.sections.slice(1);
-  const sc = { scheme: r.scheme, inDn: e0.od, valveIn: '1/2"', lines: ln, main: tee ? { first: e0.od, segs: segs.map(s => s.od), hot: H.reserveSize(mat)[0] } : null };
-  let h = `<div class="ttl">Схема</div>` + scheme(sc) + `<p class="hint">Синя лінія холодна вода, червона гаряча. Ø це зовнішній діаметр труби, мм.</p>`;
-  /* швидкість і запас до межі п. 11.6 / 12.12 */
+  const sc = { scheme: r.scheme, inDn: e0.od, lines: ln, main: tee ? { first: cm.length ? cm[0].od : e0.od, segs: cm.slice(1).map(s => s.od), hot: hm.length ? hm[0].od : H.reserveSize(P.mat)[0] } : null };
+  const svg = scheme(sc);
+  let h = `<div class="ttl">Умовна схема</div>` + svg + `<p class="hint">Схема умовна: фактична геометрія трубопроводів може відрізнятися${tee ? ", порядок приладів на магістралі за відстанню умовний" : ""}. Синя лінія холодна вода, червона гаряча. Ø це зовнішній діаметр труби, мм.</p>`;
+  /* швидкість і запас до межі п. 11.6 */
   const spd = s => {
     if(s.v == null) return `<td class="n">–</td>`;
     const m = 1 - s.v / s.vmax, cls = m < 0 ? "wr" : m < 0.1 ? "wy" : "okc";
-    return `<td class="n"><span class="${cls}">${f2(s.v, 1)} м/с</span><br><span class="sm" style="color:var(--ts)">${m < 0 ? "вище норми" : "запас " + Math.round(m * 100) + "%"}</span></td>`;
+    return `<td class="n"><span class="${cls}">${f2(s.v, 1)} м/с</span><br><span class="sm" style="color:var(--ts)">${m < 0 ? "вище межі" : "запас " + Math.round(m * 100) + "%"}</span></td>`;
   };
-  const row = (n, s) => `<tr><td>${esc(n)}</td><td><b>Ø${s.od}</b> <span class="sm" style="color:var(--ts)">${esc(s.size)}</span></td>${spd(s)}</tr>`;
-  h += `<div class="ttl" style="margin-top:14px">Діаметри</div><table class="tb"><tr><th>Ділянка</th><th>Труба</th><th class="n">Швидкість</th></tr>`;
-  h += row(tee ? "Ввід до першого трійника" : "Ввід у колектор", e0);
-  if(tee) {
-    const groups = [];
-    segs.forEach((s, i) => { const g = groups[groups.length - 1]; if(g && g.od === s.od){ g.to = i + 1; if(s.v > g.s.v) g.s = s; } else groups.push({ od: s.od, from: i + 1, to: i + 1, s }); });
-    groups.forEach(g => h += row("Магістраль після " + (g.from === g.to ? g.from + "-го" : g.from + "–" + g.to + "-го") + " відгалуження", g.s));
-  }
-  r.lines.forEach(l => {
-    const nm = l.name.replace(" (змішувач)", "");
-    if(l.hot && l.hot.od === l.cold.od) h += row(nm + ": холодна і гаряча", l.cold.v != null && l.hot.v != null && l.hot.v > l.cold.v ? l.hot : l.cold);
-    else { h += row(nm + (l.hot ? ": холодна" : ""), l.cold); if(l.hot) h += row(nm + ": гаряча", l.hot); }
+  const sub = s => `<span class="sm" style="color:var(--ts);white-space:nowrap">${esc(s.size)}<br>внутр. ${f2(s.d, 1)}</span>`;
+  const row = (n, s, q) => `<tr><td>${esc(n)}</td><td>${s.noFit ? '<b class="wr">немає</b>' : `<b>Ø${s.od}</b>`}<br>${sub(s)}</td><td class="n">${fm(q == null ? s.q : q)}<br><span class="sm" style="color:var(--ts)">${s.src === "А.5" ? "А.5" : "прийнято"}</span></td>${spd(s)}</tr>`;
+  const rows = [];
+  rows.push(row(P.boiler ? "Ввід (загальна)" : "Ввід (холодна)", e0));
+  if(tee) groups(cm).forEach(g => rows.push(row("ХВП-магістраль, ділянки " + (g.from === g.to ? g.from : g.from + "–" + g.to), g.s, g.qmax)));
+  else r.sections.filter(s => s.name === "Колектор ХВП").forEach(s => rows.push(row(s.name, s)));
+  const bo = r.lines.find(l => l.boiler);
+  if(bo) rows.push(row("Підведення до бойлера (ХВП)", bo.cold), row("Від бойлера (ГВП)", bo.hot));
+  if(tee) groups(hm).forEach(g => rows.push(row("ГВП-магістраль, ділянки " + (g.from === g.to ? g.from : g.from + "–" + g.to), g.s, g.qmax)));
+  r.lines.filter(l => !l.boiler).forEach(l => {
+    const n = nm(l.name);
+    if(l.hot && l.hot.od === l.cold.od) rows.push(row(n + ": холодна і гаряча", l.cold.v != null && l.hot.v != null && l.hot.v > l.cold.v ? l.hot : l.cold));
+    else { rows.push(row(n + (l.hot ? ": холодна" : ""), l.cold)); if(l.hot) rows.push(row(n + ": гаряча", l.hot)); }
   });
-  h += `</table>`;
-  const docT = h.slice(h.indexOf('<table class="tb">')).replace('class="tb"', 'class="docT"');
-  if(r.lines.some(l => l.id === "bath" || l.id === "shower")) h += `<div class="warn">Ванна й душ: прийнято витрату змішувача 0,30 л/с (18 л/хв). Тропічний душ або змішувач з більшою витратою може працювати некоректно.</div>`;
-  const bad = [e0].concat(segs, r.lines.flatMap(l => [l.cold, l.hot].filter(Boolean))).filter(s => s.v != null && !s.ok);
-  if(bad.length) h += `<div class="warn">Швидкість води вище норми на ділянках: ${bad.map(s => esc(s.name)).join(", ")}. Збільшіть діаметр.</div>`;
+  h += `<div class="ttl" style="margin-top:14px">Діаметри</div><table class="tb"><tr><th>Ділянка</th><th>Труба</th><th class="n">Витрата, л/с</th><th class="n">Швидкість</th></tr>${rows.join("")}</table>`;
+  h += `<p class="hint">Витрата «А.5» це значення таблиці А.5 ДБН для групи приладів ділянки; «прийнято» це розрахункова витрата приладу (див. «Додаткові параметри»). Діаметр підібрано за внутрішнім діаметром типорозміру й швидкістю до ${f2(r.sections[0].vmax, 1)} м/с (п. 11.6 ДБН). Внутрішній діаметр залежить від виробника, звіряйте з паспортом.</p>`;
+  if(P.badFl.length) h += `<div class="warn">Витрата поза діапазоном 1–60 л/хв: ${esc(P.badFl.join(", "))}. Використано типове значення.</div>`;
+  r.warnings.forEach(w => h += `<div class="warn">${esc(w)}</div>`);
+  if(r.lines.some(l => l.id === "bath" || l.id === "shower")) h += `<div class="warn">Ванна й душ: розрахункова витрата змішувача ${f2(H.devFlow("bath", P.flows) * 60, 0)} і ${f2(H.devFlow("shower", P.flows) * 60, 0)} л/хв, це припущення (типове 18 л/хв). Холодна й гаряча підводки перевіряються окремо, кожна на повну витрату змішувача. Тропічний душ або змішувач з більшою витратою вимагає введення паспортної витрати.</div>`;
+  if(r.ref) h += `<p class="hint"><b>Довідково, не для підбору:</b> за таблицею А.9 ДБН (мешканців: ${r.ref.U}, ${r.ref.kind} витрата) ${fm(r.ref.q)} л/с. Це інший спосіб визначення витрати (за кількістю споживачів), норма не уточнює вибір між ним і А.5; тут діаметр підбирається за А.5.</p>`;
+  if(r.check) h += `<p class="hint">Діагностика співвідношення витрат: ХВП ${fm(r.check.cold)}, бойлер ${fm(r.check.boiler)}, ввід ${fm(r.check.entry)} л/с. ${r.check.ok ? "Умова max(ХВП; бойлер) ≤ ввід ≤ ХВП + бойлер виконується." : "Умова max(ХВП; бойлер) ≤ ввід ≤ ХВП + бойлер не виконується."} Це лише контроль розрахунку, не підтвердження відповідності ДБН.</p>`;
   if(r.recirc){
-    const rc = r.recirc;
-    h += `<div class="ttl" style="margin-top:14px">Гаряча вода: чекання і циркуляція</div><table class="tb"><tr><th>Прилад</th><th class="n">Довжина, м</th><th class="n">Обʼєм, л</th><th class="n">Чекати, с</th></tr>`;
-    rc.items.forEach(x => h += `<tr><td>${esc(x.name)}</td><td class="n">${f2(x.len, 1)}</td><td class="n">${x.over ? '<span class="wr">' + f2(x.vol) + '</span>' : f2(x.vol)}</td><td class="n">${x.wait == null ? "–" : f2(x.wait, 0)}</td></tr>`);
-    h += `</table>` + (rc.needed
-      ? `<div class="warn">До ${esc(rc.worst.name.toLowerCase())} у трубі ${f2(rc.worst.vol)} л гарячої води, що більше ${rc.limit} л. Поки не піде гаряча, зливатиметься холодна. Варіанти: зменшити діаметр або відстань, поставити циркуляційну лінію з насосом і зворотним клапаном, або електростічку (кабель, що підігріває трубу).</div>`
-      : `<p class="hint">Обʼєм у всіх лініях не більше ${rc.limit} л, циркуляція не потрібна.</p>`)
-      + `<p class="hint">Критерій: не більше 3 л води в гілці без циркуляції (п. 7.4 ДБН для централізованого ГВП, для бойлера в квартирі це орієнтир). Довжина це відстань від бойлера до вузла плюс від вузла до приладу, це спрощення. Час це обʼєм на витрату приладу; для ванни й душу не рахується, поки не відома їхня витрата.</p>`;
+    const rc = r.recirc, direct = rc.mode === "direct";
+    h += `<div class="ttl" style="margin-top:14px">Гаряча вода: обʼєм і час очікування</div><table class="tb tbs"><tr><th>Прилад</th>${direct ? `<th class="n">Бойлер→ прилад, м</th>` : `<th class="n">Бойлер→ вузол, м</th><th class="n">Вузол→ прилад, м</th>`}<th class="n">Обʼєм, л</th><th class="n">Чекати, с</th></tr>`;
+    rc.items.forEach(x => h += `<tr><td>${esc(nm(x.name))}</td>${direct ? `<td class="n">${f2(x.lenD, 1)}</td>` : `<td class="n">${f2(x.lenB, 1)}</td><td class="n">${f2(x.lenD, 1)}</td>`}<td class="n">${x.over ? '<span class="wr">' + f2(x.vol) + '</span>' : f2(x.vol)}${x.partial ? "*" : ""}</td><td class="n">${x.wait == null ? "–" : f2(x.wait, 0)}</td></tr>`);
+    h += `</table>` + (rc.exceeded
+      ? `<div class="warn">До ${esc(nm(rc.worst.name).toLowerCase())} у трубі ${f2(rc.worst.vol)} л гарячої води, що більше орієнтира ${rc.limit} л. Можна розглянути циркуляційну лінію з насосом, зменшення діаметра чи відстані.</div>`
+      : `<p class="hint">Обʼєм у всіх лініях не перевищує орієнтир ${rc.limit} л.</p>`)
+      + `<p class="hint">Орієнтир 3 л це п. 7.4 ДБН (для централізованого ГВП; для бойлера в квартирі це довідковий орієнтир, не вимога). ${direct ? "Рахується лише довжина до приладу від бойлера." : "Довжини бойлер→вузол і вузол→прилад додаються лише коли гаряча вода йде від бойлера через вузол до приладу; якщо схема інша, розрахунок слід уточнити."} Час очікування це обʼєм, поділений на розрахункову витрату лінії. ${rc.items.some(x => x.partial) ? "* одну з довжин не введено, обʼєм неповний." : ""}</p>`;
   }
-  const ad = H.nodeAdvice($("pIn").value, qIn);
-  if(ad) h += `<div class="ttl" style="margin-top:14px">Вузол</div><ul class="rec">${ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul><p class="hint">Пороги тиску (3 і 4 бар) і запас Kvs в 1,5 раза це орієнтири, не вимоги норми. Витрата вводу ${f2(qIn * 3.6)} м³/год.</p>`;
+  const ad = H.nodeAdvice(P.pIn, e0.q);
+  if(ad) h += `<div class="ttl" style="margin-top:14px">Вузол вводу</div><ul class="rec">${ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul>`;
+  h += `<details class="hl"><summary>Припущення і обмеження методики</summary><ul class="rec">${r.assumptions.map(a => "<li>" + esc(a) + "</li>").join("")}</ul></details>`;
+  h += `<p class="hint"><b>Повний гідравлічний розрахунок втрат тиску системи не виконано. Результат попередній.</b></p>`;
   $("res").innerHTML = h;
-  lastDoc = { svg: scheme(sc), diam: docT, recirc: r.recirc ? r.recirc : null, ad, qIn, U, scheme: tee ? "трійникова" : "променева", mat: H.MAT[mat].label, boiler, pIn: $("pIn").value };
+  lastDoc = { r, P, svg, rows: null, ad, cm, hm, e0 };
 }
 
 /* ---------- PDF ---------- */
 SMProfile.mount($("profileBox"));
 async function paperEl(){
-  const d = lastDoc, prof = await SMProfile.get();
+  const d = lastDoc, r = d.r, P = d.P, prof = await SMProfile.get();
   const el = document.createElement("div"); el.className = "paper";
+  const tr = (n, s, q) => `<tr><td>${esc(n)}</td><td class="r">${fm(q == null ? s.q : q)}</td><td class="r">${f2(s.d, 1)}</td><td class="r${s.ok ? "" : " bad"}">${s.v == null ? "–" : f2(s.v, 2)}</td><td class="r">${s.noFit ? "немає" : "Ø" + s.od + " (" + esc(s.size) + ")"}</td></tr>`;
+  const rows = [tr(P.boiler ? "Ввід (загальна, А.5)" : "Ввід (холодна, А.5)", r.sections[0])];
+  if(r.scheme === "tee") groups(d.cm).forEach(g => rows.push(tr("ХВП-магістраль, ділянки " + (g.from === g.to ? g.from : g.from + "–" + g.to) + " (А.5)", g.s, g.qmax)));
+  else r.sections.filter(s => s.name === "Колектор ХВП").forEach(s => rows.push(tr("Колектор ХВП (А.5)", s)));
+  const bo = r.lines.find(l => l.boiler);
+  if(bo) rows.push(tr("Підведення до бойлера (А.5)", bo.cold), tr("Від бойлера (А.5)", bo.hot));
+  if(r.scheme === "tee") groups(d.hm).forEach(g => rows.push(tr("ГВП-магістраль, ділянки " + (g.from === g.to ? g.from : g.from + "–" + g.to) + " (А.5)", g.s, g.qmax)));
+  r.lines.filter(l => !l.boiler).forEach(l => { const n = nm(l.name); rows.push(tr(n + (l.hot ? ": холодна" : "") + " (прийнято)", l.cold)); if(l.hot) rows.push(tr(n + ": гаряча (прийнято)", l.hot)); });
+  const cnt = H.ORDER.filter(id => +P.counts[id] > 0).map(id => H.DEV[id].label + " ×" + (+P.counts[id]) + (+P.dist[id] > 0 ? " (" + P.dist[id] + " м)" : "")).join(", ");
+  const fl = H.ORDER.filter(id => +P.counts[id] > 0).map(id => { const lp = H.devFlow(id, P.flows) * 60, custom = P.flows[id] !== ""; return `<tr><td>${esc(nm(H.DEV[id].label))}</td><td class="r">${f2(lp, 0)}</td><td class="r">${fm(lp / 60)}</td><td>${custom ? "задано користувачем" : "інженерне припущення (типове)"}</td></tr>`; }).join("");
   let rc = "";
-  if(d.recirc){
-    rc = `<div class="docBlock"><b>Гаряча вода: чекання і циркуляція</b><table class="docT"><tr><th>Прилад</th><th class="r">Довжина, м</th><th class="r">Обʼєм, л</th><th class="r">Чекати, с</th></tr>` +
-      d.recirc.items.map(x => `<tr><td>${esc(x.name)}</td><td class="r">${f2(x.len, 1)}</td><td class="r${x.over ? " bad" : ""}">${f2(x.vol)}</td><td class="r">${x.wait == null ? "–" : f2(x.wait, 0)}</td></tr>`).join("") +
-      `</table>` + (d.recirc.needed ? `<div class="docNote" style="margin:6px 0 0">До ${esc(d.recirc.worst.name.toLowerCase())} у трубі ${f2(d.recirc.worst.vol)} л гарячої води, що більше ${d.recirc.limit} л: варто передбачити циркуляцію.</div>` : `<div class="docNote" style="margin:6px 0 0">Обʼєм у всіх лініях не більше ${d.recirc.limit} л, циркуляція не потрібна.</div>`) + `</div>`;
+  if(r.recirc){
+    const direct = r.recirc.mode === "direct";
+    rc = `<div class="docBlock"><b>Гаряча вода: обʼєм і час очікування</b><table class="docT"><tr><th>Прилад</th>${direct ? `<th class="r">Бойлер→прилад, м</th>` : `<th class="r">Бойлер→вузол, м</th><th class="r">Вузол→прилад, м</th>`}<th class="r">Обʼєм, л</th><th class="r">Чекати, с</th></tr>` +
+      r.recirc.items.map(x => `<tr><td>${esc(nm(x.name))}</td>${direct ? `<td class="r">${f2(x.lenD, 1)}</td>` : `<td class="r">${f2(x.lenB, 1)}</td><td class="r">${f2(x.lenD, 1)}</td>`}<td class="r${x.over ? " bad" : ""}">${f2(x.vol)}${x.partial ? "*" : ""}</td><td class="r">${x.wait == null ? "–" : f2(x.wait, 0)}</td></tr>`).join("") +
+      `</table><div class="docNote" style="margin:6px 0 0">Орієнтир 3 л (п. 7.4 ДБН для централізованого ГВП; для бойлера довідковий). ${r.recirc.exceeded ? "У деяких лініях обʼєм більший: можна розглянути рециркуляцію, зменшення діаметра чи відстані. " : ""}${direct ? "" : "Довжини додаються за умови, що гаряча вода йде від бойлера через вузол до приладу; інакше розрахунок слід уточнити. "}${r.recirc.items.some(x => x.partial) ? "* одну з довжин не введено." : ""}</div></div>`;
   }
-  const nd = d.ad ? `<div class="docBlock"><b>Вузол</b><ul style="margin:6px 0 0 18px;padding:0">${d.ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul></div>` : "";
-  el.innerHTML = SMProfile.headerHtml(prof) + `<div class="docH">Гідравлічний розрахунок водопроводу квартири</div><div class="docSub">${SMUI.dateLabel(Date.now())}</div>` +
-    `<div class="docBlock docKV"><span>Мешканців</span><b>${d.U}</b><span>Система</span><b>${d.scheme}</b><span>Матеріал розводки</span><b>${esc(d.mat)}</b>${d.pIn ? `<span>Тиск після лічильника</span><b>${esc(String(d.pIn))} бар</b>` : ""}</div>` +
-    `<div class="docBlock"><b>Схема</b>${d.svg}</div><div class="docBlock"><b>Діаметри</b>${d.diam}</div>` + rc + nd +
-    `<div class="docNote">Орієнтовний розрахунок за ДБН В.2.5-64:2012. Ø це зовнішній діаметр труби, мм. Не замінює проєкт.</div>`;
+  const nd = d.ad ? `<div class="docBlock"><b>Вузол вводу</b><ul style="margin:6px 0 0 18px;padding:0">${d.ad.lines.map(l => "<li>" + esc(l) + "</li>").join("")}</ul></div>` : "";
+  const refl = r.ref ? `<div class="docNote">Довідково, не для підбору: за таблицею А.9 (мешканців: ${r.ref.U}, ${r.ref.kind} витрата) ${fm(r.ref.q)} л/с.</div>` : "";
+  el.innerHTML = SMProfile.headerHtml(prof) + `<div class="docH">Попередній підбір діаметрів труб водопостачання</div><div class="docSub">${SMUI.dateLabel(Date.now())}</div>` +
+    `<div class="docBlock docKV"><span>Мешканців</span><b>${P.U}</b><span>Система</span><b>${P.tee ? "трійникова (порядок приладів умовний)" : "променева"}</b><span>Матеріал розводки</span><b>${esc(H.MAT[P.mat].label)}</b><span>Бойлер</span><b>${P.boiler ? "електричний, є" : "немає"}</b>${P.pIn ? `<span>Тиск після лічильника</span><b>${esc(String(P.pIn))} бар</b>` : ""}<span>Прилади</span><b>${esc(cnt)}</b></div>` +
+    `<div class="docBlock"><b>Прийняті розрахункові витрати приладів</b><table class="docT"><tr><th>Прилад</th><th class="r">л/хв</th><th class="r">л/с</th><th>Джерело</th></tr>${fl}</table><div class="docNote" style="margin:6px 0 0">Витрати приладів не нормативні й не паспортні: уточнюйте за паспортом обладнання.</div></div>` +
+    `<div class="docBlock"><b>Умовна схема</b>${d.svg}<div class="docNote" style="margin:6px 0 0">Схема умовна: фактична геометрія трубопроводів може відрізнятися. Ø це зовнішній діаметр труби, мм.</div></div>` +
+    `<div class="docBlock"><b>Діаметри, витрати, швидкості</b><table class="docT"><tr><th>Ділянка</th><th class="r">Витрата, л/с</th><th class="r">Внутр. Ø, мм</th><th class="r">Швидкість, м/с</th><th class="r">Труба</th></tr>${rows.join("")}</table><div class="docNote" style="margin:6px 0 0">Швидкість не більше ${f2(r.sections[0].vmax, 1)} м/с (п. 11.6 ДБН для полімерних труб). Внутрішній діаметр залежить від виробника: звіряйте з паспортом.</div>${refl}</div>` + rc + nd +
+    (r.warnings.length ? `<div class="docBlock"><b>Попередження</b><ul style="margin:6px 0 0 18px;padding:0">${r.warnings.map(w => "<li>" + esc(w) + "</li>").join("")}</ul></div>` : "") +
+    `<div class="docBlock"><b>Припущення і обмеження методики</b><ul style="margin:6px 0 0 18px;padding:0">${r.assumptions.map(a => "<li>" + esc(a) + "</li>").join("")}</ul></div>` +
+    `<div class="docNote"><b>Повний гідравлічний розрахунок втрат тиску системи не виконано. Результат попередній.</b> Розрахунок орієнтовний за таблицями ДБН В.2.5-64:2012 і не є проєктом.</div>`;
   return el;
 }
 async function makePdf(btn, mode){
   if(!lastDoc) return;
   const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Готуємо PDF…";
   try {
-    const blob = await SMDoc.pdf(await paperEl()), name = "gidravlichnyi-rozrakhunok-" + new Date().toISOString().slice(0, 10) + ".pdf";
-    if(mode === "share"){ const r = await SMDoc.share(blob, name, "Гідравлічний розрахунок"); if(r === "downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
+    const blob = await SMDoc.pdf(await paperEl()), name = "pidbir-diametriv-" + new Date().toISOString().slice(0, 10) + ".pdf";
+    if(mode === "share"){ const r = await SMDoc.share(blob, name, "Попередній підбір діаметрів труб водопостачання"); if(r === "downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
     else SMDoc.download(blob, name);
   } catch(e){ toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
   finally { btn.disabled = false; btn.textContent = t0; }
