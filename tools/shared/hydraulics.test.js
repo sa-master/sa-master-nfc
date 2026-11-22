@@ -223,11 +223,12 @@ t("довжина вводу порожня/відʼємна: втрат вво�
   const cold = x => x.sections.filter(z => /агістраль/.test(z.name) && !/ГВП/.test(z.name)).map(z => [z.q, z.size && z.size[0]]);
   const withH = H.calc({ ...base, boiler: undefined, hotSrc: "local" }), noH = H.calc({ ...base, boiler: undefined, hotSrc: "ext" });
   t("водонагрівач біля вузла: ХВП-магістраль однакова з нагрівачем у квартирі і без нього (нагрівач не входить в N магістралі)", JSON.stringify(cold(withH)) === JSON.stringify(cold(noH)) && cold(withH).length > 0);
+  t("у припущеннях зазначено, що співвідношення витрат ХВП-магістралі й вводу це властивість моделі, не норма", withH.assumptions.some(a => /властивість прийнятої моделі/.test(a) && /не нормативне/.test(a)));
   t("пояснення про припущення «нагрівач біля вузла вводу» присутнє в списку припущень", withH.assumptions.some(a => /біля вузла вводу/.test(a)));
   t("формули min(ХВП + нагрівач; ввід) для ділянок немає: перша ділянка магістралі не дорівнює вводу", withH.sections.find(z => /до 1-го відгалуження/.test(z.name)).q < withH.sections.find(z => z.name === "Ввід").q);
 }
-/* 18.5 Ввід і магістралі: діагностика співвідношення (не вимога ДБН) */
-Object.keys(cfgs).forEach(k => ["local", "ext", "none"].forEach(src => { const x = H.calc({ mat: "pex", scheme: "tee", hotSrc: src, ...cfgs[k] }); const e = x.sections.find(z => z.name === "Ввід"); const m = x.sections.filter(z => /Магістраль|ХВП-магістраль/.test(z.name) && !/ГВП/.test(z.name)); t("діагностика " + k + "/" + src + ": жодна ділянка ХВП-магістралі не більша за ввід", !!e && m.every(z => z.q <= e.q + 1e-9)); }));
+/* 18.5 Ввід і магістралі: властивість прийнятої моделі, діагностика розрахунку; не нормативне гідравлічне правило і не вимога ДБН */
+Object.keys(cfgs).forEach(k => ["local", "ext", "none"].forEach(src => { const x = H.calc({ mat: "pex", scheme: "tee", hotSrc: src, ...cfgs[k] }); const e = x.sections.find(z => z.name === "Ввід"); const m = x.sections.filter(z => /Магістраль|ХВП-магістраль/.test(z.name) && !/ГВП/.test(z.name)); t("властивість прийнятої моделі (не норма ДБН) " + k + "/" + src + ": жодна ділянка ХВП-магістралі не більша за ввід", !!e && m.every(z => z.q <= e.q + 1e-9)); }));
 console.log("\nКонтрольні сценарії (вхід → очікуване → фактичне → статус):");
 rows.forEach(x => console.log(" - " + x[0] + " | очікувалось: " + x[1] + " | отримано: " + x[2] + " | " + x[3]));
 console.log("\n" + ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);
