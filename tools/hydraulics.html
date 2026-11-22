@@ -68,10 +68,6 @@ details.fold.adv>summary .sub{display:block}
 .sumrow button{font-size:.9rem;font-weight:700;color:var(--cc);min-height:44px;white-space:nowrap;padding:0 4px}
 .tag{display:inline-block;font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:8px;letter-spacing:.03em}
 .tag.cold{background:var(--cbg);color:var(--cc)}.tag.hot{background:var(--hbg);color:var(--ch)}
-.hero{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--p);color:#fff;border-radius:14px;padding:10px 14px}
-.hero b{font-size:.92rem;font-weight:700;display:block}
-.hero span{display:block;font-size:.8rem;opacity:.95;margin-top:2px}
-.hero .big{font-size:2.3rem;font-weight:800;line-height:1}
 .pair{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
 .blk{flex:1 1 280px;min-width:0;border-radius:14px;padding:10px 12px;border:1px solid var(--ln)}
 .blk.c{border-color:rgba(0,122,255,.4)}.blk.hh{border-color:rgba(255,59,48,.45)}
@@ -296,7 +292,7 @@ function scheme(r){
     if(r.collector) o += badge(xc, top - 34, "Ø" + r.collector, C);
     if(lastHot >= 0) o += `<rect x="${xh - 4}" y="${top - 4}" width="8" height="${spanH}" rx="4" fill="${Hh}"/><text class="sm" x="${xh}" y="${top - 8}" text-anchor="middle">ГВП</text>`;
   }
-  o += `<circle cx="${xc}" cy="12" r="6" fill="${C}"/><text class="nm" x="${xc + 14}" y="17">Ввід</text>` + badge(xc + 84, 12, "Ø" + r.inDn, C);
+  o += `<circle cx="${xc}" cy="12" r="6" fill="${C}"/><text class="nm" x="${xc + 14}" y="17">Ввід (від забудовника)</text>` ;
   if(tee && lastHot >= 0){
     const hotIdx = L.map((l, i) => (l.hot && !l.src ? i : -1)).filter(i => i >= 0), hs = r.main.hotSegs || [];
     const cuts = []; let prev = r.main.hot;
@@ -381,7 +377,7 @@ function render(){
   if(tee) coldChain = cg.length ? cg.map(g => ({ od: g.s.od, label: gl(g) + " · " + fm(g.qmax) + " л/с" })) : [{ od: e0.od, label: "єдина ділянка" }];
   else coldChain = coll ? [{ od: coll.od, label: fm(coll.q) + " л/с" }] : [];
   let h = `<div class="sumrow"><span>${P.U} мешк. · ${tee ? "Трійникова" : "Променева"} · ${esc(H.MAT[P.mat].label.split(" (")[0])} · ${P.hotSrc === "local" ? "водонагрівач" : P.hotSrc === "ext" ? "централізоване ГВП" : "лише ХВП"}</span><button type="button" id="toParams">↑ Параметри</button></div>`;
-  let rec = `<div class="g card"><div class="h">Рекомендовані діаметри</div><div class="hero"><div><b>${r.entryKind === "total" ? "Ввід у квартиру" : "Ввід (холодна вода)"}</b><span>${fm(e0.q)} л/с${e0.v != null ? " · " + f2(e0.v, 1) + " м/с" : ""} · ${esc(e0.size)}</span></div><div class="big">Ø${e0.od}</div></div><div class="pair">`;
+  let rec = `<div class="g card"><div class="h">Рекомендовані діаметри</div><p class="note" style="margin:0 0 2px">Ввід (лічильник і арматуру) задає забудовник, тут його не підбираємо. Розрахункова витрата на вводі: <b>${fm(e0.q)} л/с</b>${e0.v != null ? ", швидкість " + f2(e0.v, 1) + " м/с" : ""}. Діаметри нижче це розводка після вводу.</p><div class="pair">`;
   rec += `<div class="blk c"><div><span class="tag cold">ХВП</span> <b style="font-size:.95rem">Холодна вода</b></div><div class="tt">${tee ? "Магістраль" + (cg.length > 1 ? " (діаметр змінюється по ділянках)" : "") : "Колектор"}</div>${chain(coldChain, "c")}`;
   if(bo) rec += `<div class="gr" style="margin-top:6px"><span class="gd c">Ø${bo.cold.od}</span><span class="gq"><b>Підведення до водонагрівача</b> · ${fm(bo.cold.q)} л/с</span></div>`;
   rec += `<div class="tt">Підводки до приладів</div>${grp(cons.filter(l => l.cold).map(l => ({ od: l.cold.od, name: l.name })), "c")}</div>`;
@@ -403,7 +399,7 @@ function render(){
   const sub = s => (s.custom ? `<span class="mr" style="color:var(--mut);font-weight:500">ваша стінка</span>` : "") + (s.minRule ? `<span class="mr">за швидкістю Ø${s.minRule.od}; Ø${s.od} прийнято за мінімумом майстра</span>` : "");
   const row = (n, s, q) => `<tr><td>${esc(n)}${sub(s)}</td><td>${s.noFit ? '<b class="wr">немає</b>' : `<span class="od">Ø${s.od}</span>`}<span class="sm">${esc(s.size)}</span><span class="sm">внутр. ${f2(s.d, 1)}</span></td><td>${fm(q == null ? s.q : q)}<span class="sm">${s.src === "А.5" ? "А.5" : "прийнято"}</span></td>${spd(s)}</tr>`;
   const rows = [];
-  rows.push(row(r.entryKind === "total" ? "Ввід (загальна)" : "Ввід (холодна)", e0));
+  rows.push(row(r.entryKind === "total" ? "Ввід (загальна), довідково" : "Ввід (холодна), довідково", e0));
   if(tee) cg.forEach(g => rows.push(row("ХВП-магістраль, " + gl(g), g.s, g.qmax)));
   else r.sections.filter(s => s.name === "Колектор ХВП").forEach(s => rows.push(row(s.name, s)));
   if(bo) rows.push(row(bo.cold.name, bo.cold), row(bo.hot.name, bo.hot));
@@ -447,8 +443,8 @@ function render(){
   if(r.lines.some(l => l.id === "bath" || l.id === "shower")) bw = `<div class="warn">Ванна й душ: розрахункова витрата змішувача ${f2(H.devFlow("bath", P.flows) * 60, 0)} і ${f2(H.devFlow("shower", P.flows) * 60, 0)} л/хв, це припущення (типове 18 л/хв). Холодна й гаряча підводки перевіряються окремо, кожна на повну витрату змішувача. Тропічний душ або змішувач з більшою витратою вимагає введення паспортної витрати.</div>`;
   $("res").innerHTML = wn + h + rec + bw + schCard + det + `<p class="fin"><b>Повний гідравлічний розрахунок втрат тиску системи не виконано. Результат попередній.</b></p>`;
   const chTxt = coldChain.map(c => "Ø" + c.od).join("→");
-  $("jumpT").textContent = "Результат: ввід Ø" + e0.od;
-  $("jumpS").textContent = "ХВП " + chTxt + (hasHot && srcL && srcL.hot ? " · ГВП Ø" + srcL.hot.od : "");
+  $("jumpT").textContent = "Результат: ХВП " + chTxt;
+  $("jumpS").textContent = (hasHot && srcL && srcL.hot ? "ГВП Ø" + srcL.hot.od + " · " : "") + "дивитись діаграму й підводки";
   lastDoc = { r, P, svg, rows: null, ad, cm, hm, e0 };
 }
 
