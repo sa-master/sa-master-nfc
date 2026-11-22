@@ -156,7 +156,7 @@ ul.note{padding-left:18px}ul.note li{margin:5px 0}
       <div class="sub" style="margin:0 0 4px">Якщо не вказано, береться сталева 1/2″.</div>
       <div class="col"><label class="cap" for="entType">Тип труби</label><select class="sel" id="entType"></select></div>
       <div class="col"><label class="cap" for="entSize">Діаметр</label><select class="sel" id="entSize"></select></div>
-      <div class="row" style="min-height:50px"><label class="lbl" style="font-size:.95rem" for="lenEntry">Довжина від лічильника до вузла<span class="sub" style="display:block">для втрати тиску у вводі</span></label><div class="fld"><input class="in" id="lenEntry" data-g="lenEntry" inputmode="decimal" autocomplete="off"><span class="unit">м</span></div></div>
+      <div class="row" style="min-height:50px"><label class="lbl" style="font-size:.95rem" for="lenEntry">Довжина від лічильника до вузла<span class="sub" style="display:block">для втрати тиску у вводі</span></label><div class="fld"><input class="in" id="lenEntry" data-g="lenEntry" inputmode="decimal" placeholder="0,5" autocomplete="off"><span class="unit">м</span></div></div>
       <div class="row" style="min-height:50px"><label class="lbl" style="font-size:.95rem" for="pIn">Тиск на вводі (після лічильника)</label><div class="fld"><input class="in" id="pIn" data-g="pIn" inputmode="decimal" placeholder="5" autocomplete="off"><span class="unit">бар</span></div></div>
       <div id="hotModeBox"><div class="sep"></div>
         <div class="h">Гаряча вода до приладу</div>
@@ -350,7 +350,7 @@ function params(){
     if(v !== "" && !(+v >= 1 && +v <= 60)){ badFl.push(H.DEV[id].label); flows[id] = ""; } else flows[id] = v;
   });
   const walls = {}; H.MAT[S.mat].sizes.forEach(z => { const v = nv(S.walls[z[0]]); if(v !== "") walls[z[0]] = v; });
-  return { counts, dist, flows, badFl, walls, U: S.U, mat: S.mat, hotSrc: S.hs, tee: S.scheme === "tee", hotDist: nv(S.hotDist), lenEntry: nv(S.lenEntry), hotMode: S.hotMode, pIn: nv(S.pIn) || "5", pInDef: nv(S.pIn) === "" };
+  return { counts, dist, flows, badFl, walls, U: S.U, mat: S.mat, hotSrc: S.hs, tee: S.scheme === "tee", hotDist: nv(S.hotDist), lenEntry: nv(S.lenEntry) || "0.5", lenDef: nv(S.lenEntry) === "", hotMode: S.hotMode, pIn: nv(S.pIn) || "5", pInDef: nv(S.pIn) === "" };
 }
 function groups(secs){ /* ділянки магістралі однакового діаметра в один рядок */
   const g = [];
@@ -368,14 +368,14 @@ function entryCalc(P, q){
   const len = +P.lenEntry > 0 ? +P.lenEntry : 0;
   const dp = len > 0 ? H.specLoss(q, z.d, spec.k, false) * len * (1 + H.KL) : null; /* Па, п. 11.7 */
   const pIn = +P.pIn > 0 ? +P.pIn : null;
-  return { type: t, label: spec.label, od: z.od, size: z.size, d: z.d, q, v, vmax: spec.vc, ok: v <= spec.vc, qmax, len, dp, pIn, pDef: !!P.pInDef, pNode: pIn != null && dp != null ? pIn - dp / 1e5 : null, def: t === "steel" && z.id === "1/2″" };
+  return { type: t, label: spec.label, od: z.od, size: z.size, d: z.d, q, v, vmax: spec.vc, ok: v <= spec.vc, qmax, len, lDef: !!P.lenDef, dp, pIn, pDef: !!P.pInDef, pNode: pIn != null && dp != null ? pIn - dp / 1e5 : null, def: t === "steel" && z.id === "1/2″" };
 }
 const entName = ec => ec.label + " " + ec.od + " (" + ec.size + ")";
 function entryLines(ec){
   const L = [];
   L.push(`Вхідна труба: ${entName(ec)}, внутрішній Ø ${f2(ec.d, 1)} мм${ec.type === "steel" ? " (типове значення, уточніть)" : ""}.${ec.def ? " Вказано за замовчуванням, поки труба не введена." : ""}`);
   L.push(`Розрахункова витрата ${fm(ec.q)} л/с: швидкість у цій трубі ${f2(ec.v, 1)} м/с при межі ${f2(ec.vmax, 1)} м/с${ec.ok ? "" : ", вище межі"}. Труба пропускає до ${fm(ec.qmax)} л/с у межах швидкості.`);
-  if(ec.dp != null) L.push(`Втрата тиску у вводі довжиною ${f2(ec.len, 1)} м: ${f2(ec.dp / 1000, 1)} кПа (${f2(ec.dp / 1e5, 2)} бар). Лічильник, фільтр і арматура не враховані.`);
+  if(ec.dp != null) L.push(`Втрата тиску у вводі довжиною ${f2(ec.len, 1)} м${ec.lDef ? " (типово, якщо не введено)" : ""}: ${f2(ec.dp / 1000, 1)} кПа (${f2(ec.dp / 1e5, 2)} бар). Лічильник, фільтр і арматура не враховані.`);
   else L.push("Довжину вводу не введено: втрату тиску у вводі не рахуємо.");
   if(ec.pNode != null) L.push(`Тиск на вводі ${f2(ec.pIn, 1)} бар${ec.pDef ? " (типово, якщо не введено)" : ""}. Орієнтовний тиск у вузлі розводки ${f2(ec.pNode, 1)} бар (без лічильника, фільтра й арматури).`);
   else if(ec.pIn != null) L.push(`Тиск на вводі ${f2(ec.pIn, 1)} бар${ec.pDef ? " (типово, якщо не введено)" : ""}. Введіть довжину вводу, щоб оцінити тиск у вузлі.`);
@@ -515,7 +515,7 @@ async function paperEl(){
   const nd = `<div class="docBlock"><b>Ввід і вузол вводу</b><ul style="margin:6px 0 0 18px;padding:0">${entryLines(ec).concat(d.ad ? d.ad.lines : []).map(l => "<li>" + esc(l) + "</li>").join("")}</ul></div>`;
   const refl = r.ref ? `<div class="docNote">Довідково, не для підбору: за таблицею А.9 (мешканців: ${r.ref.U}, ${r.ref.kind} витрата) ${fm(r.ref.q)} л/с.</div>` : "";
   el.innerHTML = SMProfile.headerHtml(prof) + `<div class="docH">Попередній підбір діаметрів труб водопостачання</div><div class="docSub">${SMUI.dateLabel(Date.now())}</div>` +
-    `<div class="docBlock docKV"><span>Мешканців</span><b>${P.U}</b><span>Система</span><b>${P.tee ? "трійникова (порядок приладів умовний)" : "променева"}</b><span>Матеріал розводки</span><b>${esc(H.MAT[P.mat].label)}</b><span>Гаряча вода</span><b>${esc(hotTxt)}</b>${wl ? `<span>Фактичні стінки труб</span><b>${esc(wl)}</b>` : ""}<span>Вхідна труба</span><b>${esc(entName(ec))}${ec.def ? " (за замовчуванням)" : ""}</b>${+P.lenEntry > 0 ? `<span>Довжина вводу</span><b>${esc(String(P.lenEntry).replace(".", ","))} м</b>` : ""}${P.pIn ? `<span>Тиск після лічильника</span><b>${esc(String(P.pIn).replace(".", ","))} бар${P.pInDef ? " (типово)" : ""}</b>` : ""}<span>Прилади</span><b>${esc(cnt)}</b></div>` +
+    `<div class="docBlock docKV"><span>Мешканців</span><b>${P.U}</b><span>Система</span><b>${P.tee ? "трійникова (порядок приладів умовний)" : "променева"}</b><span>Матеріал розводки</span><b>${esc(H.MAT[P.mat].label)}</b><span>Гаряча вода</span><b>${esc(hotTxt)}</b>${wl ? `<span>Фактичні стінки труб</span><b>${esc(wl)}</b>` : ""}<span>Вхідна труба</span><b>${esc(entName(ec))}${ec.def ? " (за замовчуванням)" : ""}</b>${+P.lenEntry > 0 ? `<span>Довжина вводу</span><b>${esc(String(P.lenEntry).replace(".", ","))} м${P.lenDef ? " (типово)" : ""}</b>` : ""}${P.pIn ? `<span>Тиск після лічильника</span><b>${esc(String(P.pIn).replace(".", ","))} бар${P.pInDef ? " (типово)" : ""}</b>` : ""}<span>Прилади</span><b>${esc(cnt)}</b></div>` +
     `<div class="docBlock"><b>Прийняті розрахункові витрати приладів</b><table class="docT"><tr><th>Прилад</th><th class="r">л/хв</th><th class="r">л/с</th><th>Джерело</th></tr>${fl}</table><div class="docNote" style="margin:6px 0 0">Витрати приладів не нормативні й не паспортні: уточнюйте за паспортом обладнання.</div></div>` +
     `<div class="docBlock"><b>Умовна схема</b>${d.svg}<div class="docNote" style="margin:6px 0 0">Схема умовна: фактична геометрія трубопроводів може відрізнятися. Ø це зовнішній діаметр труби, мм.</div></div>` +
     `<div class="docBlock"><b>Діаметри, витрати, швидкості</b><table class="docT"><tr><th>Ділянка</th><th class="r">Витрата, л/с</th><th class="r">Внутр. Ø, мм</th><th class="r">Швидкість, м/с</th><th class="r">Труба</th></tr>${rows.join("")}</table><div class="docNote" style="margin:6px 0 0">Швидкість не більше ${f2(r.sections[0].vmax, 1)} м/с (п. 11.6 ДБН для полімерних труб). Внутрішній діаметр залежить від виробника й стінки: звіряйте з паспортом. «За мінімумом майстра» означає, що за швидкістю вистачило б меншого діаметра; більший прийнято за рекомендацією майстра, не за нормою.</div>${refl}</div>` + rc + ls + nd +
