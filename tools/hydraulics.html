@@ -377,9 +377,9 @@ function render(){
   if(tee) coldChain = cg.length ? cg.map(g => ({ od: g.s.od, label: gl(g) + " · " + fm(g.qmax) + " л/с" })) : [{ od: e0.od, label: "єдина ділянка" }];
   else coldChain = coll ? [{ od: coll.od, label: fm(coll.q) + " л/с" }] : [];
   let h = `<div class="sumrow"><span>${P.U} мешк. · ${tee ? "Трійникова" : "Променева"} · ${esc(H.MAT[P.mat].label.split(" (")[0])} · ${P.hotSrc === "local" ? "водонагрівач" : P.hotSrc === "ext" ? "централізоване ГВП" : "лише ХВП"}</span><button type="button" id="toParams">↑ Параметри</button></div>`;
-  let rec = `<div class="g card"><div class="h">Рекомендовані діаметри</div><p class="note" style="margin:0 0 2px">Ввід (лічильник і арматуру) задає забудовник, тут його не підбираємо. Розрахункова витрата на вводі: <b>${fm(e0.q)} л/с</b>${e0.v != null ? ", швидкість " + f2(e0.v, 1) + " м/с" : ""}. Діаметри нижче це розводка після вводу.</p><div class="pair">`;
+  let rec = `<div class="g card"><div class="h">Рекомендовані діаметри</div><p class="note" style="margin:0 0 2px">Ввід (лічильник і арматура) задає забудовник, тут його не підбираємо. Розрахункова витрата на вводі: <b>${fm(e0.q)} л/с</b>${e0.v != null ? ", швидкість " + f2(e0.v, 1) + " м/с" : ""}. Діаметри нижче це розводка після вводу.</p><div class="pair">`;
   rec += `<div class="blk c"><div><span class="tag cold">ХВП</span> <b style="font-size:.95rem">Холодна вода</b></div><div class="tt">${tee ? "Магістраль" + (cg.length > 1 ? " (діаметр змінюється по ділянках)" : "") : "Колектор"}</div>${chain(coldChain, "c")}`;
-  if(bo) rec += `<div class="gr" style="margin-top:6px"><span class="gd c">Ø${bo.cold.od}</span><span class="gq"><b>Підведення до водонагрівача</b> · ${fm(bo.cold.q)} л/с</span></div>`;
+  if(bo) rec += `<div class="gr" style="margin-top:6px"><span class="gd c">Ø${bo.cold.od}</span><span class="gq"><b>Підведення до водонагрівача</b> <span style="white-space:nowrap">· ${fm(bo.cold.q)} л/с</span></span></div>`;
   rec += `<div class="tt">Підводки до приладів</div>${grp(cons.filter(l => l.cold).map(l => ({ od: l.cold.od, name: l.name })), "c")}</div>`;
   if(hasHot){
     rec += `<div class="blk hh"><div><span class="tag hot">ГВП</span> <b style="font-size:.95rem">Гаряча вода</b></div>`;
