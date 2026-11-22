@@ -22,8 +22,8 @@ const i = H.specLoss(0.2, 16, 0.007, false); t("specLoss ~0,93 кПа/м", i > 5
 const base = { mat: "pex", scheme: "ray", entry: { mat: "pex", od: 25 }, U: 3, norm: 285, counts: { bath: 1, shower: 1, basin: 2, sink: 1, wc: 1, washer: 1, dish: 1 }, boiler: true, lenEntry: 5, lenLine: 8, pIn: 3 };
 const r = H.calc(base);
 t("entry q = tot", near(r.sections[0].q, u(285, 3).tot) && r.sections[0].ok);
-t("bath line basic 16 (rule)", r.lines.find(l => l.id === "bath").cold.od === 16 && r.lines.find(l => l.id === "bath").cold.rule);
-t("bath warning about tropical shower", r.notes.some(n => /Тропічний душ/.test(n)));
+t("bath default 0,30 l/s -> Ø20 with speed", r.lines.find(l => l.id === "bath").cold.od === 20 && near(r.lines.find(l => l.id === "bath").cold.q, 0.3, 1e-9) && r.lines.find(l => l.id === "bath").cold.v > 0);
+t("bath note about 0,30 l/s", r.notes.some(n => /0,30 л\/с/.test(n)));
 t("bath with 20 l/min flow grows to 20", H.calc({ ...base, flows: { bath: 20 } }).lines.find(l => l.id === "bath").cold.od === 20);
 t("wc 16 at 5 l/min", r.lines.find(l => l.id === "wc").cold.od === 16 && near(r.lines.find(l => l.id === "wc").cold.q, 5 / 60, 0.0001));
 t("boiler line >=20", r.lines.find(l => l.id === "boiler").cold.od >= 20);
