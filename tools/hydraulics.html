@@ -70,7 +70,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
 
-<script src="shared/hydraulics.js?v=20261131"></script>
+<script src="shared/hydraulics.js?v=20261132"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id), H = Hydraulics;
@@ -83,34 +83,43 @@ const DEF = { bath: 1, shower: 1, sink: 1, basin: 1, wc: 1, washer: 1 };
 $("devs").innerHTML = H.ORDER.map(id => `<div class="dv"><span>${H.DEV[id].label}</span><span class="dr"><select class="formInput" id="c_${id}">${opts(0, 6)}</select><input class="formInput" id="d_${id}" type="number" inputmode="decimal" step="0.5" placeholder="м"></span></div>`).join("");
 H.ORDER.forEach(id => $("c_" + id).value = DEF[id] || 0);
 function scheme(r){
-  const W = 360, rowH = 44, top = 70, n = r.lines.length, H = top + n * rowH + 12, C = "#0A84FF", Hh = "#FF3B30", xc = 44, xh = 86, xe = 214;
+  const W = 360, rowMin = 44, top = 70, n = r.lines.length, C = "#0A84FF", Hh = "#FF3B30", xc = 44, xh = 86;
   const tee = r.scheme === "tee";
+  const ds = r.lines.map(l => l.len > 0 ? l.len : null), known = ds.filter(Boolean), hasD = known.length > 0;
+  const dmax = hasD ? Math.max.apply(null, known) : 1, dmean = hasD ? known.reduce((a, b) => a + b, 0) / known.length : 0;
+  const dv = ds.map(d => d == null ? dmean : d);
+  /* позиції рядків: у трійниковій системі проміжок між приладами росте з різницею відстаней */
+  const ys = []; r.lines.forEach((l, i) => { ys.push(i === 0 ? 0 : ys[i - 1] + rowMin + (tee && hasD ? Math.min(44, Math.max(0, (dv[i] - dv[i - 1])) * 7) : 0)); });
+  const H = top + (n ? ys[n - 1] : 0) + rowMin + 12, span = n ? ys[n - 1] + rowMin - 2 : 0;
+  /* довжина стрілки: у променевій пропорційна відстані */
+  const xe = i => (!tee && hasD) ? 130 + (dv[i] / dmax) * 90 : 190;
   let o = `<svg class="sch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Схема розводки">`;
   o += `<defs><marker id="ac" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="${C}"/></marker><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="${Hh}"/></marker><marker id="ahl" viewBox="0 0 8 8" refX="1" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M8 0L0 4L8 8z" fill="${Hh}"/></marker></defs>`;
   const badge = (x, y, t, c) => `<rect x="${x - 16}" y="${y - 8}" width="32" height="16" rx="8" fill="${c}"/><text class="bd" x="${x}" y="${y + 4}" text-anchor="middle">${t}</text>`;
-  const cy = i => top + i * rowH + 10, hy = i => top + i * rowH + 28;
+  const cy = i => top + ys[i] + 10, hy = i => top + ys[i] + 28;
   const lastCold = n - 1;
   let lastHot = -1; r.lines.forEach((l, i) => { if(l.hot) lastHot = i; });
-  /* ввід */
   o += `<line x1="${xc}" y1="8" x2="${xc}" y2="${tee ? cy(lastCold) : top - 4}" stroke="${C}" stroke-width="${tee ? 4 : 3}"/>`;
   o += `<text class="nm" x="${xc + 12}" y="22">Ввід</text>` + badge(xc + 70, 18, "Ø" + r.inDn, C) + `<text class="sm" x="${xc + 94}" y="22">кран ${r.valveIn}</text>`;
   if(tee){
     o += badge(xc, top - 20, "Ø" + r.main.first, C);
   } else {
-    o += `<rect x="${xc - 4}" y="${top - 4}" width="8" height="${n * rowH - 2}" rx="4" fill="${C}"/><text class="sm" x="${xc}" y="${top - 10}" text-anchor="middle">ХВП</text>`;
-    if(lastHot >= 0) o += `<rect x="${xh - 4}" y="${top - 4}" width="8" height="${n * rowH - 2}" rx="4" fill="${Hh}"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
+    o += `<rect x="${xc - 4}" y="${top - 4}" width="8" height="${span}" rx="4" fill="${C}"/><text class="sm" x="${xc}" y="${top - 10}" text-anchor="middle">ХВП</text>`;
+    if(lastHot >= 0) o += `<rect x="${xh - 4}" y="${top - 4}" width="8" height="${span}" rx="4" fill="${Hh}"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
   }
   if(tee && lastHot >= 0) o += `<line x1="${xh}" y1="${top - 4}" x2="${xh}" y2="${hy(lastHot)}" stroke="${Hh}" stroke-width="3"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
   r.lines.forEach((l, i) => {
-    const yc = cy(i), yh = hy(i), mid = (xc + xe) / 2;
-    o += `<line x1="${xc}" y1="${yc}" x2="${xe}" y2="${yc}" stroke="${C}" stroke-width="2" marker-end="url(#ac)"/>` + badge(mid + 14, yc, "Ø" + l.cold, C);
+    const yc = cy(i), yh = hy(i), x2 = xe(i), mid = (xh + x2) / 2;
+    o += `<line x1="${xc}" y1="${yc}" x2="${x2}" y2="${yc}" stroke="${C}" stroke-width="2" marker-end="url(#ac)"/>` + badge(mid + 14, yc, "Ø" + l.cold, C);
     if(l.hot){
-      if(l.boiler) o += `<line x1="${xe}" y1="${yh}" x2="${xh}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
-      else o += `<line x1="${xh}" y1="${yh}" x2="${xe}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
+      if(l.boiler) o += `<line x1="${x2}" y1="${yh}" x2="${xh}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
+      else o += `<line x1="${xh}" y1="${yh}" x2="${x2}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
       o += badge(mid + 14, yh, "Ø" + l.hot, Hh);
     }
     if(tee){ o += `<circle cx="${xc}" cy="${yc}" r="3.5" fill="${C}"/>`; if(l.hot) o += `<circle cx="${xh}" cy="${yh}" r="3.5" fill="${Hh}"/>`; }
-    o += `<text class="nm" x="${xe + 14}" y="${l.hot ? (yc + yh) / 2 + 4 : yc + 4}">${esc(l.name)}</text>`;
+    const ly = l.hot ? (yc + yh) / 2 : yc;
+    o += `<text class="nm" x="${x2 + 12}" y="${ly + (ds[i] ? 0 : 4)}" style="font-size:12.5px">${esc(l.name.replace(" (змішувач)", ""))}</text>`;
+    if(ds[i]) o += `<text class="sm" x="${x2 + 12}" y="${ly + 14}">${String(ds[i]).replace(".", ",")} м</text>`;
   });
   if(tee && n > 1){
     let prev = r.main.first;
@@ -127,7 +136,7 @@ function render(){
   const ent = H.pick(mat, qIn, false, 0, 18); /* ввід у колектор або до першого трійника: прохід не менший, ніж у PEX Ø25 */
   const r = H.calc({ U, norm: 285, mat, scheme: tee ? "tee" : "ray", entry: { mat, od: ent[0] }, counts, boiler, dist, hotDist: $("hd").value });
   if(!r.lines.length){ $("res").innerHTML = `<p class="hint">Додайте хоча б один прилад.</p>`; return; }
-  const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null }));
+  const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null, len: l.len > 0 ? l.len : null }));
   const e0 = r.sections[0], segs = r.sections.slice(1);
   const sc = { scheme: r.scheme, inDn: e0.od, valveIn: '1/2"', lines: ln, main: tee ? { first: e0.od, segs: segs.map(s => s.od), hot: H.reserveSize(mat)[0] } : null };
   let h = `<div class="ttl">Схема</div>` + scheme(sc) + `<p class="hint">Синя лінія холодна вода, червона гаряча. Ø це зовнішній діаметр труби, мм.</p>`;
