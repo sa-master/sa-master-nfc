@@ -3,7 +3,8 @@
    п. 11.6 (швидкість), п. 11.7 формула (9) (kl = 0,3 для довідкових втрат на трубі). А.6–А.9 (за мешканцями) лише довідково.
    Інженерні припущення, у нормі прямо не підтверджені (на сторінці й у PDF позначено): арифметичне середнє q̄ по квартирі й N по ділянках,
    лінійна інтерполяція А.5, типові витрати приладів для підводок (налаштовуються), порядок приладів на трійниковій магістралі за відстанню,
-   мінімальні Ø вводу (PEX Ø25) і ліній бойлера (PEX Ø20), довжини ГВП через вузол.
+   мінімальні Ø вводу (PEX Ø25) і ліній водонагрівача (PEX Ø20) (у результаті окремо від підбору за швидкістю), довжини ГВП через вузол.
+   Джерело гарячої води hotSrc: local (водонагрівач у квартирі), ext (ззовні, окремий ввід ГВП), none. Фактична стінка труби: walls. Втрати тиску p. 11.7 (9) лише на ділянках з відомою довжиною, без суми й висновку про тиск.
    Примітка про таблицю А.5: у джерелі рядок N=40 має значення 1,36 при q̄=16 між 1,18 і 1,40; схоже на друкарську помилку джерела, лишено як у тексті (перевірено двічі). */
 (function (root) {
   "use strict";
@@ -67,23 +68,43 @@
     return lam * rho * v * v / (2 * D);
   }
   const vel = (q, d) => (q / 1000) / (Math.PI * (d / 1000) * (d / 1000) / 4);
-  function section(name, q, size, mat, hot, len) {
-    const m = MAT[mat], d = size[2], vmax = hot ? m.vh : m.vc;
-    if (q == null) return { name, q: null, size: size[1], od: size[0], d, v: null, vmax, ok: true, rule: true };
+  /* типорозміри матеріалу з урахуванням фактичної товщини стінки, заданої користувачем (walls: { зовнішній Ø: стінка, мм }).
+     Внутрішній Ø = зовнішній − 2×стінка. Некоректні значення (стінка поза 0,8 мм … 25% від Ø, внутр. Ø < 6 мм, ряд внутрішніх Ø не зростає) ігноруються, про це додається попередження. */
+  function sizesFor(mat, walls, warn) {
+    const m = MAT[mat];
+    let out = m.sizes.map(z => {
+      const raw = walls ? walls[z[0]] : null;
+      if (raw === "" || raw == null) return z;
+      const w = +String(raw).replace(",", ".");
+      const inner = z[0] - 2 * w;
+      if (!(isFinite(w) && w >= 0.8 && w <= z[0] * 0.25 && inner >= 6)) { if (warn) warn.push("Товщина стінки труби Ø" + z[0] + " (" + String(raw).replace(".", ",") + " мм) поза допустимим діапазоном 0,8 мм … 25% від Ø: використано типову."); return z; }
+      return [z[0], z[0] + "×" + String(w).replace(".", ","), +inner.toFixed(2), true];
+    });
+    const ok = out.every((z, i) => i === 0 || z[2] > out[i - 1][2]);
+    if (!ok) { if (warn) warn.push("Задані товщини стінок порушують зростання внутрішніх діаметрів ряду: використано типові розміри."); out = m.sizes.slice(); }
+    return out;
+  }
+  /* sizes: ряд типорозмірів (типовий або зі своїми стінками); rule: підпис мінімуму майстра, якщо він діяв при виборі */
+  function section(name, q, size, mat, hot, len, sizes, rule) {
+    const m = MAT[mat], all = sizes || m.sizes, d = size[2], vmax = hot ? m.vh : m.vc;
+    if (q == null) return { name, q: null, size: size[1], od: size[0], d, v: null, vmax, ok: true, rule: true, custom: !!size[3] };
     const v = vel(q, d);
-    const s = { name, q, size: size[1], od: size[0], d, v, vmax, ok: v <= vmax };
-    if (!s.ok && size[0] === Math.max.apply(null, m.sizes.map(z => z[0]))) s.noFit = true; /* жоден типорозмір ряду не дає допустиму швидкість */
+    const s = { name, q, size: size[1], od: size[0], d, v, vmax, ok: v <= vmax, custom: !!size[3] };
+    if (!s.ok && size[0] === Math.max.apply(null, all.map(z => z[0]))) s.noFit = true; /* жоден типорозмір ряду не дає допустиму швидкість */
+    const bv = all.find(z => vel(q, z[2]) <= vmax) || all[all.length - 1]; /* найменший за швидкістю, без мінімумів майстра */
+    if (rule && size[2] > bv[2] + 1e-9) s.minRule = { od: bv[0], size: bv[1], rule };
     if (len > 0) { s.i = specLoss(q, d, m.k, hot); s.dp = s.i * len * (1 + KL); s.len = len; }
     return s;
   }
   /* запас для ванни, душу, бойлера: прохід не менший, ніж у PEX 20×2,8 (внутр. 14,4 мм); для міді й нержавійки це Ø18 */
   const REF_BORE = 14.4;
-  function pick(mat, q, hot, minOd, minBore, frac) {
+  function pick(mat, q, hot, minOd, minBore, frac, sizes) {
     const m = MAT[mat], vmax = (hot ? m.vh : m.vc) * (frac || 1);
-    const list = m.sizes.filter(s => s[0] >= minOd && (!minBore || s[2] >= minBore - 0.05));
+    const list = (sizes || m.sizes).filter(s => s[0] >= minOd && (!minBore || s[2] >= minBore - 0.05));
     return list.find(s => vel(q, s[2]) <= vmax) || list[list.length - 1];
   }
-  function reserveSize(mat) { return MAT[mat].sizes.find(s => s[2] >= REF_BORE - 0.05); }
+  function reserveSize(mat, sizes) { return (sizes || MAT[mat].sizes).find(s => s[2] >= REF_BORE - 0.05); }
+  const R_ENTRY = "ввід не менший за прохід PEX Ø25 (внутр. ≥ 18 мм)", R_HEAT = "лінія водонагрівача не менша за прохід PEX 20×2,8 (внутр. ≥ 14,4 мм)";
   /* витрати по мешканцях (таблиці А.6–А.9), інтерполяція по U; U до 40 */
   function byU(norm, U) {
     const rows = A69[String(norm)]; if (!rows || U < 1 || U > 40) return null;
@@ -99,13 +120,18 @@
   }
   const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
   const maxOf = a => a.reduce((m, x) => Math.max(m, x), 0);
-  /* p: { mat, scheme: "ray"|"tee", U, counts, boiler, flows: {id: л/хв}, dist: {id: м}, hotDist, hotMode: "node"|"direct", lenEntry, lenLine, chain } */
+  /* p: { mat, scheme: "ray"|"tee", U, counts, hotSrc: "local"|"ext"|"none", boiler (застаріле: true = "local", false = "ext"), flows: {id: л/хв}, dist: {id: м}, hotDist, hotMode: "node"|"direct", lenEntry, lenLine, walls: {Ø: стінка}, chain }
+     hotSrc: "local" водонагрівач у квартирі (бойлер, колонка), живиться від холодного вводу квартири; "ext" гаряча вода надходить ззовні й має свій ввід; "none" гарячої води немає */
   function calc(p) {
     const items = [];
     const flows = p.flows || {}, dist = p.dist || {};
-    ORDER.forEach(id => { const n = Math.max(0, Math.floor(+((p.counts || {})[id]) || 0)); for (let i = 1; i <= n; i++) items.push({ id, name: n > 1 ? DEV[id].label + " " + i : DEV[id].label, c: DEV[id].c, h: DEV[id].h, reserve: !!DEV[id].reserve, qd: devFlow(id, flows) }); });
-    const out = { items, sections: [], warnings: [], notes: [], lines: [], scheme: p.scheme === "tee" ? "tee" : "ray", method: "A5" };
-    const mat = p.mat || "pex", boiler = !!p.boiler, N = items.length;
+    const hs = p.hotSrc === "local" || p.hotSrc === "ext" || p.hotSrc === "none" ? p.hotSrc : (p.boiler ? "local" : "ext");
+    const noHot = hs === "none", boiler = hs === "local", ext = hs === "ext";
+    ORDER.forEach(id => { const n = Math.max(0, Math.floor(+((p.counts || {})[id]) || 0)); for (let i = 1; i <= n; i++) items.push({ id, name: n > 1 ? DEV[id].label + " " + i : DEV[id].label, c: DEV[id].c, h: noHot ? 0 : DEV[id].h, reserve: !!DEV[id].reserve, qd: devFlow(id, flows) }); });
+    const out = { items, sections: [], warnings: [], notes: [], lines: [], scheme: p.scheme === "tee" ? "tee" : "ray", method: "A5", hotSrc: hs };
+    const mat = p.mat || "pex", N = items.length;
+    const SZ = sizesFor(mat, p.walls, out.warnings), pk = (q, hot, minOd, minBore) => pick(mat, q, hot, minOd, minBore, 1, SZ);
+    out.sizes = SZ;
     if (!N) return out;
     if (p.scheme === "tee" && items.some(x => +dist[x.id] > 0)) items.sort((a, b) => (+dist[a.id] > 0 ? +dist[a.id] : Infinity) - (+dist[b.id] > 0 ? +dist[b.id] : Infinity)); /* порядок за відстанню: умовний, не геометрія */
     const hotItems = items.filter(x => x.h > 0);
@@ -120,82 +146,116 @@
       const dm = maxOf(devs.map(x => x.qd));
       return { q: Math.max(r.q, dm), a5: r.q, raised: dm > r.q };
     };
-    const qIn = boiler ? blk("total", N, qb.tot, items) : blk("cold", N, qb.cold, items);
+    /* ввід квартири: з водонагрівачем у квартирі він живить і холодне споживання, і водонагрівач («загальна або гаряча»); інакше лише холодне */
+    const qIn = boiler && hotItems.length ? blk("total", N, qb.tot, items) : blk("cold", N, qb.cold, items);
+    out.entryKind = boiler && hotItems.length ? "total" : "cold";
     if (!qIn) { out.warnings.push("Приладів більше 60: це поза межами реалізованої частини таблиці А.5. У таблиці ДБН рядків більше, але калькулятор їх не містить."); return out; }
-    const eSize = pick(mat, qIn.q, false, 0, 18); /* ввід не менше за прохід PEX Ø25 (внутр. ≥ 18 мм): рекомендація майстра, не вимога ДБН */
-    const e = section("Ввід", qIn.q, eSize, mat, false, p.lenEntry);
+    const eSize = pk(qIn.q, false, 0, 18); /* ввід не менше за прохід PEX Ø25 (внутр. ≥ 18 мм): рекомендація майстра, не вимога ДБН */
+    const e = section("Ввід", qIn.q, eSize, mat, false, +p.lenEntry > 0 ? +p.lenEntry : 0, SZ, R_ENTRY);
     e.matLabel = MAT[mat].label; e.src = "А.5"; e.a5 = qIn.a5; e.raised = qIn.raised;
     out.sections.push(e);
     /* довідково: А.9 за мешканцями (норма 285 л/добу); не використовується для підбору */
     const qr = byU(285, Math.floor(+p.U) || 0);
-    if (qr) { const rq = boiler ? qr.tot : qr.cold, rs = pick(mat, rq, false, 0, 18); out.ref = { q: rq, size: rs[1], od: rs[0], d: rs[2], v: vel(rq, rs[2]), kind: boiler ? "загальна" : "холодна", U: Math.floor(+p.U) }; }
+    if (qr) { const rq = boiler && hotItems.length ? qr.tot : qr.cold, rs = pk(rq, false, 0, 18); out.ref = { q: rq, size: rs[1], od: rs[0], d: rs[2], v: vel(rq, rs[2]), kind: boiler && hotItems.length ? "загальна" : "холодна", U: Math.floor(+p.U) }; }
     else out.ref = null;
-    const lenOf = id => (+dist[id] > 0 ? +dist[id] : p.lenLine);
+    const lenOf = id => (+dist[id] > 0 ? +dist[id] : (+p.lenLine > 0 ? +p.lenLine : 0));
     items.forEach(x => {
       const res = { name: x.name, id: x.id, reserve: x.reserve, cold: null, hot: null, qd: x.qd };
       res.len = lenOf(x.id);
-      res.cold = section("Холодна: " + x.name, x.qd, pick(mat, x.qd, false, 16), mat, false, res.len); res.cold.src = "прийнято";
-      if (x.h > 0) { res.hot = section("Гаряча: " + x.name, x.qd, pick(mat, x.qd, true, 16), mat, true, res.len); res.hot.src = "прийнято"; }
+      res.cold = section("Холодна: " + x.name, x.qd, pk(x.qd, false, 16), mat, false, res.len, SZ); res.cold.src = "прийнято";
+      if (x.h > 0) { res.hot = section("Гаряча: " + x.name, x.qd, pk(x.qd, true, 16), mat, true, res.len, SZ); res.hot.src = "прийнято"; }
       out.lines.push(res);
     });
-    let qBoiler = null;
-    if (boiler && hotItems.length) {
+    /* лінія джерела гарячої води: водонагрівач у квартирі (підведення ХВП і вихід ГВП) або ввід ГВП ззовні. Витрата за блоком «загальна або гаряча», N приладів з гарячою водою; водонагрівач не прилад і до N не входить */
+    let qBoiler = null, srcLine = null;
+    if ((boiler || ext) && hotItems.length) {
       qBoiler = blk("hot", hotItems.length, qb.hot, hotItems);
-      const hd = +p.hotDist > 0 ? +p.hotDist : p.lenLine;
-      const b = { name: "Бойлер", id: "boiler", boiler: true, reserve: true, len: hd,
-        cold: section("Підведення до бойлера (ХВП)", qBoiler.q, pick(mat, qBoiler.q, false, 0, REF_BORE), mat, false, hd),
-        hot: section("Від бойлера (ГВП)", qBoiler.q, pick(mat, qBoiler.q, true, 0, REF_BORE), mat, true, hd) };
-      b.cold.src = b.hot.src = "А.5"; b.cold.a5 = b.hot.a5 = qBoiler.a5;
-      out.lines.push(b);
+      const hd = +p.hotDist > 0 ? +p.hotDist : (+p.lenLine > 0 ? +p.lenLine : 0);
+      if (boiler) {
+        srcLine = { name: "Водонагрівач", id: "boiler", boiler: true, reserve: true, len: hd,
+          cold: section("Підведення до водонагрівача (ХВП)", qBoiler.q, pk(qBoiler.q, false, 0, REF_BORE), mat, false, hd, SZ, R_HEAT),
+          hot: section("Від водонагрівача (ГВП)", qBoiler.q, pk(qBoiler.q, true, 0, REF_BORE), mat, true, hd, SZ, R_HEAT) };
+        srcLine.cold.src = srcLine.hot.src = "А.5"; srcLine.cold.a5 = srcLine.hot.a5 = qBoiler.a5;
+      } else {
+        srcLine = { name: "Ввід ГВП", id: "hotext", ext: true, reserve: true, len: hd, cold: null,
+          hot: section("Ввід ГВП", qBoiler.q, pk(qBoiler.q, true, 0, 0), mat, true, hd, SZ) };
+        srcLine.hot.src = "А.5"; srcLine.hot.a5 = qBoiler.a5;
+      }
+      out.lines.push(srcLine);
     }
     /* холодна магістраль (ХВП): колектор у променевій, ділянки між відгалуженнями у трійниковій. Блок «холодна», q̄ усієї квартири, N_k приладів, що лишились */
     const qCold = blk("cold", N, qb.cold, items);
     if (out.scheme === "ray") {
-      if (N > 1) { const c = section("Колектор ХВП", qCold.q, pick(mat, qCold.q, false, 0, 0), mat, false, 0); c.src = "А.5"; c.a5 = qCold.a5; out.sections.push(c); }
+      if (N > 1) { const c = section("Колектор ХВП", qCold.q, pk(qCold.q, false, 0, 0), mat, false, 0, SZ); c.src = "А.5"; c.a5 = qCold.a5; out.sections.push(c); }
     } else if (N > 1) {
       for (let k = 0; k <= N - 2; k++) {
         const g = items.slice(k), r = blk("cold", g.length, qb.cold, g);
-        const c = section(k === 0 ? "ХВП-магістраль до 1-го відгалуження" : "Магістраль після " + k + "-го відгалуження", r.q, pick(mat, r.q, false, 16, 0), mat, false, 0);
+        const c = section(k === 0 ? "ХВП-магістраль до 1-го відгалуження" : "Магістраль після " + k + "-го відгалуження", r.q, pk(r.q, false, 16, 0), mat, false, 0, SZ);
         c.src = "А.5"; c.a5 = r.a5; c.raised = r.raised; c.kind = "coldMain"; out.sections.push(c);
       }
     }
-    /* магістраль ГВП (трійникова): блок «гаряча» (у таблиці це той самий блок, що й «загальна»), q̄_гар, приладів з гарячою водою */
+    /* магістраль ГВП (трійникова): блок «гаряча» (у таблиці це той самий блок, що й «загальна або гаряча»), q̄_гар, приладів з гарячою водою */
     if (out.scheme === "tee" && hotItems.length > 1) {
       for (let k = 0; k <= hotItems.length - 2; k++) {
-        const g = hotItems.slice(k), r = blk("hot", g.length, qb.hot, g);
-        const c = section("ГВП-магістраль" + (k === 0 ? " від бойлера" : " після " + k + "-го відгалуження"), r.q, pick(mat, r.q, true, 16, k === 0 ? REF_BORE : 0), mat, true, 0);
+        const g = hotItems.slice(k), r = blk("hot", g.length, qb.hot, g), first = k === 0 && boiler;
+        const c = section("ГВП-магістраль" + (k === 0 ? (boiler ? " від водонагрівача" : " від вводу ГВП") : " після " + k + "-го відгалуження"), r.q, pk(r.q, true, 16, first ? REF_BORE : 0), mat, true, 0, SZ, first ? R_HEAT : null);
         c.src = "А.5"; c.a5 = r.a5; c.kind = "hotMain"; out.sections.push(c);
       }
     }
-    /* діагностика співвідношення витрат: max(ХВП; бойлер) ≤ ввід ≤ ХВП + бойлер. Лише контроль, не підтвердження відповідності ДБН */
+    /* діагностика співвідношення витрат: max(ХВП; водонагрівач) ≤ ввід ≤ ХВП + водонагрівач. Лише контроль моделі, не нормативна вимога і не підтвердження відповідності ДБН */
     if (boiler && qBoiler) { const lo = Math.max(qCold.q, qBoiler.q), hi = qCold.q + qBoiler.q; out.check = { cold: qCold.q, boiler: qBoiler.q, entry: qIn.q, ok: qIn.q >= lo - 1e-9 && qIn.q <= hi + 1e-9 }; }
-    /* ГВП: обʼєм води в трубі від бойлера до приладу. Довжини бойлер→вузол і вузол→прилад показуються окремо; сума лише для геометрії «через вузол». 3 л (п. 7.4) довідковий орієнтир */
-    const S = +p.hotDist > 0 ? +p.hotDist : 0, mode = p.hotMode === "direct" ? "direct" : "node", rec = { limit: RECIRC_L0, hotDist: S, mode, items: [] };
+    /* ГВП: обʼєм води в трубі від джерела до приладу, окремо за кожною ділянкою з її внутрішнім діаметром:
+       «джерело→вузол» за діаметром лінії водонагрівача (вводу ГВП), «вузол→прилад» за діаметром підводки до приладу. Геометрію спрощено (див. «Припущення»).
+       У режимі «напряму» вся довжина джерело→прилад рахується за діаметром підводки. 3 л (п. 7.4) довідковий орієнтир */
+    const S = +p.hotDist > 0 ? +p.hotDist : 0, mode = p.hotMode === "direct" ? "direct" : "node", rec = { limit: RECIRC_L0, hotDist: S, mode, src: hs, items: [] };
+    const vol = (d, L) => Math.PI * Math.pow(d / 1000 / 2, 2) * L * 1000; /* літри */
     out.lines.forEach(l => {
-      if (!l.hot || l.boiler) return;
+      if (!l.hot || l.boiler || l.ext) return;
       const Ld = l.len > 0 ? l.len : 0, L = mode === "node" ? S + Ld : Ld;
       if (!(L > 0)) return;
-      const vol = Math.PI * Math.pow(l.hot.d / 1000 / 2, 2) * L * 1000; /* літри */
-      rec.items.push({ name: l.name, id: l.id, lenB: mode === "node" ? S : null, lenD: Ld, len: L, partial: mode === "node" && (!(S > 0) || !(Ld > 0)), d: l.hot.d, od: l.hot.od, vol, wait: l.hot.q ? vol / l.hot.q : null, over: vol > RECIRC_L0 });
+      const segs = [];
+      if (mode === "node") { const dA = srcLine ? srcLine.hot.d : l.hot.d, oA = srcLine ? srcLine.hot.od : l.hot.od; segs.push({ key: "A", len: S, d: dA, od: oA, vol: vol(dA, S) }); }
+      segs.push({ key: mode === "node" ? "B" : "D", len: Ld, d: l.hot.d, od: l.hot.od, vol: vol(l.hot.d, Ld) });
+      const v = segs.reduce((a, z) => a + z.vol, 0);
+      rec.items.push({ name: l.name, id: l.id, lenB: mode === "node" ? S : null, lenD: Ld, len: L, partial: mode === "node" && (!(S > 0) || !(Ld > 0)), d: l.hot.d, od: l.hot.od, segs, vol: v, wait: l.hot.q ? v / l.hot.q : null, over: v > RECIRC_L0 });
     });
     rec.exceeded = rec.items.some(x => x.over);
     rec.worst = rec.items.reduce((a, x) => (!a || x.vol > a.vol ? x : a), null);
     if (rec.items.length) out.recirc = rec;
+    /* орієнтовні втрати тиску H = i·l·(1+κ), κ = 0,3 (п. 11.7, формула (9)), лише на ділянках, де відомі витрата, внутрішній Ø і довжина.
+       Не підсумовуються й не порівнюються з тиском: інші ділянки шляху, лічильник, арматура, змішувачі, водонагрівач і висота не враховані.
+       У трійниковій схемі довжини ділянок магістралі не вводяться, тому втрати підводок до приладів не рахуються (витрата по введеній відстані не стала) */
+    const loss = { rows: [], skipTee: false };
+    const addLoss = (label, s, hot) => { if (s && s.q != null && s.len > 0 && s.dp != null && !s.noFit) loss.rows.push({ name: label, q: s.q, d: s.d, od: s.od, size: s.size, len: s.len, i: s.i, dp: s.dp, hot: !!hot }); };
+    addLoss("Ввід", e, false);
+    out.lines.forEach(l => {
+      if (l.boiler || l.ext) { if (l.cold) addLoss(l.cold.name, l.cold, false); addLoss(l.hot.name, l.hot, true); return; }
+      if (out.scheme === "tee") { if (l.len > 0) loss.skipTee = true; return; }
+      addLoss("Холодна: " + l.name, l.cold, false); if (l.hot) addLoss("Гаряча: " + l.name, l.hot, true);
+    });
+    out.loss = loss;
     if (p.chain) { const ch = entryChain(p.chain, qIn.q, e); out.chain = ch; ch.warnings.forEach(w => out.warnings.push(w)); }
     /* попередження */
     const all = out.sections.concat(out.lines.flatMap(l => [l.cold, l.hot].filter(Boolean)));
     all.filter(x => x.noFit).forEach(x => out.warnings.push(x.name + ": жоден типорозмір ряду не забезпечує швидкість до " + String(x.vmax).replace(".", ",") + " м/с. Рекомендованого діаметра немає, потрібні інший матеріал або розділення потоку."));
     if (flags.indexOf("lo") >= 0) out.warnings.push("Середня годинна витрата приладів менша за 4 л/год (найменший стовпець таблиці А.5): взято значення стовпця 4.");
     if (flags.indexOf("hi") >= 0) out.warnings.push("Середня годинна витрата приладів більша за 80 л/год (найбільший стовпець таблиці А.5): взято значення стовпця 80.");
-    if (out.check && !out.check.ok) out.warnings.push("Діагностика: співвідношення витрат ХВП, бойлера й вводу не виконується (max(ХВП; бойлер) ≤ ввід ≤ ХВП + бойлер). Це лише контроль розрахунку, не оцінка відповідності ДБН.");
+    if (out.check && !out.check.ok) out.warnings.push("Діагностика моделі: співвідношення витрат ХВП, водонагрівача й вводу не виконується (max(ХВП; водонагрівач) ≤ ввід ≤ ХВП + водонагрівач). Це лише контроль розрахунку, не нормативна вимога і не оцінка відповідності ДБН.");
+    const hotTxt = boiler ? "Водонагрівач у квартирі (бойлер, колонка, котел) живиться від холодного вводу квартири: ввід рахується за блоком «загальна або гаряча», підведення до водонагрівача й вихід з нього за блоком «загальна або гаряча» для приладів з гарячою водою. Водонагрівач не вважається водорозбірним приладом і до N не входить."
+      : ext ? "Гаряча вода надходить ззовні (стояк, зовнішнє джерело) і має власний ввід: ввід холодної води рахується за блоком «холодна», ввід ГВП окремо за блоком «загальна або гаряча» для приладів з гарячою водою. Тип джерела калькулятор не визначає: орієнтир п. 7.4 (3 л) у ДБН дано для централізованого ГВП."
+      : "Гаряча вода не розраховується: ввід і підводки лише холодні.";
     out.assumptions = [
+      hotTxt,
       "Середня годинна витрата q̄ береться як арифметичне середнє витрат приладів із таблиці А.3 по всій квартирі; кількість приладів N змінюється по ділянках. Це розрахункове припущення, нормативність якого не підтверджена.",
       "Інтерполяція таблиці А.5 за N і q̄ лінійна, поза діапазоном q̄ 4…80 береться крайній стовпець. Це розрахункове припущення, нормативність якого не підтверджена.",
+      "Таблицю А.5 і таблиці А.6–А.9 ДБН допускає застосовувати (Зміна № 1 до п. 5.1, Додаток А рекомендований), правила вибору між ними й правила q̄ для різних приладів у нормі немає. Тут основа А.5; А.9 лише довідково.",
       "Витрати приладів для підводок (л/хв) це початкові інженерні припущення, не нормативні й не паспортні: уточнюйте за паспортом обладнання.",
-      "Змішувачі: холодна й гаряча підводки рахуються окремо, кожна на повну розрахункову витрату змішувача (найгірший режим кожної), їх не складають. Це інженерне припущення.",
-      "Ввід не менший за прохід PEX Ø25 (внутр. 18 мм), а лінії бойлера не менші за PEX Ø20 (внутр. 14,4 мм): рекомендації майстра, не вимоги ДБН.",
-      "Діаметр підбирається за фактичним внутрішнім діаметром типорозміру й швидкістю не більше " + (mat ? String(MAT[mat].vc).replace(".", ",") : "2,5") + " м/с (п. 11.6 ДБН для полімерних труб). Внутрішній діаметр залежить від виробника: звіряйте з паспортом.",
+      "Змішувачі: холодна й гаряча підводки рахуються окремо, кожна на повну розрахункову витрату змішувача (найгірший режим кожної), їх не складають. Це інженерне припущення, воно може завищувати діаметри підводок до змішувачів.",
+      "Мінімум майстра (не вимога ДБН): ввід не менший за прохід PEX Ø25 (внутр. 18 мм), лінії водонагрівача не менші за PEX Ø20 (внутр. 14,4 мм). Якщо діаметр за швидкістю вищий за цей мінімум, мінімум не діє; якщо нижчий, у таблиці показано обидва значення.",
+      "Діаметр за швидкістю підбирається за фактичним внутрішнім діаметром типорозміру й швидкістю не більше " + String(MAT[mat].vc).replace(".", ",") + " м/с (п. 11.6 ДБН для полімерних труб). Внутрішній діаметр залежить від виробника й товщини стінки: задавайте фактичну стінку у «Додаткових параметрах» або звіряйте з паспортом.",
+      "Обʼєм гарячої води рахується окремо за ділянками: «джерело→вузол» за внутрішнім діаметром лінії водонагрівача (вводу ГВП), «вузол→прилад» за внутрішнім діаметром підводки до приладу. Геометрію спрощено: у трійниковій схемі частина відстані вузол→прилад проходить по магістралі іншого діаметра, у режимі «напряму» вся довжина береться за діаметром підводки.",
       "Порядок приладів на трійниковій магістралі за відстанню умовний і не є точною геометрією трубопроводів.",
+      "Орієнтовні втрати тиску на ділянках, для яких введено довжину: H = i·l·(1+κ), κ = 0,3 (п. 11.7 ДБН, формула (9)); питомі втрати i за формулою Дарсі–Вейсбаха (у нормі за таблицями гідравлічного розрахунку). Лічильник, фільтр, арматура, змішувачі, водонагрівач, висота й довжини магістралей не враховані, втрати ділянок не складаються в втрату до приладу, висновок про достатність тиску не робиться.",
       "Повний гідравлічний розрахунок втрат тиску системи не виконано. Результат попередній."
     ];
     return out;
@@ -261,6 +321,6 @@
     if (p !== null) out.lines.push("Пороги 2 і 4 бар це орієнтири, не вимоги норми.");
     return out;
   }
-  const api = { devFlow, a5x, nodeAdvice, LIST, VALVE, METER, entryChain, A5, A69, DEV, ORDER, MAT, a5, byU, calc, compare, specLoss, vel, pick, reserveSize, KL };
+  const api = { sizesFor, devFlow, a5x, nodeAdvice, LIST, VALVE, METER, entryChain, A5, A69, DEV, ORDER, MAT, a5, byU, calc, compare, specLoss, vel, pick, reserveSize, KL };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Hydraulics = api;
 })(typeof window !== "undefined" ? window : this);

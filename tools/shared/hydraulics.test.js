@@ -59,7 +59,7 @@ t("променева: без ГВП-магістралі", !rr.sections.some(s 
 [1, 3, 5, 8].forEach(U => { const x = H.calc({ ...base, U }); t("U=" + U + ": ввід за А.5 той самий, довідка А.9 є", near(x.sections[0].q, 0.715, 0.0006) && x.ref && near(x.ref.q, H.byU(285, U).tot, 1e-9), "A.5 0,715; A.9 " + f(H.byU(285, U).tot), f(x.sections[0].q) + "; " + (x.ref && f(x.ref.q))); });
 t("U=0 і U=41: розрахунок є, довідки А.9 немає", H.calc({ ...base, U: 0 }).ref === null && H.calc({ ...base, U: 41 }).sections.length > 0 && noBad(H.calc({ ...base, U: 41 })));
 /* 5. один прилад, однакові прилади */
-const one = H.calc({ ...base, counts: { sink: 1 }, boiler: false, dist: {} });
+const one = H.calc({ ...base, counts: { sink: 1 }, hotSrc: "none", dist: {} });
 t("один прилад: ввід = max(А.5 N=1, витрата приладу), без магістралі", one.lines.length === 1 && one.sections.length === 1 && one.sections[0].q >= one.lines[0].qd && noBad(one), "1 лінія, ввід ≥ витрати приладу", f(one.sections[0].q));
 const same = H.calc({ ...base, counts: { sink: 3, basin: 3 }, dist: {} });
 t("кілька однакових приладів: імена нумеруються, N=6", same.lines.filter(l => l.id === "sink").length === 3 && /Мийка на кухні 2/.test(same.lines[1].name) && same.N === 6);
@@ -109,6 +109,74 @@ const c = H.compare({ ...base, norm: 285 }); t("compare: 3 матеріали", 
 t("запас = PEX20-еквівалент: pex 20, cu/inox 18", H.reserveSize("pex")[0] === 20 && H.reserveSize("cu")[0] === 18);
 t("всі матеріали сторінки дають результат без NaN", H.LIST.every(m => noBad(H.calc({ ...base, mat: m }))));
 
+/* 13. Б1: обʼєм гарячої води окремо за ділянками з фактичним внутрішнім Ø */
+const vb = H.calc({ ...base, hotDist: 4, dist: { ...base.dist, basin: 5 } }), vbi = vb.recirc.items.find(x => x.id === "basin");
+const vA = Math.PI * Math.pow(14.4 / 2000, 2) * 4 * 1000, vB = Math.PI * Math.pow(11.6 / 2000, 2) * 5 * 1000;
+t("ГВП: ділянки різного Ø: джерело→вузол за Ø20 (14,4), вузол→прилад за Ø16 (11,6)", vbi.segs.length === 2 && near(vbi.segs[0].d, 14.4, 1e-9) && near(vbi.segs[1].d, 11.6, 1e-9) && near(vbi.vol, vA + vB, 1e-9), f(vA + vB, 3) + " л (0,651 + 0,528)", f(vbi.vol, 3));
+t("ГВП: обʼєм не дорівнює спрощеному (весь шлях за Ø підводки)", Math.abs(vbi.vol - Math.PI * Math.pow(11.6 / 2000, 2) * 9 * 1000) > 0.1);
+const vd = H.calc({ ...base, hotMode: "direct", hotDist: 4, dist: { ...base.dist, basin: 5 } }).recirc.items.find(x => x.id === "basin");
+t("ГВП «напряму»: одна ділянка за Ø підводки", vd.segs.length === 1 && near(vd.vol, Math.PI * Math.pow(11.6 / 2000, 2) * 5 * 1000, 1e-9));
+const vx = H.calc({ ...base, hotSrc: "ext", hotDist: 4, dist: { ...base.dist, basin: 5 } }).recirc;
+t("ГВП із зовнішнім джерелом: ділянка джерело→вузол за Ø вводу ГВП", vx.src === "ext" && near(vx.items.find(x => x.id === "basin").segs[0].d, H.calc({ ...base, hotSrc: "ext" }).lines.find(l => l.ext).hot.d, 1e-9));
+
+/* 14. Б2: фактична товщина стінки, мінімум майстра окремо від швидкості */
+const w1 = H.calc({ ...base, walls: { 25: "2,3" } });
+t("PEX 25×2,3 (внутр. 20,4): ввід 0,715 л/с Ø25, швидкість 2,19 м/с", w1.sections[0].od === 25 && near(w1.sections[0].d, 20.4, 1e-9) && near(w1.sections[0].v, 2.19, 0.01) && w1.sections[0].custom === true && w1.sections[0].ok, "Ø25 / 20,4 / 2,19", "Ø" + w1.sections[0].od + " / " + w1.sections[0].d + " / " + f(w1.sections[0].v, 2));
+t("типовий PEX без заданих стінок: ввід Ø32, швидкість 1,69", r.sections[0].od === 32 && near(r.sections[0].v, 1.69, 0.01) && !r.sections[0].custom);
+const wbad = H.calc({ ...base, walls: { 25: "20", 20: "abc", 16: "0,3", 32: "-1" } });
+t("некоректні стінки (завелика, текст, замала, відʼємна) ігноруються з попередженням", wbad.sections[0].od === 32 && wbad.warnings.filter(x => /Товщина стінки/.test(x)).length === 4 && noBad(wbad), "4 попередження, типові розміри", wbad.warnings.length);
+const wmono = H.calc({ ...base, walls: { 20: "5" } });
+t("стінки, що ламають зростання внутрішніх Ø, відхиляються", wmono.sizes.every((z, i, a) => i === 0 || z[2] > a[i - 1][2]) && noBad(wmono));
+t("sizesFor: всі типорозміри матеріалів сторінки зростають за внутрішнім Ø", H.LIST.every(m => H.sizesFor(m, null).every((z, i, a) => i === 0 || z[2] > a[i - 1][2])));
+t("sizesFor: свої стінки дають внутр. Ø = зовн. − 2×стінка", (() => { const z = H.sizesFor("pex", { 32: "3,0" })[3]; return z[0] === 32 && near(z[2], 26, 1e-9) && z[1] === "32×3,0".replace("3,0", "3") || z[1] === "32×3"; })());
+const mr = H.calc({ ...base, counts: { basin: 1 }, hotSrc: "local", dist: {}, hotDist: 4 }), ml = mr.lines.find(l => l.boiler);
+t("мінімум майстра: у лінії водонагрівача за швидкістю вистачило б Ø16, прийнято Ø20 і це видно окремо", ml.hot.od === 20 && ml.hot.minRule && ml.hot.minRule.od === 16 && /14,4/.test(ml.hot.minRule.rule), "Ø20, за швидкістю Ø16", "Ø" + ml.hot.od + " / " + (ml.hot.minRule && ml.hot.minRule.od));
+t("мінімум майстра: ввід одного приладу Ø25 за мінімумом, за швидкістю менше", mr.sections[0].od === 25 && mr.sections[0].minRule && mr.sections[0].minRule.od < 25);
+t("мінімум майстра не позначається там, де вирішує швидкість (контрольна квартира)", !r.sections[0].minRule && !r.lines.find(l => l.boiler).hot.minRule);
+t("швидкість ніде не перевищує межу, окрім ділянок «немає типорозміру»", H.LIST.every(m => { const x = H.calc({ ...base, mat: m }); return x.sections.concat(x.lines.flatMap(l => [l.cold, l.hot].filter(Boolean))).every(z => z.ok || z.noFit); }));
+
+/* 15. Б3: орієнтовні втрати тиску лише там, де відомі витрата, внутрішній Ø і довжина */
+const ray = H.calc({ ...base, scheme: "ray", lenEntry: 5 });
+const lrow = n => ray.loss.rows.find(x => x.name === n);
+const bath = lrow("Холодна: Ванна (змішувач)");
+t("втрата ділянки H = i·l·(1+0,3), i за Дарсі–Вейсбахом", bath && near(bath.dp, H.specLoss(bath.q, bath.d, 0.007, false) * bath.len * 1.3, 1e-6) && bath.len === 3, "i·3·1,3", bath && f(bath.dp, 0) + " Па");
+t("гаряча ділянка рахується при 55 °C (менша втрата за холодну при тих самих q, d, l)", lrow("Гаряча: Ванна (змішувач)").dp < bath.dp);
+t("ввід: втрата є лише коли введено довжину вводу", lrow("Ввід") && lrow("Ввід").len === 5 && !H.calc({ ...base, scheme: "ray" }).loss.rows.some(x => x.name === "Ввід"));
+t("ділянки без довжини не мають втрат (унітаз без введеної відстані)", !H.calc({ ...base, scheme: "ray", dist: {} }).loss.rows.some(x => /Унітаз/.test(x.name)));
+t("лінія водонагрівача: втрата за введеною довжиною", ray.loss.rows.some(x => /водонагрівача/.test(x.name) && x.len === 4));
+const teeL = H.calc({ ...base, lenEntry: 5 });
+t("трійникова: втрат підводок немає (довжини магістралі не вводяться), позначка skipTee", !teeL.loss.rows.some(x => /Ванна|Душ|Умивальник|Мийка/.test(x.name)) && teeL.loss.skipTee === true);
+t("втрати не підсумовуються й не дають висновку про достатність тиску", ray.loss.sum === undefined && ray.loss.total === undefined && !/достатн/i.test(JSON.stringify(ray.loss)) && /не робиться/.test(ray.assumptions.join(" ")));
+t("ділянки без типорозміру (noFit) не мають втрат", (() => { const x = H.calc({ ...base, scheme: "ray", flows: { bath: 60 }, mat: "ppr20", dist: { bath: 3 } }); return x.lines.find(l => l.id === "bath").cold.noFit ? !x.loss.rows.some(y => y.name === "Холодна: Ванна (змішувач)") : true; })());
+
+/* 16. Б4: водонагрівач і джерело ГВП окремо */
+const loc = H.calc({ ...base, hotSrc: "local" }), ex = H.calc({ ...base, hotSrc: "ext", hotDist: 4 }), nh = H.calc({ ...base, hotSrc: "none" });
+t("водонагрівач у квартирі: ввід 0,715 за «загальна або гаряча», є підведення ХВП і вихід ГВП, є діагностика", near(loc.sections[0].q, 0.715, 0.0006) && loc.lines.some(l => l.boiler && l.cold && l.hot) && loc.check && loc.hotSrc === "local");
+t("зовнішнє ГВП: ввід холодний 0,438, лінія «Ввід ГВП» лише гаряча, без підведення до водонагрівача й діагностики", near(ex.sections[0].q, 0.438, 0.001) && ex.lines.filter(l => l.ext).length === 1 && ex.lines.find(l => l.ext).cold === null && !ex.lines.some(l => l.boiler) && !ex.check);
+t("зовнішнє ГВП: усі підписи без слова «бойлер/водонагрівач»", [ex.sections, ex.lines].flat().every(x => !/бойлер|водонагрівач/i.test(x.name)) && !/Бойлер/.test(JSON.stringify(ex.recirc)) && ex.sections.filter(s => s.kind === "hotMain").every(s => /від вводу ГВП|після/.test(s.name)));
+t("зовнішнє ГВП: витрата вводу ГВП = блок «загальна або гаряча» для гарячих приладів (0,357)", near(ex.lines.find(l => l.ext).hot.q, 0.3575, 0.0006));
+t("без гарячої води: ні гарячих ліній, ні лінії джерела, ні магістралі ГВП, ні обʼєму; ввід холодний", nh.lines.every(l => !l.hot) && !nh.lines.some(l => l.boiler || l.ext) && !nh.sections.some(s => s.kind === "hotMain") && !nh.recirc && !nh.check && near(nh.sections[0].q, 0.438, 0.001) && nh.Nhot === 0);
+t("без гарячої води: у «Припущеннях» про це сказано, без згадок про водонагрівач", /не розраховується/.test(nh.assumptions[0]) && !/бойлер/i.test(nh.assumptions[0]));
+t("застарілий параметр boiler: true = водонагрівач у квартирі, false = зовнішнє ГВП", H.calc({ ...base, boiler: true }).hotSrc === "local" && H.calc({ ...base, hotSrc: undefined, boiler: false }).hotSrc === "ext");
+
+/* 17. Б3/Б6: діагностика моделі на трьох контрольних квартирах (не нормативні обмеження) */
+const cfgs = {
+  small: { U: 2, counts: { shower: 1, basin: 1, sink: 1, wc: 1, washer: 1 }, dist: { shower: 3, basin: 4, sink: 6, wc: 5, washer: 7 }, hotDist: 3 },
+  std: { U: 3, counts: { bath: 1, shower: 1, basin: 1, sink: 1, wc: 1, washer: 1 }, dist: { bath: 3, shower: 3.5, basin: 5, sink: 6, wc: 7, washer: 8 }, hotDist: 4 },
+  large: { U: 6, counts: { bath: 1, shower: 2, basin: 3, sink: 1, hyg: 2, wc: 3, washer: 1, dish: 1 }, dist: { bath: 3, shower: 4, basin: 6, sink: 8, hyg: 5, wc: 7, washer: 9, dish: 9 }, hotDist: 5 }
+};
+for (const k in cfgs) for (const src of ["local", "ext", "none"]) {
+  const x = H.calc({ mat: "pex", scheme: "tee", hotSrc: src, ...cfgs[k] });
+  const cm = x.sections.filter(s => s.kind === "coldMain"), hm = x.sections.filter(s => s.kind === "hotMain");
+  t(k + "/" + src + ": ХВП-магістраль: ділянок N−1, витрата й Ø не зростають по ходу відгалужень", cm.length === x.N - 1 && cm.every((s, i) => i === 0 || (s.q <= cm[i - 1].q + 1e-9 && s.od <= cm[i - 1].od)));
+  t(k + "/" + src + ": ГВП-магістраль: ділянок Nгар−1, витрата й Ø не зростають", hm.length === Math.max(0, x.Nhot - 1) && hm.every((s, i) => i === 0 || (s.q <= hm[i - 1].q + 1e-9 && s.od <= hm[i - 1].od)));
+  t(k + "/" + src + ": жоден рекомендований діаметр не порушує межу швидкості", x.sections.concat(x.lines.flatMap(l => [l.cold, l.hot].filter(Boolean))).every(s => s.ok || s.noFit) && noBad(x));
+}
+const dg = H.calc({ mat: "pex", scheme: "tee", hotSrc: "local", ...cfgs.std });
+t("діагностика співвідношення витрат лише повідомляє, значення таблиць не підганяються", dg.check.ok && near(dg.sections[0].q, 0.715, 0.0006) && near(dg.lines.find(l => l.boiler).hot.q, 0.3575, 0.0006));
+
+t("довжина вводу як текст з поля: рахується як число", (() => { const x = H.calc({ ...base, scheme: "ray", lenEntry: "5", hotDist: "4", dist: { bath: "3" } }); return x.loss.rows.find(y => y.name === "Ввід").len === 5 && noBad(x); })());
+t("довжина вводу порожня/відʼємна: втрат вводу немає, без NaN", ["", "-3", "abc", null].every(v => { const x = H.calc({ ...base, scheme: "ray", lenEntry: v }); return !x.loss.rows.some(y => y.name === "Ввід") && noBad(x); }));
 console.log("\nКонтрольні сценарії (вхід → очікуване → фактичне → статус):");
 rows.forEach(x => console.log(" - " + x[0] + " | очікувалось: " + x[1] + " | отримано: " + x[2] + " | " + x[3]));
 console.log("\n" + ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);
