@@ -116,19 +116,39 @@
   /* розрахункова витрата приладу для підводки, л/с: значення користувача (л/хв) або типове DEV[id].lpm (інженерне припущення, не з ДБН) */
   function devFlow(id, flows) {
     const v = flows ? flows[id] : null, n = v === "" || v == null ? NaN : +v;
-    return (n > 0 ? n : DEV[id].lpm) * LPM;
+    return (n > 0 && n <= 1000 ? n : DEV[id].lpm) * LPM; /* лише скінченні значення до 1000 л/хв, інакше типове */
   }
   const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
   const maxOf = a => a.reduce((m, x) => Math.max(m, x), 0);
   /* p: { mat, scheme: "ray"|"tee", U, counts, hotSrc: "local"|"ext"|"none", boiler (застаріле: true = "local", false = "ext"), flows: {id: л/хв}, dist: {id: м}, hotDist, hotMode: "node"|"direct", lenEntry, lenLine, walls: {Ø: стінка}, chain }
      hotSrc: "local" водонагрівач у квартирі (бойлер, колонка), живиться від холодного вводу квартири; "ext" гаряча вода надходить ззовні й має свій ввід; "none" гарячої води немає */
   function calc(p) {
-    const items = [];
-    const flows = p.flows || {}, dist = p.dist || {};
+    /* Довжини: лише скінченні числа 0…1000 м; інше (текст, від'ємні, Infinity, надмірні) відкидається з попередженням. Невідомий матеріал замінюється на PEX. */
+    const LMAX = 1000; let badLen = false;
+    const L1 = v => { if (v === "" || v == null) return 0; const x = +v; if (x === 0) return 0; if (x === x && x > 0 && x <= LMAX) return x; badLen = true; return 0; };
+    const dist = {}; Object.keys(p.dist || {}).forEach(k => { dist[k] = L1(p.dist[k]); });
+    p = Object.assign({}, p, { lenEntry: L1(p.lenEntry), lenLine: L1(p.lenLine), hotDist: L1(p.hotDist), mat: MAT[p.mat] ? p.mat : "pex" });
+    const flows = p.flows || {};
     const hs = p.hotSrc === "local" || p.hotSrc === "ext" || p.hotSrc === "none" ? p.hotSrc : (p.boiler ? "local" : "ext");
     const noHot = hs === "none", boiler = hs === "local", ext = hs === "ext";
-    ORDER.forEach(id => { const n = Math.max(0, Math.floor(+((p.counts || {})[id]) || 0)); for (let i = 1; i <= n; i++) items.push({ id, name: n > 1 ? DEV[id].label + " " + i : DEV[id].label, c: DEV[id].c, h: noHot ? 0 : DEV[id].h, reserve: !!DEV[id].reserve, qd: devFlow(id, flows) }); });
+    /* Вхідні кількості перевіряються ДО створення масиву приладів: NaN, текст, від'ємні й дробові значення, Infinity і надмірно великі числа не повинні породжувати цикл. */
+    const MAXN = 60, cnt = {}; let total = 0, tooMany = false, badCnt = false;
+    ORDER.forEach(id => {
+      const raw = (p.counts || {})[id], v = +raw;
+      let n = 0;
+      if (raw === "" || raw == null) n = 0;
+      else if (v !== v || v < 0) { n = 0; badCnt = true; }
+      else if (v > MAXN) { n = MAXN + 1; tooMany = true; }
+      else n = Math.floor(v);
+      cnt[id] = n; total += n;
+    });
+    if (total > MAXN) tooMany = true;
+    const items = [];
+    if (!tooMany) ORDER.forEach(id => { const n = cnt[id]; for (let i = 1; i <= n; i++) items.push({ id, name: n > 1 ? DEV[id].label + " " + i : DEV[id].label, c: DEV[id].c, h: noHot ? 0 : DEV[id].h, reserve: !!DEV[id].reserve, qd: devFlow(id, flows) }); });
     const out = { items, sections: [], warnings: [], notes: [], lines: [], scheme: p.scheme === "tee" ? "tee" : "ray", method: "A5", hotSrc: hs };
+    if (badLen) out.warnings.push("Некоректна довжина (не число, менше нуля або понад "+LMAX+" м) не враховується.");
+    if (badCnt) out.warnings.push("Некоректна кількість приладів (не число або менше нуля) прийнята як 0.");
+    if (tooMany) { out.warnings.push("Загальна кількість приладів більша за 60: це поза межами реалізованої частини таблиці А.5. У таблиці ДБН рядків більше, але калькулятор їх не містить."); return out; }
     const mat = p.mat || "pex", N = items.length;
     const SZ = sizesFor(mat, p.walls, out.warnings), pk = (q, hot, minOd, minBore) => pick(mat, q, hot, minOd, minBore, 1, SZ);
     out.sizes = SZ;
@@ -255,6 +275,7 @@
       "Діаметр за швидкістю підбирається за фактичним внутрішнім діаметром типорозміру й швидкістю не більше " + String(MAT[mat].vc).replace(".", ",") + " м/с (п. 11.6 ДБН для полімерних труб). Внутрішній діаметр залежить від виробника й товщини стінки: задавайте фактичну стінку у «Додаткових параметрах» або звіряйте з паспортом.",
       "Обʼєм гарячої води рахується окремо за ділянками: «джерело→вузол» за внутрішнім діаметром лінії водонагрівача (вводу ГВП), «вузол→прилад» за внутрішнім діаметром підводки до приладу. Геометрію спрощено: у трійниковій схемі частина відстані вузол→прилад проходить по магістралі іншого діаметра, у режимі «напряму» вся довжина береться за діаметром підводки.",
       "Порядок приладів на трійниковій магістралі за відстанню умовний і не є точною геометрією трубопроводів.",
+      "Водонагрівач у розрахунку умовно підключений до холодного вводу безпосередньо біля вузла вводу: ХВП-магістраль рахується лише за холодними приладами, лінія водонагрівача окремо. Якщо водонагрівач підключено далі по магістралі, ділянки до нього можуть бути навантажені більше; калькулятор цього не розраховує.",
       "Орієнтовні втрати тиску на ділянках, для яких введено довжину: H = i·l·(1+κ), κ = 0,3 (п. 11.7 ДБН, формула (9)); питомі втрати i за формулою Дарсі–Вейсбаха (у нормі за таблицями гідравлічного розрахунку). Лічильник, фільтр, арматура, змішувачі, водонагрівач, висота й довжини магістралей не враховані, втрати ділянок не складаються в втрату до приладу, висновок про достатність тиску не робиться.",
       "Повний гідравлічний розрахунок втрат тиску системи не виконано. Результат попередній."
     ];
@@ -312,8 +333,8 @@
   /* вузол вводу: орієнтир потрібного Kv за формулою Kv = Q / √Δp (Q, м³/год; Δp, бар) для двох довідкових втрат на виробі. Це не нормативні допустимі втрати.
      Потрібне Kv при робочому режимі порівнюють із паспортним Kvs виробу. Тиск після лічильника лише для застережень, автоматичного вибору обладнання немає. */
   function nodeAdvice(pIn, qIn) {
-    const Q = +qIn * 3.6; if (!(Q > 0)) return null;
-    const p = +pIn > 0 ? +pIn : null, out = { p, q: +qIn, m3h: Q, kv: [0.25, 0.5].map(dp => ({ dp, kv: Q / Math.sqrt(dp) })), lines: [] };
+    const Q = +qIn * 3.6; if (!(Q > 0) || !isFinite(Q)) return null;
+    const p = +pIn > 0 && isFinite(+pIn) ? +pIn : null, out = { p, q: +qIn, m3h: Q, kv: [0.25, 0.5].map(dp => ({ dp, kv: Q / Math.sqrt(dp) })), lines: [] };
     out.lines.push("Для витрати " + Q.toFixed(2).replace(".", ",") + " м³/год потрібне Kv = Q / √Δp: " + out.kv.map(k => k.kv.toFixed(1).replace(".", ",") + " при Δp " + String(k.dp).replace(".", ",") + " бар").join(" і ") + ". Це довідкові сценарії, не нормативні допустимі втрати.");
     out.lines.push("Паспортний Kvs виробу (крана, фільтра, редуктора, лічильника) має бути не меншим за потрібне Kv. Фактична втрата на виробі Δp = (Q / Kvs)². Остаточний вибір залежить від паспортних характеристик і допустимих втрат тиску.");
     if (p !== null && p >= 4) out.lines.push("Тиск після лічильника " + String(p).replace(".", ",") + " бар: перевірте допустимий робочий тиск арматури й приладів за паспортами, за потреби розгляньте редуктор.");

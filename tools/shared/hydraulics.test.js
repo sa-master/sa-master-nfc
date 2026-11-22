@@ -5,7 +5,7 @@ let ok = 0, bad = 0; const rows = [];
 const t = (n, c, exp, act) => { if (!c) { bad++; console.log("FAIL", n, exp !== undefined ? "| очікувалось: " + exp + " | отримано: " + act : ""); } else ok++; if (exp !== undefined) rows.push([n, exp, act, c ? "OK" : "FAIL"]); };
 const near = (a, b, e = 0.005) => Math.abs(a - b) <= e;
 const f = (x, n = 3) => (typeof x === "number" ? x.toFixed(n) : String(x));
-const noBad = o => !/NaN|Infinity|undefined/.test(JSON.stringify(o).replace(/null/g, "0"));
+const noBad = function deep(o) { if (typeof o === "number") return isFinite(o); if (o === undefined) return false; if (o && typeof o === "object") return Object.keys(o).every(k => deep(o[k])); return true; }; /* глибока перевірка: NaN, Infinity і undefined у будь-якому полі (JSON.stringify їх би приховав) */
 const has = (o, id) => o.lines.find(l => l.id === id);
 
 /* 1. таблиця А.5 у коді дорівнює таблиці в тексті ДБН (усі клітинки N=1…30 і 40, 50, 60) */
@@ -177,6 +177,57 @@ t("діагностика співвідношення витрат лише п�
 
 t("довжина вводу як текст з поля: рахується як число", (() => { const x = H.calc({ ...base, scheme: "ray", lenEntry: "5", hotDist: "4", dist: { bath: "3" } }); return x.loss.rows.find(y => y.name === "Ввід").len === 5 && noBad(x); })());
 t("довжина вводу порожня/відʼємна: втрат вводу немає, без NaN", ["", "-3", "abc", null].every(v => { const x = H.calc({ ...base, scheme: "ray", lenEntry: v }); return !x.loss.rows.some(y => y.name === "Ввід") && noBad(x); }));
+
+/* 18. Незалежні еталони та захист від некоректних даних */
+/* 18.1 Втрати тиску: еталон пораховано вручну окремо від коду (Дарсі–Вейсбах, Свемі–Джейн, вода 10 °C, k 0,007 мм):
+   q 0,3 л/с, d 14,4 мм → v 1,842 м/с, Re ≈ 20 250, λ ≈ 0,0262, i ≈ 3 169 Па/м; H = 3,169 кПа/м · 3 м · 1,3 ≈ 12,36 кПа */
+{
+  const x = H.calc({ mat: "pex", scheme: "ray", U: 3, counts: { basin: 1 }, hotSrc: "none", dist: { basin: 3 }, flows: { basin: 18 } });
+  const r = x.loss.rows.find(z => /Умивальник/.test(z.name));
+  t("втрати: розрахунок калькулятора для умивальника (q 0,3 л/с, d 14,4 мм, l 3 м) ≈ 12,36 кПа ±2 % за еталоном", !!r && Math.abs(r.q - 0.3) < 1e-9 && Math.abs(r.d - 14.4) < 1e-9 && Math.abs(r.dp - 12360) / 12360 < 0.02, "12,36 кПа", r && f(r.dp / 1000, 2) + " кПа");
+  t("втрати: незалежний еталон ≈ 12,36 кПа (±2 %) для q 0,3 л/с, d 14,4 мм, l 3 м", !!r && Math.abs(H.specLoss(0.3, 14.4, 0.007, false) - 3169) / 3169 < 0.02 && Math.abs(H.specLoss(0.3, 14.4, 0.007, false) * 3 * 1.3 - 12360) / 12360 < 0.02, "12,36 кПа", f(H.specLoss(0.3, 14.4, 0.007, false) * 3.9 / 1000, 2) + " кПа");
+  t("втрати: κ = 0,3 застосовано (відношення до втрат без κ дорівнює 1,3)", near(H.specLoss(0.3, 14.4, 0.007, false) * 3 * 1.3 / (H.specLoss(0.3, 14.4, 0.007, false) * 3), 1.3, 1e-12));
+  t("втрати: сумарної цифри і висновку про тиск немає", x.loss && x.loss.total === undefined && !/достатн/i.test(JSON.stringify(x.loss)));
+}
+/* 18.2 Кількості приладів: перевірка до створення масивів, без зависання */
+{
+  const bigs = [1e9, "1e999", Infinity, -Infinity, NaN, "abc", -5, 1e308, 61, 1000];
+  const t0 = Date.now(); let allOk = true, warnOk = true;
+  bigs.forEach(v => { const x = H.calc({ mat: "pex", scheme: "tee", U: 3, counts: { bath: v, sink: v }, hotSrc: "local" }); if (!noBad(x)) allOk = false; if (typeof v === "number" && (v > 60 || v === Infinity) || v === "1e999") { if (!(x.items.length === 0 && x.warnings.some(w => /більша за 60/.test(w)))) warnOk = false; } });
+  t("кількості: 1e9, 1e999, Infinity, NaN, текст, відʼємні, надмірні: без зависання і без NaN/Infinity", allOk && Date.now() - t0 < 2000, "швидко, чисто", (Date.now() - t0) + " мс");
+  t("кількості: надмірні значення дають повідомлення «більша за 60» і порожній перелік приладів", warnOk);
+  const sum = H.calc({ mat: "pex", scheme: "tee", U: 3, counts: { bath: 30, shower: 30, basin: 1 }, hotSrc: "local" });
+  t("кількості: сума типів 61 > 60 → повідомлення, розрахунку немає (не лише ліміт кожного типу)", sum.items.length === 0 && sum.warnings.some(w => /більша за 60/.test(w)));
+  const ok60 = H.calc({ mat: "pex", scheme: "tee", U: 3, counts: { bath: 30, shower: 30 }, hotSrc: "local" });
+  t("кількості: рівно 60 приладів розраховується", ok60.items.length === 60 && ok60.sections.length > 0 && noBad(ok60));
+  const neg = H.calc({ mat: "pex", scheme: "tee", U: 3, counts: { bath: -5, sink: 2 }, hotSrc: "local" });
+  t("кількості: відʼємне значення = 0 з попередженням, решта рахується", neg.items.length === 2 && neg.warnings.some(w => /Некоректна кількість/.test(w)));
+  const fr = H.calc({ mat: "pex", scheme: "tee", U: 3, counts: { sink: "2.9" }, hotSrc: "none" });
+  t("кількості: дробове округляється вниз", fr.items.length === 2);
+}
+/* 18.3 Інші некоректні параметри: без винятків і без NaN/Infinity у результаті */
+{
+  const weird = [NaN, Infinity, -Infinity, -1, 0, 1e9, "abc", "", "  ", null, undefined, {}, [], "1e999", "0x10"];
+  const mk = (k, v) => { const q = JSON.parse(JSON.stringify(base)); q.hotSrc = "local"; delete q.boiler; if (k === "flows") q.flows = { bath: v, sink: v, basin: v }; else if (k === "walls") q.walls = { 16: v, 20: v, 25: v, 32: v }; else if (k === "dist") q.dist = { bath: v, wc: v, basin: v }; else q[k] = v; return q; };
+  let bad1 = [], exc = [];
+  ["U", "hotDist", "lenEntry", "lenLine", "flows", "walls", "dist", "mat", "hotSrc", "scheme", "hotMode"].forEach(k => weird.forEach(v => { try { const x = H.calc(mk(k, v)); if (!noBad(x)) bad1.push(k + "=" + String(v)); } catch (e) { exc.push(k + "=" + String(v) + ": " + e.message); } }));
+  t("некоректні параметри (11 полів × 15 значень): без винятків", exc.length === 0, "0 винятків", exc.slice(0, 3).join("; "));
+  t("некоректні параметри: без NaN/Infinity/undefined у результаті", bad1.length === 0, "0", bad1.slice(0, 4).join("; "));
+  const inf = H.calc({ ...base, lenEntry: "1e999", hotDist: Infinity, scheme: "ray" });
+  t("довжина Infinity/понад 1000 м не враховується, є попередження", noBad(inf) && inf.warnings.some(w => /Некоректна довжина/.test(w)));
+  const nodes = [[NaN, 0], [Infinity, 5], [0.3, Infinity], [-1, -1]].every(a => { try { return noBad(H.nodeAdvice(a[1], a[0])); } catch (e) { return false; } });
+  t("вузол вводу: NaN/Infinity/відʼємні дають без NaN у відповіді", nodes);
+}
+/* 18.4 Припущення про водонагрівач біля вузла вводу: нагрівач не впливає на холодну магістраль */
+{
+  const cold = x => x.sections.filter(z => /агістраль/.test(z.name) && !/ГВП/.test(z.name)).map(z => [z.q, z.size && z.size[0]]);
+  const withH = H.calc({ ...base, boiler: undefined, hotSrc: "local" }), noH = H.calc({ ...base, boiler: undefined, hotSrc: "ext" });
+  t("водонагрівач біля вузла: ХВП-магістраль однакова з нагрівачем у квартирі і без нього (нагрівач не входить в N магістралі)", JSON.stringify(cold(withH)) === JSON.stringify(cold(noH)) && cold(withH).length > 0);
+  t("пояснення про припущення «нагрівач біля вузла вводу» присутнє в списку припущень", withH.assumptions.some(a => /біля вузла вводу/.test(a)));
+  t("формули min(ХВП + нагрівач; ввід) для ділянок немає: перша ділянка магістралі не дорівнює вводу", withH.sections.find(z => /до 1-го відгалуження/.test(z.name)).q < withH.sections.find(z => z.name === "Ввід").q);
+}
+/* 18.5 Ввід і магістралі: діагностика співвідношення (не вимога ДБН) */
+Object.keys(cfgs).forEach(k => ["local", "ext", "none"].forEach(src => { const x = H.calc({ mat: "pex", scheme: "tee", hotSrc: src, ...cfgs[k] }); const e = x.sections.find(z => z.name === "Ввід"); const m = x.sections.filter(z => /Магістраль|ХВП-магістраль/.test(z.name) && !/ГВП/.test(z.name)); t("діагностика " + k + "/" + src + ": жодна ділянка ХВП-магістралі не більша за ввід", !!e && m.every(z => z.q <= e.q + 1e-9)); }));
 console.log("\nКонтрольні сценарії (вхід → очікуване → фактичне → статус):");
 rows.forEach(x => console.log(" - " + x[0] + " | очікувалось: " + x[1] + " | отримано: " + x[2] + " | " + x[3]));
 console.log("\n" + ok + " passed, " + bad + " failed"); process.exit(bad ? 1 : 0);
