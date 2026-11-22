@@ -128,32 +128,32 @@ ul.note{padding-left:18px}ul.note li{margin:5px 0}
   <div class="cols">
   <div class="left" id="formCol">
     <div class="g card" id="form">
-      <div class="h">1. Параметри системи</div>
       <div class="row"><span class="lbl">Мешканців</span><div class="st" id="uSt"></div></div>
       <div class="col"><span class="cap">Розводка</span>
         <div class="seg" id="schemeSeg"><button type="button" class="sg" data-scheme="ray">Променева</button><button type="button" class="sg" data-scheme="tee">Трійникова</button></div></div>
-      <div class="col"><label class="cap" for="mat">Матеріал труб</label><select class="sel" id="mat"></select></div>
-      <div class="col"><span class="cap">Джерело гарячої води</span>
-        <label class="opt" data-hs="local"><input type="radio" name="hs" value="local"><span><b>Водонагрівач у квартирі</b><small>бойлер, котел, колонка · бере воду з вводу квартири</small></span></label>
-        <label class="opt" data-hs="ext"><input type="radio" name="hs" value="ext"><span><b>Централізоване ГВП</b><small>гаряча вода ззовні, окремий ввід</small></span></label>
-        <label class="opt" data-hs="none"><input type="radio" name="hs" value="none"><span><b>Розрахувати лише ХВП</b><small>гарячу воду не рахуємо</small></span></label>
+      <div class="col"><span class="cap">Матеріал труб</span>
+        <div class="seg" id="matSeg"></div></div>
+      <div class="col"><span class="cap">Гаряча вода</span>
+        <label class="opt" data-hs="local"><input type="radio" name="hs" value="local"><span><b>Водонагрівач у квартирі</b></span></label>
+        <label class="opt" data-hs="ext"><input type="radio" name="hs" value="ext"><span><b>Централізоване ГВП</b></span></label>
+        <label class="opt" data-hs="none"><input type="radio" name="hs" value="none"><span><b>Лише холодна вода (ХВП)</b></span></label>
       </div>
     </div>
 
     <div class="g card">
-      <div style="display:flex;justify-content:space-between;align-items:baseline"><div class="h" style="margin:0">2. Сантехнічні прилади</div><span id="total" style="font-size:.8rem;font-weight:700;color:var(--cc)"></span></div>
+      <div class="h">Прилади</div>
       <div id="devs"></div>
     </div>
 
-    <div class="g card" style="padding:2px 14px"><details class="fold adv" id="adv"><summary style="min-height:56px"><span>3. Додаткові параметри<span class="sub">Відстані, витрати приладів, стінки труб, ввід</span></span></summary><div id="advBody" style="margin-top:0">
-      <div class="sub" style="margin:0 0 6px">Усе необовʼязково. Порожнє поле означає типове значення.</div>
+    <div class="g card" style="padding:2px 14px"><details class="fold adv" id="adv"><summary style="min-height:56px"><span>Для досвідчених<span class="sub">Вхідна труба, відстані, витрати, стінки</span></span></summary><div id="advBody" style="margin-top:0">
+      <div class="sub" style="margin:0 0 6px">Нічого заповнювати не обовʼязково: порожнє поле означає типове значення.</div>
       <div class="h" style="margin-top:12px">Довжини трубопроводів</div>
       <div class="sub" id="distNote" style="margin:0 0 4px"></div>
       <div id="distRows"></div>
       <div class="row" id="hotDistRow" style="min-height:50px"><label class="lbl" id="hotDistLbl" style="font-size:.95rem" for="hotDist">Водонагрівач → вузол</label><div class="fld"><input class="in" id="hotDist" data-g="hotDist" inputmode="decimal" autocomplete="off"><span class="unit">м</span></div></div>
       <div class="sep"></div>
       <div class="h">Вхідна труба (від забудовника)</div>
-      <div class="sub" style="margin:0 0 4px">Ввід, лічильник і арматуру задає забудовник. Вкажіть, що є: за замовчуванням сталева труба 1/2″. Розрахунок вводу, швидкість і втрата тиску рахуються за цією трубою.</div>
+      <div class="sub" style="margin:0 0 4px">Якщо не вказано, береться сталева 1/2″.</div>
       <div class="col"><label class="cap" for="entType">Тип труби</label><select class="sel" id="entType"></select></div>
       <div class="col"><label class="cap" for="entSize">Діаметр</label><select class="sel" id="entSize"></select></div>
       <div class="row" style="min-height:50px"><label class="lbl" style="font-size:.95rem" for="lenEntry">Довжина від лічильника до вузла<span class="sub" style="display:block">для втрати тиску у вводі</span></label><div class="fld"><input class="in" id="lenEntry" data-g="lenEntry" inputmode="decimal" autocomplete="off"><span class="unit">м</span></div></div>
@@ -164,11 +164,11 @@ ul.note{padding-left:18px}ul.note li{margin:5px 0}
         <div class="sub" id="hmNote" style="margin-top:6px"></div></div>
       <div class="sep"></div>
       <div class="h">Витрати приладів для підводок</div>
-      <div class="sub" style="margin:0 0 4px">Розрахункова витрата приладу, л/хв. Початкові інженерні припущення, не нормативні й не паспортні: уточнюйте за паспортом обладнання.</div>
+      <div class="sub" style="margin:0 0 4px">Типові значення, уточнюйте за паспортом приладу.</div>
       <div id="flowRows"></div>
       <div class="sep"></div>
       <div class="h">Фактична товщина стінки труби</div>
-      <div class="sub" style="margin:0 0 4px">Внутрішній діаметр = зовнішній − 2 × стінка; він визначає швидкість і діаметр.</div>
+      
       <div id="wallRows"></div>
       <button type="button" class="btnSec" id="btnFlowReset" style="margin:12px 0 10px">Повернути типові значення</button>
     </div></details></div>
@@ -219,11 +219,11 @@ const inRow = (g, k, lbl, unit, ph, val) => `<div class="row" style="min-height:
 function renderForm(){
   const tee = S.scheme === "tee", hasHot = S.hs !== "none";
   $("uSt").innerHTML = stepper("U", S.U, 1, MAXU).replace(/<span class="stn[^"]*">/, '<span class="stn" id="uN">');
+  $("matSeg").innerHTML = H.LIST.map(k => `<button type="button" class="sg${k === S.mat ? " on" : ""}" data-mat="${k}">${MATS[k] || H.MAT[k].label}</button>`).join("");
   document.querySelectorAll("[data-scheme]").forEach(b => b.classList.toggle("on", b.dataset.scheme === S.scheme));
   document.querySelectorAll("[data-hm]").forEach(b => b.classList.toggle("on", b.dataset.hm === S.hotMode));
   document.querySelectorAll("[data-hs]").forEach(l => { const on = l.dataset.hs === S.hs; l.classList.toggle("on", on); l.querySelector("input").checked = on; });
   $("devs").innerHTML = H.ORDER.map(id => `<div class="row"><span class="lbl">${H.DEV[id].label}</span><div class="st">${stepper("c_" + id, S.c[id], 0, MAXC)}</div></div>`).join("");
-  $("total").textContent = "Усього: " + H.ORDER.reduce((a, id) => a + S.c[id], 0);
   const act = H.ORDER.filter(id => S.c[id] > 0);
   $("distNote").textContent = tee
     ? "Відстань від вузла до приладу по трубі. У трійниковій схемі вона задає порядок приладів на магістралі й використовується для обʼєму гарячої води."
@@ -239,8 +239,7 @@ function renderForm(){
   $("flowRows").innerHTML = act.map(id => inRow("flows", id, esc(nm(H.DEV[id].label)), "л/хв", H.DEV[id].lpm, S.flows[id] || "")).join("");
   $("wallRows").innerHTML = H.MAT[S.mat].sizes.map(z => inRow("walls", z[0], "Ø" + z[0] + " <span class='sub' style='display:inline'>(типова " + z[1].split("×")[1] + ")</span>", "мм", z[1].split("×")[1], S.walls[z[0]] || "")).join("");
 }
-$("mat").innerHTML = H.LIST.map(k => `<option value="${k}">${H.MAT[k].label}</option>`).join("");
-$("mat").value = S.mat;
+const MATS = { pex: "PEX", mp: "Металопластик", ppr20: "PPR" };
 document.addEventListener("click", e => {
   const st = e.target.closest("[data-st]");
   if(st){
@@ -248,13 +247,13 @@ document.addEventListener("click", e => {
     if(k === "U") S.U = Math.max(1, Math.min(MAXU, S.U + d)); else { const id = k.slice(2); S.c[id] = Math.max(0, Math.min(MAXC, S.c[id] + d)); }
     renderForm(); render(); return;
   }
+  const mt = e.target.closest("[data-mat]"); if(mt){ S.mat = mt.dataset.mat; S.walls = {}; renderForm(); render(); return; }
   const sc = e.target.closest("[data-scheme]"); if(sc){ S.scheme = sc.dataset.scheme; renderForm(); render(); return; }
   const hm = e.target.closest("[data-hm]"); if(hm){ S.hotMode = hm.dataset.hm; renderForm(); render(); return; }
 });
 document.querySelectorAll("[data-hs] input").forEach(i => i.addEventListener("change", () => { S.hs = i.closest("[data-hs]").dataset.hs; renderForm(); render(); }));
 $("entType").addEventListener("change", () => { S.entry.type = $("entType").value; S.entry.size = entList(S.entry.type)[0].id; renderForm(); render(); });
 $("entSize").addEventListener("change", () => { S.entry.size = $("entSize").value; render(); });
-$("mat").addEventListener("change", () => { S.mat = $("mat").value; S.walls = {}; renderForm(); render(); });
 document.addEventListener("input", e => {
   const t = e.target; if(!t.dataset || !t.dataset.g) return;
   const clean = t.value.replace(/[^0-9.,]/g, ""); if(clean !== t.value) t.value = clean;
@@ -472,7 +471,7 @@ function render(){
   let det = `<div class="g card" style="padding:2px 14px">` + dets("a", "Витрати, швидкості, внутрішні діаметри", t1) + dets("b", "Орієнтовні втрати тиску", t3, "· довідково") + (r.recirc ? dets("c", "Гаряча вода: обʼєм і час очікування", t2) : "") + dets("d", "Ввід і вузол вводу", `<ul class="note">${entryLines(ec).concat(ad ? ad.lines : []).map(l => "<li>" + esc(l) + "</li>").join("")}</ul>`) + dets("e", "Методика та обмеження", t5) + `</div>`;
   /* ---- попередження ---- */
   let wn = "";
-  if(!ec.ok) wn += `<div class="warn">Ввід (${esc(entName(ec))}) не вкладається в межу швидкості: ${f2(ec.v, 1)} м/с при межі ${f2(ec.vmax, 1)} м/с для витрати ${fm(ec.q)} л/с. Ввід задає забудовник і замінити його не можна, тому це обмеження для всієї квартири. Труба пропускає до ${fm(ec.qmax)} л/с у межах швидкості.</div>`;
+  if(!ec.ok) wn += `<div class="warn">Ввід (${esc(entName(ec))}) вузький для ${fm(ec.q)} л/с: швидкість ${f2(ec.v, 1)} м/с при межі ${f2(ec.vmax, 1)}. Ввід задає забудовник, змінити його не можна. Пропускає до ${fm(ec.qmax)} л/с.</div>`;
   if(P.badFl.length) wn += `<div class="warn">Витрата поза діапазоном 1–60 л/хв: ${esc(P.badFl.join(", "))}. Використано типове значення.</div>`;
   r.warnings.forEach(w => wn += `<div class="warn">${esc(w)}</div>`);
   let bw = "";
