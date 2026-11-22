@@ -55,14 +55,12 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
     <label>Система<select class="formInput" id="scheme"><option value="ray">Променева</option><option value="tee">Трійникова</option></select></label></div>
     <div class="zr" style="grid-template-columns:1fr"><label>Матеріал розводки<select class="formInput" id="mat"></select></label></div>
     <div class="zr" style="grid-template-columns:1fr"><label>Тиск після лічильника, бар (необовʼязково)<input class="formInput" id="pIn" type="number" inputmode="decimal" step="0.5" placeholder="напр. 4"></label></div>
-    <label class="chk"><input type="checkbox" id="boiler" checked> Бойлер у квартирі</label>
   </div>
 
   <div class="g card">
     <div class="ttl">Прилади</div>
-    <p class="hint" style="margin-top:0">Кількість і відстань від розподільчого вузла до приладу, м (по трубі).</p>
+    <p class="hint" style="margin-top:0">Кількість і відстань від розподільчого вузла до приладу, м (по трубі). Бойлер без центрального ГВП.</p>
     <div id="devs"></div>
-    <div class="zr" style="grid-template-columns:1fr"><label>Відстань від вузла до бойлера, м<input class="formInput" id="hd" type="number" inputmode="decimal" step="0.5" placeholder="напр. 4"></label></div>
   </div>
 
   <div class="g card" id="res"></div>
@@ -70,7 +68,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
 
-<script src="shared/hydraulics.js?v=20261132"></script>
+<script src="shared/hydraulics.js?v=20261133"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id), H = Hydraulics;
@@ -81,6 +79,7 @@ $("U").innerHTML = opts(1, 12); $("U").value = 3;
 $("mat").innerHTML = H.LIST.map(k => `<option value="${k}">${H.MAT[k].label}</option>`).join(""); $("mat").value = "pex";
 const DEF = { bath: 1, shower: 1, sink: 1, basin: 1, wc: 1, washer: 1 };
 $("devs").innerHTML = H.ORDER.map(id => `<div class="dv"><span>${H.DEV[id].label}</span><span class="dr"><select class="formInput" id="c_${id}">${opts(0, 6)}</select><input class="formInput" id="d_${id}" type="number" inputmode="decimal" step="0.5" placeholder="м"></span></div>`).join("");
+$("devs").insertAdjacentHTML("beforeend", `<div class="dv"><span>Бойлер (електричний)</span><span class="dr"><select class="formInput" id="c_boiler"><option>0</option><option selected>1</option></select><input class="formInput" id="d_boiler" type="number" inputmode="decimal" step="0.5" placeholder="м"></span></div>`);
 H.ORDER.forEach(id => $("c_" + id).value = DEF[id] || 0);
 function scheme(r){
   const W = 360, rowMin = 44, top = 70, n = r.lines.length, C = "#0A84FF", Hh = "#FF3B30", xc = 44, xh = 86;
@@ -131,10 +130,10 @@ function scheme(r){
 
 function render(){
   const counts = {}, dist = {}; H.ORDER.forEach(id => { counts[id] = $("c_" + id).value; dist[id] = $("d_" + id).value; });
-  const U = +$("U").value, mat = $("mat").value, boiler = $("boiler").checked, tee = $("scheme").value === "tee";
+  const U = +$("U").value, mat = $("mat").value, boiler = $("c_boiler").value === "1", tee = $("scheme").value === "tee";
   const q = H.byU(285, U), qIn = boiler ? q.tot : q.cold;
   const ent = H.pick(mat, qIn, false, 0, 18); /* ввід у колектор або до першого трійника: прохід не менший, ніж у PEX Ø25 */
-  const r = H.calc({ U, norm: 285, mat, scheme: tee ? "tee" : "ray", entry: { mat, od: ent[0] }, counts, boiler, dist, hotDist: $("hd").value });
+  const r = H.calc({ U, norm: 285, mat, scheme: tee ? "tee" : "ray", entry: { mat, od: ent[0] }, counts, boiler, dist, hotDist: $("d_boiler").value });
   if(!r.lines.length){ $("res").innerHTML = `<p class="hint">Додайте хоча б один прилад.</p>`; return; }
   const ln = r.lines.map(l => ({ name: l.name, boiler: l.boiler, cold: l.cold.od, hot: l.hot ? l.hot.od : null, len: l.len > 0 ? l.len : null }));
   const e0 = r.sections[0], segs = r.sections.slice(1);
