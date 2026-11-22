@@ -162,16 +162,12 @@ textarea.formInput{resize:vertical}
 <div class="navrow"><a href="/tools/">← Усі інструменти</a></div>
 
   <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Акт випробувань на герметичність</h1>
-  <input id="docTitle" type="hidden">
-  <div class="g card"><details class="fold"><summary>Мої акти <span id="docCount" style="color:var(--tm);font-weight:500;margin-left:6px"></span></summary>
-    <div><div id="docList"></div><button type="button" class="btnSec" id="btnNew">+ Новий акт</button>
-    <p class="hint">Зберігається автоматично в цьому браузері, разом із фото. Після очищення даних браузера акти зникнуть.</p></div></details></div>
+  <div class="g card"><details class="fold"><summary>Ваші дані для PDF</summary><div id="profileBox"></div></details></div>
   <div class="g card">
     <div class="ttl">Обʼєкт і ваші дані</div>
     <div class="formGroup"><label class="formLabel" for="iObj">Обʼєкт</label><input class="formInput" id="iObj" placeholder="Напр.: Квартира, ЖК «Назва»" autocomplete="off"></div>
     <div class="formGroup"><label class="formLabel" for="iAddr">Адреса</label><input class="formInput" id="iAddr" placeholder="Вулиця, будинок, квартира" autocomplete="off"></div>
     <div class="formGroup"><label class="formLabel" for="iClient">Замовник</label><input class="formInput" id="iClient" placeholder="Прізвище, імʼя (необовʼязково)" autocomplete="off"></div>
-    <details class="fold" style="margin-top:6px"><summary>Ваші дані для PDF</summary><div id="profileBox"></div></details>
   </div>
 
   <div class="g card">
@@ -848,22 +844,8 @@ function loadAct(d){
   actDraft = d.act || newDraft(); renderActSheet();
   suppressSave = false;
 }
-const mgr = SMUI.docs({
-  tool: "hydro", titlePrefix: "Акт випробувань", el: $("docList"), titleInput: $("docTitle"), countId: "docCount",
-  serialize: () => { actReadForm(); return { info: infoGet(), act: JSON.parse(JSON.stringify(actDraft)) }; },
-  load: loadAct,
-  reset: () => loadAct({}),
-  isEmpty: isEmptyAct,
-  sub: () => cleanText($("iObj").value)
-});
-INFO.forEach(id => $(id).addEventListener("input", () => mgr.touch()));
-/* будь-яка зміна в формі випробувань (поля, фото, ручний результат) → автозбереження */
-$("actSheetBody").addEventListener("input", () => mgr.touch());
-$("actSheetBody").addEventListener("change", () => mgr.touch());
-$("actSheetBody").addEventListener("click", () => setTimeout(() => mgr.touch(), 400));
-const _renderSheet = renderActSheet;
-renderActSheet = function(){ _renderSheet(); if(!suppressSave) mgr.touch(); };
-$("btnNew").addEventListener("click", () => { mgr.fresh(); $("outBox").classList.add("hidden"); toast("Новий акт"); });
+const mgr = { touch(){}, currentTitle: () => "Акт випробувань" };
+
 SMProfile.mount($("profileBox"));
 
 async function buildPaper(){
