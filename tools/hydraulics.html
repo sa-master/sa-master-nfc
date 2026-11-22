@@ -35,7 +35,7 @@ select.formInput{appearance:none;-webkit-appearance:none;padding:9px 8px;font-si
 
 .tb{width:100%;border-collapse:collapse;font-size:.85rem}.tb th{font-size:.7rem;font-weight:700;color:var(--tm);text-align:left;padding:4px 4px}
 .tb td{padding:7px 4px;border-top:1px solid var(--ln);vertical-align:top}.tb td.n{text-align:right;white-space:nowrap}
-.okc{color:#1a9b3c;font-weight:800}.wr{color:#d9480f;font-weight:800}
+.okc{color:#1a9b3c;font-weight:800}.wr{color:#d9480f;font-weight:800}.wy{color:#e08a00;font-weight:800}
 .fl{display:grid;grid-template-columns:1fr 84px;gap:6px 10px;align-items:center;font-size:.9rem;margin-top:6px}
 input.formInput{padding:9px 8px;font-size:.95rem;width:100%;box-sizing:border-box}
 details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;font-size:.9rem;padding:4px 0}
@@ -70,7 +70,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
 
-<script src="shared/hydraulics.js?v=20261130"></script>
+<script src="shared/hydraulics.js?v=20261131"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id), H = Hydraulics;
@@ -134,7 +134,7 @@ function render(){
   /* швидкість і запас до межі п. 11.6 / 12.12 */
   const spd = s => {
     if(s.v == null) return `<td class="n">–</td>`;
-    const m = 1 - s.v / s.vmax, cls = m < 0 ? "wr" : m < 0.1 ? "wr" : m < 0.3 ? "" : "okc";
+    const m = 1 - s.v / s.vmax, cls = m < 0 ? "wr" : m < 0.1 ? "wy" : "okc";
     return `<td class="n"><span class="${cls}">${f2(s.v, 1)} м/с</span><br><span class="sm" style="color:var(--ts)">${m < 0 ? "вище норми" : "запас " + Math.round(m * 100) + "%"}</span></td>`;
   };
   const row = (n, s) => `<tr><td>${esc(n)}</td><td><b>Ø${s.od}</b> <span class="sm" style="color:var(--ts)">${esc(s.size)}</span></td>${spd(s)}</tr>`;
