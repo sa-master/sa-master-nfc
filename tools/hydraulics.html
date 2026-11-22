@@ -68,7 +68,7 @@ details.hl{margin-top:10px}details.hl summary{cursor:pointer;font-weight:700;fon
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
 </div>
 
-<script src="shared/hydraulics.js?v=20261133"></script>
+<script src="shared/hydraulics.js?v=20261134"></script>
 <script>
 "use strict";
 const $ = id => document.getElementById(id), H = Hydraulics;
@@ -82,22 +82,25 @@ $("devs").innerHTML = H.ORDER.map(id => `<div class="dv"><span>${H.DEV[id].label
 $("devs").insertAdjacentHTML("beforeend", `<div class="dv"><span>Бойлер (електричний)</span><span class="dr"><select class="formInput" id="c_boiler"><option>0</option><option selected>1</option></select><input class="formInput" id="d_boiler" type="number" inputmode="decimal" step="0.5" placeholder="м"></span></div>`);
 H.ORDER.forEach(id => $("c_" + id).value = DEF[id] || 0);
 function scheme(r){
-  const W = 360, rowMin = 44, top = 70, n = r.lines.length, C = "#0A84FF", Hh = "#FF3B30", xc = 44, xh = 86;
+  const W = 360, top = 70, C = "#0A84FF", Hh = "#FF3B30", xc = 44, xh = 86, x0 = 112;
   const tee = r.scheme === "tee";
-  const ds = r.lines.map(l => l.len > 0 ? l.len : null), known = ds.filter(Boolean), hasD = known.length > 0;
-  const dmax = hasD ? Math.max.apply(null, known) : 1, dmean = hasD ? known.reduce((a, b) => a + b, 0) / known.length : 0;
-  const dv = ds.map(d => d == null ? dmean : d);
-  /* позиції рядків: у трійниковій системі проміжок між приладами росте з різницею відстаней */
-  const ys = []; r.lines.forEach((l, i) => { ys.push(i === 0 ? 0 : ys[i - 1] + rowMin + (tee && hasD ? Math.min(44, Math.max(0, (dv[i] - dv[i - 1])) * 7) : 0)); });
+  const anyD = r.lines.some(l => l.len > 0);
+  const ruler = !tee && anyD; /* променева з відстанями: масштабна лінійка, прилади від ближчих до дальніх */
+  const known = r.lines.filter(l => l.len > 0).map(l => l.len), dmean = known.length ? known.reduce((a, b) => a + b, 0) / known.length : 0;
+  const dOf = l => (l.len > 0 ? l.len : dmean);
+  const L = ruler ? r.lines.slice().sort((a, b) => dOf(a) - dOf(b)) : r.lines;
+  const n = L.length, ds = L.map(l => (l.len > 0 ? l.len : null)), dv = L.map(dOf);
+  const rowMin = ruler ? 58 : 44;
+  const ys = []; L.forEach((l, i) => { ys.push(i === 0 ? 0 : ys[i - 1] + rowMin + (tee && anyD ? Math.min(44, Math.max(0, (dv[i] - dv[i - 1])) * 7) : 0)); });
   const H = top + (n ? ys[n - 1] : 0) + rowMin + 12, span = n ? ys[n - 1] + rowMin - 2 : 0;
-  /* довжина стрілки: у променевій пропорційна відстані */
-  const xe = i => (!tee && hasD) ? 130 + (dv[i] / dmax) * 90 : 190;
+  const dmax = Math.max.apply(null, dv.concat([1])), step = dmax <= 6 ? 1 : dmax <= 14 ? 2 : 5, dr = Math.ceil(dmax / step) * step, kx = (W - 18 - x0) / dr;
+  const xe = i => ruler ? Math.max(x0 + 60, x0 + dv[i] * kx) : 190;
   let o = `<svg class="sch" viewBox="0 0 ${W} ${H}" role="img" aria-label="Схема розводки">`;
   o += `<defs><marker id="ac" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="${C}"/></marker><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="${Hh}"/></marker><marker id="ahl" viewBox="0 0 8 8" refX="1" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M8 0L0 4L8 8z" fill="${Hh}"/></marker></defs>`;
   const badge = (x, y, t, c) => `<rect x="${x - 16}" y="${y - 8}" width="32" height="16" rx="8" fill="${c}"/><text class="bd" x="${x}" y="${y + 4}" text-anchor="middle">${t}</text>`;
-  const cy = i => top + ys[i] + 10, hy = i => top + ys[i] + 28;
+  const cy = i => top + ys[i] + (ruler ? 20 : 10), hy = i => cy(i) + (ruler ? 18 : 18);
   const lastCold = n - 1;
-  let lastHot = -1; r.lines.forEach((l, i) => { if(l.hot) lastHot = i; });
+  let lastHot = -1; L.forEach((l, i) => { if(l.hot) lastHot = i; });
   o += `<line x1="${xc}" y1="8" x2="${xc}" y2="${tee ? cy(lastCold) : top - 4}" stroke="${C}" stroke-width="${tee ? 4 : 3}"/>`;
   o += `<text class="nm" x="${xc + 12}" y="22">Ввід</text>` + badge(xc + 70, 18, "Ø" + r.inDn, C) + `<text class="sm" x="${xc + 94}" y="22">кран ${r.valveIn}</text>`;
   if(tee){
@@ -107,18 +110,26 @@ function scheme(r){
     if(lastHot >= 0) o += `<rect x="${xh - 4}" y="${top - 4}" width="8" height="${span}" rx="4" fill="${Hh}"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
   }
   if(tee && lastHot >= 0) o += `<line x1="${xh}" y1="${top - 4}" x2="${xh}" y2="${hy(lastHot)}" stroke="${Hh}" stroke-width="3"/><text class="sm" x="${xh}" y="${top - 10}" text-anchor="middle">ГВП</text>`;
-  r.lines.forEach((l, i) => {
-    const yc = cy(i), yh = hy(i), x2 = xe(i), mid = (xh + x2) / 2;
-    o += `<line x1="${xc}" y1="${yc}" x2="${x2}" y2="${yc}" stroke="${C}" stroke-width="2" marker-end="url(#ac)"/>` + badge(mid + 14, yc, "Ø" + l.cold, C);
+  if(ruler){
+    /* лінійка: вертикальні штрихи кожні step метрів і підписи зверху */
+    for(let m = 0; m <= dr; m += step){ const x = x0 + m * kx; o += `<line x1="${x}" y1="${top - 4}" x2="${x}" y2="${H - 8}" stroke="rgba(128,128,128,.28)" stroke-width="1" stroke-dasharray="3 4"/><text class="sm" x="${x}" y="${top - 14}" text-anchor="middle">${m}${m === dr ? " м" : ""}</text>`; }
+  }
+  L.forEach((l, i) => {
+    const yc = cy(i), yh = hy(i), x2 = xe(i), mid = ruler ? x0 + 28 : (xh + x2) / 2 + 14;
+    o += `<line x1="${xc}" y1="${yc}" x2="${x2}" y2="${yc}" stroke="${C}" stroke-width="2" marker-end="url(#ac)"/>` + badge(mid, yc, "Ø" + l.cold, C);
     if(l.hot){
       if(l.boiler) o += `<line x1="${x2}" y1="${yh}" x2="${xh}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
       else o += `<line x1="${xh}" y1="${yh}" x2="${x2}" y2="${yh}" stroke="${Hh}" stroke-width="2" marker-end="url(#ah)"/>`;
-      o += badge(mid + 14, yh, "Ø" + l.hot, Hh);
+      o += badge(mid, yh, "Ø" + l.hot, Hh);
     }
     if(tee){ o += `<circle cx="${xc}" cy="${yc}" r="3.5" fill="${C}"/>`; if(l.hot) o += `<circle cx="${xh}" cy="${yh}" r="3.5" fill="${Hh}"/>`; }
-    const ly = l.hot ? (yc + yh) / 2 : yc;
-    o += `<text class="nm" x="${x2 + 12}" y="${ly + (ds[i] ? 0 : 4)}" style="font-size:12.5px">${esc(l.name.replace(" (змішувач)", ""))}</text>`;
-    if(ds[i]) o += `<text class="sm" x="${x2 + 12}" y="${ly + 14}">${String(ds[i]).replace(".", ",")} м</text>`;
+    const nm = esc(l.name.replace(" (змішувач)", "")), dtxt = ds[i] ? " · " + String(ds[i]).replace(".", ",") + " м" : "";
+    if(ruler) o += `<text class="nm" x="${x0 + 50}" y="${yc - 8}" style="font-size:12.5px">${nm}<tspan class="sm" style="font-weight:500"> ${dtxt.replace(" · ", "")}</tspan></text>`;
+    else {
+      const ly = l.hot ? (yc + yh) / 2 : yc;
+      o += `<text class="nm" x="${x2 + 12}" y="${ly + (ds[i] ? 0 : 4)}" style="font-size:12.5px">${nm}</text>`;
+      if(ds[i]) o += `<text class="sm" x="${x2 + 12}" y="${ly + 14}">${dtxt.replace(" · ", "")}</text>`;
+    }
   });
   if(tee && n > 1){
     let prev = r.main.first;
