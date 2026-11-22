@@ -83,6 +83,7 @@
     return { tot: lerp(U, us, rows.map(r => r[1])), hot: lerp(U, us, rows.map(r => r[2])), cold: lerp(U, us, rows.map(r => r[3])) };
   }
   const MAIN_FRAC = 1; /* магістраль підбирається за межею швидкості ДБН; запас показується на сторінці */
+  const MIXER_LPM = 18; /* ванна й душ: середня витрата змішувача 0,30 л/с = 18 л/хв (задано майстром), якщо не введено паспортну */
   const LPM = 1 / 60; /* л/хв -> л/с */
   /* p: { mat, scheme: "ray"|"tee", entry: {mat, od}, U, norm, counts, boiler, flows: {id: л/хв, ...}, lenEntry, lenLine, pIn } */
   function calc(p) {
@@ -104,7 +105,7 @@
     const lenOf = (id) => (+dist[id] > 0 ? +dist[id] : p.lenLine);
     const lineOf = (x) => {
       const res = { name: x.name, id: x.id, reserve: x.reserve, cold: null, hot: null };
-      const fl = flows[x.id] === "" || flows[x.id] == null ? (x.reserve ? null : 5) : +flows[x.id];
+      const fl = flows[x.id] === "" || flows[x.id] == null ? (x.reserve ? MIXER_LPM : 5) : +flows[x.id];
       const qd = fl == null ? null : fl * LPM;
       const baseSz = MAT[mat].sizes.find(z => z[0] >= 16); /* ванна й душ: базовий розмір Ø16; для потужних змішувачів див. застереження */
       const sc = qd == null ? baseSz : pick(mat, qd, false, 16);
@@ -155,7 +156,7 @@
       out.pressure = { pIn: p.pIn, loss, left: p.pIn * 1e5 - loss, line: worst.name };
     }
     if (p.chain) { const ch = entryChain(p.chain, qIn, e); out.chain = ch; ch.warnings.forEach(w => out.warnings.push(w)); }
-    out.notes.push("Ванна й душ: Ø16 достатньо для звичайних змішувачів. Тропічний душ або змішувач з великою витратою (від 12 л/хв) на Ø16 може працювати некоректно: слабкий напір, шум, просідання тиску. Для таких приладів беріть Ø20. Бойлер: не менше PEX Ø20 (внутр. 14,4 мм), це рекомендація майстра, не вимога норми.");
+    out.notes.push("Ванна й душ: прийнято витрату змішувача 0,30 л/с (18 л/хв), середнє значення. Якщо змішувач потужніший (тропічний душ, ванна на 25 л/хв), введіть паспортну витрату. Бойлер: не менше PEX Ø20 (внутр. 14,4 мм), це рекомендація майстра, не вимога норми.");
     return out;
   }
   /* порівняння матеріалів: мінімальний ввід за швидкістю, лінія до малого приладу (5 л/хв), запас Ø20 */
