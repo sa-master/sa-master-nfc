@@ -168,7 +168,6 @@ ul.note{padding-left:18px}ul.note li{margin:5px 0}
       <button type="button" class="btnSec" id="btnFlowReset" style="margin:12px 0 10px">Повернути типові значення</button>
     </div></details></div>
 
-    <button type="button" class="jump" id="jump"><span style="margin:0"><b id="jumpT">Додайте прилади</b><span id="jumpS">Результат зʼявиться нижче</span></span><svg viewBox="0 0 16 16" width="22" height="22" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button>
   </div>
 
   <div class="right" id="results">
@@ -248,9 +247,7 @@ document.addEventListener("input", e => {
   render();
 });
 $("btnFlowReset").addEventListener("click", () => { S.flows = {}; S.walls = {}; S.hotMode = "node"; renderForm(); render(); });
-$("jump").addEventListener("click", () => $("results").scrollIntoView({ behavior: "smooth", block: "start" }));
 document.addEventListener("toggle", e => { const d = e.target; if(d.dataset && d.dataset.k) S.open[d.dataset.k] = d.open; }, true);
-document.addEventListener("click", e => { if(e.target.closest("#toParams")) $("form").scrollIntoView({ behavior: "smooth", block: "start" }); });
 
 /* ---------- схема ---------- */
 function scheme(r){
@@ -364,7 +361,7 @@ function render(){
   const P = params();
   const r = H.calc({ U: P.U, mat: P.mat, scheme: P.tee ? "tee" : "ray", counts: P.counts, hotSrc: P.hotSrc, flows: P.flows, dist: P.dist, hotDist: P.hotDist, hotMode: P.hotMode, lenEntry: P.lenEntry, walls: P.walls });
   if(!r.lines.length || !r.sections.length){
-    lastDoc = null; $("pdfCard").style.display = "none"; $("jumpT").textContent = "Додайте прилади"; $("jumpS").textContent = "Результат зʼявиться нижче";
+    lastDoc = null; $("pdfCard").style.display = "none";
     $("res").innerHTML = r.warnings.length ? r.warnings.map(w => `<div class="warn">${esc(w)}</div>`).join("") : `<div class="g card"><p class="sub" style="margin:0">Додайте хоча б один прилад.</p></div>`;
     return;
   }
@@ -387,7 +384,7 @@ function render(){
   let coldChain;
   if(tee) coldChain = cg.length ? cg.map(g => ({ od: g.s.od, label: gl(g) + " · " + fm(g.qmax) + " л/с" })) : [{ od: e0.od, label: "єдина ділянка" }];
   else coldChain = coll ? [{ od: coll.od, label: fm(coll.q) + " л/с" }] : [];
-  let h = `<div class="sumrow"><span>${P.U} мешк. · ${tee ? "Трійникова" : "Променева"} · ${esc(H.MAT[P.mat].label.split(" (")[0])} · ${P.hotSrc === "local" ? "водонагрівач" : P.hotSrc === "ext" ? "централізоване ГВП" : "лише ХВП"}</span><button type="button" id="toParams">↑ Параметри</button></div>`;
+  let h = "";
   let rec = `<div class="g card"><div class="h">Рекомендовані діаметри</div><p class="note" style="margin:0 0 2px">Розрахунок від розподільчого вузла: витрата <b style="white-space:nowrap">${fm(ec.q)} л/с</b>, тиск ${f2(ec.pIn, 1)} бар${ec.pDef ? " (типово)" : ""}. Арматура на вузлі (кран, фільтр, редуктор): <b>не менше ${ec.valve.label}</b>.</p><div class="pair">`;
   rec += `<div class="blk c"><div><span class="tag cold">ХВП</span> <b style="font-size:.95rem">Холодна вода</b></div><div class="tt">${tee ? "Магістраль" + (cg.length > 1 ? " (діаметр змінюється по ділянках)" : "") : "Колектор"}</div>${chain(coldChain, "c")}`;
   if(bo) rec += `<div class="gr" style="margin-top:6px"><span class="gd c">Ø${bo.cold.od}</span><span class="gq"><b>Підведення до водонагрівача</b> <span style="white-space:nowrap">· ${fm(bo.cold.q)} л/с</span></span></div>`;
@@ -421,7 +418,6 @@ function render(){
     else { rows.push(row(n + (l.hot ? ": холодна" : ""), l.cold)); if(l.hot) rows.push(row(n + ": гаряча", l.hot)); }
   });
   let t1 = `<div class="tbw"><table class="tb"><thead><tr><th>Ділянка</th><th>Труба, мм</th><th>Витрата, л/с</th><th>Швидкість, м/с</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
-  t1 += `<p class="note">Витрата «А.5» це значення таблиці А.5 ДБН для групи приладів ділянки; «прийнято» це розрахункова витрата приладу (див. «Додаткові параметри»). Діаметр підібрано за внутрішнім діаметром типорозміру й швидкістю до ${f2(r.sections[0].vmax, 1)} м/с (п. 11.6 ДБН). Внутрішній діаметр залежить від виробника й стінки: задайте фактичну стінку в «Додаткових параметрах». Позначка «за мінімумом майстра» означає, що за швидкістю вистачило б меншого діаметра: більший прийнято за рекомендацією майстра, не за нормою.</p>`;
   /* ---- обʼєм ГВП ---- */
   let t2 = "";
   if(r.recirc){
@@ -444,7 +440,7 @@ function render(){
   let t5 = `<ul class="note">${r.assumptions.map(a => "<li>" + esc(a) + "</li>").join("")}${S.mat === "pex" ? "<li>Для металопластику розрахунок ведеться за внутрішніми діаметрами PEX: вони трохи менші, тож запас буде дещо більший.</li>" : ""}</ul>`;
   if(r.ref) t5 += `<p class="note"><b>Довідково, не для підбору:</b> за таблицею А.9 ДБН (мешканців: ${r.ref.U}, ${r.ref.kind} витрата) ${fm(r.ref.q)} л/с. Це інший спосіб визначення витрати (за кількістю споживачів), норма не уточнює вибір між ним і А.5; тут діаметр підбирається за А.5.</p>`;
   if(r.check) t5 += `<p class="note">Діагностика моделі: ХВП ${fm(r.check.cold)}, водонагрівач ${fm(r.check.boiler)}, ввід ${fm(r.check.entry)} л/с. ${r.check.ok ? "Співвідношення max(ХВП; водонагрівач) ≤ ввід ≤ ХВП + водонагрівач виконується." : "Співвідношення max(ХВП; водонагрівач) ≤ ввід ≤ ХВП + водонагрівач не виконується."} Це лише контроль розрахунку, не нормативна вимога й не підтвердження відповідності ДБН.</p>`;
-  let det = `<div class="g card" style="padding:2px 14px">` + dets("a", "Витрати, швидкості, внутрішні діаметри", t1) + dets("b", "Орієнтовні втрати тиску", t3, "· довідково") + (r.recirc ? dets("c", "Гаряча вода: обʼєм і час очікування", t2) : "") + dets("e", "Методика та обмеження", t5) + `</div>`;
+  let det = `<div class="g card" style="padding:2px 14px">` + dets("a", "Витрати, швидкості, внутрішні діаметри", t1) + (r.recirc ? dets("c", "Гаряча вода: обʼєм і час очікування", t2) : "") + `</div>`;
   /* ---- попередження ---- */
   let wn = "";
   if(P.badFl.length) wn += `<div class="warn">Витрата поза діапазоном 1–60 л/хв: ${esc(P.badFl.join(", "))}. Використано типове значення.</div>`;
@@ -453,8 +449,6 @@ function render(){
   if(r.lines.some(l => l.id === "bath" || l.id === "shower")) bw = `<div class="warn">Ванна й душ: розрахункова витрата змішувача ${f2(H.devFlow("bath", P.flows) * 60, 0)} і ${f2(H.devFlow("shower", P.flows) * 60, 0)} л/хв, це припущення (типове 18 л/хв). Холодна й гаряча підводки перевіряються окремо, кожна на повну витрату змішувача. Тропічний душ або змішувач з більшою витратою вимагає введення паспортної витрати.</div>`;
   $("res").innerHTML = wn + h + rec + bw + schCard + det;
   const chTxt = coldChain.map(c => "Ø" + c.od).join("→");
-  $("jumpT").textContent = "Результат: ХВП " + chTxt;
-  $("jumpS").textContent = (hasHot && srcL && srcL.hot ? "ГВП Ø" + srcL.hot.od + " · " : "") + "дивитись діаграму й підводки";
   lastDoc = { r, P, svg, rows: null, ad, cm, hm, e0, ec, lossRows };
 }
 
