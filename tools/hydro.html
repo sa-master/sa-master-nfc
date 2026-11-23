@@ -187,6 +187,7 @@ textarea.formInput{resize:vertical}
 .actPress span{color:var(--tm);font-weight:700}
 .actRemove{width:100%;background:none;color:#c62828;font-weight:700;font-size:.875rem;padding:.5rem}
 </style>
+<script src="shared/stats.js?v=20261127" defer></script>
 </head>
 <body>
 <div class="page">
@@ -963,6 +964,7 @@ async function outPdf(btn, mode){
   const t0=btn.textContent; btn.disabled=true; btn.textContent="Готуємо PDF…";
   try{
     const blob = await SMDoc.pdf(p, { footer: "none", signSelector: ".qa2Sign span" }), name="Звіт про герметичність.pdf";
+    if(window.SMStats) SMStats.event("zvit-pdf-hydro");
     if(mode==="share"){ const r=await SMDoc.share(blob,name,false); if(r==="downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
     else SMDoc.download(blob,name);
   }catch(e){ toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
