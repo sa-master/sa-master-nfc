@@ -165,9 +165,8 @@ textarea.formInput{resize:vertical}
   <div class="g card"><details class="fold"><summary>Ваші дані для PDF</summary><div id="profileBox"></div></details></div>
   <div class="g card">
     <div class="ttl">Обʼєкт і ваші дані</div>
-    <div class="formGroup"><label class="formLabel" for="iObj">Обʼєкт</label><input class="formInput" id="iObj" placeholder="Напр.: Квартира, ЖК «Назва»" autocomplete="off"></div>
-    <div class="formGroup"><label class="formLabel" for="iAddr">Адреса</label><input class="formInput" id="iAddr" placeholder="Вулиця, будинок, квартира" autocomplete="off"></div>
-    <div class="formGroup"><label class="formLabel" for="iClient">Замовник</label><input class="formInput" id="iClient" placeholder="Прізвище, імʼя (необовʼязково)" autocomplete="off"></div>
+    <div class="formGroup"><label class="formLabel" for="iObj">Обʼєкт</label><input class="formInput" id="iObj" placeholder="ЖК, адреса" autocomplete="off"></div>
+    <div class="formGroup"><label class="formLabel" for="iClient">Замовник</label><input class="formInput" id="iClient" placeholder="Імʼя, телефон" autocomplete="off"></div>
   </div>
 
   <div class="g card">
@@ -803,7 +802,7 @@ function actPaperHtml(project, info){
     <div class="qaTitle">${actPaperTitle(d.systems)}</div>
     <div class="qaSub">${d.systems.map(x => escapeHtml(x.rule ? x.rule.title : x.l)).join("; ")}</div>
     <div class="qaMeta">
-      <div><span>Об’єкт</span><b>${escapeHtml(info.objectName)}${info.objectAddress ? `, ${escapeHtml(info.objectAddress)}` : ""}</b></div>
+      <div><span>Об’єкт</span><b>${escapeHtml(info.objectName)}</b></div>
       ${info.clientName ? `<div><span>Замовник</span><b>${escapeHtml(info.clientName)}</b></div>` : ""}
       <div><span>Виконавець</span><b>${escapeHtml(info.companyName)}</b></div>
       <div><span>Дата проведення</span><b>${(() => { const ds = [...new Set(d.systems.map(x => x.d))].sort(); return ds.length > 1 ? `${actDateLabel(ds[0])} – ${actDateLabel(ds[ds.length - 1])}` : actDateLabel(d.date); })()}</b></div>
@@ -823,11 +822,11 @@ function actPaperHtml(project, info){
 /* ===== Самостійна сторінка ===== */
 function actCamLabels(){
   const x = actDraft && actCamTarget ? actDraft.systems[actCamTarget.i] : null;
-  const obj = cleanText(document.getElementById("iObj").value), addr = cleanText(document.getElementById("iAddr").value);
+  const obj = cleanText(document.getElementById("iObj").value);
   return {
     kind: actCamTarget && actCamTarget.which === "after" ? "ПІСЛЯ" : "ДО",
     sys: x ? x.label : "",
-    obj: [obj, addr && addr !== obj ? addr : ""].filter(Boolean).join(", ") || "sa-master.pro"
+    obj: obj || "sa-master.pro"
   };
 }
 const $ = id => document.getElementById(id);
@@ -838,7 +837,7 @@ const newDraft = () => ({
 });
 actDraft = newDraft();
 renderActSheet();
-const INFO = ["iObj","iAddr","iClient"];
+const INFO = ["iObj","iClient"];
 const infoGet = () => INFO.map(id => $(id).value);
 function isEmptyAct(){
   actReadForm();
@@ -868,7 +867,6 @@ async function buildPaper(){
   const prof = await SMProfile.get();
   const info={
     objectName: cleanText($("iObj").value)||"—",
-    objectAddress: cleanText($("iAddr").value),
     clientName: cleanText($("iClient").value),
     companyName: [prof.name, prof.phone].filter(Boolean).join(", ")||"—"
   };
