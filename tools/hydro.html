@@ -203,7 +203,7 @@ textarea.formInput{resize:vertical}
 <script src="shared/store.js?v=20261121"></script>
 <script src="shared/ui.js?v=20261121"></script>
 <script src="shared/profile.js?v=20261121"></script>
-<script src="shared/doc.js?v=20261123"></script>
+<script src="shared/doc.js?v=20261124"></script>
 <script src="shared/hydrorules.js?v=20261121"></script>
 <script>
 "use strict";
@@ -871,8 +871,8 @@ async function outPdf(btn, mode){
   const p = await buildPaper(); if(!p) return;
   const t0=btn.textContent; btn.disabled=true; btn.textContent="Готуємо PDF…";
   try{
-    const blob = await SMDoc.pdf(p, { footer: "bottom" }), name="akt-gidravlichnyh-vyprobuvan-"+todayIso()+".pdf";
-    if(mode==="share"){ const r=await SMDoc.share(blob,name,mgr.currentTitle()); if(r==="downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
+    const blob = await SMDoc.pdf(p, { footer: "bottom" }), name="Акт випробувань на герметичність.pdf";
+    if(mode==="share"){ const r=await SMDoc.share(blob,name,false); if(r==="downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
     else SMDoc.download(blob,name);
   }catch(e){ toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
   finally{ btn.disabled=false; btn.textContent=t0; }

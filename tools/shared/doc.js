@@ -73,7 +73,7 @@
   async function share(blob, name, title) {
     const file = new File([blob], name, { type: "application/pdf" });
     if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-      try { await navigator.share({ files: [file], title: title || name }); return "shared"; }
+      try { await navigator.share(title === false ? { files: [file] } : { files: [file], title: title || name }); return "shared"; }
       catch (e) { if (e && e.name === "AbortError") return "cancelled"; }
     }
     download(blob, name); return "downloaded";
