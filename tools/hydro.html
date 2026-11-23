@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Акт випробувань на герметичність — онлайн, з фото манометра | SA-MASTER.PRO</title>
-<meta name="description" content="Безкоштовний інструмент: фото манометра до і після, час і падіння тиску рахуються самі, готовий PDF-акт випробувань на герметичність водою чи повітрям.">
+<title>Звіт про герметичність — онлайн, з фото манометра | SA-MASTER.PRO</title>
+<meta name="description" content="Безкоштовний інструмент: фото манометра до і після, час і падіння тиску рахуються самі, готовий PDF-звіт про герметичність водою чи повітрям.">
 <link rel="icon" type="image/png" href="/logo.png">
 <link rel="canonical" href="https://sa-master.pro/tools/hydro.html">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="uk_UA">
 <meta property="og:site_name" content="SA-MASTER.PRO">
-<meta property="og:title" content="Акт випробувань на герметичність">
-<meta property="og:description" content="Безкоштовно: фото манометра до і після, час і падіння тиску рахуються самі, готовий PDF-акт для клієнта. Без реєстрації.">
+<meta property="og:title" content="Звіт про герметичність">
+<meta property="og:description" content="Безкоштовно: фото манометра до і після, час і падіння тиску рахуються самі, готовий PDF-звіт для клієнта. Без реєстрації.">
 <meta property="og:url" content="https://sa-master.pro/tools/hydro.html">
 <meta property="og:image" content="https://sa-master.pro/tools/og/hydro.jpg">
 <meta property="og:image:width" content="1200">
@@ -193,7 +193,7 @@ textarea.formInput{resize:vertical}
   <div class="g hero"><img src="/logo.png" alt=""><div><a href="/">SA-MASTER<span style="font-weight:500;font-size:.8rem">.pro</span></a><small>інструменти для майстрів</small></div></div>
 <div class="navrow"><a href="/tools/">← Усі інструменти</a></div>
 
-  <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Акт випробувань на герметичність</h1>
+  <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Звіт про герметичність</h1>
   <div class="g card"><details class="fold"><summary>Дані виконавця (шапка PDF)</summary><div id="profileBox"></div></details></div>
   <div class="g card">
     <div class="ttl">Обʼєкт і ваші дані</div>
@@ -204,7 +204,7 @@ textarea.formInput{resize:vertical}
   <div class="g card">
     <div class="ttl">Випробування</div>
     <div id="actSheetBody"></div>
-    <button type="button" class="btnPrimary" id="btnMake">Відправити акт</button>
+    <button type="button" class="btnPrimary" id="btnMake">Відправити звіт</button>
   </div>
 
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
@@ -245,7 +245,7 @@ let toastT=null;
 function toast(msg,ms){const el=document.getElementById("toast");el.textContent=msg;el.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("on"),ms||2200);}
 const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 
-/* ===== Логіка акта (перенесена з калькулятора без змін) ===== */
+/* ===== Логіка звіту (перенесена з калькулятора без змін) ===== */
 const ACT_SYSTEMS = [
   { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
   { key:"heat", label:"Опалення / тепла підлога", pressure:4, minutes:120, work:3, k:1.3, need:120 }
@@ -934,7 +934,7 @@ function loadAct(d){
   actDraft = d.act || newDraft(); renderActSheet();
   suppressSave = false;
 }
-const mgr = { touch(){}, currentTitle: () => "Акт випробувань" };
+const mgr = { touch(){}, currentTitle: () => "Звіт про герметичність" };
 
 SMProfile.mount($("profileBox"));
 
@@ -944,7 +944,7 @@ async function buildPaper(){
   const bad=actDraft.systems.find(x=>x.on&&actNum(x.pressure)===null);
   if(bad){toast(bad.label+": вкажіть тиск");return null;}
   if(!actDraft.systems.some(actSysDone)){toast("Зробіть фото «після» або впишіть результат вручну");return null;}
-  /* Ручний режим: тривалість менша за потрібну (вода 30 хв, опалення 120, повітря 5) — акт не формуємо */
+  /* Ручний режим: тривалість менша за потрібну (вода 30 хв, опалення 120, повітря 5) — звіт не формуємо */
   const shortSys=actDraft.systems.find(x=>{ if(!actSysDone(x)) return false; const need=x.medium==="air"?5:(x.need||30), m=actNum(x.minutes); return m===null||m<need; });
   if(shortSys){ const need=shortSys.medium==="air"?5:(shortSys.need||30); toast(`${shortSys.label}: тривалість менша за ${need} хв. Випробування має тривати не менше ${need} хв`,5000); return null; }
   const prof = await SMProfile.get();
@@ -961,7 +961,7 @@ async function outPdf(btn, mode){
   const p = await buildPaper(); if(!p) return;
   const t0=btn.textContent; btn.disabled=true; btn.textContent="Готуємо PDF…";
   try{
-    const blob = await SMDoc.pdf(p, { footer: "bottom", quiet: true }), name="Акт випробувань на герметичність.pdf";
+    const blob = await SMDoc.pdf(p, { footer: "bottom", quiet: true }), name="Звіт про герметичність.pdf";
     if(mode==="share"){ const r=await SMDoc.share(blob,name,false); if(r==="downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
     else SMDoc.download(blob,name);
   }catch(e){ toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
