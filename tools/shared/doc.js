@@ -1,4 +1,4 @@
-/* Спільний PDF-шаблон: підпис «Сформовано на sa-master.pro» з активним посиланням угорі (або внизу, opts.footer:"bottom") кожної сторінки,
+/* Спільний PDF-шаблон: підпис «Сформовано на sa-master.pro» з активним посиланням угорі (або, при opts.footer:"bottom", копірайт SA-MASTER.PRO внизу) кожної сторінки,
    завантаження та «Поділитися» (Web Share API, якщо браузер уміє ділитися файлами). */
 (function (root) {
   "use strict";
@@ -23,20 +23,18 @@
     g.fillStyle = "#d0d5dd"; g.fillRect(0, h - 3, w, 3);
     return { data: c.toDataURL("image/jpeg", 0.92), textW: tw / (px * 3), hMm };
   }
-  /* Підпис унизу сторінки: «Сформовано на sa-master.pro» + рядок як на сайті (© рік · …), з лінією зверху. */
+  /* Підпис унизу сторінки: рядок як на сайті («© рік SA-MASTER.PRO · …»), помітніший, з лінією зверху. */
   function footerBottomImage(wMm) {
-    const px = 6, hMm = 13, w = Math.round(wMm * px * 3), h = Math.round(hMm * px * 3), c = document.createElement("canvas");
+    const px = 6, hMm = 9, w = Math.round(wMm * px * 3), h = Math.round(hMm * px * 3), c = document.createElement("canvas");
     c.width = w; c.height = h; const g = c.getContext("2d");
     g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
     g.fillStyle = "#d0d5dd"; g.fillRect(0, 0, w, 3);
-    g.textBaseline = "middle"; g.textAlign = "center";
-    const fam = '-apple-system,"Segoe UI",Arial,sans-serif';
-    g.fillStyle = "#0a64d6"; g.font = "800 " + Math.round(h * 0.30) + "px " + fam;
-    const t = "Сформовано на sa-master.pro", tw = g.measureText(t).width;
-    g.fillText(t, w / 2, h * 0.34);
-    g.fillStyle = "#3a3a3c"; g.font = "600 " + Math.round(h * 0.2) + "px " + fam;
-    g.fillText("© " + new Date().getFullYear() + " SA-MASTER.PRO · Комплексний монтаж сантехніки", w / 2, h * 0.74);
-    return { data: c.toDataURL("image/jpeg", 0.92), textW: tw / (px * 3), hMm };
+    g.textBaseline = "middle"; g.textAlign = "center"; g.fillStyle = "#0a64d6";
+    const fam = '-apple-system,"Segoe UI",Arial,sans-serif', t = "© " + new Date().getFullYear() + " SA-MASTER.PRO · Комплексний монтаж сантехніки";
+    let fs = Math.round(h * 0.4); g.font = "800 " + fs + "px " + fam;
+    while (g.measureText(t).width > w * 0.96 && fs > 10) { fs -= 2; g.font = "800 " + fs + "px " + fam; }
+    g.fillText(t, w / 2, h * 0.56);
+    return { data: c.toDataURL("image/jpeg", 0.92), hMm };
   }
   /* paperEl — елемент з готовим вмістом документа (білий фон). Повертає Blob PDF. */
   async function pdf(paperEl, opts) {
