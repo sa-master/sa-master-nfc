@@ -12,15 +12,16 @@
     for (const src of l.src) { try { await loadScript(src); if (l.test()) return true; } catch (e) {} }
     return false;
   }
-  function footerImage(wMm, ruleTop) {
+  function footerImage(wMm, ruleTop, quiet) {
     const px = 6, hMm = 7, w = Math.round(wMm * px * 3), h = Math.round(hMm * px * 3), c = document.createElement("canvas");
     c.width = w; c.height = h; const g = c.getContext("2d");
     g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
-    g.fillStyle = "#0a64d6"; g.textBaseline = "middle"; g.textAlign = "center";
-    const fs = Math.round(h * 0.5); g.font = '700 ' + fs + 'px -apple-system,"Segoe UI",Arial,sans-serif';
+    g.fillStyle = quiet ? "#6b7280" : "#0a64d6"; g.textBaseline = "middle"; g.textAlign = "center";
+    const fs = Math.round(h * (quiet ? 0.42 : 0.5)); g.font = (quiet ? '500 ' : '700 ') + fs + 'px -apple-system,"Segoe UI",Arial,sans-serif';
     const t = "Сформовано на sa-master.pro", tw = g.measureText(t).width;
     g.fillText(t, w / 2, h * (ruleTop ? 0.54 : 0.46));
-    g.fillStyle = "#d0d5dd"; g.fillRect(0, ruleTop ? 0 : h - 3, w, 3);
+    if (quiet) { g.fillStyle = "#1b2a49"; const gap = tw / 2 + 28, ly = Math.round(h * (ruleTop ? 0.54 : 0.46)); g.fillRect(0, ly, w / 2 - gap, 3); g.fillRect(w / 2 + gap, ly, w / 2 - gap, 3); }
+    else { g.fillStyle = "#d0d5dd"; g.fillRect(0, ruleTop ? 0 : h - 3, w, 3); }
     return { data: c.toDataURL("image/jpeg", 0.92), textW: tw / (px * 3), hMm };
   }
   /* paperEl — елемент з готовим вмістом документа (білий фон). Повертає Blob PDF. */
@@ -39,7 +40,7 @@
       const breaks = Array.from(src.querySelectorAll(sel)).map(el => Math.round((el.getBoundingClientRect().bottom - sr.top) * scale)).filter(v => v > 0 && v < canvas.height).sort((a, b) => a - b);
       const { jsPDF } = root.jspdf, doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
       const bottom = opts.footer === "bottom";
-      const mm = 10, cw = 210 - mm * 2, foot = footerImage(cw, bottom), footH = bottom ? foot.hMm + 3 : 9, ch = 297 - mm * 2 - footH, pxPerMm = canvas.width / cw, maxH = Math.floor(ch * pxPerMm);
+      const mm = 10, cw = 210 - mm * 2, foot = footerImage(cw, bottom, opts.quiet), footH = bottom ? foot.hMm + 3 : 9, ch = 297 - mm * 2 - footH, pxPerMm = canvas.width / cw, maxH = Math.floor(ch * pxPerMm);
       let off = 0, page = 0;
       while (off < canvas.height) {
         let target = Math.min(off + maxH, canvas.height), end = target;
