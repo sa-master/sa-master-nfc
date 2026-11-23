@@ -510,6 +510,14 @@ function actStampTime(d){
 async function openActCam(i, which){
   if(!actDraft) return;
   actReadForm();
+  /* Запобіжник: фото «після» не раніше, ніж мине потрібний час від фото «до» (вода 30 хв, опалення 120 хв, повітря 5 хв) */
+  if(which === "after"){
+    const sx = actDraft.systems[i], bf = actPair(sx).b;
+    if(bf && bf.at){
+      const need = sx.medium === "air" ? 5 : (sx.need || 30), left = need - (Date.now() - new Date(bf.at).getTime()) / 60000;
+      if(left > 0){ toast(`Ще рано для фото «після». Зачекайте ${actDur(Math.ceil(left))} (потрібно ${need} хв від фото «до»)`, 5000); return; }
+    }
+  }
   actCamTarget = { i, which };
   const L = actCamLabels();
   document.getElementById("actCamTitle").textContent = `Фото ${which === "after" ? "після" : "до"} · ${L.sys.replace(/\s*\(.*\)$/, "")}`;
@@ -854,6 +862,9 @@ async function buildPaper(){
   const bad=actDraft.systems.find(x=>x.on&&actNum(x.pressure)===null);
   if(bad){toast(bad.label+": вкажіть тиск");return null;}
   if(!actDraft.systems.some(actSysDone)){toast("Зробіть фото «після» або впишіть результат вручну");return null;}
+  /* Ручний режим: тривалість менша за потрібну (вода 30 хв, опалення 120, повітря 5) — акт не формуємо */
+  const shortSys=actDraft.systems.find(x=>{ if(!actSysDone(x)) return false; const need=x.medium==="air"?5:(x.need||30), m=actNum(x.minutes); return m===null||m<need; });
+  if(shortSys){ const need=shortSys.medium==="air"?5:(shortSys.need||30); toast(`${shortSys.label}: тривалість менша за ${need} хв. Випробування має тривати не менше ${need} хв`,5000); return null; }
   const prof = await SMProfile.get();
   const info={
     objectName: cleanText($("iObj").value)||"—",
