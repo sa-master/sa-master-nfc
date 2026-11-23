@@ -173,13 +173,7 @@ textarea.formInput{resize:vertical}
   <div class="g card">
     <div class="ttl">Випробування</div>
     <div id="actSheetBody"></div>
-    <button type="button" class="btnPrimary" id="btnMake">Показати акт</button>
-  </div>
-
-  <div id="outBox" class="hidden">
-    <div class="paperWrap"><div class="paper" id="paper"></div></div>
-    <button type="button" class="btnPrimary" id="btnPdf">Завантажити PDF</button>
-    <button type="button" class="btnSec" id="btnShare">Поділитися</button>
+    <button type="button" class="btnPrimary" id="btnMake">Відправити акт</button>
   </div>
 
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
@@ -876,13 +870,6 @@ async function buildPaper(){
   paper.innerHTML=SMProfile.headerHtml(prof)+actPaperHtml({pressureAct:actDraft},info);
   return paper;
 }
-async function showAct(){
-  const p = await buildPaper(); if(!p) return null;
-  const box=$("paper"); box.innerHTML=p.innerHTML;
-  $("outBox").classList.remove("hidden"); box.scrollIntoView({behavior:"smooth",block:"start"});
-  return p;
-}
-$("btnMake").addEventListener("click",showAct);
 async function outPdf(btn, mode){
   const p = await buildPaper(); if(!p) return;
   const t0=btn.textContent; btn.disabled=true; btn.textContent="Готуємо PDF…";
@@ -893,8 +880,7 @@ async function outPdf(btn, mode){
   }catch(e){ toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
   finally{ btn.disabled=false; btn.textContent=t0; }
 }
-$("btnPdf").addEventListener("click",e=>outPdf(e.currentTarget,"download"));
-$("btnShare").addEventListener("click",e=>outPdf(e.currentTarget,"share"));
+$("btnMake").addEventListener("click",e=>outPdf(e.currentTarget,"share"));
 </script>
 </body>
 </html>
