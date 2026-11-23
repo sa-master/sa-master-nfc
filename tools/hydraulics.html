@@ -210,7 +210,7 @@ const inRow = (g, k, lbl, unit, ph, val) => `<div class="row" style="min-height:
 function renderForm(){
   const tee = S.scheme === "tee", hasHot = S.hs !== "none";
   $("uSt").innerHTML = stepper("U", S.U, 1, MAXU).replace(/<span class="stn[^"]*">/, '<span class="stn" id="uN">');
-  $("matSeg").innerHTML = H.LIST.map(k => `<button type="button" class="sg${k === S.mat ? " on" : ""}" data-mat="${k}">${MATS[k] || H.MAT[k].label}</button>`).join("");
+  $("matSeg").innerHTML = H.LIST.filter(k => k !== "mp").map(k => `<button type="button" class="sg${k === S.mat ? " on" : ""}" data-mat="${k}">${MATS[k] || H.MAT[k].label}</button>`).join("");
   document.querySelectorAll("[data-scheme]").forEach(b => b.classList.toggle("on", b.dataset.scheme === S.scheme));
   document.querySelectorAll("[data-hm]").forEach(b => b.classList.toggle("on", b.dataset.hm === S.hotMode));
   document.querySelectorAll("[data-hs]").forEach(l => { const on = l.dataset.hs === S.hs; l.classList.toggle("on", on); l.querySelector("input").checked = on; });
@@ -228,7 +228,7 @@ function renderForm(){
   $("flowRows").innerHTML = act.map(id => inRow("flows", id, esc(nm(H.DEV[id].label)), "л/хв", H.DEV[id].lpm, S.flows[id] || "")).join("");
   $("wallRows").innerHTML = H.MAT[S.mat].sizes.map(z => inRow("walls", z[0], "Ø" + z[0] + " <span class='sub' style='display:inline'>(типова " + z[1].split("×")[1] + ")</span>", "мм", z[1].split("×")[1], S.walls[z[0]] || "")).join("");
 }
-const MATS = { pex: "PEX", mp: "Металопластик", ppr20: "PPR" };
+const MATS = { pex: "PEX / металопластик", ppr20: "PPR" };
 document.addEventListener("click", e => {
   const st = e.target.closest("[data-st]");
   if(st){
@@ -441,7 +441,7 @@ function render(){
   /* ---- вузол вводу ---- */
   const ad = H.nodeAdvice(P.pIn, e0.q);
   /* ---- методика та обмеження ---- */
-  let t5 = `<ul class="note">${r.assumptions.map(a => "<li>" + esc(a) + "</li>").join("")}</ul>`;
+  let t5 = `<ul class="note">${r.assumptions.map(a => "<li>" + esc(a) + "</li>").join("")}${S.mat === "pex" ? "<li>Для металопластику розрахунок ведеться за внутрішніми діаметрами PEX: вони трохи менші, тож запас буде дещо більший.</li>" : ""}</ul>`;
   if(r.ref) t5 += `<p class="note"><b>Довідково, не для підбору:</b> за таблицею А.9 ДБН (мешканців: ${r.ref.U}, ${r.ref.kind} витрата) ${fm(r.ref.q)} л/с. Це інший спосіб визначення витрати (за кількістю споживачів), норма не уточнює вибір між ним і А.5; тут діаметр підбирається за А.5.</p>`;
   if(r.check) t5 += `<p class="note">Діагностика моделі: ХВП ${fm(r.check.cold)}, водонагрівач ${fm(r.check.boiler)}, ввід ${fm(r.check.entry)} л/с. ${r.check.ok ? "Співвідношення max(ХВП; водонагрівач) ≤ ввід ≤ ХВП + водонагрівач виконується." : "Співвідношення max(ХВП; водонагрівач) ≤ ввід ≤ ХВП + водонагрівач не виконується."} Це лише контроль розрахунку, не нормативна вимога й не підтвердження відповідності ДБН.</p>`;
   let det = `<div class="g card" style="padding:2px 14px">` + dets("a", "Витрати, швидкості, внутрішні діаметри", t1) + dets("b", "Орієнтовні втрати тиску", t3, "· довідково") + (r.recirc ? dets("c", "Гаряча вода: обʼєм і час очікування", t2) : "") + dets("e", "Методика та обмеження", t5) + `</div>`;
@@ -495,7 +495,7 @@ async function paperEl(){
     `<div class="docBlock"><b>Умовна схема</b>${d.svg}<div class="docNote" style="margin:6px 0 0">Схема умовна: фактична геометрія трубопроводів може відрізнятися. Ø це зовнішній діаметр труби, мм.</div></div>` +
     `<div class="docBlock"><b>Діаметри, витрати, швидкості</b><table class="docT"><tr><th>Ділянка</th><th class="r">Витрата, л/с</th><th class="r">Внутр. Ø, мм</th><th class="r">Швидкість, м/с</th><th class="r">Труба</th></tr>${rows.join("")}</table><div class="docNote" style="margin:6px 0 0">Швидкість не більше ${f2(r.sections[0].vmax, 1)} м/с (п. 11.6 ДБН для полімерних труб). Внутрішній діаметр залежить від виробника й стінки: звіряйте з паспортом. «За мінімумом майстра» означає, що за швидкістю вистачило б меншого діаметра; більший прийнято за рекомендацією майстра, не за нормою.</div>${refl}</div>` + rc + ls + nd +
     (r.warnings.length ? `<div class="docBlock"><b>Попередження</b><ul style="margin:6px 0 0 18px;padding:0">${r.warnings.map(w => "<li>" + esc(w) + "</li>").join("")}</ul></div>` : "") +
-    `<div class="docBlock"><b>Припущення і обмеження методики</b><ul style="margin:6px 0 0 18px;padding:0">${r.assumptions.map(a => "<li>" + esc(a) + "</li>").join("")}</ul></div>` +
+    `<div class="docBlock"><b>Припущення і обмеження методики</b><ul style="margin:6px 0 0 18px;padding:0">${r.assumptions.map(a => "<li>" + esc(a) + "</li>").join("")}${S.mat === "pex" ? "<li>Для металопластику розрахунок ведеться за внутрішніми діаметрами PEX: вони трохи менші, тож запас буде дещо більший.</li>" : ""}</ul></div>` +
     `<div class="docNote"><b>Повний гідравлічний розрахунок втрат тиску системи не виконано. Результат попередній.</b> Розрахунок орієнтовний за таблицями ДБН В.2.5-64:2012 і не є проєктом.</div>`;
   return el;
 }
