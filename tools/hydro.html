@@ -140,6 +140,10 @@ textarea.formInput{resize:vertical}
 .qaRow:first-child{border-top:0}
 .qaHead{background:#f2f5fa;font-weight:700;color:#4b5563;font-size:11px}
 .qaRow .ok{color:#1F8A4C;font-weight:700}.qaRow .bad{color:#c62828;font-weight:700}
+.qaVerdict{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:10px;background:#e8f6ee;border:1px solid #bfe3cd}
+.qaVerdict b{font-size:17px;font-weight:800;color:#1F8A4C}.qaVerdict span{font-size:12.5px;font-weight:600;color:#374151;text-align:right}
+.qaVerdict.bad{background:#fdecec;border-color:#f5c2c2}.qaVerdict.bad b{color:#c62828}
+.qaVerdict.warn{background:#fff4e0;border-color:#f3d9a4}.qaVerdict.warn b{color:#b26a00}
 .qaConcl{margin-top:10px;font-size:12.5px;font-weight:700;color:#1F8A4C}
 .actHelp{grid-column:1/-1;font-size:.78rem;color:var(--tm)}.actHelp summary{cursor:pointer;font-weight:600;color:var(--ts)}.actHelp p{margin:6px 0 0;line-height:1.45}
 .qaSub{margin:-4px 0 10px;font-size:12px;color:#6b7280}.qaNorm{margin-top:8px;font-size:11px;color:#6b7280;display:grid;gap:3px}
@@ -787,18 +791,24 @@ function actConclusion(list){
 }
 /* Заголовок акта: гідравлічне — водою, манометричне — повітрям */
 function actPaperTitle(list){
-  const air = list.filter(x => x.air).length;
-  return air === 0 ? "Акт гідравлічних випробувань" : air === list.length ? "Акт манометричних випробувань" : "Акт гідравлічних і манометричних випробувань";
+  return "Акт випробувань на герметичність";
 }
 function actPaperHtml(project, info){
   const d = actClientData(project);
   return `<section class="quoteAct">
     <div class="qaTitle">${actPaperTitle(d.systems)}</div>
     <div class="qaSub">${d.systems.map(x => escapeHtml(x.rule ? x.rule.title : x.l)).join("; ")}</div>
+    ${(() => {
+      const bad = d.systems.some(x => x.ok === false), good = d.systems.length && d.systems.every(x => x.ok === true);
+      const one = d.systems.length === 1 ? d.systems[0] : null;
+      const dates = [...new Set(d.systems.map(x => x.d))].sort();
+      const dl = dates.length > 1 ? `${actDateLabel(dates[0])} – ${actDateLabel(dates[dates.length - 1])}` : actDateLabel(d.date);
+      const nums = one ? `${actFmt(one.p)} бар${one.m === null ? "" : " · " + actDur(one.m)} · ${dl}` : `Систем: ${d.systems.length} · ${dl}`;
+      return `<div class="qaVerdict ${bad ? "bad" : good ? "" : "warn"}"><b>${bad ? "Падіння тиску" : good ? "✓ Герметично" : "Результат потребує перевірки"}</b><span>${escapeHtml(nums)}</span></div>`;
+    })()}
     <div class="qaMeta">
       <div><span>Об’єкт</span><b>${escapeHtml(info.objectName)}</b></div>
       ${info.clientName ? `<div><span>Замовник</span><b>${escapeHtml(info.clientName)}</b></div>` : ""}
-      <div><span>Виконавець</span><b>${escapeHtml(info.companyName)}</b></div>
       <div><span>Дата проведення</span><b>${(() => { const ds = [...new Set(d.systems.map(x => x.d))].sort(); return ds.length > 1 ? `${actDateLabel(ds[0])} – ${actDateLabel(ds[ds.length - 1])}` : actDateLabel(d.date); })()}</b></div>
     </div>
     <div class="qaTable">
