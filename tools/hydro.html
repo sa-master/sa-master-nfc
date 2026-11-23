@@ -844,11 +844,9 @@ function actBadge(cls, sz){
   return `<svg width="${sz || 28}" height="${sz || 28}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="${col}"/><g fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${g}</g></svg>`;
 }
 function actStat(x){
-  const T = HydroRules.ST, st = x.ev && x.ev.status;
-  if(st === T.OK) return { cls:"ok", t:"Герметично" };
-  if(st === T.BAD) return { cls:"bad", t:"Не відповідає критеріям" };
-  if(st === T.CONFIRM) return { cls:"warn", t:"Потребує підтвердження" };
-  if(st === T.RANGE) return { cls:"bad", t:"Параметри поза допустимими межами" };
+  /* Той самий критерій, що й на екрані майстра: падіння тиску порівнюється з допустимим (actSysOk) */
+  if(x.ok === true) return { cls:"ok", t:"Герметично" };
+  if(x.ok === false) return { cls:"bad", t:"Падіння тиску більше допустимого" };
   return { cls:"warn", t:"Недостатньо даних" };
 }
 function actPhTime(iso, sameDay){
@@ -857,14 +855,14 @@ function actPhTime(iso, sameDay){
   return (sameDay ? "" : `${p2(d.getDate())}.${p2(d.getMonth() + 1)}.${d.getFullYear()} `) + `${p2(d.getHours())}:${p2(d.getMinutes())}`;
 }
 function actConclText(list){
-  const T = HydroRules.ST, multi = list.length > 1, nm = x => multi ? x.l + ": " : "", cm = t => String(t).replace(/(\d)\.(\d)/g, "$1,$2");
-  const bad = list.filter(x => x.ev && (x.ev.status === T.BAD || x.ev.status === T.RANGE));
-  if(bad.length) return { cls:"bad", t:"Випробування не пройдено. " + bad.map(x => nm(x) + cm(x.ev.reasons.join("; "))).join(". ") + "." };
-  const other = list.filter(x => !x.ev || x.ev.status !== T.OK);
-  if(other.length) return { cls:"warn", t:"Висновок не сформовано. " + other.map(x => nm(x) + ((x.ev && x.ev.reasons.length) ? cm(x.ev.reasons.join("; ")) : "недостатньо даних")).join(". ") + "." };
+  const multi = list.length > 1, nm = x => multi ? x.l + ": " : "", dr = x => actFmt(Math.round((x.s - x.e) * 100) / 100) + " бар";
+  const bad = list.filter(x => x.ok === false);
+  if(bad.length) return { cls:"bad", t:"Випробування не пройдено. " + bad.map(x => nm(x) + "падіння тиску " + dr(x) + " більше допустимого (" + actFmt(ACT_ALLOW) + " бар)").join("; ") + "." };
+  const other = list.filter(x => x.ok !== true);
+  if(other.length) return { cls:"warn", t:"Висновок не сформовано: не вказано тиск на початку або в кінці випробування." };
   const drops = list.filter(x => x.s !== null && x.e !== null && x.s - x.e > 0.001);
   if(!drops.length) return { cls:"ok", t:"За час випробування падіння тиску не зафіксовано." };
-  return { cls:"ok", t:"За час випробування зафіксовано падіння тиску: " + drops.map(x => nm(x) + actFmt(Math.round((x.s - x.e) * 100) / 100) + " бар").join("; ") + "." };
+  return { cls:"ok", t:"За час випробування зафіксовано падіння тиску: " + drops.map(x => nm(x) + dr(x)).join("; ") + "." };
 }
 function actPaperHtml(project, info){
   const d = actClientData(project);
