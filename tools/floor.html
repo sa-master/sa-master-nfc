@@ -40,6 +40,7 @@ select.formInput{appearance:none;-webkit-appearance:none}
 .coil b{font-size:.92rem}
 .err{margin-top:8px;padding:10px 12px;border-radius:12px;background:rgba(255,59,48,.12);color:#d70015;font-size:.86rem}
 </style>
+<script src="shared/stats.js?v=20261127" defer></script>
 </head>
 <body>
 <div class="page">
@@ -239,6 +240,7 @@ async function makePdf(btn, mode) {
   const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Готуємо PDF…";
   try {
     const blob = await SMDoc.pdf(await paperEl()), name = "tepla-pidloga-" + new Date().toISOString().slice(0, 10) + ".pdf";
+    if (window.SMStats) SMStats.event("zvit-pdf-pidloga");
     if (mode === "share") { const r = await SMDoc.share(blob, name, mgr.currentTitle()); if (r === "downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
     else SMDoc.download(blob, name);
   } catch (e) { toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
