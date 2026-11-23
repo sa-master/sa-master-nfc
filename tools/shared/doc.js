@@ -39,8 +39,10 @@
       const sel = opts.breakSelector || ".qaMeta,.qaRow,.qaConcl,.qaNote,.qaPhT,.qaPhotos figure,.docRow,.docBlock,.docHead";
       const breaks = Array.from(src.querySelectorAll(sel)).map(el => Math.round((el.getBoundingClientRect().bottom - sr.top) * scale)).filter(v => v > 0 && v < canvas.height).sort((a, b) => a - b);
       const { jsPDF } = root.jspdf, doc = new jsPDF({ orientation: "p", unit: "mm", format: "a4", compress: true });
-      const bottom = opts.footer === "bottom";
-      const mm = 10, cw = 210 - mm * 2, foot = footerImage(cw, bottom, opts.quiet), footH = bottom ? foot.hMm + 3 : 9, ch = 297 - mm * 2 - footH, pxPerMm = canvas.width / cw, maxH = Math.floor(ch * pxPerMm);
+      const none = opts.footer === "none", bottom = opts.footer === "bottom";
+      const signEl = opts.signSelector ? src.querySelector(opts.signSelector) : null;
+      const signR = signEl ? signEl.getBoundingClientRect() : null;
+      const mm = 10, cw = 210 - mm * 2, foot = footerImage(cw, bottom, opts.quiet), footH = none ? 0 : bottom ? foot.hMm + 3 : 9, ch = 297 - mm * 2 - footH, pxPerMm = canvas.width / cw, maxH = Math.floor(ch * pxPerMm);
       let off = 0, page = 0;
       while (off < canvas.height) {
         let target = Math.min(off + maxH, canvas.height), end = target;
@@ -48,7 +50,11 @@
         const h = end - off, slice = document.createElement("canvas"); slice.width = canvas.width; slice.height = h;
         slice.getContext("2d").drawImage(canvas, 0, off, canvas.width, h, 0, 0, canvas.width, h);
         if (page > 0) doc.addPage();
-        if (bottom) {
+        if (none) {
+          doc.addImage(slice.toDataURL("image/jpeg", 0.9), "JPEG", mm, mm, cw, h / pxPerMm);
+          if (signR) { const t = Math.round((signR.top - sr.top) * scale), b = Math.round((signR.bottom - sr.top) * scale);
+            if (t >= off && b <= end) doc.link(mm + (signR.left - sr.left) * scale / pxPerMm, mm + (t - off) / pxPerMm, signR.width * scale / pxPerMm, (b - t) / pxPerMm, { url: "https://sa-master.pro" }); }
+        } else if (bottom) {
           /* підпис унизу кожної сторінки, з активним посиланням */
           doc.addImage(slice.toDataURL("image/jpeg", 0.9), "JPEG", mm, mm, cw, h / pxPerMm);
           const fy = 297 - mm - foot.hMm;
