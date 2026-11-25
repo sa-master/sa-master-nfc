@@ -4086,7 +4086,8 @@ body.inSec #pfAddPerson{display:none}
 .hBell{flex:0 0 auto;width:2.5rem;height:2.5rem;margin:0 0 1.125rem;border-radius:.75rem;background:rgba(120,120,128,.12);color:var(--t);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
 .hBell svg{width:1.25rem;height:1.25rem}.hBell .hBellN{position:absolute;top:-.25rem;right:-.25rem;min-width:1.125rem;height:1.125rem;padding:0 .25rem;border-radius:.5625rem;background:#FF3B30;color:#fff;font-size:.6875rem;font-weight:800;line-height:1.125rem;text-align:center}
 .pushBox{border-radius:.75rem;background:rgba(120,120,128,.1);padding:.875rem 1rem;margin:0 0 .75rem;font-size:.9375rem;line-height:1.45;color:var(--t)}.pushBox.on{background:rgba(52,199,89,.12)}
-.pushListHead{display:flex;align-items:center;justify-content:space-between;margin:0 0 .375rem;font-size:.8125rem;font-weight:700;color:var(--tm)}.pushListBtns{display:flex;gap:1rem}.pushListHead button{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.25rem 0}
+.pushListHead{display:flex;align-items:center;justify-content:space-between;margin:0 0 .375rem;font-size:.8125rem;font-weight:700;color:var(--tm)}.pushAskTitle{font-size:1.25rem;font-weight:800;color:var(--t);margin:0 0 .5rem}
+.pushListBtns{display:flex;gap:1rem}.pushListHead button{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.25rem 0}
 .pushList{display:flex;flex-direction:column;margin:0 0 1rem}.pushItem{display:flex;align-items:flex-start;gap:.625rem;text-align:left;background:none;padding:.625rem 0;border-top:1px solid rgba(120,120,128,.18);color:var(--t);width:100%}
 .pushDot{flex:0 0 .5rem;height:.5rem;margin-top:.4rem;border-radius:50%;background:transparent}.pushItem.new .pushDot{background:#0A84FF}.pushTxt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:.9375rem;line-height:1.35}.pushTxt b{font-weight:750}.pushTxt span{color:var(--ts,var(--t))}
 .pushItem:not(.new) .pushTxt b{font-weight:600}.pushItem small{flex:0 0 auto;font-size:.75rem;color:var(--tm);font-weight:600;margin-top:.125rem}
@@ -5389,7 +5390,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 22:05</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 22:20</div>
   </div>
 
   <div class="fsFooter">
@@ -10493,6 +10494,25 @@ async function pushEnable(){
   }
   renderPush();
 }
+/* Один раз при відкритті: «Дозволити сповіщення?» — замість пошуку дзвіночка.
+   Показуємо, лише якщо дозвіл ще не питали, людина увійшла, а на iPhone — відкрито з іконки на екрані «Додому» */
+async function pushAskMaybe(){
+  if(!pushSupported() || Notification.permission !== "default" || !cloudEnabled() || !cloudSession()) return;
+  if(pushIsIos() && !pushStandalone()) return;
+  if(pushState().askedAt || document.getElementById("pushAsk")) return;
+  if(document.querySelector(".onbScreen.open, .sheet.open, .fullscreen.open")) return;
+  const el = document.createElement("div");
+  el.className = "sheet open"; el.id = "pushAsk";
+  el.innerHTML = `<div class="panel"><div class="panelBody" style="padding-top:1.25rem">
+    <div class="pushAskTitle">Дозволити сповіщення?</div></div>
+    <div class="panelFooter"><button class="btnGhost" onclick="pushAskDone(false)">Пізніше</button><button class="btnPrimary" onclick="pushAskDone(true)">Дозволити</button></div></div>`;
+  document.body.appendChild(el);
+}
+async function pushAskDone(yes){
+  const st = pushState(); st.askedAt = Date.now(); pushSaveState(st);
+  document.getElementById("pushAsk")?.remove();
+  if(yes) await pushEnable();
+}
 async function pushDisable(){
   const sub = await pushCurrentSub();
   if(sub){
@@ -10641,6 +10661,7 @@ setTimeout(() => { if(pushSupported() && Notification.permission === "granted") 
 /* Лічильник: при відкритті та поверненні в застосунок. Відкрили за сповіщенням (#obj=…, #q=…) — переходимо до об'єкта */
 setTimeout(() => {
   pushLoadInbox().then(() => {
+    setTimeout(() => pushAskMaybe().catch(() => {}), 1500);
     if(/^#(obj|q)=|^#push$/.test(location.hash)){ const h = location.hash; history.replaceState(null, "", location.pathname + location.search); pushGo(h); }
   }).catch(() => {});
 }, 2500);
