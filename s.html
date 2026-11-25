@@ -29,6 +29,8 @@ textarea{min-height:110px;resize:vertical;font-size:13px;font-family:ui-monospac
 input:focus,textarea:focus,select:focus{outline:2px solid var(--p);outline-offset:1px}
 label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--tm)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#spAsk{position:fixed;inset:auto 0 0 0;z-index:60;display:flex;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom))}#spAsk .spIn{color:var(--t);width:100%;max-width:520px;background:var(--card,#fff);border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.25);padding:16px;display:flex;flex-direction:column;gap:12px;font-size:17px}#spAsk .spBtns{display:flex;gap:10px}#spAsk .btn{height:46px}
+.spToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:10px 16px;border-radius:12px;font-weight:650;z-index:70}
 .btn{height:50px;border-radius:14px;border:0;background:var(--p);color:#fff;font:inherit;font-size:16px;font-weight:750;padding:0 18px;cursor:pointer;width:100%}
 .btn[disabled]{opacity:.45;cursor:default}
 .btn.ghost{background:var(--soft);color:var(--p)}
@@ -771,7 +773,7 @@ function renderChecks(){
     (done.length ? (fresh.length ? `<details class="oldChecks"><summary>Попередні звірки (${done.length})</summary>${done.map(row).join("")}</details>` : done.map(row).join("")) : "");
 }
 async function fetchCheck(cid){
-  const r = await fetch(`${SERVER}/sup/${id}/checks/${cid}`, { cache:"no-store" });
+  const r = await fetch(`${SERVER}/sup/${id}/checks/${cid}?by=s`, { cache:"no-store" });   /* by=s — майстер бачить, що звірку відкрили */
   if(!r.ok) throw new Error("Звірку не знайдено");
   return r.json();
 }
@@ -987,6 +989,64 @@ $("tplBtn").onclick = downloadTemplate;
 $("search").addEventListener("input", renderItems);
 $("send").onclick = send;
 if(CAB_FROM_URL) loadCabinet(CAB_FROM_URL); else load();
+
+/* ==== Сповіщення постачальнику: нові запити на звірку приходять сповіщенням, без месенджера ====
+   «Дозволити сповіщення?» — один раз; «Пізніше» — спитаємо знову через тиждень */
+const SP = "et_spush";
+const spOk = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const spIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const spStandalone = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+const spGet = () => { try{ return JSON.parse(localStorage.getItem(SP) || "{}") || {}; }catch(e){ return {}; } };
+const spSet = v => { try{ localStorage.setItem(SP, JSON.stringify(v)); }catch(e){} };
+const spLink = () => /^[A-Za-z0-9]{6,20}$/.test(id || "") ? id : "";
+(function(){
+  if(!spLink()) return;
+  const m = { name:"et.app", short_name:"et.app", lang:"uk", display:"standalone", start_url: location.origin + "/s.html#" + spLink(), scope: location.origin + "/s.html", id: location.origin + "/s.html",
+    background_color:"#ffffff", theme_color:"#ffffff", icons:[{ src: location.origin + "/app/icon-192.png", sizes:"192x192", type:"image/png" }, { src: location.origin + "/app/icon-512.png", sizes:"512x512", type:"image/png" }] };
+  const l = document.createElement("link"); l.rel = "manifest"; l.href = "data:application/manifest+json," + encodeURIComponent(JSON.stringify(m));
+  document.head.appendChild(l);
+})();
+async function spReg(){ if(!spOk() || !spLink()) return null; try{ return await navigator.serviceWorker.register("/s-sw.js", { scope:"/s.html" }); }catch(e){ return null; } }
+async function spSend(sub){
+  const dev = /iPhone/.test(navigator.userAgent) ? "iPhone" : /Android/.test(navigator.userAgent) ? "Android" : /Mac/.test(navigator.userAgent) ? "Mac" : /Windows/.test(navigator.userAgent) ? "Windows" : "Пристрій";
+  const r = await fetch(`${SERVER}/push/ssub`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ id: spLink(), sub: sub.toJSON(), device: dev }) });
+  if(!r.ok) throw new Error("Сервер не прийняв підписку");
+  spSet({ ...spGet(), sentAt: Date.now(), endpoint: sub.endpoint });
+}
+async function spEnable(){
+  try{
+    if(await Notification.requestPermission() !== "granted") return;
+    const reg = await spReg(); if(!reg) throw new Error("Не вдалося увімкнути");
+    await navigator.serviceWorker.ready;
+    const k = await (await fetch(`${SERVER}/push/key`, { cache:"no-store" })).json();
+    const key = String(k.key || ""), raw = atob(key.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((key.length + 3) % 4));
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: Uint8Array.from(raw, c => c.charCodeAt(0)) });
+    await spSend(sub);
+    spToast("Сповіщення увімкнено");
+  }catch(e){ spToast(e && e.message ? e.message : "Не вдалося увімкнути"); }
+}
+function spToast(t){ const el = document.createElement("div"); el.className = "spToast"; el.textContent = t; document.body.appendChild(el); setTimeout(() => el.remove(), 2600); }
+function spAsk(){
+  if(!spOk() || !spLink() || Notification.permission !== "default" || (spIos() && !spStandalone())) return;
+  const st = spGet();
+  if(st.laterAt && Date.now() - st.laterAt < 7 * 864e5) return;
+  if(document.getElementById("spAsk")) return;
+  const el = document.createElement("div"); el.id = "spAsk";
+  el.innerHTML = `<div class="spIn"><b>Дозволити сповіщення?</b><div class="spBtns"><button type="button" class="btn ghost" onclick="spDone(false)">Пізніше</button><button type="button" class="btn" onclick="spDone(true)">Дозволити</button></div></div>`;
+  document.body.appendChild(el);
+}
+function spDone(yes){ document.getElementById("spAsk")?.remove(); if(!yes){ spSet({ ...spGet(), laterAt: Date.now() }); return; } spEnable(); }
+async function spRefresh(){
+  if(!spOk() || !spLink() || Notification.permission !== "granted") return;
+  const reg = await spReg(); const sub = reg && await reg.pushManager.getSubscription().catch(() => null);
+  if(!sub) return;
+  const st = spGet();
+  if(st.endpoint === sub.endpoint && Date.now() - (st.sentAt || 0) < 864e5) return;
+  try{ await spSend(sub); }catch(e){}
+}
+if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", ev => { if(ev.data && ev.data.etPush === "open") location.reload(); });
+if(!CAB_FROM_URL) setTimeout(() => { spRefresh().catch(() => {}); spAsk(); }, 2500);
 </script>
 </body>
 </html>
