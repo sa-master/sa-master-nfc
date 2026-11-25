@@ -4979,7 +4979,7 @@ body.inSec #pfAddPerson{display:none}
 
       <div class="actionSheetRow" id="actionActRow" onclick="actionOpenAct()">
         <div class="actionSheetIcon"><svg class="ic" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 12l4-4M8 16h8"/></svg></div>
-        <div class="actionSheetText" id="actionActText">Акт гідравлічних випробувань</div>
+        <div class="actionSheetText" id="actionActText">Гідравлічні випробування</div>
       </div>
 
       <div class="actionSheetRow" id="actionRestoreRow" onclick="actionRestoreProject()">
@@ -5147,12 +5147,12 @@ body.inSec #pfAddPerson{display:none}
 <div class="sheet" id="actSheet">
   <div class="panel">
     <div class="panelHead">
-      <strong>Акт гідравлічних випробувань</strong>
+      <strong>Гідравлічні випробування</strong>
       <button class="close" onclick="closeActSheet()">×</button>
     </div>
     <div class="panelBody" id="actSheetBody" style="padding-bottom:1.25rem"></div>
     <div class="panelFooter">
-      <button class="btnPrimary" onclick="saveAct()">Зберегти акт</button>
+      <button class="btnPrimary" onclick="saveAct()">Зберегти</button>
     </div>
   </div>
 </div>
@@ -5375,7 +5375,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 20.11.2026 15:35</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 14:45</div>
   </div>
 
   <div class="fsFooter">
@@ -10222,7 +10222,7 @@ function jrnPush(pid, ch, ctx, proj){
 
 /* ---- Текст для людини ---- */
 var JRN_FIELDS = { qty:"кількість", price:"ціна", purchasePrice:"ціна закупівлі", name:"назва", ownName:"назва", fullName:"назва", unit:"одиниця", whereK:"де брати", whereS:"де брати", plannedSupplierName:"постачальник", fromStockQty:"зі складу", stockTaken:"зі складу", buyLater:"купити пізніше", selfBuys:"купує клієнт", isFixture:"прилад", catalogId:"товар", buySent:"надіслано постачальнику", buyNeed:"треба купити", npShip:"Нова пошта" };
-var JRN_AREAS = { positions:"Кошторис", expenses:"Витрати", payments:"Оплати", salaries:"Виплати", todo:"Нотатки", teamAssignments:"Команда", clientSends:"Відправка клієнту", approved:"Погодження", partsApproved:"Погодження", approvalLog:"Погодження", supplierChecks:"Звірка з постачальником", status:"Статус", stage:"Етап", client:"Клієнт", details:"Дані об'єкта", title:"Назва об'єкта", files:"Файли", pressureAct:"Акт випробувань", workDiscount:"Знижка на роботи", materialDiscount:"Знижка на матеріали", workStartDate:"Дата початку", workEndDate:"Дата завершення", urgent:"Пріоритет", crewReq:"Запити працівника", crewBought:"Покупки працівника", orders:"Замовлення", ordersSent:"Замовлення", deliveryPlans:"Доставка", rooms:"Приміщення", gotLog:"Отримано", stages:"Етапи", quoteLinks:"Посилання клієнту", completedAt:"Завершення", doneAt:"Завершення" };
+var JRN_AREAS = { positions:"Кошторис", expenses:"Витрати", payments:"Оплати", salaries:"Виплати", todo:"Нотатки", teamAssignments:"Команда", clientSends:"Відправка клієнту", approved:"Погодження", partsApproved:"Погодження", approvalLog:"Погодження", supplierChecks:"Звірка з постачальником", status:"Статус", stage:"Етап", client:"Клієнт", details:"Дані об'єкта", title:"Назва об'єкта", files:"Файли", pressureAct:"Гідравлічні випробування", workDiscount:"Знижка на роботи", materialDiscount:"Знижка на матеріали", workStartDate:"Дата початку", workEndDate:"Дата завершення", urgent:"Пріоритет", crewReq:"Запити працівника", crewBought:"Покупки працівника", orders:"Замовлення", ordersSent:"Замовлення", deliveryPlans:"Доставка", rooms:"Приміщення", gotLog:"Отримано", stages:"Етапи", quoteLinks:"Посилання клієнту", completedAt:"Завершення", doneAt:"Завершення" };
 function jrnScalar(v){ return v === undefined || v === null || ["string", "number", "boolean"].includes(typeof v); }
 function jrnVal(v){
   if(v === undefined || v === null || v === "") return "—";
@@ -12376,12 +12376,12 @@ function saveAct(){
   closeActSheet();
   render();
   if(document.getElementById("quotePreviewScreen").classList.contains("open")) renderQuotePreview();
-  toast(pending.length ? `Збережено. ${(t => t.charAt(0).toUpperCase() + t.slice(1))(pending.map(actShortName).join(", "))} — допишете, коли випробуєте` : document.getElementById("quotePreviewScreen").classList.contains("open") ? "Акт додано до фактичного кошторису" : "Акт збережено — додасться до фактичного кошторису", 2800);
+  toast(pending.length ? `Збережено. ${(t => t.charAt(0).toUpperCase() + t.slice(1))(pending.map(actShortName).join(", "))} — допишете, коли випробуєте` : document.getElementById("quotePreviewScreen").classList.contains("open") ? "Випробування додано до фактичного кошторису" : "Випробування збережено — додадуться до фактичного кошторису", 2800);
 }
 function removeAct(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
-  if(!confirm("Прибрати акт випробувань з цього об’єкта?")) return;
+  if(!confirm("Прибрати гідравлічні випробування з цього об’єкта?")) return;
   delete project.pressureAct;
   project.updatedAt = new Date().toISOString();
   saveProjects();
@@ -12398,7 +12398,7 @@ function renderQuoteActBox(){
   const on = a ? (a.systems || []).filter(actSysDone) : [];
   const wait = a ? (a.systems || []).filter(x => x.on && !actSysDone(x)) : [];
   box.classList.remove("hidden");
-  box.innerHTML = `<div class="qdTitle">Акт гідравлічних випробувань</div>
+  box.innerHTML = `<div class="qdTitle">Гідравлічні випробування</div>
     <div class="qdRow"><span>${a ? `${on.length ? `✓ ${on.map(actShortName).join(", ")}` : ""}${(() => { const n = on.reduce((k, x) => k + Object.keys(x.ph || {}).length, 0) + (a.photos || []).length; return n ? ` · фото ${n}` : ""; })()}${wait.length ? `<small style="display:block;color:#c62828;font-weight:700">Ще не випробувано: ${wait.map(actShortName).join(", ")} — у клієнта його не буде</small>` : ""}` : `<small style="font-weight:600;color:var(--tm)">Клієнт отримає його разом з фактичним кошторисом</small>`}</span>
     <button type="button" class="ptBtn ${a ? "" : "primary"}" onclick="openActSheet()">${a ? "Змінити" : "＋ Додати"}</button></div>`;
 }
@@ -13081,7 +13081,7 @@ async function uploadQuoteForLink(project, pdfFile, xlsxFile){
     objectName: data.objectName, companyName: data.companyName, companyPhone: data.companyPhone,
     address: cleanText(project.client && project.client.address) || undefined,
     clientWho: [cleanText(project.client && project.client.name), cleanText(project.client && project.client.phone) ? `(${cleanText(project.client.phone)})` : ""].filter(Boolean).join(" ") || undefined,
-    linkLabel: pendingClientSend && pendingClientSend.kind === "doc" ? `${data.title || "Кошторис"}${data.act ? " та акт гідравлічних випробувань" : ""}`
+    linkLabel: pendingClientSend && pendingClientSend.kind === "doc" ? `${data.title || "Кошторис"}${data.act ? " та гідравлічні випробування" : ""}`
       : pendingClientSend && pendingClientSend.kind !== "quote" ? clientLinkLabel(pendingClientSend) : (() => {
       /* Повний кошторис або посилання не з «Надіслати клієнту» — назва за фактичним вмістом:
          лише роботи → «Кошторис на роботи», а не «роботи й матеріали» */
@@ -20730,7 +20730,7 @@ function openActions(id){
   document.getElementById("actionActRow")?.classList.toggle("hidden", !hasTrade("plumb") && !(p && p.pressureAct));
   { const a = p && p.pressureAct; const t = document.getElementById("actionActText");
     if(t){ const done = a ? (a.systems || []).filter(actSysDone) : [], wait = a ? (a.systems || []).filter(x => x.on && !actSysDone(x)) : [];
-      t.innerHTML = a ? `Акт гідравлічних випробувань<small style="display:block;color:var(--tm);font-size:.75rem;font-weight:500">${done.length ? `✓ ${escapeHtml(done.map(x => actShortName(x) + " " + actDateLabel(actSysDate(x, a)).slice(0, 5)).join(", "))}` : ""}${wait.length ? `${done.length ? " · " : ""}чекає: ${escapeHtml(wait.map(actShortName).join(", "))}` : " · додасться до фактичного кошторису"}</small>` : "Акт гідравлічних випробувань"; } }
+      t.innerHTML = a ? `Гідравлічні випробування<small style="display:block;color:var(--tm);font-size:.75rem;font-weight:500">${done.length ? `✓ ${escapeHtml(done.map(x => actShortName(x) + " " + actDateLabel(actSysDate(x, a)).slice(0, 5)).join(", "))}` : ""}${wait.length ? `${done.length ? " · " : ""}чекає: ${escapeHtml(wait.map(actShortName).join(", "))}` : " · додасться до фактичного кошторису"}</small>` : "Гідравлічні випробування"; } }
   document.getElementById("actionsSheet").classList.add("open");
 }
 
@@ -20789,7 +20789,7 @@ function actPending(p){
 function actStep(p){
   const t = actPending(p);
   if(!t) return null;
-  return { text:"Гідравлічні випробування", sub: t.done.length ? `✓ ${t.done.map(x => `${actShortName(x)} ${actSysDate(x, p.pressureAct).slice(8, 10)}.${actSysDate(x, p.pressureAct).slice(5, 7)}`).join(", ")} · чекає: ${t.wait.map(actShortName).join(", ")}` : "Фото манометра до й після — акт піде клієнту з фактичним кошторисом", label:"＋ Додати", action:`openActFor('${escapeHtml(p.id)}')` };
+  return { text:"Гідравлічні випробування", sub: t.done.length ? `✓ ${t.done.map(x => `${actShortName(x)} ${actSysDate(x, p.pressureAct).slice(8, 10)}.${actSysDate(x, p.pressureAct).slice(5, 7)}`).join(", ")} · чекає: ${t.wait.map(actShortName).join(", ")}` : "Фото манометра до й після — підуть клієнту з фактичним кошторисом", label:"＋ Додати", action:`openActFor('${escapeHtml(p.id)}')` };
 }
 function openActFor(id){
   actionsProjectId = id;
@@ -20812,7 +20812,7 @@ function actionAdvanceStage(){
   if(projectCompleted(p0)){ reopenProject(p0); render(); toast("Об’єкт знову в роботі"); return; }
   const t = actPending(p0);
   if(t){
-    if(!confirm(`Гідравлічні випробування ще не зроблено: ${t.wait.map(actShortName).join(", ")}.\n\nЗавершити об’єкт без акту випробувань?`)) return;
+    if(!confirm(`Гідравлічні випробування ще не зроблено: ${t.wait.map(actShortName).join(", ")}.\n\nЗавершити об’єкт без гідравлічних випробувань?`)) return;
     p0.actSkip = true;
   }
   if(buyOn(p0)){
