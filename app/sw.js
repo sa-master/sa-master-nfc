@@ -9,7 +9,7 @@ self.addEventListener("push", event => {
   const n = data.notification || data;
   const title = n.title || "et.app";
   const url = n.navigate || "/app/";
-  const badge = Number(n.app_badge);
+  const badge = Number(data.app_badge !== undefined ? data.app_badge : n.app_badge);   /* app_badge — на верхньому рівні */
   event.waitUntil(Promise.all([
     self.registration.showNotification(title, {
       body: n.body || "",
