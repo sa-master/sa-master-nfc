@@ -5424,7 +5424,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 00:00</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 00:10</div>
   </div>
 
   <div class="fsFooter">
@@ -9557,8 +9557,11 @@ function openCreateChoice(){
   const obj = item(ic("objects"), "Новий об’єкт", "кошторис, закупівля, облік — повний шлях", "openNewProject()");
   let list;
   if(catalogInNav()){
-    list = here(ic("catalog"), catalogMode === "stock" ? "Додати на склад" : catalogMode === "material" ? "Новий матеріал у каталог" : "Нова робота в каталог", catalogMode === "stock" ? "вибрати з каталогу матеріалів" : "з’явиться в каталозі", "catalogNewItem()")
-      + obj + item(ic("wrench"), "Разова робота", "дрібна робота без кошторису: радіатори, умивальник…", "openJobForm()");
+    /* У каталозі — що саме додати: робота, матеріал або на склад (незалежно від відкритої вкладки) */
+    list = here(ic("wrench"), "Нова робота", "у каталог робіт", "setCatalogMode('work');openCustomPosition()")
+      + here(ic("box"), "Новий матеріал", "у каталог матеріалів", "setCatalogMode('material');openCustomPosition()")
+      + here(ic("catalog"), "На склад", "вибрати з каталогу матеріалів", "setCatalogMode('stock');openStockCatalog()")
+      + obj;
   }else if(sec === "prof" && pf === "team"){
     list = here(ic("profile"), "Новий працівник", "у команду: ім’я, телефон, умови оплати", "openAddPerson()") + obj;
   }else if(!sec && homeView === "fin"){
