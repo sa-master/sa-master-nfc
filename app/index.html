@@ -5390,7 +5390,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 22:20</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 23:30</div>
   </div>
 
   <div class="fsFooter">
@@ -9876,6 +9876,10 @@ function crewApply(per, events){
     }else if(ev.type === "request"){
       if(!Array.isArray(p.crewReq)) p.crewReq = [];
       p.crewReq.push({ id:ev.id, personId:per.id, name:per.name, text:ev.text, at:ev.at, status:"new" }); news++;
+    }else if(ev.type === "act"){
+      if(!["water", "heat"].includes(ev.sys) || !ev.before || !ev.after) return;
+      if(!Array.isArray(p.crewActs)) p.crewActs = [];
+      p.crewActs.push({ id:ev.id, personId:per.id, name:per.name, sys:ev.sys, start:ev.start, end:ev.end, before:ev.before, after:ev.after, at:ev.at, status:"new" }); news++;
     }else if(ev.type === "bought"){
       if(!Array.isArray(p.crewBought)) p.crewBought = [];
       p.crewBought.push({ id:ev.id, personId:per.id, name:per.name, text:ev.text || "", amount:Number(ev.amount) || 0, date:ev.date || ev.at.slice(0, 10), photo:ev.photo || "", at:ev.at, status:"wait" }); news++;
@@ -9886,6 +9890,52 @@ function crewApply(per, events){
   try{ localStorage.setItem(CREW_SEEN_KEY, JSON.stringify(seen)); }catch(e){}
   if(changed){ jrnWith(`Від працівника: ${per.name || ""}`, () => saveProjects(), true); }
   return { changed, news };
+}
+/* ---- Гідравлічні випробування від працівника ----
+   Якщо в акті цієї системи ще немає результату — додаємо самі. Є результат майстра — чекаємо його рішення («Замінити» / «Залишити моє») */
+async function crewActPhoto(fid){
+  const r = await fetch(crewFileUrl(fid), { cache:"no-store" });
+  if(!r.ok) throw new Error("photo");
+  return actCompress(await r.blob());
+}
+async function crewActPut(p, r){
+  const before = await crewActPhoto(r.before.photo), after = await crewActPhoto(r.after.photo);
+  if(!before || !after) throw new Error("photo");
+  if(!p.pressureAct) p.pressureAct = { date: todayIso(), note:"", photos:[],
+    systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })) };
+  let x = (p.pressureAct.systems || []).find(y => y.key === r.sys);
+  if(!x){ const d = ACT_SYSTEMS.find(y => y.key === r.sys); x = { key:d.key, label:d.label, work:d.work, k:d.k, need:d.need, cond:{} }; p.pressureAct.systems.push(x); }
+  const gap = r.before.at && r.after.at ? Math.round((new Date(r.after.at) - new Date(r.before.at)) / 60000) : null;
+  Object.assign(x, { on:true, pressure:actNum(r.start), start:actNum(r.start), end:actNum(r.end), pManual:true, manual:false, by:r.name, byAt:r.at,
+    ph:{ before:{ src:before, at:r.before.at || null }, after:{ src:after, at:r.after.at || null } } });
+  if(gap !== null && gap >= 1) x.minutes = gap;
+  delete p.actSkip;
+  p.pressureAct.updatedAt = new Date().toISOString();
+  r.status = "added"; r.doneAt = p.pressureAct.updatedAt;
+  p.updatedAt = r.doneAt;
+}
+async function crewActsProcess(){
+  let changed = false;
+  for(const p of projects){
+    for(const r of (p.crewActs || []).filter(x => x.status === "new")){
+      const mine = ((p.pressureAct && p.pressureAct.systems) || []).find(y => y.key === r.sys);
+      if(mine && actSysDone(mine)){ r.status = "wait"; changed = true; continue; }
+      try{ await crewActPut(p, r); changed = true; toast(`${r.name}: випробування ${r.sys === "heat" ? "опалення" : "водопостачання"} додано до «${p.title || "об'єкта"}»`, 3200); }catch(e){}
+    }
+  }
+  if(changed){ jrnWith("Від працівника: гідравлічні випробування", () => saveProjects(), true); render(); }
+}
+async function crewActReplace(pid, id){
+  const p = projects.find(x => x.id === pid), r = p && (p.crewActs || []).find(x => x.id === id);
+  if(!r) return;
+  try{ await crewActPut(p, r); }catch(e){ toast("Не вдалося завантажити фото — перевірте інтернет"); return; }
+  touchProject(p); render(); toast("Замінено в акті");
+}
+function crewActKeep(pid, id){
+  const p = projects.find(x => x.id === pid), r = p && (p.crewActs || []).find(x => x.id === id);
+  if(!r) return;
+  r.status = "kept"; r.doneAt = new Date().toISOString();
+  touchProject(p); render();
 }
 async function crewSync(){
   if(crewBusy || !cloudEnabled() || !cloudSession()) return;
@@ -9901,6 +9951,7 @@ async function crewSync(){
     }
   }finally{ crewBusy = false; }
   if(changed) render();
+  crewActsProcess().catch(() => {});
   if(news) toast(news === 1 ? "Нове від працівника — у «Аудит»" : `Нового від працівників: ${news} — у «Аудит»`);
 }
 window.addEventListener("focus", () => { if(Date.now() - crewPollAt > 20000) crewSync(); });
@@ -9938,15 +9989,16 @@ function renderCrewLinkBox(per){
 
 /* ---- Від працівника: прохання і покупки за свої (у вкладці «Аудит») ---- */
 function crewPending(p){
-  return { req:(p.crewReq || []).filter(r => r.status === "new"), bought:(p.crewBought || []).filter(r => r.status === "wait") };
+  return { req:(p.crewReq || []).filter(r => r.status === "new"), bought:(p.crewBought || []).filter(r => r.status === "wait"), acts:(p.crewActs || []).filter(r => r.status === "wait") };
 }
 function crewFileUrl(id){ return `${cloudConfig().server}/f/${id}`; }
 function renderCrewBox(p){
-  const { req, bought } = crewPending(p);
-  if(!req.length && !bought.length) return "";
+  const { req, bought, acts } = crewPending(p);
+  if(!req.length && !bought.length && !acts.length) return "";
   const when = at => { const d = new Date(at); return isNaN(d) ? "" : d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); };
   return `<section class="planTodo crewBox"><div class="ptHead"><span>Від працівника</span></div>
     ${req.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.text)}<small>від ${escapeHtml(r.name)} · ${when(r.at)}</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewReqBuy('${escapeHtml(r.id)}')">→ Купити</button><button type="button" class="ptBtn" onclick="crewReqDone('${escapeHtml(r.id)}')">✓ Зроблено</button></span></div>`).join("")}
+    ${acts.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)}: випробування ${r.sys === "heat" ? "опалення" : "водопостачання"} ${actFmt(actNum(r.start))} → ${actFmt(actNum(r.end))} бар<small>${when(r.at)} · <a href="${crewFileUrl(r.before.photo)}" target="_blank" rel="noopener">фото до</a> · <a href="${crewFileUrl(r.after.photo)}" target="_blank" rel="noopener">після</a> · в акті вже є ваш результат</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewActReplace('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Замінити</button><button type="button" class="ptBtn" onclick="crewActKeep('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Залишити моє</button></span></div>`).join("")}
     ${bought.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)} купив за свої: ${money(r.amount)}<small>${r.text ? escapeHtml(r.text) + " · " : ""}${formatQuoteDate(r.date).slice(0, 5)}${r.photo ? ` · <a href="${crewFileUrl(r.photo)}" target="_blank" rel="noopener">фото чека</a>` : ""}</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewBoughtOk('${escapeHtml(r.id)}')">✓ Підтвердити</button><button type="button" class="ptBtn" onclick="crewBoughtNo('${escapeHtml(r.id)}')" aria-label="Відхилити">✕</button></span></div>`).join("")}
   </section>`;
 }

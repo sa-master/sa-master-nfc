@@ -86,6 +86,7 @@ input:focus,textarea:focus{outline:2px solid var(--p);outline-offset:1px}
 .r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .photo{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:12px;border:1.5px dashed var(--inb);color:var(--p);font-weight:750}
 .photo input{display:none}
+.wactSys{display:flex;gap:8px}.wactSys .chip{flex:1;justify-content:center;height:40px;font-weight:750}.wactSys .chip.on{background:var(--p);color:#fff}.wactShot{display:flex;gap:10px;align-items:center}.wactAt{color:var(--tm);font-size:12px;font-weight:600}.wactBtn{width:100%;flex:0 0 auto;height:40px;font-size:14px;border-radius:11px}
 .prev{max-height:160px;border-radius:12px;object-fit:cover;width:100%}
 .nav button{width:100%;text-align:left;padding:14px;border-radius:14px;background:var(--in);font-weight:750;font-size:16px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1C1C1E;color:#fff;border-radius:14px;padding:11px 16px;font-weight:650;font-size:14px;z-index:60;max-width:90vw;text-align:center}
@@ -203,7 +204,8 @@ function render(){
       ${(o.files || []).length ? `<div class="sec">Проєкт і фото</div><div class="files">${o.files.filter(f => f.type !== "link" && f.type !== "application/pdf").map(f => `<a class="th" href="${SERVER}/f/${esc(f.id)}" target="_blank" rel="noopener" style="background-image:url('${SERVER}/f/${esc(f.id)}')"></a>`).join("")}${o.files.filter(f => f.type === "link" || f.type === "application/pdf").map(f => `<a class="chip" href="${f.type === "link" ? esc(f.url) : `${SERVER}/f/${esc(f.id)}`}" target="_blank" rel="noopener">${f.type === "link" ? "🔗" : "📄"} ${esc(f.name)}</a>`).join("")}</div>` : ""}
       ${reqs.length ? `<div class="sec">Що потрібно</div>${reqs.map(r => `<div class="row"><span>${esc(r.text)}<small>${day(r.at)}</small></span>${stTag(r.status)}</div>`).join("")}` : ""}
       ${bought.length ? `<div class="sec">Купив за свої</div>${bought.map(r => `<div class="row"><span>${money(r.amount)}${r.text ? ` · ${esc(r.text)}` : ""}<small>${day(r.date)}</small></span>${stTag(r.status)}</div>`).join("")}` : ""}
-      ${o.phase === "done" ? "" : `<div class="acts"><button class="btn ghost" onclick="askForm('${esc(o.pid)}')">＋ Потрібно</button><button class="btn ghost" onclick="boughtForm('${esc(o.pid)}')">＋ Купив за свої</button></div>`}
+      ${(() => { const sent = (D.events || []).filter(e => e.type === "act" && e.pid === o.pid); return sent.length ? `<div class="sec">Випробування</div>${sent.slice(-4).map(e => `<div class="row"><span>${WACT_SYS[e.sys] || ""}: ${String(e.start).replace(".", ",")} → ${String(e.end).replace(".", ",")} бар<small>${day(e.at)}</small></span>${stTag("sent")}</div>`).join("")}` : ""; })()}
+      ${o.phase === "done" ? "" : `<div class="acts"><button class="btn ghost" onclick="askForm('${esc(o.pid)}')">＋ Потрібно</button><button class="btn ghost" onclick="boughtForm('${esc(o.pid)}')">＋ Купив за свої</button></div><button class="btn ghost wactBtn" onclick="actForm('${esc(o.pid)}')">Гідравлічні випробування</button>`}
       ${o.phase !== "now" ? `<button class="toggle up" onclick="openMore['p_${esc(o.pid)}']=false;render()"><span>Згорнути</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>` : ""}
     </section>`;
   };
@@ -317,6 +319,95 @@ async function boughtSend(pid){
     await send({ type:"bought", pid, amount, date:$("bDate").value, text:$("bText").value.trim(), photo });
     closeSheet(); toast("Надіслано — майстер підтвердить");
   }catch(e){ toast(e.message); $("bBtn").disabled = false; }
+}
+/* ==== Гідравлічні випробування від працівника: фото манометра «до» і «після» + тиск. Додається до об'єкта; клієнту надсилає майстер ====
+   Чернетка зберігається на телефоні: «до» можна зняти зараз, «після» — коли мине час. Фото вантажимо одразу. */
+const WACT = "et_wact";
+const WACT_SYS = { water:"Водопостачання", heat:"Опалення" };
+const wactAll = () => { try{ return JSON.parse(localStorage.getItem(WACT) || "{}") || {}; }catch(e){ return {}; } };
+const wactSave = v => { try{ localStorage.setItem(WACT, JSON.stringify(v)); }catch(e){} };
+let wactCur = null;   /* { pid, sys } */
+function wactDraft(){ const all = wactAll(); return ((all[wactCur.pid] || {})[wactCur.sys]) || {}; }
+function wactPut(d){ const all = wactAll(); all[wactCur.pid] = all[wactCur.pid] || {}; all[wactCur.pid][wactCur.sys] = d; wactSave(all); }
+/* Час зйомки з фото (EXIF) — щоб тривалість рахувалась сама */
+function wactExif(buf){
+  try{
+    const v = new DataView(buf);
+    if(v.getUint16(0) !== 0xFFD8) return null;
+    let o = 2;
+    while(o + 4 < v.byteLength){
+      const m = v.getUint16(o), len = v.getUint16(o + 2);
+      if(m === 0xFFE1 && v.getUint32(o + 4) === 0x45786966){
+        const t = o + 10, le = v.getUint16(t) === 0x4949;
+        const u16 = x => v.getUint16(x, le), u32 = x => v.getUint32(x, le);
+        const str = (off, n) => { let r = ""; for(let i = 0; i < n - 1; i++) r += String.fromCharCode(v.getUint8(off + i)); return r; };
+        const scan = ifd => { const out = {}; const n = u16(t + ifd); for(let i = 0; i < n; i++){ const e = t + ifd + 2 + i * 12, tag = u16(e), cnt = u32(e + 4); if(tag === 0x8769) out.exif = u32(e + 8); if(tag === 0x9003 || tag === 0x0132) out[tag] = str(t + u32(e + 8), cnt); } return out; };
+        const i0 = scan(u32(t + 4)), ex = i0.exif ? scan(i0.exif) : {};
+        const mm = /^(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/.exec(ex[0x9003] || i0[0x0132] || "");
+        if(!mm) return null;
+        const d = new Date(+mm[1], +mm[2] - 1, +mm[3], +mm[4], +mm[5], +mm[6]);
+        return isNaN(d) ? null : d.toISOString();
+      }
+      if((m & 0xFF00) !== 0xFF00) break;
+      o += 2 + len;
+    }
+  }catch(e){}
+  return null;
+}
+function actForm(pid, sys){
+  wactCur = { pid, sys: sys || wactCur && wactCur.pid === pid && wactCur.sys || "water" };
+  const d = wactDraft();
+  const shot = (w, label) => { const s = d[w]; return `<div class="wactShot">
+      ${s ? `<a class="th" href="${SERVER}/f/${esc(s.photo)}" target="_blank" rel="noopener" style="background-image:url('${SERVER}/f/${esc(s.photo)}')"></a>` : ""}
+      <label class="photo" style="flex:1"><input type="file" accept="image/*" capture="environment" onchange="wactPhoto('${w}', this.files[0])">📷 ${s ? "Перезняти" : label}</label></div>
+      ${s && s.at ? `<small class="wactAt">знято ${new Date(s.at).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })}</small>` : ""}`; };
+  const gap = d.before && d.after && d.before.at && d.after.at ? Math.round((new Date(d.after.at) - new Date(d.before.at)) / 60000) : null;
+  sheet(`<div class="hd"><h3>Гідравлічні випробування</h3><button class="x" onclick="closeSheet()">✕</button></div>
+    <div style="color:var(--tm);font-size:14px">${objTitle(pid)}</div>
+    <div class="wactSys">${Object.keys(WACT_SYS).map(k => `<button class="chip${k === wactCur.sys ? " on" : ""}" onclick="actForm('${esc(pid)}','${k}')">${WACT_SYS[k]}</button>`).join("")}</div>
+    <div class="sec">На початку</div>
+    ${shot("before", "Фото манометра")}
+    <label class="f">Тиск, бар<input id="wactStart" inputmode="decimal" placeholder="4,5" value="${esc(d.start ?? "")}" oninput="wactVal('start', this.value)"></label>
+    <div class="sec">У кінці</div>
+    ${shot("after", "Фото манометра")}
+    <label class="f">Тиск, бар<input id="wactEnd" inputmode="decimal" placeholder="4,5" value="${esc(d.end ?? "")}" oninput="wactVal('end', this.value)"></label>
+    ${gap !== null ? `<div style="color:var(--tm);font-size:14px">Між фото: ${gap < 60 ? gap + " хв" : Math.floor(gap / 60) + " год " + (gap % 60 ? gap % 60 + " хв" : "")}</div>` : ""}
+    <button class="btn" id="wactBtn" onclick="wactSend()">Надіслати майстру</button>`);
+}
+function wactVal(k, v){ const d = wactDraft(); d[k] = v; wactPut(d); }
+async function wactPhoto(which, file){
+  if(!file) return;
+  const keep = wactCur;
+  let at = null;
+  try{ at = wactExif(await file.arrayBuffer()); }catch(e){}
+  if(!at) at = new Date(file.lastModified || Date.now()).toISOString();
+  toast("Завантажую фото…");
+  const blob = await new Promise(res => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const k = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight)); const c = document.createElement("canvas"); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); c.toBlob(res, "image/jpeg", 0.75); };
+    img.onerror = () => { URL.revokeObjectURL(url); res(null); };
+    img.src = url;
+  });
+  if(!blob){ toast("Не вдалося відкрити фото"); return; }
+  try{
+    const r = await fetch(`${SERVER}/w/${LINK}/photo?kind=act`, { method:"POST", headers:{ "Content-Type":"image/jpeg" }, body:blob });
+    const j = await r.json().catch(() => ({}));
+    if(!r.ok) throw new Error(j.error || "Фото не завантажилось");
+    wactCur = keep;
+    const d = wactDraft(); d[which] = { photo:j.id, at }; wactPut(d);
+    actForm(keep.pid, keep.sys);
+  }catch(e){ toast(e.message); }
+}
+async function wactSend(){
+  const d = wactDraft();
+  if(!d.before || !d.after){ toast("Потрібні обидва фото манометра — на початку і в кінці"); return; }
+  if(String(d.start ?? "").trim() === "" || String(d.end ?? "").trim() === ""){ toast("Впишіть тиск на початку і в кінці"); return; }
+  $("wactBtn").disabled = true;
+  try{
+    await send({ type:"act", pid:wactCur.pid, sys:wactCur.sys, start:d.start, end:d.end, before:d.before, after:d.after });
+    const all = wactAll(); if(all[wactCur.pid]){ delete all[wactCur.pid][wactCur.sys]; wactSave(all); }
+    closeSheet(); toast("Надіслано майстру");
+  }catch(e){ toast(e.message); $("wactBtn").disabled = false; }
 }
 function openBalance(){
   const st = D.state || {}, b = st.balance || {};
