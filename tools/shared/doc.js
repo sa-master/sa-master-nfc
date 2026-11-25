@@ -31,8 +31,8 @@
       const T = "sa-master.pro";
       doc.saveGraphicsState();
       let ok = false;
-      try { doc.setGState(new doc.GState({ opacity: 0.07 })); ok = true; } catch (e) {}
-      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(ok ? 90 : 232, ok ? 90 : 232, ok ? 90 : 232);
+      try { doc.setGState(new doc.GState({ opacity: 0.14 })); ok = true; } catch (e) {}
+      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(ok ? 70 : 215, ok ? 70 : 215, ok ? 70 : 215);
       for (let y = 20; y < 330; y += 58) for (let x = -20 + ((y / 58) % 2 ? 0 : 36); x < 230; x += 72) doc.text(T, x, y, { angle: 32 });
       doc.restoreGraphicsState();
       doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(150, 150, 150);
