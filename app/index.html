@@ -5390,7 +5390,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 22:20</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 23:20</div>
   </div>
 
   <div class="fsFooter">
@@ -6829,6 +6829,7 @@ try{ localStorage.setItem(DEFAULT_WORKS_SEEDED_KEY, "1"); }catch(e){}
 
 function saveProjects(){
   try{ matsStamp(); }catch(e){}
+  try{ crewPublishSoon(); }catch(e){}
   const strings = projects.map(p => JSON.stringify(p));
   try{ jrnRecord(strings); }catch(e){}
   const data = "[" + strings.join(",") + "]";
@@ -6844,6 +6845,7 @@ function saveProfileData(){
 
 function saveTeamData(){
   try{ localStorage.setItem(TEAM_KEY, JSON.stringify(team)); }catch(e){}
+  try{ crewPublishSoon(); }catch(e){}
 }
 
 function saveCatalog(){
@@ -9846,7 +9848,26 @@ function crewLogo(){
     img.src = src;
   });
 }
+/* Публікації по черзі: одночасні (таймер і хвилинна синхронізація) не задублюють сповіщення працівнику */
+var crewPubLock = Promise.resolve();
 async function crewPublish(per){
+  const prev = crewPubLock; let release;
+  crewPubLock = new Promise(r => { release = r; });
+  try{ await prev; return await crewPublishNow(per); }finally{ release(); }
+}
+/* Зміни для працівників — за кілька секунд після збереження й одразу, коли застосунок згортають */
+var crewPubTimer = null;
+function crewPublishSoon(ms){
+  if(ET_TEST_BUILD || !crewPeople().length || !cloudEnabled() || !cloudSession()) return;
+  clearTimeout(crewPubTimer);
+  crewPubTimer = setTimeout(crewPublishAll, ms === undefined ? 4000 : ms);
+}
+async function crewPublishAll(){
+  clearTimeout(crewPubTimer); crewPubTimer = null;
+  for(const per of crewPeople()){ try{ await crewPublish(per); }catch(e){} }
+}
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "hidden" && crewPubTimer) crewPublishAll(); });
+async function crewPublishNow(per){
   const state = crewState(per);
   state.brand = { company: profileCompanyName(), logo: await crewLogo() };
   const sig = JSON.stringify(state);
