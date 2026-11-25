@@ -3613,6 +3613,8 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .qaNote{margin-top:6px;font-size:12px;color:#374151}
 .qaPhotos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
 .qaPhotos img{display:block;width:100%;height:auto;border-radius:6px;border:1px solid #e5e7eb}
+.qpRow{display:flex;align-items:center;gap:.75rem;cursor:pointer}.qpRow span{flex:1;min-width:0;display:flex;flex-direction:column;gap:.125rem;font-size:.9375rem;color:var(--t)}.qpRow small{font-size:.8125rem;color:var(--tm);font-weight:600;line-height:1.35}
+.qpSw{appearance:none;-webkit-appearance:none;flex:0 0 auto;width:3.125rem;height:1.875rem;border-radius:1rem;background:rgba(120,120,128,.32);position:relative;cursor:pointer;transition:background .2s;margin:0}.qpSw::after{content:"";position:absolute;top:.125rem;left:.125rem;width:1.625rem;height:1.625rem;border-radius:50%;background:#fff;box-shadow:0 .125rem .25rem rgba(0,0,0,.2);transition:transform .2s}.qpSw:checked{background:#34C759}.qpSw:checked::after{transform:translateX(1.25rem)}
 .qdBox{background:var(--card);border-radius:1rem;padding:.75rem .875rem;margin:0 0 .75rem;display:flex;flex-direction:column;gap:.5rem}
 .qdTitle{font-size:.75rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--tm)}
 .qdRow{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
@@ -5200,6 +5202,7 @@ body.inSec #pfAddPerson{display:none}
       <button type="button" role="tab" data-mode="materials" onclick="setQuoteMode('materials')">Матеріали</button>
     </div>
 
+    <div id="quotePrelimBox" class="qdBox hidden"></div>
     <div id="quoteDiscBox" class="qdBox hidden"></div>
     <div id="quoteActBox" class="qdBox hidden"></div>
     <article class="quotePaper" id="quotePreviewDocument"></article>
@@ -5386,7 +5389,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 21:40</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 21:55</div>
   </div>
 
   <div class="fsFooter">
@@ -11540,8 +11543,7 @@ function openSendChoice(){
       <div class="scLinks"><button type="button" onclick="closeSendChoice();openProcurementResponseFile()">⇩ Завантажити відповідь файлом</button></div></div>`
       : card(ic("box"), allOk ? "✓ Погоджено з постачальниками" : "Погодити з постачальниками", allOk ? "Наявність і ціни підтверджено" : "Наявність і ціни матеріалів", supAction)}
     ${allOk ? card(ic("doc"), "Надіслати кошторис клієнту", "Ціни актуальні", "closeSendChoice();quotePreliminary=false;openQuotePreview()", "amMain")
-      : card(ic("doc"), "Клієнту на погодження", `З кнопкою «Погоджую» · постачальник не підтвердив ціни ${mats.filter(x => !posConfirmed(x)).length} з ${mats.length} матеріалів`, "closeSendChoice();quotePreliminary=false;openQuotePreview()")
-        + card(ic("doc"), "Клієнту попередній", "Лише для ознайомлення, без погодження", "closeSendChoice();quotePreliminary=true;openQuotePreview()")}
+      : card(ic("doc"), "Надіслати клієнту", `Постачальник не підтвердив ціни ${mats.filter(x => !posConfirmed(x)).length} з ${mats.length} матеріалів · можна як попередній`, "closeSendChoice();quotePreliminary=false;openQuotePreview()")}
   </div>`;
   requestAnimationFrame(() => el.classList.add("open"));
 }
@@ -12008,6 +12010,7 @@ function renderQuotePreview(){
   document.getElementById("quotePreviewScreen").classList.add("open");
   renderQuoteDisc();
   renderQuoteActBox();
+  renderQuotePrelimBox();
 }
 
 
@@ -12650,6 +12653,17 @@ function removeAct(){
   closeActSheet();
   render();
   if(document.getElementById("quotePreviewScreen").classList.contains("open")) renderQuotePreview();
+}
+/* Перемикач «Попередній»: замість окремого пункту в меню «Надіслати» */
+function renderQuotePrelimBox(){
+  const box = document.getElementById("quotePrelimBox");
+  const project = projects.find(item => item.id === currentProjectId);
+  if(!box) return;
+  const can = project && !quoteDraft && !isFactualStage(project) && (!getApproved(project) || materialsUnapproved(project));
+  if(!can){ box.classList.add("hidden"); box.innerHTML = ""; if(!quoteDraft) quotePreliminary = false; return; }
+  box.classList.remove("hidden");
+  box.innerHTML = `<label class="qpRow"><span><b>Попередній — без кнопки «Погоджую»</b><small>${quotePreliminary ? "Клієнт лише ознайомиться. Погодити зможе пізніше, коли надішлете звичайний." : "Клієнт побачить кнопки «Погоджую» і «Не підходить»."}</small></span>
+    <input type="checkbox" class="qpSw" ${quotePreliminary ? "checked" : ""} onchange="quotePreliminary=this.checked;renderQuotePreview()" aria-label="Попередній кошторис"></label>`;
 }
 function renderQuoteActBox(){
   const box = document.getElementById("quoteActBox");
