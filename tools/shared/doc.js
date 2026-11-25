@@ -25,6 +25,21 @@
     return { data: c.toDataURL("image/jpeg", 0.92), textW: tw / (px * 3), hMm };
   }
   /* paperEl — елемент з готовим вмістом документа (білий фон). Повертає Blob PDF. */
+  /* захист від обрізання підпису: ледь помітний діагональний водяний знак по всій сторінці (поверх вмісту) + маленька позначка внизу з посиланням */
+  function mark(doc) {
+    try {
+      const T = "sa-master.pro";
+      doc.saveGraphicsState();
+      let ok = false;
+      try { doc.setGState(new doc.GState({ opacity: 0.07 })); ok = true; } catch (e) {}
+      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(ok ? 90 : 232, ok ? 90 : 232, ok ? 90 : 232);
+      for (let y = 20; y < 330; y += 58) for (let x = -20 + ((y / 58) % 2 ? 0 : 36); x < 230; x += 72) doc.text(T, x, y, { angle: 32 });
+      doc.restoreGraphicsState();
+      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(150, 150, 150);
+      doc.text(T, 105, 294.2, { align: "center" });
+      doc.link(105 - 12, 291.5, 24, 4, { url: "https://sa-master.pro" });
+    } catch (e) {}
+  }
   async function pdf(paperEl, opts) {
     opts = opts || {};
     if (!(await ensure("html2canvas")) || !(await ensure("jspdf"))) throw new Error("libs");
@@ -68,8 +83,10 @@
           const lw = foot.textW + 4;
           doc.link(105 - lw / 2, mm, lw, foot.hMm, { url: "https://sa-master.pro" });
         }
+        mark(doc);
         off = end; page++;
       }
+      try { doc.setProperties({ title: opts.title || "Звіт sa-master.pro", subject: "Сформовано на sa-master.pro", author: "sa-master.pro", creator: "sa-master.pro", keywords: "sa-master.pro" }); } catch (e) {}
       return doc.output("blob");
     } finally { host.remove(); }
   }
