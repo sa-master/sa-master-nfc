@@ -166,7 +166,7 @@ textarea.formInput{resize:vertical}
 .qa2PhI img{display:block;max-width:100%;max-height:330px;object-fit:contain}
 .qa2Ph figcaption{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;background:#eef1f6;border-top:1px solid #d6dbe3}
 .qa2Ph figcaption b{font-size:14px;font-weight:800;color:#0b1b33}.qa2Ph figcaption span{display:flex;align-items:center;gap:5px;font-size:12.5px;color:#374151;white-space:nowrap}
-.qa2Sign{display:flex;align-items:center;gap:14px;margin:22px 40px 0;color:#6b7280;font:500 13px/1 -apple-system,"Segoe UI",Arial,sans-serif;white-space:nowrap}.qa2Sign:before,.qa2Sign:after{content:"";flex:1;height:1px;background:#1b2a49}.qa2Concl{margin-top:4px}.qa2CB{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;background:#eef1f6;border:1px solid #d6dbe3}
+.qa2End{border:1.5px solid #1b2a49;border-radius:14px;padding:14px 16px 16px}.qa2End .qa2Concl{margin:0}.qa2Sign{display:flex;align-items:center;gap:14px;margin:16px 24px 0;color:#6b7280;font:500 13px/1 -apple-system,"Segoe UI",Arial,sans-serif;white-space:nowrap}.qa2Sign:before,.qa2Sign:after{content:"";flex:1;height:1px;background:#1b2a49}.qa2Concl{margin-top:4px}.qa2CB{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;background:#eef1f6;border:1px solid #d6dbe3}
 .qa2CB.ok{background:#eaf6ee;border-color:#cfe7d8}.qa2CB.bad{background:#fdecec;border-color:#f1b9b9}.qa2CB.warn{background:#fff4e0;border-color:#f0d49b}
 .qa2CB p{margin:0;font-size:14px;color:#1f2937;line-height:1.4}
 .paper.pdf .docHead{margin:24px 40px 18px;padding:0 0 12px;gap:16px;border-bottom:1.5px solid #1b2a49}
@@ -236,7 +236,7 @@ textarea.formInput{resize:vertical}
 <script src="shared/store.js?v=20261121"></script>
 <script src="shared/ui.js?v=20261121"></script>
 <script src="shared/profile.js?v=20261121"></script>
-<script src="shared/doc.js?v=20261129"></script>
+<script src="shared/doc.js?v=20261130"></script>
 <script src="shared/hydrorules.js?v=20261121"></script>
 <script>
 "use strict";
@@ -897,9 +897,9 @@ function actPaperHtml(project, info){
     </div></div>
     ${d.systems.map(sec).join("")}
     ${d.note ? `<div class="docBlock qaNote">${escapeHtml(d.note)}</div>` : ""}
-    <div class="docBlock qa2Concl"><div class="qa2H qa2H2">${actIc("clip", 24)}<span>Висновок</span></div>
+    <div class="docBlock qa2End"><div class="qa2Concl"><div class="qa2H qa2H2">${actIc("clip", 24)}<span>Висновок</span></div>
     <div class="qa2CB ${cl.cls}">${cl.cls === "ok" ? actBadge("ok", 24) : ""}<p>${escapeHtml(cl.t)}</p></div></div>
-    <div class="qa2Sign"><span>Сформовано на sa-master.pro</span></div>
+    <div class="qa2Sign"><span>Сформовано на sa-master.pro</span></div></div>
   </section>`;
 }
 
@@ -963,7 +963,7 @@ async function outPdf(btn, mode){
   const p = await buildPaper(); if(!p) return;
   const t0=btn.textContent; btn.disabled=true; btn.textContent="Готуємо PDF…";
   try{
-    const blob = await SMDoc.pdf(p, { footer: "none", signSelector: ".qa2Sign span" }), name="Звіт про герметичність.pdf";
+    const blob = await SMDoc.pdf(p, { footer: "none", band: true, signSelector: ".qa2Sign span" }), name="Звіт про герметичність.pdf";
     if(window.SMStats) SMStats.event("zvit-pdf-hydro");
     if(mode==="share"){ const r=await SMDoc.share(blob,name,false); if(r==="downloaded") toast("Поділитися з цього браузера не вдалося. PDF завантажено."); }
     else SMDoc.download(blob,name);

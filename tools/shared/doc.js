@@ -25,20 +25,18 @@
     return { data: c.toDataURL("image/jpeg", 0.92), textW: tw / (px * 3), hMm };
   }
   /* paperEl — елемент з готовим вмістом документа (білий фон). Повертає Blob PDF. */
-  /* захист від обрізання підпису: ледь помітний діагональний водяний знак по всій сторінці (поверх вмісту) + маленька позначка внизу з посиланням */
-  function mark(doc) {
-    try {
-      const T = "sa-master.pro";
-      doc.saveGraphicsState();
-      let ok = false;
-      try { doc.setGState(new doc.GState({ opacity: 0.10 })); ok = true; } catch (e) {}
-      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(ok ? 70 : 215, ok ? 70 : 215, ok ? 70 : 215);
-      for (let y = 20; y < 330; y += 58) for (let x = -20 + ((y / 58) % 2 ? 0 : 36); x < 230; x += 72) doc.text(T, x, y, { angle: 32 });
-      doc.restoreGraphicsState();
-      doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(150, 150, 150);
-      doc.text(T, 105, 294.2, { align: "center" });
-      doc.link(105 - 12, 291.5, 24, 4, { url: "https://sa-master.pro" });
-    } catch (e) {}
+  /* фірмова смуга у шапці кожної сторінки (на всю ширину, з активним посиланням) — частина дизайну, а не штамп */
+  function bandImage(wMm, hMm) {
+    const k = 18, w = Math.round(wMm * k), h = Math.round(hMm * k), c = document.createElement("canvas");
+    c.width = w; c.height = h; const g = c.getContext("2d");
+    g.fillStyle = "#0a1330"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#0a64d6"; g.fillRect(0, h - Math.round(h * 0.12), w, Math.round(h * 0.12));
+    g.textBaseline = "middle"; g.fillStyle = "#fff"; g.textAlign = "left";
+    g.font = '800 ' + Math.round(h * 0.46) + 'px -apple-system,"Segoe UI",Arial,sans-serif';
+    g.fillText("SA-MASTER.PRO", Math.round(10 * k), h * 0.46);
+    g.textAlign = "right"; g.fillStyle = "#b7c4e6"; g.font = '500 ' + Math.round(h * 0.36) + 'px -apple-system,"Segoe UI",Arial,sans-serif';
+    g.fillText("Комплексний монтаж сантехніки · Київ", w - Math.round(10 * k), h * 0.46);
+    return c.toDataURL("image/jpeg", 0.92);
   }
   async function pdf(paperEl, opts) {
     opts = opts || {};
@@ -83,7 +81,7 @@
           const lw = foot.textW + 4;
           doc.link(105 - lw / 2, mm, lw, foot.hMm, { url: "https://sa-master.pro" });
         }
-        mark(doc);
+        if (opts.band) { doc.addImage(bandImage(210, 7), "JPEG", 0, 0, 210, 7); doc.link(0, 0, 210, 7, { url: "https://sa-master.pro" }); }
         off = end; page++;
       }
       try { doc.setProperties({ title: opts.title || "Звіт sa-master.pro", subject: "Сформовано на sa-master.pro", author: "sa-master.pro", creator: "sa-master.pro", keywords: "sa-master.pro" }); } catch (e) {}
