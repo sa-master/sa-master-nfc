@@ -3415,6 +3415,7 @@ body.positionDragging{
 .byNotesHead small{display:block;text-transform:none;letter-spacing:0;font-weight:500;margin:.125rem 0 0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;font-size:.75rem}
 .byNotesHead .ptLink{white-space:nowrap;text-transform:none;letter-spacing:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;font-size:.875rem;flex:0 0 auto}
 .byNoteHint{font-size:.8125rem;color:var(--tm);line-height:1.45;padding:.375rem 0 .25rem}
+.hRough{font-size:.8125rem;color:var(--ts);font-weight:600;margin-top:.25rem;cursor:pointer}
 .actTag{flex:0 0 auto;font-size:.75rem;color:var(--tm);padding-top:.25rem}
 .undoBar span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .undoBar button{flex:0 0 auto;background:none;color:#6FC0FF;font-weight:800;font-size:.875rem;padding:.25rem .25rem}
@@ -5375,7 +5376,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 14:45</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 15:05</div>
   </div>
 
   <div class="fsFooter">
@@ -9125,6 +9126,32 @@ function homeNext(p){
   if(getApproved(p)) return { text:`✓ Погоджено · ${money(total)}`, sub: formatQuoteDate(getApproved(p).at || "").slice(0, 10) };
   return { text:`Кошторис ${money(total)}` };
 }
+/* Чорновий етап: на картці — тип водорозведення, санвузли й терміни (для пошуку схожих і оцінки строків) */
+function homeRoughStart(p){
+  if(p.workStartedAt) return String(p.workStartedAt).slice(0, 10);
+  const got = (p.positions || []).filter(x => x.got && x.gotAt && !["skip", "stock"].includes(x.whereK)).map(x => String(x.gotAt).slice(0, 10)).sort();
+  return got[0] || "";
+}
+function homeRoughInfo(p){
+  const d = p.details || {};
+  if(!/чорнов|повний/i.test(String(d.workType || ""))) return "";
+  const dd = iso => { const [y, m, day] = String(iso).slice(0, 10).split("-"); return day && m ? `${day}.${m}` : ""; };
+  const days = (a, b) => Math.max(1, Math.round((new Date(b + "T12:00:00") - new Date(a + "T12:00:00")) / 86400000) + 1);
+  const sys = (Array.isArray(d.features) ? d.features : []).find(f => /трійник|промен|колектор/i.test(f)) || (/трійник|промен|колектор/i.test(String(d.system || "")) ? d.system : "");
+  const bath = Number(d.bathrooms) > 0 ? `${d.bathrooms} санвуз.` : "";
+  const start = homeRoughStart(p);
+  const end = String(p.doneAt || p.completedAt || "").slice(0, 10);
+  let term = "";
+  if(projectCompleted(p) || ["done", "closed"].includes(p.stage || "")){
+    term = start && end ? `${dd(start)}–${dd(end)} · ${days(start, end)} дн.` : end ? `завершено ${dd(end)}` : "";
+  }else if(start){
+    term = `з ${dd(start)} · ${days(start, todayIso())}-й день`;
+  }else{
+    const up = upcomingStartDate(p);
+    term = up ? `приступити ~${dd(up)}` : "";
+  }
+  return [sys, bath, term].filter(Boolean).join(" · ");
+}
 function homeCard(p){
   const id = escapeHtml(p.id);
   const c = p.client || {};
@@ -9136,7 +9163,7 @@ function homeCard(p){
     <div class="hTop" onclick="openProject('${id}')"><b>${p.urgent ? "🔥 " : ""}${projectTitle(p)}</b><span>${escapeHtml(phaseText(p))}</span>
       <button type="button" class="hMenu" onclick="event.stopPropagation();openActions('${id}')" aria-label="Дії">⋯</button></div>
     ${c.address ? `<div class="hAddrRow"><span class="hAddrTx" onclick="openProject('${id}')">${escapeHtml(c.address)}</span><button type="button" class="hRoute" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>${ic("pin", 16)}</i>Як добратись</button></div>` : ""}
-    ${(() => { const d = p.details || {}; const t = [d.workType, Number(d.bathrooms) > 0 ? d.bathrooms + " санвуз." : "", ...(Array.isArray(d.features) ? d.features : [])].filter(Boolean); return homeSearch && t.length ? `<div class="hWho" style="font-size:.75rem">${escapeHtml(t.join(" · "))}</div>` : ""; })()}
+    ${(() => { const r = homeRoughInfo(p); if(r) return `<div class="hRough" onclick="openProject('${id}')">${escapeHtml(r)}</div>`; const d = p.details || {}; const t = [d.workType, Number(d.bathrooms) > 0 ? d.bathrooms + " санвуз." : "", ...(Array.isArray(d.features) ? d.features : [])].filter(Boolean); return homeSearch && t.length ? `<div class="hWho" style="font-size:.75rem">${escapeHtml(t.join(" · "))}</div>` : ""; })()}
     ${c.name || c.phone ? `<div class="hWho">${escapeHtml(c.name || "")}${c.name && c.phone ? " · " : ""}${c.phone ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(c.phone)}</a>` : ""}</div>` : ""}
     ${(() => { const sib = groupOrders(p).filter(x => x !== p).sort((a, b) => orderTime(a).localeCompare(orderTime(b))); return sib.length ? `<div class="hAlso" onclick="openProject('${id}')"><b>${escapeHtml(orderLabel(p))}</b><span>також: ${sib.map(x => escapeHtml(orderLabel(x)) + (!orderIsActive(x) ? ((x.status || "active") === "archived" ? " (архів)" : " ✓") : "") + (projectOverdue(x) ? ` <em class="hAlsoDebt">винен ${money(moneySummary(x).debt)}</em>` : "")).join(" · ")}</span></div>` : ""; })()}
     <div class="hBar ${fin ? "done" : ""}" onclick="openProject('${id}')">${steps.map((s, i) => `<i class="${fin || i <= idx ? "on" : ""}"></i>`).join("")}</div>
