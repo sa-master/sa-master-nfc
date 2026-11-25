@@ -5376,7 +5376,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 15:05</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 15:20</div>
   </div>
 
   <div class="fsFooter">
@@ -6814,6 +6814,7 @@ syncSupplierRatesFromCatalog();
 try{ localStorage.setItem(DEFAULT_WORKS_SEEDED_KEY, "1"); }catch(e){}
 
 function saveProjects(){
+  try{ matsStamp(); }catch(e){}
   const strings = projects.map(p => JSON.stringify(p));
   try{ jrnRecord(strings); }catch(e){}
   const data = "[" + strings.join(",") + "]";
@@ -9127,11 +9128,33 @@ function homeNext(p){
   return { text:`Кошторис ${money(total)}` };
 }
 /* Чорновий етап: на картці — тип водорозведення, санвузли й терміни (для пошуку схожих і оцінки строків) */
+/* Початок — з прорахунку матеріалів: день, коли в кошторис додали перший матеріал (p.matsAt).
+   Для старих об’єктів, де цієї дати немає, — найраніше з того, що відомо: відправка клієнту кошторису з матеріалами,
+   список постачальнику, «Роботи почались», перший отриманий товар. */
 function homeRoughStart(p){
-  if(p.workStartedAt) return String(p.workStartedAt).slice(0, 10);
-  const got = (p.positions || []).filter(x => x.got && x.gotAt && !["skip", "stock"].includes(x.whereK)).map(x => String(x.gotAt).slice(0, 10)).sort();
-  return got[0] || "";
+  if(p.matsAt) return String(p.matsAt).slice(0, 10);
+  const c = [];
+  (p.clientSends || []).forEach(s => { if(["materials", "quote"].includes(s.kind) && s.at) c.push(String(s.at).slice(0, 10)); });
+  (p.positions || []).forEach(x => { if(x.type === "material" && x.sentAt) c.push(String(x.sentAt).slice(0, 10)); });
+  if(p.workStartedAt) c.push(String(p.workStartedAt).slice(0, 10));
+  (p.positions || []).forEach(x => { if(x.got && x.gotAt && !["skip", "stock"].includes(x.whereK)) c.push(String(x.gotAt).slice(0, 10)); });
+  return c.filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x)).sort()[0] || "";
 }
+/* Дата прорахунку матеріалів: ставиться один раз, коли в об’єкті вперше з’являється матеріал */
+var matsWatch = null, matsSeen = null;
+function matsHas(p){ return (p.positions || []).some(x => x && x.type === "material" && !x.buyLaterOnly); }
+function matsStamp(){
+  if(!matsWatch){ matsSeen = new Set(projects.map(p => p && p.id)); matsWatch = new Set(projects.filter(p => p && p.id && !matsHas(p)).map(p => p.id)); return; }
+  projects.forEach(p => {
+    if(!p || !p.id || p.matsAt) return;
+    const isNew = !matsSeen.has(p.id);
+    matsSeen.add(p.id);
+    const has = matsHas(p);
+    if(!has){ matsWatch.add(p.id); return; }
+    if(matsWatch.has(p.id) || isNew){ p.matsAt = todayIso(); matsWatch.delete(p.id); }
+  });
+}
+setTimeout(() => { try{ matsStamp(); }catch(e){} }, 0);
 function homeRoughInfo(p){
   const d = p.details || {};
   if(!/чорнов|повний/i.test(String(d.workType || ""))) return "";
