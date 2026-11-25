@@ -4084,6 +4084,11 @@ body.inSec #pfAddPerson{display:none}
 .hBell{flex:0 0 auto;width:2.5rem;height:2.5rem;margin:0 0 1.125rem;border-radius:.75rem;background:rgba(120,120,128,.12);color:var(--t);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
 .hBell svg{width:1.25rem;height:1.25rem}.hBell .hBellN{position:absolute;top:-.25rem;right:-.25rem;min-width:1.125rem;height:1.125rem;padding:0 .25rem;border-radius:.5625rem;background:#FF3B30;color:#fff;font-size:.6875rem;font-weight:800;line-height:1.125rem;text-align:center}
 .pushBox{border-radius:.75rem;background:rgba(120,120,128,.1);padding:.875rem 1rem;margin:0 0 .75rem;font-size:.9375rem;line-height:1.45;color:var(--t)}.pushBox.on{background:rgba(52,199,89,.12)}
+.pushListHead{display:flex;align-items:center;justify-content:space-between;margin:0 0 .375rem;font-size:.8125rem;font-weight:700;color:var(--tm)}.pushListHead button{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.25rem 0}
+.pushList{display:flex;flex-direction:column;margin:0 0 1rem}.pushItem{display:flex;align-items:flex-start;gap:.625rem;text-align:left;background:none;padding:.625rem 0;border-top:1px solid rgba(120,120,128,.18);color:var(--t);width:100%}
+.pushDot{flex:0 0 .5rem;height:.5rem;margin-top:.4rem;border-radius:50%;background:transparent}.pushItem.new .pushDot{background:#0A84FF}.pushTxt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:.9375rem;line-height:1.35}.pushTxt b{font-weight:750}.pushTxt span{color:var(--ts,var(--t))}
+.pushItem:not(.new) .pushTxt b{font-weight:600}.pushItem small{flex:0 0 auto;font-size:.75rem;color:var(--tm);font-weight:600;margin-top:.125rem}
+.pushOn{display:flex;flex-direction:column;gap:.5rem;border-radius:.75rem;background:rgba(52,199,89,.12);padding:.75rem 1rem;font-size:.875rem;font-weight:600;color:var(--t)}.pushOnBtns{display:flex;gap:1rem}.pushOnBtns button{background:none;padding:0;color:var(--p);font-weight:700;font-size:.875rem}
 .pushBox strong{display:block;margin-bottom:.25rem}.pushBox small{display:block;color:var(--tm);font-size:.8125rem;font-weight:600}.pushBox ol{margin:.375rem 0 .5rem 1.125rem;padding:0}.pushBox li{margin:.125rem 0}
 .etLogoBtn{background:none;padding:0 0 .875rem;margin:0 .25rem .75rem 0;cursor:pointer;flex:0 0 auto}
 .etLogoBtn .etLogoWord{font-size:1.25rem;display:block}
@@ -5381,7 +5386,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 19:40</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 20:45</div>
   </div>
 
   <div class="fsFooter">
@@ -9284,7 +9289,7 @@ function renderHomeNew(){
     ph0: groupsCount(live.filter(p => projectPhase(p) === 0)), ph1: groupsCount(live.filter(p => projectPhase(p) === 1)), ph2: groupsCount(live.filter(p => projectPhase(p) >= 2)) };
   const chip = (k, label) => (k === "all" || cnt[k]) ? `<button type="button" class="hChip ${homeFilter === k ? "on" : ""}" onclick="setHomeFilter('${k}')">${label}<small>${cnt[k]}</small></button>` : "";
   main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + `
-    <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="hBell" onclick="openPush()" aria-label="Сповіщення"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button></div>
+    <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="hBell" onclick="openPush()" aria-label="${pushInbox && pushInbox.unread ? `Сповіщення, нових: ${pushInbox.unread}` : "Сповіщення"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${pushInbox && pushInbox.unread ? `<span class="hBellN">${pushInbox.unread > 99 ? "99+" : pushInbox.unread}</span>` : ""}</button><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button></div>
     ${act.length > 3 || homeSearch ? `<input class="hSearch" type="search" placeholder="Адреса, клієнт або теги: тепла 2 санвуз" value="${escapeHtml(homeSearch)}" oninput="onHomeSearch(this.value)">` : ""}
     <div class="hChips">${chip("all", "Усі")}${chip("ph0", "Прорахунок")}${chip("ph1", "Комплектація")}${chip("ph2", "Монтаж")}${chip("debt", "Борг")}${chip("wait", "Чекають")}${chip("archive", "Архів")}</div>
     <div id="hList">${renderHomeList()}</div>`;
@@ -10526,42 +10531,110 @@ function openPush(){
   renderPush();
 }
 function closePush(){ document.getElementById("pushSheet")?.classList.remove("open"); }
+/* Список подій (30 днів) з сервера; лічильник на дзвіночку й на іконці застосунку */
+var pushInbox = null;   /* var: головний екран малюється раніше, ніж цей рядок виконується */
+async function pushLoadInbox(){
+  if(!cloudEnabled() || !cloudSession()) return null;
+  const r = await cloudFetch("/push/inbox").catch(() => ({ status:0 }));
+  if(r.status !== 200 || !r.body) return pushInbox;
+  pushInbox = { items: Array.isArray(r.body.items) ? r.body.items : [], unread: Number(r.body.unread) || 0 };
+  pushBadge();
+  return pushInbox;
+}
+function pushBadge(){
+  const n = pushInbox ? pushInbox.unread : 0;
+  document.querySelectorAll(".hBell").forEach(b => {
+    let s = b.querySelector(".hBellN");
+    if(n > 0){ if(!s){ s = document.createElement("span"); s.className = "hBellN"; b.appendChild(s); } s.textContent = n > 99 ? "99+" : String(n); }
+    else if(s) s.remove();
+    b.setAttribute("aria-label", n > 0 ? `Сповіщення, нових: ${n}` : "Сповіщення");
+  });
+  try{ if(navigator.setAppBadge) (n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}); }catch(e){}
+}
+async function pushMarkRead(ids, all){
+  if(pushInbox){ pushInbox.items.forEach(x => { if(all || ids.includes(x.id)) x.read = true; }); pushInbox.unread = pushInbox.items.filter(x => !x.read).length; pushBadge(); }
+  const r = await cloudFetch("/push/read", { method:"POST", body: JSON.stringify(all ? { all:true } : { ids }) }).catch(() => null);
+  if(r && r.status === 200 && pushInbox){ pushInbox.unread = Number(r.body.unread) || 0; pushBadge(); }
+}
+/* Перехід за подією: #obj=<об'єкт>, #q=<посилання клієнту>, #push — список */
+function pushGo(url){
+  let h = "";
+  try{ h = new URL(url, location.origin).hash; }catch(e){}
+  const m = h.match(/^#(obj|q)=([^&]+)/);
+  if(h === "#push"){ openPush(); return true; }
+  if(!m) return false;
+  const key = decodeURIComponent(m[2]);
+  const p = m[1] === "obj" ? projects.find(x => x.id === key) : projects.find(x => (x.clientSends || []).some(s => sendLinkId(s.link) === key));
+  if(!p){ toast("Об'єкт ще не завантажився або вже видалений"); return false; }
+  closePush();
+  if((p.status || "active") === "archived"){ toast("Об'єкт в архіві"); return true; }
+  openProject(p.id);
+  return true;
+}
+function pushOpenItem(id){
+  const it = pushInbox && pushInbox.items.find(x => x.id === id);
+  if(!it) return;
+  if(!it.read) pushMarkRead([id]);
+  pushGo(it.url);
+}
+function pushListHtml(){
+  if(!pushInbox) return "";
+  const items = pushInbox.items;
+  if(!items.length) return `<p class="actHint">Поки подій немає. Тут з'явиться, коли клієнт погодить кошторис або відповість «Не підходить», постачальник відповість на звірку, працівник напише запит.</p>`;
+  return `<div class="pushListHead"><span>Події за 30 днів</span>${pushInbox.unread ? `<button type="button" onclick="pushMarkRead([], true).then(renderPush)">Прочитати всі</button>` : ""}</div>
+    <div class="pushList">${items.map(x => `<button type="button" class="pushItem${x.read ? "" : " new"}" onclick="pushOpenItem('${escapeHtml(x.id)}')">
+      <span class="pushDot" aria-hidden="true"></span>
+      <span class="pushTxt"><b>${escapeHtml(x.title)}</b><span>${escapeHtml(x.body)}</span></span>
+      <small>${jrnWhen(Date.parse(x.at))}${x.quiet ? " · вночі" : ""}</small></button>`).join("")}</div>`;
+}
 async function renderPush(){
   const body = document.getElementById("pushBody");
   if(!body) return;
-  const what = `<p class="actHint">Сюди і на екран телефону приходитимуть події: клієнт погодив або відмовився, постачальник відповів на звірку, працівник написав запит. Без сум — лише об'єкт і подія.</p>`;
-  let html = "", foot = "";
-  if(!pushSupported() || (pushIsIos() && !pushStandalone())){
-    html = pushIsIos()
-      ? `<div class="pushBox"><strong>На iPhone сповіщення працюють лише з іконки на екрані «Додому»</strong>
-          <ol><li>Відкрийте <b>sa-master.pro/app/</b> у Safari.</li><li>Натисніть «Поділитися» (квадрат зі стрілкою вгору) → «На початковий екран».</li><li>Відкрийте et.app з цієї іконки й поверніться сюди.</li></ol>
-          <small>Потрібна iOS 16.4 або новіша. Якщо іконка вже є, але сповіщення не вмикаються, — видаліть її і додайте заново з адреси вище.</small></div>`
-      : `<div class="pushBox"><strong>Цей браузер не підтримує сповіщення.</strong><small>Спробуйте Chrome, Safari або Edge останньої версії.</small></div>`;
-  }else if(!cloudEnabled() || !cloudSession()){
-    html = `<div class="pushBox"><strong>Потрібен вхід в акаунт</strong><small>Сповіщення приходять на пристрої вашого акаунта.</small></div>`;
+  let html = "", foot = "", list = "";
+  const iosSafari = pushIsIos() && !pushStandalone();
+  const signed = cloudEnabled() && cloudSession();
+  if(!signed){
+    html = `<div class="pushBox"><strong>Потрібен вхід в акаунт</strong><small>Події й сповіщення прив'язані до вашого акаунта.</small></div>`;
     foot = `<button class="btnPrimary" onclick="closePush();openAuthScreen()">Увійти</button>`;
-  }else if(Notification.permission === "denied"){
-    html = `<div class="pushBox"><strong>Сповіщення заборонені для et.app</strong><small>${pushIsIos() ? "Параметри → Сповіщення → et.app → «Дозволити сповіщення»." : "Дозвольте їх у налаштуваннях сайту в браузері (значок ліворуч від адреси) і відкрийте цей екран ще раз."}</small></div>`;
   }else{
-    const sub = Notification.permission === "granted" ? await pushCurrentSub() : null;
-    if(sub){
-      html = `<div class="pushBox on"><strong>✓ Увімкнено на цьому пристрої</strong><small>Тихі години 22:00–8:00 і список подій з'являться в наступному оновленні.</small></div>`;
-      foot = `<button class="btnGhost" onclick="pushDisable()">Вимкнути тут</button><button class="btnPrimary" id="pushTestBtn" onclick="pushTest()">Надіслати тестове</button>`;
+    await pushLoadInbox();
+    list = pushListHtml();
+    if(!pushSupported() || iosSafari){
+      html = pushIsIos()
+        ? `<div class="pushBox"><strong>Щоб події приходили на екран iPhone</strong>
+            <ol><li>Відкрийте <b>sa-master.pro/app/</b> у Safari.</li><li>Натисніть «Поділитися» (квадрат зі стрілкою вгору) → «На початковий екран».</li><li>Відкрийте et.app з цієї іконки й увімкніть сповіщення тут.</li></ol>
+            <small>Потрібна iOS 16.4 або новіша.</small></div>`
+        : `<div class="pushBox"><small>Цей браузер не показує сповіщення на екрані — події видно лише тут.</small></div>`;
+    }else if(Notification.permission === "denied"){
+      html = `<div class="pushBox"><strong>Сповіщення на екран заборонені</strong><small>${pushIsIos() ? "Параметри → Сповіщення → et.app → «Дозволити сповіщення»." : "Дозвольте їх у налаштуваннях сайту в браузері (значок ліворуч від адреси) і відкрийте цей екран ще раз."}</small></div>`;
     }else{
-      html = `<div class="pushBox"><strong>Сповіщення вимкнені на цьому пристрої</strong><small>Телефон запитає дозвіл — натисніть «Дозволити».</small></div>`;
-      foot = `<button class="btnPrimary" id="pushEnableBtn" onclick="pushEnable()">Увімкнути сповіщення</button>`;
+      const sub = Notification.permission === "granted" ? await pushCurrentSub() : null;
+      if(sub){
+        html = `<div class="pushOn"><span>✓ На цьому пристрої увімкнено. З 22:00 до 8:00 — тихо, зранку одне зведення.</span>
+          <span class="pushOnBtns"><button type="button" id="pushTestBtn" onclick="pushTest()">Надіслати тестове</button><button type="button" onclick="pushDisable()">Вимкнути тут</button></span></div>`;
+      }else{
+        html = `<div class="pushBox"><strong>Сповіщення на екран вимкнені на цьому пристрої</strong><small>Без сум — лише об'єкт і подія. Телефон запитає дозвіл — натисніть «Дозволити».</small></div>`;
+        foot = `<button class="btnPrimary" id="pushEnableBtn" onclick="pushEnable()">Увімкнути сповіщення</button>`;
+      }
     }
   }
-  body.innerHTML = what + html;
+  body.innerHTML = list + html;
   const panel = body.parentElement;
   panel.querySelector(".panelFooter")?.remove();
   if(foot) panel.insertAdjacentHTML("beforeend", `<div class="panelFooter">${foot}</div>`);
 }
 if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", ev => {
-  if(ev.data && ev.data.etPush === "open"){ try{ const h = new URL(ev.data.url).hash; if(h && h !== location.hash) location.hash = h; }catch(e){} }
+  if(ev.data && ev.data.etPush === "open"){ pushLoadInbox().then(() => pushGo(ev.data.url)); }
 });
 /* Service worker реєструємо лише тим, хто вже дозволив сповіщення; решта — при натисканні «Увімкнути» */
 setTimeout(() => { if(pushSupported() && Notification.permission === "granted") pushRegistration().then(pushRefresh).catch(() => {}); }, 1500);
+/* Лічильник: при відкритті та поверненні в застосунок. Відкрили за сповіщенням (#obj=…, #q=…) — переходимо до об'єкта */
+setTimeout(() => {
+  pushLoadInbox().then(() => {
+    if(/^#(obj|q)=|^#push$/.test(location.hash)){ const h = location.hash; history.replaceState(null, "", location.pathname + location.search); pushGo(h); }
+  }).catch(() => {});
+}, 2500);
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") setTimeout(() => pushLoadInbox().catch(() => {}), 1000); });
 
 function renderEmptyState(){
   return `
