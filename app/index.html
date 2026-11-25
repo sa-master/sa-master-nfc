@@ -5424,7 +5424,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 00:10</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 00:20</div>
   </div>
 
   <div class="fsFooter">
@@ -9546,7 +9546,7 @@ function inFinPeriod(date){
 /* Каталог відкрито з нижнього меню (не з об’єкта) — тоді «＋ Нова» вгорі не потрібна: створення — через «＋» внизу */
 function catalogInNav(){ return document.body.dataset.sec === "cat" && document.getElementById("catalogSheet")?.classList.contains("open") && catalogDest === "browse"; }
 function catalogNewItem(){ if(catalogMode === "stock") openStockCatalog(); else openCustomPosition(); }
-/* «＋ Створити»: першим — дія того екрана, де ви зараз; «Новий об’єкт» доступний звідусіль, бо це головне */
+/* «＋ Створити»: лише те, що стосується екрана, де ви зараз (каталог — позиції, команда — працівник, фінанси — дохід) */
 function openCreateChoice(){
   let el = document.getElementById("addMenu");
   if(!el){ el = document.createElement("div"); el.id = "addMenu"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeAddMenu(); }; document.body.appendChild(el); }
@@ -9558,14 +9558,17 @@ function openCreateChoice(){
   let list;
   if(catalogInNav()){
     /* У каталозі — що саме додати: робота, матеріал або на склад (незалежно від відкритої вкладки) */
-    list = here(ic("wrench"), "Нова робота", "у каталог робіт", "setCatalogMode('work');openCustomPosition()")
-      + here(ic("box"), "Новий матеріал", "у каталог матеріалів", "setCatalogMode('material');openCustomPosition()")
-      + here(ic("catalog"), "На склад", "вибрати з каталогу матеріалів", "setCatalogMode('stock');openStockCatalog()")
-      + obj;
+    const opts = {
+      work: here(ic("wrench"), "Нова робота", "у каталог робіт", "setCatalogMode('work');openCustomPosition()"),
+      material: here(ic("box"), "Новий матеріал", "у каталог матеріалів", "setCatalogMode('material');openCustomPosition()"),
+      stock: here(ic("catalog"), "На склад", "вибрати з каталогу матеріалів", "setCatalogMode('stock');openStockCatalog()")
+    };
+    /* першим — те, що на відкритій вкладці */
+    list = [catalogMode, ...["work", "material", "stock"].filter(k => k !== catalogMode)].filter(k => opts[k]).map(k => opts[k]).join("");
   }else if(sec === "prof" && pf === "team"){
-    list = here(ic("profile"), "Новий працівник", "у команду: ім’я, телефон, умови оплати", "openAddPerson()") + obj;
+    list = here(ic("profile"), "Новий працівник", "у команду: ім’я, телефон, умови оплати", "openAddPerson()");
   }else if(!sec && homeView === "fin"){
-    list = item(ic("wrench"), "Дохід без об’єкта", "консультація або разова робота — піде в статистику", "openJobForm()") + obj;
+    list = item(ic("wrench"), "Дохід без об’єкта", "консультація або разова робота — піде в статистику", "openJobForm()");
   }else{
     list = obj + item(ic("wrench"), "Разова робота", "дрібна робота без кошторису: радіатори, умивальник…", "openJobForm()");
   }
