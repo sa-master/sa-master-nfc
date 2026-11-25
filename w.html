@@ -67,7 +67,7 @@ h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .fi b{font-size:16px}.fi span{color:var(--tm);font-weight:650;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
 .acts{display:flex;gap:8px;margin-top:2px}.acts .btn{height:40px;font-size:14px;border-radius:11px}
 .btn{flex:1;height:46px;border-radius:13px;background:var(--p);color:#fff;font-weight:800;font-size:15px}
-.sheet .btn{flex:0 0 auto;width:100%;min-height:48px}
+.sheet .btn{flex:0 0 auto;width:100%;min-height:48px}.sheet .acts .btn{flex:1;width:auto}
 .sheet .in>*{flex-shrink:0}
 .btn.ghost{background:var(--soft);color:var(--p)}
 .btn[disabled]{opacity:.5}
@@ -367,6 +367,61 @@ function navGo(app, addr){
 load();
 window.addEventListener("focus", () => { if(D) load(); });
 setInterval(() => { if(document.visibilityState === "visible" && D && $("sheet").classList.contains("hidden")) load(); }, 60000);
+
+/* ==== Сповіщення працівнику: один раз «Дозволити сповіщення?», далі — тихо оновлюємо підписку ==== */
+const PW = "et_wpush";
+const pwSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const pwIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const pwStandalone = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+const pwGet = () => { try{ return JSON.parse(localStorage.getItem(PW) || "{}") || {}; }catch(e){ return {}; } };
+const pwSet = v => { try{ localStorage.setItem(PW, JSON.stringify(v)); }catch(e){} };
+/* Іконка на екрані «Додому» відкриває саме цю сторінку з посиланням працівника */
+(function(){
+  if(!LINK) return;
+  const m = { name:"et.app", short_name:"et.app", lang:"uk", display:"standalone", start_url: location.origin + "/w.html#" + LINK, scope: location.origin + "/w.html", id: location.origin + "/w.html",
+    background_color:"#EEF3F8", theme_color:"#EEF3F8", icons:[{ src: location.origin + "/app/icon-192.png", sizes:"192x192", type:"image/png" }, { src: location.origin + "/app/icon-512.png", sizes:"512x512", type:"image/png" }] };
+  const l = document.createElement("link"); l.rel = "manifest"; l.href = "data:application/manifest+json," + encodeURIComponent(JSON.stringify(m));
+  document.head.appendChild(l);
+})();
+async function pwReg(){
+  if(!pwSupported() || !LINK) return null;
+  try{ return await navigator.serviceWorker.register("/w-sw.js", { scope:"/w.html" }); }catch(e){ return null; }
+}
+async function pwSend(sub){
+  const r = await fetch(`${SERVER}/push/wsub`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ id: LINK, sub: sub.toJSON(), device: /iPhone/.test(navigator.userAgent) ? "iPhone" : /Android/.test(navigator.userAgent) ? "Android" : "Пристрій" }) });
+  if(!r.ok) throw new Error("Сервер не прийняв підписку");
+  pwSet({ ...pwGet(), sentAt: Date.now(), endpoint: sub.endpoint });
+}
+async function pwEnable(){
+  try{
+    if(await Notification.requestPermission() !== "granted") return;
+    const reg = await pwReg(); if(!reg) throw new Error("Не вдалося увімкнути");
+    await navigator.serviceWorker.ready;
+    const k = await (await fetch(`${SERVER}/push/key`, { cache:"no-store" })).json();
+    const raw = atob(String(k.key).replace(/-/g, "+").replace(/_/g, "/") + "===".slice((String(k.key).length + 3) % 4));
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: Uint8Array.from(raw, c => c.charCodeAt(0)) });
+    await pwSend(sub);
+    toast("Сповіщення увімкнено");
+  }catch(e){ toast(e && e.message ? e.message : "Не вдалося увімкнути"); }
+}
+function pwAsk(){
+  if(!pwSupported() || !LINK || Notification.permission !== "default" || (pwIos() && !pwStandalone()) || pwGet().askedAt) return;
+  if(!$("sheet").classList.contains("hidden")) return;
+  $("sheetIn").innerHTML = `<h3>Дозволити сповіщення?</h3><div class="acts"><button class="btn ghost" onclick="pwDone(false)">Пізніше</button><button class="btn" onclick="pwDone(true)">Дозволити</button></div>`;
+  $("sheet").classList.remove("hidden");
+}
+function pwDone(yes){ pwSet({ ...pwGet(), askedAt: Date.now() }); closeSheet(); if(yes) pwEnable(); }
+async function pwRefresh(){
+  if(!pwSupported() || !LINK || Notification.permission !== "granted") return;
+  const reg = await pwReg(); const sub = reg && await reg.pushManager.getSubscription().catch(() => null);
+  if(!sub) return;
+  const st = pwGet();
+  if(st.endpoint === sub.endpoint && Date.now() - (st.sentAt || 0) < 864e5) return;
+  try{ await pwSend(sub); }catch(e){}
+}
+if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", ev => { if(ev.data && ev.data.etPush === "open") load(); });
+setTimeout(() => { pwRefresh().catch(() => {}); pwAsk(); }, 2500);
 </script>
 </body>
 </html>
