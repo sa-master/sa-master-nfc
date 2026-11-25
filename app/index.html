@@ -5386,7 +5386,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 21:00</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 21:40</div>
   </div>
 
   <div class="fsFooter">
@@ -10842,7 +10842,7 @@ function renderProject(p){
       ${buyOn(p) ? (projectTab === "notebook" ? renderJrnWarnings(p) + renderBuyList(p) : "") : renderNextSteps(p) + (planOn(p) && projectTab === "estimate" ? "" : renderPlanTodo(p))}
       ${projectTab === "estimate" ? renderApprovedBanner(p) + renderClientSends(p) : projectTab === "notebook" ? renderClientSends(p) : ""}
       ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderFilesBox(p) : ""}
-      ${projectTab === "notebook" ? "" : projectTab === "money" ? renderMoneyTab(p) : `<div id="estMaterials">${renderMaterialsTab(p)}</div><div id="estWorks">${renderWorksTab(p)}</div>`}
+      ${projectTab === "notebook" ? "" : projectTab === "money" ? renderMoneyTab(p) : `<div id="estWorks">${renderWorksTab(p)}</div><div id="estMaterials">${renderMaterialsTab(p)}</div>`}
       </div>
     </div>
 
@@ -13581,7 +13581,7 @@ function estJump(part){
   const view = document.querySelector(".projectView");
   const target = document.getElementById(part === "works" ? "estWorks" : "estMaterials");
   if(!view || !target) return;
-  view.scrollTo({ top: part === "materials" ? 0 : view.scrollTop + target.getBoundingClientRect().top - view.getBoundingClientRect().top - 8, behavior:"smooth" });
+  view.scrollTo({ top: part === "works" ? 0 : view.scrollTop + target.getBoundingClientRect().top - view.getBoundingClientRect().top - 8, behavior:"smooth" });
   estChipsSync(part);
 }
 function estChipsSync(force){
@@ -13589,8 +13589,8 @@ function estChipsSync(force){
   if(!nav) return;
   let part = force;
   if(!part){
-    const view = document.querySelector(".projectView"), w = document.getElementById("estWorks");
-    part = view && w && w.getBoundingClientRect().top - view.getBoundingClientRect().top < view.clientHeight * 0.4 ? "works" : "materials";
+    const view = document.querySelector(".projectView"), m = document.getElementById("estMaterials");
+    part = view && m && m.getBoundingClientRect().top - view.getBoundingClientRect().top < view.clientHeight * 0.4 ? "materials" : "works";
   }
   nav.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.dataset.part === part));
 }
@@ -22265,7 +22265,7 @@ function renderSectionNav(p){
   const all = (p.positions || []).filter(x => !x.buyLaterOnly);
   const nm = all.filter(x => x.type === "material").length, nw = all.filter(x => x.type === "work").length;
   if(!nm || !nw) return "";
-  return `<nav class="estChips" id="estChips" aria-label="Розділи кошторису"><button type="button" class="on" data-part="materials" onclick="estJump('materials')">Матеріали<small>${nm}</small></button><button type="button" data-part="works" onclick="estJump('works')">Роботи<small>${nw}</small></button></nav>`;
+  return `<nav class="estChips" id="estChips" aria-label="Розділи кошторису"><button type="button" class="on" data-part="works" onclick="estJump('works')">Роботи<small>${nw}</small></button><button type="button" data-part="materials" onclick="estJump('materials')">Матеріали<small>${nm}</small></button></nav>`;
 }
 function renderSectionNavOld(p){
   if(projectTab !== "materials" || materialsCollapsed(p)) return "";
@@ -24768,8 +24768,8 @@ function openAddMenu(){
   const approved = Boolean(p && getApproved(p));
   el.innerHTML = projectTab === "estimate" ? `<div class="amSheet" role="dialog" aria-label="Що додати">
     <div class="amHead"><b>Що додати в кошторис?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
-    ${item(ic("box"), "Матеріал", "з каталогу матеріалів", "openCatalogFor('material')")}
     ${item(ic("wrench"), "Роботу", "з каталогу робіт", "openCatalogFor('work')")}
+    ${item(ic("box"), "Матеріал", "з каталогу матеріалів", "openCatalogFor('material')")}
     ${item(ic("camera"), "Проєкт чи фото", "PDF проєкту, фото прихованих комунікацій", "filesPick()")}
   </div>` : projectTab === "money" ? `<div class="amSheet" role="dialog" aria-label="Що додати">
     <div class="amHead"><b>Що додати?</b><button type="button" class="amClose" onclick="closeAddMenu()" aria-label="Закрити">✕</button></div>
