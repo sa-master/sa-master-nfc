@@ -4086,7 +4086,7 @@ body.inSec #pfAddPerson{display:none}
 .hBell{flex:0 0 auto;width:2.5rem;height:2.5rem;margin:0 0 1.125rem;border-radius:.75rem;background:rgba(120,120,128,.12);color:var(--t);display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
 .hBell svg{width:1.25rem;height:1.25rem}.hBell .hBellN{position:absolute;top:-.25rem;right:-.25rem;min-width:1.125rem;height:1.125rem;padding:0 .25rem;border-radius:.5625rem;background:#FF3B30;color:#fff;font-size:.6875rem;font-weight:800;line-height:1.125rem;text-align:center}
 .pushBox{border-radius:.75rem;background:rgba(120,120,128,.1);padding:.875rem 1rem;margin:0 0 .75rem;font-size:.9375rem;line-height:1.45;color:var(--t)}.pushBox.on{background:rgba(52,199,89,.12)}
-.pushListHead{display:flex;align-items:center;justify-content:space-between;margin:0 0 .375rem;font-size:.8125rem;font-weight:700;color:var(--tm)}.pushListHead button{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.25rem 0}
+.pushListHead{display:flex;align-items:center;justify-content:space-between;margin:0 0 .375rem;font-size:.8125rem;font-weight:700;color:var(--tm)}.pushListBtns{display:flex;gap:1rem}.pushListHead button{background:none;color:var(--p);font-weight:700;font-size:.8125rem;padding:.25rem 0}
 .pushList{display:flex;flex-direction:column;margin:0 0 1rem}.pushItem{display:flex;align-items:flex-start;gap:.625rem;text-align:left;background:none;padding:.625rem 0;border-top:1px solid rgba(120,120,128,.18);color:var(--t);width:100%}
 .pushDot{flex:0 0 .5rem;height:.5rem;margin-top:.4rem;border-radius:50%;background:transparent}.pushItem.new .pushDot{background:#0A84FF}.pushTxt{flex:1;min-width:0;display:flex;flex-direction:column;font-size:.9375rem;line-height:1.35}.pushTxt b{font-weight:750}.pushTxt span{color:var(--ts,var(--t))}
 .pushItem:not(.new) .pushTxt b{font-weight:600}.pushItem small{flex:0 0 auto;font-size:.75rem;color:var(--tm);font-weight:600;margin-top:.125rem}
@@ -5389,7 +5389,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 21:55</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 25.11.2026 22:05</div>
   </div>
 
   <div class="fsFooter">
@@ -10554,6 +10554,14 @@ function pushBadge(){
   });
   try{ if(navigator.setAppBadge) (n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}); }catch(e){}
 }
+async function pushClear(){
+  if(!confirm("Очистити всі події? Їх не можна буде повернути.")) return;
+  const r = await cloudFetch("/push/clear", { method:"POST", body:"{}" }).catch(() => null);
+  if(!r || r.status !== 200){ toast("Не вдалося очистити — перевірте інтернет"); return; }
+  pushInbox = { items: [], unread: 0 };
+  pushBadge();
+  renderPush();
+}
 async function pushMarkRead(ids, all){
   if(pushInbox){ pushInbox.items.forEach(x => { if(all || ids.includes(x.id)) x.read = true; }); pushInbox.unread = pushInbox.items.filter(x => !x.read).length; pushBadge(); }
   const r = await cloudFetch("/push/read", { method:"POST", body: JSON.stringify(all ? { all:true } : { ids }) }).catch(() => null);
@@ -10584,7 +10592,7 @@ function pushListHtml(){
   if(!pushInbox) return "";
   const items = pushInbox.items;
   if(!items.length) return `<p class="actHint">Поки подій немає. Тут з'явиться, коли клієнт погодить кошторис або відповість «Не підходить», постачальник відповість на звірку, працівник напише запит.</p>`;
-  return `<div class="pushListHead"><span>Події за 30 днів</span>${pushInbox.unread ? `<button type="button" onclick="pushMarkRead([], true).then(renderPush)">Прочитати всі</button>` : ""}</div>
+  return `<div class="pushListHead"><span>Події за 30 днів</span><span class="pushListBtns">${pushInbox.unread ? `<button type="button" onclick="pushMarkRead([], true).then(renderPush)">Прочитати всі</button>` : ""}<button type="button" onclick="pushClear()">Очистити</button></span></div>
     <div class="pushList">${items.map(x => `<button type="button" class="pushItem${x.read ? "" : " new"}" onclick="pushOpenItem('${escapeHtml(x.id)}')">
       <span class="pushDot" aria-hidden="true"></span>
       <span class="pushTxt"><b>${escapeHtml(x.title)}</b><span>${escapeHtml(x.body)}</span></span>
@@ -10613,8 +10621,7 @@ async function renderPush(){
     }else{
       const sub = Notification.permission === "granted" ? await pushCurrentSub() : null;
       if(sub){
-        html = `<div class="pushOn"><span>✓ На цьому пристрої увімкнено.</span>
-          <span class="pushOnBtns"><button type="button" id="pushTestBtn" onclick="pushTest()">Надіслати тестове</button><button type="button" onclick="pushDisable()">Вимкнути тут</button></span></div>`;
+        html = "";   /* увімкнено — нічого не показуємо; вимкнути можна в налаштуваннях телефона */
       }else{
         html = `<div class="pushBox"><strong>Сповіщення на екран вимкнені на цьому пристрої</strong><small>Без сум — лише об'єкт і подія. Телефон запитає дозвіл — натисніть «Дозволити».</small></div>`;
         foot = `<button class="btnPrimary" id="pushEnableBtn" onclick="pushEnable()">Увімкнути сповіщення</button>`;
