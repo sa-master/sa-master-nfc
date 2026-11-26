@@ -5428,7 +5428,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 09:45</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 09:55</div>
   </div>
 
   <div class="fsFooter">
@@ -9163,6 +9163,9 @@ function homeNext(p){
   const debt = projectDebt(p);
   const paid = moneySum(moneyList(p, "payment"));
   const payBtn = { label:"＋ Оплата", action: open("goMoney('payment')") };
+  /* Завершено, а фактичний кошторис ще не надіслано — нагадуємо й на картці головного екрана */
+  if(projectCompleted(p) && getApproved(p) && !p.factualSentAt)
+    return { text:"Фактичний кошторис не надіслано", sub: debt > 0.5 ? `Клієнт винен ${money(debt)}` : "Роботи завершено", label:"Надіслати", action:`openFactual('${id}')` };
   if(projectCompleted(p)) return debt > 0.5
     ? Object.assign({ text:`Клієнт винен ${money(debt)}`, cls:"neg", sub: homeSearch ? `${money(total)}: ${split()}` : `з ${money(total)}` }, payBtn)
     : { text:`Завершено · ${money(total)}`, sub: (homeSearch ? split() + " · " : "") + (p.completedAt ? formatQuoteDate(p.completedAt).slice(0, 10) : "") };
@@ -12851,7 +12854,7 @@ function saveAct(){
   if(document.getElementById("quotePreviewScreen").classList.contains("open")) renderQuotePreview();
   if(waitBefore && actAllDone(project) && (project.stage || "estimate") === "work" && !projectCompleted(project)){
     const names = project.pressureAct.systems.filter(x => x.on && actSysDone(x)).map(actShortName).join(", ");
-    setTimeout(() => { if(confirm(`Випробування зроблено: ${names}.\n\nРоботи на цьому етапі завершено? Відкрию фактичний кошторис для клієнта.`)) finishAndSend(project.id); }, 300);
+    setTimeout(() => { if(confirm(`Випробування зроблено: ${names}.\n\nРоботи на цьому етапі завершено?`)) finishAndSend(project.id); }, 300);
   }
   toast(pending.length ? `Збережено. ${(t => t.charAt(0).toUpperCase() + t.slice(1))(pending.map(actShortName).join(", "))} — допишете, коли випробуєте` : document.getElementById("quotePreviewScreen").classList.contains("open") ? "Випробування додано до фактичного кошторису" : "Випробування збережено — додадуться до фактичного кошторису", 2800);
 }
@@ -13858,7 +13861,8 @@ function openEstimateSheet(){
 
 /* ==== Завершення робіт → фактичний кошторис ====
    Тригер — «Роботи завершено» в «Що далі» або збережені випробування всіх систем (вода/опалення).
-   Після завершення одразу відкриваємо документ; якщо після погодження були зміни — спершу вибір, що показати клієнту */
+   Документ одразу не відкриваємо — надіслати можна, коли зручно: «Що далі» нагадує «Надішліть клієнту фактичний кошторис».
+   Якщо після погодження були зміни — при надсиланні спершу вибір, що показати клієнту */
 function actAllDone(p){
   const a = p && p.pressureAct;
   return Boolean(a && (a.systems || []).some(x => x.on && actSysDone(x)) && !actPending(p));
@@ -13871,7 +13875,8 @@ function finishAndSend(id){
     actionAdvanceStage();
     if(!projectCompleted(p)) return;   /* майстер передумав у підтвердженнях */
   }
-  openFactual(id);
+  currentProjectId = id; projectTab = "estimate"; render();
+  if(getApproved(p)) toast("Об’єкт завершено. Фактичний кошторис надішлете, коли буде зручно — нагадування в «Що далі»", 3600);
 }
 function openFactual(id){
   const p = projects.find(x => x.id === id);
@@ -13975,8 +13980,8 @@ function getNextSteps(p){
     if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
     { const st = actStep(p); if(st) steps.push({ ...st, primary:steps.length === 0 }); }
     steps.push(actAllDone(p)
-      ? { text:"Випробування зроблено — роботи завершено?", sub:"Далі — фактичний кошторис для клієнта", label:"Завершити", action:`finishAndSend('${id}')`, primary:true }
-      : { text:"Роботи завершено?", sub:"Далі — фактичний кошторис для клієнта", label:"Завершено", action:`finishAndSend('${id}')`, primary:steps.length === 0 });
+      ? { text:"Випробування зроблено — роботи завершено?", sub:"Фактичний кошторис надішлете, коли буде зручно", label:"Завершити", action:`finishAndSend('${id}')`, primary:true }
+      : { text:"Роботи завершено?", sub:"Фактичний кошторис надішлете, коли буде зручно", label:"Завершено", action:`finishAndSend('${id}')`, primary:steps.length === 0 });
   }else if(stage === "work"){
     if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
     const later = extrasPending(p).length;
@@ -13985,8 +13990,8 @@ function getNextSteps(p){
     if(rets) steps.push({ text:`Повернути: ${rets} поз.`, sub:"Замовлено більше, ніж треба", label:"Список", action:"setProjectTab('materials')" });
     { const st = actStep(p); if(st) steps.push({ ...st, primary:steps.length === 0 }); }
     steps.push(actAllDone(p)
-      ? { text:"Випробування зроблено — роботи завершено?", sub:"Далі — фактичний кошторис для клієнта", label:"Завершити", action:`finishAndSend('${id}')`, primary:true }
-      : { text:"Роботи завершено?", sub:"Далі — фактичний кошторис для клієнта", label:"Завершено", action:`finishAndSend('${id}')`, primary:steps.length === 0 });
+      ? { text:"Випробування зроблено — роботи завершено?", sub:"Фактичний кошторис надішлете, коли буде зручно", label:"Завершити", action:`finishAndSend('${id}')`, primary:true }
+      : { text:"Роботи завершено?", sub:"Фактичний кошторис надішлете, коли буде зручно", label:"Завершено", action:`finishAndSend('${id}')`, primary:steps.length === 0 });
   }
 
   if(stage === "done" && !p.handedOverAt){ const st = actStep(p); if(st) steps.push(st); }
