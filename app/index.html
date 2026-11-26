@@ -4267,6 +4267,25 @@ body.inSec #pfAddPerson{display:none}
   .main:has(> .hTitleRow) .etLogoBtn{grid-column:3!important}
   .main:has(> .hTitleRow) .hBell{grid-column:4!important}
 }
+
+/* ==== v6 «Спокійніше» — кошторис: назва на всю ширину, під нею ціна за одиницю · кількість · сума ====
+   Кнопки «−» і «+» — 44×40 (влучити пальцем), шрифт від 13px, назви не сині. */
+.posRow2{grid-template-columns:minmax(0,1fr) auto auto!important;grid-template-areas:"main main main" "unit qty sum";row-gap:.375rem!important;column-gap:.5rem!important;padding:.75rem .125rem!important}
+.posRow2 .posMain{grid-area:main}
+.posRow2 .posName{font-size:1rem!important;font-weight:500!important;line-height:1.3!important}
+.posRow2 .posMeta{font-size:.75rem!important;margin-top:.125rem!important;white-space:normal!important}
+.posUnit{grid-area:unit;font-size:.8125rem;color:var(--tm);font-variant-numeric:tabular-nums;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.posRow2 .posQty{grid-area:qty;gap:0!important;background:rgba(120,140,170,.12);border-radius:.625rem}
+.posRow2 .posQty button{width:2.75rem!important;height:2.5rem!important;border-radius:.625rem!important;background:none!important;color:var(--ts)!important;font-size:1.25rem!important;font-weight:500!important}
+.posRow2 .posQty input{width:2.5rem!important;height:2.25rem!important;margin:0!important;border:0!important;background:none!important;font-size:1rem!important;font-weight:650!important}
+.posRow2 .posQty input:focus{background:var(--card)!important;box-shadow:0 0 0 1.5px var(--p)}
+.posRow2 .posSumCol{grid-area:sum;width:5.5rem!important;min-width:5.5rem!important;font-size:1rem!important;font-weight:700!important;line-height:1.2!important}
+.estimateSectionTitle{font-family:inherit!important;font-size:.9375rem!important;font-weight:700!important;letter-spacing:.02em!important;color:var(--t)}
+.estimateSection.doubtSec .estimateSectionTitle{color:#B26200}
+@media (prefers-color-scheme: dark){.estimateSection.doubtSec .estimateSectionTitle{color:#F4B866}}
+.estimateSectionTotalLabel{font-family:inherit!important;letter-spacing:0!important;text-transform:none!important;font-size:.9375rem!important;color:var(--tm)!important}
+.estimateSectionTotalValue{font-size:1.0625rem!important;font-weight:700!important}
+.projectTabs button.active{color:var(--t)!important}
 </style>
 </head>
 
@@ -15060,12 +15079,13 @@ function renderPosition(projectId, pos){
         <span class="posName">${escapeHtml(positionShortName(pos))}</span>
         ${tags.length || note ? `<span class="posMeta">${tags.join("")}${note}</span>` : ""}
       </button>
+      <span class="posUnit">${priceSet ? `${money(netPrice)} / ${escapeHtml(unit)}` : ""}</span>
       <div class="posQty">
         <button type="button" onclick="posQtyStep('${prj}','${pid}',-1)" aria-label="Менше">−</button>
         <input inputmode="decimal" enterkeyhint="done" value="${formatQty(qty)}" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur()}" onchange="posQtySet('${prj}','${pid}',this.value)" aria-label="Кількість, ${escapeHtml(unit)}">
         <button type="button" onclick="posQtyStep('${prj}','${pid}',1)" aria-label="Більше">＋</button>
       </div>
-      <span class="posSumCol ${priceSet ? "" : "notSetTxt"}">${priceSet ? `${money(total)}<small>${money(netPrice)}/${escapeHtml(unit)}</small>` : "без ціни"}</span>
+      <span class="posSumCol ${priceSet ? "" : "notSetTxt"}">${priceSet ? money(total) : "без ціни"}</span>
     </div>
   `;
 }
