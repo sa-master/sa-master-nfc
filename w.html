@@ -259,6 +259,9 @@ function statBar(st, b){
 
 
 /* ---- Дії ---- */
+/* Номер операції: одна відкрита форма — один номер. Повтор після обриву зв'язку сервер не запише вдруге */
+let formOp = "";
+function newOp(){ const a = new Uint8Array(12); crypto.getRandomValues(a); return Array.from(a, b => b.toString(16).padStart(2, "0")).join(""); }
 async function send(body){
   const r = await fetch(`${SERVER}/w/${LINK}/event`, { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) });
   const d = await r.json().catch(() => ({}));
@@ -274,6 +277,7 @@ function sheet(html){ $("sheetIn").innerHTML = html; $("sheet").classList.remove
 function closeSheet(){ $("sheet").classList.add("hidden"); }
 function objTitle(pid){ const o = ((D.state || {}).objects || []).find(x => x.pid === pid); return o ? esc(o.title) : ""; }
 function askForm(pid){
+  formOp = newOp();
   sheet(`<div class="hd"><h3>Що потрібно на об’єкт</h3><button class="x" onclick="closeSheet()">✕</button></div>
     <div style="color:var(--tm);font-size:14px">${objTitle(pid)}</div>
     <label class="f">Напишіть майстру<textarea id="askText" placeholder="Привезти три коліна 50"></textarea></label>
@@ -284,12 +288,13 @@ async function askSend(pid){
   const text = $("askText").value.trim();
   if(!text){ toast("Напишіть, що потрібно"); return; }
   $("askBtn").disabled = true;
-  try{ await send({ type:"request", pid, text }); closeSheet(); toast("Надіслано майстру"); }
+  try{ await send({ type:"request", pid, text, op:formOp }); closeSheet(); toast("Надіслано майстру"); }
   catch(e){ toast(e.message); $("askBtn").disabled = false; }
 }
 let photoBlob = null;
 function boughtForm(pid){
   photoBlob = null;
+  formOp = newOp();
   const today = new Date(); const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   sheet(`<div class="hd"><h3>Купив за свої</h3><button class="x" onclick="closeSheet()">✕</button></div>
     <div style="color:var(--tm);font-size:14px">${objTitle(pid)} · майстер підтвердить і поверне</div>
@@ -323,7 +328,7 @@ async function boughtSend(pid){
       if(!r.ok) throw new Error(d.error || "Фото не завантажилось");
       photo = d.id;
     }
-    await send({ type:"bought", pid, amount, date:$("bDate").value, text:$("bText").value.trim(), photo });
+    await send({ type:"bought", pid, amount, date:$("bDate").value, text:$("bText").value.trim(), photo, op:formOp });
     closeSheet(); toast("Надіслано — майстер підтвердить");
   }catch(e){ toast(e.message); $("bBtn").disabled = false; }
 }
@@ -409,9 +414,10 @@ async function wactSend(){
   const d = wactDraft();
   if(!d.before || !d.after){ toast("Потрібні обидва фото манометра — на початку і в кінці"); return; }
   if(String(d.start ?? "").trim() === "" || String(d.end ?? "").trim() === ""){ toast("Впишіть тиск на початку і в кінці"); return; }
+  if(!d.op){ d.op = newOp(); wactPut(d); }   /* номер у чернетці — повтор після обриву не задвоїть */
   $("wactBtn").disabled = true;
   try{
-    await send({ type:"act", pid:wactCur.pid, sys:wactCur.sys, start:d.start, end:d.end, before:d.before, after:d.after });
+    await send({ type:"act", op:d.op, pid:wactCur.pid, sys:wactCur.sys, start:d.start, end:d.end, before:d.before, after:d.after });
     const all = wactAll(); if(all[wactCur.pid]){ delete all[wactCur.pid][wactCur.sys]; wactSave(all); }
     closeSheet(); toast("Надіслано майстру");
   }catch(e){ toast(e.message); $("wactBtn").disabled = false; }
