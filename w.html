@@ -24,6 +24,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .brand{font-size:22px;font-weight:900;letter-spacing:-.02em}.brand i{font-style:normal;color:var(--p)}
 .firm{display:flex;align-items:center;gap:10px;min-width:0}.firm img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:var(--card)}.firm b{font-size:17px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pwTx{color:var(--tm);font-size:15px;line-height:1.5;margin:0}.pwTx li{margin:4px 0}ol.pwTx{padding-left:20px}.pwOk{color:var(--t);font-weight:700}
+#pwBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;width:min(520px, calc(100% - 24px));display:flex;gap:8px;padding:6px;border-radius:16px;background:var(--card);box-shadow:0 10px 40px rgba(0,0,0,.3)}.pwGo{flex:1;height:46px;border-radius:12px;background:var(--p);color:#fff;font-weight:750;font-size:16px}.pwX{flex:0 0 46px;height:46px;border-radius:12px;background:var(--soft);color:var(--tm);font-size:22px}
 .topBtns{display:flex;gap:8px;flex:0 0 auto}
 .call{width:40px;height:40px;border-radius:50%;background:var(--soft);color:var(--p);display:flex;align-items:center;justify-content:center}
 h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
@@ -500,9 +501,11 @@ async function pwEnable(){
 }
 function pwAsk(){
   if(!pwSupported() || !LINK || Notification.permission !== "default" || (pwIos() && !pwStandalone()) || pwGet().askedAt) return;
-  if(!$("sheet").classList.contains("hidden")) return;
-  $("sheetIn").innerHTML = `<h3>Дозволити сповіщення?</h3><div class="acts"><button class="btn ghost" onclick="pwDone(false)">Пізніше</button><button class="btn" onclick="pwDone(true)">Дозволити</button></div>`;
-  $("sheet").classList.remove("hidden");
+  if(document.getElementById("pwBar")) return;
+  /* Не питання, а кнопка: натискання — і одразу системне «Дозволити сповіщення?» */
+  const el = document.createElement("div"); el.id = "pwBar";
+  el.innerHTML = `<button type="button" class="pwGo" onclick="pwDone(true)">🔔 Увімкнути сповіщення</button><button type="button" class="pwX" onclick="pwDone(false)" aria-label="Закрити">×</button>`;
+  document.body.appendChild(el);
 }
 /* Дзвіночок у шапці: стан сповіщень і як увімкнути — щоб можна було будь-коли, а не лише в першому питанні */
 async function pwOpen(){
@@ -518,7 +521,7 @@ async function pwOpen(){
   if(!body) body = `<p class="pwTx">Нові об’єкти, нотатки, відповіді на ваші запити й фото приходитимуть сповіщенням.</p><button class="btn" onclick="closeSheet();pwEnable().then(pwOpen)">Дозволити сповіщення</button>`;
   sheet(`<div class="hd"><h3>Сповіщення</h3><button class="x" onclick="closeSheet()">✕</button></div>${body}`);
 }
-function pwDone(yes){ pwSet({ ...pwGet(), askedAt: Date.now() }); closeSheet(); if(yes) pwEnable(); }
+function pwDone(yes){ pwSet({ ...pwGet(), askedAt: Date.now() }); document.getElementById("pwBar")?.remove(); if(yes) pwEnable(); }
 async function pwRefresh(){
   if(!pwSupported() || !LINK || Notification.permission !== "granted") return;
   const reg = await pwReg(); const sub = reg && await reg.pushManager.getSubscription().catch(() => null);
