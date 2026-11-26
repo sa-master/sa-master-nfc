@@ -20,11 +20,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;800&family=Russo+One&display=swap" rel="stylesheet">
 
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<!-- Бібліотеки Excel і PDF вантажаться паралельно й не затримують відкриття застосунку -->
+<script async src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <style>
+.hCloudBar{display:flex;align-items:center;gap:.5rem;width:100%;margin:.25rem 0 .5rem;padding:.5rem .75rem;border:1px solid rgba(255,183,77,.45);background:rgba(255,183,77,.12);color:#ffcf8a;border-radius:.75rem;font:inherit;font-size:.8125rem;line-height:1.3;text-align:left}
+.hCloudBar b{margin-left:auto;flex:0 0 auto;font-weight:800;color:#ffcf8a;text-decoration:underline}
+@media (prefers-color-scheme: light){ .hCloudBar{background:#fff4e0;border-color:#f0b35a;color:#8a4b00} .hCloudBar b{color:#8a4b00} }
 :root{
   --p:#0A84FF;
   --p-action:#0878F3;
@@ -5567,6 +5571,35 @@ body.inSec #pfAddPerson{display:none}
 
 </script>
 <script>
+/* Запис у пам'ять телефона з перевіркою: якщо місця забракло — помітне попередження, а не тиха втрата змін */
+/* Не записане тримаємо в пам'яті: воно йде і в хмару, і в «Зберегти копію» */
+let storeFailedKeys = new Set();
+const storePending = {};
+function storeSet(key, text){
+  try{ localStorage.setItem(key, text); }
+  catch(e){
+    storeFailedKeys.add(key); storePending[key] = text; storeWarnShow();
+    try{ if(cloudEnabled()){ clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 3000); } }catch(e2){}
+    return false;
+  }
+  delete storePending[key];
+  if(storeFailedKeys.delete(key) && !storeFailedKeys.size) storeWarnHide();
+  return true;
+}
+function storeWarnShow(){
+  if(!document.body){ document.addEventListener("DOMContentLoaded", storeWarnShow, { once:true }); return; }
+  let el = document.getElementById("storeWarn");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "storeWarn";
+    el.setAttribute("role", "alert");
+    el.style.cssText = "position:fixed;left:.75rem;right:.75rem;top:calc(env(safe-area-inset-top,0px) + .5rem);z-index:9999;background:#b3261e;color:#fff;border-radius:.875rem;padding:.75rem .875rem;font-size:.875rem;line-height:1.35;box-shadow:0 .5rem 1.5rem rgba(0,0,0,.4);display:flex;gap:.625rem;align-items:center";
+    el.innerHTML = `<span style="flex:1"><b>Останні зміни не збереглися на телефоні</b> — закінчилось місце для даних. Збережіть копію, поки застосунок відкритий.</span><button type="button" onclick="exportBackup()" style="flex:0 0 auto;background:#fff;color:#b3261e;border:0;border-radius:.625rem;padding:.5rem .75rem;font-weight:800;font-size:.875rem">Зберегти копію</button>`;
+    document.body.appendChild(el);
+  }
+}
+function storeWarnHide(){ document.getElementById("storeWarn")?.remove(); }
+
 
 /* ==== Хмара: автозбереження в Cloudflare і синхронізація між пристроями ====
    Налаштування й службові позначки лежать поза ключами sa_*, тому самі не синхронізуються. */
@@ -5671,6 +5704,7 @@ function cloudCollect(){
     const key = localStorage.key(i);
     if(cloudIsDataKey(key)) data[key] = localStorage.getItem(key);
   }
+  try{ Object.keys(storePending).forEach(k => { if(cloudIsDataKey(k)) data[k] = storePending[k]; }); }catch(e){}
   return data;
 }
 
@@ -5729,7 +5763,25 @@ function cloudTime(iso){
     : d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
 }
 
+/* Головний екран: показуємо лише проблему зі збереженням у хмару. Усе гаразд — нічого не видно */
+function cloudHomeHtml(){
+  try{
+    if(!cloudEnabled()) return "";
+    const dirty = Number(cloudGet(CLOUD_DIRTY_KEY) || 0);
+    const late = dirty && Date.now() - dirty > 120000;
+    if(!cloudLastError && !late) return "";
+    const offline = navigator.onLine === false || /Немає зв’язку/.test(cloudLastError);
+    const text = offline ? "Немає зв’язку · зміни збережено на телефоні, у хмару підуть пізніше" : (cloudLastError || "Зміни ще не збережено в хмарі");
+    return `<button type="button" class="hCloudBar" onclick="cloudSaveNow()">${offline ? "☁︎" : "⚠"} ${escapeHtml(text)}<b>Спробувати</b></button>`;
+  }catch(e){ return ""; }
+}
+function renderCloudHome(){ const el = document.getElementById("hCloud"); if(el) el.innerHTML = cloudHomeHtml(); }
+window.addEventListener("online", () => { try{ if(cloudEnabled()) cloudPush(); }catch(e){} renderCloudHome(); });
+window.addEventListener("offline", () => { try{ renderCloudHome(); }catch(e){} });
+setInterval(() => { try{ renderCloudHome(); }catch(e){} }, 30000);
+
 function renderCloudStatus(){
+  try{ renderCloudHome(); }catch(e){}
   /* З хмарою окремий розділ «Резервна копія» не потрібен — лишаємо тихе посилання під «Хмарою». */
   const on = cloudEnabled();
   document.getElementById("pfBackupSection")?.classList.toggle("hidden", on);
@@ -5803,8 +5855,12 @@ async function cloudPullAndReload(){
   location.reload();
 }
 
+/* Копія в «Відновити з хмари». true — сервер підтвердив (або копіювати нічого: порожні дані) */
 async function cloudArchive(data, reason){
-  try{ await cloudFetch("/sync/archive", { method:"POST", headers:{ "X-Reason": reason || "manual" }, body: JSON.stringify(data) }); }catch(e){}
+  try{
+    const { status } = await cloudFetch("/sync/archive", { method:"POST", headers:{ "X-Reason": reason || "manual" }, body: JSON.stringify(data) });
+    return status === 200 || status === 400;
+  }catch(e){ return false; }
 }
 
 /* Змінено і тут, і на іншому пристрої. Нічого не губимо: та версія, яку не обрали, лягає окремою копією. */
@@ -5816,7 +5872,11 @@ async function cloudResolveConflict(remote){
   );
   try{
     if(takeRemote){
-      await cloudArchive(cloudCollect(), "conflict-local");
+      /* Дані з цього телефона замінимо лише тоді, коли сервер підтвердив, що зберіг їхню копію */
+      if(!(await cloudArchive(cloudCollect(), "conflict-local"))){
+        cloudLastError = "Не вдалося зберегти копію даних з цього телефона — нічого не замінено. Спробуйте, коли буде стабільний інтернет";
+        renderCloudStatus(); toast(cloudLastError, 5000); return;
+      }
       await cloudPullAndReload();
     }else{
       const { body } = await cloudFetch("/sync");
@@ -5855,7 +5915,10 @@ async function cloudCheckRemote(firstConnect){
         `У хмарі вже є дані (${body.device ? body.device + ", " : ""}${cloudTime(body.savedAt)}).\n\n` +
         "OK — завантажити їх на цей пристрій.\nСкасувати — записати в хмару дані з цього пристрою.\n\nІнша версія збережеться окремою копією."
       );
-      if(take){ await cloudArchive(cloudCollect(), "conflict-local"); await cloudPullAndReload(); }
+      if(take){
+        if(!(await cloudArchive(cloudCollect(), "conflict-local"))){ cloudLastError = "Не вдалося зберегти копію даних з цього телефона — нічого не замінено. Спробуйте, коли буде стабільний інтернет"; toast(cloudLastError, 5000); return; }
+        await cloudPullAndReload();
+      }
       else{ const r = await cloudFetch("/sync"); if(r.body && r.body.data) await cloudArchive(r.body.data, "conflict-cloud"); await cloudPush(true); }
       return;
     }
@@ -5975,7 +6038,7 @@ async function previewProjectRestore(i){
   const was = getApproved(old) ? `погоджено ${money(getClientTotal(old))}` : `кошторис ${money(getEstimateTotal(old))}`;
   const nPos = (old.positions || []).length;
   if(!confirm(`Копія: ${cloudCopyLabel(it.id)}\n\nУ ній «${projectTitlePlain(old)}»: ${was}, позицій ${nPos}.\n\nПовернути об’єкт до цього стану? Поточний стан збережеться окремою копією в хмарі.`)) return;
-  try{ await cloudArchive(cloudCollect(), "before-restore"); }catch(e){}
+  if(!(await cloudArchive(cloudCollect(), "before-restore"))){ toast("Не вдалося зберегти копію поточного стану — нічого не змінено. Спробуйте, коли буде стабільний інтернет", 4500); return; }
   const idx = projects.findIndex(x => x.id === prjRestore.projectId);
   if(idx < 0) return;
   old.updatedAt = new Date().toISOString();
@@ -5991,7 +6054,7 @@ async function cloudRestore(id){
   try{
     const { status, body } = await cloudFetch(`/sync/history/${encodeURIComponent(id)}`);
     if(status !== 200 || !body || !body.data) throw new Error();
-    await cloudArchive(cloudCollect(), "before-restore");
+    if(!(await cloudArchive(cloudCollect(), "before-restore"))){ toast("Не вдалося зберегти копію поточних даних — нічого не змінено. Спробуйте, коли буде стабільний інтернет", 4500); return; }
     cloudApply(body.data);
     cloudSet(CLOUD_DIRTY_KEY, String(Date.now()));
     await cloudPush(true);
@@ -6826,7 +6889,7 @@ projects.forEach(project => (Array.isArray(project.positions) ? project.position
   if(unit !== position.unit){ position.unit = unit; unitsNormalized = true; }
 }));
 if(unitsNormalized){
-  try{ localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects)); }catch(e){}
+  storeSet(PROJECTS_KEY, JSON.stringify(projects));
 }
 
 /* Один раз розкладаємо матеріали з «Інше» за категоріями за назвою.
@@ -6858,29 +6921,31 @@ syncSupplierRatesFromCatalog();
 
 try{ localStorage.setItem(DEFAULT_WORKS_SEEDED_KEY, "1"); }catch(e){}
 
+
 function saveProjects(){
   try{ matsStamp(); }catch(e){}
   try{ crewPublishSoon(); }catch(e){}
   const strings = projects.map(p => JSON.stringify(p));
   try{ jrnRecord(strings); }catch(e){}
   const data = "[" + strings.join(",") + "]";
-  try{ localStorage.setItem(PROJECTS_KEY, data); }
-  catch(e){ /* місця забракло — спершу звільняємо журнал, об'єкти важливіші */
-    try{ localStorage.removeItem(JRN_KEY); jrnLogCache = {}; localStorage.setItem(PROJECTS_KEY, data); }catch(e2){}
+  try{ localStorage.setItem(PROJECTS_KEY, data); delete storePending[PROJECTS_KEY]; if(storeFailedKeys.delete(PROJECTS_KEY) && !storeFailedKeys.size) storeWarnHide(); }
+  catch(e){ /* місця забракло — спершу звільняємо журнал дій, об'єкти важливіші; не вийшло — попереджаємо */
+    try{ localStorage.removeItem(JRN_KEY); jrnLogCache = {}; }catch(e2){}
+    storeSet(PROJECTS_KEY, data);
   }
 }
 
 function saveProfileData(){
-  try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }catch(e){}
+  storeSet(PROFILE_KEY, JSON.stringify(profile));
 }
 
 function saveTeamData(){
-  try{ localStorage.setItem(TEAM_KEY, JSON.stringify(team)); }catch(e){}
+  storeSet(TEAM_KEY, JSON.stringify(team));
   try{ crewPublishSoon(); }catch(e){}
 }
 
 function saveCatalog(){
-  try{ localStorage.setItem(CATALOG_KEY, JSON.stringify(catalog)); }catch(e){}
+  storeSet(CATALOG_KEY, JSON.stringify(catalog));
 }
 
 function loadSupplierRates(){
@@ -6891,7 +6956,7 @@ function loadSupplierRates(){
 }
 
 function saveSupplierRates(){
-  try{ localStorage.setItem(SUPPLIER_RATES_KEY, JSON.stringify(supplierRates)); }catch(e){}
+  storeSet(SUPPLIER_RATES_KEY, JSON.stringify(supplierRates));
 }
 
 /* У версії тесту 18 була ручна фіксація. Вона не входить у погоджений
@@ -6940,7 +7005,7 @@ team.forEach(person => {
 if(teamCollaborationMigrated) saveTeamData();
 
 function saveSupplierNames(value){
-  try{ localStorage.setItem(SUPPLIER_NAMES_KEY, JSON.stringify(value)); }catch(e){}
+  storeSet(SUPPLIER_NAMES_KEY, JSON.stringify(value));
 }
 
 function loadSupplierNames(){
@@ -8002,7 +8067,7 @@ function saveSupplierContact(){
   const key = normalizeText(editingSupplierContact);
   if(name || phone) contacts[key] = { supplierName: editingSupplierContact, name, phone };
   else delete contacts[key];
-  try{ localStorage.setItem(SUPPLIER_CONTACTS_KEY, JSON.stringify(contacts)); }catch(e){}
+  storeSet(SUPPLIER_CONTACTS_KEY, JSON.stringify(contacts));
   closeSupplierContact();
   renderProcurementPlan();
   toast("Контакт збережено");
@@ -9334,6 +9399,7 @@ function renderHomeNew(){
   const chip = (k, label) => (k === "all" || cnt[k]) ? `<button type="button" class="hChip ${homeFilter === k ? "on" : ""}" onclick="setHomeFilter('${k}')">${label}<small>${cnt[k]}</small></button>` : "";
   main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + `
     <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="hBell" onclick="openPush()" aria-label="${pushInbox && pushInbox.unread ? `Сповіщення, нових: ${pushInbox.unread}` : "Сповіщення"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${pushInbox && pushInbox.unread ? `<span class="hBellN">${pushInbox.unread > 99 ? "99+" : pushInbox.unread}</span>` : ""}</button><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button></div>
+    <div id="hCloud">${cloudHomeHtml()}</div>
     ${act.length > 3 || homeSearch ? `<input class="hSearch" type="search" placeholder="Адреса, клієнт або теги: тепла 2 санвуз" value="${escapeHtml(homeSearch)}" oninput="onHomeSearch(this.value)">` : ""}
     <div class="hChips">${chip("all", "Усі")}${chip("ph0", "Прорахунок")}${chip("ph1", "Комплектація")}${chip("ph2", "Монтаж")}${chip("debt", "Борг")}${chip("wait", "Чекають")}${chip("archive", "Архів")}</div>
     <div id="hList">${renderHomeList()}</div>`;
@@ -9547,7 +9613,7 @@ function renderFinanceHtml(){
    pay — видали аванс/зарплату; expense — працівник купив за свої (ми винні йому). */
 const JOBS_KEY = "sa_jobs", LEDGER_KEY = "sa_teamLedger";
 function lsList(k){ try{ const v = JSON.parse(localStorage.getItem(k) || "[]"); return Array.isArray(v) ? v : []; }catch(e){ return []; } }
-function lsSave(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} if(typeof crewSoon === "function") crewSoon(); }
+function lsSave(k, v){ storeSet(k, JSON.stringify(v)); if(typeof crewSoon === "function") crewSoon(); }
 const jobsList = () => lsList(JOBS_KEY);
 const ledgerList = () => lsList(LEDGER_KEY);
 function jobTeamSum(j){ return (j.people || []).reduce((s, x) => s + (Number(x.amount) || 0), 0); }
@@ -10573,6 +10639,10 @@ function pushKeyBytes(b64){
   return Uint8Array.from(bin, c => c.charCodeAt(0));
 }
 let pushReg = null;
+/* Service worker реєструємо одразу (не лише для сповіщень): з ним застосунок відкривається без інтернету */
+if(typeof navigator !== "undefined" && "serviceWorker" in navigator && !ET_TEST_BUILD && /^\/app\//.test(location.pathname)){
+  window.addEventListener("load", () => { navigator.serviceWorker.register("/app/sw.js", { scope:"/app/" }).then(r => { pushReg = pushReg || r; }).catch(() => {}); });
+}
 async function pushRegistration(){
   if(pushReg) return pushReg;
   if(!pushSupported() || ET_TEST_BUILD || !/^\/app\//.test(location.pathname)) return null;
@@ -19465,7 +19535,7 @@ function applyProcurementResponse(){
       name: response.managerName || previous.name || "",
       phone: response.managerPhone || previous.phone || ""
     };
-    try{ localStorage.setItem(SUPPLIER_CONTACTS_KEY, JSON.stringify(contacts)); }catch(e){}
+    storeSet(SUPPLIER_CONTACTS_KEY, JSON.stringify(contacts));
   }
   if(response.webKey && project.supplierChecks){
     const c = supChk(project, response.webKey) || {};
@@ -21618,6 +21688,7 @@ function buildBackupFile(){
     const key = localStorage.key(i);
     if(key && isBackupKey(key)) data[key] = localStorage.getItem(key);
   }
+  Object.keys(storePending).forEach(k => { if(isBackupKey(k)) data[k] = storePending[k]; });
   const now = new Date();
   const payload = {
     app: BACKUP_APP_ID,
@@ -24812,7 +24883,7 @@ function buyLeftResolve(id, action){
 /* ---- Склад: залишки з усіх об'єктів ---- */
 const STOCK_KEY = "sa_stock";
 function stockList(){ try{ const v = JSON.parse(localStorage.getItem(STOCK_KEY) || "[]"); return Array.isArray(v) ? v : []; }catch(e){ return []; } }
-function stockSave(list){ try{ localStorage.setItem(STOCK_KEY, JSON.stringify(list)); }catch(e){} }
+function stockSave(list){ storeSet(STOCK_KEY, JSON.stringify(list)); }
 function stockAdd(e){
   const list = stockList();
   const same = list.find(x => x.from === e.from && (e.catalogId ? x.catalogId === e.catalogId : normalizeText(x.name) === normalizeText(e.name)));
