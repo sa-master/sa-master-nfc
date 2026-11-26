@@ -5301,18 +5301,8 @@ body.inSec #pfAddPerson{display:none}
         </div>
 
         <div class="formGroup">
-          <label class="formLabel">Ім'я</label>
-          <input class="formInput" id="pfFirstName" placeholder="Напр. Олег" autocomplete="off">
-        </div>
-
-        <div class="formGroup">
-          <label class="formLabel">Прізвище</label>
-          <input class="formInput" id="pfLastName" placeholder="Напр. Коваль" autocomplete="off">
-        </div>
-
-        <div class="formGroup">
-          <label class="formLabel">Назва компанії</label>
-          <input class="formInput" id="pfCompany" placeholder="Напр. Сантехмайстер" autocomplete="off">
+          <label class="formLabel">Ім’я та прізвище або назва компанії</label>
+          <input class="formInput" id="pfCompany" placeholder="Напр. Олег Коваль або Сантехмайстер" autocomplete="off">
         </div>
 
         <div class="formGroup" style="margin-bottom:0">
@@ -5431,7 +5421,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 17:50</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 22:05</div>
   </div>
 
   <div class="fsFooter">
@@ -9058,6 +9048,10 @@ function render(){
   requestAnimationFrame(syncFloatingPanelSpace);
 }
 
+/* Одне ім’я майстра: або «Ім’я Прізвище», або назва компанії — як вписав. Старі окремі ім’я/прізвище — запасний варіант */
+function profileShownName(){
+  return String(profile.company || "").trim() || [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" ");
+}
 function profileCompanyName(){
   return String(profile.company || "").trim() || [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" ") || "et.app";
 }
@@ -9084,7 +9078,7 @@ function renderHero(){
 
   const companyName = profileCompanyName();
 
-  const ini = ([profile.firstName, profile.lastName].map(x => String(x || "").trim().charAt(0)).join("") || "◎").toUpperCase();
+  const ini = (profileShownName().split(/\s+/).filter(Boolean).slice(0, 2).map(w => w.charAt(0)).join("") || "◎").toUpperCase();
   hero.innerHTML = `
     <div class="etHome compact">
       <div class="etBrand" style="cursor:default"><div class="etLogo etLogoHome" aria-label="et.app"><div class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></div></div></div>
@@ -9937,7 +9931,7 @@ async function crewPublishNow(per){
   if(per._wSig === sig) return;
   const data = await supplierApi("/w", { method:"POST", body: JSON.stringify({
     id: per.wLink || "", personId: per.id, personName: per.name,
-    masterName: [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" "),
+    masterName: profileShownName(),
     masterPhone: String(profile.phone || ""), state }) });
   per.wLink = data.id;
   Object.defineProperty(per, "_wSig", { value:sig, writable:true, enumerable:false, configurable:true });
@@ -11892,8 +11886,8 @@ async function prepareSupplierCheck(draft){
 }
 function supplierCheckLinkText(draft){
   const p = projects.find(x => x.id === draft.projectId);
-  const who = [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" ") || profileCompanyName();
-  return `Доброго дня! Це ${who}${profile.company && who !== profile.company ? ` (${profile.company})` : ""}.\n\n` +
+  const who = profileCompanyName();
+  return `Доброго дня! Це ${who}.\n\n` +
     `Прошу звірити наявність і ціни по об’єкту «${p ? projectTitlePlain(p) : "об’єкт"}» — ${draft.positionIds.length} поз.\n` +
     `Відповісти можна за посиланням: однією кнопкою «Усе є», по кожній позиції або таблицею Excel.\n${SUPPLIER_LINK_BASE + draft.web.linkId}\n\nДякую!`;
 }
@@ -17707,8 +17701,7 @@ function updateSupplierLink(name, patch){
 }
 
 function supplierLinkText(name, url){
-  const who = [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" ");
-  return `Доброго дня! Це ${who || profileCompanyName()}${profile.company && who ? ` (${profile.company})` : ""}.\n` +
+  return `Доброго дня! Це ${profileCompanyName()}.\n` +
     `Надішліть, будь ласка, актуальний прайс за посиланням — можна просто вставити рядки з вашої бази:\n${url}\n` +
     `Цим самим посиланням зручно оновлювати ціни. Дякую!`;
 }
@@ -17766,7 +17759,7 @@ async function publishSupplierLink(name, handledAt){
   const data = await supplierApi("/sup", { method:"POST", body: JSON.stringify({
     id: link && link.id,
     supplierName: cleanText(name),
-    masterName: [profile.firstName, profile.lastName].map(x => String(x || "").trim()).filter(Boolean).join(" "),
+    masterName: profileShownName(),
     masterPhone: String(profile.phone || ""),
     company: String(profile.company || ""),
     items: current.items,
@@ -21564,9 +21557,7 @@ function pfToggleTrade(id){
 function openProfile(){
   renderProfileTrades();
   { let t = "me"; try{ t = sessionStorage.getItem("sa_pfTab") || "me"; }catch(e){} const el = document.getElementById("profileScreen"); if(el) el.dataset.pf = ["me", "team"].includes(t) ? t : "me"; }
-  document.getElementById("pfFirstName").value = profile.firstName || "";
-  document.getElementById("pfLastName").value = profile.lastName || "";
-  document.getElementById("pfCompany").value = profile.company || "";
+  document.getElementById("pfCompany").value = profileShownName();
   document.getElementById("pfPhone").value = profile.phone || "";
   document.getElementById("pfPayee").value = profile.payee || "";
   document.getElementById("pfTaxId").value = profile.taxId || "";
@@ -21839,9 +21830,9 @@ function renderTeamList(){
 }
 
 function saveProfile(){
-  profile.firstName = document.getElementById("pfFirstName").value.trim();
-  profile.lastName = document.getElementById("pfLastName").value.trim();
   profile.company = document.getElementById("pfCompany").value.trim();
+  npKeepLegacyName();
+  profile.firstName = ""; profile.lastName = "";
   profile.phone = document.getElementById("pfPhone").value.trim();
   profile.payee = document.getElementById("pfPayee").value.trim();
   profile.taxId = document.getElementById("pfTaxId").value.trim();
@@ -22449,6 +22440,7 @@ function renderOrderPick(){
       ${orderPick.where === "near" ? `<span class="onbNote" style="text-align:left">${orderPick.nearBusy ? "Шукаю поштомат біля об’єкта…" : orderPick.np ? `📦 ${escapeHtml(orderPick.np.text)} · <button type="button" class="opLink" onclick="orderPickWhere('np')">інший</button>` : `Не вдалося знайти поштомат біля адреси. <button type="button" class="opLink" onclick="orderPickWhere('np')">Обрати вручну</button>`}</span>` : ""}
       ${orderPick.where === "np" && orderPick.np ? `<span class="onbNote" style="text-align:left">${escapeHtml(orderPick.np.text)} · <button type="button" class="opLink" onclick="openNpPick()">змінити</button></span>` : ""}
       ${orderPick.where === "delivery" && project.client && project.client.address ? `<span class="onbNote" style="text-align:left">Адреса: ${escapeHtml(project.client.address)}</span>` : ""}
+      ${orderPickUsesNp(project) ? `<label class="onbNote" style="text-align:left;display:flex;flex-direction:column;gap:.25rem">Отримувач на Новій пошті<input id="opNpName" class="opDate" style="width:100%" value="${escapeHtml(npRecipientName())}" placeholder="Прізвище Ім’я" autocomplete="name" onchange="npSetName(this.value)"></label>` : ""}
     </div>
     ${orderPick.where !== "pickup" ? `<div class="opStep"><span class="opLabel">Коли?</span>
       <div class="opChips">${chip("Завтра", orderPick.when === "tomorrow", "orderPickWhen('tomorrow')")}${chip("Післязавтра", orderPick.when === "after", "orderPickWhen('after')")}<input type="date" class="opDate ${orderPick.when === "date" ? "active" : ""}" value="${orderPick.when === "date" ? escapeHtml(orderPick.date) : ""}" onchange="orderPickDate(this.value)"></div>
@@ -22478,6 +22470,11 @@ function orderPickCheck(){
   setProcurementRequestMode("check");
 }
 
+function orderPickUsesNp(project){
+  if(!orderPick || (orderPick.simple && orderPick.kind === "check")) return false;
+  if(orderPick.where === "near" || orderPick.where === "np") return true;
+  return orderPickSource(project).some(x => x.npShip && orderPick.checked.has(x.id));
+}
 async function orderPickSend(silent){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project || !orderPick || !orderPick.supplier) return;
@@ -22487,6 +22484,11 @@ async function orderPickSend(silent){
   if((orderPick.where === "near" || orderPick.where === "np") && !orderPick.np){
     toast(orderPick.nearBusy ? "Ще шукаю поштомат — секунду" : "Поштомат не знайдено — оберіть «Інше відділення / поштомат» або «Доставка»", 3500);
     return;
+  }
+  if(!silent && orderPickUsesNp(project)){
+    const el = document.getElementById("opNpName");
+    if(el) npSetName(el.value);
+    if(!npRecipientName()){ toast("Впишіть отримувача на Новій пошті — прізвище та ім’я"); if(el) el.focus(); return; }
   }
   const supplierName = orderPick.supplier;
   ids.forEach(id => {
@@ -23717,9 +23719,17 @@ function npApply(np){
   }
 }
 
+/* Отримувач на Новій пошті — завжди людина (Прізвище Ім’я), навіть якщо майстер підписується назвою компанії */
+function npKeepLegacyName(){
+  if(cleanText(profile.npName || "")) return;
+  const legacy = [profile.lastName, profile.firstName].map(x => cleanText(x || "")).filter(Boolean).join(" ");
+  if(legacy) profile.npName = legacy;
+}
+function npRecipientName(){ npKeepLegacyName(); return cleanText(profile.npName || ""); }
+function npSetName(v){ profile.npName = cleanText(v || ""); saveProfileData(); }
 function npDeliveryLines(plan){
   const parts = [`Відправка Новою поштою: ${plan.np && plan.np.text ? plan.np.text : "відділення уточню"}`];
-  const name = cleanText([profile.firstName, profile.lastName].filter(Boolean).join(" "));
+  const name = npRecipientName();
   const phone = cleanText(profile.phone || "");
   if(name || phone) parts.push(`Отримувач: ${[name, phone].filter(Boolean).join(", ")}`);
   return parts;
@@ -25316,7 +25326,7 @@ function openOnboarding(){
   onbStep = 1;
   onbTrades = Array.isArray(profile.trades) ? profile.trades.slice() : [];
   onbWorkMode = profile.isSolo === false ? (team.length > 1 ? "brigades" : "partner") : "solo";
-  onbHasFop = Boolean(profile.iban) || !profile.firstName;
+  onbHasFop = Boolean(profile.iban) || !profileShownName();
   let screen = document.getElementById("onboarding");
   if(!screen){
     screen = document.createElement("div");
@@ -25331,10 +25341,10 @@ function openOnboarding(){
 function onbCollect(){
   const val = id => (document.getElementById(id)?.value || "").trim();
   if(onbStep === 1){
-    profile.firstName = val("onbFirst");
-    profile.lastName = val("onbLast");
     profile.phone = val("onbPhone");
     profile.company = val("onbCompany");
+    npKeepLegacyName();
+    profile.firstName = ""; profile.lastName = "";
   }
   if(onbStep === 2){
     profile.isSolo = onbWorkMode === "solo";
@@ -25397,10 +25407,9 @@ function renderOnboarding(){
         <p class="onbText">Ваші дані будуть у кошторисах і на сторінці для клієнта. Займе хвилину.</p>
       </div>
       <div class="onbCard">
-        <label>Ім’я<input id="onbFirst" value="${onbEsc(profile.firstName)}" placeholder="Напр. Олег" autocomplete="given-name"></label>
-        <label>Прізвище<input id="onbLast" value="${onbEsc(profile.lastName)}" placeholder="Напр. Коваль" autocomplete="family-name"></label>
+        <label>Ім’я та прізвище або назва компанії<input id="onbCompany" value="${onbEsc(profileShownName())}" placeholder="Напр. Олег Коваль або Сантехмайстер" autocomplete="name"></label>
         <label>Телефон<input id="onbPhone" value="${onbEsc(profile.phone)}" placeholder="+380 97 000 00 00" inputmode="tel" autocomplete="tel"></label>
-        <label>Назва для клієнтів (необов’язково)<input id="onbCompany" value="${onbEsc(profile.company)}" placeholder="Напр. Сантехніка під ключ" autocomplete="organization"></label>
+        
       </div>
       <div class="onbSpacer"></div>
       <span class="onbNote">Логотип додасте пізніше в Профілі</span>
@@ -25442,7 +25451,7 @@ function renderOnboarding(){
       <p class="onbText">Необов’язково. Якщо у вас є ФОП, у кошторисі для клієнта з’являться реквізити «До сплати».</p>
       <div class="onbSwitch"><button type="button" class="${onbHasFop ? "active" : ""}" onclick="onbSetFop(true)">Маю ФОП</button><button type="button" class="${onbHasFop ? "" : "active"}" onclick="onbSetFop(false)">Поки без ФОП</button></div>
       ${onbHasFop ? `<div class="onbCard">
-        <label>Отримувач<input id="onbPayee" value="${onbEsc(profile.payee || ([profile.lastName, profile.firstName].filter(Boolean).length ? "ФОП " + [profile.lastName, profile.firstName].filter(Boolean).join(" ") : ""))}" placeholder="ФОП Прізвище Ім’я"></label>
+        <label>Отримувач<input id="onbPayee" value="${onbEsc(profile.payee || "")}" placeholder="ФОП Прізвище Ім’я"></label>
         <label>ІПН / ЄДРПОУ<input id="onbTaxId" value="${onbEsc(profile.taxId)}" placeholder="10 цифр" inputmode="numeric"></label>
         <label>IBAN<input id="onbIban" value="${onbEsc(profile.iban)}" placeholder="UA00 0000 0000 0000 0000 0000 000" autocapitalize="characters" spellcheck="false"></label>
       </div>` : `<div class="onbCard"><p class="onbText">Добре — кошторис буде без реквізитів. Додати їх можна будь-коли в Профілі.</p></div>`}
