@@ -86,7 +86,8 @@ input:focus,textarea:focus{outline:2px solid var(--p);outline-offset:1px}
 .r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .photo{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:12px;border:1.5px dashed var(--inb);color:var(--p);font-weight:750}
 .photo input{display:none}
-.wactSys{display:flex;gap:8px}.wactSys .chip{flex:1;justify-content:center;height:40px;font-weight:750}.wactSys .chip.on{background:var(--p);color:#fff}.wactShot{display:flex;gap:10px;align-items:center}.wactAt{color:var(--tm);font-size:12px;font-weight:600}.wactBtn{width:100%;flex:0 0 auto;height:40px;font-size:14px;border-radius:11px}
+.wactSys{display:flex;gap:8px}.wactSys .chip{flex:1;justify-content:center;height:40px;font-weight:750}.wactSys .chip.on{background:var(--p);color:#fff}.wactShot{display:flex;gap:10px;align-items:center}.wactAt{color:var(--tm);font-size:12px;font-weight:600}.wactNote{color:var(--tm);font-size:13px;line-height:1.45;text-align:center}.wactNote a{color:var(--p);font-weight:700}
+.wactBtn{width:100%;flex:0 0 auto;height:40px;font-size:14px;border-radius:11px}
 .prev{max-height:160px;border-radius:12px;object-fit:cover;width:100%}
 .nav button{width:100%;text-align:left;padding:14px;border-radius:14px;background:var(--in);font-weight:750;font-size:16px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1C1C1E;color:#fff;border-radius:14px;padding:11px 16px;font-weight:650;font-size:14px;z-index:60;max-width:90vw;text-align:center}
@@ -372,7 +373,8 @@ function actForm(pid, sys){
     ${shot("after", "Фото манометра")}
     <label class="f">Тиск, бар<input id="wactEnd" inputmode="decimal" placeholder="4,5" value="${esc(d.end ?? "")}" oninput="wactVal('end', this.value)"></label>
     ${gap !== null ? `<div style="color:var(--tm);font-size:14px">Між фото: ${gap < 60 ? gap + " хв" : Math.floor(gap / 60) + " год " + (gap % 60 ? gap % 60 + " хв" : "")}</div>` : ""}
-    <button class="btn" id="wactBtn" onclick="wactSend()">Надіслати майстру</button>`);
+    <button class="btn" id="wactBtn" onclick="wactSend()">Надіслати майстру</button>
+    <div class="wactNote">Результат іде лише в цей об'єкт. Акт для клієнта оформлює майстер.<br>Для власних об'єктів — <a href="https://sa-master.pro/tools/hydro.html" target="_blank" rel="noopener">інструмент на sa-master.pro</a>.</div>`);
 }
 function wactVal(k, v){ const d = wactDraft(); d[k] = v; wactPut(d); }
 async function wactPhoto(which, file){
