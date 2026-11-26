@@ -5424,7 +5424,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 00:30</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 02:30</div>
   </div>
 
   <div class="fsFooter">
@@ -9341,6 +9341,19 @@ function mountHomeNav(active){
   if(!host){ host = document.createElement("div"); host.id = "homeNavHost"; document.body.appendChild(host); }
   host.innerHTML = renderHomeNav(active);
 }
+
+/* Після повороту телефона iPhone (застосунок з екрана «Додому») іноді лишає закріплене меню знизу «глухим»:
+   видно, але натискання не доходять. Після повороту повертаємо сторінку на місце й перестворюємо меню */
+function navAfterRotate(){
+  try{ window.scrollTo(0, 0); document.documentElement.scrollTop = 0; document.body.scrollTop = 0; }catch(e){}
+  const host = document.getElementById("homeNavHost");
+  if(host){ const fresh = host.cloneNode(true); host.replaceWith(fresh); }
+}
+let navRotateTimer = null;
+function navRotateSoon(){ clearTimeout(navRotateTimer); navRotateTimer = setTimeout(navAfterRotate, 350); }
+window.addEventListener("orientationchange", navRotateSoon);
+if(window.screen && screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener("change", navRotateSoon);
+(() => { let wasLand = innerWidth > innerHeight; window.addEventListener("resize", () => { const land = innerWidth > innerHeight; if(land !== wasLand){ wasLand = land; navRotateSoon(); } }); })();
 
 /* ==== Навігатор: при першому натисканні — вибір застосунку, далі — одразу обраний ==== */
 const NAV_KEY = "sa_navApp";
