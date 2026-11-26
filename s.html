@@ -29,7 +29,7 @@ textarea{min-height:110px;resize:vertical;font-size:13px;font-family:ui-monospac
 input:focus,textarea:focus,select:focus{outline:2px solid var(--p);outline-offset:1px}
 label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--tm)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-#spAsk{position:fixed;inset:auto 0 0 0;z-index:60;display:flex;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom))}#spAsk .spIn{color:var(--t);width:100%;max-width:520px;background:var(--card,#fff);border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.25);padding:16px;display:flex;flex-direction:column;gap:12px;font-size:17px}#spAsk .spBtns{display:flex;gap:10px}#spAsk .btn{height:46px}
+#spAsk{position:fixed;inset:auto 0 0 0;z-index:60;display:flex;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom))}#spAsk .spIn{color:var(--t);width:100%;flex-direction:row!important;align-items:center;padding:6px!important;max-width:520px;background:var(--card,#fff);border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.25);padding:16px;display:flex;flex-direction:column;gap:12px;font-size:17px}#spAsk .spBtns{display:flex;gap:10px}#spAsk .btn{height:46px}#spAsk .spGo{flex:1}#spAsk .spX{flex:0 0 46px;padding:0;font-size:22px}
 .spToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:10px 16px;border-radius:12px;font-weight:650;z-index:70}
 .btn{height:50px;border-radius:14px;border:0;background:var(--p);color:#fff;font:inherit;font-size:16px;font-weight:750;padding:0 18px;cursor:pointer;width:100%}
 .btn[disabled]{opacity:.45;cursor:default}
@@ -1033,7 +1033,7 @@ function spAsk(){
   if(st.laterAt && Date.now() - st.laterAt < 7 * 864e5) return;
   if(document.getElementById("spAsk")) return;
   const el = document.createElement("div"); el.id = "spAsk";
-  el.innerHTML = `<div class="spIn"><b>Дозволити сповіщення?</b><div class="spBtns"><button type="button" class="btn ghost" onclick="spDone(false)">Пізніше</button><button type="button" class="btn" onclick="spDone(true)">Дозволити</button></div></div>`;
+  el.innerHTML = `<div class="spIn"><button type="button" class="btn spGo" onclick="spDone(true)">🔔 Увімкнути сповіщення</button><button type="button" class="btn ghost spX" onclick="spDone(false)" aria-label="Закрити">×</button></div>`;
   document.body.appendChild(el);
 }
 function spDone(yes){ document.getElementById("spAsk")?.remove(); if(!yes){ spSet({ ...spGet(), laterAt: Date.now() }); return; } spEnable(); }
