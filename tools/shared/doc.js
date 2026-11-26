@@ -25,6 +25,19 @@
     return { data: c.toDataURL("image/jpeg", 0.92), textW: tw / (px * 3), hMm };
   }
   /* paperEl — елемент з готовим вмістом документа (білий фон). Повертає Blob PDF. */
+  /* фірмова смуга у шапці кожної сторінки (на всю ширину, з активним посиланням) — частина дизайну, а не штамп */
+  function bandImage(wMm, hMm) {
+    const k = 18, w = Math.round(wMm * k), h = Math.round(hMm * k), c = document.createElement("canvas");
+    c.width = w; c.height = h; const g = c.getContext("2d");
+    g.fillStyle = "#0a1330"; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#0a64d6"; g.fillRect(0, h - Math.round(h * 0.12), w, Math.round(h * 0.12));
+    g.textBaseline = "middle"; g.fillStyle = "#fff"; g.textAlign = "left";
+    g.font = '800 ' + Math.round(h * 0.46) + 'px -apple-system,"Segoe UI",Arial,sans-serif';
+    g.fillText("SA-MASTER.PRO", Math.round(10 * k), h * 0.46);
+    g.textAlign = "right"; g.fillStyle = "#b7c4e6"; g.font = '500 ' + Math.round(h * 0.36) + 'px -apple-system,"Segoe UI",Arial,sans-serif';
+    g.fillText("Комплексний монтаж сантехніки · Київ", w - Math.round(10 * k), h * 0.46);
+    return c.toDataURL("image/jpeg", 0.92);
+  }
   async function pdf(paperEl, opts) {
     opts = opts || {};
     if (!(await ensure("html2canvas")) || !(await ensure("jspdf"))) throw new Error("libs");
@@ -68,8 +81,10 @@
           const lw = foot.textW + 4;
           doc.link(105 - lw / 2, mm, lw, foot.hMm, { url: "https://sa-master.pro" });
         }
+        if (opts.band) { doc.addImage(bandImage(210, 7), "JPEG", 0, 0, 210, 7); doc.link(0, 0, 210, 7, { url: "https://sa-master.pro" }); }
         off = end; page++;
       }
+      try { doc.setProperties({ title: opts.title || "Звіт sa-master.pro", subject: "Сформовано на sa-master.pro", author: "sa-master.pro", creator: "sa-master.pro", keywords: "sa-master.pro" }); } catch (e) {}
       return doc.output("blob");
     } finally { host.remove(); }
   }
