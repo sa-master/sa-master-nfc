@@ -4204,6 +4204,7 @@ body.inSec #pfAddPerson{display:none}
 .quoteAct.qa2 .qa2Sys{margin:0 0 1em}
 .qa2Title{font-size:1.786em;line-height:1.15;font-weight:800;text-transform:uppercase;color:#0b1b33}
 .qa2Sub{margin:0.357em 0 1em;font-size:1em;color:#6b7280}
+.qa2MetaOne{grid-template-columns:1fr!important}.qa2MetaOne .qa2MD{border-left:0!important;padding-left:0!important}
 .qa2Meta{display:grid;grid-template-columns:1.25fr 1fr;border-top:1px solid #9aa3b2;border-bottom:1px solid #9aa3b2;margin-bottom:1.143em}
 .qa2MC{padding:0.714em 0}.qa2MC>div{display:flex;align-items:center;gap:0.857em;padding:0.357em 0}
 .qa2MC>div+div{border-top:1px solid #e1e5ec}.qa2MD{border-left:1px solid #9aa3b2;padding-left:1.143em}
@@ -5427,7 +5428,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 02:40</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 02:55</div>
   </div>
 
   <div class="fsFooter">
@@ -12156,7 +12157,7 @@ function renderQuotePreview(){
   lastQuoteData = {
     whole,
     title: quoteModeTitle(),
-    dateLabel: `${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
+    dateLabel: `${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending && !(quoteMode === "materials" && materialsUnapproved(project)) ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
     companyName, companyPhone, objectName, clientName, clientPhone, objectAddress,
     sections: xlsxSections,
     total: documentTotal,
@@ -12191,7 +12192,7 @@ function renderQuotePreview(){
 
     <div class="quoteDocHeading">
       <div class="quoteDocumentTitle">${quoteModeTitle()}</div>
-      <div class="quoteIssuedNote">${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
+      <div class="quoteIssuedNote">${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending && !(quoteMode === "materials" && materialsUnapproved(project)) ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
     </div>
     ${quotePreliminary && quoteMode !== "works" && !approvedSnapshot ? `<div class="quotePrelimNote">Ціни на матеріали попередні — можуть уточнитися після підтвердження наявності в постачальника.</div>` : ""}
 
@@ -12204,8 +12205,8 @@ function renderQuotePreview(){
       ${received > 0.5 ? `<div><span>Отримано</span><span>−${money(received)}</span></div>` : ""}
     </div>` : ""}
     <div class="quoteGrandTotal">
-      <span>${received > 0.5 && documentTotal - received < 0.5 ? "Сплачено повністю" : "До сплати"}</span>
-      <span>${received > 0.5 && documentTotal - received < 0.5 ? "✓" : money(Math.max(0, documentTotal - received))}</span>
+      <span>${received - documentTotal > 0.5 ? "Переплата" : received > 0.5 && documentTotal - received < 0.5 ? "Сплачено повністю" : "До сплати"}</span>
+      <span>${received - documentTotal > 0.5 ? money(received - documentTotal) : received > 0.5 && documentTotal - received < 0.5 ? "✓" : money(Math.max(0, documentTotal - received))}</span>
     </div>
     ${lastQuoteData.pay ? `<div class="quotePayBox"><b>Реквізити для оплати</b>${lastQuoteData.pay.map(([k, v]) => `<div>${escapeHtml(k)}: <strong>${escapeHtml(v)}</strong></div>`).join("")}</div>` : ""}
     ${profile.hideMadeWith ? "" : `<div class="quoteMadeWith">Складено в <b>et<span>.app</span></b></div>`}
@@ -12943,6 +12944,7 @@ function actConclText(list){
   if(!drops.length) return { cls:"ok", t:"За час випробування падіння тиску не зафіксовано." };
   return { cls:"ok", t:"За час випробування зафіксовано падіння тиску: " + drops.map(x => nm(x) + dr(x)).join("; ") + "." };
 }
+/* Об’єкт і замовник уже є в шапці документа — у звіті не повторюємо, лише дата проведення */
 function actPaperHtml(project, info){
   const d = actClientData(project);
   const multi = d.systems.length > 1;
@@ -12968,9 +12970,7 @@ function actPaperHtml(project, info){
   return `<section class="quoteAct qa2">
     <div class="qa2Blk"><div class="qa2Title">${actPaperTitle(d.systems)}</div>
     <div class="qa2Sub">${escapeHtml(actPaperSub(d.systems))}</div>
-    <div class="qa2Meta">
-      <div class="qa2MC"><div>${actIc("building", 26)}<span><small>Об’єкт</small><b>${escapeHtml(info.objectName)}${info.objectAddress ? `, ${escapeHtml(info.objectAddress)}` : ""}</b></span></div>
-      ${info.clientName ? `<div>${actIc("person", 26)}<span><small>Замовник</small><b>${escapeHtml(info.clientName)}</b></span></div>` : ""}</div>
+    <div class="qa2Meta qa2MetaOne">
       <div class="qa2MC qa2MD"><div>${actIc("calendar", 26)}<span><small>Дата проведення</small><b>${dl}</b></span></div></div>
     </div></div>
     ${d.systems.map(sec).join("")}
