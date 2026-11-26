@@ -5428,7 +5428,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 02:45</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 02:55</div>
   </div>
 
   <div class="fsFooter">
@@ -12157,7 +12157,7 @@ function renderQuotePreview(){
   lastQuoteData = {
     whole,
     title: quoteModeTitle(),
-    dateLabel: `${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
+    dateLabel: `${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending && !(quoteMode === "materials" && materialsUnapproved(project)) ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}`,
     companyName, companyPhone, objectName, clientName, clientPhone, objectAddress,
     sections: xlsxSections,
     total: documentTotal,
@@ -12192,7 +12192,7 @@ function renderQuotePreview(){
 
     <div class="quoteDocHeading">
       <div class="quoteDocumentTitle">${quoteModeTitle()}</div>
-      <div class="quoteIssuedNote">${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
+      <div class="quoteIssuedNote">${quoteDraft || (approvedSnapshot && isFactualStage(project)) ? "Станом на" : approvedSnapshot && !approvedSnapshot.pending && !(quoteMode === "materials" && materialsUnapproved(project)) ? "Погоджено" : "Ціни актуальні на"}: ${formatQuoteDate(documentDate)}</div>
     </div>
     ${quotePreliminary && quoteMode !== "works" && !approvedSnapshot ? `<div class="quotePrelimNote">Ціни на матеріали попередні — можуть уточнитися після підтвердження наявності в постачальника.</div>` : ""}
 
@@ -12205,8 +12205,8 @@ function renderQuotePreview(){
       ${received > 0.5 ? `<div><span>Отримано</span><span>−${money(received)}</span></div>` : ""}
     </div>` : ""}
     <div class="quoteGrandTotal">
-      <span>${received > 0.5 && documentTotal - received < 0.5 ? "Сплачено повністю" : "До сплати"}</span>
-      <span>${received > 0.5 && documentTotal - received < 0.5 ? "✓" : money(Math.max(0, documentTotal - received))}</span>
+      <span>${received - documentTotal > 0.5 ? "Переплата" : received > 0.5 && documentTotal - received < 0.5 ? "Сплачено повністю" : "До сплати"}</span>
+      <span>${received - documentTotal > 0.5 ? money(received - documentTotal) : received > 0.5 && documentTotal - received < 0.5 ? "✓" : money(Math.max(0, documentTotal - received))}</span>
     </div>
     ${lastQuoteData.pay ? `<div class="quotePayBox"><b>Реквізити для оплати</b>${lastQuoteData.pay.map(([k, v]) => `<div>${escapeHtml(k)}: <strong>${escapeHtml(v)}</strong></div>`).join("")}</div>` : ""}
     ${profile.hideMadeWith ? "" : `<div class="quoteMadeWith">Складено в <b>et<span>.app</span></b></div>`}
