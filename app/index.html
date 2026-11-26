@@ -4241,6 +4241,32 @@ body.inSec #pfAddPerson{display:none}
 .qaDisc{margin-top:12px;font-size:10px;color:#9aa1ad}
 .actSysHead b.warn{color:#b26a00}
 
+
+/* ==== v6 «Спокійніше» — головний екран (за погодженим прототипом) ====
+   Сітка й куточки лишаються. Назва — не синя, етап — крапкою кольору етапу, без кольорової смуги.
+   Підписи — звичайним шрифтом від 13px. Телефон і маршрут — кнопками праворуч. Дзвіночок — у правому куті. */
+.hCard{padding:.875rem 1rem!important;overflow:visible}
+.hCard .hTop{margin:0!important;padding:0!important;background:none!important;border:0!important;align-items:center}
+.hCard .hTop b{color:var(--t)!important;font-size:1.0625rem!important;font-weight:650!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hCard.hDone .hTop b{color:var(--tm)!important}
+.hCard .hTop span{font-family:inherit!important;font-size:.8125rem!important;font-weight:600!important;letter-spacing:0!important;text-transform:none!important;border:0!important;background:none!important;padding:0!important;color:var(--ts)!important;display:inline-flex;align-items:center;gap:.375rem}
+.hCard .hTop span::before{content:"";width:.4375rem;height:.4375rem;border-radius:50%;background:var(--hdt)}
+.hContact{display:flex;align-items:center;gap:.5rem;margin-top:.375rem}
+.hContactTx{flex:1;min-width:0;cursor:pointer;font-size:.8125rem;line-height:1.45}
+.hContactTx span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hWhoLine{color:var(--t)}
+.hCard .hContactTx .hAddrTx{color:var(--tm);font-size:.8125rem}
+.hIco{flex:0 0 auto;width:2.75rem;height:2.75rem;border-radius:.625rem;background:rgba(120,140,170,.14);color:var(--p);display:flex;align-items:center;justify-content:center;text-decoration:none}
+.hRough{font-size:.8125rem!important;font-weight:500!important;color:var(--ts)!important;margin-top:.375rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hBar{margin-top:.625rem!important}.hBar i{height:.1875rem!important}
+.hNext{margin-top:.625rem!important;padding-top:.625rem!important;border-top:1px solid rgba(120,140,170,.16)!important}
+.hNext b{font-size:1.25rem!important;font-weight:700!important}
+.hNext small{font-family:inherit!important;font-size:.8125rem!important;letter-spacing:0!important;text-transform:none!important}
+.hTitleRow .hBell{width:2.75rem;height:2.75rem}
+@media (min-width:760px), (orientation:landscape) and (max-height:540px){
+  .main:has(> .hTitleRow) .etLogoBtn{grid-column:3!important}
+  .main:has(> .hTitleRow) .hBell{grid-column:4!important}
+}
 </style>
 </head>
 
@@ -6494,6 +6520,7 @@ const ICON_PATHS = {
   link:'<path d="M10 14a4 4 0 0 0 5.7 0l3.2-3.2a4 4 0 0 0-5.7-5.7l-1.2 1.2"/><path d="M14 10a4 4 0 0 0-5.7 0l-3.2 3.2a4 4 0 0 0 5.7 5.7l1.2-1.2"/>',
   doc:'<path d="M6 2.5h8.5L19 7v14.5H6z"/><path d="M14 2.5V7h5"/><path d="M9 12h7M9 16h5"/>',
   image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="9.5" r="1.8"/><path d="M21 16l-5-5-9 9"/>',
+  phone:'<path d="M21 16.5v3a2 2 0 0 1-2.2 2 19.5 19.5 0 0 1-8.5-3 19.2 19.2 0 0 1-6-6A19.5 19.5 0 0 1 1.3 3.9 2 2 0 0 1 3.3 1.7h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L7.3 9.3a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.8 2.2z"/>',
   pin:'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   map:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
   compass:'<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8z"/>',
@@ -9305,9 +9332,8 @@ function homeCard(p){
   return `<article class="hCard ${phCls} ${fin ? "hDone" : ""}">
     <div class="hTop" onclick="openProject('${id}')"><b>${p.urgent ? "🔥 " : ""}${projectTitle(p)}</b><span>${escapeHtml(phaseText(p))}</span>
       <button type="button" class="hMenu" onclick="event.stopPropagation();openActions('${id}')" aria-label="Дії">⋯</button></div>
-    ${c.address ? `<div class="hAddrRow"><span class="hAddrTx" onclick="openProject('${id}')">${escapeHtml(c.address)}</span><button type="button" class="hRoute" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))"><i>${ic("pin", 16)}</i>Як добратись</button></div>` : ""}
+    ${c.name || c.phone || c.address ? `<div class="hContact"><div class="hContactTx" onclick="openProject('${id}')">${c.name || c.phone ? `<span class="hWhoLine">${escapeHtml(c.name || "")}${c.name && c.phone ? " · " : ""}${c.phone ? escapeHtml(c.phone) : ""}</span>` : ""}${c.address ? `<span class="hAddrTx">${escapeHtml(c.address)}</span>` : ""}</div>${tel ? `<a class="hIco" href="tel:${escapeHtml(tel)}" aria-label="Подзвонити клієнту">${ic("phone", 19)}</a>` : ""}${c.address ? `<button type="button" class="hIco" aria-label="Як добратись" onclick="openNav(decodeURIComponent('${encodeURIComponent(c.address).replace(/'/g, "%27")}'))">${ic("pin", 19)}</button>` : ""}</div>` : ""}
     ${(() => { const r = homeRoughInfo(p); if(r) return `<div class="hRough" onclick="openProject('${id}')">${escapeHtml(r)}</div>`; const d = p.details || {}; const t = [d.workType, Number(d.bathrooms) > 0 ? d.bathrooms + " санвуз." : "", ...(Array.isArray(d.features) ? d.features : [])].filter(Boolean); return homeSearch && t.length ? `<div class="hWho" style="font-size:.75rem">${escapeHtml(t.join(" · "))}</div>` : ""; })()}
-    ${c.name || c.phone ? `<div class="hWho">${escapeHtml(c.name || "")}${c.name && c.phone ? " · " : ""}${c.phone ? `<a href="tel:${escapeHtml(tel)}">${escapeHtml(c.phone)}</a>` : ""}</div>` : ""}
     ${(() => { const sib = groupOrders(p).filter(x => x !== p).sort((a, b) => orderTime(a).localeCompare(orderTime(b))); return sib.length ? `<div class="hAlso" onclick="openProject('${id}')"><b>${escapeHtml(orderLabel(p))}</b><span>також: ${sib.map(x => escapeHtml(orderLabel(x)) + (!orderIsActive(x) ? ((x.status || "active") === "archived" ? " (архів)" : " ✓") : "") + (projectOverdue(x) ? ` <em class="hAlsoDebt">винен ${money(moneySummary(x).debt)}</em>` : "")).join(" · ")}</span></div>` : ""; })()}
     <div class="hBar ${fin ? "done" : ""}" onclick="openProject('${id}')">${steps.map((s, i) => `<i class="${fin || i <= idx ? "on" : ""}"></i>`).join("")}</div>
     <div class="hNext"><div class="hTx" onclick="openProject('${id}')"><b class="${n.cls || ""}">${escapeHtml(n.text)}</b>${n.sub ? `<small>${escapeHtml(n.sub)}</small>` : ""}</div>
@@ -9399,7 +9425,7 @@ function renderHomeNew(){
     ph0: groupsCount(live.filter(p => projectPhase(p) === 0)), ph1: groupsCount(live.filter(p => projectPhase(p) === 1)), ph2: groupsCount(live.filter(p => projectPhase(p) >= 2)) };
   const chip = (k, label) => (k === "all" || cnt[k]) ? `<button type="button" class="hChip ${homeFilter === k ? "on" : ""}" onclick="setHomeFilter('${k}')">${label}<small>${cnt[k]}</small></button>` : "";
   main.innerHTML = renderAccessBanner() + renderSupplierUpdates() + `
-    <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="hBell" onclick="openPush()" aria-label="${pushInbox && pushInbox.unread ? `Сповіщення, нових: ${pushInbox.unread}` : "Сповіщення"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${pushInbox && pushInbox.unread ? `<span class="hBellN">${pushInbox.unread > 99 ? "99+" : pushInbox.unread}</span>` : ""}</button><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button></div>
+    <div class="hTitleRow"><h1 class="hTitle">Мої об’єкти</h1><button type="button" class="etLogo etLogoHome etLogoBtn" onclick="openGuide()" aria-label="et.app — як це працює"><span class="etLogoWord"><svg class="etLogoChain" viewBox="0 0 120 50" aria-hidden="true"><path d="M10 38 L44 30 L92 18" stroke="#1F6BF2" stroke-width="4.5" stroke-linecap="round" fill="none"/><circle cx="10" cy="38" r="8" fill="#1F6BF2"/><circle cx="44" cy="30" r="8" fill="#1F6BF2"/><circle cx="100" cy="16" r="15" fill="#5BC2F5"/></svg><span class="etLogoEt">et</span><span class="etLogoApp">.app</span></span></button><button type="button" class="hBell" onclick="openPush()" aria-label="${pushInbox && pushInbox.unread ? `Сповіщення, нових: ${pushInbox.unread}` : "Сповіщення"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${pushInbox && pushInbox.unread ? `<span class="hBellN">${pushInbox.unread > 99 ? "99+" : pushInbox.unread}</span>` : ""}</button></div>
     <div id="hCloud">${cloudHomeHtml()}</div>
     ${act.length > 3 || homeSearch ? `<input class="hSearch" type="search" placeholder="Адреса, клієнт або теги: тепла 2 санвуз" value="${escapeHtml(homeSearch)}" oninput="onHomeSearch(this.value)">` : ""}
     <div class="hChips">${chip("all", "Усі")}${chip("ph0", "Прорахунок")}${chip("ph1", "Комплектація")}${chip("ph2", "Монтаж")}${chip("debt", "Борг")}${chip("wait", "Чекають")}${chip("archive", "Архів")}</div>
