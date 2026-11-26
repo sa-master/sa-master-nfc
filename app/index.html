@@ -3740,7 +3740,7 @@ body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .personDue{display:flex;gap:1.25rem;flex-wrap:wrap;margin-top:.75rem;padding-top:.625rem;border-top:1px solid rgba(120,120,128,.14);font-size:.875rem;color:var(--tm);font-weight:650}.personDue b{display:block;font-size:1.125rem;color:var(--t);font-weight:800}.personDue small{display:block;font-size:.6875rem;color:var(--tm);font-weight:600;text-transform:none;letter-spacing:0}
 .personSum{font-size:.8125rem;color:var(--tm);font-weight:600;margin-top:.25rem}
 #jobScreen .msBox,#personScreen .msBox{margin-top:.75rem}
-.crewPush{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem;margin:0 0 .75rem;font-size:.8125rem;font-weight:600;color:var(--tm);line-height:1.4}.crewPushTx{flex:1 1 12rem}.crewPushRes{flex:1 1 100%;color:var(--t);font-weight:650}
+.crewFoot{display:flex;flex-direction:column;align-items:center;gap:.25rem;margin:.5rem 0 1rem}
 .crewInfo{font-size:.8125rem;color:var(--tm);font-weight:600;line-height:1.4}
 .crewBtns{display:flex;gap:.375rem;flex:0 0 auto}
 .ptPriv{flex:0 0 auto;border-radius:.625rem;padding:0 .5rem;background:rgba(120,120,128,.12);color:var(--tm);font-weight:700;font-size:.75rem;white-space:nowrap}.ptPriv.on{background:var(--p);color:#fff}
@@ -5431,7 +5431,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 12:00</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 17:50</div>
   </div>
 
   <div class="fsFooter">
@@ -9794,8 +9794,8 @@ function renderPersonLedger(){
       ${b.jobs.map(x => row(escapeHtml(x.j.title), `${formatQuoteDate(x.j.date).slice(0, 5)}${x.j.place ? " · " + escapeHtml(x.j.place) : ""} · разова${x.paid ? " · отримав одразу" : ""}`, money(x.amount))).join("")}
       ${!b.objects.length && !b.jobs.length ? `<div class="msRow"><span>Ще нічого</span></div>` : ""}
     </div>
-    ${renderCrewLinkBox(b.per)}
-    <button type="button" class="onbLink" style="color:var(--red)" onclick="const id=personUi.pid;closePersonLedger();deletePerson(id)">Видалити з команди</button>
+    <div class="crewFoot">${b.per.wLink ? `<button type="button" class="onbLink" onclick="crewShare('${escapeHtml(b.per.id)}', true)">Надіслати посилання ще раз</button>` : `<button type="button" class="onbLink" onclick="crewShare('${escapeHtml(b.per.id)}', true)">Надіслати посилання на його сторінку</button>`}
+    <button type="button" class="onbLink" style="color:var(--red)" onclick="const id=personUi.pid;closePersonLedger();deletePerson(id)">Видалити з команди</button></div>
     ${b.led.length ? `<div class="msBox"><div class="finHead">Видано й покупки</div>
       ${b.led.slice().sort((x, y) => String(y.date).localeCompare(String(x.date))).map(e => row(e.kind === "pay" ? "Видано" : "Купив за свої", `${formatQuoteDate(e.date).slice(0, 5)}${e.note ? " · " + escapeHtml(e.note) : ""}${e.projectId ? " · " + escapeHtml(projectTitlePlain(projects.find(p => p.id === e.projectId) || {})) : ""}`, (e.kind === "pay" ? "−" : "+") + money(e.amount), "", e.fromObject ? "" : `deletePersonEntry('${escapeHtml(e.id)}')`)).join("")}</div>` : ""}
     <div class="onbSpacer"></div>
@@ -10043,64 +10043,21 @@ setInterval(() => { if(document.visibilityState === "visible") crewSync(); }, 60
 setTimeout(crewSync, 4000);
 
 function crewLinkText(per, id){
-  return `${per.name}, це твоє посилання на об’єкти: адреси, нотатки з галочками, файли й твій розрахунок.\n${WORKER_LINK_BASE}${id}\n\nПорада: «Поділитися» → «На екран „Додому“» — відкриватиметься як застосунок.`;
+  return `${per.name}, це твоє посилання на об’єкти: адреси, нотатки, файли й твій розрахунок.\n${WORKER_LINK_BASE}${id}\n\n1. Відкрий у Safari\n2. Поділитися → На початковий екран\n3. Заходь через іконку\n4. Натисни «Увімкнути сповіщення»`;
 }
-async function crewShare(pid){
+async function crewShare(pid, quiet){
   const per = team.find(t => t.id === pid);
   if(!per) return;
   if(!cloudEnabled() || !cloudSession()){ toast("Спершу увійдіть у профілі — посилання працює через хмару"); return; }
-  if(!crewProjectsFor(pid).length && !confirm(`${per.name} ще не призначений на жоден об’єкт. Створити посилання все одно?`)) return;
+  /* quiet — новий працівник: об’єкти з’являться на його сторінці, коли призначите */
   let id;
   try{ id = await crewPublish(per); }catch(e){ toast(e.message === "login" ? "Увійдіть у профілі" : "Не вдалося створити посилання"); return; }
   id = id || per.wLink;
-  saveTeamData(); renderPersonLedger();
+  saveTeamData(); try{ renderPersonLedger(); }catch(e){}
   const text = crewLinkText(per, id);
   if(navigator.share){ try{ await navigator.share({ text }); return; }catch(e){ if(e && e.name === "AbortError") return; } }
   try{ await copyText(text); toast("Посилання скопійовано"); }catch(e){ toast("Не вдалося скопіювати"); }
 }
-async function crewRevoke(pid){
-  const per = team.find(t => t.id === pid);
-  if(!per || !per.wLink || !confirm(`Вимкнути посилання ${per.name}? Він більше не бачитиме об’єктів. Нове посилання можна створити будь-коли.`)) return;
-  try{ await supplierApi(`/w/${per.wLink}/revoke`, { method:"POST", body:"{}" }); }catch(e){}
-  delete per.wLink; saveTeamData(); renderPersonLedger(); toast("Посилання вимкнено");
-}
-/* Чи отримує працівник сповіщення: на скількох пристроях він їх дозволив; тестове — щоб перевірити разом */
-async function crewPushCheck(pid){
-  const per = team.find(t => t.id === pid), el = document.getElementById("crewPush-" + pid);
-  if(!per || !per.wLink || !el) return;
-  let r = null;
-  try{ r = await supplierApi(`/w/${per.wLink}/push`); }catch(e){}
-  if(!document.body.contains(el)) return;
-  if(!r){ el.innerHTML = `<span class="crewPushTx">Не вдалося перевірити сповіщення — немає зв’язку</span>`; return; }
-  el.innerHTML = r.devices
-    ? `<span class="crewPushTx">🔔 Сповіщення отримує: ${escapeHtml(r.list.map(x => x.device || "пристрій").join(", "))}</span><button type="button" class="onbLink" onclick="crewPushTest('${escapeHtml(pid)}')">Надіслати тестове</button>`
-    : `<span class="crewPushTx">🔕 Сповіщення не увімкнені. На iPhone: відкрити посилання в Safari → «Поділитися» → «На початковий екран» → зайти з іконки → «Дозволити».</span>`;
-}
-async function crewPushTest(pid){
-  const per = team.find(t => t.id === pid);
-  if(!per || !per.wLink) return;
-  const el = document.getElementById("crewPush-" + pid);
-  const say = t => { const x = el && el.querySelector(".crewPushRes"); if(x) x.textContent = t; else if(el) el.insertAdjacentHTML("beforeend", `<span class="crewPushRes">${escapeHtml(t)}</span>`); };
-  say("Надсилаю…");
-  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 20000));
-  try{
-    const r = await Promise.race([supplierApi(`/w/${per.wLink}/push/test`, { method:"POST", body:"{}" }), timeout]);
-    const codes = Array.isArray(r && r.codes) ? r.codes.join(", ") : "";
-    const t = r && r.sent ? `Надіслано на ${r.sent} з ${r.devices} пристр. Спитайте ${per.name}, чи прийшло.${r.gone ? ` Застарілих прибрано: ${r.gone}.` : ""}`
-      : `Не дійшло${codes ? ` (відповідь сервісу: ${codes})` : ""}. Нехай перевстановить іконку й дозволить сповіщення.`;
-    say(t); toast(t, 4200);
-    setTimeout(() => crewPushCheck(pid).then(() => say(t)), 1500);
-  }catch(e){ const t = e.message === "timeout" ? "Сервер не відповів за 20 с — спробуйте ще раз" : "Не вдалося надіслати — немає зв’язку"; say(t); toast(t); }
-}
-function renderCrewLinkBox(per){
-  if(per.wLink) setTimeout(() => crewPushCheck(per.id), 0);
-  const n = crewProjectsFor(per.id).length;
-  return `<div class="msBox"><div class="finHead">Його сторінка</div>
-    <div class="crewInfo">${per.wLink ? `Він бачить ${n} ${n === 1 ? "об’єкт" : n > 1 && n < 5 ? "об’єкти" : "об’єктів"}: адресу, нотатки (крім 🔒), файли й свій розрахунок. Кошторису, цін і сум клієнта — ні.` : `Його об’єкти (де ви його призначили): адреса й маршрут, ваші нотатки з галочками, проєкт і фото, його заробіток. Він зможе написати, що потрібно на об’єкт, і записати «купив за свої» з фото чека.`}</div>
-    ${per.wLink ? `<div class="crewPush" id="crewPush-${escapeHtml(per.id)}"><span class="crewPushTx">Перевіряю сповіщення…</span></div>` : ""}
-    <div class="jobBtns" style="margin-bottom:0"><button type="button" class="hBtn pr" onclick="crewShare('${escapeHtml(per.id)}')">${per.wLink ? "Надіслати ще раз" : "Створити й надіслати"}</button>${per.wLink ? `<button type="button" class="hBtn" onclick="crewRevoke('${escapeHtml(per.id)}')">Вимкнути</button>` : ""}</div></div>`;
-}
-
 /* ---- Від працівника: прохання і покупки за свої (у вкладці «Аудит») ---- */
 function crewPending(p){
   return { req:(p.crewReq || []).filter(r => r.status === "new"), bought:(p.crewBought || []).filter(r => r.status === "wait"), acts:(p.crewActs || []).filter(r => r.status === "wait") };
@@ -22009,12 +21966,26 @@ function savePerson(){
   closeAddPerson();
   renderTeamList();
   toast(isEditing ? "Збережено" : "Додано в команду");
+  if(!isEditing && cloudEnabled() && cloudSession()) setTimeout(() => crewAskSend(person.id), 350);
+}
+/* Один раз, коли взяли нового: посилання на його сторінку (об’єкти, нотатки, файли, розрахунок і сповіщення) */
+function crewAskSend(pid){
+  const per = team.find(t => t.id === pid);
+  if(!per) return;
+  let el = document.getElementById("crewAsk");
+  if(!el){ el = document.createElement("div"); el.className = "sheet"; el.id = "crewAsk"; el.addEventListener("click", ev => { if(ev.target === el) el.remove(); }); document.body.appendChild(el); }
+  el.innerHTML = `<div class="panel"><div class="panelHead"><strong>Надіслати посилання?</strong><button class="close" onclick="document.getElementById('crewAsk').remove()">×</button></div>
+    <div class="panelBody"><p class="actHint" style="margin:0">${escapeHtml(per.name)} на своїй сторінці бачитиме об’єкти, на які ви його призначите: адресу, нотатки (крім 🔒), файли й свій розрахунок — і отримуватиме сповіщення. Кошторису, цін і сум клієнта — ні.</p></div>
+    <div class="panelFooter"><button class="btnGhost" onclick="document.getElementById('crewAsk').remove()">Пізніше</button><button class="btnPrimary" onclick="document.getElementById('crewAsk').remove();crewShare('${escapeHtml(pid)}', true)">Надіслати</button></div></div>`;
+  el.classList.add("open");
 }
 
 function deletePerson(id){
   const person = team.find(p => p.id === id);
   if(!person) return;
   undoArm(`«${person.name}» видалено з команди`);
+  /* Його сторінку вимикаємо: більше не бачить об’єктів і не отримує сповіщень */
+  if(person.wLink){ const link = person.wLink; supplierApi(`/w/${link}/revoke`, { method:"POST", body:"{}" }).catch(() => {}); delete person.wLink; }
   team = team.filter(p => p.id !== id);
   saveTeamData();
   renderTeamList();
