@@ -21831,6 +21831,7 @@ function renderTeamList(){
 
 function saveProfile(){
   profile.company = document.getElementById("pfCompany").value.trim();
+  npKeepLegacyName();
   profile.firstName = ""; profile.lastName = "";
   profile.phone = document.getElementById("pfPhone").value.trim();
   profile.payee = document.getElementById("pfPayee").value.trim();
@@ -22439,6 +22440,7 @@ function renderOrderPick(){
       ${orderPick.where === "near" ? `<span class="onbNote" style="text-align:left">${orderPick.nearBusy ? "Шукаю поштомат біля об’єкта…" : orderPick.np ? `📦 ${escapeHtml(orderPick.np.text)} · <button type="button" class="opLink" onclick="orderPickWhere('np')">інший</button>` : `Не вдалося знайти поштомат біля адреси. <button type="button" class="opLink" onclick="orderPickWhere('np')">Обрати вручну</button>`}</span>` : ""}
       ${orderPick.where === "np" && orderPick.np ? `<span class="onbNote" style="text-align:left">${escapeHtml(orderPick.np.text)} · <button type="button" class="opLink" onclick="openNpPick()">змінити</button></span>` : ""}
       ${orderPick.where === "delivery" && project.client && project.client.address ? `<span class="onbNote" style="text-align:left">Адреса: ${escapeHtml(project.client.address)}</span>` : ""}
+      ${orderPickUsesNp(project) ? `<label class="onbNote" style="text-align:left;display:flex;flex-direction:column;gap:.25rem">Отримувач на Новій пошті<input id="opNpName" class="opDate" style="width:100%" value="${escapeHtml(npRecipientName())}" placeholder="Прізвище Ім’я" autocomplete="name" onchange="npSetName(this.value)"></label>` : ""}
     </div>
     ${orderPick.where !== "pickup" ? `<div class="opStep"><span class="opLabel">Коли?</span>
       <div class="opChips">${chip("Завтра", orderPick.when === "tomorrow", "orderPickWhen('tomorrow')")}${chip("Післязавтра", orderPick.when === "after", "orderPickWhen('after')")}<input type="date" class="opDate ${orderPick.when === "date" ? "active" : ""}" value="${orderPick.when === "date" ? escapeHtml(orderPick.date) : ""}" onchange="orderPickDate(this.value)"></div>
@@ -22468,6 +22470,11 @@ function orderPickCheck(){
   setProcurementRequestMode("check");
 }
 
+function orderPickUsesNp(project){
+  if(!orderPick || (orderPick.simple && orderPick.kind === "check")) return false;
+  if(orderPick.where === "near" || orderPick.where === "np") return true;
+  return orderPickSource(project).some(x => x.npShip && orderPick.checked.has(x.id));
+}
 async function orderPickSend(silent){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project || !orderPick || !orderPick.supplier) return;
@@ -22477,6 +22484,11 @@ async function orderPickSend(silent){
   if((orderPick.where === "near" || orderPick.where === "np") && !orderPick.np){
     toast(orderPick.nearBusy ? "Ще шукаю поштомат — секунду" : "Поштомат не знайдено — оберіть «Інше відділення / поштомат» або «Доставка»", 3500);
     return;
+  }
+  if(!silent && orderPickUsesNp(project)){
+    const el = document.getElementById("opNpName");
+    if(el) npSetName(el.value);
+    if(!npRecipientName()){ toast("Впишіть отримувача на Новій пошті — прізвище та ім’я"); if(el) el.focus(); return; }
   }
   const supplierName = orderPick.supplier;
   ids.forEach(id => {
@@ -23707,9 +23719,17 @@ function npApply(np){
   }
 }
 
+/* Отримувач на Новій пошті — завжди людина (Прізвище Ім’я), навіть якщо майстер підписується назвою компанії */
+function npKeepLegacyName(){
+  if(cleanText(profile.npName || "")) return;
+  const legacy = [profile.lastName, profile.firstName].map(x => cleanText(x || "")).filter(Boolean).join(" ");
+  if(legacy) profile.npName = legacy;
+}
+function npRecipientName(){ npKeepLegacyName(); return cleanText(profile.npName || ""); }
+function npSetName(v){ profile.npName = cleanText(v || ""); saveProfileData(); }
 function npDeliveryLines(plan){
   const parts = [`Відправка Новою поштою: ${plan.np && plan.np.text ? plan.np.text : "відділення уточню"}`];
-  const name = cleanText(profileShownName());
+  const name = npRecipientName();
   const phone = cleanText(profile.phone || "");
   if(name || phone) parts.push(`Отримувач: ${[name, phone].filter(Boolean).join(", ")}`);
   return parts;
@@ -25323,6 +25343,7 @@ function onbCollect(){
   if(onbStep === 1){
     profile.phone = val("onbPhone");
     profile.company = val("onbCompany");
+    npKeepLegacyName();
     profile.firstName = ""; profile.lastName = "";
   }
   if(onbStep === 2){
