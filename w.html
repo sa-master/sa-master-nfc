@@ -23,6 +23,8 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 4px}
 .brand{font-size:22px;font-weight:900;letter-spacing:-.02em}.brand i{font-style:normal;color:var(--p)}
 .firm{display:flex;align-items:center;gap:10px;min-width:0}.firm img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:var(--card)}.firm b{font-size:17px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pwTx{color:var(--tm);font-size:15px;line-height:1.5;margin:0}.pwTx li{margin:4px 0}ol.pwTx{padding-left:20px}.pwOk{color:var(--t);font-weight:700}
+.topBtns{display:flex;gap:8px;flex:0 0 auto}
 .call{width:40px;height:40px;border-radius:50%;background:var(--soft);color:var(--p);display:flex;align-items:center;justify-content:center}
 h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .card{background:var(--card);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
@@ -210,7 +212,7 @@ function render(){
     </section>`;
   };
   $("app").innerHTML = `
-    <div class="top">${(() => { const br = st.brand || {}; const nm = br.company || D.masterName || ""; return nm || br.logo ? `<span class="firm">${br.logo ? `<img src="${esc(br.logo)}" alt="">` : ""}<b>${esc(nm)}</b></span>` : `<span class="brand">et<i>.app</i></span>`; })()}${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="Подзвонити майстру" title="Подзвонити майстру"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>` : ""}</div>
+    <div class="top">${(() => { const br = st.brand || {}; const nm = br.company || D.masterName || ""; return nm || br.logo ? `<span class="firm">${br.logo ? `<img src="${esc(br.logo)}" alt="">` : ""}<b>${esc(nm)}</b></span>` : `<span class="brand">et<i>.app</i></span>`; })()}<span class="topBtns"><button type="button" class="call" onclick="pwOpen()" aria-label="Сповіщення"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="Подзвонити майстру" title="Подзвонити майстру"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>` : ""}</span></div>
     <h1>Мої об’єкти</h1>
     ${objs.length > 3 ? `<input class="search" type="search" placeholder="Пошук: ЖК, вулиця" value="${esc(searchQ)}" oninput="searchQ=this.value;renderList()">` : ""}
     <div id="list">
@@ -501,6 +503,20 @@ function pwAsk(){
   if(!$("sheet").classList.contains("hidden")) return;
   $("sheetIn").innerHTML = `<h3>Дозволити сповіщення?</h3><div class="acts"><button class="btn ghost" onclick="pwDone(false)">Пізніше</button><button class="btn" onclick="pwDone(true)">Дозволити</button></div>`;
   $("sheet").classList.remove("hidden");
+}
+/* Дзвіночок у шапці: стан сповіщень і як увімкнути — щоб можна було будь-коли, а не лише в першому питанні */
+async function pwOpen(){
+  let body = "";
+  if(!pwSupported()) body = pwIos() && !pwStandalone() ? "" : `<p class="pwTx">Цей браузер не показує сповіщення. Відкрийте посилання в Safari (iPhone) або Chrome (Android).</p>`;
+  if(!body && pwIos() && !pwStandalone()) body = `<p class="pwTx">На iPhone сповіщення працюють лише з іконки на екрані «Додому»:</p>
+    <ol class="pwTx"><li>Відкрийте це посилання в Safari.</li><li>«Поділитися» (квадрат зі стрілкою) → «На початковий екран» → «Додати».</li><li>Зайдіть через нову іконку й натисніть тут «Дозволити сповіщення».</li></ol>`;
+  if(!body && Notification.permission === "denied") body = `<p class="pwTx">Сповіщення заборонені. ${pwIos() ? "Параметри → Сповіщення → et.app → «Дозволити сповіщення»." : "Дозвольте їх у налаштуваннях сайту (значок ліворуч від адреси)."}</p>`;
+  if(!body && Notification.permission === "granted"){
+    const reg = await pwReg(); const sub = reg && await reg.pushManager.getSubscription().catch(() => null);
+    if(sub){ try{ await pwSend(sub); }catch(e){} body = `<p class="pwTx pwOk">✓ Сповіщення увімкнені на цьому телефоні.</p>`; }
+  }
+  if(!body) body = `<p class="pwTx">Нові об’єкти, нотатки, відповіді на ваші запити й фото приходитимуть сповіщенням.</p><button class="btn" onclick="closeSheet();pwEnable().then(pwOpen)">Дозволити сповіщення</button>`;
+  sheet(`<div class="hd"><h3>Сповіщення</h3><button class="x" onclick="closeSheet()">✕</button></div>${body}`);
 }
 function pwDone(yes){ pwSet({ ...pwGet(), askedAt: Date.now() }); closeSheet(); if(yes) pwEnable(); }
 async function pwRefresh(){
