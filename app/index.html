@@ -3740,7 +3740,7 @@ body.inSec #profileScreen{padding-bottom:calc(4.75rem + var(--sab, 0px))}
 .personDue{display:flex;gap:1.25rem;flex-wrap:wrap;margin-top:.75rem;padding-top:.625rem;border-top:1px solid rgba(120,120,128,.14);font-size:.875rem;color:var(--tm);font-weight:650}.personDue b{display:block;font-size:1.125rem;color:var(--t);font-weight:800}.personDue small{display:block;font-size:.6875rem;color:var(--tm);font-weight:600;text-transform:none;letter-spacing:0}
 .personSum{font-size:.8125rem;color:var(--tm);font-weight:600;margin-top:.25rem}
 #jobScreen .msBox,#personScreen .msBox{margin-top:.75rem}
-.crewPush{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem;margin:0 0 .75rem;font-size:.8125rem;font-weight:600;color:var(--tm);line-height:1.4}.crewPushTx{flex:1 1 12rem}
+.crewPush{display:flex;flex-wrap:wrap;align-items:center;gap:.25rem .75rem;margin:0 0 .75rem;font-size:.8125rem;font-weight:600;color:var(--tm);line-height:1.4}.crewPushTx{flex:1 1 12rem}.crewPushRes{flex:1 1 100%;color:var(--t);font-weight:650}
 .crewInfo{font-size:.8125rem;color:var(--tm);font-weight:600;line-height:1.4}
 .crewBtns{display:flex;gap:.375rem;flex:0 0 auto}
 .ptPriv{flex:0 0 auto;border-radius:.625rem;padding:0 .5rem;background:rgba(120,120,128,.12);color:var(--tm);font-weight:700;font-size:.75rem;white-space:nowrap}.ptPriv.on{background:var(--p);color:#fff}
@@ -5429,7 +5429,7 @@ body.inSec #pfAddPerson{display:none}
       </div>
     </div>
 
-    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 11:05</div>
+    <div class="appVersion hidden" data-pf="me" id="pfVersion">et.app · версія 26.11.2026 11:40</div>
   </div>
 
   <div class="fsFooter">
@@ -10077,8 +10077,18 @@ async function crewPushCheck(pid){
 async function crewPushTest(pid){
   const per = team.find(t => t.id === pid);
   if(!per || !per.wLink) return;
-  try{ const r = await supplierApi(`/w/${per.wLink}/push/test`, { method:"POST", body:"{}" }); toast(r && r.sent ? `Надіслано ${per.name}. Спитайте, чи прийшло` : "Не дійшло — нехай перевстановить іконку й дозволить сповіщення", 3200); crewPushCheck(pid); }
-  catch(e){ toast("Не вдалося надіслати — немає зв’язку"); }
+  const el = document.getElementById("crewPush-" + pid);
+  const say = t => { const x = el && el.querySelector(".crewPushRes"); if(x) x.textContent = t; else if(el) el.insertAdjacentHTML("beforeend", `<span class="crewPushRes">${escapeHtml(t)}</span>`); };
+  say("Надсилаю…");
+  const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 20000));
+  try{
+    const r = await Promise.race([supplierApi(`/w/${per.wLink}/push/test`, { method:"POST", body:"{}" }), timeout]);
+    const codes = Array.isArray(r && r.codes) ? r.codes.join(", ") : "";
+    const t = r && r.sent ? `Надіслано на ${r.sent} з ${r.devices} пристр. Спитайте ${per.name}, чи прийшло.${r.gone ? ` Застарілих прибрано: ${r.gone}.` : ""}`
+      : `Не дійшло${codes ? ` (відповідь сервісу: ${codes})` : ""}. Нехай перевстановить іконку й дозволить сповіщення.`;
+    say(t); toast(t, 4200);
+    setTimeout(() => crewPushCheck(pid).then(() => say(t)), 1500);
+  }catch(e){ const t = e.message === "timeout" ? "Сервер не відповів за 20 с — спробуйте ще раз" : "Не вдалося надіслати — немає зв’язку"; say(t); toast(t); }
 }
 function renderCrewLinkBox(per){
   if(per.wLink) setTimeout(() => crewPushCheck(per.id), 0);
