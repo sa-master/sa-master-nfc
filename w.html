@@ -25,6 +25,10 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
 .firm{display:flex;align-items:center;gap:10px;min-width:0}.firm img{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:0 0 auto;background:var(--card)}.firm b{font-size:17px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pwTx{color:var(--tm);font-size:15px;line-height:1.5;margin:0}.pwTx li{margin:4px 0}ol.pwTx{padding-left:20px}.pwOk{color:var(--t);font-weight:700}
 #pwBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;width:min(520px, calc(100% - 24px));display:flex;gap:8px;padding:6px;border-radius:16px;background:var(--card);box-shadow:0 10px 40px rgba(0,0,0,.3)}.pwGo{flex:1;height:46px;border-radius:12px;background:var(--p);color:#fff;font-weight:750;font-size:16px}.pwX{flex:0 0 46px;height:46px;border-radius:12px;background:var(--soft);color:var(--tm);font-size:22px}
+.call{position:relative}.pwN{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#FF3B30;color:#fff;font-size:11px;font-weight:800;line-height:18px;text-align:center}
+.pwHead{display:flex;justify-content:space-between;align-items:center;color:var(--tm);font-size:13px;font-weight:700}.pwHead button{color:var(--p);font-weight:700;font-size:13px;background:none}
+.pwList{display:flex;flex-direction:column}.pwItem{display:flex;gap:10px;align-items:flex-start;text-align:left;background:none;padding:10px 0;border-top:1px solid var(--line, rgba(120,120,128,.2));color:var(--t)}.pwItem i{flex:0 0 8px;height:8px;margin-top:6px;border-radius:50%}.pwItem.new i{background:#0A84FF}.pwItem span{flex:1;display:flex;flex-direction:column;font-size:15px;line-height:1.35}.pwItem b{font-weight:750}.pwItem small{color:var(--tm);font-size:12px;font-weight:600}
+.pwFlash{outline:2px solid var(--p);outline-offset:2px;transition:outline-color 1.4s}
 .topBtns{display:flex;gap:8px;flex:0 0 auto}
 .call{width:40px;height:40px;border-radius:50%;background:var(--soft);color:var(--p);display:flex;align-items:center;justify-content:center}
 h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
@@ -192,12 +196,12 @@ function render(){
     /* колір шапки — етап з калькулятора (phaseIdx), для старих даних — за назвою етапу */
     const pi = Number.isInteger(o.phaseIdx) ? o.phaseIdx : /прорах/i.test(o.stage || "") ? 0 : /комплект|закуп/i.test(o.stage || "") ? 1 : 2;
     const phc = o.phase === "done" ? "fin" : o.phase === "plan" ? "phPlan" : "ph" + Math.min(2, pi);
-    if(folded) return `<section class="card obj ${phc}">
+    if(folded) return `<section class="card obj ${phc}" data-pid="${esc(o.pid)}">
       <h2>${esc(o.title)}<span class="stage">${esc(tag)}</span></h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
       ${(o.notes || []).length || (o.files || []).length ? `<button class="toggle" onclick="openMore['p_${esc(o.pid)}']=true;render()"><span>${o.phase === "done" ? "Деталі" : "Проєкт і нотатки"}${(o.files || []).length ? ` · ${o.files.length}` : ""}</span><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>` : ""}
     </section>`;
-    return `<section class="card obj ${phc}">
+    return `<section class="card obj ${phc}" data-pid="${esc(o.pid)}">
       <h2>${esc(o.title)}${tag ? `<span class="stage">${esc(tag)}</span>` : ""}</h2>
       ${o.address ? `<div class="addr"><span>${esc(o.address)}</span><button class="route" onclick="routeObj('${esc(o.pid)}')">⌖ Як добратись</button></div>` : ""}
       ${(o.crew || []).length ? `<div class="crew">На об’єкті також: ${o.crew.map(c => { const t = String(c.phone || "").replace(/[^\d+]/g, ""); return t ? `<a href="tel:${esc(t)}">${esc(c.name)}</a>` : esc(c.name); }).join(", ")}</div>` : ""}
@@ -213,7 +217,7 @@ function render(){
     </section>`;
   };
   $("app").innerHTML = `
-    <div class="top">${(() => { const br = st.brand || {}; const nm = br.company || D.masterName || ""; return nm || br.logo ? `<span class="firm">${br.logo ? `<img src="${esc(br.logo)}" alt="">` : ""}<b>${esc(nm)}</b></span>` : `<span class="brand">et<i>.app</i></span>`; })()}<span class="topBtns"><button type="button" class="call" onclick="pwOpen()" aria-label="Сповіщення"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></button>${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="Подзвонити майстру" title="Подзвонити майстру"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>` : ""}</span></div>
+    <div class="top">${(() => { const br = st.brand || {}; const nm = br.company || D.masterName || ""; return nm || br.logo ? `<span class="firm">${br.logo ? `<img src="${esc(br.logo)}" alt="">` : ""}<b>${esc(nm)}</b></span>` : `<span class="brand">et<i>.app</i></span>`; })()}<span class="topBtns"><button type="button" class="call" onclick="pwOpen()" aria-label="Сповіщення"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${pwInbox && pwInbox.unread ? `<span class="pwN">${pwInbox.unread > 99 ? "99+" : pwInbox.unread}</span>` : ""}</button>${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="Подзвонити майстру" title="Подзвонити майстру"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></a>` : ""}</span></div>
     <h1>Мої об’єкти</h1>
     ${objs.length > 3 ? `<input class="search" type="search" placeholder="Пошук: ЖК, вулиця" value="${esc(searchQ)}" oninput="searchQ=this.value;renderList()">` : ""}
     <div id="list">
@@ -507,8 +511,45 @@ function pwAsk(){
   el.innerHTML = `<button type="button" class="pwGo" onclick="pwDone(true)">🔔 Увімкнути сповіщення</button><button type="button" class="pwX" onclick="pwDone(false)" aria-label="Закрити">×</button>`;
   document.body.appendChild(el);
 }
+/* Список подій від майстра (30 днів): цифра на дзвіночку й на іконці; натиснув — до об'єкта */
+var pwInbox = null;
+async function pwLoadInbox(){
+  if(!LINK) return;
+  try{
+    const r = await fetch(`${SERVER}/w/${LINK}/inbox`, { cache:"no-store" });
+    if(!r.ok) return;
+    const d = await r.json();
+    pwInbox = { items: Array.isArray(d.items) ? d.items : [], unread: Number(d.unread) || 0 };
+  }catch(e){ return; }
+  pwBadge();
+}
+function pwBadge(){
+  const n = pwInbox ? pwInbox.unread : 0;
+  const b = document.querySelector('.top button[aria-label="Сповіщення"]');
+  if(b){ let x = b.querySelector(".pwN"); if(n > 0){ if(!x){ x = document.createElement("span"); x.className = "pwN"; b.appendChild(x); } x.textContent = n > 99 ? "99+" : String(n); } else if(x) x.remove(); }
+  try{ if(navigator.setAppBadge) (n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {}); }catch(e){}
+}
+async function pwRead(ids, all){
+  if(pwInbox){ pwInbox.items.forEach(x => { if(all || ids.includes(x.id)) x.read = true; }); pwInbox.unread = pwInbox.items.filter(x => !x.read).length; pwBadge(); }
+  try{ await fetch(`${SERVER}/w/${LINK}/read`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(all ? { all:true } : { ids }) }); }catch(e){}
+}
+function pwGo(id){
+  const it = pwInbox && pwInbox.items.find(x => x.id === id);
+  if(!it) return;
+  if(!it.read) pwRead([id]);
+  closeSheet();
+  const card = it.pid && document.querySelector(`.obj[data-pid="${CSS.escape(it.pid)}"]`);
+  if(card){ card.scrollIntoView({ behavior:"smooth", block:"start" }); card.classList.add("pwFlash"); setTimeout(() => card.classList.remove("pwFlash"), 1600); }
+}
+function pwListHtml(){
+  if(!pwInbox || !pwInbox.items.length) return "";
+  const when = iso => new Date(iso).toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+  return `<div class="pwHead"><span>Події за 30 днів</span>${pwInbox.unread ? `<button type="button" onclick="pwRead([], true).then(pwOpen)">Прочитати всі</button>` : ""}</div>
+    <div class="pwList">${pwInbox.items.slice(0, 50).map(x => `<button type="button" class="pwItem${x.read ? "" : " new"}" onclick="pwGo('${esc(x.id)}')"><i></i><span><b>${esc(x.title)}</b>${esc(x.body)}</span><small>${when(x.at)}</small></button>`).join("")}</div>`;
+}
 /* Дзвіночок у шапці: стан сповіщень і як увімкнути — щоб можна було будь-коли, а не лише в першому питанні */
 async function pwOpen(){
+  await pwLoadInbox();
   let body = "";
   if(!pwSupported()) body = pwIos() && !pwStandalone() ? "" : `<p class="pwTx">Цей браузер не показує сповіщення. Відкрийте посилання в Safari (iPhone) або Chrome (Android).</p>`;
   if(!body && pwIos() && !pwStandalone()) body = `<p class="pwTx">На iPhone сповіщення працюють лише з іконки на екрані «Додому»:</p>
@@ -519,7 +560,7 @@ async function pwOpen(){
     if(sub){ try{ await pwSend(sub); }catch(e){} body = `<p class="pwTx pwOk">✓ Сповіщення увімкнені на цьому телефоні.</p>`; }
   }
   if(!body) body = `<p class="pwTx">Нові об’єкти, нотатки, відповіді на ваші запити й фото приходитимуть сповіщенням.</p><button class="btn" onclick="closeSheet();pwEnable().then(pwOpen)">Дозволити сповіщення</button>`;
-  sheet(`<div class="hd"><h3>Сповіщення</h3><button class="x" onclick="closeSheet()">✕</button></div>${body}`);
+  sheet(`<div class="hd"><h3>Сповіщення</h3><button class="x" onclick="closeSheet()">✕</button></div>${pwListHtml()}${body}`);
 }
 function pwDone(yes){ pwSet({ ...pwGet(), askedAt: Date.now() }); document.getElementById("pwBar")?.remove(); if(yes) pwEnable(); }
 async function pwRefresh(){
@@ -530,8 +571,10 @@ async function pwRefresh(){
   if(st.endpoint === sub.endpoint && Date.now() - (st.sentAt || 0) < 864e5) return;
   try{ await pwSend(sub); }catch(e){}
 }
-if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", ev => { if(ev.data && ev.data.etPush === "open") load(); });
+if("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", ev => { if(ev.data && ev.data.etPush === "open"){ load(); pwLoadInbox(); } });
 setTimeout(() => { pwRefresh().catch(() => {}); pwAsk(); }, 2500);
+setTimeout(() => pwLoadInbox(), 1200);
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") pwLoadInbox(); });
 </script>
 </body>
 </html>
