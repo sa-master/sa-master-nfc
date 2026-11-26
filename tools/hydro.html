@@ -979,6 +979,9 @@ async function buildPaper(){
   /* Ручний режим: тривалість менша за потрібну (вода 30 хв, опалення 120, повітря 5) — звіт не формуємо */
   const shortSys=actDraft.systems.find(x=>{ if(!actSysDone(x)) return false; const need=x.medium==="air"?5:(x.need||30), m=actNum(x.minutes); return m===null||m<need; });
   if(shortSys){ const need=shortSys.medium==="air"?5:(shortSys.need||30); toast(`${shortSys.label}: тривалість менша за ${need} хв. Випробування має тривати не менше ${need} хв`,5000); return null; }
+  /* Без тиску на початку й в кінці висновку немає — такий звіт не формуємо й не відправляємо */
+  const noData=actDraft.systems.find(x=>actSysDone(x)&&(actNum(x.start)===null||actNum(x.end)===null));
+  if(noData){toast(noData.label+": вкажіть тиск на початку та в кінці випробування",5000);return null;}
   const prof = await SMProfile.get();
   const info={
     objectName: cleanText($("iObj").value)||"—",
