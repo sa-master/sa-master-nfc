@@ -2,7 +2,7 @@
   "use strict";
   var R = HID, G = HID, KEY = "hidden-room-v1", NS = "http://www.w3.org/2000/svg";
   var $ = function (id) { return document.getElementById(id); };
-  var S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], seq: 1 }, draw = null, pdrag = null, psel = null, zm = { z: 1, px: 0, py: 0 }, ptrs = {}, pinch = null;
+  var S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], extras: [], seq: 1 }, draw = null, pdrag = null, psel = null, zm = { z: 1, px: 0, py: 0 }, ptrs = {}, pinch = null;
   var tool = "room", pickType = "sink", sel = null, hist = [], hpos = -1, view = { sc: 1, ox: 0, oy: 0 };
   var sv = $("sv"), sheet = $("sheet"), drag = null;
 
@@ -299,7 +299,7 @@
   $("redo").onclick = function () { if (hpos < hist.length - 1) { hpos++; restore(hist[hpos]); } };
   $("menu").onclick = function () {
     var b = $("box"); b.innerHTML = "<h3>Меню</h3>"; var ta = document.createElement("textarea"); ta.readOnly = true; ta.value = snap(); b.appendChild(ta);
-    var r = row(btn("Скопіювати дані", "p", function () { ta.select(); try { navigator.clipboard.writeText(ta.value); toast("Скопійовано"); } catch (e) { document.execCommand("copy"); } }), btn("Почати знову", "d", function () { S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], seq: 1 }; draw = null; sel = null; psel = null; $("ovl").classList.remove("on"); commit(); }), btn("Закрити", "", function () { $("ovl").classList.remove("on"); })); r.style.marginTop = "10px"; b.appendChild(r); $("ovl").classList.add("on");
+    var r = row(btn("Скопіювати дані", "p", function () { ta.select(); try { navigator.clipboard.writeText(ta.value); toast("Скопійовано"); } catch (e) { document.execCommand("copy"); } }), btn("Почати знову", "d", function () { S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], extras: [], seq: 1 }; draw = null; sel = null; psel = null; $("ovl").classList.remove("on"); commit(); }), btn("Закрити", "", function () { $("ovl").classList.remove("on"); })); r.style.marginTop = "10px"; b.appendChild(r); $("ovl").classList.add("on");
   };
   /* два пальці: масштаб і переміщення креслення */
   function two() { var k = Object.keys(ptrs); if (k.length < 2) return null; var a = ptrs[k[0]], b = ptrs[k[1]]; return { m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; }
@@ -332,8 +332,8 @@
     });
     return { pipes: pipes, fit: fit, rise: rise, fx: fxl, unconf: unconf, hub: !!S.hub, total: lines.length };
   }
-  $("spec").onclick = function () {
-    var sp = spec(), b = $("box"), txt = [], m = function (v) { return (v / 1000).toFixed(2); };
+  function openSpec() {
+    var sp = spec(), b = $("box"), txt = [], m = function (v) { return (v / 1000).toFixed(2); }; S.extras = S.extras || [];
     b.innerHTML = "<h3>Специфікація матеріалів</h3>";
     var tb = document.createElement("table"); tb.style.cssText = "width:100%;border-collapse:collapse;font-size:14px"; var add = function (a, c, d, hdr) { var tr = tb.insertRow(); [a, c, d].forEach(function (v, i) { var td = tr.insertCell(); td.textContent = v; td.style.cssText = "padding:6px 4px;border-bottom:1px solid #e4e7ec;" + (i ? "text-align:right;" : "") + (hdr ? "font-weight:700;background:#f2f4f7;" : ""); }); txt.push([a, c, d].join("\t")); };
     add("Позиція", "К-сть", "Запас +10 %", true);
@@ -342,14 +342,24 @@
     Object.keys(sp.fit).sort().forEach(function (k) { add(k, sp.fit[k] + " шт", ""); });
     Object.keys(sp.fx).forEach(function (k) { add(k, sp.fx[k] + " шт", ""); });
     if (sp.hub) add("Вузол / колектор", "1 шт", "");
-    if (!sp.total) { b.innerHTML += "<div class='note'>Трас ще немає. Накресліть трубу або побудуйте траси.</div>"; } else { b.appendChild(tb); }
+    S.extras.forEach(function (x) { add(x.name, x.qty + " " + (x.unit || "шт"), ""); });
+    if (!sp.total && !S.extras.length) { b.innerHTML += "<div class='note'>Трас ще немає. Накресліть трубу або побудуйте траси.</div>"; } else { b.appendChild(tb); }
     var n = document.createElement("div"); n.className = "note"; n.style.marginTop = "8px";
-    n.textContent = (sp.unconf ? "Увага: " + sp.unconf + " ліній ще не підтверджено, але враховано. " : "") + "Довжини труб — горизонтальні ділянки по плану плюс підйоми до приладів за вказаною висотою. Трійники рахуються там, де труба починається з середини іншої. Фітинги на підйомах у стінах та інше треба додати вручну.";
+    n.textContent = (sp.unconf ? "Увага: " + sp.unconf + " ліній ще не підтверджено, але враховано. " : "") + "Довжини труб — горизонтальні ділянки по плану плюс підйоми до приладів за вказаною висотою. Трійники рахуються там, де труба починається з середини іншої.";
     b.appendChild(n);
-    var r = row(btn("Скопіювати", "p", function () { var t = txt.join("\n"); try { navigator.clipboard.writeText(t); toast("Скопійовано"); } catch (e) { toast("Не вдалося скопіювати"); } }), btn("Закрити", "", function () { $("ovl").classList.remove("on"); })); r.style.marginTop = "10px"; b.appendChild(r); $("ovl").classList.add("on");
-  };
+    var h2 = document.createElement("h3"); h2.textContent = "Додаткові позиції (ваші)"; h2.style.marginTop = "14px"; b.appendChild(h2);
+    S.extras.forEach(function (x, i) {
+      var r2 = row(fld("Назва", x.name, function (v) { x.name = v; save(); openSpec(); }, "t"), fld("К-сть", x.qty, function (v) { x.qty = num(v); save(); openSpec(); }), fld("Од.", x.unit || "шт", function (v) { x.unit = v; save(); openSpec(); }, "t"), btn("✕", "d", function () { S.extras.splice(i, 1); commit(); openSpec(); }));
+      b.appendChild(r2);
+    });
+    var quick = ["Кульовий кран Ø20", "Кутовий кран 1/2\"", "Муфта Ø20", "Кліпса / кріплення Ø20", "Гільза", "Ізоляція (трубна)", "Колектор"];
+    var qr = document.createElement("div"); qr.className = "row"; quick.forEach(function (q) { var c = document.createElement("button"); c.className = "chip"; c.textContent = "+ " + q; c.onclick = function () { S.extras.push({ name: q, qty: 1, unit: q.indexOf("Ізоляція") === 0 ? "м" : "шт" }); commit(); openSpec(); }; qr.appendChild(c); });
+    b.appendChild(qr);
+    var r = row(btn("+ Своя позиція", "", function () { S.extras.push({ name: "Нова позиція", qty: 1, unit: "шт" }); commit(); openSpec(); }), btn("Скопіювати", "p", function () { var t = txt.join("\n"); try { navigator.clipboard.writeText(t); toast("Скопійовано"); } catch (e) { toast("Не вдалося скопіювати"); } }), btn("Закрити", "", function () { $("ovl").classList.remove("on"); })); r.style.marginTop = "10px"; b.appendChild(r); $("ovl").classList.add("on");
+  }
+  $("spec").onclick = openSpec;
   window.addEventListener("resize", render);
-  try { var s0 = localStorage.getItem(KEY); if (s0) S = JSON.parse(s0); } catch (e) {} S.pipes = S.pipes || []; S.axes = S.axes || {};
+  try { var s0 = localStorage.getItem(KEY); if (s0) S = JSON.parse(s0); } catch (e) {} S.pipes = S.pipes || []; S.extras = S.extras || []; S.axes = S.axes || {};
   window.__S = function () { return S; }; window.__V = function () { return view; };
   hist = [snap()]; hpos = 0; render();
 })();
