@@ -114,13 +114,17 @@
     var bb = G.bbox(poly), ix0 = Math.floor(bb.x0 / step), iy0 = Math.floor(bb.y0 / step), nx = Math.ceil(bb.x1 / step) - ix0 + 1, ny = Math.ceil(bb.y1 / step) - iy0 + 1;
     var valid = new Uint8Array(nx * ny);
     var segs = R.segs(poly);
+    var hug = new Uint8Array(nx * ny), cx0 = 0;
     function ok(x, y) {
       if (!G.inPoly([x, y], poly)) return false;
-      for (var i = 0; i < segs.length; i++) if (G.distToSeg([x, y], segs[i].a, segs[i].b) < clear) return false;
-      for (var j = 0; j < pill.length; j++) { var q = pill[j]; if (x > q.x - clear && x < q.x + q.w + clear && y > q.y - clear && y < q.y + q.h + clear) return false; }
+      var md = 1e9, i, d;
+      for (i = 0; i < segs.length; i++) { d = G.distToSeg([x, y], segs[i].a, segs[i].b); if (d < clear) return false; if (d < md) md = d; }
+      for (var j = 0; j < pill.length; j++) { var q = pill[j]; if (x > q.x - clear && x < q.x + q.w + clear && y > q.y - clear && y < q.y + q.h + clear) return false;
+        var dx = Math.max(q.x - x, 0, x - q.x - q.w), dy = Math.max(q.y - y, 0, y - q.y - q.h); d = Math.hypot(dx, dy); if (d < md) md = d; }
+      hug[cx0] = md <= clear + 1.5 * step ? 1 : 0; /* біля стіни чи колони — «уздовж стіни» */
       return true;
     }
-    var gy, gx; for (gy = 0; gy < ny; gy++) for (gx = 0; gx < nx; gx++) valid[gy * nx + gx] = ok((ix0 + gx) * step, (iy0 + gy) * step) ? 1 : 0;
+    var gy, gx; for (gy = 0; gy < ny; gy++) for (gx = 0; gx < nx; gx++) (cx0 = gy * nx + gx, valid[gy * nx + gx] = ok((ix0 + gx) * step, (iy0 + gy) * step) ? 1 : 0);
     var used = new Float32Array(nx * ny);
     function nearestNode(p, maxR) {
       var cx = Math.round(p[0] / step) - ix0, cy = Math.round(p[1] / step) - iy0, best = null;
@@ -146,7 +150,7 @@
         if (cx === t.x && cy === t.y) { goal = st; break; }
         for (var d = 0; d < 4; d++) {
           var x = cx + DX[d], y = cy + DY[d]; if (x < 0 || y < 0 || x >= nx || y >= ny || !valid[y * nx + x]) continue;
-          var nn = y * nx + x, c = used[nn] > 0 ? 0.35 : 1; if (dir !== 4 && dir !== d) c += 3;
+          var nn = y * nx + x, c = used[nn] > 0 ? 0.25 : (hug[nn] ? 1 : 2.2); if (dir !== 4 && dir !== d) c += 3;
           var ns = nn * 5 + d, ng = g[st] + c;
           if (ng < g[ns]) { g[ns] = ng; from[ns] = st; h.push(ng + hh(x, y), ns); }
         }
@@ -178,7 +182,7 @@
     var rt = R.router(room), routes = [], failed = [], poly = rt.contour.pts;
     var hn0 = R.nearest(poly, hub), hubN = null, hubP = hub.slice();
     if (hn0.d <= 5) { hubN = hn0.seg.n; hubP = hn0.q.map(Math.round); }
-    var list = fixtures.slice().sort(function (a, b) { return G.dist(a.p, hubP) - G.dist(b.p, hubP); });
+    var list = fixtures.slice().sort(function (a, b) { return G.dist(b.p, hubP) - G.dist(a.p, hubP); });
     list.forEach(function (fx) {
       var t = R.fixType(fx.type), near = R.nearest(poly, fx.p), n = near.seg.n, p = near.q.map(Math.round);
       if (near.d > 5) { failed.push(fx); return; }
