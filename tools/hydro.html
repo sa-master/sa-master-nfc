@@ -518,24 +518,6 @@ function actToggleInc(i, on){
   actSyncOn();
   renderActSheet();
 }
-/* Зняв не ту систему (напр. відкрив «Водопостачання», а випробовував опалення) — переносимо фото й цифри в іншу систему.
-   Якщо там теж є дані — системи міняються даними. Назва, ключ і норма часу лишаються за системою */
-const ACT_MOVE_KEYS = ["ph", "pressure", "start", "end", "minutes", "manual", "pManual", "date", "work", "k", "leak", "cond", "glued", "confirm", "air1", "compMax", "by", "byAt", "off"];
-function actMoveTo(i){ return (i + 1) % actDraft.systems.length; }
-function actMoveSys(i){
-  if(!actDraft) return;
-  actReadForm();
-  const a = actDraft.systems[i], b = actDraft.systems[actMoveTo(i)];
-  const ta = {}, tb = {};
-  ACT_MOVE_KEYS.forEach(k => { ta[k] = a[k]; tb[k] = b[k]; delete a[k]; delete b[k]; });
-  ACT_MOVE_KEYS.forEach(k => { if(ta[k] !== undefined) b[k] = ta[k]; if(tb[k] !== undefined) a[k] = tb[k]; });
-  [a, b].forEach(x => { if(x.pressure === undefined){ x.pressure = x.start = x.end = x.key === "heat" ? 4 : 4.5; } x.cond = x.cond || {}; });
-  const j = actMoveTo(i);
-  actDraft.show = Array.from(new Set([...(Array.isArray(actDraft.show) ? actDraft.show : []), j])).sort((p, q) => p - q);
-  actSyncOn();
-  renderActSheet();
-  toast(`Перенесено в «${actShortName(b)}»${actHasData(a) ? `, а дані «${actShortName(b)}» — в «${actShortName(a)}»` : ""}. Підпис на самому фото не змінюється`, 4500);
-}
 function renderActSheet(){
   actSyncOn();
   const box = document.getElementById("actSheetBody");
@@ -566,7 +548,6 @@ function renderActSheet(){
       </div>`
       : done ? `<div class="actSum"><span>${x.minutes ? actDur(x.minutes) : "—"} · ${actDropText(x)}</span><button type="button" onclick="actEdit(${i})">Змінити</button></div>`
         : `<button type="button" class="actManual" onclick="actEdit(${i})">Без фото? Вписати результат вручну</button>`}
-      ${actHasData(x) && actDraft.systems.length > 1 ? `<button type="button" class="actManual" onclick="actMoveSys(${i})">Не та система? Перенести в «${escapeHtml(actShortName(actDraft.systems[actMoveTo(i)]))}»</button>` : ""}
       </div>` : ""}
     </div>`;
   };
