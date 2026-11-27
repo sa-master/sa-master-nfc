@@ -177,6 +177,15 @@
       }
     };
   };
+  /* пара ХВП/ГВП вздовж осі (від вузла до приладу): ХВП праворуч за напрямком руху, ГВП ліворуч */
+  R.pairFor = function (axis, fx) {
+    var t = R.fixType(fx.type), cold = fx.cold === undefined ? t.cold : fx.cold, hot = fx.hot === undefined ? t.hot : fx.hot;
+    var dc = fx.dc || fx.d || R.DIAM, dh = fx.dh || fx.d || R.DIAM, out = [];
+    if (cold && hot) { out.push({ systemId: "cold", fixtureId: fx.id, pts: R.offsetLine(axis, dc / 2) }); out.push({ systemId: "hot", fixtureId: fx.id, pts: R.offsetLine(axis, -dh / 2) }); }
+    else if (cold) out.push({ systemId: "cold", fixtureId: fx.id, pts: R.offsetLine(axis, 0) });
+    else if (hot) out.push({ systemId: "hot", fixtureId: fx.id, pts: R.offsetLine(axis, 0) });
+    return out;
+  };
   /* побудова всіх трас: для кожного приладу ХВП праворуч, ГВП ліворуч (дивлячись на стіну), пара поруч */
   R.buildRoutes = function (room, hub, fixtures) {
     var rt = R.router(room), routes = [], failed = [], poly = rt.contour.pts;
@@ -187,12 +196,7 @@
       var t = R.fixType(fx.type), near = R.nearest(poly, fx.p), n = near.seg.n, p = near.q.map(Math.round);
       if (near.d > 5) { failed.push(fx); return; }
       var axis = rt.axis(hubP, hubN, p, n); if (!axis || axis.length < 2) { failed.push(fx); return; }
-      var cold = fx.cold !== false && t.cold !== false ? fx.cold !== false : false, hot = fx.hot !== false && t.hot !== false ? fx.hot !== false : false;
-      if (fx.cold === undefined) cold = t.cold; if (fx.hot === undefined) hot = t.hot;
-      var dc = fx.dc || fx.d || R.DIAM, dh = fx.dh || fx.d || R.DIAM; // діаметри труб, мм
-      if (cold && hot) { routes.push({ systemId: "cold", fixtureId: fx.id, pts: R.offsetLine(axis, dc / 2) }); routes.push({ systemId: "hot", fixtureId: fx.id, pts: R.offsetLine(axis, -dh / 2) }); }
-      else if (cold) routes.push({ systemId: "cold", fixtureId: fx.id, pts: R.offsetLine(axis, 0) });
-      else if (hot) routes.push({ systemId: "hot", fixtureId: fx.id, pts: R.offsetLine(axis, 0) });
+      R.pairFor(axis, fx).forEach(function (r) { routes.push(r); });
     });
     return { routes: routes, failed: failed };
   };
