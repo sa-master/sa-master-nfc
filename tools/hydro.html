@@ -151,7 +151,7 @@ textarea.formInput{resize:vertical}
 .qa2MC>div+div{border-top:1px solid #e1e5ec}.qa2MD{border-left:1px solid #d6dbe3;padding-left:16px}
 .qa2Meta small{display:block;font-size:11.5px;color:#6b7280}.qa2Meta b{display:block;font-size:13.5px;font-weight:600;color:#111;line-height:1.3}
 .qa2Ic{flex:0 0 auto}
-.qa2SysT{display:flex;align-items:center;gap:8px}.qa2SysT.k-heat{border-left-color:#e8532b}.qa2SysT.k-water{border-left-color:#0a64d6}.qa2SysT .sIc{width:30px;height:30px}.qa2SysT.k-water .sIc{background:#dcebff}.qa2SysT.k-heat .sIc{background:#ffe3da}.qa2SysT.k-water .sIc svg{stroke:#0a64d6}.qa2SysT.k-heat .sIc svg{stroke:#e8532b}
+.qa2SysT{display:flex;align-items:center;gap:8px}.qa2SysT.k-heat{border-left-color:#e8532b}.qa2SysT.k-water{border-left-color:#0a64d6}.qa2SysT .sIc{width:30px;height:30px}.qa2SysT.k-water .sIc{background:#dcebff}.qa2SysT.k-heat .sIc{background:#ffe3da}.qa2SysT.k-water .sIc svg{stroke:#0a64d6}.qa2SysT.k-hot{border-left-color:#d9480f}.qa2SysT.k-hot .sIc{background:#ffe8d6}.qa2SysT.k-hot .sIc svg{stroke:#d9480f}.qa2SysT.k-heat .sIc svg{stroke:#e8532b}
 .qIc{flex:none;display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:#e6f0fe}
 .qa2Cards>div:nth-child(2) .qIc{background:#fff1d6}.qa2Cards>div:nth-child(3) .qIc{background:#e3f5ea}
 .qa2Cards>div:nth-child(3){gap:12px}.qa2Cards>div:nth-child(3)>svg:last-child{margin-left:auto;flex:none}
@@ -258,9 +258,21 @@ const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},
 
 /* ===== Логіка звіту (перенесена з калькулятора без змін) ===== */
 const ACT_SYSTEMS = [
-  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
+  { key:"water", label:"Холодне водопостачання (ХВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
+  { key:"hot", label:"Гаряче водопостачання (ГВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
   { key:"heat", label:"Опалення / тепла підлога", pressure:4, minutes:120, work:3, k:1.3, need:120 }
 ];
+/* До ГВП окремою системою водопостачання було одне — «ХВП/ГВП»: такі акти лишаються як були */
+const ACT_OLD_WATER = "Водопостачання (ХВП/ГВП)";
+function actNewSys(x){ return { key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure }; }
+/* Старий акт: додаємо ГВП (порожнім, у PDF не піде), а «ХВП/ГВП» без результату перейменовуємо на «ХВП» */
+function actEnsure(a){
+  if(!a || !Array.isArray(a.systems)) return a;
+  ACT_SYSTEMS.forEach((d, n) => { if(!a.systems.some(x => x.key === d.key)){ a.systems.splice(Math.min(n, a.systems.length), 0, actNewSys(d)); a.tab = 0; } });
+  const w = a.systems.find(x => x.key === "water");
+  if(w && w.label === ACT_OLD_WATER && !actHasData(w)) w.label = ACT_SYSTEMS[0].label;
+  return a;
+}
 const ACT_MAX_PHOTOS = 4;
 const ACT_ALLOW = 0.2; /* падіння не більше 0,2 бар — герметично */
 let actDraft = null;
@@ -273,11 +285,12 @@ function actSysDate(x, a){
   if(ph && ph.at){ const d = new Date(ph.at); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
   return x.date || (a && a.date) || todayIso();
 }
-function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
+function actShortName(x){ return x.key === "water" ? (x.label === ACT_OLD_WATER ? "водопостачання" : "ХВП") : x.key === "hot" ? "ГВП" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
 function actNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function actFmt(v){ return v === null || v === undefined || v === "" ? "—" : String(v).replace(".", ","); }
 /* Критерії беруться з окремого файлу правил (shared/hydrorules.js), лише за ДБН. Числового допуску немає — його не вигадуємо */
-function actRule(x){ return HydroRules.ruleFor(x.key, x.medium === "air" ? "air" : "hydro"); }
+/* ГВП — той самий розділ ДБН В.2.5-64, що й холодна вода */
+function actRule(x){ return HydroRules.ruleFor(x.key === "hot" ? "water" : x.key, x.medium === "air" ? "air" : "hydro"); }
 function actAllow(x){ const r = actRule(x); return r ? r.maxDrop : null; }
 function actDrop(x){ const s = actNum(x.start), e = actNum(x.end); return s === null || e === null ? null : Math.round((s - e) * 100) / 100; }
 function actEval(x){
@@ -829,14 +842,14 @@ function actConclusion(list){
   return `${one ? "Систему" : "Системи"} випробувано надлишковим тиском. ${drop ? "Протікань не виявлено; значення тиску на початку й у кінці наведено в таблиці." : "Падіння тиску та протікань не виявлено."}`;
 }
 /* ===== Новий вигляд звіту (прототип) ===== */
-function actSysNoun(x){ return x.key === "heat" ? "опалення" : "водопостачання"; }
+function actSysNoun(x){ return x.key === "heat" ? "опалення" : x.key === "hot" ? "гарячого водопостачання" : x.label === ACT_OLD_WATER ? "водопостачання" : "холодного водопостачання"; }
 function actPaperTitle(list){
   const air = list.filter(x => x.air).length;
   return air === 0 ? "Звіт про гідравлічні випробування" : air === list.length ? "Звіт про манометричні випробування" : "Звіт про гідравлічні та манометричні випробування";
 }
 function actPaperSub(list){
   const n = [...new Set(list.map(actSysNoun))];
-  return "Перевірка герметичності " + (n.length > 1 ? "систем " + n.join(" та ") : "системи " + n[0]) + ".";
+  return "Перевірка герметичності " + (n.length > 1 ? "систем " + n.slice(0, -1).join(", ") + " та " + n[n.length - 1] : "системи " + n[0]) + ".";
 }
 const ACT_IC = {
   drop:'<path d="M12 3c3.5 4.4 6 7.4 6 10.5a6 6 0 0 1-12 0C6 10.4 8.5 7.4 12 3z"/>',
@@ -947,7 +960,7 @@ function actCamLabels(){
 const $ = id => document.getElementById(id);
 const newDraft = () => ({
   date: todayIso(),
-  systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
+  systems: ACT_SYSTEMS.map(actNewSys),
   note: "", photos: []
 });
 actDraft = newDraft();
@@ -963,7 +976,7 @@ let suppressSave = false;
 function loadAct(d){
   suppressSave = true;
   INFO.forEach((id,i) => { $(id).value = (d.info && d.info[i]) || ""; });
-  actDraft = d.act || newDraft(); renderActSheet();
+  actDraft = d.act ? actEnsure(d.act) : newDraft(); renderActSheet();
   suppressSave = false;
 }
 const mgr = { touch(){}, currentTitle: () => "Звіт про герметичність" };
