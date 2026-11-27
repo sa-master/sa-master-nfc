@@ -14274,7 +14274,7 @@ function renderActCard(p){
   return `<div class="actCard">
     <div class="acMain"><b>${ACT_SYS_IC.water}Гідравлічні випробування</b><small>${parts.length ? parts.join("") : "<span>Ще не проведено</span>"}${sent}</small></div>
     <div class="acBtns">
-      <button type="button" class="ptBtn ${done.length ? "" : "primary"}" onclick="openActFor('${p.id}')">${a ? "Акт" : "＋ Провести"}</button>
+      <button type="button" class="ptBtn ${done.length ? "" : "primary"}" onclick="openActFor('${p.id}')">${a ? "Звіт" : "＋ Провести"}</button>
       ${done.length ? `<button type="button" class="ptBtn primary" onclick="sendActReport('${p.id}')">Надіслати</button>` : ""}
     </div>
   </div>`;
@@ -14297,7 +14297,7 @@ function openHandover(id){
   const report = i.done.length
     ? `<label class="hoRow"><input type="checkbox" id="hoAct" checked onchange="handoverBtn()"><span class="hoChk"></span><span class="hoText"><b>Звіт про гідравлічні випробування</b><small>${i.done.map(x => `${escapeHtml(actShortName(x))} — ${verdict(x)}`).join(" · ")}</small></span></label>`
     : i.plumb ? `<div class="hoRow"><span class="hoChk">!</span><span class="hoText"><b>Гідравлічних випробувань немає</b><small>Клієнт їх не отримає</small></span><button type="button" class="scBtn primary" onclick="closeHandover();openActFor('${p.id}')">Провести</button></div>` : "";
-  const waitRow = i.wait.length ? `<div class="hoRow hoWarn"><span class="hoChk">!</span><span class="hoText"><b>Ще не завершено: ${escapeHtml(i.wait.map(actShortName).join(", "))}</b><small>У звіт не ввійде</small></span><button type="button" class="scBtn" onclick="closeHandover();openActFor('${p.id}')">Акт</button></div>` : "";
+  const waitRow = i.wait.length ? `<div class="hoRow hoWarn"><span class="hoChk">!</span><span class="hoText"><b>Ще не завершено: ${escapeHtml(i.wait.map(actShortName).join(", "))}</b><small>У звіт не ввійде</small></span><button type="button" class="scBtn" onclick="closeHandover();openActFor('${p.id}')">Звіт</button></div>` : "";
   const est = i.approved ? `<label class="hoRow"><input type="checkbox" id="hoEst" ${i.debt > 0.5 || i.changed ? "checked" : ""} onchange="handoverBtn()"><span class="hoChk"></span><span class="hoText"><b>Фактичний кошторис з оплатами</b><small>${money(getClientTotal(p))} · ${i.debt > 0.5 ? `клієнт винен ${money(i.debt)}` : "сплачено повністю"}${i.changed ? " · кошторис змінювали" : ""}</small></span></label>` : "";
   el.innerHTML = `<div class="amSheet" role="dialog" aria-label="Здача об’єкта">
     <div class="amHead"><b>Здача об’єкта</b><button type="button" class="amClose" onclick="closeHandover()" aria-label="Закрити">✕</button></div>
