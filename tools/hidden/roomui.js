@@ -141,9 +141,9 @@
     }
     if (!S.hub) { var n = document.createElement("div"); n.className = "err"; n.textContent = "Спершу вкажіть вузол або ввід труб."; sheet.appendChild(n); return; }
     if (!S.fixtures.length) { var n2 = document.createElement("div"); n2.className = "err"; n2.textContent = "Додайте хоча б один прилад."; sheet.appendChild(n2); return; }
-    var st = document.createElement("div"); st.className = "note"; st.textContent = "Торкніться приладу на плані — і задайте, де йде його траса. Або «Запропонувати автоматично» як чернетку."; sheet.appendChild(st);
+    var st = document.createElement("div"); st.className = "note"; st.textContent = manual ? "Режим «вручну»: торкніться приладу й задайте точки повороту." : "Торкніться приладу на плані — траса від вузла побудується сама, з найменшою кількістю кутів. Або побудуйте всі одразу."; sheet.appendChild(st);
     var all = allRoutes(), conf = all.length && all.every(function (r) { return r.confirmed; });
-    sheet.appendChild(row(btn("Запропонувати автоматично", "", build), all.length && !conf ? btn("Підтвердити як фактичні", "p", function () { S.routes.forEach(function (r) { r.confirmed = true; }); Object.keys(S.axes).forEach(function (k) { S.axes[k].confirmed = true; }); commit(); }) : document.createElement("span"), all.length ? btn("Скинути", "d", function () { S.routes = []; S.axes = {}; commit(); }) : document.createElement("span")));
+    sheet.appendChild(row(btn("Побудувати всі", "", build), btn(manual ? "Режим: вручну" : "Режим: авто", "", function () { manual = !manual; render(); }), all.length && !conf ? btn("Підтвердити як фактичні", "p", function () { S.routes.forEach(function (r) { r.confirmed = true; }); Object.keys(S.axes).forEach(function (k) { S.axes[k].confirmed = true; }); commit(); }) : document.createElement("span"), all.length ? btn("Скинути", "d", function () { S.routes = []; S.axes = {}; commit(); }) : document.createElement("span")));
     if (all.length) {
       var tot = { cold: 0, hot: 0 }; all.forEach(function (r) { tot[r.systemId] += len(r.pts); });
       var d = document.createElement("div"); d.className = "note"; d.textContent = (conf ? "Підтверджені (фактичні) траси. " : "Пунктир — не підтверджено, у звіт не йде. ") + "Довжина по плану: ХВП " + (tot.cold / 1000).toFixed(2) + " м, ГВП " + (tot.hot / 1000).toFixed(2) + " м (горизонтальні ділянки, без підйомів).";
@@ -164,6 +164,12 @@
     if (c[0] !== last[0] || c[1] !== last[1]) pts.push(c); pts.push(p);
     return R.clean(pts);
   }
+  var manual = false;
+  function autoOne(fid) {
+    var fx = fxOf(fid), res = R.buildRoutes(S.room, S.hub, [fx]);
+    if (!res.axes[fid]) { toast("Не вдалося дотягнути трасу до цього приладу"); return; }
+    S.axes[fid] = { pts: res.axes[fid], confirmed: false }; S.routes = S.routes.filter(function (r) { return r.fixtureId !== fid; }); commit();
+  }
   function startDraw(fid) {
     var hn = R.nearest(C().pts, S.hub);
     draw = { fid: fid, pts: [S.hub.map(Math.round)], hubN: hn.seg.n, fromHub: true }; render();
@@ -179,8 +185,8 @@
   function build() {
     var c = C(); if (c.errors.length) { toast(c.errors[0]); return; }
     var res = R.buildRoutes(S.room, S.hub, S.fixtures); build.failed = res.failed.map(function (f) { return f.id || f; });
-    S.routes = res.routes.map(function (r) { return { systemId: r.systemId, fixtureId: r.fixtureId, pts: r.pts, confirmed: false }; });
-    commit(); toast(S.routes.length ? "Побудовано чернетку трас" : "Траси не побудовано");
+    S.routes = []; S.axes = {}; Object.keys(res.axes).forEach(function (id) { S.axes[id] = { pts: res.axes[id], confirmed: false }; });
+    commit(); toast(Object.keys(S.axes).length ? "Траси побудовано (чернетка)" : "Траси не побудовано");
   }
 
   /* ---------- жести ---------- */
@@ -210,7 +216,7 @@
       return;
     }
     var h = hit(q);
-    if (tool === "routes") { if (h && h.k === "f" && S.hub) startDraw(h.id); return; }
+    if (tool === "routes") { if (h && h.k === "f" && S.hub) { if (manual) startDraw(h.id); else autoOne(h.id); } return; }
     if (tool === "fix" || tool === "select" || tool === "hub") { if (h && (tool === "select" || (tool === "fix" && h.k === "f") || (tool === "hub" && h.k === "h"))) { sel = h; render(); return; } }
     var n = wallHit(q);
     if (tool === "fix" && n) { var t = R.fixType(pickType), f = { id: "f" + S.seq++, type: pickType, p: [Math.round(n.q[0]), Math.round(n.q[1])], base: "a", h: t.h }; S.fixtures.push(f); sel = { k: "f", id: f.id }; geomChanged(); commit(); }

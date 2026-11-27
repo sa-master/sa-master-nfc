@@ -150,7 +150,7 @@
         if (cx === t.x && cy === t.y) { goal = st; break; }
         for (var d = 0; d < 4; d++) {
           var x = cx + DX[d], y = cy + DY[d]; if (x < 0 || y < 0 || x >= nx || y >= ny || !valid[y * nx + x]) continue;
-          var nn = y * nx + x, c = used[nn] > 0 ? 0.25 : (hug[nn] ? 1 : 2.2); if (dir !== 4 && dir !== d) c += 3;
+          var nn = y * nx + x, c = used[nn] > 0 ? 4 : 1; if (dir !== 4 && dir !== d) c += 40; /* найменше кутів; уже зайняте — дорожче */
           var ns = nn * 5 + d, ng = g[st] + c;
           if (ng < g[ns]) { g[ns] = ng; from[ns] = st; h.push(ng + hh(x, y), ns); }
         }
@@ -188,7 +188,7 @@
   };
   /* побудова всіх трас: для кожного приладу ХВП праворуч, ГВП ліворуч (дивлячись на стіну), пара поруч */
   R.buildRoutes = function (room, hub, fixtures) {
-    var rt = R.router(room), routes = [], failed = [], poly = rt.contour.pts;
+    var rt = R.router(room), routes = [], axes = {}, failed = [], poly = rt.contour.pts;
     var hn0 = R.nearest(poly, hub), hubN = null, hubP = hub.slice();
     if (hn0.d <= 5) { hubN = hn0.seg.n; hubP = hn0.q.map(Math.round); }
     var list = fixtures.slice().sort(function (a, b) { return G.dist(b.p, hubP) - G.dist(a.p, hubP); });
@@ -196,9 +196,9 @@
       var t = R.fixType(fx.type), near = R.nearest(poly, fx.p), n = near.seg.n, p = near.q.map(Math.round);
       if (near.d > 5) { failed.push(fx); return; }
       var axis = rt.axis(hubP, hubN, p, n); if (!axis || axis.length < 2) { failed.push(fx); return; }
-      R.pairFor(axis, fx).forEach(function (r) { routes.push(r); });
+      axes[fx.id] = axis; R.pairFor(axis, fx).forEach(function (r) { routes.push(r); });
     });
-    return { routes: routes, failed: failed };
+    return { routes: routes, axes: axes, failed: failed };
   };
   return R;
 });
