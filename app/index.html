@@ -10146,6 +10146,7 @@ function crewApply(per, events){
       if(!Array.isArray(p.crewReq)) p.crewReq = [];
       p.crewReq.push({ id:ev.id, personId:per.id, name:per.name, text:ev.text, at:ev.at, status:"new" }); news++;
     }else if(ev.type === "act"){
+      if(ev.sys === "hot") ev.sys = "water";   /* надіслане з ГВП за ті кілька хвилин — як водопостачання */
       if(!["water", "heat"].includes(ev.sys) || !ev.before || !ev.after) return;
       if(!Array.isArray(p.crewActs)) p.crewActs = [];
       p.crewActs.push({ id:ev.id, personId:per.id, name:per.name, sys:ev.sys, start:ev.start, end:ev.end, before:ev.before, after:ev.after, at:ev.at, status:"new" }); news++;
@@ -12409,6 +12410,16 @@ const ACT_SYSTEMS = [
   { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
   { key:"heat", label:"Опалення / тепла підлога", pressure:4, minutes:120, work:3, k:1.3, need:120 }
 ];
+/* ГВП окремою системою було кілька хвилин (PR #132, скасовано): прибираємо з актів порожню ГВП і повертаємо назву «ХВП/ГВП».
+   Якщо ГВП уже має результат — лишається як є й перевіряється за правилом водопостачання */
+function actTidy(a){
+  if(!a || !Array.isArray(a.systems)) return a;
+  const hasData = x => Boolean(x && x.ph && (x.ph.before || x.ph.after) || x && x.manual);
+  if(a.systems.some(x => x.key === "hot" && !hasData(x))){ a.systems = a.systems.filter(x => x.key !== "hot" || hasData(x)); a.tab = 0; }
+  const w = a.systems.find(x => x.key === "water");
+  if(w && w.label === "Холодне водопостачання (ХВП)" && !hasData(w)) w.label = ACT_SYSTEMS[0].label;
+  return a;
+}
 const ACT_MAX_PHOTOS = 4;
 const ACT_ALLOW = 0.2; /* падіння не більше 0,2 бар — герметично */
 let actDraft = null;
@@ -12432,7 +12443,7 @@ function actSysDate(x, a){
   if(ph && ph.at){ const d = new Date(ph.at); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
   return x.date || (a && a.date) || todayIso();
 }
-function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
+function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "hot" ? "ГВП" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
 function actIncluded(project){
   const a = project && project.pressureAct;
   return Boolean(a && actFactual(project) && quoteMode !== "materials" && (a.systems || []).some(actSysDone));
@@ -12440,7 +12451,7 @@ function actIncluded(project){
 function actNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function actFmt(v){ return v === null || v === undefined || v === "" ? "—" : String(v).replace(".", ","); }
 /* Критерії беруться з окремого файлу правил (shared/hydrorules.js), лише за ДБН. Числового допуску немає — його не вигадуємо */
-function actRule(x){ return HydroRules.ruleFor(x.key, x.medium === "air" ? "air" : "hydro"); }
+function actRule(x){ return HydroRules.ruleFor(x.key === "hot" ? "water" : x.key, x.medium === "air" ? "air" : "hydro"); }
 function actAllow(x){ const r = actRule(x); return r ? r.maxDrop : null; }
 function actDrop(x){ const s = actNum(x.start), e = actNum(x.end); return s === null || e === null ? null : Math.round((s - e) * 100) / 100; }
 function actEval(x){
@@ -12527,7 +12538,7 @@ function openActSheet(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
   const a = project.pressureAct;
-  actDraft = a ? JSON.parse(JSON.stringify(a)) : {
+  actDraft = a ? actTidy(JSON.parse(JSON.stringify(a))) : {
     date: todayIso(),
     systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
     note: "",
