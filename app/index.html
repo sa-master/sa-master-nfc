@@ -10149,7 +10149,7 @@ function crewApply(per, events){
       if(ev.sys === "hot") ev.sys = "water";   /* надіслане з ГВП за ті кілька хвилин — як водопостачання */
       if(!["water", "heat"].includes(ev.sys) || !ev.before || !ev.after) return;
       if(!Array.isArray(p.crewActs)) p.crewActs = [];
-      p.crewActs.push({ id:ev.id, personId:per.id, name:per.name, sys:ev.sys, start:ev.start, end:ev.end, before:ev.before, after:ev.after, at:ev.at, status:"new" }); news++;
+      p.crewActs.push({ id:ev.id, personId:per.id, name:per.name, sys:ev.sys, start:ev.start, end:ev.end, before:ev.before, after:ev.after, medium:ev.medium === "air" ? "air" : "water", work:ev.work ?? null, k:ev.k || null, at:ev.at, status:"new" }); news++;
     }else if(ev.type === "bought"){
       if(!Array.isArray(p.crewBought)) p.crewBought = [];
       p.crewBought.push({ id:ev.id, personId:per.id, name:per.name, text:ev.text || "", amount:Number(ev.amount) || 0, date:ev.date || ev.at.slice(0, 10), photo:ev.photo || "", at:ev.at, status:"wait" }); news++;
@@ -10179,6 +10179,10 @@ async function crewActPut(p, r){
   Object.assign(x, { on:true, pressure:actNum(r.start), start:actNum(r.start), end:actNum(r.end), pManual:true, manual:false, by:r.name, byAt:r.at,
     ph:{ before:{ src:before, at:r.before.at || null }, after:{ src:after, at:r.after.at || null } } });
   if(gap !== null && gap >= 1) x.minutes = gap;
+  /* Чим випробовував працівник, робочий тиск і коефіцієнт (з екрана, як на сайті) */
+  if(r.medium) x.medium = r.medium;
+  if(actNum(r.work) !== null) x.work = actNum(r.work);
+  if([1.1, 1.3, 1.5].includes(Number(r.k))) x.k = Number(r.k);
   delete p.actSkip;
   p.pressureAct.updatedAt = new Date().toISOString();
   r.status = "added"; r.doneAt = p.pressureAct.updatedAt;
@@ -12415,7 +12419,7 @@ const ACT_SYSTEMS = [
 function actTidy(a){
   if(!a || !Array.isArray(a.systems)) return a;
   const hasData = x => Boolean(x && x.ph && (x.ph.before || x.ph.after) || x && x.manual);
-  if(a.systems.some(x => x.key === "hot" && !hasData(x))){ a.systems = a.systems.filter(x => x.key !== "hot" || hasData(x)); a.tab = 0; }
+  if(a.systems.some(x => x.key === "hot" && !hasData(x))){ a.systems = a.systems.filter(x => x.key !== "hot" || hasData(x)); a.tab = 0; a.show = null; }
   const w = a.systems.find(x => x.key === "water");
   if(w && w.label === "Холодне водопостачання (ХВП)" && !hasData(w)) w.label = ACT_SYSTEMS[0].label;
   return a;
@@ -12650,14 +12654,24 @@ function actCheckHtml(x, i, ev, done){
 /* Випробування одного обʼєкта: вкладки «Водопостачання» / «Опалення», у PDF — разом або окремо */
 function actHasData(x){ return Boolean(x && (actPair(x).b || actPair(x).a || x.manual)); }
 function actSyncOn(){ if(actDraft) actDraft.systems.forEach(x => { x.on = actHasData(x) && !x.off; }); }
+/* Відмічені системи видно одна під одною: можна почати опалення й водопостачання разом, а кінцеві дані дописати згодом */
+function actShown(){
+  const n = actDraft.systems.length, ok = i => Number.isInteger(i) && i >= 0 && i < n;
+  if(Array.isArray(actDraft.show)){ const s = actDraft.show.filter(ok); if(s.length) return s; }
+  const d = actDraft.systems.map((x, i) => i).filter(i => actHasData(actDraft.systems[i]));
+  return d.length ? d : [ok(actDraft.tab) ? actDraft.tab : 0];
+}
 function actChipsHtml(){
-  const tab = actDraft.tab || 0;
-  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip ${i === tab ? "on" : ""}"><input type="checkbox" ${i === tab ? "checked" : ""} onchange="actPickSys(${i})"><span>${escapeHtml(x.label)}${actHasData(x) ? " ✓" : ""}</span></label>`).join("")}</div>`;
+  const shown = actShown();
+  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip ${shown.includes(i) ? "on" : ""}"><input type="checkbox" ${shown.includes(i) ? "checked" : ""} onchange="actPickSys(${i})"><span>${escapeHtml(x.label)}${actHasData(x) ? " ✓" : ""}</span></label>`).join("")}</div>`;
 }
 function actPickSys(i){
   actReadForm();
   if(!actDraft) return;
-  actDraft.tab = i;
+  const s = actShown().slice();
+  if(s.includes(i)){ if(s.length > 1) s.splice(s.indexOf(i), 1); }
+  else s.push(i);
+  actDraft.show = s.sort((a, b) => a - b);
   renderActSheet();
 }
 function actIncHtml(){
@@ -12682,7 +12696,7 @@ function renderActSheet(){
     const ev = actEval(x);
     const ok = done ? actSysOk(x) : null;
     return `<div class="actSys">
-      <div class="actSysHead"><span></span>${1 ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
+      <div class="actSysHead"><span>${actShown().length > 1 ? escapeHtml(x.label) : ""}</span>${1 ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
       ${1 ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
           ? `<div class="actPh"><img src="${ph.src}" alt="" onclick="actPhView(${i},'${w}')" title="Відкрити"><span>${escapeHtml(actPhLabel(x, w))}</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
@@ -12710,7 +12724,7 @@ function renderActSheet(){
   box.innerHTML = `
     ${actChipsHtml()}
     <div class="actWork" style="grid-template-columns:1fr"><label><small>Чим випробовуємо</small><select id="act_med" onchange="actSetMedium(this.value)"><option value="water" ${med === "water" ? "selected" : ""}>Водою (гідравлічне)</option><option value="air" ${med === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label></div>
-    ${actDraft.systems.map((x, i) => i === (actDraft.tab || 0) ? sys(x, i) : "").join("")}
+    ${actDraft.systems.map((x, i) => actShown().includes(i) ? sys(x, i) : "").join("")}
     ${actIncHtml()}
     ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${src}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
     <div class="formGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
