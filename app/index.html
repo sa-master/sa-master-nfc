@@ -5268,6 +5268,7 @@ body.inSec #pfAddPerson{display:none}
     </div>
     <div class="panelBody" id="actSheetBody" style="padding-bottom:1.25rem"></div>
     <div class="panelFooter">
+      <button class="btnGhost hidden" id="actSendBtn" onclick="saveAct({ send:true })">Надіслати клієнту</button>
       <button class="btnPrimary" onclick="saveAct()">Зберегти</button>
     </div>
   </div>
@@ -12870,7 +12871,12 @@ function actToggleInc(i, on){
   actSyncOn();
   renderActSheet();
 }
+function actSendBtnSync(){
+  const b = document.getElementById("actSendBtn");
+  if(b) b.classList.toggle("hidden", !(actDraft && actDraft.systems.some(x => x.on && actSysDone(x))));
+}
 function renderActSheet(){
+  setTimeout(actSendBtnSync, 0);
   actSyncOn();
   const box = document.getElementById("actSheetBody");
   if(!box || !actDraft) return;
@@ -13224,7 +13230,8 @@ function actViewRetake(){ const t = actViewAt; closeActView(); if(t && t.i >= 0)
 function actEdit(i){ if(!actDraft) return; actReadForm(); actDraft.systems[i].edit = true; actDraft.systems[i].manual = true; renderActSheet(); setTimeout(() => document.getElementById("act_minutes_" + i)?.focus(), 50); }
 function actPhotoDel(i, which){ if(!actDraft) return; actReadForm(); const x = actDraft.systems[i]; if(x.ph) delete x.ph[which]; renderActSheet(); }
 function actOldPhotoDel(i){ if(!actDraft) return; actReadForm(); actDraft.photos.splice(i, 1); renderActSheet(); }
-function saveAct(){
+function saveAct(opt){
+  const send = Boolean(opt && opt.send);   /* «Надіслати клієнту» у вікні звіту: зберегти й надіслати лише звіт (об'єкт не завершує) */
   const project = projects.find(item => item.id === currentProjectId);
   if(!project || !actDraft) return;
   actReadForm();
@@ -13239,6 +13246,7 @@ function saveAct(){
   try{ saveProjects(); }catch(e){ toast("Не вдалося зберегти — забагато фото. Приберіть одне й спробуйте ще раз"); return; }
   closeActSheet();
   render();
+  if(send){ sendActReport(project.id); return; }
   if(document.getElementById("quotePreviewScreen").classList.contains("open")) renderQuotePreview();
   if(waitBefore && actAllDone(project) && (project.stage || "estimate") === "work" && !projectCompleted(project)){
     const names = project.pressureAct.systems.filter(x => x.on && actSysDone(x)).map(actShortName).join(", ");
@@ -14274,8 +14282,7 @@ function renderActCard(p){
   return `<div class="actCard">
     <div class="acMain"><b>${ACT_SYS_IC.water}Гідравлічні випробування</b><small>${parts.length ? parts.join("") : "<span>Ще не проведено</span>"}${sent}</small></div>
     <div class="acBtns">
-      <button type="button" class="ptBtn ${done.length ? "" : "primary"}" onclick="openActFor('${p.id}')">${a ? "Звіт" : "＋ Провести"}</button>
-      ${done.length ? `<button type="button" class="ptBtn primary" onclick="sendActReport('${p.id}')">Надіслати</button>` : ""}
+      <button type="button" class="ptBtn ${a ? "" : "primary"}" onclick="openActFor('${p.id}')">${a ? "Звіт" : "＋ Провести"}</button>
     </div>
   </div>`;
 }
@@ -14485,7 +14492,7 @@ function getNextSteps(p){
 
 function handoverStep(p, primary){
   const hasAct = actHasDone(p), est = Boolean(getApproved(p));
-  return { text: actAllDone(p) ? "Випробування зроблено — здати об’єкт?" : "Здати об’єкт клієнту", sub: hasAct ? (est ? "Звіт про випробування, за потреби — фактичний кошторис" : "Надіслати звіт про випробування й завершити") : est ? "Фактичний кошторис і завершення" : "Завершити об’єкт", label:"Здати", action:`openHandover('${p.id}')`, primary };
+  return { text: "Здати об’єкт клієнту", sub: hasAct ? (est ? "Звіт про випробування, за потреби — фактичний кошторис" : "Надіслати звіт про випробування й завершити") : est ? "Фактичний кошторис і завершення" : "Завершити об’єкт", label:"Здати", action:`openHandover('${p.id}')`, primary };
 }
 /* Кнопка «?» у шапці об’єкта ховає / показує «Що далі» (запам’ятовуємо на цьому телефоні) */
 const NEXT_HIDDEN_KEY = "sa_nextStepsHidden";
