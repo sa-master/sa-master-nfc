@@ -368,7 +368,7 @@ async function boughtSend(pid){
 /* ==== Гідравлічні випробування від працівника: фото манометра «до» і «після» + тиск. Додається до об'єкта; клієнту надсилає майстер ====
    Чернетка зберігається на телефоні: «до» можна зняти зараз, «після» — коли мине час. Фото вантажимо одразу. */
 const WACT = "et_wact";
-const WACT_SYS = { water:"ХВП", hot:"ГВП", heat:"Опалення" };
+const WACT_SYS = { water:"Водопостачання", heat:"Опалення" };
 const wactAll = () => { try{ return JSON.parse(localStorage.getItem(WACT) || "{}") || {}; }catch(e){ return {}; } };
 const wactSave = v => { try{ localStorage.setItem(WACT, JSON.stringify(v)); }catch(e){} };
 let wactCur = null;   /* { pid, sys } */
@@ -400,7 +400,7 @@ function wactExif(buf){
   return null;
 }
 /* Пробний тиск — як у майстра: робочий тиск × коефіцієнт, округлення до 0,5 бар. Тиск на початку підставляється сам, поки працівник не виправив його вручну */
-const WACT_DEF = { water:{ work:3, k:1.5 }, hot:{ work:3, k:1.5 }, heat:{ work:3, k:1.3 } };
+const WACT_DEF = { water:{ work:3, k:1.5 }, heat:{ work:3, k:1.3 } };
 const WACT_KS = [1.1, 1.3, 1.5];
 const wactNum = v => { const t = String(v ?? "").replace(",", ".").trim(), n = Number(t); return t !== "" && Number.isFinite(n) ? n : null; };
 const wactFmt = n => n === null ? "" : String(n).replace(".", ",");
