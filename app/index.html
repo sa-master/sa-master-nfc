@@ -13346,8 +13346,12 @@ function actConclText(list){
   const other = list.filter(x => x.ok !== true);
   if(other.length) return { cls:"warn", t:"Висновок не сформовано: не вказано тиск на початку або в кінці випробування." };
   const drops = list.filter(x => x.s !== null && x.e !== null && x.s - x.e > 0.001);
-  if(!drops.length) return { cls:"ok", t:"За час випробування падіння тиску не зафіксовано." };
-  return { cls:"ok", t:"За час випробування зафіксовано падіння тиску: " + drops.map(x => nm(x) + dr(x)).join("; ") + "." };
+  /* Спершу результат («герметичні»), цифри — як підтвердження, з нормою поруч: «падіння тиску» саме по собі насторожує клієнта */
+  const tight = multi ? "Системи герметичні" : "Система герметична";
+  if(!drops.length) return { cls:"ok", t:tight + ": падіння тиску не зафіксовано." };
+  const norm = "допустимо не більше " + actFmt(ACT_ALLOW) + " бар";
+  if(!multi) return { cls:"ok", t:tight + ". Падіння тиску " + dr(drops[0]) + " — у межах норми (" + norm + ")." };
+  return { cls:"ok", t:tight + ". Падіння тиску в межах норми (" + norm + "): " + list.map(x => x.l + " — " + (drops.includes(x) ? dr(x) : "без падіння")).join("; ") + "." };
 }
 /* Об’єкт і замовник уже є в шапці документа — у звіті не повторюємо, лише дата проведення */
 function actPaperHtml(project, info){
