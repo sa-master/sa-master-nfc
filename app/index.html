@@ -5602,6 +5602,92 @@ body.inSec #pfAddPerson{display:none}
 /* Не записане тримаємо в пам'яті: воно йде і в хмару, і в «Зберегти копію» */
 let storeFailedKeys = new Set();
 const storePending = {};
+/* ==== Фото актів випробувань — в окремому сховищі телефона (IndexedDB), а не в основних даних ====
+   Основне сховище браузера мале (~5 МБ на iPhone), а кожне фото манометра ~100 КБ — після кількох десятків фото
+   об'єкти переставали зберігатись. Тепер в об'єкті замість фото лише позначка «phref:<ключ>», саме фото — окремо.
+   У хмару й у файл копії фото йдуть, як і раніше, повністю (позначки замінюються самими фото). */
+const PH_PREFIX = "phref:";
+const PH_DATA_RE = /"data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]{1000,}"/g;
+const PH_REF_RE = /"phref:([a-z0-9]{6,40})"/g;
+const phCache = new Map();      /* ключ → фото (dataURL) */
+let phReady = false, phOK = false, phDb = null;
+const phPending = new Set(), phPendKeys = new Set();   /* фото, що ще записуються в окреме сховище */
+let phResaveT = null;
+let phReadyResolve; const phReadyP = new Promise(r => { phReadyResolve = r; });
+function phKeyOf(s){
+  let a = 2166136261, b = 5381;
+  for(let i = 0; i < s.length; i++){ const c = s.charCodeAt(i); a ^= c; a = Math.imul(a, 16777619); b = (Math.imul(b, 33) + c) | 0; }
+  return (a >>> 0).toString(36) + (b >>> 0).toString(36) + s.length.toString(36);
+}
+function phIsData(s){ return typeof s === "string" && s.length >= 1000 && s.startsWith("data:image/"); }
+function phIsRef(s){ return typeof s === "string" && s.startsWith(PH_PREFIX); }
+/* Для показу: позначку перетворюємо на фото */
+function actImg(s){ return phIsRef(s) ? (phCache.get(s.slice(PH_PREFIX.length)) || "") : (s || ""); }
+/* Фото → позначка (лише коли окреме сховище працює; інакше фото лишається як було) */
+function phKeep(s){
+  if(!phIsData(s) || !phReady || !phOK) return s;
+  const k = phKeyOf(s);
+  if(!phCache.has(k)){
+    phCache.set(k, s); phPendKeys.add(k);
+    const pr = phIdb("readwrite", st => st.put(s, k)).then(() => { phPendKeys.delete(k); }, () => phBroken()).finally(() => phPending.delete(pr));
+    phPending.add(pr);
+  }
+  return PH_PREFIX + k;
+}
+function phFlush(){ return Promise.all(Array.from(phPending)).catch(() => {}); }
+function phPackText(t){ return typeof t === "string" && phReady && phOK && t.indexOf("data:image/") >= 0 ? t.replace(PH_DATA_RE, m => JSON.stringify(phKeep(JSON.parse(m)))) : t; }
+function phUnpackText(t){ return typeof t === "string" && t.indexOf(PH_PREFIX) >= 0 ? t.replace(PH_REF_RE, (m, k) => phCache.has(k) ? JSON.stringify(phCache.get(k)) : m) : t; }
+/* Об'єкти в пам'яті: фото акта → позначки (перед кожним збереженням) */
+function phNormAct(a){
+  if(!a || typeof a !== "object") return;
+  (a.systems || []).forEach(x => ["before", "after"].forEach(w => { const ph = x && x.ph && x.ph[w]; if(ph && phIsData(ph.src)) ph.src = phKeep(ph.src); }));
+  if(Array.isArray(a.photos)) a.photos = a.photos.map(phKeep);
+}
+function phNormProjects(){ if(phReady && phOK) (projects || []).forEach(p => p && phNormAct(p.pressureAct)); }
+/* Окреме сховище відмовило — повертаємо фото в об'єкти, щоб нічого не загубити */
+function phBroken(){
+  if(!phOK) return;
+  phOK = false;
+  try{ projects = JSON.parse(phUnpackText(JSON.stringify(projects))); saveProjects(); }catch(e){}
+}
+function phIdb(mode, fn){
+  return new Promise((res, rej) => {
+    if(!phDb) return rej(new Error("no db"));
+    const tx = phDb.transaction("ph", mode), st = tx.objectStore("ph"); let out;
+    const r = fn(st); if(r) r.onsuccess = () => { out = r.result; };
+    tx.oncomplete = () => res(out); tx.onerror = tx.onabort = () => rej(tx.error || new Error("idb"));
+  });
+}
+async function phInit(){
+  try{
+    phDb = await new Promise((res, rej) => { const r = indexedDB.open("et_photos", 1); r.onupgradeneeded = () => r.result.createObjectStore("ph"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    const keys = await phIdb("readonly", st => st.getAllKeys()), vals = await phIdb("readonly", st => st.getAll());
+    (keys || []).forEach((k, i) => phCache.set(String(k), vals[i]));
+    phOK = true;
+  }catch(e){ phOK = false; }
+  phReady = true; phReadyResolve();
+  if(!phOK) return;
+  /* Перенесення: фото, що ще лежать в об'єктах і журналі дій, — в окреме сховище */
+  try{
+    const before = JSON.stringify(projects);
+    phNormProjects();
+    await phFlush();   /* спершу фото записані окремо — лише потім прибираємо їх з об'єктів */
+    if(phOK && JSON.stringify(projects) !== before){ const jb = jrnBase; jrnBase = null; saveProjects(); if(jb) jrnBaseInit(); }
+    const jt = localStorage.getItem(JRN_KEY);
+    if(jt && jt.indexOf("data:image/") >= 0){ const packed = phPackText(jt); await phFlush(); if(phOK){ localStorage.setItem(JRN_KEY, packed); jrnLogCache = null; } }
+  }catch(e){}
+  /* Прибирання: фото, на які вже ніщо не посилається (видалені), стираємо */
+  try{
+    const used = new Set();
+    const scan = t => { if(typeof t === "string") for(const m of t.matchAll(PH_REF_RE)) used.add(m[1]); };
+    scan(JSON.stringify(projects)); scan(localStorage.getItem(JRN_KEY)); Object.values(storePending).forEach(scan);
+    const dead = Array.from(phCache.keys()).filter(k => !used.has(k));
+    if(dead.length){ await phIdb("readwrite", st => { dead.forEach(k => st.delete(k)); }); dead.forEach(k => phCache.delete(k)); }
+  }catch(e){}
+  try{ render(); }catch(e){}
+  try{ if(actDraft) renderActSheet(); }catch(e){}
+}
+
 function storeSet(key, text){
   try{ localStorage.setItem(key, text); }
   catch(e){
@@ -5732,6 +5818,7 @@ function cloudCollect(){
     if(cloudIsDataKey(key)) data[key] = localStorage.getItem(key);
   }
   try{ Object.keys(storePending).forEach(k => { if(cloudIsDataKey(k)) data[k] = storePending[k]; }); }catch(e){}
+  Object.keys(data).forEach(k => { data[k] = phUnpackText(data[k]); });   /* у хмару — самі фото, не позначки */
   return data;
 }
 
@@ -5744,7 +5831,7 @@ function cloudApply(data){
       if(cloudIsDataKey(key)) existing.push(key);
     }
     existing.forEach(key => { if(!(key in data)) cloudDel(key); });
-    Object.keys(data).forEach(key => { if(cloudIsDataKey(key)) cloudSet(key, String(data[key])); });
+    Object.keys(data).forEach(key => { if(cloudIsDataKey(key)) cloudSet(key, phPackText(String(data[key]))); });
   }finally{
     cloudSuppress = false;
   }
@@ -5826,6 +5913,7 @@ function renderCloudStatus(){
 
 async function cloudPush(force){
   if(!cloudEnabled()) return;
+  if(!phReady) await phReadyP;   /* без окремого сховища фото не зібрати — чекаємо його */
   if(cloudBusy){ clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 2000); return; }
   cloudBusy = true;
   const dirtyStamp = cloudGet(CLOUD_DIRTY_KEY);
@@ -5879,6 +5967,7 @@ async function cloudPullAndReload(){
   cloudSet(CLOUD_AT_KEY, body.savedAt || "");
   cloudSet(CLOUD_HASH_KEY, cloudHash(cloudCollect()));
   cloudDel(CLOUD_DIRTY_KEY);
+  await phFlush();
   location.reload();
 }
 
@@ -6085,6 +6174,7 @@ async function cloudRestore(id){
     cloudApply(body.data);
     cloudSet(CLOUD_DIRTY_KEY, String(Date.now()));
     await cloudPush(true);
+    await phFlush();
     location.reload();
   }catch(e){
     toast("Не вдалося відновити копію");
@@ -6951,11 +7041,18 @@ try{ localStorage.setItem(DEFAULT_WORKS_SEEDED_KEY, "1"); }catch(e){}
 
 
 function saveProjects(){
+  try{ phNormProjects(); }catch(e){}
   try{ matsStamp(); }catch(e){}
   try{ crewPublishSoon(); }catch(e){}
   const strings = projects.map(p => JSON.stringify(p));
   try{ jrnRecord(strings); }catch(e){}
-  const data = "[" + strings.join(",") + "]";
+  let data = "[" + strings.join(",") + "]";
+  /* Нове фото ще записується в окреме сховище (мілісекунди) — поки що кладемо його й в об'єкт, якщо є місце; після запису — лише позначку */
+  if(phPendKeys.size){
+    const full = data.replace(PH_REF_RE, (m, k) => phPendKeys.has(k) && phCache.has(k) ? JSON.stringify(phCache.get(k)) : m);
+    clearTimeout(phResaveT); phFlush().then(() => { phResaveT = setTimeout(() => { if(!phPendKeys.size) saveProjects(); }, 0); });
+    try{ localStorage.setItem(PROJECTS_KEY, full); delete storePending[PROJECTS_KEY]; if(storeFailedKeys.delete(PROJECTS_KEY) && !storeFailedKeys.size) storeWarnHide(); return; }catch(e){}
+  }
   try{ localStorage.setItem(PROJECTS_KEY, data); delete storePending[PROJECTS_KEY]; if(storeFailedKeys.delete(PROJECTS_KEY) && !storeFailedKeys.size) storeWarnHide(); }
   catch(e){ /* місця забракло — спершу звільняємо журнал дій, об'єкти важливіші; не вийшло — попереджаємо */
     try{ localStorage.removeItem(JRN_KEY); jrnLogCache = {}; }catch(e2){}
@@ -10750,6 +10847,7 @@ function renderJrn(){
   </div></div>`;
 }
 setTimeout(jrnBaseInit, 0);
+setTimeout(phInit, 0);
 
 /* ==== Push-сповіщення: дзвіночок у «Мої об'єкти», увімкнення на цьому пристрої ====
    Service worker (/app/sw.js) лише показує сповіщення — нічого не кешує. */
@@ -12699,7 +12797,7 @@ function renderActSheet(){
       <div class="actSysHead"><span>${actShown().length > 1 ? escapeHtml(x.label) : ""}</span>${1 ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
       ${1 ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
-          ? `<div class="actPh"><img src="${ph.src}" alt="" onclick="actPhView(${i},'${w}')" title="Відкрити"><span>${escapeHtml(actPhLabel(x, w))}</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
+          ? `<div class="actPh"><img src="${actImg(ph.src)}" alt="" onclick="actPhView(${i},'${w}')" title="Відкрити"><span>${escapeHtml(actPhLabel(x, w))}</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
           : `<button type="button" class="actPhAdd" onclick="openActCam(${i},'${w}')">${ACT_GAUGE_SVG}<b>Зробіть фото ${w === "before" ? "до" : "після"}</b><small>${w === "before" ? "на початку випробування" : (x.medium === "air" ? "через 5+ хв" : x.need >= 120 ? "через 2+ год" : "через 30+ хв")}</small></button>`; }).join("")}
       </div>
       ${actGapWarn(x) ? `<div class="actWarn">${escapeHtml(actGapWarn(x))}</div>` : ""}
@@ -12726,7 +12824,7 @@ function renderActSheet(){
     <div class="actWork" style="grid-template-columns:1fr"><label><small>Чим випробовуємо</small><select id="act_med" onchange="actSetMedium(this.value)"><option value="water" ${med === "water" ? "selected" : ""}>Водою (гідравлічне)</option><option value="air" ${med === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label></div>
     ${actDraft.systems.map((x, i) => actShown().includes(i) ? sys(x, i) : "").join("")}
     ${actIncHtml()}
-    ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${src}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
+    ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${actImg(src)}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
     <div class="formGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
     
   `;
@@ -13029,7 +13127,7 @@ function actPhView(i, w){
   const src = i < 0 ? (actDraft.photos || [])[w] : actPair(actDraft.systems[i])[w === "before" ? "b" : "a"]?.src;
   if(!src) return;
   actViewAt = { i, w };
-  document.getElementById("actViewImg").src = src;
+  document.getElementById("actViewImg").src = actImg(src);
   document.getElementById("actViewTitle").textContent = i < 0 ? "Фото" : (t => t.charAt(0).toUpperCase() + t.slice(1))(`${actPhLabel(actDraft.systems[i], w)} · ${actShortName(actDraft.systems[i])}`);
   document.getElementById("actViewBot").style.display = i < 0 ? "none" : "";
   document.getElementById("actView").classList.remove("hidden");
@@ -13103,9 +13201,9 @@ function actClientData(project){
   return {
     date: dates[dates.length - 1] || a.date,
     systems: done.map(x => ({ key:x.key, l:x.label + (x.medium === "air" ? " (повітрям)" : ""), d:actSysDate(x, a), p:actNum(x.pressure), m:actNum(x.minutes), s:actNum(x.start), e:actNum(x.end), dt:actDropText(x), ok:actSysOk(x), air:x.medium === "air", rule:(r => r ? { norm:r.norm, clause:r.clause, title:r.title, maxDrop:r.maxDrop } : null)(actRule(x)), wk:actNum(x.work), leak:x.leak,
-      ph: ["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph ? { src:ph.src, c:actPhLabel(x, w), w, at:ph.at || "" } : null; }).filter(Boolean) })),
+      ph: ["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph ? { src:actImg(ph.src), c:actPhLabel(x, w), w, at:ph.at || "" } : null; }).filter(Boolean) })),
     note: a.note || "",
-    photos: (a.photos || []).slice(0, ACT_MAX_PHOTOS)
+    photos: (a.photos || []).slice(0, ACT_MAX_PHOTOS).map(actImg)
   };
 }
 /* ===== Вигляд звіту (той самий, що в окремому інструменті «Звіт про герметичність») ===== */
@@ -21839,6 +21937,7 @@ function buildBackupFile(){
     if(key && isBackupKey(key)) data[key] = localStorage.getItem(key);
   }
   Object.keys(storePending).forEach(k => { if(isBackupKey(k)) data[k] = storePending[k]; });
+  Object.keys(data).forEach(k => { data[k] = phUnpackText(data[k]); });   /* у файл копії — самі фото */
   const now = new Date();
   const payload = {
     app: BACKUP_APP_ID,
@@ -21858,6 +21957,7 @@ function markBackupDone(){
 }
 
 async function exportBackup(){
+  if(!phReady) await phReadyP;
   let file;
   try{
     file = buildBackupFile();
@@ -21926,7 +22026,7 @@ function handleBackupFile(event){
     try{
       Object.keys(current).forEach(key => localStorage.removeItem(key));
       Object.entries(payload.data).forEach(([key, value]) => {
-        if(isBackupKey(key) && typeof value === "string") localStorage.setItem(key, value);
+        if(isBackupKey(key) && typeof value === "string") localStorage.setItem(key, phPackText(value));
       });
     }catch(e){
       try{
@@ -21938,7 +22038,7 @@ function handleBackupFile(event){
     }
 
     toast("Дані відновлено");
-    setTimeout(() => location.reload(), 600);
+    phFlush().then(() => setTimeout(() => location.reload(), 600));
   };
   reader.onerror = () => toast("Не вдалося прочитати файл");
   reader.readAsText(file);

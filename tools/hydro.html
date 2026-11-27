@@ -1031,26 +1031,36 @@ async function outPdf(btn, mode){
 const WM = (() => { const h = new URLSearchParams((location.hash || "").replace(/^#/, "")); const w = h.get("w") || "", p = h.get("p") || ""; return /^[A-Za-z0-9_-]{8,64}$/.test(w) && p ? { link:w, pid:p.slice(0, 60) } : null; })();
 const SERVER = "https://sa-master-api.c6hht469s9.workers.dev";
 const DRAFT_KEY = WM ? `hydro_w_${WM.link}_${WM.pid}` : "hydro_draft";
-let saveT = null, saveWarned = false;
+let saveT = null, saveWarned = false, draftLoaded = false;
+/* Чернетка з фото — в IndexedDB (основне сховище браузера мале й спільне з et.app); без IndexedDB — як раніше */
+async function draftWrite(v){
+  try{ await SMStore.setMeta(DRAFT_KEY, v); if(!SMStore.isMemory()){ try{ localStorage.removeItem(DRAFT_KEY); }catch(e){} return; } }catch(e){}
+  try{ if(v) localStorage.setItem(DRAFT_KEY, JSON.stringify(v)); else localStorage.removeItem(DRAFT_KEY); }
+  catch(e){ if(!saveWarned){ saveWarned = true; toast("Пам’ять браузера заповнена — чернетка може не зберегтися", 4000); } }
+}
 function draftEmpty(){ if(!WM) return isEmptyAct(); actReadForm(); return !actDraft.systems.some(x => actHasData(x) || x.pManual || actNum(x.work) !== actNum((ACT_SYSTEMS.find(d => d.key === x.key) || {}).work)); }
 function draftSave(){
   clearTimeout(saveT);
   saveT = setTimeout(() => {
-    if(suppressSave || !actDraft) return;
+    if(suppressSave || !actDraft || !draftLoaded) return;
     actReadForm();
     const empty = draftEmpty();
-    try{ if(empty) localStorage.removeItem(DRAFT_KEY); else localStorage.setItem(DRAFT_KEY, JSON.stringify({ info: infoGet(), act: actDraft, at: Date.now() })); }
-    catch(e){ if(!saveWarned){ saveWarned = true; toast("Пам’ять браузера заповнена — чернетка може не зберегтися", 4000); } }
+    draftWrite(empty ? null : JSON.parse(JSON.stringify({ info: infoGet(), act: actDraft, at: Date.now() })));
     if(!WM) $("btnNew").hidden = empty;
   }, 300);
 }
 const renderActSheetBase = renderActSheet;
 renderActSheet = function(){ renderActSheetBase(); draftSave(); };
 ["input", "change"].forEach(t => { $("actSheetBody").addEventListener(t, draftSave); INFO.forEach(id => $(id).addEventListener(t, draftSave)); });
-function draftLoad(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); }catch(e){ return null; } }
+async function draftLoad(){
+  let v = null;
+  try{ v = await SMStore.getMeta(DRAFT_KEY); }catch(e){}
+  if(!v){ try{ v = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); }catch(e){} }
+  return v;
+}
 $("btnNew").addEventListener("click", () => {
   if(!confirm("Почати новий звіт? Поточні фото й дані буде видалено.")) return;
-  try{ localStorage.removeItem(DRAFT_KEY); }catch(e){}
+  draftWrite(null);
   loadAct({ info:[], act:newDraft() }); $("btnNew").hidden = true;
 });
 
@@ -1109,6 +1119,7 @@ async function wSend(btn){
   toast(`Надіслано майстру: ${sent.map(actShortName).join(", ")}` + (left.length ? `. ${left.map(actShortName).join(", ")} — чекає фото «після»` : ""), 3500);
   if(!left.length) setTimeout(() => { location.href = "/w.html#" + WM.link; }, 1800);
 }
+let wTitle = "";
 async function wStart(){
   document.documentElement.classList.add("wMode");
   $("navBack").href = "/w.html#" + WM.link; $("navBack").textContent = "← Назад";
@@ -1120,14 +1131,18 @@ async function wStart(){
     const d = await r.json();
     const o = ((d.state || {}).objects || []).find(x => x.pid === WM.pid);
     if(!r.ok || !o || o.phase === "done"){ $("btnMake").disabled = true; toast(!r.ok ? (d.error || "Посилання не працює") : "Цей об’єкт уже недоступний для випробувань", 5000); }
-    if(o){ $("iObj").value = [o.title, o.address && o.address !== o.title ? o.address : ""].filter(Boolean).join(", "); draftSave(); }
+    if(o){ wTitle = $("iObj").value = [o.title, o.address && o.address !== o.title ? o.address : ""].filter(Boolean).join(", "); draftSave(); }
   }catch(e){ toast("Немає зв’язку — фото можна робити, надішлете пізніше", 4000); }
 }
 
-const saved = draftLoad();
-loadAct(saved || { info:[], act:newDraft() });
-if(WM){ wImportOld(); renderActSheet(); wStart(); }
-else{ $("btnMake").addEventListener("click", e => outPdf(e.currentTarget, "share")); $("btnNew").hidden = !saved; }
+loadAct({ info:[], act:newDraft() });
+if(WM) wStart(); else $("btnMake").addEventListener("click", e => outPdf(e.currentTarget, "share"));
+(async () => {
+  const saved = await draftLoad();
+  if(saved) loadAct(saved);
+  draftLoaded = true;
+  if(WM){ if(wTitle) $("iObj").value = wTitle; wImportOld(); renderActSheet(); } else{ $("btnNew").hidden = !saved; if(saved) draftSave(); }
+})();
 </script>
 </body>
 </html>
