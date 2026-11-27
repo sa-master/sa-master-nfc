@@ -10299,16 +10299,26 @@ async function crewActsProcess(){
   for(const p of projects){
     for(const r of (p.crewActs || []).filter(x => x.status === "new")){
       const mine = ((p.pressureAct && p.pressureAct.systems) || []).find(y => y.key === r.sys);
-      if(mine && actSysDone(mine)){ r.status = "wait"; changed = true; continue; }
-      try{ await crewActPut(p, r); changed = true; toast(`${r.name}: випробування ${r.sys === "heat" ? "опалення" : "водопостачання"} додано до «${p.title || "об'єкта"}»`, 3200); }catch(e){}
+      /* У майстра вже є щось по цій системі (навіть лише фото «до») — не затираємо, чекаємо рішення */
+      const draftSys = actDraft && currentProjectId === p.id ? (actDraft.systems || []).find(y => y.key === r.sys) : null;
+      if((mine && actHasData(mine)) || (draftSys && actHasData(draftSys))){ r.status = "wait"; changed = true; continue; }
+      try{ await crewActPut(p, r); crewActToDraft(p, r.sys); changed = true; toast(`${r.name}: випробування ${r.sys === "heat" ? "опалення" : "водопостачання"} додано до «${p.title || "об'єкта"}»`, 3200); }catch(e){}
     }
   }
   if(changed){ jrnWith("Від працівника: гідравлічні випробування", () => saveProjects(), true); render(); }
 }
+/* Акт зараз відкритий у майстра — переносимо результат працівника і в нього, інакше «Зберегти» його затре */
+function crewActToDraft(p, sys){
+  if(!actDraft || currentProjectId !== p.id) return;
+  const x = (p.pressureAct.systems || []).find(y => y.key === sys); if(!x) return;
+  const i = actDraft.systems.findIndex(y => y.key === sys), copy = JSON.parse(JSON.stringify(x));
+  if(i >= 0) actDraft.systems[i] = copy; else actDraft.systems.push(copy);
+  try{ renderActSheet(); }catch(e){}
+}
 async function crewActReplace(pid, id){
   const p = projects.find(x => x.id === pid), r = p && (p.crewActs || []).find(x => x.id === id);
   if(!r) return;
-  try{ await crewActPut(p, r); }catch(e){ toast("Не вдалося завантажити фото — перевірте інтернет"); return; }
+  try{ await crewActPut(p, r); crewActToDraft(p, r.sys); }catch(e){ toast("Не вдалося завантажити фото — перевірте інтернет"); return; }
   touchProject(p); render(); toast("Замінено в акті");
 }
 function crewActKeep(pid, id){
@@ -10365,7 +10375,7 @@ function renderCrewBox(p){
   const when = at => { const d = new Date(at); return isNaN(d) ? "" : d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); };
   return `<section class="planTodo crewBox"><div class="ptHead"><span>Від працівника</span></div>
     ${req.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.text)}<small>від ${escapeHtml(r.name)} · ${when(r.at)}</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewReqBuy('${escapeHtml(r.id)}')">→ Купити</button><button type="button" class="ptBtn" onclick="crewReqDone('${escapeHtml(r.id)}')">✓ Зроблено</button></span></div>`).join("")}
-    ${acts.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)}: випробування ${r.sys === "heat" ? "опалення" : "водопостачання"} ${actFmt(actNum(r.start))} → ${actFmt(actNum(r.end))} бар<small>${when(r.at)} · <a href="${crewFileUrl(r.before.photo)}" target="_blank" rel="noopener">фото до</a> · <a href="${crewFileUrl(r.after.photo)}" target="_blank" rel="noopener">після</a> · в акті вже є ваш результат</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewActReplace('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Замінити</button><button type="button" class="ptBtn" onclick="crewActKeep('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Залишити моє</button></span></div>`).join("")}
+    ${acts.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)}: випробування ${r.sys === "heat" ? "опалення" : "водопостачання"} ${actFmt(actNum(r.start))} → ${actFmt(actNum(r.end))} бар<small>${when(r.at)} · <a href="${crewFileUrl(r.before.photo)}" target="_blank" rel="noopener">фото до</a> · <a href="${crewFileUrl(r.after.photo)}" target="_blank" rel="noopener">після</a> · в акті вже є ваші дані</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewActReplace('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Замінити</button><button type="button" class="ptBtn" onclick="crewActKeep('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Залишити моє</button></span></div>`).join("")}
     ${bought.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)} купив за свої: ${money(r.amount)}<small>${r.text ? escapeHtml(r.text) + " · " : ""}${formatQuoteDate(r.date).slice(0, 5)}${r.photo ? ` · <a href="${crewFileUrl(r.photo)}" target="_blank" rel="noopener">фото чека</a>` : ""}</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewBoughtOk('${escapeHtml(r.id)}')">✓ Підтвердити</button><button type="button" class="ptBtn" onclick="crewBoughtNo('${escapeHtml(r.id)}')" aria-label="Відхилити">✕</button></span></div>`).join("")}
   </section>`;
 }
