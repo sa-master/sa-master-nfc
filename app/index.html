@@ -9359,7 +9359,7 @@ function homeNext(p){
   const paid = moneySum(moneyList(p, "payment"));
   const payBtn = { label:"＋ Оплата", action: open("goMoney('payment')") };
   /* Завершено, а фактичний кошторис ще не надіслано — нагадуємо й на картці головного екрана */
-  if(projectCompleted(p) && getApproved(p) && !p.factualSentAt)
+  if((projectCompleted(p) || p.stage === "done") && getApproved(p) && !p.factualSentAt)
     return { text:"Фактичний кошторис не надіслано", sub: debt > 0.5 ? `Клієнт винен ${money(debt)}` : "Роботи завершено", label:"Надіслати", action:`openFactual('${id}')` };
   if(projectCompleted(p)) return debt > 0.5
     ? Object.assign({ text:`Клієнт винен ${money(debt)}`, cls:"neg", sub: homeSearch ? `${money(total)}: ${split()}` : `з ${money(total)}` }, payBtn)
@@ -14019,7 +14019,7 @@ async function printQuotePreview(){
     const files = xlsxFile ? [file, xlsxFile] : [file];
     pendingClientSend = project ? clientSendDraft(project) : null;
     const shareMessage = pendingClientSend && pendingClientSend.text ? pendingClientSend.text : quoteShareMessage(project);
-    if(project){ project.quoteSentAt = new Date().toISOString(); if(isFactualStage(project) && getApproved(project)) project.factualSentAt = project.quoteSentAt; saveProjects(); }
+    if(project){ project.quoteSentAt = new Date().toISOString(); if(isFactualStage(project) && getApproved(project)){ project.factualSentAt = project.quoteSentAt; if(project.stage === "done") completeProject(project, "надіслано фактичний кошторис"); } saveProjects(); }
 
     /* Клієнту — текст з описом і посилання на сторінку: там суми, PDF/Excel і кнопка «Погоджую» */
     if(project && !clientLinksEnabled()) toast("Ви не увійшли в акаунт (Профіль) — надсилаю файлами, без посилання", 4500);
@@ -14192,10 +14192,32 @@ function actAllDone(p){
   const a = p && p.pressureAct;
   return Boolean(a && (a.systems || []).some(x => x.on && actSysDone(x)) && !actPending(p));
 }
+/* «Роботи завершено» після випробувань: об'єкт НЕ закривається — лише «роботи виконано» (етап «Здача»).
+   Завершується він, коли клієнту надіслано фактичний кошторис: доти працівник може надсилати випробування, «Аудит» на місці,
+   а заробіток команди не позначається отриманим. Без погодженого кошторису (фактичного немає) — як раніше, одразу завершено */
+function markWorksDone(p){
+  const t = actPending(p);
+  if(t){
+    if(!confirm(`Гідравлічні випробування ще не зроблено: ${t.wait.map(actShortName).join(", ")}.\n\nПозначити роботи виконаними без них?`)) return false;
+    p.actSkip = true;
+  }
+  p.stage = "done";
+  p.phase = phaseSteps(p).length - 1;
+  if(!p.doneAt) p.doneAt = new Date().toISOString();
+  touchProject(p);
+  return true;
+}
 function finishAndSend(id){
   const p = projects.find(x => x.id === id);
   if(!p) return;
-  if(!projectCompleted(p)){
+  if(!projectCompleted(p) && getApproved(p) && p.stage !== "done"){
+    closeActionsSheet();
+    if(!markWorksDone(p)) return;
+    currentProjectId = id; projectTab = "estimate"; render();
+    toast("Роботи виконано. Об’єкт завершиться, коли надішлете клієнту фактичний кошторис", 3500);
+    return;
+  }
+  if(!projectCompleted(p) && p.stage !== "done"){
     actionsProjectId = id;
     actionAdvanceStage();
     if(!projectCompleted(p)) return;   /* майстер передумав у підтвердженнях */
@@ -14305,8 +14327,8 @@ function getNextSteps(p){
     if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
     { const st = actStep(p); if(st) steps.push({ ...st, primary:steps.length === 0 }); }
     steps.push(actAllDone(p)
-      ? { text:"Випробування зроблено — роботи завершено?", sub:"Фактичний кошторис надішлете, коли буде зручно", label:"Завершити", action:`finishAndSend('${id}')`, primary:true }
-      : { text:"Роботи завершено?", sub:"Фактичний кошторис надішлете, коли буде зручно", label:"Завершено", action:`finishAndSend('${id}')`, primary:steps.length === 0 });
+      ? { text:"Випробування зроблено — роботи завершено?", sub:"Далі — фактичний кошторис клієнту; після нього об’єкт завершиться", label:"Завершити", action:`finishAndSend('${id}')`, primary:true }
+      : { text:"Роботи завершено?", sub:"Далі — фактичний кошторис клієнту; після нього об’єкт завершиться", label:"Завершено", action:`finishAndSend('${id}')`, primary:steps.length === 0 });
   }else if(stage === "work"){
     if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
     const later = extrasPending(p).length;
@@ -14315,14 +14337,15 @@ function getNextSteps(p){
     if(rets) steps.push({ text:`Повернути: ${rets} поз.`, sub:"Замовлено більше, ніж треба", label:"Список", action:"setProjectTab('materials')" });
     { const st = actStep(p); if(st) steps.push({ ...st, primary:steps.length === 0 }); }
     steps.push(actAllDone(p)
-      ? { text:"Випробування зроблено — роботи завершено?", sub:"Фактичний кошторис надішлете, коли буде зручно", label:"Завершити", action:`finishAndSend('${id}')`, primary:true }
-      : { text:"Роботи завершено?", sub:"Фактичний кошторис надішлете, коли буде зручно", label:"Завершено", action:`finishAndSend('${id}')`, primary:steps.length === 0 });
+      ? { text:"Випробування зроблено — роботи завершено?", sub:"Далі — фактичний кошторис клієнту; після нього об’єкт завершиться", label:"Завершити", action:`finishAndSend('${id}')`, primary:true }
+      : { text:"Роботи завершено?", sub:"Далі — фактичний кошторис клієнту; після нього об’єкт завершиться", label:"Завершено", action:`finishAndSend('${id}')`, primary:steps.length === 0 });
   }
 
+  if(stage === "done" && getApproved(p) && !p.factualSentAt) steps.push({ text:"Надішліть клієнту фактичний кошторис", sub:"Після надсилання об’єкт завершиться", label:"Надіслати", action:`openFactual('${id}')`, primary:true });
   if(stage === "done" && !p.handedOverAt){ const st = actStep(p); if(st) steps.push(st); }
   if(stage === "done" && buyOn(p) && buyLeftovers(p).length) steps.push({ text:`Нерозібрані залишки: ${buyLeftovers(p).length}`, sub:"Повернути постачальнику чи на склад", label:"Показати", action:"setProjectTab('notebook');setTimeout(()=>document.querySelector('.byLeft')?.scrollIntoView({behavior:'smooth',block:'center'}),120)" });
   if(stage === "done" && !p.handedOverAt){
-    steps.push({ text:"Здали об’єкт клієнту?", sub:"Клієнт подивився і прийняв роботи", label:"Так, здали", action:`handOverProject('${id}')`, primary:true });
+    if(!(getApproved(p) && !p.factualSentAt)) steps.push({ text:"Здали об’єкт клієнту?", sub:"Клієнт подивився і прийняв роботи", label:"Так, здали", action:`handOverProject('${id}')`, primary:true });
     return steps;
   }
 
