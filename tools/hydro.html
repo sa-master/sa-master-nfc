@@ -47,6 +47,10 @@ h1{font-size:1.45rem;line-height:1.2;letter-spacing:-.4px}
 textarea.formInput{resize:vertical}
 .btnPrimary{display:block;width:100%;margin-top:14px;border:0;border-radius:16px;background:var(--p);color:#fff;font-weight:700;font-size:1.05rem;padding:16px;cursor:pointer}
 .btnPrimary:disabled{opacity:.6}
+.btnNew[hidden]{display:none}.btnNew{display:block;margin:12px auto 0;background:none;border:0;color:var(--tm);font-weight:600;font-size:.9rem;text-decoration:underline;cursor:pointer}
+/* Працівник: надсилає майстру в об'єкт — без шапки PDF, замовника, ручного введення й примітки */
+.wMode #profileCard,.wMode #clientGroup,.wMode .actManual,.wMode .actInc,.wMode #noteGroup{display:none}
+.wMode #iObj{background:transparent;border-color:transparent;padding-left:0;font-weight:700}
 .btnGhost{display:block;width:100%;margin-top:10px;border:0;border-radius:16px;background:rgba(0,122,255,.12);color:var(--p);font-weight:700;padding:14px;cursor:pointer}
 .hidden{display:none!important}
 .hint{margin-top:10px;font-size:.78rem;line-height:1.45;color:var(--tm)}
@@ -202,20 +206,21 @@ textarea.formInput{resize:vertical}
 <body>
 <div class="page">
   <div class="g hero"><img src="/logo.png" alt=""><div><a href="/">SA-MASTER<span style="font-weight:500;font-size:.8rem">.pro</span></a><small>інструменти для майстрів</small></div></div>
-<div class="navrow"><a href="/tools/">← Усі інструменти</a></div>
+<div class="navrow"><a href="/tools/" id="navBack">← Усі інструменти</a></div>
 
   <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Звіт про герметичність</h1>
-  <div class="g card"><details class="fold"><summary>Дані виконавця (шапка PDF)</summary><div id="profileBox"></div></details></div>
+  <div class="g card" id="profileCard"><details class="fold"><summary>Дані виконавця (шапка PDF)</summary><div id="profileBox"></div></details></div>
   <div class="g card">
-    <div class="ttl">Обʼєкт і ваші дані</div>
+    <div class="ttl" id="objTtl">Обʼєкт і ваші дані</div>
     <div class="formGroup"><label class="formLabel" for="iObj">Обʼєкт</label><input class="formInput" id="iObj" placeholder="ЖК, адреса" autocomplete="off"></div>
-    <div class="formGroup"><label class="formLabel" for="iClient">Замовник</label><input class="formInput" id="iClient" placeholder="Імʼя, телефон" autocomplete="off"></div>
+    <div class="formGroup" id="clientGroup"><label class="formLabel" for="iClient">Замовник</label><input class="formInput" id="iClient" placeholder="Імʼя, телефон" autocomplete="off"></div>
   </div>
 
   <div class="g card">
     <div class="ttl">Випробування</div>
     <div id="actSheetBody"></div>
     <button type="button" class="btnPrimary" id="btnMake">Відправити звіт</button>
+    <button type="button" class="btnNew" id="btnNew" hidden>Почати новий звіт</button>
   </div>
 
   <p class="ft">© <script>document.write(new Date().getFullYear())</script> SA-MASTER.PRO · Комплексний монтаж сантехніки</p>
@@ -266,7 +271,7 @@ const ACT_SYSTEMS = [
 function actTidy(a){
   if(!a || !Array.isArray(a.systems)) return a;
   const hasData = x => Boolean(x && x.ph && (x.ph.before || x.ph.after) || x && x.manual);
-  if(a.systems.some(x => x.key === "hot" && !hasData(x))){ a.systems = a.systems.filter(x => x.key !== "hot" || hasData(x)); a.tab = 0; }
+  if(a.systems.some(x => x.key === "hot" && !hasData(x))){ a.systems = a.systems.filter(x => x.key !== "hot" || hasData(x)); a.tab = 0; a.show = null; }
   const w = a.systems.find(x => x.key === "water");
   if(w && w.label === "Холодне водопостачання (ХВП)" && !hasData(w)) w.label = ACT_SYSTEMS[0].label;
   return a;
@@ -466,14 +471,24 @@ function actCheckHtml(x, i, ev, done){
 /* Випробування одного обʼєкта: вкладки «Водопостачання» / «Опалення», у PDF — разом або окремо */
 function actHasData(x){ return Boolean(x && (actPair(x).b || actPair(x).a || x.manual)); }
 function actSyncOn(){ if(actDraft) actDraft.systems.forEach(x => { x.on = actHasData(x) && !x.off; }); }
+/* Відмічені системи видно одна під одною: можна почати опалення й водопостачання разом, а кінцеві дані дописати згодом */
+function actShown(){
+  const n = actDraft.systems.length, ok = i => Number.isInteger(i) && i >= 0 && i < n;
+  if(Array.isArray(actDraft.show)){ const s = actDraft.show.filter(ok); if(s.length) return s; }
+  const d = actDraft.systems.map((x, i) => i).filter(i => actHasData(actDraft.systems[i]));
+  return d.length ? d : [ok(actDraft.tab) ? actDraft.tab : 0];
+}
 function actChipsHtml(){
-  const tab = actDraft.tab || 0;
-  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip ${i === tab ? "on" : ""}"><input type="checkbox" ${i === tab ? "checked" : ""} onchange="actPickSys(${i})"><span>${escapeHtml(x.label)}${actHasData(x) ? " ✓" : ""}</span></label>`).join("")}</div>`;
+  const shown = actShown();
+  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip ${shown.includes(i) ? "on" : ""}"><input type="checkbox" ${shown.includes(i) ? "checked" : ""} onchange="actPickSys(${i})"><span>${escapeHtml(x.label)}${actHasData(x) ? " ✓" : ""}</span></label>`).join("")}</div>`;
 }
 function actPickSys(i){
   actReadForm();
   if(!actDraft) return;
-  actDraft.tab = i;
+  const s = actShown().slice();
+  if(s.includes(i)){ if(s.length > 1) s.splice(s.indexOf(i), 1); }
+  else s.push(i);
+  actDraft.show = s.sort((a, b) => a - b);
   renderActSheet();
 }
 function actIncHtml(){
@@ -498,7 +513,7 @@ function renderActSheet(){
     const ev = actEval(x);
     const ok = done ? actSysOk(x) : null;
     return `<div class="actSys">
-      <div class="actSysHead"><span></span>${1 ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
+      <div class="actSysHead"><span>${actShown().length > 1 ? escapeHtml(x.label) : ""}</span>${1 ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
       ${done ? "" : actWorkHtml(x, i)}
       ${1 ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
@@ -526,10 +541,10 @@ function renderActSheet(){
   box.innerHTML = `
     ${actChipsHtml()}
     <div class="actWork" style="grid-template-columns:1fr"><label><small>Чим випробовуємо</small><select id="act_med" onchange="actSetMedium(this.value)"><option value="water" ${med === "water" ? "selected" : ""}>Водою (гідравлічне)</option><option value="air" ${med === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label></div>
-    ${actDraft.systems.map((x, i) => i === (actDraft.tab || 0) ? sys(x, i) : "").join("")}
+    ${actDraft.systems.map((x, i) => actShown().includes(i) ? sys(x, i) : "").join("")}
     ${actIncHtml()}
     ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${src}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
-    <div class="formGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
+    <div class="formGroup" id="noteGroup"><label class="formLabel">Примітка</label><textarea class="formInput" id="actNote" rows="2" placeholder="Напр.: система залишена під тиском" oninput="actReadForm()">${escapeHtml(actDraft.note || "")}</textarea></div>
     
   `;
 }
@@ -960,8 +975,6 @@ const newDraft = () => ({
   systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
   note: "", photos: []
 });
-actDraft = newDraft();
-renderActSheet();
 const INFO = ["iObj","iClient"];
 const infoGet = () => INFO.map(id => $(id).value);
 function isEmptyAct(){
@@ -1014,7 +1027,107 @@ async function outPdf(btn, mode){
   }catch(e){ toast("Не вдалося створити PDF. Перевірте звʼязок і спробуйте ще раз."); }
   finally{ btn.disabled=false; btn.textContent=t0; }
 }
-$("btnMake").addEventListener("click",e=>outPdf(e.currentTarget,"share"));
+/* ===== Чернетка зберігається на телефоні: фото «до» зараз, «після» — коли мине час, навіть якщо сторінку закрили ===== */
+const WM = (() => { const h = new URLSearchParams((location.hash || "").replace(/^#/, "")); const w = h.get("w") || "", p = h.get("p") || ""; return /^[A-Za-z0-9_-]{8,64}$/.test(w) && p ? { link:w, pid:p.slice(0, 60) } : null; })();
+const SERVER = "https://sa-master-api.c6hht469s9.workers.dev";
+const DRAFT_KEY = WM ? `hydro_w_${WM.link}_${WM.pid}` : "hydro_draft";
+let saveT = null, saveWarned = false;
+function draftEmpty(){ if(!WM) return isEmptyAct(); actReadForm(); return !actDraft.systems.some(x => actHasData(x) || x.pManual || actNum(x.work) !== actNum((ACT_SYSTEMS.find(d => d.key === x.key) || {}).work)); }
+function draftSave(){
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    if(suppressSave || !actDraft) return;
+    actReadForm();
+    const empty = draftEmpty();
+    try{ if(empty) localStorage.removeItem(DRAFT_KEY); else localStorage.setItem(DRAFT_KEY, JSON.stringify({ info: infoGet(), act: actDraft, at: Date.now() })); }
+    catch(e){ if(!saveWarned){ saveWarned = true; toast("Пам’ять браузера заповнена — чернетка може не зберегтися", 4000); } }
+    if(!WM) $("btnNew").hidden = empty;
+  }, 300);
+}
+const renderActSheetBase = renderActSheet;
+renderActSheet = function(){ renderActSheetBase(); draftSave(); };
+["input", "change"].forEach(t => { $("actSheetBody").addEventListener(t, draftSave); INFO.forEach(id => $(id).addEventListener(t, draftSave)); });
+function draftLoad(){ try{ return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); }catch(e){ return null; } }
+$("btnNew").addEventListener("click", () => {
+  if(!confirm("Почати новий звіт? Поточні фото й дані буде видалено.")) return;
+  try{ localStorage.removeItem(DRAFT_KEY); }catch(e){}
+  loadAct({ info:[], act:newDraft() }); $("btnNew").hidden = true;
+});
+
+/* ===== Працівник: той самий екран, але надсилається майстру в конкретний об'єкт et.app ===== */
+/* Чернетка зі старого екрана працівника (до цієї версії): фото вже на сервері — беремо їх */
+function wImportOld(){
+  let all; try{ all = JSON.parse(localStorage.getItem("et_wact") || "{}") || {}; }catch(e){ return; }
+  const old = all[WM.pid]; if(!old) return;
+  ["water", "heat"].forEach(k => {
+    const d = old[k], x = actDraft.systems.find(y => y.key === k); if(!d || !x) return;
+    x.ph = x.ph || {};
+    ["before", "after"].forEach(w => { if(d[w] && d[w].photo && !x.ph[w]) x.ph[w] = { src:`${SERVER}/f/${d[w].photo}`, at:d[w].at || null, fid:d[w].photo }; });
+    if(actNum(d.work) !== null) x.work = actNum(d.work);
+    if(Number(d.k)) x.k = Number(d.k);
+    if(actNum(d.start) !== null){ x.pressure = x.start = actNum(d.start); x.pManual = true; }
+    if(actNum(d.end) !== null) x.end = actNum(d.end);
+  });
+  delete all[WM.pid];
+  try{ localStorage.setItem("et_wact", JSON.stringify(all)); }catch(e){}
+}
+const wOp = () => { const a = new Uint8Array(12); crypto.getRandomValues(a); return Array.from(a, b => b.toString(16).padStart(2, "0")).join(""); };
+async function wUpload(ph){
+  if(ph.fid) return ph.fid;
+  const blob = await (await fetch(ph.src)).blob();
+  const r = await fetch(`${SERVER}/w/${WM.link}/photo?kind=act`, { method:"POST", headers:{ "Content-Type":"image/jpeg" }, body:blob });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(j.error || "Фото не завантажилось. Перевірте зв’язок і спробуйте ще раз");
+  ph.fid = j.id; draftSave();
+  return j.id;
+}
+async function wSend(btn){
+  actReadForm();
+  const ready = actDraft.systems.filter(x => actPair(x).b && actPair(x).a);
+  if(!ready.length){ toast(actDraft.systems.some(x => actPair(x).b) ? "Зробіть фото «після» — тоді можна надіслати" : "Зробіть фото манометра «до» і «після» хоча б однієї системи", 4000); return; }
+  const bad = ready.find(x => actNum(x.start) === null || actNum(x.end) === null);
+  if(bad){ toast(`${bad.label}: вкажіть тиск на початку та в кінці`, 4000); return; }
+  const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Надсилаємо…";
+  const sent = [];
+  try{
+    for(const x of ready){
+      const b = await wUpload(x.ph.before), a = await wUpload(x.ph.after);
+      if(!x.op){ x.op = wOp(); draftSave(); }   /* номер у чернетці — повтор після обриву не задвоїть */
+      const r = await fetch(`${SERVER}/w/${WM.link}/event`, { method:"POST", headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({ type:"act", op:x.op, pid:WM.pid, sys:x.key, start:actNum(x.start), end:actNum(x.end), before:{ photo:b, at:x.ph.before.at || "" }, after:{ photo:a, at:x.ph.after.at || "" }, medium:x.medium === "air" ? "air" : "water", work:actNum(x.work), k:x.k || null }) });
+      const j = await r.json().catch(() => ({}));
+      if(!r.ok) throw new Error(j.error || "Не надіслалось. Перевірте зв’язок і спробуйте ще раз");
+      sent.push(x);
+      const d = ACT_SYSTEMS.find(y => y.key === x.key), i = actDraft.systems.indexOf(x);
+      actDraft.systems[i] = { key:d.key, label:d.label, on:false, pressure:d.pressure, minutes:d.minutes, work:d.work, k:d.k, need:d.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:d.pressure, end:d.pressure, medium:x.medium };
+      renderActSheet();
+    }
+  }catch(e){ toast(e.message, 4500); }
+  btn.disabled = false; btn.textContent = t0;
+  if(!sent.length) return;
+  const left = actDraft.systems.filter(x => actPair(x).b);
+  toast(`Надіслано майстру: ${sent.map(actShortName).join(", ")}` + (left.length ? `. ${left.map(actShortName).join(", ")} — чекає фото «після»` : ""), 3500);
+  if(!left.length) setTimeout(() => { location.href = "/w.html#" + WM.link; }, 1800);
+}
+async function wStart(){
+  document.documentElement.classList.add("wMode");
+  $("navBack").href = "/w.html#" + WM.link; $("navBack").textContent = "← Назад";
+  $("btnMake").textContent = "Надіслати майстру";
+  $("btnMake").addEventListener("click", e => wSend(e.currentTarget));
+  $("iObj").readOnly = true; $("objTtl").textContent = "Обʼєкт";
+  try{
+    const r = await fetch(`${SERVER}/w/${WM.link}`, { cache:"no-store" });
+    const d = await r.json();
+    const o = ((d.state || {}).objects || []).find(x => x.pid === WM.pid);
+    if(!r.ok || !o || o.phase === "done"){ $("btnMake").disabled = true; toast(!r.ok ? (d.error || "Посилання не працює") : "Цей об’єкт уже недоступний для випробувань", 5000); }
+    if(o){ $("iObj").value = [o.title, o.address && o.address !== o.title ? o.address : ""].filter(Boolean).join(", "); draftSave(); }
+  }catch(e){ toast("Немає зв’язку — фото можна робити, надішлете пізніше", 4000); }
+}
+
+const saved = draftLoad();
+loadAct(saved || { info:[], act:newDraft() });
+if(WM){ wImportOld(); renderActSheet(); wStart(); }
+else{ $("btnMake").addEventListener("click", e => outPdf(e.currentTarget, "share")); $("btnNew").hidden = !saved; }
 </script>
 </body>
 </html>
