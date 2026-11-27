@@ -2,7 +2,7 @@
   "use strict";
   var R = HID, G = HID, KEY = "hidden-room-v1", NS = "http://www.w3.org/2000/svg";
   var $ = function (id) { return document.getElementById(id); };
-  var S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, seq: 1 }, draw = null;
+  var S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], seq: 1 }, draw = null, pdrag = null, psel = null;
   var tool = "room", pickType = "sink", sel = null, hist = [], hpos = -1, view = { sc: 1, ox: 0, oy: 0 };
   var sv = $("sv"), sheet = $("sheet"), drag = null;
 
@@ -17,6 +17,71 @@
     S.axes = S.axes || {}; var out = S.routes.filter(function (r) { return !S.axes[r.fixtureId]; });
     Object.keys(S.axes).forEach(function (id) { var fx = fxOf(id); if (!fx) return; R.pairFor(S.axes[id].pts, fx).forEach(function (r) { r.confirmed = !!S.axes[id].confirmed; out.push(r); }); });
     return out;
+  }
+  /* ---------- інструмент «Труба»: тягнеш палець, лінія під 90° і прилипає ---------- */
+  function pipeDraw(pts, pp, on, pv) {
+    if (!pts || pts.length < 2) return;
+    var dc = pp.dc || R.DIAM, dh = pp.dh || R.DIAM, polys = [];
+    if (pp.cold !== false && pp.hot !== false) { polys.push(["cold", R.offsetLine(pts, dc / 2), dc]); polys.push(["hot", R.offsetLine(pts, -dh / 2), dh]); }
+    else if (pp.hot === false) polys.push(["cold", pts, dc]); else polys.push(["hot", pts, dh]);
+    polys.forEach(function (q) { el("polyline", { points: q[1].map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: q[0] === "cold" ? "#0a64d6" : "#d92d20", "stroke-width": Math.max(2.5, q[2] * view.sc), "stroke-linejoin": "miter", "stroke-dasharray": pp.confirmed ? "" : "7 5", opacity: pv ? .6 : 1, "pointer-events": "none" }); });
+    if (on) el("polyline", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: "#111", "stroke-width": 1, "stroke-dasharray": "2 3", "pointer-events": "none" });
+    for (var i = 1; i < pts.length; i++) { var a = pts[i - 1], b = pts[i], l = Math.round(Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1])); if (l < 1) continue; label(X((a[0] + b[0]) / 2), Y((a[1] + b[1]) / 2) - 9, l + "", { s: 11, c: "#111" }); }
+    if (on) pts.forEach(function (p) { el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, fill: "#111", "pointer-events": "none" }); });
+  }
+  function snapCands() {
+    var out = []; if (S.hub) out.push(S.hub);
+    (S.pipes || []).forEach(function (pp) { pp.pts.forEach(function (p) { out.push(p); }); });
+    S.fixtures.forEach(function (f) { out.push(f.p); });
+    return out;
+  }
+  function onSeg(q) { /* найближча точка на вже накресленій трубі (px-відстань) */
+    var best = null, bd = 18;
+    (S.pipes || []).forEach(function (pp) { for (var i = 1; i < pp.pts.length; i++) { var a = pp.pts[i - 1], b = pp.pts[i], ax = X(a[0]), ay = Y(a[1]), bx = X(b[0]), by = Y(b[1]), L2 = Math.pow(bx - ax, 2) + Math.pow(by - ay, 2) || 1, t = Math.max(0, Math.min(1, ((q[0] - ax) * (bx - ax) + (q[1] - ay) * (by - ay)) / L2)), d = Math.hypot(ax + t * (bx - ax) - q[0], ay + t * (by - ay) - q[1]); if (d < bd) { bd = d; best = [Math.round((a[0] + t * (b[0] - a[0])) / 10) * 10, Math.round((a[1] + t * (b[1] - a[1])) / 10) * 10]; } } });
+    return best;
+  }
+  function snapStart(q) {
+    var w = world(q), cs = snapCands(), best = null, bd = 22;
+    cs.forEach(function (p) { var d = Math.hypot(X(p[0]) - q[0], Y(p[1]) - q[1]); if (d < bd) { bd = d; best = p.slice(); } });
+    if (best) return { p: best, kind: "pt" };
+    var sp = onSeg(q); if (sp) return { p: sp, kind: "seg" };
+    var wn = wallHit(q); if (wn && wn.d * view.sc <= 22) return { p: [Math.round(wn.q[0]), Math.round(wn.q[1])], kind: "wall", n: wn.seg.n };
+    return { p: [Math.round(w[0] / 10) * 10, Math.round(w[1] / 10) * 10], kind: "free" };
+  }
+  function alignSnap(v, axis) { var best = v, bd = 12 / view.sc; snapCands().concat(R.pillars(S.room).map(function (f) { return [f.x, f.y]; })).forEach(function (p) { var d = Math.abs(p[axis] - v); if (d < bd) { bd = d; best = p[axis]; } }); return best === v ? Math.round(v / 10) * 10 : best; }
+  function orthoEnd(st, w, forceN) {
+    var dx = w[0] - st[0], dy = w[1] - st[1], horiz = forceN ? !(Math.abs(forceN[1]) > .5) : Math.abs(dx) >= Math.abs(dy);
+    return horiz ? [alignSnap(w[0], 0), st[1]] : [st[0], alignSnap(w[1], 1)];
+  }
+  function lastPipeEnd(p) { var r = null; (S.pipes || []).forEach(function (pp, i) { var e = pp.pts[pp.pts.length - 1]; if (!pp.confirmed && e[0] === p[0] && e[1] === p[1]) r = i; }); return r; }
+  function pipeDown(q) { var st = snapStart(q), ci = lastPipeEnd(st.p); pdrag = { q: q, st: st, base: [st.p], attr: ci != null ? S.pipes[ci] : { dc: R.DIAM, dh: R.DIAM }, cont: ci, end: null, moved: false }; }
+  function pipeMove(q) {
+    if (!pdrag) return; if (Math.hypot(q[0] - pdrag.q[0], q[1] - pdrag.q[1]) <= 8 && !pdrag.moved) return; pdrag.moved = true;
+    var w = world(q), st = pdrag.st.p, fn = pdrag.st.kind === "wall" ? pdrag.st.n : (pdrag.st.p === S.hub ? null : null);
+    var hn = S.hub && pdrag.st.p[0] === S.hub[0] && pdrag.st.p[1] === S.hub[1] ? R.nearest(C().pts, S.hub).seg.n : null;
+    pdrag.end = orthoEnd(st, w, fn || hn); if (pdrag.end[0] === st[0] && pdrag.end[1] === st[1]) pdrag.end = null;
+    if (pdrag.cont != null) pdrag.base = S.pipes[pdrag.cont].pts.slice();
+    render();
+  }
+  function pipeUp(q) {
+    var d = pdrag; pdrag = null; if (!d) return;
+    if (!d.moved) { /* тап: вибір труби */ var hit2 = null; (S.pipes || []).forEach(function (pp, i) { if (onSegIdx(q, pp)) hit2 = i; }); psel = hit2; render(); return; }
+    if (!d.end) { render(); return; }
+    if (d.cont != null) { var pp = S.pipes[d.cont]; pp.pts = R.clean(pp.pts.concat([d.end])); psel = d.cont; }
+    else { S.pipes.push({ id: "p" + S.seq++, pts: [d.st.p, d.end], dc: R.DIAM, dh: R.DIAM, cold: true, hot: true, confirmed: false }); psel = S.pipes.length - 1; }
+    commit();
+  }
+  function onSegIdx(q, pp) { for (var i = 1; i < pp.pts.length; i++) { var a = pp.pts[i - 1], b = pp.pts[i], ax = X(a[0]), ay = Y(a[1]), bx = X(b[0]), by = Y(b[1]), L2 = Math.pow(bx - ax, 2) + Math.pow(by - ay, 2) || 1, t = Math.max(0, Math.min(1, ((q[0] - ax) * (bx - ax) + (q[1] - ay) * (by - ay)) / L2)); if (Math.hypot(ax + t * (bx - ax) - q[0], ay + t * (by - ay) - q[1]) < 18) return true; } return false; }
+  function pipeSheet() {
+    var h = document.createElement("h4"); h.textContent = "Труба"; sheet.appendChild(h);
+    var pp = S.pipes[psel];
+    if (!pp) { var n = document.createElement("div"); n.className = "note"; n.textContent = "Тягніть палець від вузла (або від кінця вже накресленої труби). Лінія стає під 90° і прилипає до сітки 10 мм та до осей інших точок. Торкніться труби, щоб змінити її."; sheet.appendChild(n); sheet.appendChild(row(btn("Підтвердити всі", "p", function () { (S.pipes || []).forEach(function (x) { x.confirmed = true; }); commit(); }))); return; }
+    var last = pp.pts.length - 1, a = pp.pts[last - 1], b = pp.pts[last], l = Math.round(Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]));
+    sheet.appendChild(row(fld("Остання ділянка, мм", l, function (v) { var nv = Math.max(10, num(v)), dx = Math.sign(b[0] - a[0]), dy = Math.sign(b[1] - a[1]); pp.pts[last] = [a[0] + dx * nv, a[1] + dy * nv]; pp.confirmed = false; commit(); }), fld("Ø ХВП, мм", pp.dc || R.DIAM, function (v) { pp.dc = num(v) || R.DIAM; commit(); }), fld("Ø ГВП, мм", pp.dh || R.DIAM, function (v) { pp.dh = num(v) || R.DIAM; commit(); })));
+    sheet.appendChild(row(sel2("Що йде", pp.cold === false ? "hot" : pp.hot === false ? "cold" : "both", [["both", "ХВП + ГВП"], ["cold", "лише ХВП"], ["hot", "лише ГВП"]], function (v) { pp.cold = v !== "hot"; pp.hot = v !== "cold"; commit(); })));
+    sheet.appendChild(row(btn("↶ Остання ділянка", "", function () { if (pp.pts.length > 2) pp.pts.pop(); else { S.pipes.splice(psel, 1); psel = null; } commit(); }), btn(pp.confirmed ? "Підтверджено ✓" : "Підтвердити як фактичну", pp.confirmed ? "" : "p", function () { pp.confirmed = !pp.confirmed; commit(); }), btn("Видалити", "d", function () { S.pipes.splice(psel, 1); psel = null; commit(); })));
+    var len2 = 0; for (var i = 1; i < pp.pts.length; i++) len2 += Math.abs(pp.pts[i][0] - pp.pts[i - 1][0]) + Math.abs(pp.pts[i][1] - pp.pts[i - 1][1]);
+    var d2 = document.createElement("div"); d2.className = "note"; d2.textContent = "Довжина по плану: " + (len2 / 1000).toFixed(2) + " м. Пунктир — не підтверджено. Пара ХВП справа, ГВП зліва за напрямком від вузла."; sheet.appendChild(d2);
   }
   function C() { return R.contour(S.room); }
   function segs() { var c = C(); return c.errors.length ? [] : R.segs(c.pts); }
@@ -40,7 +105,7 @@
     var c = C(), W = S.room.W, D = S.room.D;
     $("undo").disabled = hpos <= 0; $("redo").disabled = hpos >= hist.length - 1;
     document.querySelectorAll("#bar button").forEach(function (b) { b.classList.toggle("on", b.dataset.tool === tool); });
-    var hints = { room: "Задайте розміри й додайте виступи, ніші, колони", fix: "Оберіть прилад і торкніться стіни, де він стоїть", hub: "Торкніться стіни, де вузол або ввід труб", routes: "Торкніться приладу, щоб задати його трасу", select: "Торкніться приладу чи вузла; тягніть уздовж стіни" };
+    var hints = { room: "Задайте розміри й додайте виступи, ніші, колони", fix: "Оберіть прилад і торкніться стіни, де він стоїть", hub: "Торкніться стіни, де вузол або ввід труб", routes: "Торкніться приладу, щоб задати його трасу", pipe: "Тягніть палець від вузла чи кінця труби — лінія стане під 90° і прилипне", select: "Торкніться приладу чи вузла; тягніть уздовж стіни" };
     $("hint").textContent = hints[tool];
     if (c.errors.length) { label(20, 90, c.errors[0], { a: "start", c: "#d70015", s: 13 }); return; }
     var pts = c.pts;
@@ -59,6 +124,8 @@
       var fx = S.fixtures.filter(function (f) { return f.id === r.fixtureId; })[0], d = (r.systemId === "cold" ? fx && (fx.dc || fx.d) : fx && (fx.dh || fx.d)) || R.DIAM;
       el("polyline", { points: r.pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: dia[r.systemId], "stroke-width": Math.max(2.5, d * view.sc), "stroke-linejoin": "miter", "stroke-linecap": "butt", "stroke-dasharray": r.confirmed ? "" : "7 5", opacity: r.pv ? .55 : (r.confirmed ? 1 : .8), "pointer-events": "none" });
     });
+    (S.pipes || []).forEach(function (pp, pi) { pipeDraw(pp.pts, pp, pi === psel, false); });
+    if (pdrag && pdrag.end) { var pv2 = pdrag.base.concat([pdrag.end]); pipeDraw(pv2.length > 1 ? pv2 : [], pdrag.attr, true, true); }
     /* прилади */
     S.fixtures.forEach(function (f, i) {
       var t = R.fixType(f.type), near = R.nearest(pts, f.p), n = near.seg.n, x = X(f.p[0]), y = Y(f.p[1]);
@@ -92,6 +159,7 @@
     sheet.innerHTML = ""; var show = false;
     if (tool === "room") { show = true; roomSheet(); }
     else if (tool === "routes") { show = true; routesSheet(); }
+    else if (tool === "pipe") { show = true; pipeSheet(); }
     else if (sel && sel.k === "f") { show = true; fixSheet(); }
     else if (sel && sel.k === "h") { show = true; hubSheet(); }
     sheet.classList.toggle("on", show);
@@ -199,12 +267,14 @@
     if (S.hub) { var n2 = R.nearest(c.pts, S.hub).seg.n, d2 = Math.hypot(X(S.hub[0]) + n2[0] * 16 - q[0], Y(S.hub[1]) - n2[1] * 16 - q[1]); if (d2 < bd) best = { k: "h" }; }
     return best;
   }
-  sv.addEventListener("pointerdown", function (e) { var q = pt(e); drag = { q: q, moved: false, h: tool === "select" || tool === "fix" || tool === "hub" ? hit(q) : null }; sv.setPointerCapture(e.pointerId); });
+  sv.addEventListener("pointerdown", function (e) { if (tool === "pipe") { if (!C().errors.length) { pipeDown(pt(e)); sv.setPointerCapture(e.pointerId); } return; } var q = pt(e); drag = { q: q, moved: false, h: tool === "select" || tool === "fix" || tool === "hub" ? hit(q) : null }; sv.setPointerCapture(e.pointerId); });
   sv.addEventListener("pointermove", function (e) {
+    if (tool === "pipe") { pipeMove(pt(e)); return; }
     if (!drag) return; var q = pt(e); if (Math.hypot(q[0] - drag.q[0], q[1] - drag.q[1]) > 8) drag.moved = true;
     if (drag.moved && drag.h && tool === "select") { var n = wallHit(q); if (!n) return; var np = [Math.round(n.q[0]), Math.round(n.q[1])]; if (drag.h.k === "h") S.hub = np; else S.fixtures.forEach(function (f) { if (f.id === drag.h.id) f.p = np; }); sel = drag.h; drag.did = true; render(); }
   });
   sv.addEventListener("pointerup", function (e) {
+    if (tool === "pipe") { pipeUp(pt(e)); return; }
     if (!drag) return; var q = pt(e), d = drag; drag = null;
     if (d.did) { geomChanged(); commit(); return; }
     if (d.moved) return;
@@ -223,15 +293,15 @@
     else if (tool === "hub" && n) { S.hub = [Math.round(n.q[0]), Math.round(n.q[1])]; sel = { k: "h" }; geomChanged(); commit(); }
     else if (tool === "select") { sel = null; render(); }
   });
-  document.querySelectorAll("#bar button").forEach(function (b) { b.onclick = function () { tool = b.dataset.tool; if (tool !== "select" && tool !== "fix" && tool !== "hub") sel = null; render(); }; });
+  document.querySelectorAll("#bar button").forEach(function (b) { b.onclick = function () { tool = b.dataset.tool; pdrag = null; if (tool !== "pipe") psel = null; if (tool !== "select" && tool !== "fix" && tool !== "hub") sel = null; render(); }; });
   $("undo").onclick = function () { if (hpos > 0) { hpos--; restore(hist[hpos]); } };
   $("redo").onclick = function () { if (hpos < hist.length - 1) { hpos++; restore(hist[hpos]); } };
   $("menu").onclick = function () {
     var b = $("box"); b.innerHTML = "<h3>Меню</h3>"; var ta = document.createElement("textarea"); ta.readOnly = true; ta.value = snap(); b.appendChild(ta);
-    var r = row(btn("Скопіювати дані", "p", function () { ta.select(); try { navigator.clipboard.writeText(ta.value); toast("Скопійовано"); } catch (e) { document.execCommand("copy"); } }), btn("Почати знову", "d", function () { S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, seq: 1 }; draw = null; sel = null; $("ovl").classList.remove("on"); commit(); }), btn("Закрити", "", function () { $("ovl").classList.remove("on"); })); r.style.marginTop = "10px"; b.appendChild(r); $("ovl").classList.add("on");
+    var r = row(btn("Скопіювати дані", "p", function () { ta.select(); try { navigator.clipboard.writeText(ta.value); toast("Скопійовано"); } catch (e) { document.execCommand("copy"); } }), btn("Почати знову", "d", function () { S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], seq: 1 }; draw = null; sel = null; psel = null; $("ovl").classList.remove("on"); commit(); }), btn("Закрити", "", function () { $("ovl").classList.remove("on"); })); r.style.marginTop = "10px"; b.appendChild(r); $("ovl").classList.add("on");
   };
   window.addEventListener("resize", render);
-  try { var s0 = localStorage.getItem(KEY); if (s0) S = JSON.parse(s0); } catch (e) {}
+  try { var s0 = localStorage.getItem(KEY); if (s0) S = JSON.parse(s0); } catch (e) {} S.pipes = S.pipes || []; S.axes = S.axes || {};
   window.__S = function () { return S; }; window.__V = function () { return view; };
   hist = [snap()]; hpos = 0; render();
 })();
