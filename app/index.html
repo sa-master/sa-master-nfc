@@ -3594,6 +3594,14 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .actCamTop{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 1rem) 1rem 1rem;background:linear-gradient(rgba(0,0,0,.7),transparent);display:flex;align-items:center;gap:.75rem}
 .actCamTop button{width:2.375rem;height:2.375rem;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:1.125rem;flex:0 0 auto}
 .actCamTop b{display:block;font-size:1.0625rem}.actCamTop small{font-size:.8125rem;opacity:.8}
+/* Кожна система — свій колір і значок, щоб не сплутати водопостачання з опаленням */
+.actChip.k-water.on{border-color:#0a64d6;background:rgba(10,100,214,.08)}.actChip.k-heat.on{border-color:#e8532b;background:rgba(232,83,43,.08)}
+.actChip .sIco{display:flex;flex:none}.actChip.k-water .sIco{color:#0a64d6}.actChip.k-heat .sIco{color:#e8532b}
+.actSys.k-water{border-left:4px solid #0a64d6}.actSys.k-heat{border-left:4px solid #e8532b}
+.actSysName{display:flex;align-items:center;gap:6px;font-weight:800}.actSys.k-water .actSysName{color:#0a64d6}.actSys.k-heat .actSysName{color:#e8532b}
+.actPick{padding:16px 14px;text-align:center;color:var(--tm);font-weight:700;border:1.5px dashed rgba(120,120,128,.4);border-radius:14px;margin-bottom:12px}
+.actCamSys{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 6rem);transform:translateX(-50%);display:flex;align-items:center;gap:.5rem;padding:.4rem 1rem;border-radius:999px;font-weight:900;font-size:1.25rem;letter-spacing:.04em;text-transform:uppercase;color:#fff;pointer-events:none;white-space:nowrap}
+.actCamSys.k-water{background:#0a64d6}.actCamSys.k-heat{background:#e8532b}
 .actCamHint{position:absolute;left:0;right:0;top:calc(46% + min(41vw,190px) + 1rem);text-align:center;font-size:.9375rem;font-weight:600;text-shadow:0 1px 4px #000;pointer-events:none}
 .actCamBot{position:absolute;left:0;right:0;bottom:0;padding:2rem 1rem calc(env(safe-area-inset-bottom) + 2rem);background:linear-gradient(transparent,rgba(0,0,0,.85) 35%);display:flex;flex-direction:column;align-items:center;gap:1rem}
 .actCamStamp{font-size:.78rem;background:rgba(0,0,0,.45);padding:.3rem .625rem;border-radius:.5rem;opacity:.9}
@@ -5248,6 +5256,7 @@ body.inSec #pfAddPerson{display:none}
   <video id="actCamVideo" playsinline muted autoplay></video>
   <div class="actCamMask"></div><div class="actCamRing"><svg viewBox="0 0 100 100" aria-hidden="true"><circle id="actCamProg" cx="50" cy="50" r="49" pathLength="100" stroke-dasharray="0 100"/></svg></div>
   <div class="actCamTop"><button type="button" onclick="closeActCam()" aria-label="Закрити">✕</button><div style="flex:1;min-width:0"><b id="actCamTitle"></b><small id="actCamSub"></small></div><button type="button" class="actCamTorch" id="actCamTorch" onclick="actCamTorchToggle()" aria-label="Вспишка"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></button></div>
+  <div class="actCamSys" id="actCamSys"></div>
   <div class="actCamHint" id="actCamHint">Наведіть манометр у коло</div>
   <div class="actCamBot"><div class="actCamStamp" id="actCamStamp"></div><button type="button" class="actCamShut" id="actCamShut" onclick="actCamShoot()" aria-label="Зробити фото"><i></i></button></div>
   <input type="file" id="actCamFallback" accept="image/*" capture="environment" hidden onchange="actCamFallbackPick(this)">
@@ -12752,22 +12761,27 @@ function actCheckHtml(x, i, ev, done){
 /* Випробування одного обʼєкта: вкладки «Водопостачання» / «Опалення», у PDF — разом або окремо */
 function actHasData(x){ return Boolean(x && (actPair(x).b || actPair(x).a || x.manual)); }
 function actSyncOn(){ if(actDraft) actDraft.systems.forEach(x => { x.on = actHasData(x) && !x.off; }); }
+const ACT_SYS_IC = {
+  water:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11z"/></svg>',
+  heat:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6v12M10 6v12M14 6v12M18 6v12M4 9h16M4 15h16"/></svg>'
+};
+function actSysIc(x){ return ACT_SYS_IC[x && x.key] || ""; }
 /* Відмічені системи видно одна під одною: можна почати опалення й водопостачання разом, а кінцеві дані дописати згодом */
 function actShown(){
   const n = actDraft.systems.length, ok = i => Number.isInteger(i) && i >= 0 && i < n;
   if(Array.isArray(actDraft.show)){ const s = actDraft.show.filter(ok); if(s.length) return s; }
   const d = actDraft.systems.map((x, i) => i).filter(i => actHasData(actDraft.systems[i]));
-  return d.length ? d : [ok(actDraft.tab) ? actDraft.tab : 0];
+  return d;   /* нічого не вибрано — майстер сам відмічає систему (щоб не знімати «не ту») */
 }
 function actChipsHtml(){
   const shown = actShown();
-  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip ${shown.includes(i) ? "on" : ""}"><input type="checkbox" ${shown.includes(i) ? "checked" : ""} onchange="actPickSys(${i})"><span>${escapeHtml(x.label)}${actHasData(x) ? " ✓" : ""}</span></label>`).join("")}</div>`;
+  return `<div class="actChips">${actDraft.systems.map((x, i) => `<label class="actChip k-${x.key} ${shown.includes(i) ? "on" : ""}"><input type="checkbox" ${shown.includes(i) ? "checked" : ""} onchange="actPickSys(${i})"><i class="sIco">${actSysIc(x)}</i><span>${escapeHtml(x.label)}${actHasData(x) ? " ✓" : ""}</span></label>`).join("")}</div>`;
 }
 function actPickSys(i){
   actReadForm();
   if(!actDraft) return;
   const s = actShown().slice();
-  if(s.includes(i)){ if(s.length > 1) s.splice(s.indexOf(i), 1); }
+  if(s.includes(i)){ if(s.length > 1 || !actHasData(actDraft.systems[i])) s.splice(s.indexOf(i), 1); }
   else s.push(i);
   actDraft.show = s.sort((a, b) => a - b);
   renderActSheet();
@@ -12784,6 +12798,24 @@ function actToggleInc(i, on){
   actSyncOn();
   renderActSheet();
 }
+/* Зняв не ту систему (напр. відкрив «Водопостачання», а випробовував опалення) — переносимо фото й цифри в іншу систему.
+   Якщо там теж є дані — системи міняються даними. Назва, ключ і норма часу лишаються за системою */
+const ACT_MOVE_KEYS = ["ph", "pressure", "start", "end", "minutes", "manual", "pManual", "date", "work", "k", "leak", "cond", "glued", "confirm", "air1", "compMax", "by", "byAt", "off"];
+function actMoveTo(i){ return (i + 1) % actDraft.systems.length; }
+function actMoveSys(i){
+  if(!actDraft) return;
+  actReadForm();
+  const a = actDraft.systems[i], b = actDraft.systems[actMoveTo(i)];
+  const ta = {}, tb = {};
+  ACT_MOVE_KEYS.forEach(k => { ta[k] = a[k]; tb[k] = b[k]; delete a[k]; delete b[k]; });
+  ACT_MOVE_KEYS.forEach(k => { if(ta[k] !== undefined) b[k] = ta[k]; if(tb[k] !== undefined) a[k] = tb[k]; });
+  [a, b].forEach(x => { if(x.pressure === undefined){ x.pressure = x.start = x.end = x.key === "heat" ? 4 : 4.5; } x.cond = x.cond || {}; });
+  const j = actMoveTo(i);
+  actDraft.show = Array.from(new Set([...(Array.isArray(actDraft.show) ? actDraft.show : []), j])).sort((p, q) => p - q);
+  actSyncOn();
+  renderActSheet();
+  toast(`Перенесено в «${actShortName(b)}»${actHasData(a) ? `, а дані «${actShortName(b)}» — в «${actShortName(a)}»` : ""}. Підпис на самому фото не змінюється`, 4500);
+}
 function renderActSheet(){
   actSyncOn();
   const box = document.getElementById("actSheetBody");
@@ -12793,8 +12825,8 @@ function renderActSheet(){
     const done = Boolean(actPair(x).a) || Boolean(x.manual);
     const ev = actEval(x);
     const ok = done ? actSysOk(x) : null;
-    return `<div class="actSys">
-      <div class="actSysHead"><span>${actShown().length > 1 ? escapeHtml(x.label) : ""}</span>${1 ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
+    return `<div class="actSys k-${x.key}">
+      <div class="actSysHead"><span class="actSysName">${actSysIc(x)}${escapeHtml(x.label)}</span>${1 ? (done ? `<b class="${ok === false ? "bad" : "ok"}">${ok === false ? "Падіння тиску" : "✓ Герметично"}</b>` : `<small>${actPair(x).b ? "чекаємо фото «після»" : "ще не випробувано"}</small>`) : `<small>не випробовувалось</small>`}</div>
       ${1 ? `<div class="actPair">
         ${["before", "after"].map(w => { const ph = actPair(x)[w === "before" ? "b" : "a"]; return ph
           ? `<div class="actPh"><img src="${actImg(ph.src)}" alt="" onclick="actPhView(${i},'${w}')" title="Відкрити"><span>${escapeHtml(actPhLabel(x, w))}</span><button type="button" onclick="actPhotoDel(${i},'${w}')" aria-label="Прибрати фото">×</button></div>`
@@ -12814,6 +12846,7 @@ function renderActSheet(){
       </div>`
       : done ? `<div class="actSum"><span>${x.minutes ? actDur(x.minutes) : "—"} · ${actDropText(x)}</span><button type="button" onclick="actEdit(${i})">Змінити</button></div>`
         : `<button type="button" class="actManual" onclick="actEdit(${i})">Без фото? Вписати результат вручну</button>`}
+      ${actHasData(x) && actDraft.systems.length > 1 ? `<button type="button" class="actManual" onclick="actMoveSys(${i})">Не та система? Перенести в «${escapeHtml(actShortName(actDraft.systems[actMoveTo(i)]))}»</button>` : ""}
       </div>` : ""}
     </div>`;
   };
@@ -12822,6 +12855,7 @@ function renderActSheet(){
   box.innerHTML = `
     ${actChipsHtml()}
     <div class="actWork" style="grid-template-columns:1fr"><label><small>Чим випробовуємо</small><select id="act_med" onchange="actSetMedium(this.value)"><option value="water" ${med === "water" ? "selected" : ""}>Водою (гідравлічне)</option><option value="air" ${med === "air" ? "selected" : ""}>Повітрям (манометричне)</option></select></label></div>
+    ${actShown().length ? "" : `<div class="actPick">Відмітьте вгорі, що випробовуєте</div>`}
     ${actDraft.systems.map((x, i) => actShown().includes(i) ? sys(x, i) : "").join("")}
     ${actIncHtml()}
     ${(actDraft.photos || []).length ? `<div class="formGroup"><label class="formLabel">Інші фото</label><div class="actPhotos">${actDraft.photos.map((src, i) => `<div class="actPh"><img src="${actImg(src)}" alt="" onclick="actPhView(-1,${i})"><button type="button" onclick="actOldPhotoDel(${i})" aria-label="Прибрати фото">×</button></div>`).join("")}</div></div>` : ""}
@@ -12885,6 +12919,7 @@ async function openActCam(i, which){
   actCamTarget = { i, which };
   const L = actCamLabels();
   document.getElementById("actCamTitle").textContent = `Фото ${which === "after" ? "після" : "до"} · ${L.sys.replace(/\s*\(.*\)$/, "")}`;
+  { const sx = actDraft.systems[i], el = document.getElementById("actCamSys"); if(el){ el.className = "actCamSys k-" + sx.key; el.innerHTML = actSysIc(sx).replace(/18/g, "22") + escapeHtml(actShortName(sx)); } }   /* велика кольорова плашка: що саме знімаємо */
   document.getElementById("actCamSub").textContent = L.obj;
   const tick = () => { const el = document.getElementById("actCamStamp"); if(el && actCamStream) el.textContent = `На фото буде: об’єкт · ${actStampTime(new Date()).replace(/:\d\d$/, "")} · «${which === "after" ? "після" : "до"}»`; };
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ document.getElementById("actCamFallback").click(); return; }
