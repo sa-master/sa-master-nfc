@@ -3635,6 +3635,14 @@ body.clientView .catalogRowAction.info,body.clientView .catalogRowAction.edit,bo
 .qdChips button.on{background:var(--p-action);color:#fff}
 .qdHint{font-size:.75rem;color:var(--tm);font-weight:600}
 .amItem.amMain{background:var(--p-action)}
+.actCard{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem .75rem;background:var(--card);border-radius:.875rem;padding:.75rem .875rem;margin:0 0 .75rem}
+.actCard .acMain{flex:1 1 12rem;min-width:0;display:flex;flex-direction:column;gap:.25rem}
+.actCard .acMain b{display:flex;align-items:center;gap:.375rem;font-weight:750;color:var(--t);font-size:.9375rem;}
+.actCard .acSent{color:var(--tm)}
+.actCard .acMain b svg{color:#0a64d6;flex:none}
+.actCard small{color:var(--tm);font-size:.8125rem;line-height:1.4;display:flex;flex-wrap:wrap;gap:.125rem .625rem}
+.actCard .acOk{color:var(--ok,#1f9d55);font-weight:700}.actCard .acOk.bad{color:#c62828}.actCard .acWait{color:#b26a00;font-weight:600}
+.actCard .acBtns{display:flex;gap:.375rem;flex:none;margin-left:auto}
 /* Здача об'єкта */
 .hoObj{color:var(--tm);font-weight:600;padding:0 .25rem .25rem;margin-top:-.25rem}
 .hoList{background:var(--card);border-radius:1rem;padding:.25rem 1rem;margin-bottom:.5rem}
@@ -11316,6 +11324,7 @@ function renderProject(p){
 
       <div class="projectView">
       ${renderStageHint(p)}
+      ${clientView || projectTab === "money" ? "" : renderActCard(p)}
       ${clientView ? "" : renderGroupStages(p)}
       ${(buyOn(p) ? projectTab === "notebook" : projectTab !== "money") ? renderCrewBox(p) : ""}
       ${projectTab === "estimate" || projectTab === "notebook" ? renderSupLine(p) : ""}
@@ -11815,6 +11824,7 @@ function renderQuotePreviewSection(title, positions, discountPercent, discountAm
 }
 
 function openQuotePreview(){
+  quoteWithAct = quoteWithActNext === null ? true : quoteWithActNext; quoteWithActNext = null;
   if(!requireAccess()) return;
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
@@ -12616,9 +12626,10 @@ function actSysDate(x, a){
   return x.date || (a && a.date) || todayIso();
 }
 function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "hot" ? "ГВП" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
+let quoteWithAct = true, quoteWithActNext = null;   /* звіт про випробування в кошторисі — галочкою в перегляді (зазвичай разом) */
 function actIncluded(project){
   const a = project && project.pressureAct;
-  return Boolean(a && actFactual(project) && quoteMode !== "materials" && (a.systems || []).some(actSysDone));
+  return Boolean(quoteWithAct && a && actFactual(project) && quoteMode !== "materials" && (a.systems || []).some(actSysDone));
 }
 function actNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function actFmt(v){ return v === null || v === undefined || v === "" ? "—" : String(v).replace(".", ","); }
@@ -13268,7 +13279,8 @@ function renderQuoteActBox(){
   box.classList.remove("hidden");
   box.innerHTML = `<div class="qdTitle">Гідравлічні випробування</div>
     <div class="qdRow"><span>${a ? `${on.length ? `✓ ${on.map(actShortName).join(", ")}` : ""}${(() => { const n = on.reduce((k, x) => k + Object.keys(x.ph || {}).length, 0) + (a.photos || []).length; return n ? ` · фото ${n}` : ""; })()}${wait.length ? `<small style="display:block;color:#c62828;font-weight:700">Ще не випробувано: ${wait.map(actShortName).join(", ")} — у клієнта його не буде</small>` : ""}` : `<small style="font-weight:600;color:var(--tm)">Клієнт отримає його разом з фактичним кошторисом</small>`}</span>
-    <button type="button" class="ptBtn ${a ? "" : "primary"}" onclick="openActSheet()">${a ? "Змінити" : "＋ Додати"}</button></div>`;
+    <button type="button" class="ptBtn ${a ? "" : "primary"}" onclick="openActSheet()">${a ? "Змінити" : "＋ Додати"}</button></div>
+    ${on.length ? `<label class="qdRow" style="cursor:pointer"><span>Додати звіт до кошторису</span><input type="checkbox" ${quoteWithAct ? "checked" : ""} onchange="quoteWithAct=this.checked;renderQuotePreview()"></label>` : ""}`;
 }
 function actClientData(project){
   const a = project.pressureAct;
@@ -14250,6 +14262,24 @@ function actAllDone(p){
    Клієнт отримує один документ і одне посилання; надіслали — об'єкт завершено. Доти об'єкт у роботі:
    працівник може надсилати випробування, «Аудит» на місці, заробіток команди не позначається ==== */
 let handoverFor = null;
+/* ==== Гідравлічні випробування на екрані об'єкта (не в меню «⋯»): стан, «Акт», «Надіслати клієнту» — окремо від кошторису.
+   Окреме надсилання звіту об'єкт НЕ завершує; завершує лише «Здати об'єкт» ==== */
+function renderActCard(p){
+  const a = p.pressureAct, sys = (a && a.systems) || [];
+  if(!a && !(hasTrade("plumb") && ["work", "done"].includes(p.stage))) return "";
+  const done = sys.filter(actSysDone), wait = sys.filter(x => x.on && !actSysDone(x));
+  const parts = done.map(x => `<span class="acOk ${actSysOk(x) === false ? "bad" : ""}">${actSysOk(x) === false ? "✕" : "✓"} ${escapeHtml(actShortName(x))}</span>`)
+    .concat(wait.map(x => `<span class="acWait">${escapeHtml(actShortName(x))} — триває</span>`));
+  const sent = p.actSentAt ? `<span class="acSent">надіслано ${escapeHtml(formatQuoteDate(p.actSentAt).slice(0, 5))}</span>` : "";
+  return `<div class="actCard">
+    <div class="acMain"><b>${ACT_SYS_IC.water}Гідравлічні випробування</b><small>${parts.length ? parts.join("") : "<span>Ще не проведено</span>"}${sent}</small></div>
+    <div class="acBtns">
+      <button type="button" class="ptBtn ${done.length ? "" : "primary"}" onclick="openActFor('${p.id}')">${a ? "Акт" : "＋ Провести"}</button>
+      ${done.length ? `<button type="button" class="ptBtn primary" onclick="sendActReport('${p.id}')">Надіслати</button>` : ""}
+    </div>
+  </div>`;
+}
+function sendActReport(id){ handoverFor = null; openActReport(id); }
 function handoverInfo(p){
   const sys = (p.pressureAct && p.pressureAct.systems) || [];
   const approved = Boolean(getApproved(p)), debt = projectDebt(p), changed = approved && revisionChanges(p).length > 0;
@@ -14265,7 +14295,7 @@ function openHandover(id){
   let el = document.getElementById("handoverSheet");
   if(!el){ el = document.createElement("div"); el.id = "handoverSheet"; el.className = "addMenu"; el.onclick = e => { if(e.target === el) closeHandover(); }; document.body.appendChild(el); }
   const report = i.done.length
-    ? `<div class="hoRow"><span class="hoChk on">✓</span><span class="hoText"><b>Звіт про гідравлічні випробування</b><small>${i.done.map(x => `${escapeHtml(actShortName(x))} — ${verdict(x)}`).join(" · ")}</small></span></div>`
+    ? `<label class="hoRow"><input type="checkbox" id="hoAct" checked onchange="handoverBtn()"><span class="hoChk"></span><span class="hoText"><b>Звіт про гідравлічні випробування</b><small>${i.done.map(x => `${escapeHtml(actShortName(x))} — ${verdict(x)}`).join(" · ")}</small></span></label>`
     : i.plumb ? `<div class="hoRow"><span class="hoChk">!</span><span class="hoText"><b>Гідравлічних випробувань немає</b><small>Клієнт їх не отримає</small></span><button type="button" class="scBtn primary" onclick="closeHandover();openActFor('${p.id}')">Провести</button></div>` : "";
   const waitRow = i.wait.length ? `<div class="hoRow hoWarn"><span class="hoChk">!</span><span class="hoText"><b>Ще не завершено: ${escapeHtml(i.wait.map(actShortName).join(", "))}</b><small>У звіт не ввійде</small></span><button type="button" class="scBtn" onclick="closeHandover();openActFor('${p.id}')">Акт</button></div>` : "";
   const est = i.approved ? `<label class="hoRow"><input type="checkbox" id="hoEst" ${i.debt > 0.5 || i.changed ? "checked" : ""} onchange="handoverBtn()"><span class="hoChk"></span><span class="hoText"><b>Фактичний кошторис з оплатами</b><small>${money(getClientTotal(p))} · ${i.debt > 0.5 ? `клієнт винен ${money(i.debt)}` : "сплачено повністю"}${i.changed ? " · кошторис змінювали" : ""}</small></span></label>` : "";
@@ -14281,15 +14311,15 @@ function openHandover(id){
 function handoverBtn(){
   const p = projects.find(x => x.id === currentProjectId), btn = document.getElementById("hoGo");
   if(!p || !btn) return;
-  const send = handoverInfo(p).done.length || document.getElementById("hoEst")?.checked;
+  const send = document.getElementById("hoAct")?.checked || document.getElementById("hoEst")?.checked;
   btn.textContent = send ? "Надіслати клієнту і завершити" : "Завершити без надсилання";
 }
 function closeHandover(){ document.getElementById("handoverSheet")?.classList.remove("open"); }
 function handoverGo(id){
   const p = projects.find(x => x.id === id);
   if(!p) return;
-  const i = handoverInfo(p), est = Boolean(document.getElementById("hoEst")?.checked);
-  if(!est && !i.done.length){
+  const est = Boolean(document.getElementById("hoEst")?.checked), withAct = Boolean(document.getElementById("hoAct")?.checked);
+  if(!est && !withAct){
     if(!confirm("Нічого не надсилати клієнту й просто завершити об’єкт?")) return;
     closeHandover();
     p.handoverAt = new Date().toISOString();
@@ -14302,13 +14332,14 @@ function handoverGo(id){
   if(est){
     /* фактичний кошторис можливий лише після робіт — етап «Здача»; звіт про випробування йде в ньому */
     if(!isFactualStage(p)){ p.stage = "done"; p.phase = phaseSteps(p).length - 1; if(!p.doneAt) p.doneAt = new Date().toISOString(); touchProject(p); }
+    quoteWithActNext = withAct;   /* разом зі звітом — як відмічено на екрані здачі */
     openFactual(id);
   }else openActReport(id);
 }
 /* Надіслали документ здачі (або фактичний кошторис об'єкта на етапі «Здача») — об'єкт завершено */
 function handoverSent(project, how){
   if(!project || projectCompleted(project)) return;
-  if(handoverFor !== project.id && project.stage !== "done") return;
+  if(handoverFor !== project.id) return;   /* окремий звіт чи кошторис об'єкт не завершують — лише «Здати об'єкт» */
   handoverFor = null;
   project.handoverAt = new Date().toISOString();
   completeProject(project, how);
@@ -14420,7 +14451,7 @@ function getNextSteps(p){
 
   if(stage === "work" && (planOn(p) || buyOn(p))){
     if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
-    { const st = actStep(p); if(st) steps.push({ ...st, primary:steps.length === 0 }); }
+    /* гідравлічні випробування — окремою карткою на екрані об'єкта (renderActCard) */
     steps.push(handoverStep(p, actAllDone(p) || steps.length === 0));
   }else if(stage === "work"){
     if(debt > 0.5) steps.push({ text:`${debtWord(p)} ${money(debt)}`, sub:"Отримали гроші — запишіть", label:"＋ Оплата", action:"goMoney('payment')" });
@@ -14428,14 +14459,13 @@ function getNextSteps(p){
     if(later) steps.push({ text:`Докупити: ${later} поз.`, sub:"Купите самі або дозамовите", label:"Список", action:"setProjectTab('materials')" });
     const rets = returnsPending(p).length;
     if(rets) steps.push({ text:`Повернути: ${rets} поз.`, sub:"Замовлено більше, ніж треба", label:"Список", action:"setProjectTab('materials')" });
-    { const st = actStep(p); if(st) steps.push({ ...st, primary:steps.length === 0 }); }
+    /* гідравлічні випробування — окремою карткою на екрані об'єкта (renderActCard) */
     steps.push(handoverStep(p, actAllDone(p) || steps.length === 0));
   }
 
   /* Етап «Здача», а клієнту ще нічого не надіслано — один крок «Здати об'єкт» */
   const toSend = stage === "done" && !p.factualSentAt && !p.actSentAt && !p.handoverAt && !projectCompleted(p);
   if(toSend) steps.push(handoverStep(p, true));
-  if(stage === "done" && !p.handedOverAt){ const st = actStep(p); if(st) steps.push(st); }
   if(stage === "done" && buyOn(p) && buyLeftovers(p).length) steps.push({ text:`Нерозібрані залишки: ${buyLeftovers(p).length}`, sub:"Повернути постачальнику чи на склад", label:"Показати", action:"setProjectTab('notebook');setTimeout(()=>document.querySelector('.byLeft')?.scrollIntoView({behavior:'smooth',block:'center'}),120)" });
   if(stage === "done" && !p.handedOverAt){
     if(!toSend) steps.push({ text:"Здали об’єкт клієнту?", sub:"Клієнт подивився і прийняв роботи", label:"Так, здали", action:`handOverProject('${id}')`, primary:true });
