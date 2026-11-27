@@ -2,7 +2,7 @@
   "use strict";
   var R = HID, G = HID, KEY = "hidden-room-v1", NS = "http://www.w3.org/2000/svg";
   var $ = function (id) { return document.getElementById(id); };
-  var S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], seq: 1 }, draw = null, pdrag = null, psel = null;
+  var S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], seq: 1 }, draw = null, pdrag = null, psel = null, zm = { z: 1, px: 0, py: 0 }, ptrs = {}, pinch = null;
   var tool = "room", pickType = "sink", sel = null, hist = [], hpos = -1, view = { sc: 1, ox: 0, oy: 0 };
   var sv = $("sv"), sheet = $("sheet"), drag = null;
 
@@ -94,7 +94,8 @@
     S.room.features.forEach(function (f) { if (f.kind === "pillar") { x0 = Math.min(x0, f.x); x1 = Math.max(x1, f.x + f.w); y0 = Math.min(y0, f.y); y1 = Math.max(y1, f.y + f.h); } });
     var top = 50, avail = r.height - top - (sheet.classList.contains("on") ? sheet.offsetHeight : 0), pd = 40;
     var sc = Math.min((r.width - 2 * pad) / (x1 - x0), (avail - 2 * pd) / (y1 - y0));
-    view = { sc: sc, ox: (r.width - (x1 - x0) * sc) / 2 - x0 * sc, oy: top + (avail - (y1 - y0) * sc) / 2 + y1 * sc };
+    var b0 = { sc: sc, ox: (r.width - (x1 - x0) * sc) / 2 - x0 * sc, oy: top + (avail - (y1 - y0) * sc) / 2 + y1 * sc }, cx = r.width / 2, cy = r.height / 2;
+    view = { sc: b0.sc * zm.z, ox: cx + (b0.ox - cx) * zm.z + zm.px, oy: cy + (b0.oy - cy) * zm.z + zm.py, b0: b0, cx: cx, cy: cy };
   }
   var X = function (x) { return view.ox + x * view.sc; }, Y = function (y) { return view.oy - y * view.sc; };
   function el(n, a, txt) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; sv.appendChild(e); return e; }
@@ -299,6 +300,53 @@
   $("menu").onclick = function () {
     var b = $("box"); b.innerHTML = "<h3>Меню</h3>"; var ta = document.createElement("textarea"); ta.readOnly = true; ta.value = snap(); b.appendChild(ta);
     var r = row(btn("Скопіювати дані", "p", function () { ta.select(); try { navigator.clipboard.writeText(ta.value); toast("Скопійовано"); } catch (e) { document.execCommand("copy"); } }), btn("Почати знову", "d", function () { S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], seq: 1 }; draw = null; sel = null; psel = null; $("ovl").classList.remove("on"); commit(); }), btn("Закрити", "", function () { $("ovl").classList.remove("on"); })); r.style.marginTop = "10px"; b.appendChild(r); $("ovl").classList.add("on");
+  };
+  /* два пальці: масштаб і переміщення креслення */
+  function two() { var k = Object.keys(ptrs); if (k.length < 2) return null; var a = ptrs[k[0]], b = ptrs[k[1]]; return { m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1 }; }
+  sv.addEventListener("pointerdown", function (e) { ptrs[e.pointerId] = pt(e); if (Object.keys(ptrs).length === 2) { drag = null; pdrag = null; draw = draw; pinch = two(); pinch.z = zm.z; pinch.px = zm.px; pinch.py = zm.py; e.stopImmediatePropagation(); } }, true);
+  sv.addEventListener("pointermove", function (e) {
+    if (!ptrs[e.pointerId]) return; ptrs[e.pointerId] = pt(e);
+    if (pinch) { var t = two(); if (!t) return; var z2 = Math.max(1, Math.min(10, pinch.z * t.d / pinch.d)), v = view;
+      var o2x = t.m[0] - (pinch.m[0] - (v.cx + (v.b0.ox - v.cx) * pinch.z + pinch.px)) * (z2 / pinch.z), o2y = t.m[1] - (pinch.m[1] - (v.cy + (v.b0.oy - v.cy) * pinch.z + pinch.py)) * (z2 / pinch.z);
+      zm.z = z2; zm.px = o2x - v.cx - (v.b0.ox - v.cx) * z2; zm.py = o2y - v.cy - (v.b0.oy - v.cy) * z2; render(); e.stopImmediatePropagation(); }
+  }, true);
+  function endP(e) { delete ptrs[e.pointerId]; if (pinch) { if (Object.keys(ptrs).length < 2) { pinch = null; drag = null; pdrag = null; e.stopImmediatePropagation(); } } }
+  sv.addEventListener("pointerup", endP, true); sv.addEventListener("pointercancel", endP, true);
+  $("fitb").onclick = function () { zm = { z: 1, px: 0, py: 0 }; render(); };
+  /* ---------- специфікація ---------- */
+  function plen(p) { var s = 0; for (var i = 1; i < p.length; i++) s += Math.abs(p[i][0] - p[i - 1][0]) + Math.abs(p[i][1] - p[i - 1][1]); return s; }
+  function spec() {
+    var lines = [], unconf = 0;
+    allRoutes().forEach(function (r) { var fx = fxOf(r.fixtureId); lines.push({ sys: r.systemId, d: r.systemId === "cold" ? (fx && (fx.dc || fx.d)) || R.DIAM : (fx && (fx.dh || fx.d)) || R.DIAM, pts: r.pts, conf: r.confirmed, tee: false }); });
+    (S.pipes || []).forEach(function (pp) {
+      var dc = pp.dc || R.DIAM, dh = pp.dh || R.DIAM, tee = false, st = pp.pts[0];
+      (S.pipes || []).forEach(function (o) { if (o === pp) return; for (var i = 1; i < o.pts.length; i++) { var a = o.pts[i - 1], b = o.pts[i]; var inx = a[1] === b[1] && st[1] === a[1] && st[0] > Math.min(a[0], b[0]) && st[0] < Math.max(a[0], b[0]), iny = a[0] === b[0] && st[0] === a[0] && st[1] > Math.min(a[1], b[1]) && st[1] < Math.max(a[1], b[1]); if (inx || iny) tee = true; } });
+      if (pp.cold !== false) lines.push({ sys: "cold", d: dc, pts: pp.hot === false ? pp.pts : R.offsetLine(pp.pts, dc / 2), conf: pp.confirmed, tee: tee });
+      if (pp.hot !== false) lines.push({ sys: "hot", d: dh, pts: pp.cold === false ? pp.pts : R.offsetLine(pp.pts, -dh / 2), conf: pp.confirmed, tee: tee });
+    });
+    var pipes = {}, fit = {}, rise = {}, mk = function (o, k, v) { o[k] = (o[k] || 0) + v; };
+    lines.forEach(function (l) { if (!l.conf) unconf++; var nm = (l.sys === "cold" ? "ХВП" : "ГВП") + " Ø" + l.d; mk(pipes, nm, plen(l.pts)); mk(fit, "Коліно 90° Ø" + l.d, Math.max(0, l.pts.length - 2)); if (l.tee) mk(fit, "Трійник Ø" + l.d, 1); });
+    var fxl = {}; S.fixtures.forEach(function (f) {
+      var t = R.fixType(f.type); mk(fxl, t.name, 1); var c = f.cold === undefined ? t.cold : f.cold, hh = f.hot === undefined ? t.hot : f.hot, h = f.h || t.h;
+      [["cold", c, f.dc || f.d || R.DIAM], ["hot", hh, f.dh || f.d || R.DIAM]].forEach(function (x) { if (x[1]) { mk(rise, (x[0] === "cold" ? "ХВП" : "ГВП") + " Ø" + x[2] + " (підйом до приладу)", h); mk(fit, "Коліно 90° Ø" + x[2] + " (перехід на підйом)", 1); } });
+    });
+    return { pipes: pipes, fit: fit, rise: rise, fx: fxl, unconf: unconf, hub: !!S.hub, total: lines.length };
+  }
+  $("spec").onclick = function () {
+    var sp = spec(), b = $("box"), txt = [], m = function (v) { return (v / 1000).toFixed(2); };
+    b.innerHTML = "<h3>Специфікація матеріалів</h3>";
+    var tb = document.createElement("table"); tb.style.cssText = "width:100%;border-collapse:collapse;font-size:14px"; var add = function (a, c, d, hdr) { var tr = tb.insertRow(); [a, c, d].forEach(function (v, i) { var td = tr.insertCell(); td.textContent = v; td.style.cssText = "padding:6px 4px;border-bottom:1px solid #e4e7ec;" + (i ? "text-align:right;" : "") + (hdr ? "font-weight:700;background:#f2f4f7;" : ""); }); txt.push([a, c, d].join("\t")); };
+    add("Позиція", "К-сть", "Запас +10 %", true);
+    Object.keys(sp.pipes).sort().forEach(function (k) { add("Труба " + k, m(sp.pipes[k]) + " м", m(sp.pipes[k] * 1.1) + " м"); });
+    Object.keys(sp.rise).sort().forEach(function (k) { add("Труба " + k, m(sp.rise[k]) + " м", m(sp.rise[k] * 1.1) + " м"); });
+    Object.keys(sp.fit).sort().forEach(function (k) { add(k, sp.fit[k] + " шт", ""); });
+    Object.keys(sp.fx).forEach(function (k) { add(k, sp.fx[k] + " шт", ""); });
+    if (sp.hub) add("Вузол / колектор", "1 шт", "");
+    if (!sp.total) { b.innerHTML += "<div class='note'>Трас ще немає. Накресліть трубу або побудуйте траси.</div>"; } else { b.appendChild(tb); }
+    var n = document.createElement("div"); n.className = "note"; n.style.marginTop = "8px";
+    n.textContent = (sp.unconf ? "Увага: " + sp.unconf + " ліній ще не підтверджено, але враховано. " : "") + "Довжини труб — горизонтальні ділянки по плану плюс підйоми до приладів за вказаною висотою. Трійники рахуються там, де труба починається з середини іншої. Фітинги на підйомах у стінах та інше треба додати вручну.";
+    b.appendChild(n);
+    var r = row(btn("Скопіювати", "p", function () { var t = txt.join("\n"); try { navigator.clipboard.writeText(t); toast("Скопійовано"); } catch (e) { toast("Не вдалося скопіювати"); } }), btn("Закрити", "", function () { $("ovl").classList.remove("on"); })); r.style.marginTop = "10px"; b.appendChild(r); $("ovl").classList.add("on");
   };
   window.addEventListener("resize", render);
   try { var s0 = localStorage.getItem(KEY); if (s0) S = JSON.parse(s0); } catch (e) {} S.pipes = S.pipes || []; S.axes = S.axes || {};
