@@ -41,16 +41,19 @@ t("траси: пара йде в обхід колони, лише прямі �
   });
   var a = res.routes.filter(function (r) { return r.fixtureId === "a"; }), cold = a.filter(function (r) { return r.systemId === "cold"; })[0], hot = a.filter(function (r) { return r.systemId === "hot"; })[0];
   var ce = cold.pts[cold.pts.length - 1], he = hot.pts[hot.pts.length - 1];
-  assert.strictEqual(ce[1], 0); assert.strictEqual(he[1], 0); assert.strictEqual(he[0] - ce[0], 30); // нижня стіна: праворуч обличчям до стіни = менше x
+  assert.strictEqual(ce[1], 0); assert.strictEqual(he[1], 0); assert.strictEqual(he[0] - ce[0], 20); // нижня стіна: праворуч обличчям до стіни = менше x
   var b = res.routes.filter(function (r) { return r.fixtureId === "b"; }), cb = b.filter(function (r) { return r.systemId === "cold"; })[0], hb = b.filter(function (r) { return r.systemId === "hot"; })[0];
   assert.strictEqual(cb.pts[cb.pts.length - 1][0], 3000); assert.ok(cb.pts[cb.pts.length - 1][1] < hb.pts[hb.pts.length - 1][1]); // права стіна: обличчям на схід праворуч = південь (менше y)
 });
-t("пара йде поруч: відстань між осями ХВП і ГВП на прямих ділянках 30 мм (впритул)", function () {
+t("пара йде поруч: відстань між осями ХВП і ГВП на прямих ділянках = діаметр труби (20 мм), впритул", function () {
   var res = R.buildRoutes(room, [200, 0], [sink("a", 2200, 0)]), c = res.routes[0].pts, h = res.routes[1].pts; assert.strictEqual(c.length, h.length);
-  for (var i = 1; i < c.length; i++) { if (c[i][0] === c[i - 1][0]) assert.strictEqual(Math.abs(c[i][0] - h[i][0]), 30); else assert.strictEqual(Math.abs(c[i][1] - h[i][1]), 30); }
+  for (var i = 1; i < c.length; i++) { if (c[i][0] === c[i - 1][0]) assert.strictEqual(Math.abs(c[i][0] - h[i][0]), 20); else assert.strictEqual(Math.abs(c[i][1] - h[i][1]), 20); }
 });
 t("вузол біля стіни: траса виходить перпендикулярно стіні", function () {
   var res = R.buildRoutes(room, [200, 0], [sink("a", 2200, 0)]), p = res.routes[0].pts; assert.strictEqual(p[0][1], 0); assert.strictEqual(p[1][0], p[0][0]);
+});
+t("різні діаметри: 25 і 16 мм → осі ≈20,5 мм (округлення до 1 мм → 21)", function () {
+  var f = sink("a", 2200, 0); f.dc = 25; f.dh = 16; var r = R.buildRoutes(room, [200, 0], [f]).routes; assert.strictEqual(Math.abs(r[0].pts[0][0] - r[1].pts[0][0]), 21);
 });
 t("недосяжний прилад потрапляє в failed", function () {
   var res = R.buildRoutes({ W: 3000, D: 2000, features: [{ kind: "pillar", x: 0, y: 900, w: 3000, h: 200 }] }, [200, 0], [{ id: "z", type: "sink", p: [1500, 2000] }]); assert.strictEqual(res.failed.length, 1);

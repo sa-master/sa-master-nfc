@@ -3,7 +3,7 @@
 (function (root, f) { var m = f(); if (typeof module === "object" && module.exports) module.exports = m; else { root.HID = root.HID || {}; for (var k in m) root.HID[k] = m[k]; } })(this, function () {
   var G = (typeof require === "function" && typeof module === "object") ? require("./geometry.js") : window.HID;
   var R = {};
-  R.PAIR = 15;       // половина відстані між осями ХВП і ГВП, мм (труби впритул; можна змінити)
+  R.DIAM = 20; R.PAIR = 15;       // половина відстані між осями ХВП і ГВП, мм (труби впритул; можна змінити)
   R.STEP = 50;       // крок сітки пошуку, мм
   R.CLEAR = 110;     // мінімальна відстань осі пари до стіни, мм
 
@@ -185,9 +185,10 @@
       var axis = rt.axis(hubP, hubN, p, n); if (!axis || axis.length < 2) { failed.push(fx); return; }
       var cold = fx.cold !== false && t.cold !== false ? fx.cold !== false : false, hot = fx.hot !== false && t.hot !== false ? fx.hot !== false : false;
       if (fx.cold === undefined) cold = t.cold; if (fx.hot === undefined) hot = t.hot;
-      if (cold && hot) { routes.push({ systemId: "cold", fixtureId: fx.id, pts: R.offsetLine(axis, R.PAIR) }); routes.push({ systemId: "hot", fixtureId: fx.id, pts: R.offsetLine(axis, -R.PAIR) }); }
-      else if (cold) routes.push({ systemId: "cold", fixtureId: fx.id, pts: R.offsetLine(axis, R.PAIR) });
-      else if (hot) routes.push({ systemId: "hot", fixtureId: fx.id, pts: R.offsetLine(axis, -R.PAIR) });
+      var dc = fx.dc || fx.d || R.DIAM, dh = fx.dh || fx.d || R.DIAM; // діаметри труб, мм
+      if (cold && hot) { routes.push({ systemId: "cold", fixtureId: fx.id, pts: R.offsetLine(axis, dc / 2) }); routes.push({ systemId: "hot", fixtureId: fx.id, pts: R.offsetLine(axis, -dh / 2) }); }
+      else if (cold) routes.push({ systemId: "cold", fixtureId: fx.id, pts: R.offsetLine(axis, 0) });
+      else if (hot) routes.push({ systemId: "hot", fixtureId: fx.id, pts: R.offsetLine(axis, 0) });
     });
     return { routes: routes, failed: failed };
   };
