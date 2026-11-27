@@ -87,13 +87,13 @@ h1{font-size:24px;font-weight:850;line-height:1.2;padding:0 4px}
 .sheet .hd{display:flex;justify-content:space-between;align-items:center}
 .x{width:34px;height:34px;border-radius:50%;background:rgba(120,120,128,.14);font-size:15px;color:var(--tm)}
 label.f{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;color:var(--tm)}
-input,textarea{font:inherit;font-size:16px;color:var(--t);background:var(--in);border:1px solid var(--inb);border-radius:12px;padding:11px 12px;width:100%}
+input,textarea,select{font:inherit;font-size:16px;color:var(--t);background:var(--in);border:1px solid var(--inb);border-radius:12px;padding:11px 12px;width:100%}
 textarea{min-height:80px;resize:vertical}
-input:focus,textarea:focus{outline:2px solid var(--p);outline-offset:1px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--p);outline-offset:1px}
 .r2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .photo{display:flex;align-items:center;justify-content:center;gap:8px;height:46px;border-radius:12px;border:1.5px dashed var(--inb);color:var(--p);font-weight:750}
 .photo input{display:none}
-.wactSys{display:flex;gap:8px}.wactSys .chip{flex:1;justify-content:center;height:40px;font-weight:750}.wactSys .chip.on{background:var(--p);color:#fff}.wactShot{display:flex;gap:10px;align-items:center}.wactAt{color:var(--tm);font-size:12px;font-weight:600}.wactBtn{width:100%;flex:0 0 auto;height:40px;font-size:14px;border-radius:11px}
+.wactSys{display:flex;gap:8px}.wactSys .chip{flex:1;justify-content:center;height:40px;font-weight:750}.wactSys .chip.on{background:var(--p);color:#fff}.wactShot{display:flex;gap:10px;align-items:center}.wactAt{color:var(--tm);font-size:12px;font-weight:600}.wactSug{font-size:14px;color:var(--tm);font-weight:600}.wactSug b{color:var(--t)}.wactSug button{color:var(--p);font-weight:750;margin-left:6px}.wactBtn{width:100%;flex:0 0 auto;height:40px;font-size:14px;border-radius:11px}
 .prev{max-height:160px;border-radius:12px;object-fit:cover;width:100%}
 .nav button{width:100%;text-align:left;padding:14px;border-radius:14px;background:var(--in);font-weight:750;font-size:16px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1C1C1E;color:#fff;border-radius:14px;padding:11px 16px;font-weight:650;font-size:14px;z-index:60;max-width:90vw;text-align:center}
@@ -399,9 +399,47 @@ function wactExif(buf){
   }catch(e){}
   return null;
 }
+/* Пробний тиск — як у майстра: робочий тиск × коефіцієнт, округлення до 0,5 бар. Тиск на початку підставляється сам, поки працівник не виправив його вручну */
+const WACT_DEF = { water:{ work:3, k:1.5 }, heat:{ work:3, k:1.3 } };
+const WACT_KS = [1.1, 1.3, 1.5];
+const wactNum = v => { const t = String(v ?? "").replace(",", ".").trim(), n = Number(t); return t !== "" && Number.isFinite(n) ? n : null; };
+const wactFmt = n => n === null ? "" : String(n).replace(".", ",");
+function wactK(d){ return Number(d.k) || WACT_DEF[wactCur.sys].k; }
+function wactSug(d){ const w = wactNum(d.work), k = wactK(d); return w === null || w <= 0 ? null : Math.round(w * k * 2) / 2; }
+function wactPrep(d){
+  /* чернетка зі старої версії: тиск уже вписаний руками — не чіпаємо */
+  if(d.work === undefined){ if(String(d.start ?? "").trim() !== "") d.sManual = true; d.work = String(WACT_DEF[wactCur.sys].work); }
+  const sug = wactSug(d);
+  if(!d.sManual && sug !== null) d.start = wactFmt(sug);
+  return d;
+}
+function wactSugHtml(d){
+  const sug = wactSug(d);
+  if(sug === null) return "Впишіть робочий тиск — пробний порахується сам";
+  return `Пробний тиск: <b>${wactFmt(sug)} бар</b>` + (d.sManual && wactNum(d.start) !== sug ? `<button type="button" onclick="wactUseSug()">Підставити</button>` : "");
+}
+function wactCalc(){
+  const d = wactPrep(wactDraft());
+  d.work = $("wactWork").value; d.k = Number($("wactK").value) || WACT_DEF[wactCur.sys].k;
+  const sug = wactSug(d);
+  if(!d.sManual && sug !== null){ d.start = wactFmt(sug); $("wactStart").value = d.start; }
+  wactPut(d);
+  $("wactSug").innerHTML = wactSugHtml(d);
+  $("wactEnd").placeholder = d.start || "4,5";
+}
+function wactUseSug(){
+  const d = wactDraft(), sug = wactSug(d); if(sug === null) return;
+  d.start = wactFmt(sug); d.sManual = false; wactPut(d);
+  $("wactStart").value = d.start; $("wactSug").innerHTML = wactSugHtml(d); $("wactEnd").placeholder = d.start;
+}
+function wactStartIn(v){
+  const d = wactDraft(); d.start = v; d.sManual = true; wactPut(d);
+  $("wactSug").innerHTML = wactSugHtml(d); $("wactEnd").placeholder = v || "4,5";
+}
 function actForm(pid, sys){
   wactCur = { pid, sys: sys || wactCur && wactCur.pid === pid && wactCur.sys || "water" };
-  const d = wactDraft();
+  const d = wactPrep(wactDraft()); wactPut(d);
+  const k = wactK(d);
   const shot = (w, label) => { const s = d[w]; return `<div class="wactShot">
       ${s ? `<a class="th" href="${SERVER}/f/${esc(s.photo)}" target="_blank" rel="noopener" style="background-image:url('${SERVER}/f/${esc(s.photo)}')"></a>` : ""}
       <button type="button" class="photo" style="flex:1;background:none" onclick="openActCam('${w}')">📷 ${s ? "Перезняти" : label}</button></div>
@@ -410,12 +448,17 @@ function actForm(pid, sys){
   sheet(`<div class="hd"><h3>Гідравлічні випробування</h3><button class="x" onclick="closeSheet()">✕</button></div>
     <div style="color:var(--tm);font-size:14px">${objTitle(pid)}</div>
     <div class="wactSys">${Object.keys(WACT_SYS).map(k => `<button class="chip${k === wactCur.sys ? " on" : ""}" onclick="actForm('${esc(pid)}','${k}')">${WACT_SYS[k]}</button>`).join("")}</div>
+    <div class="r2">
+      <label class="f">Робочий тиск, бар<input id="wactWork" inputmode="decimal" placeholder="напр. 3" value="${esc(d.work ?? "")}" onfocus="this.select()" oninput="wactCalc()"></label>
+      <label class="f">Коефіцієнт<select id="wactK" onchange="wactCalc()">${WACT_KS.map(c => `<option value="${c}"${c === k ? " selected" : ""}>× ${wactFmt(c)}</option>`).join("")}</select></label>
+    </div>
+    <div class="wactSug" id="wactSug">${wactSugHtml(d)}</div>
     <div class="sec">На початку</div>
     ${shot("before", "Фото манометра")}
-    <label class="f">Тиск, бар<input id="wactStart" inputmode="decimal" placeholder="4,5" value="${esc(d.start ?? "")}" oninput="wactVal('start', this.value)"></label>
+    <label class="f">Тиск, бар<input id="wactStart" inputmode="decimal" placeholder="4,5" value="${esc(d.start ?? "")}" onfocus="this.select()" oninput="wactStartIn(this.value)"></label>
     <div class="sec">У кінці</div>
     ${shot("after", "Фото манометра")}
-    <label class="f">Тиск, бар<input id="wactEnd" inputmode="decimal" placeholder="4,5" value="${esc(d.end ?? "")}" oninput="wactVal('end', this.value)"></label>
+    <label class="f">Тиск, бар<input id="wactEnd" inputmode="decimal" placeholder="${esc(d.start || "4,5")}" value="${esc(d.end ?? "")}" oninput="wactVal('end', this.value)"></label>
     ${gap !== null ? `<div style="color:var(--tm);font-size:14px">Між фото: ${gap < 60 ? gap + " хв" : Math.floor(gap / 60) + " год " + (gap % 60 ? gap % 60 + " хв" : "")}</div>` : ""}
     <button class="btn" id="wactBtn" onclick="wactSend()">Надіслати майстру</button>`);
 }
