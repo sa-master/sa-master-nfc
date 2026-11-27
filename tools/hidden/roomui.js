@@ -1,6 +1,10 @@
 (function () {
   "use strict";
   var R = HID, G = HID, KEY = "hidden-room-v1", NS = "http://www.w3.org/2000/svg";
+  var DK = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+  var P = DK ? { bg: "#0f1115", room: "#1a1e26", wall: "#8fb4ff", wallSoft: "#262c38", pillar: "#2b3240", ink: "#f2f4f7", mute: "#98a2b3", pill: "#232936", pillLn: "#343c4d", dot: "#2a303c", cold: "#4c9dff", hot: "#ff6b5e", hub: "#ffb020", card: "#1e232d", on: "#4c9dff", err: "#ff6b5e" }
+    : { bg: "#ffffff", room: "#f6f8fb", wall: "#1d2b4f", wallSoft: "#dfe5ee", pillar: "#cfd6e2", ink: "#101828", mute: "#667085", pill: "#ffffff", pillLn: "#d0d5dd", dot: "#e4e8ef", cold: "#1570ef", hot: "#e5392b", hub: "#d92d20", card: "#ffffff", on: "#1570ef", err: "#d92d20" };
+  document.documentElement.style.setProperty("--stage", P.bg);
   var $ = function (id) { return document.getElementById(id); };
   var S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], extras: [], seq: 1 }, draw = null, pdrag = null, psel = null, zm = { z: 1, px: 0, py: 0 }, ptrs = {}, pinch = null;
   var tool = "room", pickType = "sink", sel = null, hist = [], hpos = -1, view = { sc: 1, ox: 0, oy: 0 };
@@ -24,10 +28,10 @@
     var dc = pp.dc || R.DIAM, dh = pp.dh || R.DIAM, polys = [];
     if (pp.cold !== false && pp.hot !== false) { polys.push(["cold", R.offsetLine(pts, dc / 2), dc]); polys.push(["hot", R.offsetLine(pts, -dh / 2), dh]); }
     else if (pp.hot === false) polys.push(["cold", pts, dc]); else polys.push(["hot", pts, dh]);
-    polys.forEach(function (q) { el("polyline", { points: q[1].map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: q[0] === "cold" ? "#0a64d6" : "#d92d20", "stroke-width": Math.max(2.5, q[2] * view.sc), "stroke-linejoin": "miter", "stroke-dasharray": pp.confirmed ? "" : "7 5", opacity: pv ? .6 : 1, "pointer-events": "none" }); });
-    if (on) el("polyline", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: "#111", "stroke-width": 1, "stroke-dasharray": "2 3", "pointer-events": "none" });
-    for (var i = 1; i < pts.length; i++) { var a = pts[i - 1], b = pts[i], l = Math.round(Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1])); if (l < 1) continue; label(X((a[0] + b[0]) / 2), Y((a[1] + b[1]) / 2) - 9, l + "", { s: 11, c: "#111" }); }
-    if (on) pts.forEach(function (p) { el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, fill: "#111", "pointer-events": "none" }); });
+    polys.forEach(function (q) { el("polyline", { points: q[1].map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: q[0] === "cold" ? P.cold : P.hot, "stroke-width": Math.max(4, q[2] * view.sc), "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": pp.confirmed ? "" : "7 5", opacity: pv ? .6 : 1, "pointer-events": "none" }); });
+    if (on) el("polyline", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: P.ink, "stroke-width": 1, "stroke-dasharray": "2 3", "pointer-events": "none" });
+    for (var i = 1; i < pts.length; i++) { var a = pts[i - 1], b = pts[i], l = Math.round(Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1])); if (l < 1) continue; label(X((a[0] + b[0]) / 2), Y((a[1] + b[1]) / 2) - 9, l + "", { s: 11, c: P.ink }); }
+    if (on) pts.forEach(function (p) { el("circle", { cx: X(p[0]), cy: Y(p[1]), r: 4, fill: P.ink, "pointer-events": "none" }); });
   }
   function snapCands() {
     var out = []; if (S.hub) out.push(S.hub);
@@ -92,38 +96,45 @@
     var xs = [0, W], ys = [0, D]; C().pts.forEach(function (p) { xs.push(p[0]); ys.push(p[1]); });
     var x0 = Math.min.apply(0, xs), x1 = Math.max.apply(0, xs), y0 = Math.min.apply(0, ys), y1 = Math.max.apply(0, ys);
     S.room.features.forEach(function (f) { if (f.kind === "pillar") { x0 = Math.min(x0, f.x); x1 = Math.max(x1, f.x + f.w); y0 = Math.min(y0, f.y); y1 = Math.max(y1, f.y + f.h); } });
-    var top = 50, avail = r.height - top - (sheet.classList.contains("on") ? sheet.offsetHeight : 0), pd = 40;
+    var top = 122, bot = 100 + (sheet.classList.contains("on") ? sheet.offsetHeight + 10 : 0) + ($("chips").classList.contains("on") ? 58 : 0), avail = r.height - top - bot, pd = 24; document.documentElement.style.setProperty("--dock", bot + "px"); if (avail < 120) avail = 120;
     var sc = Math.min((r.width - 2 * pad) / (x1 - x0), (avail - 2 * pd) / (y1 - y0));
     var b0 = { sc: sc, ox: (r.width - (x1 - x0) * sc) / 2 - x0 * sc, oy: top + (avail - (y1 - y0) * sc) / 2 + y1 * sc }, cx = r.width / 2, cy = r.height / 2;
     view = { sc: b0.sc * zm.z, ox: cx + (b0.ox - cx) * zm.z + zm.px, oy: cy + (b0.oy - cy) * zm.z + zm.py, b0: b0, cx: cx, cy: cy };
   }
   var X = function (x) { return view.ox + x * view.sc; }, Y = function (y) { return view.oy - y * view.sc; };
   function el(n, a, txt) { var e = document.createElementNS(NS, n); for (var k in a) e.setAttribute(k, a[k]); if (txt != null) e.textContent = txt; sv.appendChild(e); return e; }
-  function label(x, y, t, o) { o = o || {}; var e = el("text", { x: x, y: y, "text-anchor": o.a || "middle", "font-size": o.s || 11, fill: o.c || "#344054", "font-weight": o.w || 600, "paint-order": "stroke", stroke: "#fff", "stroke-width": 3, "pointer-events": "none" }, t); return e; }
+  function label(x, y, t, o) {
+    o = o || {}; var sz = o.s || 11, str = String(t), w = str.length * sz * 0.58 + 10, h = sz + 7, a = o.a || "middle";
+    if (!o.bare) { var rx = a === "start" ? x - 5 : a === "end" ? x - w + 5 : x - w / 2; el("rect", { x: rx, y: y - sz + 1 - 3, width: w, height: h, rx: h / 2, fill: P.pill, stroke: P.pillLn, "stroke-width": 1, opacity: .94, "pointer-events": "none" }); }
+    return el("text", { x: x, y: y, "text-anchor": a, "font-size": sz, fill: o.c || P.ink, "font-weight": o.w || 600, "pointer-events": "none", style: "font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif" }, str);
+  }
 
   function render() {
     renderSheet(); fit(); sv.innerHTML = "";
     var c = C(), W = S.room.W, D = S.room.D;
+    var gs = view.sc * 100; while (gs < 14) gs *= 5; var gx = ((view.ox % gs) + gs) % gs, gy = ((view.oy % gs) + gs) % gs;
+    var df = el("defs", {}); var pat = document.createElementNS(NS, "pattern"); pat.setAttribute("id", "gd"); pat.setAttribute("width", gs); pat.setAttribute("height", gs); pat.setAttribute("patternUnits", "userSpaceOnUse"); pat.setAttribute("x", gx); pat.setAttribute("y", gy); var dc0 = document.createElementNS(NS, "circle"); dc0.setAttribute("cx", 0); dc0.setAttribute("cy", 0); dc0.setAttribute("r", 1.3); dc0.setAttribute("fill", P.dot); pat.appendChild(dc0); df.appendChild(pat); el("rect", { x: 0, y: 0, width: "100%", height: "100%", fill: "url(#gd)", "pointer-events": "none" });
     $("undo").disabled = hpos <= 0; $("redo").disabled = hpos >= hist.length - 1;
     document.querySelectorAll("#bar button").forEach(function (b) { b.classList.toggle("on", b.dataset.tool === tool); });
     var hints = { room: "Задайте розміри й додайте виступи, ніші, колони", fix: "Оберіть прилад і торкніться стіни, де він стоїть", hub: "Торкніться стіни, де вузол або ввід труб", routes: "Торкніться приладу, щоб задати його трасу", pipe: "Тягніть палець від вузла чи кінця труби — лінія стане під 90° і прилипне", select: "Торкніться приладу чи вузла; тягніть уздовж стіни" };
-    $("hint").textContent = hints[tool];
-    if (c.errors.length) { label(20, 90, c.errors[0], { a: "start", c: "#d70015", s: 13 }); return; }
+    $("hint").textContent = hints[tool]; $("hint").style.display = sheet.classList.contains("on") ? "none" : "";
+    if (c.errors.length) { label(20, 90, c.errors[0], { a: "start", c: P.err, s: 13 }); return; }
     var pts = c.pts;
-    el("polygon", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "#f4f6fa", stroke: "#1b2a49", "stroke-width": 4, "stroke-linejoin": "miter" });
-    R.pillars(S.room).forEach(function (f) { el("rect", { x: X(f.x), y: Y(f.y + f.h), width: f.w * view.sc, height: f.h * view.sc, fill: "#c9ced8", stroke: "#1b2a49", "stroke-width": 3 }); });
+    el("polygon", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: P.room, stroke: P.wallSoft, "stroke-width": 14, "stroke-linejoin": "round" });
+    el("polygon", { points: pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: P.wall, "stroke-width": 3, "stroke-linejoin": "round" });
+    R.pillars(S.room).forEach(function (f) { el("rect", { x: X(f.x), y: Y(f.y + f.h), width: f.w * view.sc, height: f.h * view.sc, fill: P.pillar, stroke: P.wall, "stroke-width": 2.5, rx: 3 }); });
     var sg = R.segs(pts);
     sg.forEach(function (s, i) { /* довжина стіни ззовні */
       var mx = (s.a[0] + s.b[0]) / 2, my = (s.a[1] + s.b[1]) / 2, o = 20;
-      label(X(mx) - s.n[0] * o, Y(my) + s.n[1] * o + 4, Math.round(s.len) + "", { c: "#667085" });
+      label(X(mx) - s.n[0] * o, Y(my) + s.n[1] * o + 4, Math.round(s.len) + "", { c: P.mute, s: 11 });
     });
-    pts.forEach(function (p, i) { el("circle", { cx: X(p[0]) + 0, cy: Y(p[1]), r: 9, fill: "#1b2a49" }); label(X(p[0]), Y(p[1]) + 4, i + 1, { c: "#fff", s: 10, w: 700 }).setAttribute("stroke-width", 0); });
+    pts.forEach(function (p, i) { el("circle", { cx: X(p[0]) + 0, cy: Y(p[1]), r: 9, fill: P.wall }); label(X(p[0]), Y(p[1]) + 3.5, i + 1, { c: DK ? "#0f1115" : "#fff", s: 10, w: 700, bare: true }); });
     /* траси */
-    var dia = { cold: "#0a64d6", hot: "#d92d20" };
+    var dia = { cold: P.cold, hot: P.hot };
     var shown = allRoutes(); if (draw) { var pv = drawAxis(true); if (pv) { var fxd = fxOf(draw.fid); R.pairFor(pv, fxd).forEach(function (r) { r.pv = 1; shown.push(r); }); } }
     shown.forEach(function (r) {
       var fx = S.fixtures.filter(function (f) { return f.id === r.fixtureId; })[0], d = (r.systemId === "cold" ? fx && (fx.dc || fx.d) : fx && (fx.dh || fx.d)) || R.DIAM;
-      el("polyline", { points: r.pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: dia[r.systemId], "stroke-width": Math.max(2.5, d * view.sc), "stroke-linejoin": "miter", "stroke-linecap": "butt", "stroke-dasharray": r.confirmed ? "" : "7 5", opacity: r.pv ? .55 : (r.confirmed ? 1 : .8), "pointer-events": "none" });
+      el("polyline", { points: r.pts.map(function (p) { return X(p[0]) + "," + Y(p[1]); }).join(" "), fill: "none", stroke: dia[r.systemId], "stroke-width": Math.max(4, d * view.sc), "stroke-linejoin": "round", "stroke-linecap": "round", "stroke-dasharray": r.confirmed ? "" : "7 5", opacity: r.pv ? .55 : (r.confirmed ? 1 : .8), "pointer-events": "none" });
     });
     (S.pipes || []).forEach(function (pp, pi) { pipeDraw(pp.pts, pp, pi === psel, false); });
     if (pdrag && pdrag.end) { var pv2 = pdrag.base.concat([pdrag.end]); pipeDraw(pv2.length > 1 ? pv2 : [], pdrag.attr, true, true); }
@@ -131,16 +142,16 @@
     S.fixtures.forEach(function (f, i) {
       var t = R.fixType(f.type), near = R.nearest(pts, f.p), n = near.seg.n, x = X(f.p[0]), y = Y(f.p[1]);
       var cx = x + n[0] * 14, cy = y - n[1] * 14, on = sel && sel.k === "f" && sel.id === f.id;
-      el("circle", { cx: cx, cy: cy, r: 13, fill: on ? "#0a64d6" : "#fff", stroke: "#1b2a49", "stroke-width": 2.5 });
-      label(cx, cy + 4, t.code, { c: on ? "#fff" : "#111", s: 12, w: 800 }).setAttribute("stroke-width", 0);
+      el("circle", { cx: cx, cy: cy, r: 14, fill: on ? P.on : P.card, stroke: on ? P.on : P.wall, "stroke-width": 2.5 });
+      label(cx, cy + 4, t.code, { c: on ? "#fff" : P.ink, s: 12, w: 800, bare: true });
       var si = near.seg.i, base = f.base === "b" ? "b" : "a", corner = base === "a" ? si + 1 : (si + 1) % pts.length + 1;
       var tx = x + n[0] * 44, ty = Y(f.p[1]) - n[1] * 44 + 4;
-      label(tx, ty, "№" + corner + ": " + R.distFrom(near.seg, f.p, base) + " · h" + (f.h || t.h), { s: 10, c: "#475467" });
+      label(tx, ty, "№" + corner + ": " + R.distFrom(near.seg, f.p, base) + " · h" + (f.h || t.h), { s: 10, c: P.mute });
     });
     if (S.hub) {
       var hn = R.nearest(pts, S.hub), hx = X(S.hub[0]) + hn.seg.n[0] * 16, hy = Y(S.hub[1]) - hn.seg.n[1] * 16, on2 = sel && sel.k === "h";
-      el("rect", { x: hx - 13, y: hy - 13, width: 26, height: 26, rx: 4, fill: on2 ? "#0a64d6" : "#fff", stroke: "#b42318", "stroke-width": 3 });
-      label(hx, hy + 5, "◉", { c: on2 ? "#fff" : "#b42318", s: 15 }).setAttribute("stroke-width", 0);
+      el("rect", { x: hx - 13, y: hy - 13, width: 26, height: 26, rx: 8, fill: on2 ? P.on : P.card, stroke: P.hub, "stroke-width": 3 });
+      label(hx, hy + 5, "◉", { c: on2 ? "#fff" : P.hub, s: 15, bare: true });
     }
     renderChips();
   }
@@ -156,8 +167,9 @@
   function btn(t, cls, on) { var b = document.createElement("button"); b.className = "btn " + (cls || ""); b.textContent = t; b.onclick = on; return b; }
   function row() { var r = document.createElement("div"); r.className = "row"; for (var i = 0; i < arguments.length; i++) r.appendChild(arguments[i]); return r; }
 
+  var sheetMin = false;
   function renderSheet() {
-    sheet.innerHTML = ""; var show = false;
+    sheet.innerHTML = ""; var show = false; var gb = document.createElement("div"); gb.className = "grab"; gb.onclick = function () { sheetMin = !sheetMin; render(); }; sheet.appendChild(gb); sheet.classList.toggle("min", sheetMin);
     if (tool === "room") { show = true; roomSheet(); }
     else if (tool === "routes") { show = true; routesSheet(); }
     else if (tool === "pipe") { show = true; pipeSheet(); }
