@@ -10146,7 +10146,7 @@ function crewApply(per, events){
       if(!Array.isArray(p.crewReq)) p.crewReq = [];
       p.crewReq.push({ id:ev.id, personId:per.id, name:per.name, text:ev.text, at:ev.at, status:"new" }); news++;
     }else if(ev.type === "act"){
-      if(!["water", "hot", "heat"].includes(ev.sys) || !ev.before || !ev.after) return;
+      if(!["water", "heat"].includes(ev.sys) || !ev.before || !ev.after) return;
       if(!Array.isArray(p.crewActs)) p.crewActs = [];
       p.crewActs.push({ id:ev.id, personId:per.id, name:per.name, sys:ev.sys, start:ev.start, end:ev.end, before:ev.before, after:ev.after, at:ev.at, status:"new" }); news++;
     }else if(ev.type === "bought"){
@@ -10162,7 +10162,6 @@ function crewApply(per, events){
 }
 /* ---- Гідравлічні випробування від працівника ----
    Якщо в акті цієї системи ще немає результату — додаємо самі. Є результат майстра — чекаємо його рішення («Замінити» / «Залишити моє») */
-function crewActSys(k){ return k === "heat" ? "опалення" : k === "hot" ? "ГВП" : "ХВП"; }
 async function crewActPhoto(fid){
   const r = await fetch(crewFileUrl(fid), { cache:"no-store" });
   if(!r.ok) throw new Error("photo");
@@ -10172,8 +10171,7 @@ async function crewActPut(p, r){
   const before = await crewActPhoto(r.before.photo), after = await crewActPhoto(r.after.photo);
   if(!before || !after) throw new Error("photo");
   if(!p.pressureAct) p.pressureAct = { date: todayIso(), note:"", photos:[],
-    systems: ACT_SYSTEMS.map(actNewSys) };
-  actEnsure(p.pressureAct);
+    systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })) };
   let x = (p.pressureAct.systems || []).find(y => y.key === r.sys);
   if(!x){ const d = ACT_SYSTEMS.find(y => y.key === r.sys); x = { key:d.key, label:d.label, work:d.work, k:d.k, need:d.need, cond:{} }; p.pressureAct.systems.push(x); }
   const gap = r.before.at && r.after.at ? Math.round((new Date(r.after.at) - new Date(r.before.at)) / 60000) : null;
@@ -10191,7 +10189,7 @@ async function crewActsProcess(){
     for(const r of (p.crewActs || []).filter(x => x.status === "new")){
       const mine = ((p.pressureAct && p.pressureAct.systems) || []).find(y => y.key === r.sys);
       if(mine && actSysDone(mine)){ r.status = "wait"; changed = true; continue; }
-      try{ await crewActPut(p, r); changed = true; toast(`${r.name}: випробування ${crewActSys(r.sys)} додано до «${p.title || "об'єкта"}»`, 3200); }catch(e){}
+      try{ await crewActPut(p, r); changed = true; toast(`${r.name}: випробування ${r.sys === "heat" ? "опалення" : "водопостачання"} додано до «${p.title || "об'єкта"}»`, 3200); }catch(e){}
     }
   }
   if(changed){ jrnWith("Від працівника: гідравлічні випробування", () => saveProjects(), true); render(); }
@@ -10256,7 +10254,7 @@ function renderCrewBox(p){
   const when = at => { const d = new Date(at); return isNaN(d) ? "" : d.toLocaleString("uk-UA", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }); };
   return `<section class="planTodo crewBox"><div class="ptHead"><span>Від працівника</span></div>
     ${req.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.text)}<small>від ${escapeHtml(r.name)} · ${when(r.at)}</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewReqBuy('${escapeHtml(r.id)}')">→ Купити</button><button type="button" class="ptBtn" onclick="crewReqDone('${escapeHtml(r.id)}')">✓ Зроблено</button></span></div>`).join("")}
-    ${acts.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)}: випробування ${crewActSys(r.sys)} ${actFmt(actNum(r.start))} → ${actFmt(actNum(r.end))} бар<small>${when(r.at)} · <a href="${crewFileUrl(r.before.photo)}" target="_blank" rel="noopener">фото до</a> · <a href="${crewFileUrl(r.after.photo)}" target="_blank" rel="noopener">після</a> · в акті вже є ваш результат</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewActReplace('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Замінити</button><button type="button" class="ptBtn" onclick="crewActKeep('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Залишити моє</button></span></div>`).join("")}
+    ${acts.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)}: випробування ${r.sys === "heat" ? "опалення" : "водопостачання"} ${actFmt(actNum(r.start))} → ${actFmt(actNum(r.end))} бар<small>${when(r.at)} · <a href="${crewFileUrl(r.before.photo)}" target="_blank" rel="noopener">фото до</a> · <a href="${crewFileUrl(r.after.photo)}" target="_blank" rel="noopener">після</a> · в акті вже є ваш результат</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewActReplace('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Замінити</button><button type="button" class="ptBtn" onclick="crewActKeep('${escapeHtml(p.id)}','${escapeHtml(r.id)}')">Залишити моє</button></span></div>`).join("")}
     ${bought.map(r => `<div class="ptRow"><span class="ptText">${escapeHtml(r.name)} купив за свої: ${money(r.amount)}<small>${r.text ? escapeHtml(r.text) + " · " : ""}${formatQuoteDate(r.date).slice(0, 5)}${r.photo ? ` · <a href="${crewFileUrl(r.photo)}" target="_blank" rel="noopener">фото чека</a>` : ""}</small></span><span class="crewBtns"><button type="button" class="ptBtn primary" onclick="crewBoughtOk('${escapeHtml(r.id)}')">✓ Підтвердити</button><button type="button" class="ptBtn" onclick="crewBoughtNo('${escapeHtml(r.id)}')" aria-label="Відхилити">✕</button></span></div>`).join("")}
   </section>`;
 }
@@ -12408,21 +12406,9 @@ function renderQuotePreview(){
    Додається до фактичного кошторису: на сторінці клієнта окремим блоком, у PDF — з нової сторінки.
    project.pressureAct = { date, systems:[{ key, label, on, pressure, minutes, start, end }], note, photos:[dataURL] } */
 const ACT_SYSTEMS = [
-  { key:"water", label:"Холодне водопостачання (ХВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
-  { key:"hot", label:"Гаряче водопостачання (ГВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
+  { key:"water", label:"Водопостачання (ХВП/ГВП)", pressure:4.5, minutes:30, work:3, k:1.5, need:30 },
   { key:"heat", label:"Опалення / тепла підлога", pressure:4, minutes:120, work:3, k:1.3, need:120 }
 ];
-/* До ГВП окремою системою водопостачання було одне — «ХВП/ГВП»: такі акти лишаються як були */
-const ACT_OLD_WATER = "Водопостачання (ХВП/ГВП)";
-function actNewSys(x){ return { key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure }; }
-/* Старий акт: додаємо ГВП (порожнім, у PDF не піде), а «ХВП/ГВП» без результату перейменовуємо на «ХВП» */
-function actEnsure(a){
-  if(!a || !Array.isArray(a.systems)) return a;
-  ACT_SYSTEMS.forEach((d, n) => { if(!a.systems.some(x => x.key === d.key)){ a.systems.splice(Math.min(n, a.systems.length), 0, actNewSys(d)); a.tab = 0; } });
-  const w = a.systems.find(x => x.key === "water");
-  if(w && w.label === ACT_OLD_WATER && !actHasData(w)) w.label = ACT_SYSTEMS[0].label;
-  return a;
-}
 const ACT_MAX_PHOTOS = 4;
 const ACT_ALLOW = 0.2; /* падіння не більше 0,2 бар — герметично */
 let actDraft = null;
@@ -12446,7 +12432,7 @@ function actSysDate(x, a){
   if(ph && ph.at){ const d = new Date(ph.at); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
   return x.date || (a && a.date) || todayIso();
 }
-function actShortName(x){ return x.key === "water" ? (x.label === ACT_OLD_WATER ? "водопостачання" : "ХВП") : x.key === "hot" ? "ГВП" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
+function actShortName(x){ return x.key === "water" ? "водопостачання" : x.key === "heat" ? "опалення" : String(x.label || "").toLowerCase(); }
 function actIncluded(project){
   const a = project && project.pressureAct;
   return Boolean(a && actFactual(project) && quoteMode !== "materials" && (a.systems || []).some(actSysDone));
@@ -12454,8 +12440,7 @@ function actIncluded(project){
 function actNum(v){ const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 100) / 100 : null; }
 function actFmt(v){ return v === null || v === undefined || v === "" ? "—" : String(v).replace(".", ","); }
 /* Критерії беруться з окремого файлу правил (shared/hydrorules.js), лише за ДБН. Числового допуску немає — його не вигадуємо */
-/* ГВП — той самий розділ ДБН В.2.5-64, що й холодна вода */
-function actRule(x){ return HydroRules.ruleFor(x.key === "hot" ? "water" : x.key, x.medium === "air" ? "air" : "hydro"); }
+function actRule(x){ return HydroRules.ruleFor(x.key, x.medium === "air" ? "air" : "hydro"); }
 function actAllow(x){ const r = actRule(x); return r ? r.maxDrop : null; }
 function actDrop(x){ const s = actNum(x.start), e = actNum(x.end); return s === null || e === null ? null : Math.round((s - e) * 100) / 100; }
 function actEval(x){
@@ -12542,9 +12527,9 @@ function openActSheet(){
   const project = projects.find(item => item.id === currentProjectId);
   if(!project) return;
   const a = project.pressureAct;
-  actDraft = a ? actEnsure(JSON.parse(JSON.stringify(a))) : {
+  actDraft = a ? JSON.parse(JSON.stringify(a)) : {
     date: todayIso(),
-    systems: ACT_SYSTEMS.map(actNewSys),
+    systems: ACT_SYSTEMS.map(x => ({ key:x.key, label:x.label, on:false, pressure:x.pressure, minutes:x.minutes, work:x.work, k:x.k, need:x.need, leak:null, cond:{}, glued:false, confirm:false, air1:false, compMax:null, start:x.pressure, end:x.pressure })),
     note: "",
     photos: []
   };
@@ -13099,14 +13084,14 @@ function actClientData(project){
   };
 }
 /* ===== Вигляд звіту (той самий, що в окремому інструменті «Звіт про герметичність») ===== */
-function actSysNoun(x){ return x.key === "heat" ? "опалення" : x.key === "hot" ? "гарячого водопостачання" : x.label === ACT_OLD_WATER ? "водопостачання" : "холодного водопостачання"; }
+function actSysNoun(x){ return x.key === "heat" ? "опалення" : "водопостачання"; }
 function actPaperTitle(list){
   const air = list.filter(x => x.air).length;
   return air === 0 ? "Звіт про гідравлічні випробування" : air === list.length ? "Звіт про манометричні випробування" : "Звіт про гідравлічні та манометричні випробування";
 }
 function actPaperSub(list){
   const n = [...new Set(list.map(actSysNoun))];
-  return "Перевірка герметичності " + (n.length > 1 ? "систем " + n.slice(0, -1).join(", ") + " та " + n[n.length - 1] : "системи " + n[0]) + ".";
+  return "Перевірка герметичності " + (n.length > 1 ? "систем " + n.join(" та ") : "системи " + n[0]) + ".";
 }
 const ACT_IC = {
   building:'<rect x="5" y="3" width="10" height="18"/><path d="M15 9h4v12h-4M8 7h2M8 11h2M8 15h2"/>',
