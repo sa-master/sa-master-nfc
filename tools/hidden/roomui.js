@@ -2,8 +2,8 @@
   "use strict";
   var R = HID, G = HID, KEY = "hidden-room-v1", NS = "http://www.w3.org/2000/svg";
   var DK = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
-  var P = DK ? { bg: "#0f1115", room: "#1a1e26", wall: "#8fb4ff", wallSoft: "#262c38", pillar: "#2b3240", ink: "#f2f4f7", mute: "#98a2b3", pill: "#232936", pillLn: "#343c4d", dot: "#2a303c", cold: "#4c9dff", hot: "#ff6b5e", hub: "#ffb020", card: "#1e232d", on: "#4c9dff", err: "#ff6b5e" }
-    : { bg: "#ffffff", room: "#f6f8fb", wall: "#1d2b4f", wallSoft: "#dfe5ee", pillar: "#cfd6e2", ink: "#101828", mute: "#667085", pill: "#ffffff", pillLn: "#d0d5dd", dot: "#e4e8ef", cold: "#1570ef", hot: "#e5392b", hub: "#d92d20", card: "#ffffff", on: "#1570ef", err: "#d92d20" };
+  var P = DK ? { bg: "#0f1115", room: "#1a1e26", wall: "#8fb4ff", pb: "#1d2b45", wallSoft: "#262c38", pillar: "#2b3240", ink: "#f2f4f7", mute: "#98a2b3", pill: "#232936", pillLn: "#343c4d", dot: "#2a303c", cold: "#4c9dff", hot: "#ff6b5e", hub: "#ffb020", card: "#1e232d", on: "#4c9dff", err: "#ff6b5e" }
+    : { bg: "#ffffff", room: "#f6f8fb", wall: "#1d2b4f", pb: "#e3eeff", wallSoft: "#dfe5ee", pillar: "#cfd6e2", ink: "#101828", mute: "#667085", pill: "#ffffff", pillLn: "#d0d5dd", dot: "#e4e8ef", cold: "#1570ef", hot: "#e5392b", hub: "#d92d20", card: "#ffffff", on: "#1570ef", err: "#d92d20" };
   document.documentElement.style.setProperty("--stage", P.bg);
   var $ = function (id) { return document.getElementById(id); };
   var S = { room: { W: 3000, D: 2000, features: [] }, fixtures: [], hub: null, routes: [], axes: {}, pipes: [], extras: [], seq: 1 }, draw = null, pdrag = null, psel = null, zm = { z: 1, px: 0, py: 0 }, ptrs = {}, pinch = null;
@@ -87,6 +87,35 @@
     var len2 = 0; for (var i = 1; i < pp.pts.length; i++) len2 += Math.abs(pp.pts[i][0] - pp.pts[i - 1][0]) + Math.abs(pp.pts[i][1] - pp.pts[i - 1][1]);
     var d2 = document.createElement("div"); d2.className = "note"; d2.textContent = "Довжина по плану: " + (len2 / 1000).toFixed(2) + " м. Пунктир — не підтверджено. Пара ХВП справа, ГВП зліва за напрямком від вузла."; sheet.appendChild(d2);
   }
+  /* ---------- умовні позначення (вид зверху; низ символу — біля стіни) ---------- */
+  var SYM = { wc: { w: 380, d: 700 }, sink: { w: 500, d: 400 }, shower: { w: 900, d: 900 }, bath: { w: 1700, d: 700 }, washer: { w: 600, d: 600 }, boiler: { w: 440, d: 440 }, bidet: { w: 300, d: 520 }, other: { w: 400, d: 300 }, hub: { w: 400, d: 140 } };
+  function symK(sy) { return Math.max(view.sc, 26 / Math.min(sy.w, sy.d) * (sy.d < 200 ? 0.45 : 1)); }
+  function symShapes(type) {
+    var o = { fill: "inherit" };
+    if (type === "wc") return [["rect", { x: -190, y: 0, width: 380, height: 150, rx: 20 }], ["ellipse", { cx: 0, cy: 430, rx: 190, ry: 270 }]];
+    if (type === "sink") return [["rect", { x: -250, y: 0, width: 500, height: 400, rx: 40 }], ["ellipse", { cx: 0, cy: 220, rx: 170, ry: 120 }], ["circle", { cx: 0, cy: 60, r: 22 }]];
+    if (type === "shower") return [["rect", { x: -450, y: 0, width: 900, height: 900, rx: 20 }], ["line", { x1: -450, y1: 0, x2: 450, y2: 900 }], ["line", { x1: 450, y1: 0, x2: -450, y2: 900 }], ["circle", { cx: 0, cy: 450, r: 45 }]];
+    if (type === "bath") return [["rect", { x: -850, y: 0, width: 1700, height: 700, rx: 90 }], ["rect", { x: -770, y: 80, width: 1540, height: 540, rx: 220 }], ["circle", { cx: -690, cy: 350, r: 28 }]];
+    if (type === "washer") return [["rect", { x: -300, y: 0, width: 600, height: 600, rx: 30 }], ["circle", { cx: 0, cy: 330, r: 210 }], ["circle", { cx: 0, cy: 330, r: 120 }]];
+    if (type === "boiler") return [["circle", { cx: 0, cy: 220, r: 220 }], ["circle", { cx: 0, cy: 220, r: 140 }]];
+    if (type === "bidet") return [["rect", { x: -150, y: 0, width: 300, height: 110, rx: 20 }], ["ellipse", { cx: 0, cy: 320, rx: 150, ry: 200 }]];
+    if (type === "hub") return [["rect", { x: -200, y: 0, width: 400, height: 140, rx: 18 }], ["circle", { cx: -100, cy: 70, r: 34, c: "cold" }], ["circle", { cx: 100, cy: 70, r: 34, c: "hot" }]];
+    return [["rect", { x: -200, y: 0, width: 400, height: 300, rx: 20, dash: 1 }], ["line", { x1: -120, y1: 80, x2: 120, y2: 220 }]];
+  }
+  function symbol(p, n, type, on) {
+    var sy = SYM[type] || SYM.other, k = symK(sy), ang = Math.atan2(-n[0], -n[1]) * 180 / Math.PI, g = document.createElementNS(NS, "g");
+    g.setAttribute("transform", "translate(" + X(p[0]) + "," + Y(p[1]) + ") rotate(" + ang + ") scale(" + k + ")"); g.setAttribute("pointer-events", "none"); sv.appendChild(g);
+    var stroke = on ? P.on : (type === "hub" ? P.hub : P.wall);
+    symShapes(type).forEach(function (sh) {
+      var e = document.createElementNS(NS, sh[0]), a = sh[1];
+      for (var key in a) if (key !== "c" && key !== "dash") e.setAttribute(key, a[key]);
+      var isPort = !!a.c;
+      e.setAttribute("fill", isPort ? (a.c === "cold" ? P.cold : P.hot) : (sh[0] === "line" ? "none" : (on ? P.pb : P.card)));
+      e.setAttribute("fill-opacity", isPort ? 1 : .55); e.setAttribute("stroke", isPort ? "none" : stroke); e.setAttribute("stroke-width", on ? 2.5 : 1.6); e.setAttribute("vector-effect", "non-scaling-stroke");
+      if (a.dash) e.setAttribute("stroke-dasharray", "5 4");
+      g.appendChild(e);
+    });
+  }
   function C() { return R.contour(S.room); }
   function segs() { var c = C(); return c.errors.length ? [] : R.segs(c.pts); }
 
@@ -140,19 +169,13 @@
     if (pdrag && pdrag.end) { var pv2 = pdrag.base.concat([pdrag.end]); pipeDraw(pv2.length > 1 ? pv2 : [], pdrag.attr, true, true); }
     /* прилади */
     S.fixtures.forEach(function (f, i) {
-      var t = R.fixType(f.type), near = R.nearest(pts, f.p), n = near.seg.n, x = X(f.p[0]), y = Y(f.p[1]);
-      var cx = x + n[0] * 14, cy = y - n[1] * 14, on = sel && sel.k === "f" && sel.id === f.id;
-      el("circle", { cx: cx, cy: cy, r: 14, fill: on ? P.on : P.card, stroke: on ? P.on : P.wall, "stroke-width": 2.5 });
-      label(cx, cy + 4, t.code, { c: on ? "#fff" : P.ink, s: 12, w: 800, bare: true });
-      var si = near.seg.i, base = f.base === "b" ? "b" : "a", corner = base === "a" ? si + 1 : (si + 1) % pts.length + 1;
-      var tx = x + n[0] * 44, ty = Y(f.p[1]) - n[1] * 44 + 4;
+      var t = R.fixType(f.type), near = R.nearest(pts, f.p), n = near.seg.n, on = sel && sel.k === "f" && sel.id === f.id, sy = SYM[f.type] || SYM.other;
+      symbol(f.p, n, f.type, on);
+      var si = near.seg.i, base = f.base === "b" ? "b" : "a", corner = base === "a" ? si + 1 : (si + 1) % pts.length + 1, k = symK(sy);
+      var off = sy.d * k + 16, tx = X(f.p[0]) + n[0] * off, ty = Y(f.p[1]) - n[1] * off + 4;
       label(tx, ty, "№" + corner + ": " + R.distFrom(near.seg, f.p, base) + " · h" + (f.h || t.h), { s: 10, c: P.mute });
     });
-    if (S.hub) {
-      var hn = R.nearest(pts, S.hub), hx = X(S.hub[0]) + hn.seg.n[0] * 16, hy = Y(S.hub[1]) - hn.seg.n[1] * 16, on2 = sel && sel.k === "h";
-      el("rect", { x: hx - 13, y: hy - 13, width: 26, height: 26, rx: 8, fill: on2 ? P.on : P.card, stroke: P.hub, "stroke-width": 3 });
-      label(hx, hy + 5, "◉", { c: on2 ? "#fff" : P.hub, s: 15, bare: true });
-    }
+    if (S.hub) { var hn = R.nearest(pts, S.hub); symbol(S.hub, hn.seg.n, "hub", sel && sel.k === "h"); }
     renderChips();
   }
 
@@ -276,8 +299,8 @@
   function wallHit(q) { var c = C(); if (c.errors.length) return null; var w = world(q), n = R.nearest(c.pts, w); return n.d * view.sc <= 48 ? n : null; }
   function hit(q) {
     var c = C(); var best = null, bd = 28; if (c.errors.length) return null;
-    S.fixtures.forEach(function (f) { var n = R.nearest(c.pts, f.p).seg.n, x = X(f.p[0]) + n[0] * 14, y = Y(f.p[1]) - n[1] * 14, d = Math.hypot(x - q[0], y - q[1]); if (d < bd) { bd = d; best = { k: "f", id: f.id }; } });
-    if (S.hub) { var n2 = R.nearest(c.pts, S.hub).seg.n, d2 = Math.hypot(X(S.hub[0]) + n2[0] * 16 - q[0], Y(S.hub[1]) - n2[1] * 16 - q[1]); if (d2 < bd) best = { k: "h" }; }
+    S.fixtures.forEach(function (f) { var n = R.nearest(c.pts, f.p).seg.n, sy = SYM[f.type] || SYM.other, k = symK(sy), x = X(f.p[0]) + n[0] * sy.d * k / 2, y = Y(f.p[1]) - n[1] * sy.d * k / 2, d = Math.hypot(x - q[0], y - q[1]) - Math.max(0, Math.min(sy.w, sy.d) * k / 2 - 28); if (d < bd) { bd = d; best = { k: "f", id: f.id }; } });
+    if (S.hub) { var n2 = R.nearest(c.pts, S.hub).seg.n, hk = symK(SYM.hub), d2 = Math.hypot(X(S.hub[0]) + n2[0] * SYM.hub.d * hk / 2 - q[0], Y(S.hub[1]) - n2[1] * SYM.hub.d * hk / 2 - q[1]) - 6; if (d2 < bd) best = { k: "h" }; }
     return best;
   }
   sv.addEventListener("pointerdown", function (e) { if (tool === "pipe") { if (!C().errors.length) { pipeDown(pt(e)); sv.setPointerCapture(e.pointerId); } return; } var q = pt(e); drag = { q: q, moved: false, h: tool === "select" || tool === "fix" || tool === "hub" ? hit(q) : null }; sv.setPointerCapture(e.pointerId); });
